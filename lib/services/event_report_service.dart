@@ -10,6 +10,7 @@ import '../services/admin_events_service.dart';
 import '../utils/event_linked_spot_loader.dart';
 import '../utils/event_suggestion_utils.dart';
 import '../utils/image_preparation.dart';
+import '../utils/ui_yield.dart';
 
 class EventReportService {
   EventReportService({FirebaseFirestore? firestore, FirebaseStorage? storage})
@@ -33,29 +34,43 @@ class EventReportService {
 
   /// Upload photos to [eventSuggestions/] (staging; does not trigger resize extension).
   Future<List<String>> uploadSuggestedEventPhotos(
-    List<Uint8List> photoBytesList,
+    List<PreparedImage> preparedPhotos,
   ) async {
-    if (photoBytesList.isEmpty) return const <String>[];
-    if (photoBytesList.length > maxSuggestedPhotos) {
+    if (preparedPhotos.isEmpty) return const <String>[];
+    if (preparedPhotos.length > maxSuggestedPhotos) {
       throw StateError('At most $maxSuggestedPhotos photos allowed.');
     }
 
     final photoUrls = <String>[];
-    for (var i = 0; i < photoBytesList.length; i++) {
-      final prepared = await prepareImageForUpload(photoBytesList[i]);
+    final baseTimestamp = DateTime.now().millisecondsSinceEpoch;
+    for (var i = 0; i < preparedPhotos.length; i++) {
+      await yieldToUi();
+      final prepared = preparedPhotos[i];
       final ext = _extensionForContentType(prepared.contentType);
       final fileName =
-          '$eventSuggestionsPrefix${DateTime.now().millisecondsSinceEpoch}_web_image_$i$ext';
+          '$eventSuggestionsPrefix${baseTimestamp}_web_image_$i$ext';
       final ref = _storage.ref().child(fileName);
 
-      final uploadTask = ref.putData(
+      final snapshot = await ref.putData(
         prepared.bytes,
         SettableMetadata(contentType: prepared.contentType),
       );
-      final snapshot = await uploadTask;
       photoUrls.add(await snapshot.ref.getDownloadURL());
     }
     return photoUrls;
+  }
+
+  /// Legacy upload path when only raw bytes are available (e.g. mobile file reads).
+  Future<List<String>> uploadSuggestedEventPhotoBytes(
+    List<Uint8List> photoBytesList,
+  ) async {
+    if (photoBytesList.isEmpty) return const <String>[];
+    final preparedPhotos = <PreparedImage>[];
+    for (final bytes in photoBytesList) {
+      await yieldToUi();
+      preparedPhotos.add(await prepareImageForUpload(bytes));
+    }
+    return uploadSuggestedEventPhotos(preparedPhotos);
   }
 
   Future<bool> submitEventReport({

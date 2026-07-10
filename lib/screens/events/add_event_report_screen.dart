@@ -1106,7 +1106,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
         }
         try {
           suggestedPhotoUrls = await eventReportService
-              .uploadSuggestedEventPhotos(imageBytes);
+              .uploadSuggestedEventPhotoBytes(imageBytes);
         } catch (e) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(

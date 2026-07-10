@@ -10,6 +10,7 @@ import '../models/rating.dart';
 import '../utils/duplicate_spot_resolution_utils.dart';
 import '../utils/image_preparation.dart';
 import '../utils/image_url_utils.dart';
+import '../utils/ui_yield.dart';
 import 'audit_log_service.dart';
 
 class SpotService extends ChangeNotifier {
@@ -602,6 +603,35 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  Future<String> _uploadPreparedImage(
+    PreparedImage prepared,
+    String fileName,
+  ) async {
+    await yieldToUi();
+    final ref = _storage.ref().child(fileName);
+    final snapshot = await ref.putData(
+      prepared.bytes,
+      SettableMetadata(contentType: prepared.contentType),
+    );
+    return snapshot.ref.getDownloadURL();
+  }
+
+  Future<List<String>> _uploadPreparedImages(
+    List<PreparedImage> preparedPhotos, {
+    required String pathPrefix,
+    required String fileNameStem,
+  }) async {
+    final photoUrls = <String>[];
+    final baseTimestamp = DateTime.now().millisecondsSinceEpoch;
+    for (var i = 0; i < preparedPhotos.length; i++) {
+      final prepared = preparedPhotos[i];
+      final ext = _extensionForContentType(prepared.contentType);
+      final fileName = '$pathPrefix${baseTimestamp}_${fileNameStem}_$i$ext';
+      photoUrls.add(await _uploadPreparedImage(prepared, fileName));
+    }
+    return photoUrls;
+  }
+
   // Upload multiple images to Firebase Storage
   Future<List<String>> _uploadImages(List<File> imageFiles) async {
     final List<String> imageUrls = [];
@@ -628,8 +658,17 @@ class SpotService extends ChangeNotifier {
   Future<List<String>> uploadSuggestedPhotos({
     List<File>? photoFiles,
     List<Uint8List>? photoBytesList,
+    List<PreparedImage>? preparedPhotos,
   }) async {
     try {
+      if (preparedPhotos != null && preparedPhotos.isNotEmpty) {
+        return _uploadPreparedImages(
+          preparedPhotos,
+          pathPrefix: 'suggestions/',
+          fileNameStem: 'web_image',
+        );
+      }
+
       final List<String> photoUrls = [];
 
       if (photoFiles != null && photoFiles.isNotEmpty) {
@@ -640,15 +679,7 @@ class SpotService extends ChangeNotifier {
           final ext = _extensionForContentType(prepared.contentType);
           final fileName =
               'suggestions/${DateTime.now().millisecondsSinceEpoch}_image_$i$ext';
-          final ref = _storage.ref().child(fileName);
-
-          final uploadTask = ref.putData(
-            prepared.bytes,
-            SettableMetadata(contentType: prepared.contentType),
-          );
-          final snapshot = await uploadTask;
-          final url = await snapshot.ref.getDownloadURL();
-          photoUrls.add(url);
+          photoUrls.add(await _uploadPreparedImage(prepared, fileName));
         }
       } else if (photoBytesList != null && photoBytesList.isNotEmpty) {
         for (int i = 0; i < photoBytesList.length; i++) {
@@ -657,15 +688,7 @@ class SpotService extends ChangeNotifier {
           final ext = _extensionForContentType(prepared.contentType);
           final fileName =
               'suggestions/${DateTime.now().millisecondsSinceEpoch}_web_image_$i$ext';
-          final ref = _storage.ref().child(fileName);
-
-          final uploadTask = ref.putData(
-            prepared.bytes,
-            SettableMetadata(contentType: prepared.contentType),
-          );
-          final snapshot = await uploadTask;
-          final url = await snapshot.ref.getDownloadURL();
-          photoUrls.add(url);
+          photoUrls.add(await _uploadPreparedImage(prepared, fileName));
         }
       }
 

@@ -6719,7 +6719,7 @@ class _SuggestPhotoDialog extends StatefulWidget {
 class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
   late final TextEditingController detailsController;
   late final TextEditingController emailController;
-  final List<Uint8List> _selectedImageBytes = [];
+  final List<PreparedImage> _selectedImages = [];
   bool _isPreparingImages = false;
   String? _imageProgressLabel;
   bool _isUploading = false;
@@ -6793,9 +6793,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
 
       if (preparedImages.isNotEmpty) {
         setState(() {
-          for (final prepared in preparedImages) {
-            _selectedImageBytes.add(prepared.bytes);
-          }
+          _selectedImages.addAll(preparedImages);
         });
       }
     } on ImagePreparationException catch (e) {
@@ -6830,13 +6828,13 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
 
   Future<void> _removeImage(int index) async {
     setState(() {
-      _selectedImageBytes.removeAt(index);
+      _selectedImages.removeAt(index);
     });
   }
 
   Future<void> _submitPhotos() async {
     final l10n = AppLocalizations.of(context)!;
-    if (_selectedImageBytes.isEmpty) {
+    if (_selectedImages.isEmpty) {
       setState(() {
         _submissionError = l10n.spotDetailSelectAtLeastOnePhoto;
       });
@@ -6871,6 +6869,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
       _submissionError = null;
       emailError = null;
     });
+    await yieldToUi();
 
     try {
       final spotService = Provider.of<SpotService>(context, listen: false);
@@ -6883,9 +6882,10 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
       setState(() {
         _isUploading = true;
       });
+      await yieldToUi();
 
       final photoUrls = await spotService.uploadSuggestedPhotos(
-        photoBytesList: _selectedImageBytes,
+        preparedPhotos: _selectedImages,
       );
 
       setState(() {
@@ -7009,11 +7009,11 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                 ],
                 const SizedBox(height: 16),
                 // Display selected images
-                if (_selectedImageBytes.isNotEmpty) ...[
+                if (_selectedImages.isNotEmpty) ...[
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: List.generate(_selectedImageBytes.length, (
+                    children: List.generate(_selectedImages.length, (
                       index,
                     ) {
                       return Stack(
@@ -7028,7 +7028,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                               ),
                             ),
                             child: MemoryImagePreview(
-                              bytes: _selectedImageBytes[index],
+                              bytes: _selectedImages[index].bytes,
                               size: 100,
                               borderRadius: 8,
                             ),

@@ -1710,7 +1710,7 @@ class _SuggestEventPhotoDialog extends StatefulWidget {
 
 class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
   final TextEditingController _emailController = TextEditingController();
-  final List<Uint8List> _selectedImageBytes = <Uint8List>[];
+  final List<PreparedImage> _selectedImages = <PreparedImage>[];
   bool _isPreparingImages = false;
   String? _imageProgressLabel;
   bool _isUploading = false;
@@ -1739,7 +1739,7 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
 
   Future<void> _pickImagesFromGallery() async {
     final remaining =
-        EventReportService.maxSuggestedPhotos - _selectedImageBytes.length;
+        EventReportService.maxSuggestedPhotos - _selectedImages.length;
     if (remaining <= 0) return;
 
     List<XFile> pickedFiles;
@@ -1777,11 +1777,11 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
       if (preparedImages.isNotEmpty) {
         setState(() {
           for (final prepared in preparedImages) {
-            if (_selectedImageBytes.length >=
+            if (_selectedImages.length >=
                 EventReportService.maxSuggestedPhotos) {
               break;
             }
-            _selectedImageBytes.add(prepared.bytes);
+            _selectedImages.add(prepared);
           }
         });
       }
@@ -1802,7 +1802,7 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
   }
 
   Future<void> _takePhoto() async {
-    if (_selectedImageBytes.length >= EventReportService.maxSuggestedPhotos) {
+    if (_selectedImages.length >= EventReportService.maxSuggestedPhotos) {
       return;
     }
 
@@ -1828,7 +1828,7 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
         },
       );
       if (!mounted || preparedImages.isEmpty) return;
-      setState(() => _selectedImageBytes.add(preparedImages.first.bytes));
+      setState(() => _selectedImages.add(preparedImages.first));
     } on ImagePreparationException catch (e) {
       if (!mounted) return;
       setState(() => _error = e.message);
@@ -1860,7 +1860,7 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
         return;
       }
     }
-    if (_selectedImageBytes.isEmpty) {
+    if (_selectedImages.isEmpty) {
       setState(() => _error = l10n.eventDetailSuggestPhotosPickRequired);
       return;
     }
@@ -1870,11 +1870,12 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
       _isUploading = true;
       _error = null;
     });
+    await yieldToUi();
 
     try {
       final eventService = context.read<EventReportService>();
       final uploadedUrls = await eventService.uploadSuggestedEventPhotos(
-        _selectedImageBytes,
+        _selectedImages,
       );
 
       if (!mounted) return;
@@ -1999,16 +2000,16 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
                 ),
               ],
               const SizedBox(height: 12),
-              if (_selectedImageBytes.isNotEmpty)
+              if (_selectedImages.isNotEmpty)
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: List.generate(_selectedImageBytes.length, (index) {
-                    final bytes = _selectedImageBytes[index];
+                  children: List.generate(_selectedImages.length, (index) {
+                    final prepared = _selectedImages[index];
                     return Stack(
                       children: [
                         MemoryImagePreview(
-                          bytes: bytes,
+                          bytes: prepared.bytes,
                           size: 96,
                           borderRadius: 8,
                         ),
@@ -2022,7 +2023,7 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
                               onTap: _isBusy
                                   ? null
                                   : () => setState(
-                                      () => _selectedImageBytes.removeAt(index),
+                                      () => _selectedImages.removeAt(index),
                                     ),
                               borderRadius: BorderRadius.circular(16),
                               child: const Padding(
