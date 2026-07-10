@@ -482,10 +482,12 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
     }
 
     final event = await context.read<AdminEventsService>().getEventById(eventId);
-    if (event?.latitude == null || event?.longitude == null || !mounted) {
-      return;
-    }
-    await _focusEventPin(EventMapPin.fromParkourEvent(event!));
+    if (event == null || !mounted) return;
+
+    final pin = await context.read<EventMapService>().resolvePinForLocate(event);
+    if (pin == null || !mounted) return;
+
+    await _focusEventPin(pin);
   }
 
   Future<void> _focusEventPin(EventMapPin pin) async {

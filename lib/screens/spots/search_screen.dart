@@ -2882,11 +2882,14 @@ class SearchScreenState extends State<SearchScreen>
 
       final admin = Provider.of<AdminEventsService>(context, listen: false);
       final event = await admin.getEventById(eventId);
-      if (event?.latitude == null || event?.longitude == null || !mounted) {
-        return;
-      }
+      if (event == null || !mounted) return;
 
-      final pin = EventMapPin.fromParkourEvent(event!);
+      final pin = await Provider.of<EventMapService>(
+        context,
+        listen: false,
+      ).resolvePinForLocate(event);
+      if (pin == null || !mounted) return;
+
       await _selectEventPin(pin, focusMap: true);
       if (mounted) {
         context.go('/explore');

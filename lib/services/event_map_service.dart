@@ -1,7 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/event_map_pin.dart';
+import '../models/parkour_event.dart';
+import '../utils/event_linked_spot_loader.dart';
+import '../utils/event_locate_utils.dart';
 
 class EventsInBoundsResult {
   final List<EventMapPin> pins;
@@ -18,6 +22,11 @@ class EventsInBoundsResult {
 }
 
 class EventMapService extends ChangeNotifier {
+  EventMapService({FirebaseFirestore? firestore})
+    : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  final FirebaseFirestore _firestore;
+
   Future<EventsInBoundsResult> getEventsInBounds(
     double minLat,
     double maxLat,
@@ -57,6 +66,39 @@ class EventMapService extends ChangeNotifier {
       shownCount: (responseData['shownCount'] as num?)?.toInt() ?? pins.length,
       totalCount: (responseData['totalCount'] as num?)?.toInt(),
       eventCount: (responseData['eventCount'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  /// Materialized map pins for a single event (venue and/or linked spots).
+  Future<List<EventMapPin>> getMapPinsForEvent(String eventId) async {
+    final trimmed = eventId.trim();
+    if (trimmed.isEmpty) return const [];
+
+    try {
+      final snapshot = await _firestore
+          .collection('eventMapPins')
+          .where('eventId', isEqualTo: trimmed)
+          .get();
+      return snapshot.docs.map(EventMapPin.fromFirestore).toList();
+    } catch (e, st) {
+      debugPrint('EventMapService.getMapPinsForEvent error: $e\n$st');
+      return const [];
+    }
+  }
+
+  /// Resolves a pin for Explore locate (direct coords, map pins, or linked spots).
+  Future<EventMapPin?> resolvePinForLocate(ParkourEvent event) {
+    return resolveEventMapPinForLocate(
+      event: event,
+      getMapPinsForEvent: getMapPinsForEvent,
+      loadEligibleLinkedSpot:
+          ({required List<String> spotIds, required List<String> spotListIds}) {
+            return loadFirstEligibleSpotForEventPin(
+              firestore: _firestore,
+              spotIds: spotIds,
+              spotListIds: spotListIds,
+            );
+          },
     );
   }
 }

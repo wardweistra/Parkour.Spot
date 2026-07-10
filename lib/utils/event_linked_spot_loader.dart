@@ -2,7 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/spot.dart';
 import '../models/spot_list.dart';
+import 'event_locate_utils.dart';
 import 'event_location_utils.dart';
+
+/// Whether a spot list expands into event map pins (mirrors Cloud Functions).
+bool isSpotListExpandableForEventPins(SpotList list) {
+  return list.visibility == SpotListVisibility.public ||
+      list.visibility == SpotListVisibility.unlisted;
+}
 
 /// Loads the first linked spot used to infer an event's city/country.
 Future<Spot?> loadSourceSpotForCityCountry({
@@ -27,6 +34,39 @@ Future<Spot?> loadSourceSpotForCityCountry({
     if (effectiveSpotIds.isEmpty) continue;
     final spot = await _loadSpotById(firestore, effectiveSpotIds.first);
     if (spot != null) return spot;
+  }
+
+  return null;
+}
+
+/// First eligible linked spot for Explore locate when the event has no venue.
+///
+/// Walks [spotIds], then expandable [spotListIds] (`public` / `unlisted` only).
+/// Skips hidden / duplicate spots and spots without valid coordinates.
+Future<Spot?> loadFirstEligibleSpotForEventPin({
+  required FirebaseFirestore firestore,
+  required List<String> spotIds,
+  required List<String> spotListIds,
+}) async {
+  for (final spotId in spotIds) {
+    final trimmedId = spotId.trim();
+    if (trimmedId.isEmpty) continue;
+    final spot = await _loadSpotById(firestore, trimmedId);
+    if (spot != null && isSpotEligibleForEventMapPin(spot)) return spot;
+  }
+
+  for (final listId in spotListIds) {
+    final trimmedListId = listId.trim();
+    if (trimmedListId.isEmpty) continue;
+    final listDoc =
+        await firestore.collection('spotLists').doc(trimmedListId).get();
+    if (!listDoc.exists || listDoc.data() == null) continue;
+    final list = SpotList.fromFirestore(listDoc);
+    if (!isSpotListExpandableForEventPins(list)) continue;
+    for (final spotId in list.effectiveSpotIds) {
+      final spot = await _loadSpotById(firestore, spotId);
+      if (spot != null && isSpotEligibleForEventMapPin(spot)) return spot;
+    }
   }
 
   return null;
