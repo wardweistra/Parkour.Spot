@@ -714,7 +714,7 @@ class SpotService extends ChangeNotifier {
     approvedByUserId, // Optional: userId of the approver (for audit log)
     String?
     approvedByUserName, // Optional: userName of the approver (for audit log)
-    void Function(int current, int total)? onProgress,
+    void Function(int current, int total, {String phase})? onProgress,
   }) async {
     try {
       _isLoading = true;
@@ -735,13 +735,12 @@ class SpotService extends ChangeNotifier {
       // Move photos from /suggestions/ to /spots/
       final List<String> finalPhotoUrls = [];
       final total = photoUrls.length;
-      int current = 0;
+      var current = 0;
       for (final photoUrl in photoUrls) {
         try {
           current++;
-          onProgress?.call(current, total);
-          // Yield to event loop so UI stays responsive (resize is CPU-heavy on web)
-          await Future<void>.delayed(Duration.zero);
+          onProgress?.call(current, total, phase: 'Downloading');
+          await yieldToUi();
 
           // Extract the file path from the URL
           final uri = Uri.parse(photoUrl);
@@ -774,26 +773,35 @@ class SpotService extends ChangeNotifier {
           final sourceRef = _storage.ref().child(filePath);
           final destRef = _storage.ref().child(newPath);
 
-          // Fetch via HTTP (bypasses getData's 10MB limit), then resize to avoid
-          // timeout/memory issues with very large images (e.g. 13MB phone photos).
+          // Fetch via HTTP (bypasses getData's 10MB limit), then resize off the
+          // main thread to avoid freezing the UI with large images.
           final response = await http.get(Uri.parse(photoUrl));
           if (response.statusCode != 200 || response.bodyBytes.isEmpty) {
             debugPrint('Failed to fetch photo: ${response.statusCode}');
             continue;
           }
-          final rawBytes = Uint8List.fromList(response.bodyBytes);
-          await Future<void>.delayed(
-            Duration.zero,
-          ); // Let UI update before CPU-heavy resize
-          final resizedBytes = resizeImageForSpotUpload(rawBytes);
-          if (resizedBytes == null || resizedBytes.isEmpty) {
-            debugPrint('Failed to resize photo: $photoUrl');
+          final rawBytes = response.bodyBytes;
+
+          onProgress?.call(current, total, phase: 'Processing');
+          await yieldToUi();
+          PreparedImage prepared;
+          try {
+            prepared = await prepareImageForSpotPromotion(
+              rawBytes,
+              maxDimension: 2048,
+              jpegQuality: 85,
+            );
+          } on ImagePreparationException catch (e) {
+            debugPrint('Failed to prepare photo $photoUrl: $e');
             continue;
           }
+          await yieldToUi();
 
+          onProgress?.call(current, total, phase: 'Uploading');
+          await yieldToUi();
           await destRef.putData(
-            resizedBytes,
-            SettableMetadata(contentType: 'image/jpeg'),
+            prepared.bytes,
+            SettableMetadata(contentType: prepared.contentType),
           );
           final newUrl = await destRef.getDownloadURL();
           finalPhotoUrls.add(newUrl);
@@ -914,12 +922,20 @@ class SpotService extends ChangeNotifier {
   }
 
   // Move photos from /suggestions/ to /rejected/ path (used when rejecting photo suggestions)
-  Future<List<String>> movePhotosToRejected(List<String> photoUrls) async {
+  Future<List<String>> movePhotosToRejected(
+    List<String> photoUrls, {
+    void Function(int current, int total)? onProgress,
+  }) async {
     try {
       final List<String> rejectedUrls = [];
+      final total = photoUrls.length;
 
-      for (final photoUrl in photoUrls) {
+      for (var i = 0; i < photoUrls.length; i++) {
+        final photoUrl = photoUrls[i];
         try {
+          onProgress?.call(i + 1, total);
+          await yieldToUi();
+
           // Extract the file path from the URL
           final uri = Uri.parse(photoUrl);
           String? filePath;

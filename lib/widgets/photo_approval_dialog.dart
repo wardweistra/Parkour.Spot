@@ -7,6 +7,8 @@ import '../models/spot.dart';
 import '../services/spot_service.dart';
 import '../services/auth_service.dart';
 import '../services/spot_report_service.dart';
+import '../utils/ui_yield.dart';
+import 'image_processing_banner.dart';
 
 class PhotoApprovalDialog extends StatefulWidget {
   final SpotReport report;
@@ -23,7 +25,8 @@ class PhotoApprovalDialog extends StatefulWidget {
 class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
   String? _targetSpotId;
   bool _isApproving = false;
-  String? _approvalProgress; // e.g. "Processing 2 of 5..."
+  String? _approvalProgress; // e.g. "Processing photo 2 of 5..."
+  String? _approvalPhase;
   String? _error;
   Spot? _originalSpot;
   Spot? _currentSpot;
@@ -201,8 +204,10 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
     setState(() {
       _isApproving = true;
       _approvalProgress = null;
+      _approvalPhase = 'Starting review...';
       _error = null;
     });
+    await yieldToUi();
 
     try {
       final spotService = Provider.of<SpotService>(context, listen: false);
@@ -233,10 +238,11 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
           targetSpotId: _targetSpotId,
           approvedByUserId: userId,
           approvedByUserName: userName,
-          onProgress: (current, total) {
+          onProgress: (current, total, {phase = 'Processing'}) {
             if (!mounted) return;
             setState(() {
-              _approvalProgress = 'Processing $current of $total...';
+              _approvalPhase = '$phase photo';
+              _approvalProgress = '($current / $total)';
             });
           },
         );
@@ -248,9 +254,16 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
             _error = spotService.error ?? 'Failed to add photos to spot';
             _isApproving = false;
             _approvalProgress = null;
+            _approvalPhase = null;
           });
           return;
         }
+
+        setState(() {
+          _approvalPhase = 'Updating report';
+          _approvalProgress = null;
+        });
+        await yieldToUi();
 
         await reportService.updateReportWithApprovedPhotos(
           reportId: widget.report.id,
@@ -268,8 +281,27 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
       if (rejectedIndices.isNotEmpty) {
         final rejectedOriginalUrls =
             rejectedIndices.map((i) => suggestedPhotoUrls[i]).toList();
-        final rejectedUrls = await spotService.movePhotosToRejected(rejectedOriginalUrls);
+        setState(() {
+          _approvalPhase = 'Rejecting photo';
+          _approvalProgress = null;
+        });
+        await yieldToUi();
+        final rejectedUrls = await spotService.movePhotosToRejected(
+          rejectedOriginalUrls,
+          onProgress: (current, total) {
+            if (!mounted) return;
+            setState(() {
+              _approvalPhase = 'Rejecting photo';
+              _approvalProgress = '($current / $total)';
+            });
+          },
+        );
         if (rejectedUrls.isNotEmpty) {
+          setState(() {
+            _approvalPhase = 'Updating report';
+            _approvalProgress = null;
+          });
+          await yieldToUi();
           await reportService.updateReportWithRejectedPhotos(
             reportId: widget.report.id,
             spotId: widget.report.spotId,
@@ -285,6 +317,11 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
       if (!mounted) return;
 
       // 3. Mark Done when all suggested photos are processed
+      setState(() {
+        _approvalPhase = 'Finishing review';
+        _approvalProgress = null;
+      });
+      await yieldToUi();
       await reportService.updateReportStatus(
         reportId: widget.report.id,
         status: 'Done',
@@ -302,6 +339,7 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
           _error = 'Error: $e';
           _isApproving = false;
           _approvalProgress = null;
+          _approvalPhase = null;
         });
       }
     }
@@ -329,6 +367,13 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (_isApproving && _approvalPhase != null) ...[
+                  ImageProcessingBanner(
+                    message: _approvalPhase!,
+                    progressLabel: _approvalProgress,
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 // Photo previews with Accept/Reject per photo
                 if (_suggestedPhotoUrls.isNotEmpty) ...[
                   Text(
@@ -666,10 +711,8 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       ),
-                      if (_approvalProgress != null) ...[
-                        const SizedBox(width: 12),
-                        Text(_approvalProgress!),
-                      ],
+                      const SizedBox(width: 12),
+                      Text(_approvalPhase ?? 'Submitting...'),
                     ],
                   )
                 : Text(_isRejectAll()

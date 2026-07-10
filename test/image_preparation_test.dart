@@ -196,6 +196,30 @@ void main() {
     });
   });
 
+  group('readJpegDimensions', () {
+    test('returns dimensions for valid JPEG bytes', () {
+      final bytes = Uint8List.fromList(
+        img.encodeJpg(img.Image(width: 800, height: 600), quality: 90),
+      );
+      expect(readJpegDimensions(bytes), (800, 600));
+    });
+
+    test('returns null for non-JPEG bytes', () {
+      expect(readJpegDimensions(_minimalPngBytes()), isNull);
+    });
+  });
+
+  group('prepareImageForSpotPromotion fast path', () {
+    test('returns original JPEG bytes when already within max dimension', () async {
+      final bytes = Uint8List.fromList(
+        img.encodeJpg(img.Image(width: 1200, height: 900), quality: 90),
+      );
+      final result = await prepareImageForSpotPromotion(bytes, maxDimension: 2048);
+      expect(result.bytes, bytes);
+      expect(result.contentType, 'image/jpeg');
+    });
+  });
+
   group('resizeImageForSpotUpload', () {
     test('returns null for corrupt JPEG header', () {
       final bytes = Uint8List.fromList([

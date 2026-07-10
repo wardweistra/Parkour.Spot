@@ -4,6 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:heic_to_png_jpg/heic_to_png_jpg.dart';
 import 'package:image/image.dart' as img;
 
+import 'web_image_preparation_stub.dart'
+    if (dart.library.js_interop) 'web_image_preparation_web.dart' as web_image;
+
 /// Result of preparing an image for upload.
 /// Contains validated/converted bytes and the correct MIME type.
 class PreparedImage {
@@ -89,6 +92,75 @@ String detectContentType(Uint8List bytes) {
 bool isValidImageFormat(Uint8List bytes) {
   final ct = detectContentType(bytes);
   return ct.isNotEmpty && ct != 'image/heic';
+}
+
+/// Reads JPEG width and height from SOF markers without full decode.
+(int, int)? readJpegDimensions(Uint8List bytes) {
+  if (bytes.length < 4 ||
+      bytes[0] != 0xFF ||
+      bytes[1] != 0xD8 ||
+      bytes[2] != 0xFF) {
+    return null;
+  }
+
+  var index = 2;
+  while (index + 9 < bytes.length) {
+    if (bytes[index] != 0xFF) {
+      index++;
+      continue;
+    }
+
+    final marker = bytes[index + 1];
+    if (marker == 0xD8 || marker == 0xD9) {
+      index += 2;
+      continue;
+    }
+    if (marker == 0x01 || (marker >= 0xD0 && marker <= 0xD7)) {
+      index += 2;
+      continue;
+    }
+
+    final segmentLength = (bytes[index + 2] << 8) | bytes[index + 3];
+    if (segmentLength < 2) {
+      return null;
+    }
+
+    final isStartOfFrame =
+        (marker >= 0xC0 && marker <= 0xC3) ||
+        (marker >= 0xC5 && marker <= 0xC7) ||
+        (marker >= 0xC9 && marker <= 0xCB) ||
+        (marker >= 0xCD && marker <= 0xCF);
+    if (isStartOfFrame) {
+      final height = (bytes[index + 5] << 8) | bytes[index + 6];
+      final width = (bytes[index + 7] << 8) | bytes[index + 8];
+      if (width <= 0 || height <= 0) {
+        return null;
+      }
+      return (width, height);
+    }
+
+    index += 2 + segmentLength;
+  }
+
+  return null;
+}
+
+PreparedImage? _tryPassThroughPreparedJpeg(
+  Uint8List bytes, {
+  required int maxDimension,
+}) {
+  if (detectContentType(bytes) != 'image/jpeg') {
+    return null;
+  }
+  final dimensions = readJpegDimensions(bytes);
+  if (dimensions == null) {
+    return null;
+  }
+  final (width, height) = dimensions;
+  if (width > maxDimension || height > maxDimension) {
+    return null;
+  }
+  return PreparedImage(bytes: bytes, contentType: 'image/jpeg');
 }
 
 PreparedImage _prepareFromDecoded({
@@ -281,6 +353,44 @@ Future<PreparedImage> prepareImageForUpload(
   }
 
   return _prepareImageOffMainThread(
+    bytes,
+    maxDimension: maxDimension,
+    jpegQuality: jpegQuality,
+  );
+}
+
+/// Prepares a downloaded suggestion photo for promotion to [/spots/].
+///
+/// Uses a fast JPEG header pass-through when already within [maxDimension],
+/// then browser-async resize on web, with a Dart isolate fallback.
+Future<PreparedImage> prepareImageForSpotPromotion(
+  Uint8List bytes, {
+  int maxDimension = 2048,
+  int jpegQuality = 85,
+}) async {
+  if (bytes.isEmpty) {
+    throw ImagePreparationException('Image data is empty.');
+  }
+
+  final passThrough = _tryPassThroughPreparedJpeg(
+    bytes,
+    maxDimension: maxDimension,
+  );
+  if (passThrough != null) {
+    return passThrough;
+  }
+
+  if (kIsWeb) {
+    final webPrepared = await web_image.prepareDownloadedImageOnWeb(
+      bytes: bytes,
+      maxDimension: maxDimension,
+    );
+    if (webPrepared != null) {
+      return webPrepared;
+    }
+  }
+
+  return prepareImageForUpload(
     bytes,
     maxDimension: maxDimension,
     jpegQuality: jpegQuality,

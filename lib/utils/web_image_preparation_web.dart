@@ -64,36 +64,12 @@ Future<PreparedImage> _encodeElementAsJpeg(
   return PreparedImage(bytes: bytes, contentType: 'image/jpeg');
 }
 
-/// Validates and prepares a picked image using the browser's async decoder.
-///
-/// Returns a [PreparedImage] when preparation succeeds in the browser.
-/// Returns `null` to fall back to the Dart isolate pipeline (e.g. LibreWolf
-/// canvas blocking, animated GIF resize, or unsupported cases).
-Future<PreparedImage?> preparePickedImageOnWeb({
-  required String blobUrl,
-  required String? mimeType,
-  required Future<Uint8List> Function() readBytes,
+Future<PreparedImage?> _prepareDecodedElement({
+  required web.HTMLImageElement element,
+  required Uint8List bytes,
   required int maxDimension,
+  String? mimeType,
 }) async {
-  if (blobUrl.isEmpty) {
-    return null;
-  }
-
-  final element = web.HTMLImageElement()..src = blobUrl;
-
-  late Uint8List bytes;
-  try {
-    final results = await Future.wait<Object?>([
-      element.decode().toDart,
-      readBytes(),
-    ]);
-    bytes = results[1]! as Uint8List;
-  } catch (_) {
-    throw ImagePreparationException(
-      'This image appears to be corrupt or unreadable. Please try a different photo.',
-    );
-  }
-
   final width = element.naturalWidth;
   final height = element.naturalHeight;
   if (width <= 0 || height <= 0) {
@@ -135,5 +111,72 @@ Future<PreparedImage?> preparePickedImageOnWeb({
     return await _encodeElementAsJpeg(element, width, height, maxDimension);
   } catch (_) {
     return null;
+  }
+}
+
+/// Validates and prepares a picked image using the browser's async decoder.
+///
+/// Returns a [PreparedImage] when preparation succeeds in the browser.
+/// Returns `null` to fall back to the Dart isolate pipeline (e.g. LibreWolf
+/// canvas blocking, animated GIF resize, or unsupported cases).
+Future<PreparedImage?> preparePickedImageOnWeb({
+  required String blobUrl,
+  required String? mimeType,
+  required Future<Uint8List> Function() readBytes,
+  required int maxDimension,
+}) async {
+  if (blobUrl.isEmpty) {
+    return null;
+  }
+
+  final element = web.HTMLImageElement()..src = blobUrl;
+
+  late Uint8List bytes;
+  try {
+    final results = await Future.wait<Object?>([
+      element.decode().toDart,
+      readBytes(),
+    ]);
+    bytes = results[1]! as Uint8List;
+  } catch (_) {
+    throw ImagePreparationException(
+      'This image appears to be corrupt or unreadable. Please try a different photo.',
+    );
+  }
+
+  return _prepareDecodedElement(
+    element: element,
+    bytes: bytes,
+    maxDimension: maxDimension,
+    mimeType: mimeType,
+  );
+}
+
+/// Prepares downloaded image bytes using the browser's async decoder.
+///
+/// Returns `null` to fall back to the Dart isolate pipeline.
+Future<PreparedImage?> prepareDownloadedImageOnWeb({
+  required Uint8List bytes,
+  required int maxDimension,
+}) async {
+  if (bytes.isEmpty) {
+    return null;
+  }
+
+  final blob = web.Blob([bytes.toJS].toJS);
+  final blobUrl = web.URL.createObjectURL(blob);
+  final element = web.HTMLImageElement()..src = blobUrl;
+
+  try {
+    await element.decode().toDart;
+    return _prepareDecodedElement(
+      element: element,
+      bytes: bytes,
+      maxDimension: maxDimension,
+    );
+  } catch (_) {
+    return null;
+  } finally {
+    web.URL.revokeObjectURL(blobUrl);
   }
 }

@@ -10,3 +10,10 @@ Future<PreparedImage?> preparePickedImageOnWeb({
   required int maxDimension,
 }) async =>
     null;
+
+/// Non-web: always defers to the Dart image pipeline.
+Future<PreparedImage?> prepareDownloadedImageOnWeb({
+  required Uint8List bytes,
+  required int maxDimension,
+}) async =>
+    null;
