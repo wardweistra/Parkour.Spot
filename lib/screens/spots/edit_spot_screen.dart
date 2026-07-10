@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 
 import '../../models/spot.dart';
@@ -22,6 +21,7 @@ import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
 import '../../utils/map_recentering_mixin.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../utils/image_preparation.dart';
+import '../../utils/image_picker_utils.dart';
 
 class EditSpotScreen extends StatefulWidget {
   final Spot spot;
@@ -287,18 +287,13 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
 
   Future<void> _pickFromGallery() async {
     try {
-      final ImagePicker picker = ImagePicker();
-      final List<XFile> images = await picker.pickMultiImage(
-        maxWidth: 2048,
-        maxHeight: 2048,
-        imageQuality: 85,
-      );
+      final images = await pickImagesFromGallery();
 
       if (images.isNotEmpty) {
         for (final image in images) {
           try {
             final bytes = await image.readAsBytes();
-            final prepared = await prepareImageForUpload(bytes);
+            final prepared = await preparePickedImageBytes(bytes);
             if (mounted) {
               setState(() => _selectedImageBytes.add(prepared.bytes));
             }
@@ -330,17 +325,11 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
 
   Future<void> _takePhoto() async {
     try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: ImageSource.camera,
-        maxWidth: 2048,
-        maxHeight: 2048,
-        imageQuality: 85,
-      );
+      final image = await pickImage(source: ImageSource.camera);
 
       if (image != null) {
         final bytes = await image.readAsBytes();
-        final prepared = await prepareImageForUpload(bytes);
+        final prepared = await preparePickedImageBytes(bytes);
         if (mounted) {
           setState(() => _selectedImageBytes.add(prepared.bytes));
         }

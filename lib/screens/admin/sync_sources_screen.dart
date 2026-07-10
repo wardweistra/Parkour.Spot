@@ -3,13 +3,13 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../constants/spot_attributes.dart';
 import '../../services/auth_service.dart';
 import '../../services/sync_source_service.dart';
 import '../../utils/image_preparation.dart';
+import '../../utils/image_picker_utils.dart';
 import '../../utils/search_index_backfill_message.dart';
 import '../../widgets/spot_form/attributes_section.dart';
 
@@ -2437,18 +2437,13 @@ class _MissingImagesScreenState extends State<MissingImagesScreen> {
 
   Future<void> _selectImage(String filename) async {
     try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 2048,
-        maxHeight: 2048,
-        imageQuality: 85,
-      );
-      
+      final image = await pickImage(source: ImageSource.gallery);
+
       if (image != null) {
         final bytes = await image.readAsBytes();
+        final prepared = await preparePickedImageBytes(bytes);
         setState(() {
-          _selectedImages[filename] = bytes;
+          _selectedImages[filename] = prepared.bytes;
         });
       }
     } catch (e) {

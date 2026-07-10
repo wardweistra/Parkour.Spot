@@ -89,33 +89,87 @@ bool isValidImageFormat(Uint8List bytes) {
   return ct.isNotEmpty && ct != 'image/heic';
 }
 
+PreparedImage _prepareFromDecoded({
+  required img.Image decoded,
+  required Uint8List originalBytes,
+  required String contentType,
+  int maxDimension = 0,
+  int jpegQuality = 0,
+}) {
+  if (contentType == 'image/gif') {
+    return PreparedImage(bytes: originalBytes, contentType: contentType);
+  }
+
+  final needsResize = maxDimension > 0 &&
+      (decoded.width > maxDimension || decoded.height > maxDimension);
+  final needsJpegReencode =
+      jpegQuality > 0 && contentType == 'image/jpeg';
+
+  if (!needsResize && !needsJpegReencode) {
+    return PreparedImage(bytes: originalBytes, contentType: contentType);
+  }
+
+  img.Image output = decoded;
+  if (needsResize) {
+    if (decoded.width >= decoded.height) {
+      output = img.copyResize(
+        decoded,
+        width: maxDimension,
+        interpolation: img.Interpolation.linear,
+      );
+    } else {
+      output = img.copyResize(
+        decoded,
+        height: maxDimension,
+        interpolation: img.Interpolation.linear,
+      );
+    }
+  }
+
+  final quality = jpegQuality > 0 ? jpegQuality : 85;
+  final jpegBytes = img.encodeJpg(output, quality: quality);
+  return PreparedImage(
+    bytes: Uint8List.fromList(jpegBytes),
+    contentType: 'image/jpeg',
+  );
+}
+
 /// Validates image bytes, converts HEIC to JPEG if needed, and returns
 /// prepared bytes with correct contentType. Rejects invalid formats.
 ///
 /// Supported input: JPEG, PNG, GIF, WebP, HEIC (converted to JPEG).
 /// Throws [ImagePreparationException] for unsupported or corrupt images.
-Future<PreparedImage> prepareImageForUpload(Uint8List bytes) async {
+///
+/// When [maxDimension] or [jpegQuality] are set, the image is decoded,
+/// resized (longest edge capped), and re-encoded in Dart — avoiding browser
+/// canvas APIs that break under privacy-focused browsers.
+Future<PreparedImage> prepareImageForUpload(
+  Uint8List bytes, {
+  int maxDimension = 0,
+  int jpegQuality = 0,
+}) async {
   if (bytes.isEmpty) {
     throw ImagePreparationException(
       'Image data is empty.',
     );
   }
 
-  // HEIC: convert to JPEG
+  // HEIC: convert to JPEG, then continue through the normal pipeline.
   if (isHeic(bytes)) {
     try {
       final jpegBytes = await HeicConverter.convertToJPG(
         heicData: bytes,
-        quality: 85,
+        quality: jpegQuality > 0 ? jpegQuality : 85,
       );
       if (jpegBytes.isEmpty) {
         throw ImagePreparationException(
           'Failed to convert HEIC image. Please try a different photo.',
         );
       }
-      return PreparedImage(
-        bytes: jpegBytes,
-        contentType: 'image/jpeg',
+      return prepareImageForUpload(
+        jpegBytes,
+        maxDimension: maxDimension,
+        jpegQuality: jpegQuality,
       );
     } catch (e) {
       if (e is ImagePreparationException) rethrow;
@@ -125,7 +179,6 @@ Future<PreparedImage> prepareImageForUpload(Uint8List bytes) async {
     }
   }
 
-  // Validate other formats
   final contentType = detectContentType(bytes);
   if (contentType.isEmpty) {
     throw ImagePreparationException(
@@ -133,7 +186,20 @@ Future<PreparedImage> prepareImageForUpload(Uint8List bytes) async {
     );
   }
 
-  return PreparedImage(bytes: bytes, contentType: contentType);
+  final decoded = img.decodeImage(bytes);
+  if (decoded == null || decoded.width <= 0 || decoded.height <= 0) {
+    throw ImagePreparationException(
+      'This image appears to be corrupt or unreadable. Please try a different photo.',
+    );
+  }
+
+  return _prepareFromDecoded(
+    decoded: decoded,
+    originalBytes: bytes,
+    contentType: contentType,
+    maxDimension: maxDimension,
+    jpegQuality: jpegQuality,
+  );
 }
 
 /// Resizes image bytes for spot upload (e.g. when approving suggested photos).
@@ -146,29 +212,21 @@ Uint8List? resizeImageForSpotUpload(
 }) {
   if (bytes.isEmpty) return null;
   try {
+    final contentType = detectContentType(bytes);
+    if (contentType.isEmpty || contentType == 'image/heic') return null;
+
     final decoded = img.decodeImage(bytes);
-    if (decoded == null) return null;
-    final w = decoded.width;
-    final h = decoded.height;
-    if (w <= 0 || h <= 0) return null;
-    img.Image resized = decoded;
-    if (w > maxDimension || h > maxDimension) {
-      if (w > h) {
-        resized = img.copyResize(
-          decoded,
-          width: maxDimension,
-          interpolation: img.Interpolation.linear,
-        );
-      } else {
-        resized = img.copyResize(
-          decoded,
-          height: maxDimension,
-          interpolation: img.Interpolation.linear,
-        );
-      }
+    if (decoded == null || decoded.width <= 0 || decoded.height <= 0) {
+      return null;
     }
-    final jpegBytes = img.encodeJpg(resized, quality: jpegQuality);
-    return Uint8List.fromList(jpegBytes);
+
+    return _prepareFromDecoded(
+      decoded: decoded,
+      originalBytes: bytes,
+      contentType: contentType,
+      maxDimension: maxDimension,
+      jpegQuality: jpegQuality,
+    ).bytes;
   } catch (_) {
     return null;
   }

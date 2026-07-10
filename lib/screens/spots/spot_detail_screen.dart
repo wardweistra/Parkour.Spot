@@ -48,6 +48,7 @@ import '../../widgets/resized_spot_image.dart';
 import '../../widgets/spot_detail_community_section.dart';
 import '../../widgets/spot_detail_quick_action_chip.dart';
 import '../../utils/image_preparation.dart';
+import '../../utils/image_picker_utils.dart';
 import '../../services/user_profile_service.dart';
 import '../../services/jumpflix_service.dart';
 import '../../utils/relative_date_localization.dart';
@@ -56,7 +57,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/audit_log_service.dart';
 import 'package:web/web.dart' as web;
-import 'package:image_picker/image_picker.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -6745,18 +6745,13 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
 
   Future<void> _pickImages() async {
     try {
-      final ImagePicker picker = ImagePicker();
-      final List<XFile> pickedFiles = await picker.pickMultiImage(
-        maxWidth: 2048,
-        maxHeight: 2048,
-        imageQuality: 85,
-      );
+      final pickedFiles = await pickImagesFromGallery();
 
       if (pickedFiles.isNotEmpty) {
         for (final pickedFile in pickedFiles) {
           try {
             final bytes = await pickedFile.readAsBytes();
-            final prepared = await prepareImageForUpload(bytes);
+            final prepared = await preparePickedImageBytes(bytes);
             if (mounted) {
               setState(() => _selectedImageBytes.add(prepared.bytes));
             }

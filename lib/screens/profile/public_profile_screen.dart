@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
+import '../../utils/image_picker_utils.dart';
 import '../../services/user_profile_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/profile_picture_service.dart';
@@ -1388,12 +1388,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   /// Pick image from gallery
   Future<void> _pickImageFromGallery() async {
     try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? pickedFile = await picker.pickImage(
+      final pickedFile = await pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1920,
-        maxHeight: 1920,
-        imageQuality: 90,
+        maxDimension: 1920,
+        jpegQuality: 90,
       );
 
       if (pickedFile != null) {
@@ -1414,12 +1412,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   /// Take photo with camera
   Future<void> _takePhoto() async {
     try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? pickedFile = await picker.pickImage(
+      final pickedFile = await pickImage(
         source: ImageSource.camera,
-        maxWidth: 1920,
-        maxHeight: 1920,
-        imageQuality: 90,
+        maxDimension: 1920,
+        jpegQuality: 90,
       );
 
       if (pickedFile != null) {
@@ -1521,13 +1517,18 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       String photoURL;
 
       if (kIsWeb) {
-        // Web: read as bytes
+        // Web: read as bytes and prepare in Dart (avoids browser canvas issues).
         updateProgress(0.1, _l10n.publicProfileReadingImage);
-        final bytes = await pickedFile.readAsBytes();
+        final rawBytes = await pickedFile.readAsBytes();
+        final prepared = await preparePickedImageBytes(
+          rawBytes,
+          maxDimension: 1920,
+          jpegQuality: 90,
+        );
 
         // Upload with progress updates
         photoURL = await _profilePictureService.uploadProfilePictureBytes(
-          bytes,
+          prepared.bytes,
           onProgress: (progress) {
             String message;
             if (progress < 0.3) {

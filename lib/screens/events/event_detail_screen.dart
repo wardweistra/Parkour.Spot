@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:provider/provider.dart';
 
@@ -31,6 +30,7 @@ import '../../utils/map_recentering_mixin.dart';
 import '../../utils/event_suggestion_utils.dart';
 import '../../utils/marker_icon_utils.dart';
 import '../../utils/image_preparation.dart';
+import '../../utils/image_picker_utils.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/location_info_box.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
@@ -1604,12 +1604,7 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
 
   Future<void> _pickImagesFromGallery() async {
     try {
-      final picker = ImagePicker();
-      final pickedFiles = await picker.pickMultiImage(
-        maxWidth: 2048,
-        maxHeight: 2048,
-        imageQuality: 85,
-      );
+      final pickedFiles = await pickImagesFromGallery();
       if (pickedFiles.isEmpty || !mounted) return;
 
       for (final pickedFile in pickedFiles) {
@@ -1618,7 +1613,7 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
           break;
         }
         final bytes = await pickedFile.readAsBytes();
-        final prepared = await prepareImageForUpload(bytes);
+        final prepared = await preparePickedImageBytes(bytes);
         _selectedImageBytes.add(prepared.bytes);
       }
       if (mounted) setState(() {});
@@ -1636,16 +1631,10 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
       if (_selectedImageBytes.length >= EventReportService.maxSuggestedPhotos) {
         return;
       }
-      final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(
-        source: ImageSource.camera,
-        maxWidth: 2048,
-        maxHeight: 2048,
-        imageQuality: 85,
-      );
+      final pickedFile = await pickImage(source: ImageSource.camera);
       if (pickedFile == null || !mounted) return;
       final bytes = await pickedFile.readAsBytes();
-      final prepared = await prepareImageForUpload(bytes);
+      final prepared = await preparePickedImageBytes(bytes);
       setState(() => _selectedImageBytes.add(prepared.bytes));
     } on ImagePreparationException catch (e) {
       if (!mounted) return;

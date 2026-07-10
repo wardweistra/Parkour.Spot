@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:typed_data';
 import 'dart:math';
@@ -22,6 +21,7 @@ import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
 import 'package:go_router/go_router.dart';
 import '../../utils/map_recentering_mixin.dart';
 import '../../utils/image_preparation.dart';
+import '../../utils/image_picker_utils.dart';
 import '../../config/app_config.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/page_scaffold.dart';
@@ -247,19 +247,14 @@ class _AddSpotScreenState extends State<AddSpotScreen>
 
   Future<void> _pickImagesFromGallery() async {
     try {
-      final picker = ImagePicker();
-      final pickedFiles = await picker.pickMultiImage(
-        maxWidth: 2048,
-        maxHeight: 2048,
-        imageQuality: 85,
-      );
+      final pickedFiles = await pickImagesFromGallery();
 
       if (pickedFiles.isNotEmpty) {
         int added = 0;
         for (final pickedFile in pickedFiles) {
           try {
             final bytes = await pickedFile.readAsBytes();
-            final prepared = await prepareImageForUpload(bytes);
+            final prepared = await preparePickedImageBytes(bytes);
             _selectedImageBytes.add(prepared.bytes);
             added++;
           } on ImagePreparationException catch (e) {
@@ -290,17 +285,11 @@ class _AddSpotScreenState extends State<AddSpotScreen>
 
   Future<void> _takePhoto() async {
     try {
-      final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(
-        source: ImageSource.camera,
-        maxWidth: 2048,
-        maxHeight: 2048,
-        imageQuality: 85,
-      );
+      final pickedFile = await pickImage(source: ImageSource.camera);
 
       if (pickedFile != null) {
         final bytes = await pickedFile.readAsBytes();
-        final prepared = await prepareImageForUpload(bytes);
+        final prepared = await preparePickedImageBytes(bytes);
         _selectedImageBytes.add(prepared.bytes);
         setState(() {});
       }

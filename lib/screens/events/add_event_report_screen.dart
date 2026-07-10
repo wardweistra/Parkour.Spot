@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/app_config.dart';
@@ -19,6 +18,7 @@ import '../../utils/browser_timezone_utils.dart';
 import '../../utils/event_location_utils.dart';
 import '../../utils/event_schedule_utils.dart';
 import '../../utils/image_preparation.dart';
+import '../../utils/image_picker_utils.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../utils/map_recentering_mixin.dart';
 import '../../l10n/app_localizations.dart';
@@ -895,19 +895,14 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
 
   Future<void> _pickImagesFromGallery() async {
     try {
-      final picker = ImagePicker();
-      final pickedFiles = await picker.pickMultiImage(
-        maxWidth: 2048,
-        maxHeight: 2048,
-        imageQuality: 85,
-      );
+      final pickedFiles = await pickImagesFromGallery();
 
       if (pickedFiles.isNotEmpty) {
         var added = 0;
         for (final pickedFile in pickedFiles) {
           try {
             final bytes = await pickedFile.readAsBytes();
-            final prepared = await prepareImageForUpload(bytes);
+            final prepared = await preparePickedImageBytes(bytes);
             _selectedImageBytes.add(prepared.bytes);
             added++;
           } on ImagePreparationException catch (e) {
@@ -939,17 +934,11 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
 
   Future<void> _takePhoto() async {
     try {
-      final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(
-        source: ImageSource.camera,
-        maxWidth: 2048,
-        maxHeight: 2048,
-        imageQuality: 85,
-      );
+      final pickedFile = await pickImage(source: ImageSource.camera);
 
       if (pickedFile != null) {
         final bytes = await pickedFile.readAsBytes();
-        final prepared = await prepareImageForUpload(bytes);
+        final prepared = await preparePickedImageBytes(bytes);
         setState(() => _selectedImageBytes.add(prepared.bytes));
       }
     } on ImagePreparationException catch (e) {
