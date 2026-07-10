@@ -3576,6 +3576,63 @@ class AppLocalizationsNl extends AppLocalizations {
       'Bedankt! Je bewerkingsvoorstel is ingediend ter beoordeling.';
 
   @override
+  String get eventDetailMenuFlagDuplicate => 'Markeer als duplicaat';
+
+  @override
+  String get eventDetailMenuFlagDuplicateSubtitleYes =>
+      'Dit event is een duplicaat';
+
+  @override
+  String get eventDetailMenuFlagDuplicateSubtitleNo =>
+      'Al gemarkeerd als duplicaat';
+
+  @override
+  String get eventDetailFlagDuplicateDialogTitle => 'Markeer als duplicaat';
+
+  @override
+  String get eventDetailFlagDuplicateIntro =>
+      'Dit event lijkt een duplicaat van een ander. Selecteer hieronder het originele event.';
+
+  @override
+  String get eventDetailFlagDuplicateWhichQuestion =>
+      'Van welk event is dit een duplicaat?';
+
+  @override
+  String get eventDetailFlagDuplicateSuggestionsHeader =>
+      'Events rond deze data';
+
+  @override
+  String get eventDetailThanksDuplicateSuggestion =>
+      'Bedankt! Je duplicaatvoorstel is ingediend ter beoordeling.';
+
+  @override
+  String get eventDetailUnableFlagDuplicate =>
+      'Dit event kan nu niet als duplicaat worden gemarkeerd.';
+
+  @override
+  String get eventDetailDuplicateReportSelectRequired =>
+      'Selecteer het originele event.';
+
+  @override
+  String get eventReportQueueDuplicateSuggestion => 'Duplicaatvoorstel';
+
+  @override
+  String get eventReportQueueApproveDuplicate =>
+      'Duplicaatkoppeling goedkeuren';
+
+  @override
+  String get eventReportQueueOpenOriginalEvent =>
+      'Voorgesteld origineel event openen';
+
+  @override
+  String get eventDuplicateApprovalExternalOriginalHint =>
+      'De gebruiker stelde een event van een externe bron voor. Kies het native parkour.spot-event als canoniek origineel.';
+
+  @override
+  String get eventDuplicateApprovalPickNativeTitle =>
+      'Kies het native event als canoniek origineel.';
+
+  @override
   String get eventDetailSuggestPhotosTitle => 'Foto’s voorstellen';
 
   @override

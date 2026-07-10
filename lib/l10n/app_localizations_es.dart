@@ -3591,6 +3591,62 @@ class AppLocalizationsEs extends AppLocalizations {
       '¡Gracias! Tu sugerencia de edición se ha enviado para revisión.';
 
   @override
+  String get eventDetailMenuFlagDuplicate => 'Marcar como duplicado';
+
+  @override
+  String get eventDetailMenuFlagDuplicateSubtitleYes =>
+      'Este evento es un duplicado';
+
+  @override
+  String get eventDetailMenuFlagDuplicateSubtitleNo =>
+      'Ya marcado como duplicado';
+
+  @override
+  String get eventDetailFlagDuplicateDialogTitle => 'Marcar como duplicado';
+
+  @override
+  String get eventDetailFlagDuplicateIntro =>
+      'Este evento parece un duplicado de otro. Selecciona el evento original abajo.';
+
+  @override
+  String get eventDetailFlagDuplicateWhichQuestion =>
+      '¿De qué evento es duplicado?';
+
+  @override
+  String get eventDetailFlagDuplicateSuggestionsHeader =>
+      'Eventos en estas fechas';
+
+  @override
+  String get eventDetailThanksDuplicateSuggestion =>
+      '¡Gracias! Tu sugerencia de duplicado se ha enviado para revisión.';
+
+  @override
+  String get eventDetailUnableFlagDuplicate =>
+      'No se puede marcar este evento como duplicado ahora.';
+
+  @override
+  String get eventDetailDuplicateReportSelectRequired =>
+      'Selecciona el evento original.';
+
+  @override
+  String get eventReportQueueDuplicateSuggestion => 'Sugerencia de duplicado';
+
+  @override
+  String get eventReportQueueApproveDuplicate => 'Aprobar enlace de duplicado';
+
+  @override
+  String get eventReportQueueOpenOriginalEvent =>
+      'Abrir evento original sugerido';
+
+  @override
+  String get eventDuplicateApprovalExternalOriginalHint =>
+      'El usuario sugirió un evento de una fuente externa. Elige el evento nativo de parkour.spot como original canónico.';
+
+  @override
+  String get eventDuplicateApprovalPickNativeTitle =>
+      'Elige el evento nativo como original canónico.';
+
+  @override
   String get eventDetailSuggestPhotosTitle => 'Sugerir fotos';
 
   @override

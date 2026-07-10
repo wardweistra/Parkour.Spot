@@ -3474,6 +3474,66 @@
   "@eventDetailThanksEditSuggestion": {
     "description": "Success message after submitting event edit suggestion"
   },
+  "eventDetailMenuFlagDuplicate": "Flag as duplicate",
+  "@eventDetailMenuFlagDuplicate": {
+    "description": "Event detail menu: flag as duplicate"
+  },
+  "eventDetailMenuFlagDuplicateSubtitleYes": "This event is a duplicate",
+  "@eventDetailMenuFlagDuplicateSubtitleYes": {
+    "description": "Event detail menu subtitle when duplicate flag is available"
+  },
+  "eventDetailMenuFlagDuplicateSubtitleNo": "Already marked as duplicate",
+  "@eventDetailMenuFlagDuplicateSubtitleNo": {
+    "description": "Event detail menu subtitle when event is already a duplicate"
+  },
+  "eventDetailFlagDuplicateDialogTitle": "Flag as duplicate",
+  "@eventDetailFlagDuplicateDialogTitle": {
+    "description": "Dialog title for flagging an event as duplicate"
+  },
+  "eventDetailFlagDuplicateIntro": "This event appears to be a duplicate of another event. Select the original event below.",
+  "@eventDetailFlagDuplicateIntro": {
+    "description": "Dialog intro for flagging an event as duplicate"
+  },
+  "eventDetailFlagDuplicateWhichQuestion": "Which event is this a duplicate of?",
+  "@eventDetailFlagDuplicateWhichQuestion": {
+    "description": "Dialog question for picking duplicate original event"
+  },
+  "eventDetailFlagDuplicateSuggestionsHeader": "Events around these dates",
+  "@eventDetailFlagDuplicateSuggestionsHeader": {
+    "description": "Header for permissive duplicate report date suggestions"
+  },
+  "eventDetailThanksDuplicateSuggestion": "Thanks! Your duplicate suggestion has been submitted for review.",
+  "@eventDetailThanksDuplicateSuggestion": {
+    "description": "Success message after submitting event duplicate suggestion"
+  },
+  "eventDetailUnableFlagDuplicate": "Unable to flag this event as duplicate right now.",
+  "@eventDetailUnableFlagDuplicate": {
+    "description": "Error when event duplicate flag cannot be opened"
+  },
+  "eventDetailDuplicateReportSelectRequired": "Please select the original event.",
+  "@eventDetailDuplicateReportSelectRequired": {
+    "description": "Validation when no original event selected for duplicate report"
+  },
+  "eventReportQueueDuplicateSuggestion": "Duplicate suggestion",
+  "@eventReportQueueDuplicateSuggestion": {
+    "description": "Chip label for duplicate event reports in moderator queue"
+  },
+  "eventReportQueueApproveDuplicate": "Approve duplicate link",
+  "@eventReportQueueApproveDuplicate": {
+    "description": "Approve button for duplicate event reports"
+  },
+  "eventReportQueueOpenOriginalEvent": "Open suggested original event",
+  "@eventReportQueueOpenOriginalEvent": {
+    "description": "Link to user-suggested original event in moderator queue"
+  },
+  "eventDuplicateApprovalExternalOriginalHint": "The user suggested an event from an external source. Pick the native parkour.spot event that should be the canonical original.",
+  "@eventDuplicateApprovalExternalOriginalHint": {
+    "description": "Hint when approving duplicate report with external suggested original"
+  },
+  "eventDuplicateApprovalPickNativeTitle": "Pick the native event to use as the canonical original.",
+  "@eventDuplicateApprovalPickNativeTitle": {
+    "description": "Prompt for moderator to select native original when approving duplicate report"
+  },
   "eventDetailSuggestPhotosTitle": "Suggest photos",
   "@eventDetailSuggestPhotosTitle": {
     "description": "Dialog title for event photo suggestions"

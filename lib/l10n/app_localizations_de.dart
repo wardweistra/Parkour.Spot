@@ -3614,6 +3614,63 @@ class AppLocalizationsDe extends AppLocalizations {
       'Danke! Dein Änderungsvorschlag wurde zur Prüfung eingereicht.';
 
   @override
+  String get eventDetailMenuFlagDuplicate => 'Als Duplikat melden';
+
+  @override
+  String get eventDetailMenuFlagDuplicateSubtitleYes =>
+      'Dieses Event ist ein Duplikat';
+
+  @override
+  String get eventDetailMenuFlagDuplicateSubtitleNo =>
+      'Bereits als Duplikat markiert';
+
+  @override
+  String get eventDetailFlagDuplicateDialogTitle => 'Als Duplikat melden';
+
+  @override
+  String get eventDetailFlagDuplicateIntro =>
+      'Dieses Event scheint ein Duplikat eines anderen zu sein. Wähle unten das Original-Event.';
+
+  @override
+  String get eventDetailFlagDuplicateWhichQuestion =>
+      'Von welchem Event ist dies ein Duplikat?';
+
+  @override
+  String get eventDetailFlagDuplicateSuggestionsHeader =>
+      'Events um diese Termine';
+
+  @override
+  String get eventDetailThanksDuplicateSuggestion =>
+      'Danke! Dein Duplikat-Vorschlag wurde zur Prüfung eingereicht.';
+
+  @override
+  String get eventDetailUnableFlagDuplicate =>
+      'Dieses Event kann gerade nicht als Duplikat gemeldet werden.';
+
+  @override
+  String get eventDetailDuplicateReportSelectRequired =>
+      'Bitte wähle das Original-Event.';
+
+  @override
+  String get eventReportQueueDuplicateSuggestion => 'Duplikat-Vorschlag';
+
+  @override
+  String get eventReportQueueApproveDuplicate =>
+      'Duplikat-Verknüpfung genehmigen';
+
+  @override
+  String get eventReportQueueOpenOriginalEvent =>
+      'Vorgeschlagenes Original-Event öffnen';
+
+  @override
+  String get eventDuplicateApprovalExternalOriginalHint =>
+      'Der Nutzer hat ein Event aus einer externen Quelle vorgeschlagen. Wähle das native parkour.spot-Event als kanonisches Original.';
+
+  @override
+  String get eventDuplicateApprovalPickNativeTitle =>
+      'Wähle das native Event als kanonisches Original.';
+
+  @override
   String get eventDetailSuggestPhotosTitle => 'Fotos vorschlagen';
 
   @override

@@ -82,4 +82,32 @@ void main() {
       expect(report.hasSuggestedEdits, isTrue);
     });
   });
+
+  group('EventReport.isDuplicateSuggestion', () {
+    test('returns true when duplicateOfEventId is set', () {
+      final report = EventReport(
+        id: 'report-dup',
+        title: 'Jam',
+        status: 'New',
+        startAt: DateTime.utc(2026, 5, 28, 18),
+        targetEventId: 'event-a',
+        duplicateOfEventId: 'event-b',
+      );
+
+      expect(report.isDuplicateSuggestion, isTrue);
+    });
+
+    test('returns false when duplicateOfEventId is empty', () {
+      final report = EventReport(
+        id: 'report-edit',
+        title: 'Jam',
+        status: 'New',
+        startAt: DateTime.utc(2026, 5, 28, 18),
+        targetEventId: 'event-a',
+        suggestedTitle: 'New title',
+      );
+
+      expect(report.isDuplicateSuggestion, isFalse);
+    });
+  });
 }

@@ -6069,6 +6069,96 @@ abstract class AppLocalizations {
   /// **'Thanks! Your edit suggestion has been submitted for review.'**
   String get eventDetailThanksEditSuggestion;
 
+  /// Event detail menu: flag as duplicate
+  ///
+  /// In en, this message translates to:
+  /// **'Flag as duplicate'**
+  String get eventDetailMenuFlagDuplicate;
+
+  /// Event detail menu subtitle when duplicate flag is available
+  ///
+  /// In en, this message translates to:
+  /// **'This event is a duplicate'**
+  String get eventDetailMenuFlagDuplicateSubtitleYes;
+
+  /// Event detail menu subtitle when event is already a duplicate
+  ///
+  /// In en, this message translates to:
+  /// **'Already marked as duplicate'**
+  String get eventDetailMenuFlagDuplicateSubtitleNo;
+
+  /// Dialog title for flagging an event as duplicate
+  ///
+  /// In en, this message translates to:
+  /// **'Flag as duplicate'**
+  String get eventDetailFlagDuplicateDialogTitle;
+
+  /// Dialog intro for flagging an event as duplicate
+  ///
+  /// In en, this message translates to:
+  /// **'This event appears to be a duplicate of another event. Select the original event below.'**
+  String get eventDetailFlagDuplicateIntro;
+
+  /// Dialog question for picking duplicate original event
+  ///
+  /// In en, this message translates to:
+  /// **'Which event is this a duplicate of?'**
+  String get eventDetailFlagDuplicateWhichQuestion;
+
+  /// Header for permissive duplicate report date suggestions
+  ///
+  /// In en, this message translates to:
+  /// **'Events around these dates'**
+  String get eventDetailFlagDuplicateSuggestionsHeader;
+
+  /// Success message after submitting event duplicate suggestion
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks! Your duplicate suggestion has been submitted for review.'**
+  String get eventDetailThanksDuplicateSuggestion;
+
+  /// Error when event duplicate flag cannot be opened
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to flag this event as duplicate right now.'**
+  String get eventDetailUnableFlagDuplicate;
+
+  /// Validation when no original event selected for duplicate report
+  ///
+  /// In en, this message translates to:
+  /// **'Please select the original event.'**
+  String get eventDetailDuplicateReportSelectRequired;
+
+  /// Chip label for duplicate event reports in moderator queue
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate suggestion'**
+  String get eventReportQueueDuplicateSuggestion;
+
+  /// Approve button for duplicate event reports
+  ///
+  /// In en, this message translates to:
+  /// **'Approve duplicate link'**
+  String get eventReportQueueApproveDuplicate;
+
+  /// Link to user-suggested original event in moderator queue
+  ///
+  /// In en, this message translates to:
+  /// **'Open suggested original event'**
+  String get eventReportQueueOpenOriginalEvent;
+
+  /// Hint when approving duplicate report with external suggested original
+  ///
+  /// In en, this message translates to:
+  /// **'The user suggested an event from an external source. Pick the native parkour.spot event that should be the canonical original.'**
+  String get eventDuplicateApprovalExternalOriginalHint;
+
+  /// Prompt for moderator to select native original when approving duplicate report
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the native event to use as the canonical original.'**
+  String get eventDuplicateApprovalPickNativeTitle;
+
   /// Dialog title for event photo suggestions
   ///
   /// In en, this message translates to:

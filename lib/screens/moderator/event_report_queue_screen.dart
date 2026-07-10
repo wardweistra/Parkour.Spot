@@ -10,6 +10,7 @@ import '../../services/auth_service.dart';
 import '../../services/event_report_service.dart';
 import '../../utils/event_schedule_utils.dart';
 import '../../widgets/location_review_map.dart';
+import '../../widgets/event_duplicate_approval_dialog.dart';
 import '../../widgets/event_suggested_edits_summary.dart';
 import '../../widgets/event_suggestion_approval_dialog.dart';
 import '../../widgets/page_scaffold.dart';
@@ -235,6 +236,11 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
   Future<void> _approve(EventReport report) async {
     if (_busyReportIds.contains(report.id)) return;
 
+    if (report.isDuplicateSuggestion) {
+      await _approveDuplicate(report);
+      return;
+    }
+
     if (report.isSuggestionForExistingEvent) {
       await _approveSuggestion(report);
       return;
@@ -279,6 +285,29 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
     final approvedEventId = await showDialog<String?>(
       context: context,
       builder: (dialogContext) => EventSuggestionApprovalDialog(report: report),
+    );
+
+    if (!mounted) return;
+    setState(() => _busyReportIds.remove(report.id));
+
+    if (approvedEventId == null) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.eventSuggestionApprovalSuccess(approvedEventId)),
+      ),
+    );
+  }
+
+  Future<void> _approveDuplicate(EventReport report) async {
+    if (_busyReportIds.contains(report.id)) return;
+    setState(() => _busyReportIds.add(report.id));
+
+    final approvedEventId = await showDialog<String?>(
+      context: context,
+      builder: (dialogContext) =>
+          EventDuplicateApprovalDialog(report: report),
     );
 
     if (!mounted) return;
@@ -400,9 +429,11 @@ class _EventReportCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final color = _statusColor(theme);
     final canReview = report.status == 'New' || report.status == 'Reviewing';
     final isSuggestion = report.isSuggestionForExistingEvent;
+    final isDuplicateSuggestion = report.isDuplicateSuggestion;
     final hasSuggestedEdits = report.hasSuggestedEdits;
     return Card(
       margin: EdgeInsets.zero,
@@ -503,15 +534,55 @@ class _EventReportCard extends StatelessWidget {
                 if (isSuggestion)
                   _metaChip(
                     context,
-                    icon: hasSuggestedEdits
+                    icon: isDuplicateSuggestion
+                        ? Icons.copy_all_outlined
+                        : hasSuggestedEdits
                         ? Icons.edit_note_outlined
                         : Icons.add_photo_alternate_outlined,
-                    label: hasSuggestedEdits
+                    label: isDuplicateSuggestion
+                        ? l10n.eventReportQueueDuplicateSuggestion
+                        : hasSuggestedEdits
                         ? 'Edit suggestion'
                         : 'Photo suggestion',
                   ),
               ],
             ),
+            if (report.details?.isNotEmpty ?? false) ...[
+              const SizedBox(height: 12),
+              SelectableText.rich(
+                TextSpan(
+                  style: theme.textTheme.bodyMedium,
+                  children: [
+                    TextSpan(
+                      text: 'Additional details: ',
+                      style: TextStyle(color: theme.colorScheme.secondary),
+                    ),
+                    TextSpan(text: report.details!),
+                  ],
+                ),
+              ),
+            ],
+            if (isDuplicateSuggestion &&
+                report.duplicateOfEventId?.trim().isNotEmpty == true) ...[
+              const SizedBox(height: 12),
+              TextButton.icon(
+                onPressed: () => context.push(
+                  '/event/${report.duplicateOfEventId!.trim()}',
+                ),
+                icon: const Icon(Icons.open_in_new, size: 18),
+                label: Text(l10n.eventReportQueueOpenOriginalEvent),
+              ),
+              if (report.duplicateOfEventTitle?.isNotEmpty ?? false)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Text(
+                    report.duplicateOfEventTitle!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+            ],
             if (report.description?.isNotEmpty ?? false) ...[
               const SizedBox(height: 12),
               Text(report.description!, style: theme.textTheme.bodyMedium),
@@ -617,7 +688,9 @@ class _EventReportCard extends StatelessWidget {
                         onPressed: onApprove,
                         icon: const Icon(Icons.check_circle_outline),
                         label: Text(
-                          isSuggestion
+                          isDuplicateSuggestion
+                              ? l10n.eventReportQueueApproveDuplicate
+                              : isSuggestion
                               ? 'Approve suggestion'
                               : 'Approve & publish',
                         ),

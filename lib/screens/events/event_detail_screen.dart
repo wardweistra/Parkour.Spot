@@ -43,6 +43,7 @@ import '../../widgets/detail_action_menu_item.dart';
 import '../../widgets/detail_image_carousel.dart';
 import '../../widgets/event_detail_provenance_line.dart';
 import '../../widgets/event_detail_when_block.dart';
+import '../../widgets/event_duplicate_report_dialog.dart';
 import '../../widgets/event_selection_dialog.dart';
 import '../../widgets/moderator_action_fields.dart';
 import '../../services/url_service.dart';
@@ -371,6 +372,34 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
   }
 
+  Future<void> _showFlagDuplicateDialog() async {
+    final event = _event;
+    if (event == null || !mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    final blockedReason = _eventSuggestionBlockedReason(event, l10n);
+    if (blockedReason != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(blockedReason), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    final submitted = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => EventDuplicateReportDialog(event: event),
+    );
+    if (!mounted) return;
+    if (submitted == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.eventDetailThanksDuplicateSuggestion),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
   Widget _buildShareActionRow(
     AppLocalizations l10n,
     ParkourEvent event,
@@ -445,6 +474,18 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     };
   }
 
+  String _eventMenuFlagDuplicateSubtitle(
+    AppLocalizations l10n,
+    ParkourEvent event,
+  ) {
+    return switch (eventSuggestionBlockedReasonKey(event)) {
+      null => l10n.eventDetailMenuFlagDuplicateSubtitleYes,
+      'eventDetailCannotSuggestForDuplicate' =>
+        l10n.eventDetailMenuFlagDuplicateSubtitleNo,
+      _ => l10n.eventDetailMenuSuggestBlockedUnavailable,
+    };
+  }
+
   Widget _eventEditMenuButton({
     required AppLocalizations l10n,
     required ParkourEvent event,
@@ -468,6 +509,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       event,
       isPhoto: false,
     );
+    final flagDuplicateSubtitle = _eventMenuFlagDuplicateSubtitle(l10n, event);
 
     return PopupMenuButton<_EventEditMenuAction>(
       position: PopupMenuPosition.under,
@@ -495,6 +537,16 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               icon: Icons.edit_note_outlined,
               title: l10n.eventDetailQuickActionSuggestEdit,
               subtitle: suggestEditSubtitle,
+              enabled: canSuggest,
+            ),
+          ),
+          PopupMenuItem<_EventEditMenuAction>(
+            value: _EventEditMenuAction.flagDuplicate,
+            enabled: canSuggest,
+            child: DetailActionMenuItem(
+              icon: Icons.copy_all_outlined,
+              title: l10n.eventDetailMenuFlagDuplicate,
+              subtitle: flagDuplicateSubtitle,
               enabled: canSuggest,
             ),
           ),
@@ -611,6 +663,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         return;
       case _EventEditMenuAction.suggestEdit:
         await _showSuggestEditDialog();
+        return;
+      case _EventEditMenuAction.flagDuplicate:
+        await _showFlagDuplicateDialog();
         return;
       case _EventEditMenuAction.editEvent:
         await _onStaffMenu(
@@ -3278,6 +3333,7 @@ enum _EventStaffAction {
 enum _EventEditMenuAction {
   suggestPhoto,
   suggestEdit,
+  flagDuplicate,
   editEvent,
   createNativeEvent,
   markDuplicate,

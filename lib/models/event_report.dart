@@ -47,6 +47,9 @@ class EventReport {
     this.suggestedLocationRemoved = false,
     this.suggestedPhotoUrls = const <String>[],
     this.rejectedPhotoUrls = const <String>[],
+    this.duplicateOfEventId,
+    this.duplicateOfEventTitle,
+    this.details,
     this.createdAt,
     this.updatedAt,
     this.reviewedAt,
@@ -95,6 +98,9 @@ class EventReport {
   final bool suggestedLocationRemoved;
   final List<String> suggestedPhotoUrls;
   final List<String> rejectedPhotoUrls;
+  final String? duplicateOfEventId;
+  final String? duplicateOfEventTitle;
+  final String? details;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? reviewedAt;
@@ -185,6 +191,9 @@ class EventReport {
       suggestedLocationRemoved: data['suggestedLocationRemoved'] == true,
       suggestedPhotoUrls: parseStringList(data['suggestedPhotoUrls']),
       rejectedPhotoUrls: parseStringList(data['rejectedPhotoUrls']),
+      duplicateOfEventId: data['duplicateOfEventId'] as String?,
+      duplicateOfEventTitle: data['duplicateOfEventTitle'] as String?,
+      details: data['details'] as String?,
       createdAt: parseDate(data['createdAt']),
       updatedAt: parseDate(data['updatedAt']),
       reviewedAt: parseDate(data['reviewedAt']),
@@ -193,6 +202,11 @@ class EventReport {
 
   bool get isSuggestionForExistingEvent {
     final id = targetEventId?.trim();
+    return id != null && id.isNotEmpty;
+  }
+
+  bool get isDuplicateSuggestion {
+    final id = duplicateOfEventId?.trim();
     return id != null && id.isNotEmpty;
   }
 

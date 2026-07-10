@@ -3625,6 +3625,62 @@ class AppLocalizationsFr extends AppLocalizations {
       'Merci ! Votre suggestion de modification a été soumise pour examen.';
 
   @override
+  String get eventDetailMenuFlagDuplicate => 'Marquer comme doublon';
+
+  @override
+  String get eventDetailMenuFlagDuplicateSubtitleYes =>
+      'Cet événement est un doublon';
+
+  @override
+  String get eventDetailMenuFlagDuplicateSubtitleNo =>
+      'Déjà marqué comme doublon';
+
+  @override
+  String get eventDetailFlagDuplicateDialogTitle => 'Marquer comme doublon';
+
+  @override
+  String get eventDetailFlagDuplicateIntro =>
+      'Cet événement semble être un doublon d\'un autre. Sélectionnez l\'événement d\'origine ci-dessous.';
+
+  @override
+  String get eventDetailFlagDuplicateWhichQuestion =>
+      'De quel événement s\'agit-il du doublon ?';
+
+  @override
+  String get eventDetailFlagDuplicateSuggestionsHeader =>
+      'Événements autour de ces dates';
+
+  @override
+  String get eventDetailThanksDuplicateSuggestion =>
+      'Merci ! Votre suggestion de doublon a été soumise pour examen.';
+
+  @override
+  String get eventDetailUnableFlagDuplicate =>
+      'Impossible de signaler cet événement comme doublon pour le moment.';
+
+  @override
+  String get eventDetailDuplicateReportSelectRequired =>
+      'Veuillez sélectionner l\'événement d\'origine.';
+
+  @override
+  String get eventReportQueueDuplicateSuggestion => 'Suggestion de doublon';
+
+  @override
+  String get eventReportQueueApproveDuplicate => 'Approuver le lien de doublon';
+
+  @override
+  String get eventReportQueueOpenOriginalEvent =>
+      'Ouvrir l\'événement d\'origine suggéré';
+
+  @override
+  String get eventDuplicateApprovalExternalOriginalHint =>
+      'L\'utilisateur a suggéré un événement d\'une source externe. Choisissez l\'événement natif parkour.spot comme original canonique.';
+
+  @override
+  String get eventDuplicateApprovalPickNativeTitle =>
+      'Choisissez l\'événement natif comme original canonique.';
+
+  @override
   String get eventDetailSuggestPhotosTitle => 'Suggérer des photos';
 
   @override

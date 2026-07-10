@@ -6,6 +6,7 @@ import '../utils/replay_latest_stream.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/event_report.dart';
+import '../services/admin_events_service.dart';
 import '../utils/event_linked_spot_loader.dart';
 import '../utils/event_suggestion_utils.dart';
 import '../utils/image_preparation.dart';
@@ -94,6 +95,9 @@ class EventReportService {
     String? suggestedCountryCode,
     bool suggestedLocationRemoved = false,
     List<String> suggestedPhotoUrls = const <String>[],
+    String? duplicateOfEventId,
+    String? duplicateOfEventTitle,
+    String? details,
   }) async {
     final trimmedTitle = title.trim();
     if (trimmedTitle.isEmpty) return false;
@@ -123,6 +127,9 @@ class EventReportService {
           ?..sort();
     final normalizedTargetEventId = targetEventId?.trim();
     final normalizedTargetEventTitle = targetEventTitle?.trim();
+    final normalizedDuplicateOfEventId = duplicateOfEventId?.trim();
+    final normalizedDuplicateOfEventTitle = duplicateOfEventTitle?.trim();
+    final normalizedDetails = details?.trim();
     final normalizedSuggestedTitle = suggestedTitle?.trim();
     final normalizedSuggestedDescription = suggestedDescription?.trim();
     final normalizedSuggestedWebsiteUrl = suggestedWebsiteUrl?.trim();
@@ -216,6 +223,14 @@ class EventReportService {
         if (suggestedLocationRemoved) 'suggestedLocationRemoved': true,
         if (normalizedPhotoUrls.isNotEmpty)
           'suggestedPhotoUrls': normalizedPhotoUrls,
+        if (normalizedDuplicateOfEventId != null &&
+            normalizedDuplicateOfEventId.isNotEmpty)
+          'duplicateOfEventId': normalizedDuplicateOfEventId,
+        if (normalizedDuplicateOfEventTitle != null &&
+            normalizedDuplicateOfEventTitle.isNotEmpty)
+          'duplicateOfEventTitle': normalizedDuplicateOfEventTitle,
+        if (normalizedDetails != null && normalizedDetails.isNotEmpty)
+          'details': normalizedDetails,
         'status': statuses.first,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -329,6 +344,64 @@ class EventReportService {
       suggestedCity: suggestedCity,
       suggestedCountryCode: suggestedCountryCode,
       suggestedLocationRemoved: suggestedLocationRemoved,
+    );
+  }
+
+  Future<bool> submitEventDuplicateSuggestion({
+    required String targetEventId,
+    required String targetEventTitle,
+    required DateTime startAt,
+    DateTime? endAt,
+    bool isDateOnly = false,
+    String? timeZone,
+    String? description,
+    String? websiteUrl,
+    double? latitude,
+    double? longitude,
+    String? address,
+    String? city,
+    String? countryCode,
+    List<String> existingSpotIds = const <String>[],
+    List<String> existingSpotListIds = const <String>[],
+    required String duplicateOfEventId,
+    required String duplicateOfEventTitle,
+    String? details,
+    String? reporterUserId,
+    String? reporterName,
+    String? reporterEmail,
+  }) async {
+    final trimmedDuplicateId = duplicateOfEventId.trim();
+    final trimmedDuplicateTitle = duplicateOfEventTitle.trim();
+    if (trimmedDuplicateId.isEmpty || trimmedDuplicateTitle.isEmpty) {
+      return false;
+    }
+    if (trimmedDuplicateId == targetEventId.trim()) {
+      return false;
+    }
+
+    return submitEventReport(
+      title: targetEventTitle,
+      startAt: startAt,
+      endAt: endAt,
+      isDateOnly: isDateOnly,
+      timeZone: timeZone,
+      description: description,
+      websiteUrl: websiteUrl,
+      latitude: latitude,
+      longitude: longitude,
+      address: address,
+      city: city,
+      countryCode: countryCode,
+      spotIds: existingSpotIds,
+      spotListIds: existingSpotListIds,
+      targetEventId: targetEventId,
+      targetEventTitle: targetEventTitle,
+      reporterUserId: reporterUserId,
+      reporterName: reporterName,
+      reporterEmail: reporterEmail,
+      duplicateOfEventId: trimmedDuplicateId,
+      duplicateOfEventTitle: trimmedDuplicateTitle,
+      details: details,
     );
   }
 
@@ -508,6 +581,65 @@ class EventReportService {
       return result;
     } catch (e) {
       debugPrint('Error approving event report: $e');
+      return null;
+    }
+  }
+
+  /// Approves a duplicate suggestion by linking [targetEventId] to [nativeOriginalEventId].
+  Future<String?> approveDuplicateReport({
+    required String reportId,
+    required String approverUserId,
+    required String nativeOriginalEventId,
+    required AdminEventsService adminEventsService,
+    String? approverName,
+    String? moderatorNotes,
+  }) async {
+    try {
+      final reportRef = _firestore.collection('eventReports').doc(reportId);
+      final snapshot = await reportRef.get();
+      if (!snapshot.exists || snapshot.data() == null) {
+        return null;
+      }
+
+      final report = EventReport.fromSnapshot(snapshot);
+      if (!report.isDuplicateSuggestion) {
+        return null;
+      }
+      final targetEventId = report.targetEventId?.trim();
+      if (targetEventId == null || targetEventId.isEmpty) {
+        return null;
+      }
+      if (report.status == 'Approved' && report.approvedEventId != null) {
+        return report.approvedEventId;
+      }
+
+      final trimmedNativeId = nativeOriginalEventId.trim();
+      if (trimmedNativeId.isEmpty) {
+        return null;
+      }
+
+      final marked = await adminEventsService.markEventAsDuplicate(
+        duplicateEventId: targetEventId,
+        nativeOriginalEventId: trimmedNativeId,
+      );
+      if (!marked) {
+        return null;
+      }
+
+      await reportRef.update({
+        'status': 'Approved',
+        'approvedEventId': targetEventId,
+        'reviewedBy': approverUserId,
+        if (approverName != null && approverName.trim().isNotEmpty)
+          'reviewedByName': approverName.trim(),
+        if (moderatorNotes != null && moderatorNotes.trim().isNotEmpty)
+          'moderatorNotes': moderatorNotes.trim(),
+        'reviewedAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      return targetEventId;
+    } catch (e) {
+      debugPrint('Error approving duplicate event report: $e');
       return null;
     }
   }

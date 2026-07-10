@@ -910,6 +910,59 @@ class AdminEventsService extends ChangeNotifier {
     }
   }
 
+  /// Events around the reference dates for user duplicate reports (all sources).
+  Future<List<ParkourEvent>> fetchEventDuplicateReportCandidates({
+    required String excludeEventId,
+    DateTime? aroundStartAt,
+    DateTime? aroundEndAt,
+    int limit = 40,
+  }) async {
+    try {
+      final dateWindow = aroundStartAt == null
+          ? null
+          : EventDateWindow.aroundEvent(
+              startAt: aroundStartAt,
+              endAt: aroundEndAt,
+            );
+
+      Query<Map<String, dynamic>> query = _firestore.collection('events');
+      if (dateWindow != null) {
+        query = query
+            .where(
+              'startAt',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(dateWindow.start),
+            )
+            .where(
+              'startAt',
+              isLessThanOrEqualTo: Timestamp.fromDate(dateWindow.end),
+            )
+            .orderBy('startAt');
+      } else {
+        query = query.orderBy('startAt', descending: true);
+      }
+
+      final snapshot = await query.limit(limit * 3).get();
+      final out = <ParkourEvent>[];
+      for (final doc in snapshot.docs) {
+        if (doc.id == excludeEventId) continue;
+        final event = ParkourEvent.fromFirestore(doc);
+        final dup = event.duplicateOf?.trim();
+        if (dup != null && dup.isNotEmpty) continue;
+        if (dateWindow != null && !dateWindow.overlapsParkourEvent(event)) {
+          continue;
+        }
+        out.add(event);
+        if (out.length >= limit) break;
+      }
+      return out;
+    } catch (e, st) {
+      debugPrint(
+        'AdminEventsService.fetchEventDuplicateReportCandidates error: $e\n$st',
+      );
+      return const <ParkourEvent>[];
+    }
+  }
+
   /// Validates and sets [duplicateEventId].duplicateOf to [nativeOriginalEventId].
   Future<bool> markEventAsDuplicate({
     required String duplicateEventId,
