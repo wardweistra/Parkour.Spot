@@ -2242,7 +2242,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get spotDetailReportCategoryClosed => 'Spot geschlossen oder entfernt';
 
   @override
-  String get spotDetailReportCategoryInaccurate => 'Falsche Lage oder Angaben';
+  String get spotDetailReportCategoryInaccurate =>
+      'Standort oder Angaben wirken falsch';
 
   @override
   String get spotDetailReportCategoryUnsafe => 'Unsichere Bedingungen';
@@ -2259,7 +2260,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get spotDetailReportCategoryInaccurateDesc =>
-      'Die Position auf der Karte stimmt nicht, oder Angaben wie Name, Beschreibung oder Adresse sind falsch. Bitte unten angeben, was korrigiert werden soll.';
+      'Etwas an diesem Spot wirkt falsch: Pin, Name, Beschreibung oder Adresse können nicht stimmen. Nutze dies, wenn du nicht weißt, wie es richtig sein sollte. Beschreibe unten, was nicht passt. Kennst du die Korrektur? Nutze stattdessen „Bearbeitung vorschlagen“ im Spot-Menü.';
 
   @override
   String get spotDetailReportCategoryUnsafeDesc =>

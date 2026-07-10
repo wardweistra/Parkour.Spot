@@ -2219,7 +2219,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get spotDetailReportCategoryInaccurate =>
-      'Onjuiste locatie of gegevens';
+      'Locatie of gegevens lijken onjuist';
 
   @override
   String get spotDetailReportCategoryUnsafe => 'Onveilige omstandigheden';
@@ -2236,7 +2236,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get spotDetailReportCategoryInaccurateDesc =>
-      'De locatie op de kaart klopt niet, of gegevens zoals naam, beschrijving of adres zijn fout. Geef hieronder aan wat gecorrigeerd moet worden.';
+      'Iets aan deze spot lijkt niet te kloppen: de pin, naam, beschrijving of het adres kan fout zijn. Gebruik dit als je niet zeker weet wat de juiste informatie is. Beschrijf hieronder wat er mis lijkt. Weet je wat er moet veranderen? Gebruik dan «Bewerking voorstellen» in het spotmenu.';
 
   @override
   String get spotDetailReportCategoryUnsafeDesc =>

@@ -3852,7 +3852,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotDetailReportCategoryInaccurate.
   ///
   /// In en, this message translates to:
-  /// **'Inaccurate location or details'**
+  /// **'Location or details seem wrong'**
   String get spotDetailReportCategoryInaccurate;
 
   /// No description provided for @spotDetailReportCategoryUnsafe.
@@ -3882,7 +3882,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotDetailReportCategoryInaccurateDesc.
   ///
   /// In en, this message translates to:
-  /// **'The spot’s location on the map is incorrect, or details like name, description, or address are wrong. Please provide more details below on what should be corrected.'**
+  /// **'Something about this spot looks wrong: the pin, name, description, or address may be incorrect. Use this when you are not sure what the correct information should be. Describe what seems off below. If you know what to change, use Suggest an edit from the spot menu instead.'**
   String get spotDetailReportCategoryInaccurateDesc;
 
   /// No description provided for @spotDetailReportCategoryUnsafeDesc.

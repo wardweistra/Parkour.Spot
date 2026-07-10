@@ -2244,7 +2244,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get spotDetailReportCategoryInaccurate =>
-      'Emplacement ou infos incorrects';
+      'L\'emplacement ou les infos semblent incorrects';
 
   @override
   String get spotDetailReportCategoryUnsafe => 'Conditions dangereuses';
@@ -2261,7 +2261,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get spotDetailReportCategoryInaccurateDesc =>
-      'La position sur la carte est incorrecte ou le nom, la description ou l’adresse sont erronés. Indiquez ci-dessous ce qu’il faut corriger.';
+      'Quelque chose semble erroné sur ce spot : l\'épingle, le nom, la description ou l\'adresse peuvent être incorrects. Utilisez ceci si vous n\'êtes pas sûr de la bonne information. Décrivez ci-dessous ce qui semble faux. Si vous savez quoi modifier, utilisez « Suggérer une modification » dans le menu du spot.';
 
   @override
   String get spotDetailReportCategoryUnsafeDesc =>

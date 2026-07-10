@@ -2232,7 +2232,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get spotDetailReportCategoryInaccurate =>
-      'Localização ou dados incorretos';
+      'Localização ou dados parecem incorretos';
 
   @override
   String get spotDetailReportCategoryUnsafe => 'Condições inseguras';
@@ -2249,7 +2249,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get spotDetailReportCategoryInaccurateDesc =>
-      'A posição no mapa está errada ou o nome, descrição ou morada estão incorretos. Indica abaixo o que corrigir.';
+      'Algo neste spot parece errado: o pin, o nome, a descrição ou a morada podem estar incorretos. Usa isto quando não sabes qual é a informação correta. Descreve abaixo o que parece incorreto. Se sabes o que alterar, usa «Sugerir edição» no menu do spot.';
 
   @override
   String get spotDetailReportCategoryUnsafeDesc =>
