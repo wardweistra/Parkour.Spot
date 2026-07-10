@@ -19,6 +19,8 @@ class MemoryImagePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Cap decode resolution on one axis only so aspect ratio is preserved;
+    // BoxFit.cover crops to the square display size.
     final cacheSize = (size * 3).round();
 
     return ClipRRect(
@@ -29,7 +31,6 @@ class MemoryImagePreview extends StatelessWidget {
         height: size,
         fit: fit,
         cacheWidth: cacheSize,
-        cacheHeight: cacheSize,
         errorBuilder: (context, error, stackTrace) => Container(
           width: size,
           height: size,
