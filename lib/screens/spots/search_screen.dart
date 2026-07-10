@@ -2864,33 +2864,35 @@ class SearchScreenState extends State<SearchScreen>
 
   Future<void> _locateEventById(String eventId) async {
     try {
-      EventMapPin? loadedPin;
-      for (final pin in _loadedEventPins) {
-        if (pin.eventId == eventId) {
-          loadedPin = pin;
-          break;
-        }
-      }
+      final admin = Provider.of<AdminEventsService>(context, listen: false);
+      final event = await admin.getEventById(eventId);
+      if (event == null || !mounted) return;
 
-      if (loadedPin != null && mounted) {
-        await _selectEventPin(loadedPin, focusMap: true);
+      final eventMapService = Provider.of<EventMapService>(
+        context,
+        listen: false,
+      );
+      final target = await eventMapService.resolveLocateTargetForEvent(event);
+      if (target == null || !mounted) return;
+
+      if (target.isSpotList) {
+        await _locateSpotListById(target.spotListId!);
         if (mounted) {
           context.go('/explore');
         }
         return;
       }
 
-      final admin = Provider.of<AdminEventsService>(context, listen: false);
-      final event = await admin.getEventById(eventId);
-      if (event == null || !mounted) return;
+      final pin = target.pin!;
+      EventMapPin? loadedPin;
+      for (final candidate in _loadedEventPins) {
+        if (candidate.eventId == eventId) {
+          loadedPin = candidate;
+          break;
+        }
+      }
 
-      final pin = await Provider.of<EventMapService>(
-        context,
-        listen: false,
-      ).resolvePinForLocate(event);
-      if (pin == null || !mounted) return;
-
-      await _selectEventPin(pin, focusMap: true);
+      await _selectEventPin(loadedPin ?? pin, focusMap: true);
       if (mounted) {
         context.go('/explore');
       }
@@ -2899,6 +2901,14 @@ class SearchScreenState extends State<SearchScreen>
         debugPrint('Failed to locate event $eventId: $e');
       }
     }
+  }
+
+  Future<void> _locateSpotListById(String listId) async {
+    _searchStateServiceRef?.setSelectedListId(listId);
+    if (mounted) {
+      setState(() => _selectedListId = listId);
+    }
+    await _openSpotListPreview(listId);
   }
 
   Widget _buildSpotsList() {
@@ -3003,7 +3013,22 @@ class SearchScreenState extends State<SearchScreen>
   }
 
   Future<void> _locateEvent(EventMapPin pin) async {
-    await _selectEventPin(pin, focusMap: true);
+    final admin = Provider.of<AdminEventsService>(context, listen: false);
+    final event = await admin.getEventById(pin.eventId);
+    if (event == null || !mounted) return;
+
+    final target = await Provider.of<EventMapService>(
+      context,
+      listen: false,
+    ).resolveLocateTargetForEvent(event);
+    if (target == null || !mounted) return;
+
+    if (target.isSpotList) {
+      await _locateSpotListById(target.spotListId!);
+      return;
+    }
+
+    await _selectEventPin(target.pin ?? pin, focusMap: true);
   }
 
   Widget _buildEventOverlayCard({required double maxWidth}) {

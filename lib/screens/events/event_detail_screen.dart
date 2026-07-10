@@ -14,6 +14,7 @@ import '../../models/spot.dart';
 import '../../models/spot_list.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/admin_events_service.dart';
+import '../../services/event_map_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/geocoding_service.dart';
 import '../../services/snackbar_service.dart';
@@ -1297,10 +1298,25 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   }
 
   void _locateEventOnMap() {
-    final id = _event?.id;
-    if (id != null && id.isNotEmpty) {
-      context.go('/explore?locateEventId=$id');
+    _locateEventOnMapAsync();
+  }
+
+  Future<void> _locateEventOnMapAsync() async {
+    final event = _event;
+    final id = event?.id;
+    if (id == null || id.isEmpty) return;
+
+    final target = await context
+        .read<EventMapService>()
+        .resolveLocateTargetForEvent(event!);
+    if (!mounted) return;
+
+    if (target?.isSpotList == true) {
+      context.go('/explore?listId=${target!.spotListId}');
+      return;
     }
+
+    context.go('/explore?locateEventId=$id');
   }
 
   Future<void> _openInMaps(double lat, double lng) async {

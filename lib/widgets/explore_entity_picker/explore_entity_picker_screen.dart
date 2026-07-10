@@ -20,7 +20,9 @@ import '../../services/search_state_service.dart';
 import '../../services/spot_service.dart';
 import '../../utils/explore_events_utils.dart';
 import '../../utils/explore_search_autocomplete.dart';
+import '../../utils/event_linked_spot_loader.dart';
 import '../../utils/location_permission_utils.dart';
+import '../../utils/map_bounds_utils.dart';
 import '../../utils/marker_icon_utils.dart';
 import '../event_card.dart';
 import '../spot_card.dart';
@@ -468,26 +470,50 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
   }
 
   Future<void> _locateEventById(String eventId) async {
+    final event = await context.read<AdminEventsService>().getEventById(eventId);
+    if (event == null || !mounted) return;
+
+    final eventMapService = context.read<EventMapService>();
+    final target = await eventMapService.resolveLocateTargetForEvent(event);
+    if (target == null || !mounted) return;
+
+    if (target.isSpotList) {
+      await _focusSpotList(target.spotListId!);
+      return;
+    }
+
+    final pin = target.pin!;
     EventMapPin? loadedPin;
-    for (final pin in _loadedEventPins) {
-      if (pin.eventId == eventId) {
-        loadedPin = pin;
+    for (final candidate in _loadedEventPins) {
+      if (candidate.eventId == eventId) {
+        loadedPin = candidate;
         break;
       }
     }
 
-    if (loadedPin != null) {
-      await _focusEventPin(loadedPin);
-      return;
+    await _focusEventPin(loadedPin ?? pin);
+  }
+
+  Future<void> _focusSpotList(String listId) async {
+    final spots = await loadEligibleSpotsForSpotListId(
+      firestore: context.read<EventMapService>().firestore,
+      listId: listId,
+    );
+    if (!mounted || spots.isEmpty) return;
+
+    final bounds = calculateBoundsForSpots(spots);
+    if (_mapController != null && bounds != null) {
+      await _mapController!.animateCamera(
+        CameraUpdate.newLatLngBounds(bounds, 50),
+      );
     }
 
-    final event = await context.read<AdminEventsService>().getEventById(eventId);
-    if (event == null || !mounted) return;
-
-    final pin = await context.read<EventMapService>().resolvePinForLocate(event);
-    if (pin == null || !mounted) return;
-
-    await _focusEventPin(pin);
+    if (!mounted) return;
+    setState(() {
+      _previewEventPin = null;
+      _previewSpot = null;
+      _markers = _rebuildMarkers();
+    });
   }
 
   Future<void> _focusEventPin(EventMapPin pin) async {

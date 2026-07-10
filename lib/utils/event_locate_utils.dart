@@ -7,6 +7,18 @@ import 'event_linked_spot_loader.dart';
 import 'event_location_utils.dart';
 import 'explore_events_utils.dart';
 
+/// Where Explore should focus when locating an event.
+class EventLocateTarget {
+  const EventLocateTarget.spotList(this.spotListId) : pin = null;
+
+  const EventLocateTarget.pin(this.pin) : spotListId = null;
+
+  final String? spotListId;
+  final EventMapPin? pin;
+
+  bool get isSpotList => spotListId != null;
+}
+
 /// Whether [spot] can be used as an event map pin (mirrors Cloud Functions).
 bool isSpotEligibleForEventMapPin(Spot spot) {
   if (spot.hidden) return false;
@@ -132,6 +144,57 @@ Future<EventMapPin?> resolveEventMapPinForLocate({
   if (!isSpotEligibleForEventMapPin(spot)) return null;
 
   return eventMapPinFromLinkedSpot(event: event, spot: spot);
+}
+
+/// Resolves how to locate an event on Explore.
+///
+/// When the event links an expandable spot list with mappable spots, the list
+/// is preferred over a single pin.
+Future<EventLocateTarget?> resolveEventLocateTarget({
+  required ParkourEvent event,
+  FirebaseFirestore? firestore,
+  required Future<List<EventMapPin>> Function(String eventId) getMapPinsForEvent,
+  required Future<Spot?> Function({
+    required List<String> spotIds,
+    required List<String> spotListIds,
+  })
+  loadEligibleLinkedSpot,
+  Future<String?> Function({
+    FirebaseFirestore? firestore,
+    required List<String> spotListIds,
+  })?
+  resolveLocatableSpotListId,
+}) async {
+  if (resolveLocatableSpotListId != null) {
+    final listId = await resolveLocatableSpotListId(
+      firestore: firestore,
+      spotListIds: event.spotListIds,
+    );
+    if (listId != null) {
+      return EventLocateTarget.spotList(listId);
+    }
+  } else {
+    if (firestore == null) {
+      throw ArgumentError(
+        'firestore is required when resolveLocatableSpotListId is not provided',
+      );
+    }
+    final listId = await resolveLocatableSpotListIdForEvent(
+      firestore: firestore,
+      spotListIds: event.spotListIds,
+    );
+    if (listId != null) {
+      return EventLocateTarget.spotList(listId);
+    }
+  }
+
+  final pin = await resolveEventMapPinForLocate(
+    event: event,
+    getMapPinsForEvent: getMapPinsForEvent,
+    loadEligibleLinkedSpot: loadEligibleLinkedSpot,
+  );
+  if (pin == null) return null;
+  return EventLocateTarget.pin(pin);
 }
 
 /// Map pins for event detail preview and inline maps.

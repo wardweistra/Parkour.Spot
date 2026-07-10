@@ -89,9 +89,18 @@ class EventMapService extends ChangeNotifier {
   }
 
   /// Resolves a pin for Explore locate (direct coords, map pins, or linked spots).
-  Future<EventMapPin?> resolvePinForLocate(ParkourEvent event) {
-    return resolveEventMapPinForLocate(
+  Future<EventMapPin?> resolvePinForLocate(ParkourEvent event) async {
+    final target = await resolveLocateTargetForEvent(event);
+    return target?.pin;
+  }
+
+  /// Resolves spot list vs single-pin locate for an event.
+  Future<EventLocateTarget?> resolveLocateTargetForEvent(
+    ParkourEvent event,
+  ) {
+    return resolveEventLocateTarget(
       event: event,
+      firestore: _firestore,
       getMapPinsForEvent: getMapPinsForEvent,
       loadEligibleLinkedSpot:
           ({required List<String> spotIds, required List<String> spotListIds}) {

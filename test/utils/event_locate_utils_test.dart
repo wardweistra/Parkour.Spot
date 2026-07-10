@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parkour_spot/models/event_map_pin.dart';
 import 'package:parkour_spot/models/parkour_event.dart';
@@ -281,6 +282,64 @@ void main() {
       expect(pins[1].kind, EventMapPinKind.spot);
       expect(pins[1].spotId, 'spot-b');
       expect(pins[2].spotId, 'spot-c');
+    });
+  });
+
+  group('resolveEventLocateTarget', () {
+    final start = DateTime.utc(2026, 9, 1, 10);
+
+    test('prefers expandable spot list over direct coordinates', () async {
+      final event = ParkourEvent(
+        id: 'e-list',
+        title: 'List event',
+        startAt: start,
+        latitude: 52.1,
+        longitude: 5.1,
+        spotListIds: const ['list-1'],
+      );
+
+      final target = await resolveEventLocateTarget(
+        event: event,
+        getMapPinsForEvent: (_) async => const [],
+        loadEligibleLinkedSpot: ({required spotIds, required spotListIds}) async {
+          return null;
+        },
+        resolveLocatableSpotListId:
+            ({FirebaseFirestore? firestore, required List<String> spotListIds}) async {
+          expect(spotListIds, ['list-1']);
+          return 'list-1';
+        },
+      );
+
+      expect(target?.isSpotList, isTrue);
+      expect(target?.spotListId, 'list-1');
+      expect(target?.pin, isNull);
+    });
+
+    test('falls back to pin when no locatable spot list', () async {
+      final event = ParkourEvent(
+        id: 'e-pin',
+        title: 'Pin event',
+        startAt: start,
+        latitude: 52.1,
+        longitude: 5.1,
+      );
+
+      final target = await resolveEventLocateTarget(
+        event: event,
+        getMapPinsForEvent: (_) async => const [],
+        loadEligibleLinkedSpot: ({required spotIds, required spotListIds}) async {
+          return null;
+        },
+        resolveLocatableSpotListId:
+            ({FirebaseFirestore? firestore, required List<String> spotListIds}) async {
+          return null;
+        },
+      );
+
+      expect(target?.isSpotList, isFalse);
+      expect(target?.pin?.latitude, 52.1);
+      expect(target?.pin?.longitude, 5.1);
     });
   });
 

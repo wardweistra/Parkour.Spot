@@ -81,6 +81,60 @@ Future<List<Spot>> loadEligibleSpotsForEventPins({
   return result;
 }
 
+/// First expandable spot list on [event] that has at least one mappable spot.
+Future<String?> resolveLocatableSpotListIdForEvent({
+  required FirebaseFirestore firestore,
+  required List<String> spotListIds,
+}) async {
+  for (final rawId in spotListIds) {
+    final listId = rawId.trim();
+    if (listId.isEmpty) continue;
+    final listDoc = await firestore.collection('spotLists').doc(listId).get();
+    if (!listDoc.exists || listDoc.data() == null) continue;
+    final list = SpotList.fromFirestore(listDoc);
+    if (!isSpotListExpandableForEventPins(list)) continue;
+    if (list.effectiveSpotIds.isEmpty) continue;
+
+    var hasEligibleSpot = false;
+    for (final spotId in list.effectiveSpotIds) {
+      final spot = await _loadSpotById(firestore, spotId);
+      if (spot != null && isSpotEligibleForEventMapPin(spot)) {
+        hasEligibleSpot = true;
+        break;
+      }
+    }
+    if (!hasEligibleSpot) continue;
+
+    return listId;
+  }
+  return null;
+}
+
+/// Eligible spots from a single expandable spot list.
+Future<List<Spot>> loadEligibleSpotsForSpotListId({
+  required FirebaseFirestore firestore,
+  required String listId,
+}) async {
+  final trimmedListId = listId.trim();
+  if (trimmedListId.isEmpty) return const [];
+
+  final listDoc =
+      await firestore.collection('spotLists').doc(trimmedListId).get();
+  if (!listDoc.exists || listDoc.data() == null) return const [];
+
+  final list = SpotList.fromFirestore(listDoc);
+  if (!isSpotListExpandableForEventPins(list)) return const [];
+
+  final spots = <Spot>[];
+  for (final spotId in list.effectiveSpotIds) {
+    final spot = await _loadSpotById(firestore, spotId);
+    if (spot != null && isSpotEligibleForEventMapPin(spot)) {
+      spots.add(spot);
+    }
+  }
+  return spots;
+}
+
 /// First eligible linked spot for Explore locate when the event has no venue.
 ///
 /// Walks [spotIds], then expandable [spotListIds] (`public` / `unlisted` only).
