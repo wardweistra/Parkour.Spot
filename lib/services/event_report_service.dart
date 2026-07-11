@@ -34,8 +34,9 @@ class EventReportService {
 
   /// Upload photos to [eventSuggestions/] (staging; does not trigger resize extension).
   Future<List<String>> uploadSuggestedEventPhotos(
-    List<PreparedImage> preparedPhotos,
-  ) async {
+    List<PreparedImage> preparedPhotos, {
+    void Function(int current, int total)? onProgress,
+  }) async {
     if (preparedPhotos.isEmpty) return const <String>[];
     if (preparedPhotos.length > maxSuggestedPhotos) {
       throw StateError('At most $maxSuggestedPhotos photos allowed.');
@@ -43,7 +44,9 @@ class EventReportService {
 
     final photoUrls = <String>[];
     final baseTimestamp = DateTime.now().millisecondsSinceEpoch;
+    final total = preparedPhotos.length;
     for (var i = 0; i < preparedPhotos.length; i++) {
+      onProgress?.call(i + 1, total);
       await yieldToUi();
       final prepared = preparedPhotos[i];
       final ext = _extensionForContentType(prepared.contentType);

@@ -133,6 +133,8 @@ class SpotService extends ChangeNotifier {
     Uint8List? imageBytes,
     List<File>? imageFiles,
     List<Uint8List>? imageBytesList,
+    List<PreparedImage>? preparedPhotos,
+    void Function(int current, int total)? onUploadProgress,
   }) async {
     try {
       _isLoading = true;
@@ -152,6 +154,13 @@ class SpotService extends ChangeNotifier {
       // Handle multiple image uploads
       if (imageFiles != null && imageFiles.isNotEmpty) {
         imageUrls = await _uploadImages(imageFiles);
+      } else if (preparedPhotos != null && preparedPhotos.isNotEmpty) {
+        imageUrls = await _uploadPreparedImages(
+          preparedPhotos,
+          pathPrefix: 'spots/',
+          fileNameStem: 'web_image',
+          onProgress: onUploadProgress,
+        );
       } else if (imageBytesList != null && imageBytesList.isNotEmpty) {
         imageUrls = await _uploadImagesBytes(imageBytesList);
       }
@@ -620,10 +629,13 @@ class SpotService extends ChangeNotifier {
     List<PreparedImage> preparedPhotos, {
     required String pathPrefix,
     required String fileNameStem,
+    void Function(int current, int total)? onProgress,
   }) async {
     final photoUrls = <String>[];
     final baseTimestamp = DateTime.now().millisecondsSinceEpoch;
+    final total = preparedPhotos.length;
     for (var i = 0; i < preparedPhotos.length; i++) {
+      onProgress?.call(i + 1, total);
       final prepared = preparedPhotos[i];
       final ext = _extensionForContentType(prepared.contentType);
       final fileName = '$pathPrefix${baseTimestamp}_${fileNameStem}_$i$ext';

@@ -96,8 +96,9 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   String? _linkedSpotListId;
   String? _linkedSpotListName;
 
-  final List<Uint8List?> _selectedImageBytes = [];
+  final List<PreparedImage?> _selectedImages = [];
   bool _isPreparingImages = false;
+  bool _isUploadingImages = false;
   String? _imageProcessingMessage;
   bool _scheduleDisplayInitialized = false;
 
@@ -939,7 +940,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       if (preparedImages.isNotEmpty) {
         setState(() {
           for (final prepared in preparedImages) {
-            _selectedImageBytes.add(prepared.bytes);
+            _selectedImages.add(prepared);
           }
         });
       }
@@ -987,7 +988,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     try {
       final preparedImages = await preparePickedFiles([pickedFile], maxImages: 1);
       if (preparedImages.isNotEmpty && mounted) {
-        setState(() => _selectedImageBytes.add(preparedImages.first.bytes));
+        setState(() => _selectedImages.add(preparedImages.first));
       }
     } on ImagePreparationException catch (e) {
       if (mounted) {
@@ -1016,8 +1017,8 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
 
   void _removeImageAt(int index) {
     setState(() {
-      if (index < _selectedImageBytes.length) {
-        _selectedImageBytes.removeAt(index);
+      if (index < _selectedImages.length) {
+        _selectedImages.removeAt(index);
       }
     });
   }
@@ -1025,8 +1026,8 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   void _reorderSelectedImage(int oldIndex, int newIndex) {
     setState(() {
       if (newIndex > oldIndex) newIndex -= 1;
-      final item = _selectedImageBytes.removeAt(oldIndex);
-      _selectedImageBytes.insert(newIndex, item);
+      final item = _selectedImages.removeAt(oldIndex);
+      _selectedImages.insert(newIndex, item);
     });
   }
 
@@ -1084,16 +1085,20 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _isUploadingImages = true;
+      _imageProcessingMessage = l10n.publicProfileUploading;
+    });
+    await yieldToUi();
     try {
       final eventReportService = context.read<EventReportService>();
       List<String> suggestedPhotoUrls = const <String>[];
-      final imageBytes = _selectedImageBytes.whereType<Uint8List>().toList(
-        growable: false,
-      );
+      final preparedPhotos =
+          _selectedImages.whereType<PreparedImage>().toList(growable: false);
 
-      if (imageBytes.isNotEmpty) {
-        if (imageBytes.length > EventReportService.maxSuggestedPhotos) {
+      if (preparedPhotos.isNotEmpty) {
+        if (preparedPhotos.length > EventReportService.maxSuggestedPhotos) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1105,8 +1110,16 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
           return;
         }
         try {
-          suggestedPhotoUrls = await eventReportService
-              .uploadSuggestedEventPhotoBytes(imageBytes);
+          suggestedPhotoUrls = await eventReportService.uploadSuggestedEventPhotos(
+            preparedPhotos,
+            onProgress: (current, total) {
+              if (!mounted) return;
+              setState(() {
+                _imageProcessingMessage =
+                    '${l10n.publicProfileUploading} ${imagePickProgressLabel(current, total)}';
+              });
+            },
+          );
         } catch (e) {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1190,10 +1203,17 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       }
     } finally {
       if (mounted) {
-        setState(() => _isSubmitting = false);
+        setState(() {
+          _isSubmitting = false;
+          _isUploadingImages = false;
+          _imageProcessingMessage = null;
+        });
       }
     }
   }
+
+  List<Uint8List?> get _selectedImageBytes =>
+      _selectedImages.map((image) => image?.bytes).toList();
 
   Widget _buildWhereSection(AppLocalizations l10n, ThemeData theme) {
     final fieldsEnabled = !_isSubmitting && !_isGeocoding;
@@ -1557,7 +1577,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
               onReorderSelected: _reorderSelectedImage,
               sectionTitle: l10n.addEventPhotosSectionTitle,
               showRequiredIndicator: false,
-              isProcessingImages: _isPreparingImages,
+              isProcessingImages: _isPreparingImages || _isUploadingImages,
               processingMessage: _imageProcessingMessage,
             ),
             const SizedBox(height: 24),

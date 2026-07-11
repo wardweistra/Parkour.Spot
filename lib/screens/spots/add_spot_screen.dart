@@ -42,7 +42,7 @@ class _AddSpotScreenState extends State<AddSpotScreen>
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
 
-  final List<Uint8List?> _selectedImageBytes = [];
+  final List<PreparedImage?> _selectedImages = [];
   Position? _currentPosition;
   LatLng? _pickedLocation;
   String? _currentAddress;
@@ -50,6 +50,7 @@ class _AddSpotScreenState extends State<AddSpotScreen>
   String? _currentCountryCode;
   bool _isLoading = false;
   bool _isPreparingImages = false;
+  bool _isUploadingImages = false;
   String? _imageProcessingMessage;
   bool _isGettingLocation = false;
   bool _isGeocoding = false;
@@ -291,7 +292,7 @@ class _AddSpotScreenState extends State<AddSpotScreen>
       if (preparedImages.isNotEmpty) {
         setState(() {
           for (final prepared in preparedImages) {
-            _selectedImageBytes.add(prepared.bytes);
+            _selectedImages.add(prepared);
           }
         });
       }
@@ -339,7 +340,7 @@ class _AddSpotScreenState extends State<AddSpotScreen>
     try {
       final preparedImages = await preparePickedFiles([pickedFile], maxImages: 1);
       if (preparedImages.isNotEmpty && mounted) {
-        setState(() => _selectedImageBytes.add(preparedImages.first.bytes));
+        setState(() => _selectedImages.add(preparedImages.first));
       }
     } on ImagePreparationException catch (e) {
       if (mounted) {
@@ -368,16 +369,16 @@ class _AddSpotScreenState extends State<AddSpotScreen>
 
   void _removeImageAt(int index) {
     setState(() {
-      if (index < _selectedImageBytes.length) {
-        _selectedImageBytes.removeAt(index);
+      if (index < _selectedImages.length) {
+        _selectedImages.removeAt(index);
       }
     });
   }
 
   void _reorderSelectedImage(int oldIndex, int newIndex) {
     setState(() {
-      final item = _selectedImageBytes.removeAt(oldIndex);
-      _selectedImageBytes.insert(newIndex, item);
+      final item = _selectedImages.removeAt(oldIndex);
+      _selectedImages.insert(newIndex, item);
     });
   }
 
@@ -457,7 +458,7 @@ class _AddSpotScreenState extends State<AddSpotScreen>
     if (!_formKey.currentState!.validate()) return;
 
     // Check if at least one photo is uploaded
-    if (_selectedImageBytes.isEmpty) {
+    if (_selectedImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(AppLocalizations.of(context)!.addSpotNeedPhoto),
@@ -477,9 +478,13 @@ class _AddSpotScreenState extends State<AddSpotScreen>
       return;
     }
 
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isLoading = true;
+      _isUploadingImages = true;
+      _imageProcessingMessage = l10n.publicProfileUploading;
     });
+    await yieldToUi();
 
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
@@ -522,13 +527,19 @@ class _AddSpotScreenState extends State<AddSpotScreen>
         hidden: false, // New spot, not hidden
       );
 
+      final preparedPhotos =
+          _selectedImages.whereType<PreparedImage>().toList(growable: false);
       final spotId = await spotService.createSpot(
         spot,
         imageFiles: null,
-        imageBytesList: _selectedImageBytes
-            .where((bytes) => bytes != null)
-            .cast<Uint8List>()
-            .toList(),
+        preparedPhotos: preparedPhotos,
+        onUploadProgress: (current, total) {
+          if (!mounted) return;
+          setState(() {
+            _imageProcessingMessage =
+                '${l10n.publicProfileUploading} ${imagePickProgressLabel(current, total)}';
+          });
+        },
       );
 
       if (spotId != null && mounted) {
@@ -536,7 +547,7 @@ class _AddSpotScreenState extends State<AddSpotScreen>
         _nameController.clear();
         _descriptionController.clear();
         setState(() {
-          _selectedImageBytes.clear();
+          _selectedImages.clear();
           _selectedAccess = null;
           _selectedFeatures.clear();
           _selectedFacilities.clear();
@@ -570,10 +581,15 @@ class _AddSpotScreenState extends State<AddSpotScreen>
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _isUploadingImages = false;
+          _imageProcessingMessage = null;
         });
       }
     }
   }
+
+  List<Uint8List?> get _selectedImageBytes =>
+      _selectedImages.map((image) => image?.bytes).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -630,7 +646,7 @@ class _AddSpotScreenState extends State<AddSpotScreen>
                     onRemoveSelectedAt: _removeImageAt,
                     onRemoveExistingAt: (index) {}, // Not used in add mode
                     onReorderSelected: _reorderSelectedImage,
-                    isProcessingImages: _isPreparingImages,
+                    isProcessingImages: _isPreparingImages || _isUploadingImages,
                     processingMessage: _imageProcessingMessage,
                   ),
 
@@ -716,7 +732,7 @@ class _AddSpotScreenState extends State<AddSpotScreen>
                         _isLoading ||
                             (_currentPosition == null &&
                                 _pickedLocation == null) ||
-                            _selectedImageBytes.isEmpty
+                            _selectedImages.isEmpty
                         ? null
                         : _submitForm,
                     text: _isLoading
