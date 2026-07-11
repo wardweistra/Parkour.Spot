@@ -320,7 +320,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
           if (!mounted) return;
           setState(() {
             _imageProcessingMessage =
-                'Processing image... (${imagePickProgressLabel(current, total)})';
+                'Processing image... ${imagePickProgressLabel(current, total)}';
           });
         },
       );

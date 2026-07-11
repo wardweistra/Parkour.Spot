@@ -856,7 +856,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
           if (!mounted) return;
           setState(() {
             _imageProcessingMessage =
-                'Processing image... (${imagePickProgressLabel(current, total)})';
+                'Processing image... ${imagePickProgressLabel(current, total)}';
           });
         },
       );

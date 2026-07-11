@@ -929,7 +929,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
           if (!mounted) return;
           setState(() {
             _imageProcessingMessage =
-                '${l10n.publicProfileProcessingImage} (${imagePickProgressLabel(current, total)})';
+                '${l10n.publicProfileProcessingImage} ${imagePickProgressLabel(current, total)}';
           });
         },
       );
