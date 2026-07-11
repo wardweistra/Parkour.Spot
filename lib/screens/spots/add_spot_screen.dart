@@ -110,6 +110,13 @@ class _AddSpotScreenState extends State<AddSpotScreen>
         _isSatelliteView = _searchStateServiceRef!.isSatellite;
       });
     });
+
+    _nameController.addListener(_onFormFieldChanged);
+    _descriptionController.addListener(_onFormFieldChanged);
+  }
+
+  void _onFormFieldChanged() {
+    if (mounted) setState(() {});
   }
 
   void _onSearchStateChanged() {
@@ -598,6 +605,22 @@ class _AddSpotScreenState extends State<AddSpotScreen>
   List<Uint8List?> get _selectedImageBytes =>
       _selectedImages.map((image) => image?.bytes).toList();
 
+  bool get _hasName => _nameController.text.trim().isNotEmpty;
+
+  bool get _hasValidDescription {
+    final text = _descriptionController.text.trim();
+    return text.isNotEmpty && text.length >= 10;
+  }
+
+  bool get _canSubmit =>
+      !_isLoading &&
+      !_isPreparingImages &&
+      !_isUploadingImages &&
+      (_currentPosition != null || _pickedLocation != null) &&
+      _selectedImages.isNotEmpty &&
+      _hasName &&
+      _hasValidDescription;
+
   String? _submitBlockReason(AppLocalizations l10n) {
     if (_isLoading) return null;
     if (_isPreparingImages || _isUploadingImages) {
@@ -608,6 +631,12 @@ class _AddSpotScreenState extends State<AddSpotScreen>
     }
     if (_selectedImages.isEmpty) {
       return l10n.addSpotNeedPhoto;
+    }
+    if (!_hasName) return l10n.addSpotNameRequired;
+    if (!_hasValidDescription) {
+      final text = _descriptionController.text.trim();
+      if (text.isEmpty) return l10n.addSpotDescriptionRequired;
+      return l10n.addSpotDescriptionMinLength;
     }
     return null;
   }
@@ -761,15 +790,7 @@ class _AddSpotScreenState extends State<AddSpotScreen>
 
                   // Submit Button
                   CustomButton(
-                    onPressed:
-                        _isLoading ||
-                            _isPreparingImages ||
-                            _isUploadingImages ||
-                            (_currentPosition == null &&
-                                _pickedLocation == null) ||
-                            _selectedImages.isEmpty
-                        ? null
-                        : _submitForm,
+                    onPressed: _canSubmit ? _submitForm : null,
                     text: _isLoading
                         ? l10n.addSpotCreating
                         : l10n.addSpotCreateButton,
