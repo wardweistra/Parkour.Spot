@@ -8,7 +8,9 @@ import '../models/parkour_event.dart';
 import '../services/admin_events_service.dart';
 import '../services/auth_service.dart';
 import '../services/event_report_service.dart';
+import '../utils/ui_yield.dart';
 import 'event_suggested_edits_summary.dart';
+import 'image_processing_banner.dart';
 
 class EventSuggestionApprovalDialog extends StatefulWidget {
   const EventSuggestionApprovalDialog({super.key, required this.report});
@@ -24,6 +26,8 @@ class _EventSuggestionApprovalDialogState
     extends State<EventSuggestionApprovalDialog> {
   bool _isLoading = true;
   bool _isApproving = false;
+  String? _approvalPhase;
+  String? _approvalProgress;
   String? _error;
 
   ParkourEvent? _currentEvent;
@@ -125,8 +129,11 @@ class _EventSuggestionApprovalDialogState
 
     setState(() {
       _isApproving = true;
+      _approvalPhase = 'Starting approval...';
+      _approvalProgress = null;
       _error = null;
     });
+    await yieldToUi();
 
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
@@ -158,6 +165,13 @@ class _EventSuggestionApprovalDialogState
             user?.email,
         moderatorNotes: notes.isEmpty ? null : notes,
         targetEventIdOverride: targetEventId,
+        onPhotoProgress: (current, total, {phase = 'Processing'}) {
+          if (!mounted) return;
+          setState(() {
+            _approvalPhase = '$phase photo';
+            _approvalProgress = '($current / $total)';
+          });
+        },
       );
 
       if (!mounted) return;
@@ -258,7 +272,9 @@ class _EventSuggestionApprovalDialogState
         ? targetEvent.eventSourceName!.trim()
         : 'external source';
 
-    return AlertDialog(
+    return PopScope(
+      canPop: !_isApproving,
+      child: AlertDialog(
       title: Text(l10n.eventSuggestionApprovalTitle),
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600, maxHeight: 520),
@@ -267,6 +283,13 @@ class _EventSuggestionApprovalDialogState
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (_isApproving && _approvalPhase != null) ...[
+                ImageProcessingBanner(
+                  message: _approvalPhase!,
+                  progressLabel: _approvalProgress,
+                ),
+                const SizedBox(height: 12),
+              ],
               Text(
                 report.targetEventTitle?.trim().isNotEmpty == true
                     ? report.targetEventTitle!.trim()
@@ -468,14 +491,22 @@ class _EventSuggestionApprovalDialogState
         FilledButton(
           onPressed: (_isApproving || !_canApprove()) ? null : _approve,
           child: _isApproving
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(_approvalPhase ?? l10n.eventSuggestionApproveButton),
+                  ],
                 )
               : Text(l10n.eventSuggestionApproveButton),
         ),
       ],
+      ),
     );
   }
 }

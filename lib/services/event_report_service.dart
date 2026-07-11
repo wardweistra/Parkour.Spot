@@ -492,6 +492,7 @@ class EventReportService {
     String? approverName,
     String? moderatorNotes,
     String? targetEventIdOverride,
+    void Function(int current, int total, {String phase})? onPhotoProgress,
   }) async {
     try {
       final reportRef = _firestore.collection('eventReports').doc(reportId);
@@ -509,6 +510,7 @@ class EventReportService {
       if (report.suggestedPhotoUrls.isNotEmpty) {
         promotedImageUrls = await _promoteSuggestedEventPhotos(
           report.suggestedPhotoUrls,
+          onProgress: onPhotoProgress,
         );
         if (promotedImageUrls == null || promotedImageUrls.isEmpty) {
           debugPrint('Failed to promote suggested event photos');
@@ -704,6 +706,7 @@ class EventReportService {
     required String reviewerUserId,
     String? reviewerName,
     String? moderatorNotes,
+    void Function(int current, int total)? onPhotoProgress,
   }) async {
     try {
       final reportRef = _firestore.collection('eventReports').doc(reportId);
@@ -717,6 +720,7 @@ class EventReportService {
       if (report.suggestedPhotoUrls.isNotEmpty) {
         rejectedUrls = await _moveEventPhotosToRejected(
           report.suggestedPhotoUrls,
+          onProgress: onPhotoProgress,
         );
       }
 
@@ -779,13 +783,18 @@ class EventReportService {
 
   /// Move staging photos from [eventSuggestions/] to [events/] with resize.
   Future<List<String>?> _promoteSuggestedEventPhotos(
-    List<String> photoUrls,
-  ) async {
+    List<String> photoUrls, {
+    void Function(int current, int total, {String phase})? onProgress,
+  }) async {
     final finalPhotoUrls = <String>[];
+    final total = photoUrls.length;
+    var current = 0;
 
     for (final photoUrl in photoUrls) {
       try {
-        await Future<void>.delayed(Duration.zero);
+        current++;
+        onProgress?.call(current, total, phase: 'Downloading');
+        await yieldToUi();
 
         final filePath = _storagePathFromUrl(
           photoUrl,
@@ -814,17 +823,28 @@ class EventReportService {
           continue;
         }
 
-        final rawBytes = Uint8List.fromList(response.bodyBytes);
-        await Future<void>.delayed(Duration.zero);
-        final resizedBytes = resizeImageForSpotUpload(rawBytes);
-        if (resizedBytes == null || resizedBytes.isEmpty) {
-          debugPrint('Failed to resize event suggestion photo: $photoUrl');
+        final rawBytes = response.bodyBytes;
+
+        onProgress?.call(current, total, phase: 'Processing');
+        await yieldToUi();
+        PreparedImage prepared;
+        try {
+          prepared = await prepareImageForSpotPromotion(
+            rawBytes,
+            maxDimension: 2048,
+            jpegQuality: 85,
+          );
+        } on ImagePreparationException catch (e) {
+          debugPrint('Failed to prepare event photo $photoUrl: $e');
           continue;
         }
+        await yieldToUi();
 
+        onProgress?.call(current, total, phase: 'Uploading');
+        await yieldToUi();
         await destRef.putData(
-          resizedBytes,
-          SettableMetadata(contentType: 'image/jpeg'),
+          prepared.bytes,
+          SettableMetadata(contentType: prepared.contentType),
         );
         final newUrl = await destRef.getDownloadURL();
         finalPhotoUrls.add(newUrl);
@@ -1002,12 +1022,18 @@ class EventReportService {
   }
 
   Future<List<String>> _moveEventPhotosToRejected(
-    List<String> photoUrls,
-  ) async {
+    List<String> photoUrls, {
+    void Function(int current, int total)? onProgress,
+  }) async {
     final rejectedUrls = <String>[];
+    final total = photoUrls.length;
 
-    for (final photoUrl in photoUrls) {
+    for (var i = 0; i < photoUrls.length; i++) {
+      final photoUrl = photoUrls[i];
       try {
+        onProgress?.call(i + 1, total);
+        await yieldToUi();
+
         final filePath = _storagePathFromUrl(
           photoUrl,
           expectedPrefix: eventSuggestionsPrefix,

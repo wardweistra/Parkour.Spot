@@ -13,7 +13,9 @@ import '../../widgets/location_review_map.dart';
 import '../../widgets/event_duplicate_approval_dialog.dart';
 import '../../widgets/event_suggested_edits_summary.dart';
 import '../../widgets/event_suggestion_approval_dialog.dart';
+import '../../widgets/image_processing_banner.dart';
 import '../../widgets/page_scaffold.dart';
+import '../../utils/ui_yield.dart';
 
 class EventReportQueueScreen extends StatefulWidget {
   const EventReportQueueScreen({super.key});
@@ -30,6 +32,29 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
   ];
   String _selectedFilter = EventReportService.statuses.first;
   final Set<String> _busyReportIds = <String>{};
+  final Map<String, String> _busyProgressLabels = <String, String>{};
+
+  void _updateBusyProgress(
+    String reportId, {
+    required String message,
+    String? progressLabel,
+  }) {
+    if (!mounted) return;
+    setState(() {
+      _busyReportIds.add(reportId);
+      _busyProgressLabels[reportId] = progressLabel == null
+          ? message
+          : '$message $progressLabel';
+    });
+  }
+
+  void _clearBusy(String reportId) {
+    if (!mounted) return;
+    setState(() {
+      _busyReportIds.remove(reportId);
+      _busyProgressLabels.remove(reportId);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -164,6 +189,7 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
                       report: report,
                       dateFormat: dateFormat,
                       isBusy: _busyReportIds.contains(report.id),
+                      busyProgressLabel: _busyProgressLabels[report.id],
                       onSetStatus: (status) => _setStatus(report, status),
                       onApprove: () => _approve(report),
                       onReject: () => _reject(report),
@@ -247,14 +273,13 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
     }
 
     if (!mounted) return;
-    setState(() => _busyReportIds.add(report.id));
+    _updateBusyProgress(report.id, message: 'Starting approval...');
+    await yieldToUi();
     final auth = context.read<AuthService>();
     final user = auth.currentUser;
     final userId = user?.uid;
     if (userId == null) {
-      if (mounted) {
-        setState(() => _busyReportIds.remove(report.id));
-      }
+      _clearBusy(report.id);
       return;
     }
 
@@ -263,10 +288,19 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
       approverUserId: userId,
       approverName:
           auth.userProfile?.displayName ?? user?.displayName ?? user?.email,
+      onPhotoProgress: report.suggestedPhotoUrls.isEmpty
+          ? null
+          : (current, total, {phase = 'Processing'}) {
+              _updateBusyProgress(
+                report.id,
+                message: '$phase photo',
+                progressLabel: '($current / $total)',
+              );
+            },
     );
 
     if (!mounted) return;
-    setState(() => _busyReportIds.remove(report.id));
+    _clearBusy(report.id);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -359,10 +393,11 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
     final user = auth.currentUser;
     final reviewerUserId = user?.uid;
     if (reviewerUserId == null) {
-      if (mounted) setState(() => _busyReportIds.remove(report.id));
+      _clearBusy(report.id);
       return;
     }
 
+    await yieldToUi();
     final ok = await eventReportService.rejectReport(
       reportId: report.id,
       reviewerUserId: reviewerUserId,
@@ -371,10 +406,19 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
       moderatorNotes: notesController.text.trim().isEmpty
           ? null
           : notesController.text.trim(),
+      onPhotoProgress: report.suggestedPhotoUrls.isEmpty
+          ? null
+          : (current, total) {
+              _updateBusyProgress(
+                report.id,
+                message: 'Rejecting photo',
+                progressLabel: '($current / $total)',
+              );
+            },
     );
 
     if (!mounted) return;
-    setState(() => _busyReportIds.remove(report.id));
+    _clearBusy(report.id);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -390,6 +434,7 @@ class _EventReportCard extends StatelessWidget {
     required this.report,
     required this.dateFormat,
     required this.isBusy,
+    this.busyProgressLabel,
     required this.onSetStatus,
     required this.onApprove,
     required this.onReject,
@@ -398,6 +443,7 @@ class _EventReportCard extends StatelessWidget {
   final EventReport report;
   final DateFormat dateFormat;
   final bool isBusy;
+  final String? busyProgressLabel;
   final ValueChanged<String> onSetStatus;
   final VoidCallback onApprove;
   final VoidCallback onReject;
@@ -664,9 +710,13 @@ class _EventReportCard extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 16),
-            if (isBusy)
-              const Center(child: CircularProgressIndicator())
-            else ...[
+            if (isBusy) ...[
+              if (busyProgressLabel != null) ...[
+                ImageProcessingBanner(message: busyProgressLabel!),
+                const SizedBox(height: 12),
+              ],
+              const Center(child: CircularProgressIndicator()),
+            ] else ...[
               if (canReview) ...[
                 SegmentedButton<String>(
                   segments: const <ButtonSegment<String>>[
