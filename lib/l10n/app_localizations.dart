@@ -790,12 +790,6 @@ abstract class AppLocalizations {
   /// **'Report an issue'**
   String get profileReportIssue;
 
-  /// About section: link to translation contribution (Crowdin or similar)
-  ///
-  /// In en, this message translates to:
-  /// **'Help translate the app'**
-  String get profileHelpTranslate;
-
   /// Account tab: PWA install card title
   ///
   /// In en, this message translates to:

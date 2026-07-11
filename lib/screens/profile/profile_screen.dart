@@ -15,7 +15,6 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/instagram_button.dart';
 import '../../widgets/github_button.dart';
 import '../../widgets/report_issue_button.dart';
-import '../../widgets/help_translate_button.dart';
 import '../../widgets/email_button.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -762,11 +761,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                                           label: l10n.profileReportIssue,
                                         ),
                                         const SizedBox(height: 16),
-                                        HelpTranslateButton(
-                                          url: 'https://translate.parkour.spot',
-                                          label: l10n.profileHelpTranslate,
-                                        ),
-                                        const SizedBox(height: 16),
                                         EmailButton(
                                           email: 'parkour.spot@wardweistra.nl',
                                           label: l10n.profileContactUs,
@@ -827,11 +821,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                             url:
                                 'https://github.com/wardweistra/Parkour.Spot/issues',
                             label: l10n.profileReportIssue,
-                          ),
-                          const SizedBox(height: 16),
-                          HelpTranslateButton(
-                            url: 'https://translate.parkour.spot',
-                            label: l10n.profileHelpTranslate,
                           ),
                           const SizedBox(height: 16),
                           EmailButton(
