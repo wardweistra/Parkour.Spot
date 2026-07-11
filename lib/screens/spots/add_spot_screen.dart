@@ -457,6 +457,14 @@ class _AddSpotScreenState extends State<AddSpotScreen>
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final l10n = AppLocalizations.of(context)!;
+    if (_isPreparingImages || _isUploadingImages) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.publicProfileProcessingImage)),
+      );
+      return;
+    }
+
     // Check if at least one photo is uploaded
     if (_selectedImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -478,7 +486,6 @@ class _AddSpotScreenState extends State<AddSpotScreen>
       return;
     }
 
-    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isLoading = true;
       _isUploadingImages = true;
@@ -591,9 +598,25 @@ class _AddSpotScreenState extends State<AddSpotScreen>
   List<Uint8List?> get _selectedImageBytes =>
       _selectedImages.map((image) => image?.bytes).toList();
 
+  String? _submitBlockReason(AppLocalizations l10n) {
+    if (_isLoading) return null;
+    if (_isPreparingImages || _isUploadingImages) {
+      return l10n.publicProfileProcessingImage;
+    }
+    if (_currentPosition == null && _pickedLocation == null) {
+      return l10n.addSpotNeedLocation;
+    }
+    if (_selectedImages.isEmpty) {
+      return l10n.addSpotNeedPhoto;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final submitBlockReason = _submitBlockReason(l10n);
     return PageScaffold(
       title: l10n.exploreAddSpotTitle,
       body: Form(
@@ -726,10 +749,22 @@ class _AddSpotScreenState extends State<AddSpotScreen>
 
                   const SizedBox(height: 24),
 
+                  if (submitBlockReason != null) ...[
+                    Text(
+                      submitBlockReason,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+
                   // Submit Button
                   CustomButton(
                     onPressed:
                         _isLoading ||
+                            _isPreparingImages ||
+                            _isUploadingImages ||
                             (_currentPosition == null &&
                                 _pickedLocation == null) ||
                             _selectedImages.isEmpty

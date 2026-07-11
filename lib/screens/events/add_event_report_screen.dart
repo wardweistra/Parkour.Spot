@@ -474,12 +474,17 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
 
   bool get _canSubmit =>
       !_isSubmitting &&
+      !_isPreparingImages &&
+      !_isUploadingImages &&
       _hasLocationOrLink &&
       !_typedAddressNeedsResolution() &&
       _hasTitle &&
       _hasValidWebsiteUrl();
 
   String? _submitBlockReason(AppLocalizations l10n) {
+    if (_isPreparingImages || _isUploadingImages) {
+      return l10n.publicProfileProcessingImage;
+    }
     if (!_hasLocationOrLink) return l10n.addEventNeedLocationOrLink;
     if (_typedAddressNeedsResolution()) return l10n.addEventAddressNeedsResolve;
     if (!_hasTitle) return l10n.addEventTitleRequired;
@@ -1033,6 +1038,13 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
 
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context)!;
+
+    if (_isPreparingImages || _isUploadingImages) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.publicProfileProcessingImage)),
+      );
+      return;
+    }
 
     if (!_hasLocationOrLink) {
       ScaffoldMessenger.of(
