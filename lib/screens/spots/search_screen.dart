@@ -32,6 +32,7 @@ import '../../widgets/source_details_dialog.dart';
 import '../../config/app_config.dart';
 import '../../utils/marker_icon_utils.dart';
 import '../../utils/map_bounds_utils.dart';
+import '../../utils/map_camera_utils.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../constants/spot_attributes.dart';
 import '../../l10n/app_localizations.dart';
@@ -2758,6 +2759,8 @@ class SearchScreenState extends State<SearchScreen>
   }
 
   Future<void> _locateSpot(Spot spot) async {
+    final viewport = MediaQuery.sizeOf(context);
+
     // Collapse bottom sheet if open
     if (_isBottomSheetOpen) {
       await _bottomSheetAnimationController.reverse();
@@ -2768,19 +2771,17 @@ class SearchScreenState extends State<SearchScreen>
       }
     }
 
-    // Center map on spot with fluid zoom-in (no zoom-out)
+    // Focus the spot with fluid zoom-in (no zoom-out). On small screens, the
+    // final pixel scroll keeps the marker visible above the detail card.
     if (_mapController != null) {
-      const double desiredZoom = 15.0;
-      final double targetZoom = _lastKnownZoom < desiredZoom
-          ? desiredZoom
-          : _lastKnownZoom;
-      // Step 1: pan to target at current zoom (smoother motion)
-      await _mapController!.animateCamera(
-        CameraUpdate.newLatLng(LatLng(spot.latitude, spot.longitude)),
+      final updates = selectedSpotCameraUpdates(
+        target: LatLng(spot.latitude, spot.longitude),
+        currentZoom: _lastKnownZoom,
+        viewportWidth: viewport.width,
+        viewportHeight: viewport.height,
       );
-      // Step 2: if we need to zoom in, do that as a separate animation
-      if (_lastKnownZoom < targetZoom) {
-        await _mapController!.animateCamera(CameraUpdate.zoomTo(targetZoom));
+      for (final update in updates) {
+        await _mapController!.animateCamera(update);
       }
     }
 
