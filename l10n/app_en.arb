@@ -2601,13 +2601,27 @@
       }
     }
   },
-  "detailUpcomingEventLabel": "Upcoming event",
+  "detailUpcomingEventLabel": "{count, plural, one{Upcoming event} other{Upcoming events}}",
   "@detailUpcomingEventLabel": {
-    "description": "Heading for linked upcoming event callout on spot or list detail"
+    "description": "Heading for linked upcoming event callout on spot or list detail",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
-  "detailUpcomingEventOpen": "Open",
-  "@detailUpcomingEventOpen": {
-    "description": "Button to open linked upcoming event detail page"
+  "detailUpcomingEventsAndMore": "{count, plural, one{1 more event} other{{count} more events}}",
+  "@detailUpcomingEventsAndMore": {
+    "description": "Secondary action under upcoming-event callout to open the full list of other upcoming events",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "detailUpcomingEventsSheetTitle": "Upcoming events",
+  "@detailUpcomingEventsSheetTitle": {
+    "description": "Title for bottom sheet listing all upcoming events at a spot or list"
   },
   "publicProfilePageTitle": "Profile",
   "@publicProfilePageTitle": {

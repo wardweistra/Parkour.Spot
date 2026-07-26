@@ -4914,14 +4914,20 @@ abstract class AppLocalizations {
   /// Heading for linked upcoming event callout on spot or list detail
   ///
   /// In en, this message translates to:
-  /// **'Upcoming event'**
-  String get detailUpcomingEventLabel;
+  /// **'{count, plural, one{Upcoming event} other{Upcoming events}}'**
+  String detailUpcomingEventLabel(int count);
 
-  /// Button to open linked upcoming event detail page
+  /// Secondary action under upcoming-event callout to open the full list of other upcoming events
   ///
   /// In en, this message translates to:
-  /// **'Open'**
-  String get detailUpcomingEventOpen;
+  /// **'{count, plural, one{1 more event} other{{count} more events}}'**
+  String detailUpcomingEventsAndMore(int count);
+
+  /// Title for bottom sheet listing all upcoming events at a spot or list
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming events'**
+  String get detailUpcomingEventsSheetTitle;
 
   /// Page title for public profile screen
   ///

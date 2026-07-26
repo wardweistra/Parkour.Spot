@@ -14,8 +14,8 @@ import '../../widgets/spot_training_plan_dialog.dart';
 import '../../utils/spot_check_in_flow.dart';
 import '../../services/spot_service.dart';
 import '../../services/spot_report_service.dart';
-import '../../services/admin_events_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/event_map_service.dart';
 import '../../services/url_service.dart';
 import '../../services/web_share_service.dart';
 import '../../utils/share_link_text.dart';
@@ -39,9 +39,9 @@ import '../../services/spot_check_in_service.dart';
 import '../../services/spot_training_plan_service.dart';
 import '../../services/feature_access_service.dart';
 import '../../models/spot_list.dart';
-import '../../models/parkour_event.dart';
-import '../../utils/event_schedule_utils.dart';
 import '../../utils/marker_icon_utils.dart';
+import '../../utils/upcoming_linked_events_utils.dart';
+import '../../widgets/linked_upcoming_event_panel.dart';
 import '../../utils/resized_spot_image_provider.dart';
 import '../../widgets/no_images_placeholder.dart';
 import '../../widgets/resized_spot_image.dart';
@@ -209,7 +209,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   /// Cached future for Jumpflix videos (avoids refetch on rebuild).
   Future<List<JumpflixVideo>>? _jumpflixVideosFuture;
-  Future<ParkourEvent?>? _upcomingSpotEventFuture;
+  Future<List<UpcomingLinkedEvent>>? _upcomingSpotEventsFuture;
 
   // Getter for the current spot (falls back to widget.spot if not updated)
   Spot get _spot => _currentSpot ?? widget.spot;
@@ -500,13 +500,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         context,
         listen: false,
       ).getJumpflixVideosForSpot(widget.spot.id!);
-      _upcomingSpotEventFuture = Provider.of<AdminEventsService>(
-        context,
-        listen: false,
-      ).getNextUpcomingEventForSpot(widget.spot.id!);
+      _upcomingSpotEventsFuture = _loadUpcomingSpotEvents(widget.spot.id!);
     } else {
       _jumpflixVideosFuture = Future<List<JumpflixVideo>>.value([]);
-      _upcomingSpotEventFuture = Future<ParkourEvent?>.value(null);
+      _upcomingSpotEventsFuture =
+          Future<List<UpcomingLinkedEvent>>.value(const []);
     }
 
     // Initialize satellite view from SearchStateService
@@ -542,15 +540,19 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           context,
           listen: false,
         ).getJumpflixVideosForSpot(widget.spot.id!);
-        _upcomingSpotEventFuture = Provider.of<AdminEventsService>(
-          context,
-          listen: false,
-        ).getNextUpcomingEventForSpot(widget.spot.id!);
+        _upcomingSpotEventsFuture = _loadUpcomingSpotEvents(widget.spot.id!);
       } else {
         _jumpflixVideosFuture = Future<List<JumpflixVideo>>.value([]);
-        _upcomingSpotEventFuture = Future<ParkourEvent?>.value(null);
+        _upcomingSpotEventsFuture =
+            Future<List<UpcomingLinkedEvent>>.value(const []);
       }
     }
+  }
+
+  Future<List<UpcomingLinkedEvent>> _loadUpcomingSpotEvents(String spotId) {
+    return Provider.of<EventMapService>(context, listen: false)
+        .getUpcomingPinsForSpot(spotId)
+        .then(upcomingLinkedEventsFromPins);
   }
 
   String _formatSpotDocumentTitle(Spot s, AppLocalizations l10n) {
@@ -2409,7 +2411,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          _buildUpcomingSpotEventPanel(),
+                          LinkedUpcomingEventPanel(
+                            eventsFuture: _upcomingSpotEventsFuture,
+                            margin: EdgeInsets.zero,
+                          ),
                           const SizedBox(height: 12),
                           SpotDetailCommunitySection(
                             spotId: _spot.id!,
@@ -5111,91 +5116,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           fontWeight: FontWeight.normal,
         ),
       ),
-    );
-  }
-
-  Widget _buildUpcomingSpotEventPanel() {
-    if (_spot.id == null) return const SizedBox.shrink();
-
-    return FutureBuilder<ParkourEvent?>(
-      future: _upcomingSpotEventFuture ?? Future<ParkourEvent?>.value(null),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox.shrink();
-        }
-        final event = snapshot.data;
-        if (event == null || event.id == null) {
-          return const SizedBox.shrink();
-        }
-
-        final colors = Theme.of(context).colorScheme;
-        return Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: colors.primaryContainer.withValues(alpha: 0.35),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: colors.primary.withValues(alpha: 0.25)),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.event_available_outlined, color: colors.primary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Upcoming event',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: colors.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      event.title,
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _formatUpcomingEventDateTime(
-                        event.startAt,
-                        endAt: event.endAt,
-                        isDateOnly: event.isDateOnly,
-                        timeZone: event.timeZone,
-                      ),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-              TextButton.icon(
-                onPressed: () => context.push('/event/${event.id}'),
-                icon: const Icon(Icons.open_in_new, size: 16),
-                label: const Text('Open'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  String _formatUpcomingEventDateTime(
-    DateTime startAt, {
-    DateTime? endAt,
-    required bool isDateOnly,
-    String? timeZone,
-  }) {
-    return EventScheduleUtils.formatSummaryLine(
-      context,
-      startAt: startAt,
-      endAt: endAt,
-      isDateOnly: isDateOnly,
-      timeZone: timeZone,
     );
   }
 

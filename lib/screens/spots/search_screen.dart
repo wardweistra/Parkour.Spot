@@ -25,7 +25,6 @@ import '../../services/spot_list_service.dart';
 import '../../services/user_locations_of_interest_service.dart';
 import '../../models/spot.dart';
 import '../../models/spot_list.dart';
-import '../../models/parkour_event.dart';
 import '../../widgets/spot_card.dart';
 import '../../widgets/linked_upcoming_event_panel.dart';
 import '../../widgets/source_details_dialog.dart';
@@ -34,6 +33,7 @@ import '../../utils/marker_icon_utils.dart';
 import '../../utils/map_bounds_utils.dart';
 import '../../utils/map_camera_utils.dart';
 import '../../utils/location_permission_utils.dart';
+import '../../utils/upcoming_linked_events_utils.dart';
 import '../../constants/spot_attributes.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -345,7 +345,7 @@ class SearchScreenState extends State<SearchScreen>
   String? _selectedListName; // Name of the selected spot list
   SpotList? _selectedList; // Full spot list object for preview
   bool _showListPreview = false; // Whether to show the list preview card
-  Future<ParkourEvent?>? _linkedSpotListEventFuture;
+  Future<List<UpcomingLinkedEvent>>? _linkedSpotListEventsFuture;
   Set<String> _highlightedSpotIds = {}; // Spot IDs from selected list
   DateTime? _lastAutocompleteSpotSelection; // Guard against mobile tap-through
   bool _hasSetInitialAutocompleteQuery = false;
@@ -420,7 +420,7 @@ class SearchScreenState extends State<SearchScreen>
           _selectedList = null;
           _selectedListName = null;
           _showListPreview = false;
-          _linkedSpotListEventFuture = null;
+          _linkedSpotListEventsFuture = null;
           _highlightedSpotIds.clear();
           _markers = _rebuildMarkers();
         });
@@ -2476,7 +2476,7 @@ class SearchScreenState extends State<SearchScreen>
           _selectedList = null;
           _selectedListName = null;
           _showListPreview = false;
-          _linkedSpotListEventFuture = null;
+          _linkedSpotListEventsFuture = null;
           _highlightedSpotIds.clear();
           _markers = _rebuildMarkers();
         });
@@ -2491,14 +2491,14 @@ class SearchScreenState extends State<SearchScreen>
         context,
         listen: false,
       );
-      final linkedEventFuture = eventsService.getNextUpcomingEventForSpotList(
-        listId,
-      );
+      final linkedEventsFuture = eventsService
+          .getUpcomingEventsForSpotList(listId)
+          .then(upcomingLinkedEventsFromParkourEvents);
 
       setState(() {
         _selectedList = list;
         _selectedListName = list.name;
-        _linkedSpotListEventFuture = linkedEventFuture;
+        _linkedSpotListEventsFuture = linkedEventsFuture;
         _highlightedSpotIds = list.effectiveSpotIds.toSet();
         // Rebuild markers to reflect highlighting
         _markers = _rebuildMarkers();
@@ -2570,7 +2570,7 @@ class SearchScreenState extends State<SearchScreen>
       _selectedListId = null;
       _selectedListName = null;
       _showListPreview = false;
-      _linkedSpotListEventFuture = null;
+      _linkedSpotListEventsFuture = null;
       _highlightedSpotIds.clear();
       _markers = _rebuildMarkers();
     });
@@ -3284,7 +3284,7 @@ class SearchScreenState extends State<SearchScreen>
                       ),
                     ),
                   LinkedUpcomingEventPanel(
-                    eventFuture: _linkedSpotListEventFuture,
+                    eventsFuture: _linkedSpotListEventsFuture,
                     margin: const EdgeInsets.only(bottom: 12),
                     compact: true,
                   ),

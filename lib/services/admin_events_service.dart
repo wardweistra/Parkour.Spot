@@ -473,24 +473,36 @@ class AdminEventsService extends ChangeNotifier {
   }
 
   Future<ParkourEvent?> getNextUpcomingEventForSpot(String spotId) async {
-    return _getNextUpcomingEvent(
-      field: 'spotIds',
-      id: spotId,
-      logLabel: 'getNextUpcomingEventForSpot',
-    );
+    final events = await getUpcomingEventsForSpot(spotId);
+    return events.isEmpty ? null : events.first;
   }
 
   Future<ParkourEvent?> getNextUpcomingEventForSpotList(
     String spotListId,
   ) async {
-    return _getNextUpcomingEvent(
-      field: 'spotListIds',
-      id: spotListId,
-      logLabel: 'getNextUpcomingEventForSpotList',
+    final events = await getUpcomingEventsForSpotList(spotListId);
+    return events.isEmpty ? null : events.first;
+  }
+
+  /// Upcoming events directly linked to [spotId] via `spotIds`.
+  Future<List<ParkourEvent>> getUpcomingEventsForSpot(String spotId) {
+    return _getUpcomingEvents(
+      field: 'spotIds',
+      id: spotId,
+      logLabel: 'getUpcomingEventsForSpot',
     );
   }
 
-  Future<ParkourEvent?> _getNextUpcomingEvent({
+  /// Upcoming events linked to [spotListId] via `spotListIds`.
+  Future<List<ParkourEvent>> getUpcomingEventsForSpotList(String spotListId) {
+    return _getUpcomingEvents(
+      field: 'spotListIds',
+      id: spotListId,
+      logLabel: 'getUpcomingEventsForSpotList',
+    );
+  }
+
+  Future<List<ParkourEvent>> _getUpcomingEvents({
     required String field,
     required String id,
     required String logLabel,
@@ -520,11 +532,10 @@ class AdminEventsService extends ChangeNotifier {
         }
       }
       events.sort((a, b) => a.startAt.compareTo(b.startAt));
-      if (events.isEmpty) return null;
-      return events.first;
+      return events;
     } catch (e, st) {
       debugPrint('AdminEventsService.$logLabel error: $e\n$st');
-      return null;
+      return const [];
     }
   }
 

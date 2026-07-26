@@ -7,7 +7,6 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../../models/spot_list.dart';
 import '../../models/spot.dart';
-import '../../models/parkour_event.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
@@ -35,6 +34,7 @@ import 'spot_list_advanced_organization_screen.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/spot_list_localization.dart';
 import '../../utils/relative_date_localization.dart';
+import '../../utils/upcoming_linked_events_utils.dart';
 
 enum _ListManageMenuAction { listSettings, organize, createEvent, delete }
 
@@ -61,7 +61,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   Spot? _selectedSpot; // Currently selected/highlighted spot
   final ScrollController _scrollController = ScrollController();
   String? _creatorName;
-  Future<ParkourEvent?>? _linkedEventFuture;
+  Future<List<UpcomingLinkedEvent>>? _linkedEventsFuture;
 
   @override
   void initState() {
@@ -136,9 +136,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       context,
       listen: false,
     );
-    _linkedEventFuture = eventsService.getNextUpcomingEventForSpotList(
-      widget.listId,
-    );
+    _linkedEventsFuture = eventsService
+        .getUpcomingEventsForSpotList(widget.listId)
+        .then(upcomingLinkedEventsFromParkourEvents);
 
     // Load creator display name
     if (list.createdBy.isNotEmpty) {
@@ -1328,7 +1328,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
             // Map showing all spots
             if (_spots.isNotEmpty) _buildMap(),
             _buildListActionsRow(),
-            LinkedUpcomingEventPanel(eventFuture: _linkedEventFuture),
+            LinkedUpcomingEventPanel(eventsFuture: _linkedEventsFuture),
             // List info header
             if (_list!.description != null && _list!.description!.isNotEmpty)
               Container(

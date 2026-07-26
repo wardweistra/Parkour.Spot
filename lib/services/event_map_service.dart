@@ -6,6 +6,7 @@ import '../models/event_map_pin.dart';
 import '../models/parkour_event.dart';
 import '../utils/event_linked_spot_loader.dart';
 import '../utils/event_locate_utils.dart';
+import '../utils/upcoming_linked_events_utils.dart';
 
 class EventsInBoundsResult {
   final List<EventMapPin> pins;
@@ -84,6 +85,26 @@ class EventMapService extends ChangeNotifier {
       return snapshot.docs.map(EventMapPin.fromFirestore).toList();
     } catch (e, st) {
       debugPrint('EventMapService.getMapPinsForEvent error: $e\n$st');
+      return const [];
+    }
+  }
+
+  /// Upcoming/in-progress spot pins for [spotId], including list-linked events.
+  ///
+  /// Dedupes by event id and sorts by [EventMapPin.startAt] ascending.
+  Future<List<EventMapPin>> getUpcomingPinsForSpot(String spotId) async {
+    final trimmed = spotId.trim();
+    if (trimmed.isEmpty) return const [];
+
+    try {
+      final snapshot = await _firestore
+          .collection('eventMapPins')
+          .where('spotId', isEqualTo: trimmed)
+          .get();
+      final pins = snapshot.docs.map(EventMapPin.fromFirestore);
+      return dedupeAndSortSpotEventPins(pins, spotId: trimmed);
+    } catch (e, st) {
+      debugPrint('EventMapService.getUpcomingPinsForSpot error: $e\n$st');
       return const [];
     }
   }

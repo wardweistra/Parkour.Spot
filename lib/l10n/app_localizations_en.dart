@@ -2878,10 +2878,29 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get detailUpcomingEventLabel => 'Upcoming event';
+  String detailUpcomingEventLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Upcoming events',
+      one: 'Upcoming event',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get detailUpcomingEventOpen => 'Open';
+  String detailUpcomingEventsAndMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count more events',
+      one: '1 more event',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get detailUpcomingEventsSheetTitle => 'Upcoming events';
 
   @override
   String get publicProfilePageTitle => 'Profile';
