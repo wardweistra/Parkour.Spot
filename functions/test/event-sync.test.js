@@ -652,6 +652,40 @@ describe("event-sync helpers", () => {
       expect(events[2].externalImageUrl).toBeUndefined();
     });
 
+    it("ignores link=event_page and falls back to organizer website", () => {
+      const payload = {
+        time_zone: "Europe/Berlin",
+        events: [
+          {
+            id: 10,
+            title: "Placeholder link",
+            start: "2022-06-17",
+            end: "2022-06-17",
+            all_day: 1,
+            link: "event_page",
+            organizer: {
+              website: "https://organizer.example/jam",
+            },
+          },
+          {
+            id: 11,
+            title: "Only event_page",
+            start: "2022-06-18",
+            end: "2022-06-18",
+            all_day: 1,
+            link: "event_page",
+            desc: "<p>See https://from-description.example/x</p>",
+          },
+        ],
+      };
+      const events = parseExternalEventsFromWixPublishedCalendar(payload, {
+        sourceId: "wix-1",
+        sourceName: "Jam Calendar",
+      });
+      expect(events[0].websiteUrl).toBe("https://organizer.example/jam");
+      expect(events[1].websiteUrl).toBe("https://from-description.example/x");
+    });
+
     it("uses calendar time_zone as feed default for all-day and floating timed", () => {
       const events = parseExternalEventsFromWixPublishedCalendar(basePayload, {
         sourceId: "wix-1",

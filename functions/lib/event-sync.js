@@ -936,19 +936,30 @@ function extractWixVenueCoordinates(venue) {
 }
 
 /**
+ * @param {*} raw
+ * @return {string|null}
+ */
+function normalizeWixWebsiteCandidate(raw) {
+  const value = toNonEmptyString(raw);
+  if (!value) return null;
+  if (value.toLowerCase() === "event_page") return null;
+  return value;
+}
+
+/**
  * @param {Object} event
  * @return {string|null}
  */
 function extractWixWebsiteUrl(event) {
-  const link = toNonEmptyString(event.link);
+  const link = normalizeWixWebsiteCandidate(event.link);
   if (link) return link;
   const organizerWebsite = event.organizer &&
       typeof event.organizer === "object" ?
-    toNonEmptyString(event.organizer.website) :
+    normalizeWixWebsiteCandidate(event.organizer.website) :
     null;
   if (organizerWebsite) return organizerWebsite;
   const venueWebsite = event.venue && typeof event.venue === "object" ?
-    toNonEmptyString(event.venue.website) :
+    normalizeWixWebsiteCandidate(event.venue.website) :
     null;
   return venueWebsite;
 }
