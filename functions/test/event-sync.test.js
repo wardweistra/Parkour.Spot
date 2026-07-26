@@ -7,9 +7,11 @@ const {
   extractLastHttpUrlFromDescription,
   hasExternalEventAddressChanged,
   hasExternalEventContentChanges,
+  hasExternalEventPlaceFields,
   normalizeImportedEventDescription,
   normalizeImportedTimeZone,
   parseExternalEventsFromIcs,
+  parseExternalEventsFromWixPublishedCalendar,
   removeExtractedWebsiteUrlFromDescription,
   shouldGeocodeExternalEventAddress,
 } = require("../lib/event-sync");
@@ -81,6 +83,24 @@ describe("event-sync helpers", () => {
         timeZoneSource: EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT,
       };
       expect(hasExternalEventContentChanges(existing, withSource)).toBe(true);
+    });
+
+    it("detects externalImageUrl changes", () => {
+      const existing = {
+        ...incoming,
+        externalImageUrl: "https://cdn.example.com/a.jpg",
+      };
+      const withImage = {
+        ...incoming,
+        externalImageUrl: "https://cdn.example.com/b.jpg",
+      };
+      expect(hasExternalEventContentChanges(existing, withImage)).toBe(true);
+      expect(
+          hasExternalEventContentChanges(existing, {
+            ...incoming,
+            externalImageUrl: "https://cdn.example.com/a.jpg",
+          }),
+      ).toBe(false);
     });
   });
 
@@ -164,6 +184,30 @@ describe("event-sync helpers", () => {
               {address: "Rua Augusta, 10"},
           ),
       ).toBe(false);
+    });
+
+    it("skips geocoding when incoming event already has coordinates", () => {
+      expect(
+          shouldGeocodeExternalEventAddress(
+              null,
+              {
+                address: "Stockholm, Sweden",
+                latitude: 59.33,
+                longitude: 18.07,
+              },
+          ),
+      ).toBe(false);
+    });
+
+    it("detects missing city/country place fields", () => {
+      expect(hasExternalEventPlaceFields({city: "Graz", countryCode: "AT"}))
+          .toBe(true);
+      expect(hasExternalEventPlaceFields({city: "Graz"})).toBe(false);
+      expect(hasExternalEventPlaceFields({
+        city: "",
+        countryCode: "AT",
+      })).toBe(false);
+      expect(hasExternalEventPlaceFields(null)).toBe(false);
     });
   });
 
@@ -483,6 +527,222 @@ describe("event-sync helpers", () => {
         "Indy Jam",
         "Summer Jam",
       ]);
+    });
+  });
+
+  describe("parseExternalEventsFromWixPublishedCalendar", () => {
+    const basePayload = {
+      time_zone: "Europe/Berlin",
+      events: [
+        {
+          id: 1016162,
+          title: "KIPA JAM - STOCKHOLM",
+          start: "2022-06-17",
+          end: "2022-06-19",
+          all_day: 1,
+          time_zone: "",
+          desc: "<p>Jam in Stockholm</p><p>https://kipamagazine.com/jam</p>",
+          link: null,
+          image: "https://static.wixstatic.com/media/example.jpg",
+          venue: {
+            name: "Stockholm",
+            address: "Stockholm, Sweden",
+            lat: "59.32932349999999",
+            long: "18.0685808",
+          },
+        },
+        {
+          id: 1016145,
+          title: "REGENSBURG JAM",
+          start: "2022-07-02T00:00",
+          end: "2022-07-03T01:00",
+          all_day: 0,
+          time_zone: "",
+          desc: "",
+          link: "https://example.com/regensburg",
+          image: "[\"https:\\/\\/static.wixstatic.com\\/media\\/array-style.jpg\"]",
+          venue: {
+            name: "Parkourhalle Regensburg",
+            address: "Lilienthalstraße, Regensburg, Germany",
+            lat: "49.0114667",
+            long: "12.0600309",
+          },
+        },
+        {
+          id: 3332204,
+          title: "PARKOUR CHALLENGE RACE",
+          start: "2025-08-24T12:00",
+          end: "2025-08-24T13:00",
+          all_day: 0,
+          time_zone: "Europe/Paris",
+          desc: "Race day",
+          venue: {
+            address: "Paris, France",
+          },
+        },
+      ],
+    };
+
+    it("maps ids, venue address/coords, and website fields", () => {
+      const events = parseExternalEventsFromWixPublishedCalendar(basePayload, {
+        sourceId: "wix-1",
+        sourceName: "Jam Calendar",
+      });
+
+      expect(events).toHaveLength(3);
+      const stockholm = events.find((e) => e.externalEventUid === "1016162");
+      expect(stockholm.externalEventKey).toBe("1016162");
+      expect(stockholm.title).toBe("KIPA JAM - STOCKHOLM");
+      expect(stockholm.address).toBe("Stockholm, Sweden");
+      expect(stockholm.latitude).toBeCloseTo(59.32932349999999);
+      expect(stockholm.longitude).toBeCloseTo(18.0685808);
+      expect(stockholm.websiteUrl).toBe("https://kipamagazine.com/jam");
+      expect(stockholm.description).toBe("Jam in Stockholm");
+      expect(stockholm.externalImageUrl).toBe(
+          "https://static.wixstatic.com/media/example.jpg",
+      );
+
+      const regensburg = events.find((e) => e.externalEventUid === "1016145");
+      expect(regensburg.websiteUrl).toBe("https://example.com/regensburg");
+      expect(regensburg.externalImageUrl).toBe(
+          "https://static.wixstatic.com/media/array-style.jpg",
+      );
+    });
+
+    it("parses image fields that are JSON-encoded URL arrays", () => {
+      const payload = {
+        time_zone: "Europe/Berlin",
+        events: [
+          {
+            id: 1,
+            title: "Array image",
+            start: "2022-06-17",
+            end: "2022-06-17",
+            all_day: 1,
+            image: "[\"https:\\/\\/static.wixstatic.com\\/media\\/foo.jpg\"]",
+          },
+          {
+            id: 2,
+            title: "Plain image",
+            start: "2022-06-18",
+            end: "2022-06-18",
+            all_day: 1,
+            image: "https://static.wixstatic.com/media/bar.jpg",
+          },
+          {
+            id: 3,
+            title: "No image",
+            start: "2022-06-19",
+            end: "2022-06-19",
+            all_day: 1,
+            image: "",
+          },
+        ],
+      };
+      const events = parseExternalEventsFromWixPublishedCalendar(payload, {
+        sourceId: "wix-1",
+        sourceName: "Jam Calendar",
+      });
+      expect(events[0].externalImageUrl).toBe(
+          "https://static.wixstatic.com/media/foo.jpg",
+      );
+      expect(events[1].externalImageUrl).toBe(
+          "https://static.wixstatic.com/media/bar.jpg",
+      );
+      expect(events[2].externalImageUrl).toBeUndefined();
+    });
+
+    it("uses calendar time_zone as feed default for all-day and floating timed", () => {
+      const events = parseExternalEventsFromWixPublishedCalendar(basePayload, {
+        sourceId: "wix-1",
+        sourceName: "Jam Calendar",
+      });
+
+      const stockholm = events.find((e) => e.externalEventUid === "1016162");
+      expect(stockholm.isDateOnly).toBe(true);
+      expect(stockholm.timeZone).toBe("Europe/Berlin");
+      expect(stockholm.timeZoneSource).toBe(EVENT_TIME_ZONE_SOURCE_FEED);
+      expect(stockholm.startAt).toEqual(
+          dateStartToUtc(2022, 6, 17, "Europe/Berlin"),
+      );
+      expect(stockholm.endAt).toEqual(
+          dateEndToUtc(2022, 6, 19, "Europe/Berlin"),
+      );
+
+      const regensburg = events.find((e) => e.externalEventUid === "1016145");
+      expect(regensburg.isDateOnly).toBe(false);
+      expect(regensburg.timeZone).toBe("Europe/Berlin");
+      expect(regensburg.timeZoneSource).toBe(EVENT_TIME_ZONE_SOURCE_FEED);
+      expect(regensburg.startAt.toISOString()).toBe("2022-07-01T22:00:00.000Z");
+      expect(regensburg.endAt.toISOString()).toBe("2022-07-02T23:00:00.000Z");
+    });
+
+    it("falls back to sourceDefaultTimeZone when calendar TZ is missing", () => {
+      const payload = {
+        ...basePayload,
+        time_zone: "",
+        events: [basePayload.events[0]],
+      };
+      const events = parseExternalEventsFromWixPublishedCalendar(payload, {
+        sourceId: "wix-1",
+        sourceName: "Jam Calendar",
+        sourceDefaultTimeZone: "Europe/Amsterdam",
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].timeZone).toBe("Europe/Amsterdam");
+      expect(events[0].timeZoneSource).toBe(
+          EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT,
+      );
+      expect(events[0].startAt).toEqual(
+          dateStartToUtc(2022, 6, 17, "Europe/Amsterdam"),
+      );
+    });
+
+    it("prefers event-level time_zone when set", () => {
+      const events = parseExternalEventsFromWixPublishedCalendar(basePayload, {
+        sourceId: "wix-1",
+        sourceName: "Jam Calendar",
+      });
+      const race = events.find((e) => e.externalEventUid === "3332204");
+      expect(race.timeZone).toBe("Europe/Paris");
+      expect(race.timeZoneSource).toBe(EVENT_TIME_ZONE_SOURCE_FEED);
+      expect(race.startAt.toISOString()).toBe("2025-08-24T10:00:00.000Z");
+      expect(race.endAt.toISOString()).toBe("2025-08-24T11:00:00.000Z");
+    });
+
+    it("skips events without id or unparseable start", () => {
+      const payload = {
+        time_zone: "",
+        events: [
+          {title: "No id", start: "2022-06-17", all_day: 1},
+          {id: 1, title: "Bad start", start: "not-a-date", all_day: 0},
+          {
+            id: 2,
+            title: "Timed without timezone",
+            start: "2022-07-02T00:00",
+            end: "2022-07-02T01:00",
+            all_day: 0,
+            time_zone: "",
+          },
+          {
+            id: 3,
+            title: "All-day without timezone uses UTC floating",
+            start: "2022-06-17",
+            end: "2022-06-17",
+            all_day: 1,
+            time_zone: "",
+          },
+        ],
+      };
+      const events = parseExternalEventsFromWixPublishedCalendar(payload, {
+        sourceId: "wix-1",
+        sourceName: "Jam Calendar",
+      });
+      expect(events).toHaveLength(1);
+      expect(events[0].externalEventUid).toBe("3");
+      expect(events[0].timeZone).toBeUndefined();
+      expect(events[0].startAt.toISOString()).toBe("2022-06-17T00:00:00.000Z");
     });
   });
 });

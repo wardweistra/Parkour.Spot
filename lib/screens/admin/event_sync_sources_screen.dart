@@ -238,6 +238,13 @@ class _EventSyncSourcesScreenState extends State<EventSyncSourcesScreen> {
                           children: [
                             Chip(
                               label: Text(
+                                source.isWixPublishedCalendar
+                                    ? 'Wix calendar'
+                                    : 'ICS',
+                              ),
+                            ),
+                            Chip(
+                              label: Text(
                                 source.isActive ? 'Active' : 'Inactive',
                               ),
                             ),
@@ -410,6 +417,7 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
   late final TextEditingController _syncScheduleCtrl;
   late final List<String> _defaultTimeZoneOptions;
   late String _selectedDefaultTimeZone;
+  late String _sourceType;
   late bool _isActive;
   late bool _autoSyncEnabled;
   bool _isSaving = false;
@@ -445,9 +453,27 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
     _selectedDefaultTimeZone =
         EventScheduleUtils.normalizeTimeZone(widget.source?.defaultTimeZone) ??
         _noDefaultTimeZoneValue;
+    _sourceType =
+        widget.source?.sourceType ?? EventSyncSource.sourceTypeIcs;
     _isActive = widget.source?.isActive ?? true;
     _autoSyncEnabled = widget.source?.autoSyncEnabled ?? false;
   }
+
+  bool get _isWixSourceType =>
+      _sourceType == EventSyncSource.sourceTypeWixPublishedCalendar;
+
+  String get _feedUrlLabel =>
+      _isWixSourceType ? 'Published calendar URL' : 'ICS URL';
+
+  String get _feedUrlHelperText => _isWixSourceType
+      ? 'Full BoomTech/Wix published_calendar URL including the instance token'
+      : 'Google Calendar public .ics URL';
+
+  String get _defaultTimeZoneHelperText => _isWixSourceType
+      ? 'Fallback when the published calendar has no time_zone. '
+            'Re-sync after changing this.'
+      : 'Used when the ICS feed has no calendar timezone. '
+            'Re-sync after changing this.';
 
   String _defaultTimeZoneLabel(String value) {
     if (value == _noDefaultTimeZoneValue) {
@@ -492,11 +518,29 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                       ? 'Required'
                       : null,
                 ),
+                DropdownButtonFormField<String>(
+                  initialValue: _sourceType,
+                  decoration: const InputDecoration(labelText: 'Source type'),
+                  items: const [
+                    DropdownMenuItem(
+                      value: EventSyncSource.sourceTypeIcs,
+                      child: Text('ICS feed'),
+                    ),
+                    DropdownMenuItem(
+                      value: EventSyncSource.sourceTypeWixPublishedCalendar,
+                      child: Text('Wix published calendar'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() => _sourceType = value);
+                  },
+                ),
                 TextFormField(
                   controller: _icsUrlCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'ICS URL',
-                    helperText: 'Google Calendar public .ics URL',
+                  decoration: InputDecoration(
+                    labelText: _feedUrlLabel,
+                    helperText: _feedUrlHelperText,
                   ),
                   validator: (value) {
                     final trimmed = value?.trim() ?? '';
@@ -505,6 +549,10 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                     if (uri == null || uri.host.isEmpty) return 'Invalid URL';
                     if (uri.scheme != 'http' && uri.scheme != 'https') {
                       return 'URL must start with http or https';
+                    }
+                    if (_isWixSourceType &&
+                        !uri.path.contains('/api/published_calendar')) {
+                      return 'URL must include /api/published_calendar';
                     }
                     return null;
                   },
@@ -526,11 +574,9 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                 DropdownButtonFormField<String>(
                   initialValue: _selectedDefaultTimeZone,
                   isExpanded: true,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Default timezone for all-day events',
-                    helperText:
-                        'Used when the ICS feed has no calendar timezone. '
-                        'Re-sync after changing this.',
+                    helperText: _defaultTimeZoneHelperText,
                   ),
                   items: _defaultTimeZoneOptions
                       .map(
@@ -610,6 +656,7 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                     ok = await service.createSource(
                       name: _nameCtrl.text.trim(),
                       icsUrl: _icsUrlCtrl.text.trim(),
+                      sourceType: _sourceType,
                       description: trimmedDescription.isEmpty
                           ? null
                           : trimmedDescription,
@@ -630,6 +677,7 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                       sourceId: widget.source!.id,
                       name: _nameCtrl.text.trim(),
                       icsUrl: _icsUrlCtrl.text.trim(),
+                      sourceType: _sourceType,
                       description: trimmedDescription,
                       publicUrl: trimmedPublicUrl,
                       isActive: _isActive,

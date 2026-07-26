@@ -40,9 +40,13 @@ DateTime? _parseTimestamp(dynamic timestamp) {
 }
 
 class EventSyncSource {
+  static const String sourceTypeIcs = 'ics';
+  static const String sourceTypeWixPublishedCalendar = 'wixPublishedCalendar';
+
   final String id;
   final String name;
   final String icsUrl;
+  final String sourceType;
   final String? description;
   final String? publicUrl;
   final bool isActive;
@@ -58,6 +62,7 @@ class EventSyncSource {
     required this.id,
     required this.name,
     required this.icsUrl,
+    this.sourceType = sourceTypeIcs,
     this.description,
     this.publicUrl,
     required this.isActive,
@@ -71,10 +76,16 @@ class EventSyncSource {
   });
 
   factory EventSyncSource.fromMap(Map<String, dynamic> data) {
+    final rawSourceType = data['sourceType']?.toString();
+    final sourceType =
+        rawSourceType == EventSyncSource.sourceTypeWixPublishedCalendar
+        ? EventSyncSource.sourceTypeWixPublishedCalendar
+        : EventSyncSource.sourceTypeIcs;
     return EventSyncSource(
       id: data['id']?.toString() ?? '',
       name: data['name']?.toString() ?? '',
       icsUrl: data['icsUrl']?.toString() ?? '',
+      sourceType: sourceType,
       description: data['description'] as String?,
       publicUrl: data['publicUrl'] as String?,
       isActive: data['isActive'] is bool ? data['isActive'] as bool : true,
@@ -91,6 +102,9 @@ class EventSyncSource {
       defaultTimeZone: data['defaultTimeZone'] as String?,
     );
   }
+
+  bool get isWixPublishedCalendar =>
+      sourceType == sourceTypeWixPublishedCalendar;
 }
 
 class EventSyncSourceService extends ChangeNotifier {
@@ -160,6 +174,7 @@ class EventSyncSourceService extends ChangeNotifier {
   Future<bool> createSource({
     required String name,
     required String icsUrl,
+    String sourceType = EventSyncSource.sourceTypeIcs,
     String? description,
     String? publicUrl,
     bool isActive = true,
@@ -172,6 +187,7 @@ class EventSyncSourceService extends ChangeNotifier {
       final result = await callable.call({
         'name': name,
         'icsUrl': icsUrl,
+        'sourceType': sourceType,
         'description': description,
         'publicUrl': publicUrl,
         'isActive': isActive,
@@ -198,6 +214,7 @@ class EventSyncSourceService extends ChangeNotifier {
     required String sourceId,
     String? name,
     String? icsUrl,
+    String? sourceType,
     String? description,
     String? publicUrl,
     bool? isActive,
@@ -210,6 +227,7 @@ class EventSyncSourceService extends ChangeNotifier {
       final payload = <String, dynamic>{'sourceId': sourceId};
       if (name != null) payload['name'] = name;
       if (icsUrl != null) payload['icsUrl'] = icsUrl;
+      if (sourceType != null) payload['sourceType'] = sourceType;
       if (description != null) payload['description'] = description;
       if (publicUrl != null) payload['publicUrl'] = publicUrl;
       if (isActive != null) payload['isActive'] = isActive;

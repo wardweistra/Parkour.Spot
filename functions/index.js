@@ -112,12 +112,17 @@ const {
 } = require("./lib/import-helpers");
 const {shouldRunSync} = require("./lib/sync-helpers");
 const {
+  EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR,
   hasExternalEventAddressChanged,
   hasExternalEventContentChanges,
+  hasExternalEventPlaceFields,
+  hasStoredEventCoordinates,
   parseExternalEventsFromIcs,
+  parseExternalEventsFromWixPublishedCalendar,
   buildExternalEventKey,
   shouldGeocodeExternalEventAddress,
   normalizeEventSyncSourceDefaultTimeZone,
+  normalizeEventSyncSourceType,
 } = require("./lib/event-sync");
 const {
   deleteEventMapPins,
@@ -1578,20 +1583,22 @@ function downloadFile(url) {
 /**
  * Checks if an image with the given hash already exists in Firebase Storage
  * @param {string} imageHash - The content hash of the image
+ * @param {string=} storageFolder - Storage folder prefix (`spots` or `events`)
  * @return {Promise<string|null>} A promise that resolves to the existing
  * file path or null
  */
-async function checkImageExists(imageHash) {
+async function checkImageExists(imageHash, storageFolder = "spots") {
   try {
-    // List files in the spots folder with the hash prefix
+    const prefix = `${storageFolder}/`;
+    // List files in the folder with the hash prefix
     const [files] = await bucket.getFiles({
-      prefix: `spots/`,
+      prefix,
       delimiter: "/",
     });
 
     for (const file of files) {
       const fileName = file.name;
-      // Check if filename contains our hash (format: spots/name_hash_index.ext)
+      // Check if filename contains our hash (format: folder/name_hash_index.ext)
       if (fileName.includes(`_${imageHash}_`)) {
         // Verify the file still exists and is accessible
         const [exists] = await file.exists();
@@ -1965,6 +1972,7 @@ async function optimizeImage(imageBuffer) {
  * @param {string} spotName - The name of the spot for filename generation
  * @param {number} imageIndex - The index of the image for filename generation
  * @param {string|null} storedHash - Previously stored hash for this image (if available)
+ * @param {string=} storageFolder - Storage folder prefix (`spots` or `events`)
  * @return {Promise<Object|null>} A promise that resolves to {url, hash} or null
  */
 async function downloadAndUploadImage(
@@ -1972,6 +1980,7 @@ async function downloadAndUploadImage(
     spotName,
     imageIndex,
     storedHash = null,
+    storageFolder = "spots",
 ) {
   let imageBuffer = null;
   try {
@@ -1996,7 +2005,10 @@ async function downloadAndUploadImage(
 
     // If we have a stored hash, check if the image still exists by that hash
     if (storedHash) {
-      const existingFileName = await checkImageExists(storedHash);
+      const existingFileName = await checkImageExists(
+          storedHash,
+          storageFolder,
+      );
       if (existingFileName) {
         console.log(
             `Using stored hash for existing image: ${storedHash.substring(0, 8)}...`,
@@ -2030,7 +2042,7 @@ async function downloadAndUploadImage(
     }
 
     // Check if image already exists by hash
-    const existingFileName = await checkImageExists(imageHash);
+    const existingFileName = await checkImageExists(imageHash, storageFolder);
     if (existingFileName) {
       console.log(`Image already exists, reusing: ${existingFileName}`);
       const publicUrl = getPublicUrl(existingFileName);
@@ -2045,8 +2057,9 @@ async function downloadAndUploadImage(
 
     // Generate filename with hash instead of timestamp
     const extension = path.extname(new URL(imageUrl).pathname) || ".jpg";
+    const safeFolder = storageFolder === "events" ? "events" : "spots";
     const filename =
-      `spots/${spotName.replace(/[^a-zA-Z0-9]/g, "_")}_` +
+      `${safeFolder}/${spotName.replace(/[^a-zA-Z0-9]/g, "_")}_` +
       `${imageHash}_${imageIndex}${extension}`;
 
     // Optimize the image before uploading
@@ -4101,6 +4114,210 @@ function normalizeIcsUrl(value) {
 }
 
 /**
+ * Normalizes and validates a feed URL for an event sync source type.
+ * @param {*} value
+ * @param {"ics"|"wixPublishedCalendar"} sourceType
+ * @return {string}
+ */
+function normalizeEventSyncFeedUrl(value, sourceType) {
+  const normalizedType = normalizeEventSyncSourceType(sourceType);
+  if (normalizedType !== EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR) {
+    return normalizeIcsUrl(value);
+  }
+
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error("icsUrl is required");
+  }
+  const trimmed = value.trim();
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch (_) {
+    throw new Error("icsUrl must be a valid URL");
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new Error("icsUrl must use http or https");
+  }
+  if (!parsed.pathname.includes("/api/published_calendar")) {
+    throw new Error(
+        "wixPublishedCalendar icsUrl must point to /api/published_calendar",
+    );
+  }
+  return parsed.toString();
+}
+
+/**
+ * Copies feed-provided coordinates onto a create/update payload when present.
+ * @param {Object} target
+ * @param {Object} parsedEvent
+ * @return {boolean}
+ */
+function applyParsedEventCoordinates(target, parsedEvent) {
+  if (!hasStoredEventCoordinates(parsedEvent)) return false;
+  target.latitude = Number(parsedEvent.latitude);
+  target.longitude = Number(parsedEvent.longitude);
+  return true;
+}
+
+/**
+ * Looks up city/country for coordinates via Google Maps reverse geocoding.
+ * @param {number} latitude
+ * @param {number} longitude
+ * @param {Object=} options
+ * @param {string=} options.googleMapsApiKey
+ * @param {Map<string, Object|null>=} options.geocodeCache
+ * @return {Promise<{city: (string|null), countryCode: (string|null)}|null>}
+ */
+async function lookupExternalEventPlaceFromCoordinates(
+    latitude,
+    longitude,
+    options = {},
+) {
+  const lat = Number(latitude);
+  const lng = Number(longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+  const apiKey = options.googleMapsApiKey;
+  if (typeof apiKey !== "string" || apiKey.trim().length === 0) {
+    logger.warn("externalEventPlaceLookup.skippedMissingApiKey", {
+      fn: "lookupExternalEventPlaceFromCoordinates",
+      latitude: lat,
+      longitude: lng,
+    });
+    return null;
+  }
+
+  const cacheKey = `ll:${lat.toFixed(5)},${lng.toFixed(5)}`;
+  const geocodeCache = options.geocodeCache;
+  if (geocodeCache instanceof Map && geocodeCache.has(cacheKey)) {
+    return geocodeCache.get(cacheKey);
+  }
+
+  const geocodeResult = await geocodeCoordinates(lat, lng, apiKey);
+  const place = geocodeResult && geocodeResult.success ? {
+    city: typeof geocodeResult.city === "string" &&
+      geocodeResult.city.trim().length > 0 ?
+      geocodeResult.city.trim() :
+      null,
+    countryCode: typeof geocodeResult.countryCode === "string" &&
+      geocodeResult.countryCode.trim().length > 0 ?
+      geocodeResult.countryCode.trim().toUpperCase() :
+      null,
+  } : null;
+
+  if (geocodeCache instanceof Map) geocodeCache.set(cacheKey, place);
+  return place;
+}
+
+/**
+ * Fills city/country from coordinates when missing.
+ * @param {Object} target
+ * @param {number} latitude
+ * @param {number} longitude
+ * @param {Object=} options
+ * @return {Promise<boolean>} true when at least one place field was written
+ */
+async function applyExternalEventPlaceFromCoordinates(
+    target,
+    latitude,
+    longitude,
+    options = {},
+) {
+  const place = await lookupExternalEventPlaceFromCoordinates(
+      latitude,
+      longitude,
+      options,
+  );
+  if (!place) return false;
+  let wrote = false;
+  if (place.city) {
+    target.city = place.city;
+    wrote = true;
+  }
+  if (place.countryCode) {
+    target.countryCode = place.countryCode;
+    wrote = true;
+  }
+  return wrote;
+}
+
+/**
+ * @param {string|null|undefined} title
+ * @return {string}
+ */
+function sanitizeExternalEventImageName(title) {
+  const cleaned = typeof title === "string" ?
+    title.replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") :
+    "";
+  return cleaned.length > 0 ? cleaned.slice(0, 80) : "event";
+}
+
+/**
+ * Resolves feed image URL into hosted imageUrls for an external event.
+ * @param {Object} parsedEvent
+ * @param {Object|null|undefined} existingData
+ * @return {Promise<{externalImageUrl: (string|null), imageUrls: (Array<string>|null), uploaded: boolean}>}
+ */
+async function resolveExternalEventImages(parsedEvent, existingData = null) {
+  const incomingUrl = typeof parsedEvent.externalImageUrl === "string" ?
+    parsedEvent.externalImageUrl.trim() :
+    "";
+  const existingExternalUrl = existingData &&
+      typeof existingData.externalImageUrl === "string" ?
+    existingData.externalImageUrl.trim() :
+    "";
+  const existingImageUrls = existingData && Array.isArray(existingData.imageUrls) ?
+    existingData.imageUrls.filter((url) => typeof url === "string" && url.trim()) :
+    [];
+
+  if (!incomingUrl) {
+    return {
+      externalImageUrl: null,
+      imageUrls: existingExternalUrl ? [] : null,
+      uploaded: false,
+    };
+  }
+
+  if (incomingUrl === existingExternalUrl && existingImageUrls.length > 0) {
+    return {
+      externalImageUrl: incomingUrl,
+      imageUrls: existingImageUrls,
+      uploaded: false,
+    };
+  }
+
+  const uploaded = await downloadAndUploadImage(
+      incomingUrl,
+      sanitizeExternalEventImageName(parsedEvent.title),
+      0,
+      null,
+      "events",
+  );
+  if (uploaded && uploaded.url) {
+    return {
+      externalImageUrl: incomingUrl,
+      imageUrls: [uploaded.url],
+      uploaded: true,
+    };
+  }
+
+  // Keep previous hosted image if re-download fails and source URL is unchanged.
+  if (incomingUrl === existingExternalUrl && existingImageUrls.length > 0) {
+    return {
+      externalImageUrl: incomingUrl,
+      imageUrls: existingImageUrls,
+      uploaded: false,
+    };
+  }
+
+  return {
+    externalImageUrl: incomingUrl,
+    imageUrls: [],
+    uploaded: false,
+  };
+}
+
+/**
  * Downloads text content and follows redirects.
  * @param {string} url
  * @param {number=} redirectCount
@@ -4118,7 +4335,12 @@ function downloadTextFromUrl(url, redirectCount = 0) {
   const client = parsedUrl.protocol === "http:" ? http : https;
 
   return new Promise((resolve, reject) => {
-    const request = client.get(parsedUrl, (response) => {
+    const request = client.get(parsedUrl, {
+      headers: {
+        "User-Agent": "ParkourSpotEventSync/1.0",
+        "Accept": "application/json, text/calendar, text/plain, */*",
+      },
+    }, (response) => {
       if (
         response.statusCode &&
         response.statusCode >= 300 &&
@@ -4259,7 +4481,24 @@ async function buildExternalEventCreateData(parsedEvent, options = {}) {
     createData.externalEventRecurrenceId = parsedEvent.externalEventRecurrenceId;
   }
 
-  if (shouldGeocodeExternalEventAddress(null, parsedEvent)) {
+  const resolvedImages = await resolveExternalEventImages(parsedEvent, null);
+  if (resolvedImages.externalImageUrl) {
+    createData.externalImageUrl = resolvedImages.externalImageUrl;
+  }
+  if (Array.isArray(resolvedImages.imageUrls) &&
+      resolvedImages.imageUrls.length > 0) {
+    createData.imageUrls = resolvedImages.imageUrls;
+  }
+
+  if (applyParsedEventCoordinates(createData, parsedEvent)) {
+    // Feed already provided coordinates; still look up city/country.
+    await applyExternalEventPlaceFromCoordinates(
+        createData,
+        createData.latitude,
+        createData.longitude,
+        options,
+    );
+  } else if (shouldGeocodeExternalEventAddress(null, parsedEvent)) {
     const geocodedLocation = await geocodeExternalEventAddress(
         parsedEvent.address,
         options,
@@ -4328,12 +4567,43 @@ async function buildExternalEventChangedUpdate(
     updateData.timeZoneSource = FieldValue.delete();
   }
 
+  const resolvedImages = await resolveExternalEventImages(
+      parsedEvent,
+      existingData,
+  );
+  if (resolvedImages.externalImageUrl) {
+    updateData.externalImageUrl = resolvedImages.externalImageUrl;
+  } else {
+    updateData.externalImageUrl = FieldValue.delete();
+  }
+  if (Array.isArray(resolvedImages.imageUrls)) {
+    if (resolvedImages.imageUrls.length > 0) {
+      updateData.imageUrls = resolvedImages.imageUrls;
+    } else {
+      updateData.imageUrls = FieldValue.delete();
+    }
+  }
+
   const addressChanged = hasExternalEventAddressChanged(
       existingData,
       parsedEvent,
   );
 
-  if (addressChanged) {
+  if (applyParsedEventCoordinates(updateData, parsedEvent)) {
+    // Keep feed coordinates; refresh city/country when address changed or missing.
+    if (addressChanged || !hasExternalEventPlaceFields(existingData)) {
+      const wrotePlace = await applyExternalEventPlaceFromCoordinates(
+          updateData,
+          updateData.latitude,
+          updateData.longitude,
+          options,
+      );
+      if (!wrotePlace && addressChanged) {
+        updateData.city = FieldValue.delete();
+        updateData.countryCode = FieldValue.delete();
+      }
+    }
+  } else if (addressChanged) {
     if (shouldGeocodeExternalEventAddress(existingData, parsedEvent)) {
       const geocodedLocation = await geocodeExternalEventAddress(
           parsedEvent.address,
@@ -4376,6 +4646,16 @@ async function buildExternalEventChangedUpdate(
         updateData.address = geocodedLocation.address;
       }
     }
+  } else if (
+    hasStoredEventCoordinates(existingData) &&
+    !hasExternalEventPlaceFields(existingData)
+  ) {
+    await applyExternalEventPlaceFromCoordinates(
+        updateData,
+        existingData.latitude,
+        existingData.longitude,
+        options,
+    );
   }
 
   return updateData;
@@ -4393,21 +4673,46 @@ async function syncExternalEventSource(sourceDoc) {
       sourceData.name.trim().length > 0 ?
     sourceData.name.trim() :
     sourceId;
+  const sourceType = normalizeEventSyncSourceType(sourceData.sourceType);
   logger.info("externalEventSync.start", {
     sourceId,
+    sourceType,
     mapsApiKeyConfigured: Boolean(
         typeof process.env.GOOGLE_MAPS_API_KEY === "string" &&
         process.env.GOOGLE_MAPS_API_KEY.trim().length > 0,
     ),
   });
-  const icsUrl = normalizeIcsUrl(sourceData.icsUrl);
-  const icsText = await downloadTextFromUrl(icsUrl);
+  const feedUrl = normalizeEventSyncFeedUrl(sourceData.icsUrl, sourceType);
+  const feedText = await downloadTextFromUrl(feedUrl);
   const sourceDefaultTimeZone =
     normalizeEventSyncSourceDefaultTimeZone(sourceData.defaultTimeZone);
-  const parsedEvents = parseExternalEventsFromIcs(icsText, {
+  let parsedEvents;
+  if (sourceType === EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR) {
+    let payload;
+    try {
+      payload = JSON.parse(feedText);
+    } catch (error) {
+      throw new Error(
+          `Failed parsing published_calendar JSON: ${error.message}`,
+      );
+    }
+    parsedEvents = parseExternalEventsFromWixPublishedCalendar(payload, {
+      sourceId,
+      sourceName,
+      sourceDefaultTimeZone,
+    });
+  } else {
+    parsedEvents = parseExternalEventsFromIcs(feedText, {
+      sourceId,
+      sourceName,
+      sourceDefaultTimeZone,
+    });
+  }
+  logger.info("externalEventSync.parsed", {
     sourceId,
-    sourceName,
-    sourceDefaultTimeZone,
+    sourceType,
+    totalParsed: parsedEvents.length,
+    feedBytes: feedText.length,
   });
 
   const uniqueEventsByKey = new Map();
@@ -4462,6 +4767,8 @@ async function syncExternalEventSource(sourceDoc) {
     changed: 0,
     unchanged: 0,
     coordinatesBackfilled: 0,
+    imagesBackfilled: 0,
+    placeBackfilled: 0,
   };
 
   const commitBatch = async () => {
@@ -4492,31 +4799,78 @@ async function syncExternalEventSource(sourceDoc) {
       stats.changed += 1;
       operationCount += 1;
     } else {
-      let wroteCoords = false;
-      if (shouldGeocodeExternalEventAddress(existing.data, parsedEvent)) {
+      const backfillUpdate = {};
+      if (
+        hasStoredEventCoordinates(parsedEvent) &&
+        !hasStoredEventCoordinates(existing.data)
+      ) {
+        backfillUpdate.latitude = Number(parsedEvent.latitude);
+        backfillUpdate.longitude = Number(parsedEvent.longitude);
+        stats.coordinatesBackfilled += 1;
+      } else if (shouldGeocodeExternalEventAddress(existing.data, parsedEvent)) {
         const geocodedLocation = await geocodeExternalEventAddress(
             parsedEvent.address,
             externalEventGeocodeOptions,
         );
         if (geocodedLocation) {
-          const coordinateBackfillUpdate = {
-            latitude: geocodedLocation.latitude,
-            longitude: geocodedLocation.longitude,
-            updatedAt: FieldValue.serverTimestamp(),
-            externalSyncLastSeenAt: FieldValue.serverTimestamp(),
-          };
+          backfillUpdate.latitude = geocodedLocation.latitude;
+          backfillUpdate.longitude = geocodedLocation.longitude;
           if (geocodedLocation.city) {
-            coordinateBackfillUpdate.city = geocodedLocation.city;
+            backfillUpdate.city = geocodedLocation.city;
           }
           if (geocodedLocation.countryCode) {
-            coordinateBackfillUpdate.countryCode = geocodedLocation.countryCode;
+            backfillUpdate.countryCode = geocodedLocation.countryCode;
           }
-          batch.update(existing.ref, coordinateBackfillUpdate);
-          wroteCoords = true;
           stats.coordinatesBackfilled += 1;
         }
       }
-      if (!wroteCoords) {
+
+      const coordsForPlace = hasStoredEventCoordinates(backfillUpdate) ?
+        backfillUpdate :
+        (hasStoredEventCoordinates(parsedEvent) ?
+          parsedEvent :
+          existing.data);
+      if (
+        hasStoredEventCoordinates(coordsForPlace) &&
+        !hasExternalEventPlaceFields(existing.data) &&
+        !hasExternalEventPlaceFields(backfillUpdate)
+      ) {
+        const wrotePlace = await applyExternalEventPlaceFromCoordinates(
+            backfillUpdate,
+            coordsForPlace.latitude,
+            coordsForPlace.longitude,
+            externalEventGeocodeOptions,
+        );
+        if (wrotePlace) {
+          stats.placeBackfilled += 1;
+        }
+      }
+
+      const existingImageUrls = Array.isArray(existing.data.imageUrls) ?
+        existing.data.imageUrls :
+        [];
+      const needsImageBackfill =
+        typeof parsedEvent.externalImageUrl === "string" &&
+        parsedEvent.externalImageUrl.trim().length > 0 &&
+        existingImageUrls.length === 0;
+      if (needsImageBackfill) {
+        const resolvedImages = await resolveExternalEventImages(
+            parsedEvent,
+            existing.data,
+        );
+        if (Array.isArray(resolvedImages.imageUrls) &&
+            resolvedImages.imageUrls.length > 0) {
+          backfillUpdate.imageUrls = resolvedImages.imageUrls;
+          backfillUpdate.externalImageUrl = resolvedImages.externalImageUrl;
+          stats.imagesBackfilled += 1;
+        }
+      }
+
+      if (Object.keys(backfillUpdate).length > 0) {
+        backfillUpdate.updatedAt = FieldValue.serverTimestamp();
+        backfillUpdate.externalSyncLastSeenAt = FieldValue.serverTimestamp();
+        batch.update(existing.ref, backfillUpdate);
+      } else {
         batch.update(existing.ref, {
           externalSyncLastSeenAt: FieldValue.serverTimestamp(),
         });
@@ -4558,15 +4912,18 @@ exports.createEventSyncSource = onCall(
           syncSchedule,
           autoSyncEnabled = false,
           defaultTimeZone,
+          sourceType,
         } = request.data || {};
 
         if (typeof name !== "string" || name.trim().length === 0) {
           throw new Error("name is required");
         }
 
+        const normalizedSourceType = normalizeEventSyncSourceType(sourceType);
         const sourceData = {
           name: name.trim(),
-          icsUrl: normalizeIcsUrl(icsUrl),
+          sourceType: normalizedSourceType,
+          icsUrl: normalizeEventSyncFeedUrl(icsUrl, normalizedSourceType),
           isActive: Boolean(isActive),
           autoSyncEnabled: Boolean(autoSyncEnabled),
           createdAt: FieldValue.serverTimestamp(),
@@ -4625,6 +4982,7 @@ exports.updateEventSyncSource = onCall(
           syncSchedule,
           autoSyncEnabled,
           defaultTimeZone,
+          sourceType,
         } = request.data || {};
 
         if (typeof sourceId !== "string" || sourceId.trim().length === 0) {
@@ -4641,8 +4999,28 @@ exports.updateEventSyncSource = onCall(
           }
           updateData.name = name.trim();
         }
-        if (icsUrl !== undefined) {
-          updateData.icsUrl = normalizeIcsUrl(icsUrl);
+        if (icsUrl !== undefined || sourceType !== undefined) {
+          const existingDoc = await db
+              .collection("eventSyncSources")
+              .doc(sourceId.trim())
+              .get();
+          if (!existingDoc.exists) {
+            throw new Error("Event sync source not found");
+          }
+          const existingData = existingDoc.data() || {};
+          const effectiveSourceType = normalizeEventSyncSourceType(
+            sourceType !== undefined ? sourceType : existingData.sourceType,
+          );
+          if (sourceType !== undefined) {
+            updateData.sourceType = effectiveSourceType;
+          }
+          const effectiveFeedUrl = icsUrl !== undefined ?
+            icsUrl :
+            existingData.icsUrl;
+          updateData.icsUrl = normalizeEventSyncFeedUrl(
+              effectiveFeedUrl,
+              effectiveSourceType,
+          );
         }
         if (description !== undefined) {
           if (typeof description === "string" && description.trim().length > 0) {
@@ -4746,6 +5124,7 @@ exports.getEventSyncSource = onCall({region: "europe-west1"}, async (request) =>
     const source = {
       id: doc.id,
       name: data.name,
+      sourceType: normalizeEventSyncSourceType(data.sourceType),
       description: data.description,
       publicUrl: data.publicUrl,
       isActive: data.isActive,
@@ -4800,7 +5179,7 @@ exports.getEventSyncSources = onCall(
 exports.syncEventSource = onCall(
     {
       region: "europe-west1",
-      timeoutSeconds: 540,
+      timeoutSeconds: 3600,
       memory: "1GiB",
       secrets: ["GOOGLE_MAPS_API_KEY"],
     },
@@ -4841,7 +5220,7 @@ exports.syncEventSource = onCall(
 exports.syncAllEventSources = onCall(
     {
       region: "europe-west1",
-      timeoutSeconds: 540,
+      timeoutSeconds: 3600,
       memory: "1GiB",
       secrets: ["GOOGLE_MAPS_API_KEY"],
     },
