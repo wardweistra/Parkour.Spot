@@ -79,62 +79,82 @@ class _EventCardState extends State<EventCard> {
   Widget _buildListCard(BuildContext context) {
     final images = widget.pin.imageUrls;
     final description = widget.pin.description?.trim() ?? '';
+    final l10n = AppLocalizations.of(context)!;
 
     return Card(
       elevation: 2,
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: widget.onTapWithImageIndex != null
             ? () => widget.onTapWithImageIndex!(_currentPage)
             : widget.onTap,
         borderRadius: BorderRadius.circular(16),
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildImageSection(context, images, borderRadius: 16),
-                SingleChildScrollView(
-                  physics: const NeverScrollableScrollPhysics(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ..._buildTextContent(
-                          context,
-                          description: description,
-                          descriptionMaxLines: 3,
-                          includeLocationMeta: false,
-                        ),
-                        const SizedBox(height: 50),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: 12,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Grid cells pass a fixed height; the mobile list does not.
+            final hasBoundedHeight = constraints.hasBoundedHeight;
+
+            final descriptionText = Text(
+              description.isEmpty ? l10n.spotCardNoDescription : description,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                height: 1.4,
+                fontStyle: description.isEmpty
+                    ? FontStyle.italic
+                    : FontStyle.normal,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            );
+
+            final textBlock = Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: hasBoundedHeight
+                    ? MainAxisSize.max
+                    : MainAxisSize.min,
                 children: [
-                  _buildLocationMeta(
-                    context,
-                    flagHeight: 20,
-                    flagWidth: 30,
-                    spacing: 8,
+                  ..._buildTitleAndWhen(context),
+                  const SizedBox(height: 8),
+                  if (hasBoundedHeight)
+                    Expanded(child: descriptionText)
+                  else
+                    descriptionText,
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: _buildLocationMeta(
+                          context,
+                          flagHeight: 20,
+                          flagWidth: 30,
+                          spacing: 8,
+                        ),
+                      ),
+                      _buildListActionButtons(context),
+                    ],
                   ),
-                  _buildListActionButtons(context),
                 ],
               ),
-            ),
-          ],
+            );
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: hasBoundedHeight
+                  ? MainAxisSize.max
+                  : MainAxisSize.min,
+              children: [
+                _buildImageSection(context, images, borderRadius: 16),
+                if (hasBoundedHeight) Expanded(child: textBlock) else textBlock,
+              ],
+            );
+          },
         ),
       ),
     );
@@ -212,13 +232,7 @@ class _EventCardState extends State<EventCard> {
     );
   }
 
-  List<Widget> _buildTextContent(
-    BuildContext context, {
-    required String description,
-    required int descriptionMaxLines,
-    required bool includeLocationMeta,
-  }) {
-    final l10n = AppLocalizations.of(context)!;
+  List<Widget> _buildTitleAndWhen(BuildContext context) {
     return [
       Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,6 +264,18 @@ class _EventCardState extends State<EventCard> {
           fontWeight: FontWeight.w500,
         ),
       ),
+    ];
+  }
+
+  List<Widget> _buildTextContent(
+    BuildContext context, {
+    required String description,
+    required int descriptionMaxLines,
+    required bool includeLocationMeta,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    return [
+      ..._buildTitleAndWhen(context),
       const SizedBox(height: 8),
       Text(
         description.isEmpty ? l10n.spotCardNoDescription : description,
@@ -299,13 +325,17 @@ class _EventCardState extends State<EventCard> {
             city.isNotEmpty)
           SizedBox(width: spacing),
         if (city != null && city.isNotEmpty)
-          Text(
-            city,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.7),
-              fontWeight: FontWeight.w500,
+          Flexible(
+            child: Text(
+              city,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
       ],
