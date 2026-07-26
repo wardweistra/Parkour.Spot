@@ -76,7 +76,7 @@
   "profileInstallBannerTitle": "Instala la app Parkour·Spot",
   "profileInstallBannerSubtitle": "Obtén la experiencia completa",
   "profileInstallDialogTitle": "Instalar Parkour·Spot",
-  "profileInstallIntro": "Para instalar Parkour·Spot en tu {device}:",
+  "profileInstallIntro": "Para instalar Parkour·Spot en tu {device}, abre esta página en {browser} y sigue estos pasos:",
   "profileInstallDeviceIphone": "iPhone",
   "profileInstallDeviceAndroid": "dispositivo Android",
   "profileInstallIosStep1": "Toca el botón Compartir en la parte inferior de la pantalla",

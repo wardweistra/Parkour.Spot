@@ -54,6 +54,7 @@ class _PwaInstallPromptState extends State<PwaInstallPrompt> {
     final isIos = MobileDetectionService.isIOS;
     final deviceLabel =
         isIos ? l10n.profileInstallDeviceIphone : l10n.profileInstallDeviceAndroid;
+    final browserLabel = isIos ? 'Safari' : 'Chrome';
     final step1 = isIos ? l10n.profileInstallIosStep1 : l10n.profileInstallAndroidStep1;
     final step2 = isIos ? l10n.profileInstallIosStep2 : l10n.profileInstallAndroidStep2;
     final step3 = isIos ? l10n.profileInstallIosStep3 : l10n.profileInstallAndroidStep3;
@@ -74,7 +75,7 @@ class _PwaInstallPromptState extends State<PwaInstallPrompt> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              l10n.profileInstallIntro(deviceLabel),
+              l10n.profileInstallIntro(deviceLabel, browserLabel),
               style: Theme.of(dialogContext).textTheme.titleMedium,
             ),
             const SizedBox(height: 16),

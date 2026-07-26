@@ -811,8 +811,8 @@ abstract class AppLocalizations {
   /// PWA install dialog: intro before steps
   ///
   /// In en, this message translates to:
-  /// **'To install Parkour·Spot on your {device}:'**
-  String profileInstallIntro(String device);
+  /// **'To install Parkour·Spot on your {device}, open this page in {browser} and follow these steps:'**
+  String profileInstallIntro(String device, String browser);
 
   /// Device name for iOS install instructions
   ///
