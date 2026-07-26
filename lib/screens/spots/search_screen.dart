@@ -6,6 +6,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint, listEquals;
 import 'dart:async';
+import 'dart:math' as math;
+import 'dart:ui' show lerpDouble;
 import 'package:uuid/uuid.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../../services/event_map_service.dart';
@@ -273,6 +275,13 @@ class SearchScreenState extends State<SearchScreen>
   bool _isLocationPermissionDenied = false;
   bool _isSatelliteView = false;
   bool _isBottomSheetOpen = false; // Start collapsed by default
+
+  /// Floor for the collapsed sheet so header chrome (logo, mode pills, chevron)
+  /// always fits; 9% of short web viewports can dip below content height.
+  static const double _collapsedBottomSheetMinHeight = 80;
+
+  static const double _collapsedBottomSheetHeightFraction = 0.09;
+  static const double _expandedBottomSheetHeightFraction = 0.75;
   Position? _currentPosition;
   BitmapDescriptor? _userLocationIcon;
   BitmapDescriptor? _spotDefaultIcon;
@@ -305,7 +314,7 @@ class SearchScreenState extends State<SearchScreen>
   BitmapDescriptor? _eventIcon;
   BitmapDescriptor? _eventSelectedIcon;
   late AnimationController _bottomSheetAnimationController;
-  late Animation<double> _bottomSheetAnimation;
+  late CurvedAnimation _bottomSheetAnimation;
   late PageController _imagePageController;
   double _dragStartY = 0.0;
   bool _isDragging = false;
@@ -482,22 +491,16 @@ class SearchScreenState extends State<SearchScreen>
       }
     });
 
-    // Initialize bottom sheet animation
+    // Initialize bottom sheet animation (0 = collapsed, 1 = expanded).
+    // Absolute heights are resolved at layout time so collapsed keeps a min size.
     _bottomSheetAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _bottomSheetAnimation =
-        Tween<double>(
-          begin: 0.09, // Very compact when collapsed - minimal footprint
-          end:
-              0.75, // Less expanded - still good for browsing but leaves more map visible
-        ).animate(
-          CurvedAnimation(
-            parent: _bottomSheetAnimationController,
-            curve: Curves.easeInOut,
-          ),
-        );
+    _bottomSheetAnimation = CurvedAnimation(
+      parent: _bottomSheetAnimationController,
+      curve: Curves.easeInOut,
+    );
 
     // Initialize image page controller
     _imagePageController = PageController();
@@ -651,6 +654,7 @@ class SearchScreenState extends State<SearchScreen>
     _mapController = null;
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _bottomSheetAnimation.dispose();
     _bottomSheetAnimationController.dispose();
     _imagePageController.dispose();
     // Remove listeners
@@ -2622,6 +2626,19 @@ class SearchScreenState extends State<SearchScreen>
     });
   }
 
+  double _collapsedBottomSheetHeight(double screenHeight) {
+    return math.max(
+      screenHeight * _collapsedBottomSheetHeightFraction,
+      _collapsedBottomSheetMinHeight,
+    );
+  }
+
+  double _bottomSheetHeight(double screenHeight, double t) {
+    final collapsed = _collapsedBottomSheetHeight(screenHeight);
+    final expanded = screenHeight * _expandedBottomSheetHeightFraction;
+    return lerpDouble(collapsed, expanded, t)!;
+  }
+
   // Public API to check if bottom sheet is open
   bool get isBottomSheetOpen => _isBottomSheetOpen;
 
@@ -4375,9 +4392,10 @@ class SearchScreenState extends State<SearchScreen>
                                     maxWidth: 1200,
                                   ),
                                   child: Container(
-                                    height:
-                                        MediaQuery.of(context).size.height *
-                                        _bottomSheetAnimation.value,
+                                    height: _bottomSheetHeight(
+                                      MediaQuery.sizeOf(context).height,
+                                      _bottomSheetAnimation.value,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Theme.of(
                                         context,
@@ -4615,7 +4633,9 @@ class SearchScreenState extends State<SearchScreen>
                         return Positioned(
                           right: rightPosition,
                           bottom:
-                              MediaQuery.of(context).size.height * 0.09 +
+                              _collapsedBottomSheetHeight(
+                                    MediaQuery.sizeOf(context).height,
+                                  ) +
                               144, // Position above map/satellite button
                           child: PointerInterceptor(
                             child: FloatingActionButton(
@@ -4662,7 +4682,9 @@ class SearchScreenState extends State<SearchScreen>
                         return Positioned(
                           right: rightPosition,
                           bottom:
-                              MediaQuery.of(context).size.height * 0.09 +
+                              _collapsedBottomSheetHeight(
+                                    MediaQuery.sizeOf(context).height,
+                                  ) +
                               80, // Position above location button
                           child: PointerInterceptor(
                             child: FloatingActionButton(
@@ -4711,7 +4733,9 @@ class SearchScreenState extends State<SearchScreen>
                         return Positioned(
                           right: rightPosition,
                           bottom:
-                              MediaQuery.of(context).size.height * 0.09 +
+                              _collapsedBottomSheetHeight(
+                                    MediaQuery.sizeOf(context).height,
+                                  ) +
                               16, // Position above bottom sheet
                           child: PointerInterceptor(
                             child: FloatingActionButton(
