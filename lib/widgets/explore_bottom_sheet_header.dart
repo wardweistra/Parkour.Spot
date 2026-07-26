@@ -278,6 +278,7 @@ class _ModeSegment extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             child: Row(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Icon(
                   selected ? selectedIcon : icon,
@@ -286,29 +287,35 @@ class _ModeSegment extends StatelessWidget {
                 ),
                 const SizedBox(width: 5),
                 Flexible(
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: label,
-                          style: theme.textTheme.labelLarge!.copyWith(
-                            color: foreground,
-                            fontWeight: selected
-                                ? FontWeight.w600
-                                : FontWeight.w500,
-                          ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.labelLarge!.copyWith(
+                          color: foreground,
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          height: 1.2,
                         ),
-                        if (detailSuffix != null && detailSuffix!.isNotEmpty)
-                          TextSpan(
-                            text: ' $detailSuffix',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: suffixColor,
-                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (detailSuffix != null && detailSuffix!.isNotEmpty)
+                        Text(
+                          detailSuffix!,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: suffixColor,
+                            height: 1.2,
                           ),
-                      ],
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
                   ),
                 ),
               ],
