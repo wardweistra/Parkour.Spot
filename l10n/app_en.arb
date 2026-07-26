@@ -741,6 +741,10 @@
   "@exploreFilterBy": {
     "description": "Filters: section label"
   },
+  "exploreFilterHasImages": "Only spots with images",
+  "@exploreFilterHasImages": {
+    "description": "Show only spots that have at least one image"
+  },
   "exploreFilterAmenities": "Amenities",
   "@exploreFilterAmenities": {
     "description": "Filter mode: amenities"
@@ -938,7 +942,7 @@
   "@exploreApplyFilters": {
     "description": "Apply filters and close"
   },
-  "exploreSpotCountShort": "{count, plural, one{1 spot} other{{count} spots}}",
+  "exploreSpotCountShort": "{count, plural, one{{count} spot} other{{count} spots}}",
   "@exploreSpotCountShort": {
     "description": "Spot list preview: spot count",
     "placeholders": {

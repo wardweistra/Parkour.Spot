@@ -311,6 +311,7 @@ class SearchScreenState extends State<SearchScreen>
   bool _isDragging = false;
   double _lastKnownZoom = 14.0;
   // Filters
+  bool _hasImagesOnly = false;
   String? _filterArea; // "amenities" | "source" | null (default = amenities)
   String?
   _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
@@ -368,6 +369,7 @@ class SearchScreenState extends State<SearchScreen>
     if (searchState == null) return;
 
     // Update local state from SearchStateService
+    final newHasImagesOnly = searchState.hasImagesOnly;
     final newFilterArea = searchState.filterArea;
     final newSelectedSpotSource = searchState.selectedSpotSource;
     final newSpotAccess = List<String>.from(searchState.spotAccess);
@@ -383,6 +385,7 @@ class SearchScreenState extends State<SearchScreen>
     final newSelectedListId = searchState.selectedListId;
 
     final filterChanged =
+        _hasImagesOnly != newHasImagesOnly ||
         _filterArea != newFilterArea ||
         _selectedSpotSource != newSelectedSpotSource ||
         !listEquals(_spotAccess, newSpotAccess) ||
@@ -398,6 +401,7 @@ class SearchScreenState extends State<SearchScreen>
 
     setState(() {
       _isSatelliteView = newIsSatelliteView;
+      _hasImagesOnly = newHasImagesOnly;
       _filterArea = newFilterArea;
       _selectedSpotSource = newSelectedSpotSource;
       _spotAccess = newSpotAccess;
@@ -435,6 +439,7 @@ class SearchScreenState extends State<SearchScreen>
   }
 
   bool _hasActiveFilters() {
+    if (_hasImagesOnly) return true;
     final searchState = _searchStateServiceRef;
     // Match _buildFilters / spot queries: null means default amenities, not "source".
     if ((_filterArea ?? 'amenities') == 'amenities') {
@@ -525,6 +530,7 @@ class SearchScreenState extends State<SearchScreen>
 
       setState(() {
         _isSatelliteView = _searchStateServiceRef!.isSatellite;
+        _hasImagesOnly = _searchStateServiceRef!.hasImagesOnly;
         _filterArea = _searchStateServiceRef!.filterArea;
         _selectedSpotSource = _searchStateServiceRef!.selectedSpotSource;
         _spotAccess = List<String>.from(_searchStateServiceRef!.spotAccess);
@@ -1366,6 +1372,7 @@ class SearchScreenState extends State<SearchScreen>
           minLng,
           maxLng,
           limit: 100,
+          hasImages: _hasImagesOnly,
           filterArea: _filterArea ?? 'amenities',
           spotSource: (_filterArea ?? 'amenities') == 'amenities'
               ? null
@@ -1432,6 +1439,20 @@ class SearchScreenState extends State<SearchScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Card(
+          child: SwitchListTile(
+            secondary: const Icon(Icons.photo_library_outlined),
+            title: Text(l10n.exploreFilterHasImages),
+            value: _hasImagesOnly,
+            onChanged: (value) {
+              Provider.of<SearchStateService>(
+                context,
+                listen: false,
+              ).setHasImagesOnly(value);
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
         Text(
           l10n.exploreFilterBy,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(

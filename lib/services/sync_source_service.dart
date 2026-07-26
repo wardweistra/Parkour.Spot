@@ -654,6 +654,27 @@ class SyncSourceService extends ChangeNotifier {
     }
   }
 
+  /// One-time backfill: materializes hasImages for all existing spots.
+  Future<Map<String, dynamic>?> backfillSpotHasImages() async {
+    try {
+      final callable = _functions.httpsCallable(
+        'backfillSpotHasImages',
+        options: HttpsCallableOptions(
+          timeout: const Duration(minutes: 9),
+        ),
+      );
+      final result = await callable.call();
+      final data = result.data;
+      if (data == null) return null;
+      return _callableResponseAsMap(data);
+    } catch (e) {
+      _error = 'Failed to backfill spot hasImages: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return null;
+    }
+  }
+
   /// One-time backfill: populates spotSearchTerms for all spots (Explore autocomplete).
   /// Run once after deploying searchSpotsByTitle changes.
   Future<Map<String, dynamic>?> backfillSpotNameLower({bool purge = false}) async {

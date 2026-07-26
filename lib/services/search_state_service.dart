@@ -8,6 +8,7 @@ class SearchStateService extends ChangeNotifier {
   static const String _keyCenterLng = 'search_center_lng';
   static const String _keyZoom = 'search_zoom';
   static const String _keyIsSatellite = 'search_is_satellite';
+  static const String _keyHasImagesOnly = 'search_has_images_only';
   static const String _keySelectedSpotSource = 'search_selected_spot_source'; // null = all, "" = native, string = specific source
   static const String _keyFilterArea = 'search_filter_area'; // "amenities" | "source" | null
   static const String _keySpotAccess = 'search_spot_access'; // when amenities: list of "public" | "restricted" | "paid" for OR query
@@ -29,6 +30,7 @@ class SearchStateService extends ChangeNotifier {
   double? _centerLng;
   double? _zoom;
   bool _isSatellite = false;
+  bool _hasImagesOnly = false;
   String? _filterArea; // "amenities" | "source" | null (default = amenities)
   String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
   List<String> _spotAccess = []; // when filterArea=amenities: ["public", "restricted", "paid"] for OR query, empty = any
@@ -50,6 +52,7 @@ class SearchStateService extends ChangeNotifier {
   double? get centerLng => _centerLng;
   double? get zoom => _zoom;
   bool get isSatellite => _isSatellite;
+  bool get hasImagesOnly => _hasImagesOnly;
   String? get filterArea => _filterArea;
   String? get selectedSpotSource => _selectedSpotSource;
   List<String> get spotAccess => List.unmodifiable(_spotAccess);
@@ -122,6 +125,7 @@ class SearchStateService extends ChangeNotifier {
       _centerLng = prefs.getDouble(_keyCenterLng);
       _zoom = prefs.getDouble(_keyZoom);
       _isSatellite = prefs.getBool(_keyIsSatellite) ?? false;
+      _hasImagesOnly = prefs.getBool(_keyHasImagesOnly) ?? false;
       final storedFilterArea = prefs.getString(_keyFilterArea);
       _selectedSpotSource = prefs.getString(_keySelectedSpotSource); // null if not set (all sources)
       final foldersJson = prefs.getString(_keySelectedFolders);
@@ -220,6 +224,12 @@ class SearchStateService extends ChangeNotifier {
     }
   }
 
+  Future<void> setHasImagesOnly(bool value) async {
+    _hasImagesOnly = value;
+    notifyListeners();
+    await _persistFilterState();
+  }
+
   /// Set filter area: "amenities" | "source" | null (null = amenities)
   /// When switching to amenities, clears source/folder. When switching to source, clears amenities.
   Future<void> setFilterArea(String? filterArea) async {
@@ -252,6 +262,7 @@ class SearchStateService extends ChangeNotifier {
 
   /// Reset all source and amenities filters to defaults.
   Future<void> clearAllFilters() async {
+    _hasImagesOnly = false;
     _filterArea = 'source';
     _selectedSpotSource = null;
     _selectedFolders = {};
@@ -363,6 +374,7 @@ class SearchStateService extends ChangeNotifier {
   Future<void> _persistFilterState() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_keyHasImagesOnly, _hasImagesOnly);
       if (_filterArea == null) {
         await prefs.remove(_keyFilterArea);
       } else {
@@ -505,4 +517,3 @@ class SearchStateService extends ChangeNotifier {
     }
   }
 }
-

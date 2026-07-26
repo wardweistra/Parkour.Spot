@@ -56,6 +56,11 @@ const {
   serializeSpotForApi,
 } = require("./lib/api-helpers");
 const {
+  applyHasImagesFilter,
+  deriveHasImages,
+  buildHasImagesBackfillUpdate,
+} = require("./lib/spot-image-filter");
+const {
   getCountryNameWithArticle,
   calculateDistance,
   calculateBounds,
@@ -666,8 +671,9 @@ async function commitPendingBatch(batchState) {
 /**
  * Shared query logic for top spots in bounds. Used by getTopSpotsInBounds callable
  * and the spots-in-bounds API endpoint.
- * @param {Object} params - minLat, maxLat, minLng, maxLng, limit, filterArea, spotSource,
- *   folders, folder, spotAccess, spotFacilities*, goodFor, spotFeatures
+ * @param {Object} params - minLat, maxLat, minLng, maxLng, limit, hasImages,
+ *   filterArea, spotSource, folders, folder, spotAccess, spotFacilities*,
+ *   goodFor, spotFeatures
  * @return {Promise<{success: boolean, totalCount: number, averageWilson: number,
  *   shownCount: number, spots: Array}|{success: boolean, error: string}>}
  */
@@ -678,6 +684,7 @@ async function executeTopSpotsInBoundsQuery(params) {
     minLng,
     maxLng,
     limit = 100,
+    hasImages = false,
     spotSource = null,
     folder = null,
     folders = null,
@@ -862,6 +869,8 @@ async function executeTopSpotsInBoundsQuery(params) {
       }
       query = query.where("hidden", "==", false);
     }
+
+    query = applyHasImagesFilter(query, hasImages);
 
     return query.orderBy("ranking", "desc");
   };
@@ -3108,6 +3117,16 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
         // If no images returned, don't set imageUrls/imageHashes to preserve existing arrays
       }
     }
+
+    const effectiveImageUrls = Array.isArray(spotData.imageUrls) ?
+      spotData.imageUrls :
+      (Array.isArray(existingSpotData && existingSpotData.imageUrls) ?
+        existingSpotData.imageUrls :
+        []);
+    spotData.hasImages = deriveHasImages(
+        effectiveImageUrls,
+        existingSpotData && existingSpotData.imageUrl,
+    );
 
     if (existingSpots.empty) {
       // Create new spot - initialize rating fields to 0 and ranking field
@@ -6502,6 +6521,81 @@ exports.updateSpotSourceNames = onCall(
       } catch (error) {
         console.error("Error updating spot source names:", error);
         throw new Error(`Failed to update spot source names: ${error.message}`);
+      }
+    },
+);
+
+// One-time backfill: materialize hasImages for all existing spots.
+// Safe to rerun; only missing or stale values are updated. Admin only.
+exports.backfillSpotHasImages = onCall(
+    {region: "europe-west1", memory: "256MiB", timeoutSeconds: 540},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+
+        const BATCH_SIZE = 400;
+        const batchState = {
+          batch: db.batch(),
+          operationCount: 0,
+        };
+        let lastDoc = null;
+        let totalProcessed = 0;
+        let totalUpdated = 0;
+        let spotsWithImages = 0;
+        let spotsWithoutImages = 0;
+        let hasMore = true;
+
+        while (hasMore) {
+          let query = db.collection("spots").limit(BATCH_SIZE);
+          if (lastDoc) {
+            query = query.startAfter(lastDoc);
+          }
+          const snapshot = await query.get();
+          if (snapshot.empty) break;
+
+          for (const doc of snapshot.docs) {
+            const spotData = doc.data() || {};
+            const update = buildHasImagesBackfillUpdate(spotData);
+            const hasImages = update ?
+              update.hasImages :
+              spotData.hasImages === true;
+
+            if (hasImages) {
+              spotsWithImages += 1;
+            } else {
+              spotsWithoutImages += 1;
+            }
+
+            if (update) {
+              await queueBatchUpdate(batchState, doc.ref, update);
+              totalUpdated += 1;
+            }
+          }
+
+          totalProcessed += snapshot.size;
+          lastDoc = snapshot.docs[snapshot.docs.length - 1];
+          hasMore = snapshot.size === BATCH_SIZE;
+          console.log(
+              `hasImages backfill: ${totalProcessed} processed, ` +
+              `${totalUpdated} updated`,
+          );
+        }
+
+        await commitPendingBatch(batchState);
+
+        return {
+          success: true,
+          message: "Spot hasImages backfill completed",
+          stats: {
+            totalProcessed,
+            totalUpdated,
+            spotsWithImages,
+            spotsWithoutImages,
+          },
+        };
+      } catch (error) {
+        console.error("Error in backfillSpotHasImages:", error);
+        throw new Error(`Failed to backfill spot hasImages: ${error.message}`);
       }
     },
 );

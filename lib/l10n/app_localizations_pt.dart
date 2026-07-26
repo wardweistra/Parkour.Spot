@@ -597,6 +597,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get exploreFilterBy => 'Filtrar por';
 
   @override
+  String get exploreFilterHasImages => 'Apenas spots com imagens';
+
+  @override
   String get exploreFilterAmenities => 'Comodidades';
 
   @override
@@ -751,7 +754,7 @@ class AppLocalizationsPt extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count spots',
-      one: '1 spot',
+      one: '$count spot',
     );
     return '$_temp0';
   }

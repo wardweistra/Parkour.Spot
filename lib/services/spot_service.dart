@@ -1239,6 +1239,7 @@ class SpotService extends ChangeNotifier {
     double minLng,
     double maxLng, {
     int limit = 100,
+    bool hasImages = false, // true = only spots with images
     String? filterArea, // "amenities" | "source" | null (null = source)
     String?
     spotSource, // when source: null = all, "" = native, string = specific source
@@ -1264,6 +1265,9 @@ class SpotService extends ChangeNotifier {
         'maxLng': maxLng,
         'limit': limit,
       };
+      if (hasImages) {
+        requestData['hasImages'] = true;
+      }
       if (filterArea != null) {
         requestData['filterArea'] = filterArea;
       }
@@ -1606,6 +1610,7 @@ class SpotService extends ChangeNotifier {
 
         if (newPhotos.isNotEmpty) {
           originalSpotUpdates['imageUrls'] = [...existingPhotos, ...newPhotos];
+          originalSpotUpdates['hasImages'] = true;
           needsOriginalUpdate = true;
         }
       }

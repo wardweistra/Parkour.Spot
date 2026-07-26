@@ -600,6 +600,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get exploreFilterBy => 'Filtrer par';
 
   @override
+  String get exploreFilterHasImages => 'Uniquement les spots avec des images';
+
+  @override
   String get exploreFilterAmenities => 'Équipements';
 
   @override
@@ -759,7 +762,7 @@ class AppLocalizationsFr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count spots',
-      one: '1 spot',
+      one: '$count spot',
     );
     return '$_temp0';
   }
