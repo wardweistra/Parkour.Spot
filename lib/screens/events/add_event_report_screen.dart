@@ -22,6 +22,7 @@ import '../../utils/image_picker_utils.dart';
 import '../../utils/ui_yield.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../utils/map_recentering_mixin.dart';
+import '../../utils/pointer_interceptor_picker.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
@@ -328,11 +329,11 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   }
 
   Future<void> _withSchedulePickerLock(Future<void> Function() fn) async {
-    _isSchedulePickerOpen = true;
+    setState(() => _isSchedulePickerOpen = true);
     try {
       await fn();
     } finally {
-      _isSchedulePickerOpen = false;
+      if (mounted) setState(() => _isSchedulePickerOpen = false);
     }
   }
 
@@ -366,6 +367,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
         ),
         firstDate: DateTime.now().subtract(const Duration(days: 365)),
         lastDate: DateTime.now().add(const Duration(days: 3650)),
+        builder: interceptingPickerBuilder,
       );
       if (pickedDate == null || !mounted) return null;
       return EventScheduleUtils.dateStartToUtc(
@@ -407,6 +409,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
           minDate.day,
         ),
         lastDate: DateTime.now().add(const Duration(days: 3650)),
+        builder: interceptingPickerBuilder,
       );
       if (pickedDate == null || !mounted) {
         return (value: null, cancelled: true);
@@ -859,6 +862,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
           ? DateTime(displayMin.year, displayMin.month, displayMin.day)
           : DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 3650)),
+      builder: interceptingPickerBuilder,
     );
     if (pickedDate == null || !mounted) return null;
 
@@ -867,6 +871,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       helpText: timeHelpText,
       cancelText: timeCancelText,
       initialTime: TimeOfDay.fromDateTime(displayInitial),
+      builder: interceptingPickerBuilder,
     );
     if (pickedTime == null || !mounted) return null;
 
@@ -1329,6 +1334,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
               isGeocoding: false,
               isSatelliteView: _isSatelliteView,
               isLocationPermissionDenied: _isLocationPermissionDenied,
+              blockMapPointers: _isSchedulePickerOpen,
               onRefreshLocation: () => _getCurrentLocation(setAsPickedPin: true),
               onPickOnMap: _pickLocationOnMap,
               onToggleSatellite: (value) {

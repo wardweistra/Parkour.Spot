@@ -30,6 +30,7 @@ import '../../utils/event_suggestion_utils.dart';
 import '../../utils/image_preparation.dart';
 import '../../utils/image_picker_utils.dart';
 import '../../utils/ui_yield.dart';
+import '../../utils/pointer_interceptor_picker.dart';
 import '../../widgets/image_processing_banner.dart';
 import '../../widgets/memory_image_preview.dart';
 import '../../widgets/custom_text_field.dart';
@@ -2352,11 +2353,11 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
   }
 
   Future<void> _withSchedulePickerLock(Future<void> Function() fn) async {
-    _isSchedulePickerOpen = true;
+    setState(() => _isSchedulePickerOpen = true);
     try {
       await fn();
     } finally {
-      _isSchedulePickerOpen = false;
+      if (mounted) setState(() => _isSchedulePickerOpen = false);
     }
   }
 
@@ -2774,6 +2775,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
           ? DateTime(displayMin.year, displayMin.month, displayMin.day)
           : DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 3650)),
+      builder: interceptingPickerBuilder,
     );
     if (pickedDate == null || !mounted) return null;
 
@@ -2782,6 +2784,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
       helpText: timeHelpText,
       cancelText: timeCancelText,
       initialTime: TimeOfDay.fromDateTime(displayInitial),
+      builder: interceptingPickerBuilder,
     );
     if (pickedTime == null || !mounted) return null;
 
@@ -2810,6 +2813,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
         ),
         firstDate: DateTime.now().subtract(const Duration(days: 365)),
         lastDate: DateTime.now().add(const Duration(days: 3650)),
+        builder: interceptingPickerBuilder,
       );
       if (pickedDate == null || !mounted) return null;
       return EventScheduleUtils.dateStartToUtc(
@@ -2851,6 +2855,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
           minDate.day,
         ),
         lastDate: DateTime.now().add(const Duration(days: 3650)),
+        builder: interceptingPickerBuilder,
       );
       if (pickedDate == null || !mounted) {
         return (value: null, cancelled: true);
@@ -3247,6 +3252,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
               isGeocoding: false,
               isSatelliteView: _isSatelliteView,
               isLocationPermissionDenied: _isLocationPermissionDenied,
+              blockMapPointers: _isSchedulePickerOpen,
               onRefreshLocation: () => _getCurrentLocation(setAsPickedPin: true),
               onPickOnMap: _pickLocationOnMap,
               onToggleSatellite: (value) {

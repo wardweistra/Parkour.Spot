@@ -28,6 +28,10 @@ class SpotLocationSection extends StatefulWidget {
   final bool showSelectedPin;
   final bool showLocationDetails;
   final List<Spot> linkedSpots;
+  /// When true, covers the map with a [PointerInterceptor] so platform-view
+  /// links (e.g. Google Maps "Keyboard shortcuts") cannot receive clicks while
+  /// a Flutter dialog/picker is open above the map on web.
+  final bool blockMapPointers;
 
   const SpotLocationSection({
     super.key,
@@ -50,6 +54,7 @@ class SpotLocationSection extends StatefulWidget {
     this.showSelectedPin = true,
     this.showLocationDetails = true,
     this.linkedSpots = const <Spot>[],
+    this.blockMapPointers = false,
   });
 
   @override
@@ -231,7 +236,9 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                       scrollGesturesEnabled: false,
                       tiltGesturesEnabled: false,
                       rotateGesturesEnabled: false,
-                      onTap: (_) => widget.onPickOnMap(),
+                      onTap: widget.blockMapPointers
+                          ? null
+                          : (_) => widget.onPickOnMap(),
                     ),
                     // Pick Location hint
                     Positioned(
@@ -276,9 +283,11 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                       right: 10,
                       child: PointerInterceptor(
                         child: FloatingActionButton(
-                          onPressed: () {
-                            widget.onToggleSatellite(!widget.isSatelliteView);
-                          },
+                          onPressed: widget.blockMapPointers
+                              ? null
+                              : () {
+                                  widget.onToggleSatellite(!widget.isSatelliteView);
+                                },
                           heroTag: '${widget.mapHeroTagPrefix}_mapTypeToggleFab',
                           mini: true,
                           tooltip: widget.isSatelliteView
@@ -296,7 +305,9 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                       right: 10,
                       child: PointerInterceptor(
                         child: FloatingActionButton(
-                          onPressed: widget.isGettingLocation ? null : widget.onRefreshLocation,
+                          onPressed: widget.blockMapPointers || widget.isGettingLocation
+                              ? null
+                              : widget.onRefreshLocation,
                           heroTag: '${widget.mapHeroTagPrefix}_currentLocationFab',
                           mini: true,
                           tooltip: widget.isLocationPermissionDenied
@@ -317,6 +328,14 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                         ),
                       ),
                     ),
+                    // Must be last so it covers map HTML links and map FABs while
+                    // Flutter dialogs/pickers are open above this platform view.
+                    if (widget.blockMapPointers)
+                      Positioned.fill(
+                        child: PointerInterceptor(
+                          child: const SizedBox.expand(),
+                        ),
+                      ),
                   ],
                 ),
               ),

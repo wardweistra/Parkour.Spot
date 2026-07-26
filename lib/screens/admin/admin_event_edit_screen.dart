@@ -25,6 +25,7 @@ import '../../utils/image_picker_utils.dart';
 import '../../utils/ui_yield.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../utils/map_recentering_mixin.dart';
+import '../../utils/pointer_interceptor_picker.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
@@ -326,11 +327,11 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
   }
 
   Future<void> _withSchedulePickerLock(Future<void> Function() fn) async {
-    _isSchedulePickerOpen = true;
+    setState(() => _isSchedulePickerOpen = true);
     try {
       await fn();
     } finally {
-      _isSchedulePickerOpen = false;
+      if (mounted) setState(() => _isSchedulePickerOpen = false);
     }
   }
 
@@ -400,6 +401,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
           ? DateTime(displayMin.year, displayMin.month, displayMin.day)
           : DateTime(2020),
       lastDate: DateTime(2100),
+      builder: interceptingPickerBuilder,
     );
     if (pickedDate == null || !mounted) return null;
 
@@ -408,6 +410,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
       helpText: timeHelpText,
       cancelText: timeCancelText,
       initialTime: TimeOfDay.fromDateTime(displayInitial),
+      builder: interceptingPickerBuilder,
     );
     if (pickedTime == null || !mounted) return null;
 
@@ -436,6 +439,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
         ),
         firstDate: DateTime(2020),
         lastDate: DateTime(2100),
+        builder: interceptingPickerBuilder,
       );
       if (pickedDate == null || !mounted) return null;
       return EventScheduleUtils.dateStartToUtc(
@@ -477,6 +481,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
           minDate.day,
         ),
         lastDate: DateTime(2100),
+        builder: interceptingPickerBuilder,
       );
       if (pickedDate == null || !mounted) {
         return (value: null, cancelled: true);
@@ -1398,6 +1403,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
               isGeocoding: false,
               isSatelliteView: _isSatelliteView,
               isLocationPermissionDenied: _isLocationPermissionDenied,
+              blockMapPointers: _isSchedulePickerOpen,
               onRefreshLocation: () => _getCurrentLocation(setAsPickedPin: true),
               onPickOnMap: _pickLocationOnMap,
               onToggleSatellite: (value) {
