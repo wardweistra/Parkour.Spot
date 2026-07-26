@@ -3557,6 +3557,43 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get eventDetailMarkDuplicateTitle => 'Mark as Duplicate';
+
+  @override
+  String eventDetailMarkDuplicateBody(String title) {
+    return 'Mark this event as a duplicate of “$title”? This action can be reversed later.';
+  }
+
+  @override
+  String get eventDetailMarkDuplicateAddToOriginal =>
+      'Select which items to add to the original event:';
+
+  @override
+  String get eventDetailMarkDuplicatePhotos => 'Photos';
+
+  @override
+  String get eventDetailMarkDuplicateLinkedSpots => 'Linked spots';
+
+  @override
+  String get eventDetailMarkDuplicateOverwrite =>
+      'Select which items to overwrite in the original event (if set):';
+
+  @override
+  String get eventDetailMarkDuplicateEventTitle => 'Title';
+
+  @override
+  String get eventDetailMarkDuplicateDescription => 'Description';
+
+  @override
+  String get eventDetailMarkDuplicateLocation => 'Location';
+
+  @override
+  String get eventDetailMarkDuplicateSchedule => 'Schedule';
+
+  @override
+  String get eventDetailMarkDuplicateWebsite => 'Website';
+
+  @override
   String get eventDetailMarkDuplicateSuccess => 'Event marked as duplicate.';
 
   @override

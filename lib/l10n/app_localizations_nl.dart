@@ -3579,6 +3579,43 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get eventDetailMarkDuplicateTitle => 'Markeer als duplicaat';
+
+  @override
+  String eventDetailMarkDuplicateBody(String title) {
+    return 'Dit event als duplicaat van «$title» markeren? Dit kan later weer ongedaan worden gemaakt.';
+  }
+
+  @override
+  String get eventDetailMarkDuplicateAddToOriginal =>
+      'Kies wat je aan het originele event wilt toevoegen:';
+
+  @override
+  String get eventDetailMarkDuplicatePhotos => 'Foto’s';
+
+  @override
+  String get eventDetailMarkDuplicateLinkedSpots => 'Gekoppelde spots';
+
+  @override
+  String get eventDetailMarkDuplicateOverwrite =>
+      'Kies wat je in het originele event wilt overschrijven (indien ingesteld):';
+
+  @override
+  String get eventDetailMarkDuplicateEventTitle => 'Titel';
+
+  @override
+  String get eventDetailMarkDuplicateDescription => 'Beschrijving';
+
+  @override
+  String get eventDetailMarkDuplicateLocation => 'Locatie';
+
+  @override
+  String get eventDetailMarkDuplicateSchedule => 'Planning';
+
+  @override
+  String get eventDetailMarkDuplicateWebsite => 'Website';
+
+  @override
   String get eventDetailMarkDuplicateSuccess =>
       'Event als duplicaat gemarkeerd.';
 

@@ -123,6 +123,49 @@ class AuditLogService {
     }
   }
 
+  /// Log when an event is marked as duplicate
+  Future<void> logEventMarkedAsDuplicate({
+    required String eventId,
+    required String originalEventId,
+    required String? userId,
+    required String? userName,
+    bool transferPhotos = false,
+    bool transferLinkedSpots = false,
+    bool overwriteTitle = false,
+    bool overwriteDescription = false,
+    bool overwriteLocation = false,
+    bool overwriteSchedule = false,
+    bool overwriteWebsite = false,
+    String? reportId,
+    String? notes,
+  }) async {
+    try {
+      await _firestore.collection('auditLog').add({
+        'action':
+            AuditLogAction.eventMarkedAsDuplicate.toString().split('.').last,
+        'eventId': eventId,
+        if (reportId != null) 'reportId': reportId,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'metadata': {
+          'originalEventId': originalEventId,
+          'transferPhotos': transferPhotos,
+          'transferLinkedSpots': transferLinkedSpots,
+          'overwriteTitle': overwriteTitle,
+          'overwriteDescription': overwriteDescription,
+          'overwriteLocation': overwriteLocation,
+          'overwriteSchedule': overwriteSchedule,
+          'overwriteWebsite': overwriteWebsite,
+          if (notes != null && notes.isNotEmpty) 'notes': notes,
+        },
+      });
+    } catch (e) {
+      debugPrint('Error logging event duplicate marking: $e');
+      // Don't throw - audit logging should not break the main operation
+    }
+  }
+
   /// Log when an event is hidden or unhidden
   Future<void> logEventHidden({
     required String eventId,

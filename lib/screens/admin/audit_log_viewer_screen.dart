@@ -518,6 +518,28 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
               }
             }
             break;
+          case AuditLogAction.eventMarkedAsDuplicate:
+            title = 'Event Marked as Duplicate';
+            subtitle = auditLog.userName != null
+                ? 'Marked by ${auditLog.userName}'
+                : auditLog.userId != null
+                    ? 'Marked by ${auditLog.userId}'
+                    : 'Marked by unknown';
+            if (auditLog.metadata != null &&
+                auditLog.metadata!['originalEventId'] != null) {
+              details =
+                  'Original event: ${auditLog.metadata!['originalEventId']}';
+              if (auditLog.reportId != null) {
+                details += '\nLinked to report: ${auditLog.reportId}';
+              }
+              if (auditLog.metadata!['notes'] != null) {
+                final notes = auditLog.metadata!['notes'] as String;
+                if (notes.isNotEmpty) {
+                  details += '\n\nNotes: $notes';
+                }
+              }
+            }
+            break;
           case AuditLogAction.spotHidden:
             title = 'Spot Hidden';
             subtitle = auditLog.userName != null

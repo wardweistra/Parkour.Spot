@@ -8,6 +8,7 @@ import '../services/admin_events_service.dart';
 import '../services/auth_service.dart';
 import '../services/event_report_service.dart';
 import 'event_duplicate_picker.dart';
+import 'event_duplicate_transfer_dialog.dart';
 import 'event_selection_dialog.dart';
 
 class EventDuplicateApprovalDialog extends StatefulWidget {
@@ -24,6 +25,7 @@ class _EventDuplicateApprovalDialogState
     extends State<EventDuplicateApprovalDialog> {
   ParkourEvent? _suggestedOriginal;
   ParkourEvent? _resolvedNativeOriginal;
+  ParkourEvent? _targetEvent;
   bool _loading = true;
   bool _approving = false;
   String? _error;
@@ -46,13 +48,23 @@ class _EventDuplicateApprovalDialogState
     }
 
     try {
-      final event = await context.read<AdminEventsService>().getEventById(
-        duplicateId,
-      );
+      final admin = context.read<AdminEventsService>();
+      final targetId = widget.report.targetEventId?.trim();
+      final results = await Future.wait([
+        admin.getEventById(duplicateId),
+        if (targetId != null && targetId.isNotEmpty)
+          admin.getEventById(targetId)
+        else
+          Future<ParkourEvent?>.value(null),
+      ]);
       if (!mounted) return;
+
+      final event = results[0];
+      final target = results[1];
 
       if (event == null) {
         setState(() {
+          _targetEvent = target;
           _loading = false;
           _error = 'Suggested original event was not found.';
           _needsNativePick = true;
@@ -64,6 +76,7 @@ class _EventDuplicateApprovalDialogState
       setState(() {
         _suggestedOriginal = event;
         _resolvedNativeOriginal = needsPick ? null : event;
+        _targetEvent = target;
         _needsNativePick = needsPick;
         _loading = false;
       });
@@ -123,6 +136,24 @@ class _EventDuplicateApprovalDialogState
       return;
     }
 
+    final targetEvent = _targetEvent;
+    EventDuplicateTransferResult transferResult =
+        const EventDuplicateTransferResult();
+
+    if (targetEvent != null) {
+      final dialogResult = await showDialog<EventDuplicateTransferResult>(
+        context: context,
+        builder: (dialogContext) => EventDuplicateTransferDialog(
+          duplicateEvent: targetEvent,
+          originalTitle: resolved!.title,
+          showReportSelector: false,
+        ),
+      );
+      if (!mounted) return;
+      if (dialogResult == null) return;
+      transferResult = dialogResult;
+    }
+
     setState(() {
       _approving = true;
       _error = null;
@@ -147,6 +178,14 @@ class _EventDuplicateApprovalDialogState
               auth.userProfile?.displayName ??
               user?.displayName ??
               user?.email,
+          moderatorNotes: transferResult.notes,
+          transferPhotos: transferResult.transferPhotos,
+          transferLinkedSpots: transferResult.transferLinkedSpots,
+          overwriteTitle: transferResult.overwriteTitle,
+          overwriteDescription: transferResult.overwriteDescription,
+          overwriteLocation: transferResult.overwriteLocation,
+          overwriteSchedule: transferResult.overwriteSchedule,
+          overwriteWebsite: transferResult.overwriteWebsite,
         );
 
     if (!mounted) return;

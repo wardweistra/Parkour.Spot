@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/parkour_event.dart';
 import '../utils/event_date_window.dart';
+import '../utils/event_duplicate_merge.dart';
 import '../utils/event_linked_spot_loader.dart';
 import '../utils/image_preparation.dart';
 import 'audit_log_service.dart';
@@ -966,9 +967,23 @@ class AdminEventsService extends ChangeNotifier {
   }
 
   /// Validates and sets [duplicateEventId].duplicateOf to [nativeOriginalEventId].
+  ///
+  /// Optionally merges selected fields from the duplicate into the native original
+  /// before linking (same pattern as [SpotService.markSpotAsDuplicate]).
   Future<bool> markEventAsDuplicate({
     required String duplicateEventId,
     required String nativeOriginalEventId,
+    bool transferPhotos = false,
+    bool transferLinkedSpots = false,
+    bool overwriteTitle = false,
+    bool overwriteDescription = false,
+    bool overwriteLocation = false,
+    bool overwriteSchedule = false,
+    bool overwriteWebsite = false,
+    String? userId,
+    String? userName,
+    String? reportId,
+    String? notes,
   }) async {
     _error = null;
     notifyListeners();
@@ -1047,10 +1062,49 @@ class AdminEventsService extends ChangeNotifier {
         'eventSourceId=${dupData?['eventSourceId']}',
       );
 
+      final originalUpdates = buildEventDuplicateMergeUpdates(
+        original: original,
+        duplicate: duplicate,
+        transferPhotos: transferPhotos,
+        transferLinkedSpots: transferLinkedSpots,
+        overwriteTitle: overwriteTitle,
+        overwriteDescription: overwriteDescription,
+        overwriteLocation: overwriteLocation,
+        overwriteSchedule: overwriteSchedule,
+        overwriteWebsite: overwriteWebsite,
+      );
+
+      if (originalUpdates.isNotEmpty) {
+        originalUpdates['updatedAt'] = FieldValue.serverTimestamp();
+        await _firestore
+            .collection('events')
+            .doc(trimmedOriginal)
+            .update(originalUpdates);
+      }
+
       await _firestore.collection('events').doc(trimmedDup).update({
         'duplicateOf': trimmedOriginal,
-        'updatedAt': Timestamp.fromDate(DateTime.now().toUtc()),
+        'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      if (userId != null && userName != null) {
+        await _auditLogService.logEventMarkedAsDuplicate(
+          eventId: trimmedDup,
+          originalEventId: trimmedOriginal,
+          userId: userId,
+          userName: userName,
+          transferPhotos: transferPhotos,
+          transferLinkedSpots: transferLinkedSpots,
+          overwriteTitle: overwriteTitle,
+          overwriteDescription: overwriteDescription,
+          overwriteLocation: overwriteLocation,
+          overwriteSchedule: overwriteSchedule,
+          overwriteWebsite: overwriteWebsite,
+          reportId: reportId,
+          notes: notes,
+        );
+      }
+
       notifyListeners();
       return true;
     } catch (e, st) {

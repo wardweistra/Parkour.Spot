@@ -6081,6 +6081,72 @@ abstract class AppLocalizations {
   /// **'Mark this event as a duplicate of “{title}”?'**
   String eventDetailMarkDuplicateConfirmBody(String title);
 
+  /// Title of the event duplicate transfer/confirm dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as Duplicate'**
+  String get eventDetailMarkDuplicateTitle;
+
+  /// Body of the event duplicate transfer dialog; title is the original event
+  ///
+  /// In en, this message translates to:
+  /// **'Mark this event as a duplicate of “{title}”? This action can be reversed later.'**
+  String eventDetailMarkDuplicateBody(String title);
+
+  /// Section header for additive merge options
+  ///
+  /// In en, this message translates to:
+  /// **'Select which items to add to the original event:'**
+  String get eventDetailMarkDuplicateAddToOriginal;
+
+  /// Checkbox to append photos from the duplicate
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get eventDetailMarkDuplicatePhotos;
+
+  /// Checkbox to union linked spots and spot lists
+  ///
+  /// In en, this message translates to:
+  /// **'Linked spots'**
+  String get eventDetailMarkDuplicateLinkedSpots;
+
+  /// Section header for overwrite merge options
+  ///
+  /// In en, this message translates to:
+  /// **'Select which items to overwrite in the original event (if set):'**
+  String get eventDetailMarkDuplicateOverwrite;
+
+  /// Checkbox to overwrite event title
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get eventDetailMarkDuplicateEventTitle;
+
+  /// Checkbox to overwrite event description
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get eventDetailMarkDuplicateDescription;
+
+  /// Checkbox to overwrite event location
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get eventDetailMarkDuplicateLocation;
+
+  /// Checkbox to overwrite event dates and timezone
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get eventDetailMarkDuplicateSchedule;
+
+  /// Checkbox to overwrite event website URL
+  ///
+  /// In en, this message translates to:
+  /// **'Website'**
+  String get eventDetailMarkDuplicateWebsite;
+
   /// Snackbar after duplicate link saved
   ///
   /// In en, this message translates to:

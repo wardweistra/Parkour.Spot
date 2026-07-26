@@ -47,6 +47,7 @@ import '../../widgets/event_detail_provenance_line.dart';
 import '../../widgets/event_detail_when_block.dart';
 import '../../widgets/event_duplicate_report_dialog.dart';
 import '../../widgets/event_selection_dialog.dart';
+import '../../widgets/event_duplicate_transfer_dialog.dart';
 import '../../widgets/moderator_action_fields.dart';
 import '../../services/url_service.dart';
 import '../../widgets/detail_duplicate_relationship.dart';
@@ -798,29 +799,34 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         final admin = context.read<AdminEventsService>();
         final origEvent = await admin.getEventById(originalId);
         if (!context.mounted || origEvent == null) return;
-        final confirmed = await showDialog<bool>(
+        final transferResult =
+            await showDialog<EventDuplicateTransferResult>(
           context: context,
-          builder: (c) => AlertDialog(
-            title: Text(l10n.spotDetailMenuMarkDuplicate),
-            content: Text(
-              l10n.eventDetailMarkDuplicateConfirmBody(origEvent.title),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(c, false),
-                child: Text(l10n.profileCancel),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(c, true),
-                child: Text(l10n.spotDetailConfirm),
-              ),
-            ],
+          builder: (c) => EventDuplicateTransferDialog(
+            duplicateEvent: event,
+            originalTitle: origEvent.title,
           ),
         );
-        if (confirmed != true || !context.mounted) return;
+        if (transferResult == null || !context.mounted) return;
+        final auth = context.read<AuthService>();
+        final userId = auth.currentUser?.uid;
+        final userName = auth.userProfile?.displayName ??
+            auth.currentUser?.displayName ??
+            auth.currentUser?.email;
         final ok = await admin.markEventAsDuplicate(
           duplicateEventId: id,
           nativeOriginalEventId: originalId,
+          transferPhotos: transferResult.transferPhotos,
+          transferLinkedSpots: transferResult.transferLinkedSpots,
+          overwriteTitle: transferResult.overwriteTitle,
+          overwriteDescription: transferResult.overwriteDescription,
+          overwriteLocation: transferResult.overwriteLocation,
+          overwriteSchedule: transferResult.overwriteSchedule,
+          overwriteWebsite: transferResult.overwriteWebsite,
+          userId: userId,
+          userName: userName,
+          reportId: transferResult.reportId,
+          notes: transferResult.notes,
         );
         if (!context.mounted) return;
         if (ok) {

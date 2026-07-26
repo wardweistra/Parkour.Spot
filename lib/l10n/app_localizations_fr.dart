@@ -3628,6 +3628,43 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get eventDetailMarkDuplicateTitle => 'Marquer comme doublon';
+
+  @override
+  String eventDetailMarkDuplicateBody(String title) {
+    return 'Marquer cet événement comme doublon de « $title » ? Cette action peut être annulée plus tard.';
+  }
+
+  @override
+  String get eventDetailMarkDuplicateAddToOriginal =>
+      'Choisissez quoi ajouter à l’événement d’origine :';
+
+  @override
+  String get eventDetailMarkDuplicatePhotos => 'Photos';
+
+  @override
+  String get eventDetailMarkDuplicateLinkedSpots => 'Spots liés';
+
+  @override
+  String get eventDetailMarkDuplicateOverwrite =>
+      'Choisissez quoi écraser sur l’événement d’origine (si défini) :';
+
+  @override
+  String get eventDetailMarkDuplicateEventTitle => 'Titre';
+
+  @override
+  String get eventDetailMarkDuplicateDescription => 'Description';
+
+  @override
+  String get eventDetailMarkDuplicateLocation => 'Emplacement';
+
+  @override
+  String get eventDetailMarkDuplicateSchedule => 'Horaires';
+
+  @override
+  String get eventDetailMarkDuplicateWebsite => 'Site web';
+
+  @override
   String get eventDetailMarkDuplicateSuccess =>
       'Événement marqué comme doublon.';
 

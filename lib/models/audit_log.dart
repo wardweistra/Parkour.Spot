@@ -5,6 +5,7 @@ enum AuditLogAction {
   spotMarkedAsDuplicate,
   spotHidden,
   spotUnhidden,
+  eventMarkedAsDuplicate,
   eventHidden,
   eventUnhidden,
   spotReportStatusChange,

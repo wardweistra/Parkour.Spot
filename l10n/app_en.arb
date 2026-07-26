@@ -3432,6 +3432,55 @@
       }
     }
   },
+  "eventDetailMarkDuplicateTitle": "Mark as Duplicate",
+  "@eventDetailMarkDuplicateTitle": {
+    "description": "Title of the event duplicate transfer/confirm dialog"
+  },
+  "eventDetailMarkDuplicateBody": "Mark this event as a duplicate of “{title}”? This action can be reversed later.",
+  "@eventDetailMarkDuplicateBody": {
+    "description": "Body of the event duplicate transfer dialog; title is the original event",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "eventDetailMarkDuplicateAddToOriginal": "Select which items to add to the original event:",
+  "@eventDetailMarkDuplicateAddToOriginal": {
+    "description": "Section header for additive merge options"
+  },
+  "eventDetailMarkDuplicatePhotos": "Photos",
+  "@eventDetailMarkDuplicatePhotos": {
+    "description": "Checkbox to append photos from the duplicate"
+  },
+  "eventDetailMarkDuplicateLinkedSpots": "Linked spots",
+  "@eventDetailMarkDuplicateLinkedSpots": {
+    "description": "Checkbox to union linked spots and spot lists"
+  },
+  "eventDetailMarkDuplicateOverwrite": "Select which items to overwrite in the original event (if set):",
+  "@eventDetailMarkDuplicateOverwrite": {
+    "description": "Section header for overwrite merge options"
+  },
+  "eventDetailMarkDuplicateEventTitle": "Title",
+  "@eventDetailMarkDuplicateEventTitle": {
+    "description": "Checkbox to overwrite event title"
+  },
+  "eventDetailMarkDuplicateDescription": "Description",
+  "@eventDetailMarkDuplicateDescription": {
+    "description": "Checkbox to overwrite event description"
+  },
+  "eventDetailMarkDuplicateLocation": "Location",
+  "@eventDetailMarkDuplicateLocation": {
+    "description": "Checkbox to overwrite event location"
+  },
+  "eventDetailMarkDuplicateSchedule": "Schedule",
+  "@eventDetailMarkDuplicateSchedule": {
+    "description": "Checkbox to overwrite event dates and timezone"
+  },
+  "eventDetailMarkDuplicateWebsite": "Website",
+  "@eventDetailMarkDuplicateWebsite": {
+    "description": "Checkbox to overwrite event website URL"
+  },
   "eventDetailMarkDuplicateSuccess": "Event marked as duplicate.",
   "@eventDetailMarkDuplicateSuccess": {
     "description": "Snackbar after duplicate link saved"

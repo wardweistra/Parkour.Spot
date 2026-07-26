@@ -653,6 +653,13 @@ class EventReportService {
     required AdminEventsService adminEventsService,
     String? approverName,
     String? moderatorNotes,
+    bool transferPhotos = false,
+    bool transferLinkedSpots = false,
+    bool overwriteTitle = false,
+    bool overwriteDescription = false,
+    bool overwriteLocation = false,
+    bool overwriteSchedule = false,
+    bool overwriteWebsite = false,
   }) async {
     try {
       final reportRef = _firestore.collection('eventReports').doc(reportId);
@@ -681,6 +688,17 @@ class EventReportService {
       final marked = await adminEventsService.markEventAsDuplicate(
         duplicateEventId: targetEventId,
         nativeOriginalEventId: trimmedNativeId,
+        transferPhotos: transferPhotos,
+        transferLinkedSpots: transferLinkedSpots,
+        overwriteTitle: overwriteTitle,
+        overwriteDescription: overwriteDescription,
+        overwriteLocation: overwriteLocation,
+        overwriteSchedule: overwriteSchedule,
+        overwriteWebsite: overwriteWebsite,
+        userId: approverUserId,
+        userName: approverName,
+        reportId: reportId,
+        notes: moderatorNotes,
       );
       if (!marked) {
         return null;
