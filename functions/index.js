@@ -112,6 +112,11 @@ const {
 } = require("./lib/import-helpers");
 const {shouldRunSync} = require("./lib/sync-helpers");
 const {
+  normalizeFolderList,
+  applyFolderFilter,
+  sortFoldersByIncludeOrder,
+} = require("./lib/folder-filter");
+const {
   EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR,
   hasExternalEventAddressChanged,
   hasExternalEventContentChanges,
@@ -2646,73 +2651,37 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
     }
   }
 
-  // Normalize includeFolders from source configuration
-  let includeFolders = [];
-  if (Array.isArray(source.includeFolders)) {
-    includeFolders = source.includeFolders;
-  } else if (typeof source.includeFolders === "string") {
-    includeFolders = source.includeFolders.split(",");
-  }
-  includeFolders = includeFolders
-      .map((s) => (typeof s === "string" ? s.trim() : ""))
-      .filter((s) => s.length > 0);
+  // Normalize and apply include/exclude folder filter (mutually exclusive)
+  const beforeFolderFilterCount = placemarks.length;
+  const folderFilterResult = applyFolderFilter(
+      placemarks,
+      source.includeFolders,
+      source.excludeFolders,
+  );
+  placemarks = folderFilterResult.placemarks;
+  const includeFolders = folderFilterResult.includeFolders;
+  const excludeFolders = folderFilterResult.excludeFolders;
 
-  if (includeFolders.length > 0) {
+  if (folderFilterResult.mode !== "none") {
     console.log(
-        `[FOLDER FILTER] Applying folder filter for source: ${source.name}`,
+        `[FOLDER FILTER] Applying ${folderFilterResult.mode} folder filter ` +
+        `for source: ${source.name}`,
     );
     console.log(
-        `[FOLDER FILTER] Total placemarks before filter: ${placemarks.length}`,
+        `[FOLDER FILTER] Total placemarks before filter: ${beforeFolderFilterCount}`,
     );
-    console.log(
-        `[FOLDER FILTER] Include folders: [${includeFolders.join(", ")}]`,
-    );
-
-    // Log all folder names found in placemarks before processing
-    const foldersInPlacemarks = new Set();
-    placemarks.forEach((placemark) => {
-      if (placemark.folderName) {
-        foldersInPlacemarks.add(placemark.folderName);
-      }
-    });
-    console.log(
-        `[FOLDER FILTER] Folders found in placemarks: [${Array.from(foldersInPlacemarks).join(", ")}]`,
-    );
-
-    const includeSetLower = new Set(includeFolders.map((f) => f.toLowerCase()));
-    const beforeCount = placemarks.length;
-    placemarks = placemarks.filter((p) => {
-      const path = Array.isArray(p.folderPath) ? p.folderPath : [];
-      return path.some((seg) => includeSetLower.has(String(seg).toLowerCase()));
-    });
-
-    // Sort placemarks by the order specified in includeFolders
-    placemarks.sort((a, b) => {
-      const aFolderName = a.folderName ? a.folderName.toLowerCase() : "";
-      const bFolderName = b.folderName ? b.folderName.toLowerCase() : "";
-
-      const aIndex = includeFolders.findIndex(
-          (folder) => folder.toLowerCase() === aFolderName,
+    if (folderFilterResult.mode === "include") {
+      console.log(
+          `[FOLDER FILTER] Include folders: [${includeFolders.join(", ")}]`,
       );
-      const bIndex = includeFolders.findIndex(
-          (folder) => folder.toLowerCase() === bFolderName,
+    } else {
+      console.log(
+          `[FOLDER FILTER] Exclude folders: [${excludeFolders.join(", ")}]`,
       );
-
-      // If both folders are in includeFolders, sort by their order
-      if (aIndex !== -1 && bIndex !== -1) {
-        return aIndex - bIndex;
-      }
-
-      // If only one folder is in includeFolders, prioritize it
-      if (aIndex !== -1) return -1;
-      if (bIndex !== -1) return 1;
-
-      // If neither folder is in includeFolders, maintain original order
-      return 0;
-    });
-
+    }
     console.log(
-        `Applied folder filter and ordering for source ${source.name}: ${placemarks.length}/${beforeCount} placemarks kept`,
+        `[FOLDER FILTER] Placemarks after filter: ` +
+        `${placemarks.length}/${beforeFolderFilterCount}`,
     );
   }
 
@@ -3273,27 +3242,8 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
           `[FOLDER COLLECTION] Final allFolders before sorting: [${Array.from(allFolders).join(", ")}]`,
       );
 
-      // Sort folders by the order specified in includeFolders, then alphabetically for any not in includeFolders
-      const sortedFolders = Array.from(allFolders).sort((a, b) => {
-        const aIndex = includeFolders.findIndex(
-            (folder) => folder.toLowerCase() === a.toLowerCase(),
-        );
-        const bIndex = includeFolders.findIndex(
-            (folder) => folder.toLowerCase() === b.toLowerCase(),
-        );
-
-        // If both folders are in includeFolders, sort by their order
-        if (aIndex !== -1 && bIndex !== -1) {
-          return aIndex - bIndex;
-        }
-
-        // If only one folder is in includeFolders, prioritize it
-        if (aIndex !== -1) return -1;
-        if (bIndex !== -1) return 1;
-
-        // If neither folder is in includeFolders, sort alphabetically
-        return a.localeCompare(b);
-      });
+      // Sort folders by includeFolders order (when set), then alphabetically
+      const sortedFolders = sortFoldersByIncludeOrder(allFolders, includeFolders);
 
       console.log(
           `[FOLDER COLLECTION] Final sorted allFolders: [${sortedFolders.join(", ")}]`,
@@ -3781,6 +3731,7 @@ exports.createSyncSource = onCall(
           instagramHandle,
           isActive = true,
           includeFolders,
+          excludeFolders,
           recordFolderName,
           defaultSpotAttributes,
           folderSpotAttributes,
@@ -3791,6 +3742,15 @@ exports.createSyncSource = onCall(
 
         if (!name || !kmzUrl) {
           throw new Error("name and kmzUrl are required");
+        }
+
+        const normalizedInclude = normalizeFolderList(includeFolders);
+        const normalizedExclude = normalizeFolderList(excludeFolders);
+        if (normalizedInclude.length > 0 && normalizedExclude.length > 0) {
+          throw new Error(
+              "includeFolders and excludeFolders are mutually exclusive; " +
+              "provide only one",
+          );
         }
 
         const sourceData = {
@@ -3804,19 +3764,11 @@ exports.createSyncSource = onCall(
           updatedAt: FieldValue.serverTimestamp(),
         };
 
-        // Add optional folder config only if they have values
-        if (Array.isArray(includeFolders) && includeFolders.length > 0) {
-          sourceData.includeFolders = includeFolders
-              .map((s) => s.trim())
-              .filter((s) => s.length > 0);
-        } else if (
-          typeof includeFolders === "string" &&
-        includeFolders.trim().length > 0
-        ) {
-          sourceData.includeFolders = includeFolders
-              .split(",")
-              .map((s) => s.trim())
-              .filter((s) => s.length > 0);
+        // Add optional folder config only if they have values (mutually exclusive)
+        if (normalizedInclude.length > 0) {
+          sourceData.includeFolders = normalizedInclude;
+        } else if (normalizedExclude.length > 0) {
+          sourceData.excludeFolders = normalizedExclude;
         }
 
         if (typeof recordFolderName === "boolean") {
@@ -3874,6 +3826,7 @@ exports.updateSyncSource = onCall(
           instagramHandle,
           isActive,
           includeFolders,
+          excludeFolders,
           recordFolderName,
           defaultSpotAttributes,
           folderSpotAttributes,
@@ -3898,19 +3851,42 @@ exports.updateSyncSource = onCall(
           updateData.instagramHandle = instagramHandle;
         }
         if (isActive !== undefined) updateData.isActive = isActive;
-        if (includeFolders !== undefined) {
-          if (Array.isArray(includeFolders)) {
-            updateData.includeFolders = includeFolders
-                .map((s) => s.trim())
-                .filter((s) => s.length > 0);
-          } else if (typeof includeFolders === "string") {
-            const list = includeFolders
-                .split(",")
-                .map((s) => s.trim())
-                .filter((s) => s.length > 0);
-            updateData.includeFolders = list;
-          } else if (includeFolders === null) {
+
+        // Folder filters are mutually exclusive: setting one clears the other.
+        if (includeFolders !== undefined || excludeFolders !== undefined) {
+          const normalizedInclude = includeFolders !== undefined ?
+            normalizeFolderList(includeFolders) :
+            null;
+          const normalizedExclude = excludeFolders !== undefined ?
+            normalizeFolderList(excludeFolders) :
+            null;
+
+          if (
+            normalizedInclude &&
+            normalizedInclude.length > 0 &&
+            normalizedExclude &&
+            normalizedExclude.length > 0
+          ) {
+            throw new Error(
+                "includeFolders and excludeFolders are mutually exclusive; " +
+                "provide only one",
+            );
+          }
+
+          if (normalizedInclude && normalizedInclude.length > 0) {
+            updateData.includeFolders = normalizedInclude;
+            updateData.excludeFolders = FieldValue.delete();
+          } else if (normalizedExclude && normalizedExclude.length > 0) {
+            updateData.excludeFolders = normalizedExclude;
             updateData.includeFolders = FieldValue.delete();
+          } else {
+            // Cleared filter(s): remove whichever side(s) the client sent
+            if (includeFolders !== undefined) {
+              updateData.includeFolders = FieldValue.delete();
+            }
+            if (excludeFolders !== undefined) {
+              updateData.excludeFolders = FieldValue.delete();
+            }
           }
         }
         if (recordFolderName !== undefined) {

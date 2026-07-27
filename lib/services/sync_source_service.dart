@@ -73,7 +73,8 @@ class SyncSource {
   final String? publicUrl;
   final String? instagramHandle; // Instagram handle for the source owner
   final bool isActive;
-  final List<String>? includeFolders; // Optional list of folders to include
+  final List<String>? includeFolders; // Optional whitelist of folders to include
+  final List<String>? excludeFolders; // Optional blacklist of folders to exclude (mutually exclusive with includeFolders)
   final bool? recordFolderName; // Whether to store folder name on spots
   final List<String>? allFolders; // List of all folders found during sync (when recordFolderName is true)
   final Map<String, dynamic>? defaultSpotAttributes; // Defaults for all new spots in this source
@@ -100,6 +101,7 @@ class SyncSource {
     this.instagramHandle,
     required this.isActive,
     this.includeFolders,
+    this.excludeFolders,
     this.recordFolderName,
     this.allFolders,
     this.defaultSpotAttributes,
@@ -128,6 +130,7 @@ class SyncSource {
       instagramHandle: data['instagramHandle'],
       isActive: data['isActive'] ?? true,
       includeFolders: _stringListFromDynamic(data['includeFolders']),
+      excludeFolders: _stringListFromDynamic(data['excludeFolders']),
       recordFolderName: data['recordFolderName'] is bool ? data['recordFolderName'] as bool : null,
       allFolders: _stringListFromDynamic(data['allFolders']),
       defaultSpotAttributes: _parseDefaultSpotAttributes(data['defaultSpotAttributes']),
@@ -323,6 +326,7 @@ class SyncSourceService extends ChangeNotifier {
     String? instagramHandle,
     bool isActive = true,
     List<String>? includeFolders,
+    List<String>? excludeFolders,
     bool? recordFolderName,
     Map<String, dynamic>? defaultSpotAttributes,
     Map<String, dynamic>? folderSpotAttributes,
@@ -340,6 +344,7 @@ class SyncSourceService extends ChangeNotifier {
         'instagramHandle': instagramHandle,
         'isActive': isActive,
         if (includeFolders != null) 'includeFolders': includeFolders,
+        if (excludeFolders != null) 'excludeFolders': excludeFolders,
         if (recordFolderName != null) 'recordFolderName': recordFolderName,
         if (defaultSpotAttributes != null) 'defaultSpotAttributes': defaultSpotAttributes,
         if (folderSpotAttributes != null) 'folderSpotAttributes': folderSpotAttributes,
@@ -369,6 +374,7 @@ class SyncSourceService extends ChangeNotifier {
     String? instagramHandle,
     bool? isActive,
     List<String>? includeFolders,
+    List<String>? excludeFolders,
     bool? recordFolderName,
     Map<String, dynamic>? defaultSpotAttributes,
     Map<String, dynamic>? folderSpotAttributes,
@@ -387,6 +393,7 @@ class SyncSourceService extends ChangeNotifier {
       if (instagramHandle != null) payload['instagramHandle'] = instagramHandle;
       if (isActive != null) payload['isActive'] = isActive;
       if (includeFolders != null) payload['includeFolders'] = includeFolders;
+      if (excludeFolders != null) payload['excludeFolders'] = excludeFolders;
       if (recordFolderName != null) payload['recordFolderName'] = recordFolderName;
       if (updateSpotAttributeDefaults) {
         payload['defaultSpotAttributes'] = defaultSpotAttributes;

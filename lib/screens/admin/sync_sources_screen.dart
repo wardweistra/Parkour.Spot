@@ -528,6 +528,21 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                           ],
                         ),
                       ],
+                      if (s.excludeFolders != null && s.excludeFolders!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 2,
+                          children: [
+                            const Text('Exclude folders:', style: TextStyle( fontSize: 12)),
+                            ...s.excludeFolders!.map((folder) => Chip(
+                              label: Text(folder, style: _kSyncChipLabelText),
+                              labelStyle: _kSyncChipLabelText,
+                              backgroundColor: Colors.orange.shade100,
+                            )),
+                          ],
+                        ),
+                      ],
                       if (s.allFolders != null && s.allFolders!.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Wrap(
@@ -1721,12 +1736,15 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
   late final TextEditingController publicUrlCtrl;
   late final TextEditingController instagramHandleCtrl;
   late final TextEditingController includeFoldersCtrl;
+  late final TextEditingController excludeFoldersCtrl;
   late final TextEditingController folderRuleNameCtrl;
   late final TextEditingController lightSyncScheduleCtrl;
   late final TextEditingController fullSyncScheduleCtrl;
   late bool isActive;
   late bool recordFolderName;
   late bool autoSyncEnabled;
+  /// 'include' or 'exclude' — mutually exclusive folder filter mode
+  late String folderFilterMode;
   late _EditableSpotAttributes _sourceDefaultAttributes;
   final Map<String, _EditableSpotAttributes> _folderDefaultAttributes = {};
 
@@ -1743,6 +1761,14 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
           ? ''
           : widget.source!.includeFolders!.join('\n'),
     );
+    excludeFoldersCtrl = TextEditingController(
+      text: (widget.source?.excludeFolders == null || widget.source?.excludeFolders?.isEmpty == true)
+          ? ''
+          : widget.source!.excludeFolders!.join('\n'),
+    );
+    final hasExclude = widget.source?.excludeFolders != null &&
+        widget.source!.excludeFolders!.isNotEmpty;
+    folderFilterMode = hasExclude ? 'exclude' : 'include';
     folderRuleNameCtrl = TextEditingController();
     lightSyncScheduleCtrl = TextEditingController(text: widget.source?.lightSyncSchedule ?? '');
     fullSyncScheduleCtrl = TextEditingController(text: widget.source?.fullSyncSchedule ?? '');
@@ -1770,10 +1796,19 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
     publicUrlCtrl.dispose();
     instagramHandleCtrl.dispose();
     includeFoldersCtrl.dispose();
+    excludeFoldersCtrl.dispose();
     folderRuleNameCtrl.dispose();
     lightSyncScheduleCtrl.dispose();
     fullSyncScheduleCtrl.dispose();
     super.dispose();
+  }
+
+  List<String> _parseFolderLines(String text) {
+    return text
+        .split('\n')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
   }
 
   String? _findExistingFolderRuleKey(String folderName) {
@@ -1858,15 +1893,55 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 ),
               ),
               const SizedBox(height: 8),
-              TextFormField(
-                controller: includeFoldersCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Include Folders (optional)',
-                  helperText: 'One folder name per line. Folder names with commas are fully supported.',
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Folder filter (optional)',
+                  style: Theme.of(context).textTheme.titleSmall,
                 ),
-                maxLines: 5,
-                minLines: 3,
               ),
+              const SizedBox(height: 8),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(
+                    value: 'include',
+                    label: Text('Include'),
+                  ),
+                  ButtonSegment(
+                    value: 'exclude',
+                    label: Text('Exclude'),
+                  ),
+                ],
+                selected: {folderFilterMode},
+                onSelectionChanged: (Set<String> selected) {
+                  setState(() {
+                    folderFilterMode = selected.first;
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
+              if (folderFilterMode == 'include')
+                TextFormField(
+                  controller: includeFoldersCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Include Folders (optional)',
+                    helperText:
+                        'One folder name per line. Only these folders are imported; leave empty to import all.',
+                  ),
+                  maxLines: 5,
+                  minLines: 3,
+                )
+              else
+                TextFormField(
+                  controller: excludeFoldersCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Exclude Folders (optional)',
+                    helperText:
+                        'One folder name per line. These folders are skipped; all others are imported.',
+                  ),
+                  maxLines: 5,
+                  minLines: 3,
+                ),
               const SizedBox(height: 8),
               const Divider(),
               Align(
@@ -2142,6 +2217,12 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
             final folderDefaultAttributesPayload =
                 _serializeFolderDefaultAttributes();
             bool ok;
+            final includeList = folderFilterMode == 'include'
+                ? _parseFolderLines(includeFoldersCtrl.text)
+                : <String>[];
+            final excludeList = folderFilterMode == 'exclude'
+                ? _parseFolderLines(excludeFoldersCtrl.text)
+                : <String>[];
             if (widget.source == null) {
               ok = await service.createSource(
                 name: nameCtrl.text.trim(),
@@ -2150,13 +2231,8 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 publicUrl: publicUrlCtrl.text.trim().isEmpty ? null : publicUrlCtrl.text.trim(),
                 instagramHandle: instagramHandleCtrl.text.trim().isEmpty ? null : instagramHandleCtrl.text.trim(),
                 isActive: isActive,
-                includeFolders: includeFoldersCtrl.text.trim().isEmpty
-                    ? null
-                    : includeFoldersCtrl.text
-                        .split('\n')
-                        .map((s) => s.trim())
-                        .where((s) => s.isNotEmpty)
-                        .toList(),
+                includeFolders: includeList.isEmpty ? null : includeList,
+                excludeFolders: excludeList.isEmpty ? null : excludeList,
                 recordFolderName: recordFolderName,
                 defaultSpotAttributes: sourceDefaultAttributesPayload,
                 folderSpotAttributes: folderDefaultAttributesPayload,
@@ -2173,13 +2249,9 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 publicUrl: publicUrlCtrl.text.trim(),
                 instagramHandle: instagramHandleCtrl.text.trim(),
                 isActive: isActive,
-                includeFolders: includeFoldersCtrl.text.trim().isEmpty
-                    ? <String>[]
-                    : includeFoldersCtrl.text
-                        .split('\n')
-                        .map((s) => s.trim())
-                        .where((s) => s.isNotEmpty)
-                        .toList(),
+                // Always send both so the unused mode is cleared server-side
+                includeFolders: includeList,
+                excludeFolders: excludeList,
                 recordFolderName: recordFolderName,
                 defaultSpotAttributes: sourceDefaultAttributesPayload,
                 folderSpotAttributes: folderDefaultAttributesPayload,
