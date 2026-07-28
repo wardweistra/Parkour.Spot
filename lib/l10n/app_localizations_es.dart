@@ -427,8 +427,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileInstallDialogTitle => 'Instalar Parkour·Spot';
 
   @override
-  String profileInstallIntro(String device) {
-    return 'Para instalar Parkour·Spot en tu $device:';
+  String profileInstallIntro(String device, String browser) {
+    return 'Para instalar Parkour·Spot en tu $device, abre esta página en $browser y sigue estos pasos:';
   }
 
   @override

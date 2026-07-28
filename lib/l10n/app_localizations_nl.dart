@@ -426,8 +426,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileInstallDialogTitle => 'Parkour·Spot installeren';
 
   @override
-  String profileInstallIntro(String device) {
-    return 'Om Parkour·Spot op je $device te installeren:';
+  String profileInstallIntro(String device, String browser) {
+    return 'Open deze pagina in $browser en volg deze stappen om Parkour·Spot op je $device te installeren:';
   }
 
   @override

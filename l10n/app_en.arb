@@ -509,13 +509,17 @@
   "@profileInstallDialogTitle": {
     "description": "PWA install instructions dialog title"
   },
-  "profileInstallIntro": "To install Parkour·Spot on your {device}:",
+  "profileInstallIntro": "To install Parkour·Spot on your {device}, open this page in {browser} and follow these steps:",
   "@profileInstallIntro": {
     "description": "PWA install dialog: intro before steps",
     "placeholders": {
       "device": {
         "type": "String",
         "example": "iPhone"
+      },
+      "browser": {
+        "type": "String",
+        "example": "Safari"
       }
     }
   },

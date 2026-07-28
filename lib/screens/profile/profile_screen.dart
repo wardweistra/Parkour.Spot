@@ -1000,6 +1000,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     final deviceLabel = isIos
         ? l10n.profileInstallDeviceIphone
         : l10n.profileInstallDeviceAndroid;
+    final browserLabel = isIos ? 'Safari' : 'Chrome';
     final step1 = isIos
         ? l10n.profileInstallIosStep1
         : l10n.profileInstallAndroidStep1;
@@ -1028,7 +1029,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              l10n.profileInstallIntro(deviceLabel),
+              l10n.profileInstallIntro(deviceLabel, browserLabel),
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 16),
