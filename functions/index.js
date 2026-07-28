@@ -9584,6 +9584,224 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
       // Don't throw - allow main metrics calculation to succeed even if users export fails
     }
 
+    // Export all events to Events sheet (processed in batches to reduce memory usage)
+    let eventsExported = 0;
+    try {
+      console.log("Starting events export to Google Sheets");
+
+      // Check if Events sheet exists, create if missing
+      const eventsSheetName = "Events";
+      let eventsSheetExists = false;
+
+      try {
+        const spreadsheet = await sheets.spreadsheets.get({
+          spreadsheetId: sheetId,
+        });
+
+        eventsSheetExists = spreadsheet.data.sheets.some(
+            (sheet) => sheet.properties.title === eventsSheetName,
+        );
+      } catch (error) {
+        console.warn(`Error checking for Events sheet: ${error.message}`);
+      }
+
+      if (!eventsSheetExists) {
+        console.log(`Creating ${eventsSheetName} sheet`);
+        await rateLimitedSheetsCall(
+            () => sheets.spreadsheets.batchUpdate({
+              spreadsheetId: sheetId,
+              resource: {
+                requests: [
+                  {
+                    addSheet: {
+                      properties: {
+                        title: eventsSheetName,
+                      },
+                    },
+                  },
+                ],
+              },
+            }),
+            1000, // 1 second delay
+        );
+        console.log(`Successfully created ${eventsSheetName} sheet`);
+      }
+
+      // Clear existing data from Events sheet
+      const eventsClearRange = `${eventsSheetName}!A1:Z100000`;
+      await rateLimitedSheetsCall(
+          () => sheets.spreadsheets.values.clear({
+            spreadsheetId: sheetId,
+            range: eventsClearRange,
+          }),
+          1000, // 1 second delay
+      );
+      console.log(`Cleared existing data from ${eventsSheetName} sheet`);
+
+      // Write header row first
+      const eventsHeaderRow = [
+        [
+          "Event ID",
+          "Title",
+          "Country Code",
+          "City",
+          "Event Source Name",
+          "Image Count",
+          "Is Duplicate",
+          "Is Hidden",
+          "Is Date Only",
+          "Is Native",
+          "Has Website",
+          "Has Location",
+          "Spot Count",
+          "Spot List Count",
+          "Contributor Count",
+          "Created From Create Native",
+          "Start At",
+          "End At",
+          "Time Zone",
+          "Created At",
+          "Updated At",
+        ],
+      ];
+      await rateLimitedSheetsCall(
+          () => sheets.spreadsheets.values.update({
+            spreadsheetId: sheetId,
+            range: `${eventsSheetName}!A1`,
+            valueInputOption: "RAW",
+            resource: {
+              values: eventsHeaderRow,
+            },
+          }),
+          1000, // 1 second delay
+      );
+
+      // Process events in batches to reduce memory usage
+      const EVENT_BATCH_SIZE = 500; // Process 500 events at a time
+      let lastEventDoc = null;
+      let eventBatchNumber = 0;
+      let currentEventRow = 2; // Start at row 2 (row 1 is header)
+
+      // Format dates helper function
+      const formatEventDate = (timestamp) => {
+        if (!timestamp) return "";
+        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        return date.toISOString();
+      };
+
+      let processingEvents = true;
+      while (processingEvents) {
+        eventBatchNumber++;
+        console.log(`Processing event batch ${eventBatchNumber}...`);
+
+        // Build query for next batch
+        let eventQuery = db.collection("events").limit(EVENT_BATCH_SIZE);
+        if (lastEventDoc) {
+          eventQuery = eventQuery.startAfter(lastEventDoc);
+        }
+
+        const eventBatchSnapshot = await eventQuery.get();
+
+        if (eventBatchSnapshot.empty) {
+          console.log(
+              `No more events to process. Completed ${eventBatchNumber - 1} batches.`,
+          );
+          processingEvents = false;
+          continue;
+        }
+
+        console.log(
+            `Event batch ${eventBatchNumber}: Processing ${eventBatchSnapshot.size} events...`,
+        );
+
+        // Prepare batch data
+        const eventBatchData = [];
+        eventBatchSnapshot.forEach((doc) => {
+          const eventData = doc.data();
+
+          // Extract and format fields
+          const imageUrls = eventData.imageUrls || [];
+          const imageCount = Array.isArray(imageUrls) ? imageUrls.length : 0;
+          const isDuplicate = eventData.duplicateOf != null;
+          const isHidden = eventData.hidden === true;
+          const isDateOnly = eventData.isDateOnly === true;
+          const eventSourceId = typeof eventData.eventSourceId === "string" ?
+            eventData.eventSourceId.trim() :
+            "";
+          const isNative = eventSourceId.length === 0;
+          const hasWebsite = !!(eventData.websiteUrl && eventData.websiteUrl !== "");
+          const hasLocation = eventData.latitude != null && eventData.longitude != null;
+          const spotIds = eventData.spotIds || [];
+          const spotCount = Array.isArray(spotIds) ? spotIds.length : 0;
+          const spotListIds = eventData.spotListIds || [];
+          const spotListCount = Array.isArray(spotListIds) ? spotListIds.length : 0;
+          const contributors = eventData.contributors || [];
+          const contributorCount = Array.isArray(contributors) ? contributors.length : 0;
+          const createdFromCreateNative = eventData.createdFromCreateNative === true;
+
+          eventBatchData.push([
+            doc.id, // Event ID
+            eventData.title || "", // Title
+            eventData.countryCode || "", // Country Code
+            eventData.city || "", // City
+            eventData.eventSourceName || "", // Event Source Name
+            imageCount, // Image Count
+            isDuplicate, // Is Duplicate
+            isHidden, // Is Hidden
+            isDateOnly, // Is Date Only
+            isNative, // Is Native
+            hasWebsite, // Has Website
+            hasLocation, // Has Location
+            spotCount, // Spot Count
+            spotListCount, // Spot List Count
+            contributorCount, // Contributor Count
+            createdFromCreateNative, // Created From Create Native
+            formatEventDate(eventData.startAt), // Start At
+            formatEventDate(eventData.endAt), // End At
+            eventData.timeZone || "", // Time Zone
+            formatEventDate(eventData.createdAt), // Created At
+            formatEventDate(eventData.updatedAt), // Updated At
+          ]);
+        });
+
+        // Write batch to Google Sheets
+        if (eventBatchData.length > 0) {
+          await rateLimitedSheetsCall(
+              () => sheets.spreadsheets.values.update({
+                spreadsheetId: sheetId,
+                range: `${eventsSheetName}!A${currentEventRow}`,
+                valueInputOption: "RAW",
+                resource: {
+                  values: eventBatchData,
+                },
+              }),
+              1000, // 1 second delay between batches
+          );
+
+          eventsExported += eventBatchData.length;
+          currentEventRow += eventBatchData.length;
+
+          console.log(
+              `Event batch ${eventBatchNumber}: Wrote ${eventBatchData.length} events ` +
+              `(total exported: ${eventsExported})`,
+          );
+        }
+
+        // Update lastEventDoc for pagination
+        lastEventDoc = eventBatchSnapshot.docs[eventBatchSnapshot.docs.length - 1];
+
+        // If we got fewer than EVENT_BATCH_SIZE, we're done
+        if (eventBatchSnapshot.size < EVENT_BATCH_SIZE) {
+          processingEvents = false;
+        }
+      }
+
+      console.log(`Successfully synced ${eventsExported} events to ${eventsSheetName} sheet`);
+    } catch (eventsError) {
+      console.error("Error exporting events to Google Sheets:", eventsError);
+      // Don't throw - allow main metrics calculation to succeed even if events export fails
+    }
+
     console.log("User activity metrics calculation completed successfully");
 
     return {
@@ -9593,6 +9811,7 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
       rowsSynced: sheetData.length,
       spotsExported: spotsExported,
       usersExported: usersExported,
+      eventsExported: eventsExported,
     };
   } catch (error) {
     console.error("Error in user activity metrics calculation:", error);

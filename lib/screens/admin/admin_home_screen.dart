@@ -134,7 +134,7 @@ class AdminHomeScreen extends StatelessWidget {
               leading: const Icon(Icons.analytics),
               title: const Text('User Activity Metrics'),
               subtitle: const Text(
-                'Calculate and sync DAU/WAU/MAU metrics to Google Sheets',
+                'Calculate and sync DAU/WAU/MAU metrics, Spots, Users, and Events to Google Sheets',
               ),
               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () => context.push('/admin/user-activity-metrics'),

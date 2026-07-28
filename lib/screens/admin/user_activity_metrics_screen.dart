@@ -175,6 +175,9 @@ class _UserActivityMetricsScreenState extends State<UserActivityMetricsScreen> {
                   Text(
                     '• Syncs all historical metrics to Google Sheets for Looker Studio',
                   ),
+                  Text(
+                    '• Also refreshes Spots, Users, and Events tabs for Looker Studio dashboards',
+                  ),
                   SizedBox(height: 8),
                   Text(
                     'Note: This function runs automatically every night at 1 minute after midnight UTC. '
@@ -234,6 +237,12 @@ class _UserActivityMetricsScreenState extends State<UserActivityMetricsScreen> {
                     ],
                     if (lastResult['rowsSynced'] != null)
                       Text('Rows synced to Google Sheets: ${lastResult['rowsSynced']}'),
+                    if (lastResult['spotsExported'] != null)
+                      Text('Spots exported: ${lastResult['spotsExported']}'),
+                    if (lastResult['usersExported'] != null)
+                      Text('Users exported: ${lastResult['usersExported']}'),
+                    if (lastResult['eventsExported'] != null)
+                      Text('Events exported: ${lastResult['eventsExported']}'),
                   ],
                 ),
               ),
