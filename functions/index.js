@@ -9209,6 +9209,7 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
           "Rating Count",
           "Average Rating",
           "Wilson Lower Bound",
+          "Created From Create Native",
           "Created At",
           "Updated At",
         ],
@@ -9279,6 +9280,7 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
           const wilsonLowerBound = spotData.wilsonLowerBound != null ?
             Number(spotData.wilsonLowerBound.toFixed(4)) :
             0;
+          const createdFromCreateNative = spotData.createdFromCreateNative === true;
 
           batchData.push([
             doc.id, // Spot ID
@@ -9294,6 +9296,7 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
             ratingCount, // Rating Count
             averageRating, // Average Rating
             wilsonLowerBound, // Wilson Lower Bound
+            createdFromCreateNative, // Created From Create Native
             formatDate(spotData.createdAt), // Created At
             formatDate(spotData.updatedAt), // Updated At
           ]);
