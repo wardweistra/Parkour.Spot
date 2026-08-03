@@ -178,6 +178,10 @@ class _UserActivityMetricsScreenState extends State<UserActivityMetricsScreen> {
                   Text(
                     '• Also refreshes Spots, Users, and Events tabs for Looker Studio dashboards',
                   ),
+                  Text(
+                    '• Users export includes contribution counts: spots/events added or '
+                    'improved, plus moderator create-native deduplications',
+                  ),
                   SizedBox(height: 8),
                   Text(
                     'Note: This function runs automatically every night at 1 minute after midnight UTC. '

@@ -134,6 +134,10 @@ const {executeEventsInBoundsQuery} = require("./lib/events-in-bounds");
 const {
   lookupTimeZoneFromCoordinates,
 } = require("./lib/timezone-lookup");
+const {
+  buildUserContributionStats,
+  getUserContributionStats,
+} = require("./lib/user-contribution-stats");
 
 // Import shared HTML template
 const {generateHtmlPage} = require("./html-template");
@@ -9408,6 +9412,12 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
           "Has Any Saved Spot Lists",
           "Has Any Check Ins",
           "Has Any Training Plans",
+          "Spots Added",
+          "Spots Improved",
+          "Spots Deduplicated",
+          "Events Created",
+          "Events Improved",
+          "Events Deduplicated",
         ],
       ];
       await rateLimitedSheetsCall(
@@ -9478,6 +9488,10 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
       const usersWithCheckIns = await getUserIdsWithAnyInTopLevelCollection("spotCheckIns");
       const usersWithTrainingPlans = await getUserIdsWithAnyInTopLevelCollection("spotTrainingPlans");
 
+      // Aggregate per-user spot/event contribution counts for Looker Studio.
+      console.log("Building per-user contribution stats from spots and events...");
+      const contributionStatsByUser = await buildUserContributionStats(db);
+
       let processingUsers = true;
       while (processingUsers) {
         userBatchNumber++;
@@ -9523,6 +9537,10 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
           const hasAnySavedSpotLists = usersWithSavedSpotLists.has(doc.id);
           const hasAnyCheckIns = usersWithCheckIns.has(doc.id);
           const hasAnyTrainingPlans = usersWithTrainingPlans.has(doc.id);
+          const contributionStats = getUserContributionStats(
+              contributionStatsByUser,
+              doc.id,
+          );
 
           userBatchData.push([
             doc.id, // User ID
@@ -9543,6 +9561,12 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
             hasAnySavedSpotLists, // Has Any Saved Spot Lists
             hasAnyCheckIns, // Has Any Check Ins
             hasAnyTrainingPlans, // Has Any Training Plans
+            contributionStats.spotsAdded, // Spots Added
+            contributionStats.spotsImproved, // Spots Improved
+            contributionStats.spotsDeduplicated, // Spots Deduplicated
+            contributionStats.eventsCreated, // Events Created
+            contributionStats.eventsImproved, // Events Improved
+            contributionStats.eventsDeduplicated, // Events Deduplicated
           ]);
         });
 
