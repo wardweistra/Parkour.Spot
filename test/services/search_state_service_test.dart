@@ -45,6 +45,7 @@ void main() {
       await service.clearAllFilters();
 
       expect(service.hasImagesOnly, isFalse);
+      expect(service.filterArea, 'amenities');
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getBool('search_has_images_only'), isFalse);
     },

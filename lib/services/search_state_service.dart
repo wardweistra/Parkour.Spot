@@ -304,7 +304,7 @@ class SearchStateService extends ChangeNotifier {
   /// Reset all source and amenities filters to defaults.
   Future<void> clearAllFilters() async {
     _hasImagesOnly = false;
-    _filterArea = 'source';
+    _filterArea = 'amenities';
     _selectedSpotSource = null;
     _selectedFolders = {};
     _spotAccess = [];
