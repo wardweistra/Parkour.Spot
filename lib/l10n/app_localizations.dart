@@ -1096,10 +1096,10 @@ abstract class AppLocalizations {
   /// **'Filter by'**
   String get exploreFilterBy;
 
-  /// Show only spots that have at least one image
+  /// Amenity chip: only spots that have at least one image
   ///
   /// In en, this message translates to:
-  /// **'Only spots with images'**
+  /// **'With images'**
   String get exploreFilterHasImages;
 
   /// Filter mode: amenities
@@ -1113,6 +1113,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sources'**
   String get exploreFilterSources;
+
+  /// Filter card: photos
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get exploreSpotPhotosTitle;
+
+  /// Filter card: photos description
+  ///
+  /// In en, this message translates to:
+  /// **'Show spots that have at least one photo'**
+  String get exploreSpotPhotosSubtitle;
 
   /// Filter card: access
   ///

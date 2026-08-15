@@ -600,13 +600,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get exploreFilterBy => 'Filtrer par';
 
   @override
-  String get exploreFilterHasImages => 'Uniquement les spots avec des images';
+  String get exploreFilterHasImages => 'Avec images';
 
   @override
   String get exploreFilterAmenities => 'Équipements';
 
   @override
   String get exploreFilterSources => 'Sources';
+
+  @override
+  String get exploreSpotPhotosTitle => 'Photos';
+
+  @override
+  String get exploreSpotPhotosSubtitle =>
+      'Afficher les spots qui ont au moins une photo';
 
   @override
   String get exploreSpotAccessTitle => 'Accès au spot';

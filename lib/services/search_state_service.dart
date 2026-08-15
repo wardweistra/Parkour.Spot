@@ -9,19 +9,32 @@ class SearchStateService extends ChangeNotifier {
   static const String _keyZoom = 'search_zoom';
   static const String _keyIsSatellite = 'search_is_satellite';
   static const String _keyHasImagesOnly = 'search_has_images_only';
-  static const String _keySelectedSpotSource = 'search_selected_spot_source'; // null = all, "" = native, string = specific source
-  static const String _keyFilterArea = 'search_filter_area'; // "amenities" | "source" | null
-  static const String _keySpotAccess = 'search_spot_access'; // when amenities: list of "public" | "restricted" | "paid" for OR query
-  static const String _keySpotFacilitiesCovered = 'search_spot_facilities_covered'; // when amenities: "yes"
-  static const String _keySpotFacilitiesLighting = 'search_spot_facilities_lighting'; // when amenities: "yes"
-  static const String _keySpotFacilitiesWaterTap = 'search_spot_facilities_water_tap'; // when amenities: "yes"
-  static const String _keySpotFacilitiesToilet = 'search_spot_facilities_toilet'; // when amenities: "yes"
-  static const String _keySpotFacilitiesParking = 'search_spot_facilities_parking'; // when amenities: "yes"
-  static const String _keyGoodFor = 'search_good_for'; // when amenities: list for array-contains-any
-  static const String _keySpotFeatures = 'search_spot_features'; // when amenities: list for array-contains-any
-  static const String _keyAttributeFilterMode = 'search_attribute_filter_mode'; // "goodFor" | "spotFeatures"
-  static const String _keySelectedFolders = 'search_selected_folders'; // JSON map of sourceId -> List<String> (multiple folders, empty list = all folders)
-  static const String _keySelectedListId = 'search_selected_list_id'; // Selected spot list ID for highlighting
+  static const String _keySelectedSpotSource =
+      'search_selected_spot_source'; // null = all, "" = native, string = specific source
+  static const String _keyFilterArea =
+      'search_filter_area'; // "amenities" | "source" | null
+  static const String _keySpotAccess =
+      'search_spot_access'; // when amenities: list of "public" | "restricted" | "paid" for OR query
+  static const String _keySpotFacilitiesCovered =
+      'search_spot_facilities_covered'; // when amenities: "yes"
+  static const String _keySpotFacilitiesLighting =
+      'search_spot_facilities_lighting'; // when amenities: "yes"
+  static const String _keySpotFacilitiesWaterTap =
+      'search_spot_facilities_water_tap'; // when amenities: "yes"
+  static const String _keySpotFacilitiesToilet =
+      'search_spot_facilities_toilet'; // when amenities: "yes"
+  static const String _keySpotFacilitiesParking =
+      'search_spot_facilities_parking'; // when amenities: "yes"
+  static const String _keyGoodFor =
+      'search_good_for'; // when amenities: list for array-contains-any
+  static const String _keySpotFeatures =
+      'search_spot_features'; // when amenities: list for array-contains-any
+  static const String _keyAttributeFilterMode =
+      'search_attribute_filter_mode'; // "goodFor" | "spotFeatures"
+  static const String _keySelectedFolders =
+      'search_selected_folders'; // JSON map of sourceId -> List<String> (multiple folders, empty list = all folders)
+  static const String _keySelectedListId =
+      'search_selected_list_id'; // Selected spot list ID for highlighting
   static const String _keyLastKnownUserLat = 'search_last_known_user_lat';
   static const String _keyLastKnownUserLng = 'search_last_known_user_lng';
 
@@ -32,17 +45,22 @@ class SearchStateService extends ChangeNotifier {
   bool _isSatellite = false;
   bool _hasImagesOnly = false;
   String? _filterArea; // "amenities" | "source" | null (default = amenities)
-  String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
-  List<String> _spotAccess = []; // when filterArea=amenities: ["public", "restricted", "paid"] for OR query, empty = any
+  String?
+  _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
+  List<String> _spotAccess =
+      []; // when filterArea=amenities: ["public", "restricted", "paid"] for OR query, empty = any
   bool? _spotFacilitiesCovered; // when filterArea=amenities: true = "yes"
   bool? _spotFacilitiesLighting; // when filterArea=amenities: true = "yes"
   bool? _spotFacilitiesWaterTap; // when filterArea=amenities: true = "yes"
   bool? _spotFacilitiesToilet; // when filterArea=amenities: true = "yes"
   bool? _spotFacilitiesParking; // when filterArea=amenities: true = "yes"
   List<String> _goodFor = []; // when filterArea=amenities: array-contains-any
-  List<String> _spotFeatures = []; // when filterArea=amenities: array-contains-any
-  String _attributeFilterMode = 'goodFor'; // "goodFor" | "spotFeatures" - which attribute chip section to show
-  Map<String, List<String>> _selectedFolders = {}; // sourceId -> list of selected folder names (empty list = all folders)
+  List<String> _spotFeatures =
+      []; // when filterArea=amenities: array-contains-any
+  String _attributeFilterMode =
+      'goodFor'; // "goodFor" | "spotFeatures" - which attribute chip section to show
+  Map<String, List<String>> _selectedFolders =
+      {}; // sourceId -> list of selected folder names (empty list = all folders)
   String? _selectedListId; // Selected spot list ID for highlighting
   double? _lastKnownUserLat;
   double? _lastKnownUserLng;
@@ -64,22 +82,23 @@ class SearchStateService extends ChangeNotifier {
   List<String> get goodFor => List.unmodifiable(_goodFor);
   List<String> get spotFeatures => List.unmodifiable(_spotFeatures);
   String get attributeFilterMode => _attributeFilterMode;
-  Map<String, List<String>> get selectedFolders => Map.unmodifiable(_selectedFolders);
+  Map<String, List<String>> get selectedFolders =>
+      Map.unmodifiable(_selectedFolders);
   String? get selectedListId => _selectedListId;
   double? get lastKnownUserLat => _lastKnownUserLat;
   double? get lastKnownUserLng => _lastKnownUserLng;
-  
+
   /// Get selected folders for a specific source (empty list = all folders)
   List<String> getSelectedFoldersForSource(String sourceId) {
     return _selectedFolders[sourceId] ?? [];
   }
-  
+
   /// Check if a specific folder is selected for a source
   bool isFolderSelectedForSource(String sourceId, String folder) {
     final folders = _selectedFolders[sourceId];
     return folders != null && folders.contains(folder);
   }
-  
+
   /// Toggle folder selection for a source (add if not selected, remove if selected)
   Future<void> toggleFolderForSource(String sourceId, String folder) async {
     final currentFolders = _selectedFolders[sourceId] ?? [];
@@ -93,25 +112,30 @@ class SearchStateService extends ChangeNotifier {
       }
     } else {
       // Add folder
-      _selectedFolders[sourceId] = List<String>.from(currentFolders)..add(folder);
+      _selectedFolders[sourceId] = List<String>.from(currentFolders)
+        ..add(folder);
     }
     notifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
-      final foldersJson = jsonEncode(_selectedFolders.map((key, value) => MapEntry(key, value)));
+      final foldersJson = jsonEncode(
+        _selectedFolders.map((key, value) => MapEntry(key, value)),
+      );
       await prefs.setString(_keySelectedFolders, foldersJson);
     } catch (e) {
       // Ignore SharedPreferences errors - settings will not persist but app continues to work
     }
   }
-  
+
   /// Clear all folder selections for a source (select all folders)
   Future<void> clearFoldersForSource(String sourceId) async {
     _selectedFolders.remove(sourceId);
     notifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
-      final foldersJson = jsonEncode(_selectedFolders.map((key, value) => MapEntry(key, value)));
+      final foldersJson = jsonEncode(
+        _selectedFolders.map((key, value) => MapEntry(key, value)),
+      );
       await prefs.setString(_keySelectedFolders, foldersJson);
     } catch (e) {
       // Ignore SharedPreferences errors - settings will not persist but app continues to work
@@ -127,11 +151,15 @@ class SearchStateService extends ChangeNotifier {
       _isSatellite = prefs.getBool(_keyIsSatellite) ?? false;
       _hasImagesOnly = prefs.getBool(_keyHasImagesOnly) ?? false;
       final storedFilterArea = prefs.getString(_keyFilterArea);
-      _selectedSpotSource = prefs.getString(_keySelectedSpotSource); // null if not set (all sources)
+      _selectedSpotSource = prefs.getString(
+        _keySelectedSpotSource,
+      ); // null if not set (all sources)
       final foldersJson = prefs.getString(_keySelectedFolders);
       // Migration: "source" used to be the default value.
       // Keep legacy migration, but preserve explicit source filters.
-      final hasStoredSourceFilters = _selectedSpotSource != null || _hasStoredFolderSelections(foldersJson);
+      final hasStoredSourceFilters =
+          _selectedSpotSource != null ||
+          _hasStoredFolderSelections(foldersJson);
       if (storedFilterArea == 'source' && !hasStoredSourceFilters) {
         _filterArea = null;
         await prefs.remove(_keyFilterArea);
@@ -150,7 +178,9 @@ class SearchStateService extends ChangeNotifier {
             _spotAccess = [];
           }
         } catch (e) {
-          _spotAccess = [accessJson]; // Migrate old format: raw string stored directly
+          _spotAccess = [
+            accessJson,
+          ]; // Migrate old format: raw string stored directly
         }
       } else {
         _spotAccess = [];
@@ -162,14 +192,16 @@ class SearchStateService extends ChangeNotifier {
       _spotFacilitiesParking = prefs.getBool(_keySpotFacilitiesParking);
       _goodFor = _loadStringListFromPrefs(prefs, _keyGoodFor);
       _spotFeatures = _loadStringListFromPrefs(prefs, _keySpotFeatures);
-      _attributeFilterMode = prefs.getString(_keyAttributeFilterMode) ?? 'goodFor';
-      if (_attributeFilterMode != 'goodFor' && _attributeFilterMode != 'spotFeatures') {
+      _attributeFilterMode =
+          prefs.getString(_keyAttributeFilterMode) ?? 'goodFor';
+      if (_attributeFilterMode != 'goodFor' &&
+          _attributeFilterMode != 'spotFeatures') {
         _attributeFilterMode = 'goodFor';
       }
       _selectedListId = prefs.getString(_keySelectedListId); // null if not set
       _lastKnownUserLat = prefs.getDouble(_keyLastKnownUserLat);
       _lastKnownUserLng = prefs.getDouble(_keyLastKnownUserLng);
-      
+
       // Load selected folders (migrate from old format if needed)
       if (foldersJson != null) {
         try {
@@ -178,7 +210,10 @@ class SearchStateService extends ChangeNotifier {
             // Handle migration from old String format to new List<String> format
             if (value is List) {
               // Already in new format
-              return MapEntry(key, List<String>.from(value.map((v) => v.toString())));
+              return MapEntry(
+                key,
+                List<String>.from(value.map((v) => v.toString())),
+              );
             } else if (value is String) {
               // Old single folder format - convert to list
               return MapEntry(key, [value]);
@@ -192,14 +227,18 @@ class SearchStateService extends ChangeNotifier {
           _selectedFolders = {};
         }
       }
-      
+
       notifyListeners();
     } catch (e) {
       // Silent fail - persistence is best-effort
     }
   }
 
-  Future<void> saveMapCamera(double centerLat, double centerLng, double zoom) async {
+  Future<void> saveMapCamera(
+    double centerLat,
+    double centerLng,
+    double zoom,
+  ) async {
     _centerLat = centerLat;
     _centerLng = centerLng;
     _zoom = zoom;
@@ -231,7 +270,8 @@ class SearchStateService extends ChangeNotifier {
   }
 
   /// Set filter area: "amenities" | "source" | null (null = amenities)
-  /// When switching to amenities, clears source/folder. When switching to source, clears amenities.
+  /// When switching to amenities, clears source/folder. When switching to
+  /// source, clears amenity filters including has-images.
   Future<void> setFilterArea(String? filterArea) async {
     if (_filterArea == filterArea) return;
     _filterArea = filterArea;
@@ -246,6 +286,7 @@ class SearchStateService extends ChangeNotifier {
         // Ignore SharedPreferences errors
       }
     } else if (filterArea == 'source' || filterArea == null) {
+      _hasImagesOnly = false;
       _spotAccess = [];
       _spotFacilitiesCovered = null;
       _spotFacilitiesLighting = null;
@@ -393,12 +434,18 @@ class SearchStateService extends ChangeNotifier {
       if (_spotFacilitiesLighting == null) {
         await prefs.remove(_keySpotFacilitiesLighting);
       } else {
-        await prefs.setBool(_keySpotFacilitiesLighting, _spotFacilitiesLighting!);
+        await prefs.setBool(
+          _keySpotFacilitiesLighting,
+          _spotFacilitiesLighting!,
+        );
       }
       if (_spotFacilitiesWaterTap == null) {
         await prefs.remove(_keySpotFacilitiesWaterTap);
       } else {
-        await prefs.setBool(_keySpotFacilitiesWaterTap, _spotFacilitiesWaterTap!);
+        await prefs.setBool(
+          _keySpotFacilitiesWaterTap,
+          _spotFacilitiesWaterTap!,
+        );
       }
       if (_spotFacilitiesToilet == null) {
         await prefs.remove(_keySpotFacilitiesToilet);
@@ -445,7 +492,10 @@ class SearchStateService extends ChangeNotifier {
 
   /// Set selected folders for a specific source (empty list = all folders)
   /// This method is kept for backward compatibility but prefer using toggleFolderForSource
-  Future<void> setSelectedFoldersForSource(String sourceId, List<String> folders) async {
+  Future<void> setSelectedFoldersForSource(
+    String sourceId,
+    List<String> folders,
+  ) async {
     if (folders.isEmpty) {
       _selectedFolders.remove(sourceId);
     } else {
@@ -454,7 +504,9 @@ class SearchStateService extends ChangeNotifier {
     notifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
-      final foldersJson = jsonEncode(_selectedFolders.map((key, value) => MapEntry(key, value)));
+      final foldersJson = jsonEncode(
+        _selectedFolders.map((key, value) => MapEntry(key, value)),
+      );
       await prefs.setString(_keySelectedFolders, foldersJson);
     } catch (e) {
       // Ignore SharedPreferences errors - settings will not persist but app continues to work
@@ -477,7 +529,10 @@ class SearchStateService extends ChangeNotifier {
     }
   }
 
-  static List<String> _loadStringListFromPrefs(SharedPreferences prefs, String key) {
+  static List<String> _loadStringListFromPrefs(
+    SharedPreferences prefs,
+    String key,
+  ) {
     final json = prefs.getString(key);
     if (json == null || json.isEmpty) return [];
     try {

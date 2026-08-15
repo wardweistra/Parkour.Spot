@@ -25,15 +25,15 @@ void main() {
     expect(restoredService.hasImagesOnly, isTrue);
   });
 
-  test('switching filter area preserves the has-images filter', () async {
+  test('switching to sources clears the has-images filter', () async {
     final service = SearchStateService();
     await service.setHasImagesOnly(true);
 
     await service.setFilterArea('source');
-    expect(service.hasImagesOnly, isTrue);
+    expect(service.hasImagesOnly, isFalse);
 
     await service.setFilterArea('amenities');
-    expect(service.hasImagesOnly, isTrue);
+    expect(service.hasImagesOnly, isFalse);
   });
 
   test(

@@ -439,11 +439,11 @@ class SearchScreenState extends State<SearchScreen>
   }
 
   bool _hasActiveFilters() {
-    if (_hasImagesOnly) return true;
     final searchState = _searchStateServiceRef;
     // Match _buildFilters / spot queries: null means default amenities, not "source".
     if ((_filterArea ?? 'amenities') == 'amenities') {
-      return _spotAccess.isNotEmpty ||
+      return _hasImagesOnly ||
+          _spotAccess.isNotEmpty ||
           _spotFacilitiesCovered == true ||
           _spotFacilitiesLighting == true ||
           _spotFacilitiesWaterTap == true ||
@@ -1372,7 +1372,8 @@ class SearchScreenState extends State<SearchScreen>
           minLng,
           maxLng,
           limit: 100,
-          hasImages: _hasImagesOnly,
+          hasImages:
+              (_filterArea ?? 'amenities') == 'amenities' && _hasImagesOnly,
           filterArea: _filterArea ?? 'amenities',
           spotSource: (_filterArea ?? 'amenities') == 'amenities'
               ? null
@@ -1439,20 +1440,6 @@ class SearchScreenState extends State<SearchScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Card(
-          child: SwitchListTile(
-            secondary: const Icon(Icons.photo_library_outlined),
-            title: Text(l10n.exploreFilterHasImages),
-            value: _hasImagesOnly,
-            onChanged: (value) {
-              Provider.of<SearchStateService>(
-                context,
-                listen: false,
-              ).setHasImagesOnly(value);
-            },
-          ),
-        ),
-        const SizedBox(height: 12),
         Text(
           l10n.exploreFilterBy,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -1520,6 +1507,8 @@ class SearchScreenState extends State<SearchScreen>
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            _buildPhotosFilterCard(searchState),
+            const SizedBox(height: 12),
             _buildAccessFilterCard(searchState),
             const SizedBox(height: 12),
             _buildFacilitiesFilterCard(searchState),
@@ -1528,6 +1517,55 @@ class SearchScreenState extends State<SearchScreen>
           ],
         );
       },
+    );
+  }
+
+  Widget _buildPhotosFilterCard(SearchStateService searchState) {
+    final l10n = AppLocalizations.of(context)!;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.exploreSpotPhotosTitle,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.exploreSpotPhotosSubtitle,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildFilterChip(
+                  label: l10n.exploreFilterHasImages,
+                  icon: Icons.photo_library_outlined,
+                  selected: _hasImagesOnly,
+                  onTap: () {
+                    final next = !_hasImagesOnly;
+                    searchState.setHasImagesOnly(next);
+                    setState(() => _hasImagesOnly = next);
+                    if (_mapController != null) {
+                      _loadMapDataForCurrentView();
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 

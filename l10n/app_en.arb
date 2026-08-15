@@ -741,9 +741,9 @@
   "@exploreFilterBy": {
     "description": "Filters: section label"
   },
-  "exploreFilterHasImages": "Only spots with images",
+  "exploreFilterHasImages": "With images",
   "@exploreFilterHasImages": {
-    "description": "Show only spots that have at least one image"
+    "description": "Amenity chip: only spots that have at least one image"
   },
   "exploreFilterAmenities": "Amenities",
   "@exploreFilterAmenities": {
@@ -752,6 +752,14 @@
   "exploreFilterSources": "Sources",
   "@exploreFilterSources": {
     "description": "Filter mode: data sources"
+  },
+  "exploreSpotPhotosTitle": "Photos",
+  "@exploreSpotPhotosTitle": {
+    "description": "Filter card: photos"
+  },
+  "exploreSpotPhotosSubtitle": "Show spots that have at least one photo",
+  "@exploreSpotPhotosSubtitle": {
+    "description": "Filter card: photos description"
   },
   "exploreSpotAccessTitle": "Spot Access",
   "@exploreSpotAccessTitle": {

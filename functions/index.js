@@ -793,6 +793,7 @@ async function executeTopSpotsInBoundsQuery(params) {
   }
 
   const useAmenitiesFilter = filterArea === "amenities" && (
+    hasImages === true ||
     (spotAccess && (typeof spotAccess === "string" ||
         (Array.isArray(spotAccess) && spotAccess.length > 0))) ||
     (spotFacilitiesCovered === "yes") ||
@@ -870,7 +871,10 @@ async function executeTopSpotsInBoundsQuery(params) {
       query = query.where("hidden", "==", false);
     }
 
-    query = applyHasImagesFilter(query, hasImages);
+    query = applyHasImagesFilter(
+        query,
+        filterArea === "amenities" && hasImages,
+    );
 
     return query.orderBy("ranking", "desc");
   };
