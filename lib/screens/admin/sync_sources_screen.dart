@@ -234,6 +234,11 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
             onPressed: () => _backfillSpotNameLower(context),
           ),
           IconButton(
+            icon: const Icon(Icons.photo_library_outlined),
+            tooltip: 'Backfill Spot Image Flags (hasImages)',
+            onPressed: () => _backfillSpotHasImages(context),
+          ),
+          IconButton(
             icon: const Icon(Icons.auto_fix_high),
             tooltip: 'Backfill Source Attributes',
             onPressed: () => _showBackfillSpotAttributesDialog(context),
@@ -1700,6 +1705,88 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       if (mounted) {
         scaffoldMessenger.showSnackBar(SnackBar(content: Text('Backfill failed: $e'), backgroundColor: Colors.red));
       }
+    }
+  }
+
+  Future<void> _backfillSpotHasImages(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Backfill Spot Image Flags'),
+        content: const Text(
+          'Sets hasImages from imageUrls for every existing spot. '
+          'The operation is safe to run again and only updates stale values.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Run'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !context.mounted) return;
+
+    final syncService = context.read<SyncSourceService>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    late NavigatorState navigator;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) {
+        navigator = Navigator.of(c);
+        return const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Backfilling spot image flags...'),
+            ],
+          ),
+        );
+      },
+    );
+
+    try {
+      final result = await syncService.backfillSpotHasImages();
+      navigator.pop();
+      if (!mounted) return;
+
+      if (result != null && result['success'] == true) {
+        final statsValue = result['stats'];
+        final stats = statsValue is Map
+            ? Map<String, dynamic>.from(statsValue)
+            : null;
+        final message = stats == null
+            ? 'Backfill completed'
+            : 'Backfill completed. Processed: '
+                  '${_formatStatInt(stats['totalProcessed'])}, updated: '
+                  '${_formatStatInt(stats['totalUpdated'])}, with images: '
+                  '${_formatStatInt(stats['spotsWithImages'])}.';
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: Colors.green),
+        );
+      } else {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(syncService.error ?? 'Backfill failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      navigator.pop();
+      if (!mounted) return;
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Backfill failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 }

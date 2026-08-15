@@ -598,10 +598,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get exploreFilterBy => 'Filtrar por';
 
   @override
+  String get exploreFilterHasImages => 'Con imágenes';
+
+  @override
   String get exploreFilterAmenities => 'Servicios';
 
   @override
   String get exploreFilterSources => 'Fuentes';
+
+  @override
+  String get exploreSpotPhotosTitle => 'Fotos';
+
+  @override
+  String get exploreSpotPhotosSubtitle =>
+      'Mostrar spots que tengan al menos una foto';
 
   @override
   String get exploreSpotAccessTitle => 'Acceso al spot';
@@ -752,7 +762,7 @@ class AppLocalizationsEs extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count spots',
-      one: '1 spot',
+      one: '$count spot',
     );
     return '$_temp0';
   }

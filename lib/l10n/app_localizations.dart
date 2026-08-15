@@ -1096,6 +1096,12 @@ abstract class AppLocalizations {
   /// **'Filter by'**
   String get exploreFilterBy;
 
+  /// Amenity chip: only spots that have at least one image
+  ///
+  /// In en, this message translates to:
+  /// **'With images'**
+  String get exploreFilterHasImages;
+
   /// Filter mode: amenities
   ///
   /// In en, this message translates to:
@@ -1107,6 +1113,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sources'**
   String get exploreFilterSources;
+
+  /// Filter card: photos
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get exploreSpotPhotosTitle;
+
+  /// Filter card: photos description
+  ///
+  /// In en, this message translates to:
+  /// **'Show spots that have at least one photo'**
+  String get exploreSpotPhotosSubtitle;
 
   /// Filter card: access
   ///
@@ -1363,7 +1381,7 @@ abstract class AppLocalizations {
   /// Spot list preview: spot count
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{1 spot} other{{count} spots}}'**
+  /// **'{count, plural, one{{count} spot} other{{count} spots}}'**
   String exploreSpotCountShort(int count);
 
   /// Compact install button on explore PWA banner

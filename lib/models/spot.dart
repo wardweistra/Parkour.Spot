@@ -10,6 +10,7 @@ class Spot {
   final String? city;
   final String? countryCode;
   final List<String>? imageUrls;
+  bool get hasImages => imageUrls?.isNotEmpty ?? false;
   final List<String>? youtubeVideoIds;
   final String? folderName;
   final String? createdBy;
@@ -298,6 +299,7 @@ class Spot {
       'city': city,
       'countryCode': countryCode,
       'imageUrls': imageUrls,
+      'hasImages': hasImages,
       if (youtubeVideoIds != null)
         'youtubeVideoIds': (youtubeVideoIds!.isEmpty && isUpdate)
             ? FieldValue.delete()
