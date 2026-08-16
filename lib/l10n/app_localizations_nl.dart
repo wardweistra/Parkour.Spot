@@ -746,7 +746,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get exploreClearFilters => 'Wissen';
 
   @override
-  String get exploreApplyFilters => 'Toepassen';
+  String get exploreDoneFilters => 'Klaar';
+
+  @override
+  String exploreDoneFiltersWithCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Klaar · $count spots',
+      one: 'Klaar · 1 spot',
+    );
+    return '$_temp0';
+  }
 
   @override
   String exploreSpotCountShort(int count) {

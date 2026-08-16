@@ -756,7 +756,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get exploreClearFilters => 'Zurücksetzen';
 
   @override
-  String get exploreApplyFilters => 'Anwenden';
+  String get exploreDoneFilters => 'Fertig';
+
+  @override
+  String exploreDoneFiltersWithCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Fertig · $count Spots',
+      one: 'Fertig · 1 Spot',
+    );
+    return '$_temp0';
+  }
 
   @override
   String exploreSpotCountShort(int count) {

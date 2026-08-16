@@ -753,7 +753,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get exploreClearFilters => 'Limpar';
 
   @override
-  String get exploreApplyFilters => 'Aplicar';
+  String get exploreDoneFilters => 'Pronto';
+
+  @override
+  String exploreDoneFiltersWithCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Pronto · $count spots',
+      one: 'Pronto · 1 spot',
+    );
+    return '$_temp0';
+  }
 
   @override
   String exploreSpotCountShort(int count) {

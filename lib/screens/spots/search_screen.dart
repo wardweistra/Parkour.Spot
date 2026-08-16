@@ -27,6 +27,7 @@ import '../../services/spot_list_service.dart';
 import '../../services/user_locations_of_interest_service.dart';
 import '../../models/spot.dart';
 import '../../models/spot_list.dart';
+import '../../widgets/custom_button.dart';
 import '../../widgets/spot_card.dart';
 import '../../widgets/linked_upcoming_event_panel.dart';
 import '../../widgets/source_details_dialog.dart';
@@ -3270,6 +3271,20 @@ class SearchScreenState extends State<SearchScreen>
 
   int _exploreSpotCountForHeader() => _totalSpotsInView ?? _visibleSpots.length;
 
+  String _exploreFiltersDoneLabel(AppLocalizations l10n) {
+    if (_isLoadingMapData) {
+      return l10n.exploreDoneFilters;
+    }
+    return l10n.exploreDoneFiltersWithCount(_exploreSpotCountForHeader());
+  }
+
+  void _closeFiltersDialog() {
+    if (!_showFiltersDialog) return;
+    setState(() {
+      _showFiltersDialog = false;
+    });
+  }
+
   int _exploreEventCountForHeader() => _visibleEvents.length;
 
   String? _exploreSpotsSegmentSuffix(AppLocalizations l10n) {
@@ -4693,8 +4708,8 @@ class SearchScreenState extends State<SearchScreen>
                           right: rightPosition,
                           bottom:
                               _collapsedBottomSheetHeight(
-                                    MediaQuery.sizeOf(context).height,
-                                  ) +
+                                MediaQuery.sizeOf(context).height,
+                              ) +
                               144, // Position above map/satellite button
                           child: PointerInterceptor(
                             child: FloatingActionButton(
@@ -4742,8 +4757,8 @@ class SearchScreenState extends State<SearchScreen>
                           right: rightPosition,
                           bottom:
                               _collapsedBottomSheetHeight(
-                                    MediaQuery.sizeOf(context).height,
-                                  ) +
+                                MediaQuery.sizeOf(context).height,
+                              ) +
                               80, // Position above location button
                           child: PointerInterceptor(
                             child: FloatingActionButton(
@@ -4793,8 +4808,8 @@ class SearchScreenState extends State<SearchScreen>
                           right: rightPosition,
                           bottom:
                               _collapsedBottomSheetHeight(
-                                    MediaQuery.sizeOf(context).height,
-                                  ) +
+                                MediaQuery.sizeOf(context).height,
+                              ) +
                               16, // Position above bottom sheet
                           child: PointerInterceptor(
                             child: FloatingActionButton(
@@ -4842,13 +4857,10 @@ class SearchScreenState extends State<SearchScreen>
   }
 
   Widget _buildFiltersDialog() {
+    final l10n = AppLocalizations.of(context)!;
+    final canClearFilters = _hasActiveFilters();
     return GestureDetector(
-      onTap: () {
-        // Close dialog when tapping outside
-        setState(() {
-          _showFiltersDialog = false;
-        });
-      },
+      onTap: _closeFiltersDialog,
       child: PointerInterceptor(
         // Intercept pointer events on the full-screen barrier area
         child: Container(
@@ -4882,81 +4894,60 @@ class SearchScreenState extends State<SearchScreen>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Header
                         Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                AppLocalizations.of(
-                                  context,
-                                )!.exploreFiltersDialogTitle,
+                                l10n.exploreFiltersDialogTitle,
                                 style: Theme.of(
                                   context,
                                 ).textTheme.headlineSmall,
                               ),
                               IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _showFiltersDialog = false;
-                                  });
-                                },
+                                onPressed: _closeFiltersDialog,
                                 icon: const Icon(Icons.close),
                               ),
                             ],
                           ),
                         ),
-
-                        // Filters Content
                         Flexible(
                           child: SingleChildScrollView(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: _buildFilters(),
                           ),
                         ),
-
-                        // Clear and Apply Buttons
                         Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
                               Expanded(
-                                child: TextButton(
-                                  onPressed: () async {
-                                    final searchState =
-                                        Provider.of<SearchStateService>(
-                                          context,
-                                          listen: false,
-                                        );
-                                    await searchState.clearAllFilters();
-                                    if (!mounted) return;
-                                    setState(() {
-                                      _showFiltersDialog = false;
-                                    });
-                                  },
-                                  child: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    )!.exploreClearFilters,
-                                  ),
+                                child: CustomButton(
+                                  text: l10n.exploreClearFilters,
+                                  width: double.infinity,
+                                  height: 44,
+                                  isOutlined: true,
+                                  onPressed: canClearFilters
+                                      ? () async {
+                                          final searchState =
+                                              Provider.of<SearchStateService>(
+                                                context,
+                                                listen: false,
+                                              );
+                                          await searchState.clearAllFilters();
+                                        }
+                                      : null,
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 12),
                               Expanded(
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      _showFiltersDialog = false;
-                                    });
-                                    // Reload spots since source filtering is done at database level
-                                    _loadMapDataForCurrentView();
-                                  },
-                                  child: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    )!.exploreApplyFilters,
-                                  ),
+                                flex: 2,
+                                child: CustomButton(
+                                  text: _exploreFiltersDoneLabel(l10n),
+                                  width: double.infinity,
+                                  height: 44,
+                                  onPressed: _closeFiltersDialog,
                                 ),
                               ),
                             ],

@@ -950,9 +950,18 @@
   "@exploreClearFilters": {
     "description": "Reset all filters"
   },
-  "exploreApplyFilters": "Apply",
-  "@exploreApplyFilters": {
-    "description": "Apply filters and close"
+  "exploreDoneFilters": "Done",
+  "@exploreDoneFilters": {
+    "description": "Close filters panel; filters already apply live"
+  },
+  "exploreDoneFiltersWithCount": "{count, plural, one{Done · 1 spot} other{Done · {count} spots}}",
+  "@exploreDoneFiltersWithCount": {
+    "description": "Close filters panel, with live matching spot count in the current map view",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "exploreSpotCountShort": "{count, plural, one{{count} spot} other{{count} spots}}",
   "@exploreSpotCountShort": {

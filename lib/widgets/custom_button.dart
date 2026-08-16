@@ -59,9 +59,10 @@ class CustomButton extends StatelessWidget {
     final disabledFill = scheme.surfaceContainerHighest;
     final disabledBlendBase = isOutlined ? scheme.surface : disabledFill;
     final disabledForeground = Color.alphaBlend(
-      scheme.onSurface.withValues(alpha: 0.78),
+      scheme.onSurface.withValues(alpha: isOutlined ? 0.38 : 0.78),
       disabledBlendBase,
     );
+    final disabledOutline = scheme.outline.withValues(alpha: 0.35);
 
     final showDisabledChrome = isLoading || onPressed == null;
 
@@ -81,22 +82,32 @@ class CustomButton extends StatelessWidget {
       height: height,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isOutlined ? Colors.transparent : defaultBackgroundColor,
-          foregroundColor:
-              isOutlined ? outlinedForeground : filledForeground,
-          disabledBackgroundColor: isOutlined ? Colors.transparent : disabledFill,
-          disabledForegroundColor: disabledForeground,
-          elevation: isOutlined ? 0 : 2,
-          shadowColor: isOutlined ? Colors.transparent : null,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
-            side: isOutlined
-                ? BorderSide(
-                    color: defaultBackgroundColor,
-                    width: 2,
-                  )
-                : BorderSide.none,
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (isOutlined) return Colors.transparent;
+            if (states.contains(WidgetState.disabled)) return disabledFill;
+            return defaultBackgroundColor;
+          }),
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) return disabledForeground;
+            return isOutlined ? outlinedForeground : filledForeground;
+          }),
+          elevation: WidgetStateProperty.all(isOutlined ? 0.0 : 2.0),
+          shadowColor: WidgetStateProperty.all(
+            isOutlined ? Colors.transparent : null,
+          ),
+          side: WidgetStateProperty.resolveWith((states) {
+            if (!isOutlined) return BorderSide.none;
+            final disabled = states.contains(WidgetState.disabled);
+            return BorderSide(
+              color: disabled ? disabledOutline : defaultBackgroundColor,
+              width: 2,
+            );
+          }),
+          shape: WidgetStateProperty.all(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(borderRadius),
+            ),
           ),
         ),
         child: isLoading

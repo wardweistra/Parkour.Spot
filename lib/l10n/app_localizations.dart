@@ -1372,11 +1372,17 @@ abstract class AppLocalizations {
   /// **'Clear'**
   String get exploreClearFilters;
 
-  /// Apply filters and close
+  /// Close filters panel; filters already apply live
   ///
   /// In en, this message translates to:
-  /// **'Apply'**
-  String get exploreApplyFilters;
+  /// **'Done'**
+  String get exploreDoneFilters;
+
+  /// Close filters panel, with live matching spot count in the current map view
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Done · 1 spot} other{Done · {count} spots}}'**
+  String exploreDoneFiltersWithCount(int count);
 
   /// Spot list preview: spot count
   ///
