@@ -594,13 +594,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get explorePickerLoading => 'Karte wird geladen…';
 
   @override
-  String get exploreFilterBy => 'Filtern nach';
+  String get exploreFilterBy => 'Spots filtern nach';
 
   @override
   String get exploreFilterHasImages => 'Mit Fotos';
 
   @override
-  String get exploreFilterAmenities => 'Spots';
+  String get exploreFilterAmenities => 'Attribute';
 
   @override
   String get exploreFilterSources => 'Quellen';
@@ -610,9 +610,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get exploreSpotAccessTitle => 'Zugang';
-
-  @override
-  String get exploreFilterAny => 'Beliebig';
 
   @override
   String get exploreSpotFacilitiesTitle => 'Ausstattung';

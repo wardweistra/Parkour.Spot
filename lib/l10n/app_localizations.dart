@@ -1090,10 +1090,10 @@ abstract class AppLocalizations {
   /// **'Loading map…'**
   String get explorePickerLoading;
 
-  /// Filters: section label
+  /// Filters: section label above Attributes/Sources tabs
   ///
   /// In en, this message translates to:
-  /// **'Filter by'**
+  /// **'Filter spots by'**
   String get exploreFilterBy;
 
   /// Amenity chip: only spots that have at least one photo
@@ -1105,10 +1105,10 @@ abstract class AppLocalizations {
   /// Filter mode: spot attributes (photos, access, facilities, skills)
   ///
   /// In en, this message translates to:
-  /// **'Spots'**
+  /// **'Attributes'**
   String get exploreFilterAmenities;
 
-  /// Filter mode: data sources
+  /// Filter mode: spot data sources
   ///
   /// In en, this message translates to:
   /// **'Sources'**
@@ -1125,12 +1125,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Access'**
   String get exploreSpotAccessTitle;
-
-  /// Access filter: any access level
-  ///
-  /// In en, this message translates to:
-  /// **'Any'**
-  String get exploreFilterAny;
 
   /// Filter card: facilities
   ///

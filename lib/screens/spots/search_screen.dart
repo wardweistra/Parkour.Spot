@@ -1442,67 +1442,72 @@ class SearchScreenState extends State<SearchScreen>
   Widget _buildFilters() {
     final l10n = AppLocalizations.of(context)!;
     final selectedFilterArea = _filterArea ?? 'amenities';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.exploreFilterBy,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.7),
+    // Full width keeps tabs left-aligned while Sources is still loading
+    // (otherwise the column shrink-wraps and the scroll view centers it).
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.exploreFilterBy,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        SegmentedButton<String?>(
-          segments: [
-            ButtonSegment(
-              value: 'amenities',
-              label: Text(l10n.exploreFilterAmenities),
-              icon: const Icon(Icons.workspace_premium),
-            ),
-            ButtonSegment(
-              value: 'source',
-              label: Text(l10n.exploreFilterSources),
-              icon: const Icon(Icons.folder),
-            ),
-          ],
-          selected: {selectedFilterArea},
-          onSelectionChanged: (Set<String?> selected) {
-            final value = selected.first;
-            Provider.of<SearchStateService>(
-              context,
-              listen: false,
-            ).setFilterArea(value);
-            setState(() {
-              _filterArea = value;
-            });
-            if (value == 'source') {
-              _ensureSyncSourcesLoaded();
-            }
-            // Defer spot reload so the tab switch paints immediately
-            if (_mapController != null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted && _mapController != null) {
-                  _loadMapDataForCurrentView();
-                }
+          const SizedBox(height: 8),
+          SegmentedButton<String?>(
+            segments: [
+              ButtonSegment(
+                value: 'amenities',
+                label: Text(l10n.exploreFilterAmenities),
+                icon: const Icon(Icons.workspace_premium),
+              ),
+              ButtonSegment(
+                value: 'source',
+                label: Text(l10n.exploreFilterSources),
+                icon: const Icon(Icons.folder),
+              ),
+            ],
+            selected: {selectedFilterArea},
+            onSelectionChanged: (Set<String?> selected) {
+              final value = selected.first;
+              Provider.of<SearchStateService>(
+                context,
+                listen: false,
+              ).setFilterArea(value);
+              setState(() {
+                _filterArea = value;
               });
-            }
-          },
-        ),
-        const SizedBox(height: 16),
-        if (selectedFilterArea == 'amenities')
-          _buildAmenitiesFilters()
-        else
-          Consumer<SyncSourceService>(
-            builder: (context, syncService, child) {
-              final summaries = List<SyncSourceSummary>.from(
-                syncService.sourceSummaries,
-              )..sort((a, b) => a.name.compareTo(b.name));
-              return _buildSourceFilters(syncService, summaries);
+              if (value == 'source') {
+                _ensureSyncSourcesLoaded();
+              }
+              // Defer spot reload so the tab switch paints immediately
+              if (_mapController != null) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && _mapController != null) {
+                    _loadMapDataForCurrentView();
+                  }
+                });
+              }
             },
           ),
-      ],
+          const SizedBox(height: 16),
+          if (selectedFilterArea == 'amenities')
+            _buildAmenitiesFilters()
+          else
+            Consumer<SyncSourceService>(
+              builder: (context, syncService, child) {
+                final summaries = List<SyncSourceSummary>.from(
+                  syncService.sourceSummaries,
+                )..sort((a, b) => a.name.compareTo(b.name));
+                return _buildSourceFilters(syncService, summaries);
+              },
+            ),
+        ],
+      ),
     );
   }
 
@@ -1539,25 +1544,19 @@ class SearchScreenState extends State<SearchScreen>
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildFilterChip(
-                  label: l10n.exploreFilterHasImages,
-                  icon: Icons.photo_library_outlined,
-                  selected: _hasImagesOnly,
-                  onTap: () {
-                    final next = !_hasImagesOnly;
-                    searchState.setHasImagesOnly(next);
-                    setState(() => _hasImagesOnly = next);
-                    if (_mapController != null) {
-                      _loadMapDataForCurrentView();
-                    }
-                  },
-                ),
-              ],
+            const SizedBox(height: 4),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.photo_library_outlined),
+              title: Text(l10n.exploreFilterHasImages),
+              value: _hasImagesOnly,
+              onChanged: (value) {
+                searchState.setHasImagesOnly(value);
+                setState(() => _hasImagesOnly = value);
+                if (_mapController != null) {
+                  _loadMapDataForCurrentView();
+                }
+              },
             ),
           ],
         ),
@@ -1568,6 +1567,7 @@ class SearchScreenState extends State<SearchScreen>
   Widget _buildAccessFilterCard(SearchStateService searchState) {
     final l10n = AppLocalizations.of(context)!;
     final keys = SpotAttributes.getKeys('access');
+    final scheme = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -1584,106 +1584,56 @@ class SearchScreenState extends State<SearchScreen>
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: [
-                _buildFilterChip(
-                  label: l10n.exploreFilterAny,
-                  icon: Icons.check_circle_outline,
-                  selected: _spotAccess.isEmpty,
-                  onTap: () {
-                    searchState.clearSpotAccess();
-                    setState(() => _spotAccess = []);
-                    if (_mapController != null) _loadMapDataForCurrentView();
-                  },
-                ),
-                ...keys.map((key) {
-                  final label = SpotAttributes.getLabel('access', key);
-                  final icon = SpotAttributes.getIcon('access', key);
-                  final description = SpotAttributes.getFilterDescription(
-                    'access',
-                    key,
-                  );
-                  final selected = _spotAccess.contains(key);
-                  Color backgroundColor;
-                  Color textColor;
-                  if (selected) {
-                    switch (key) {
-                      case 'public':
-                        backgroundColor = Colors.green.withValues(alpha: 0.1);
-                        textColor = Colors.green.shade700;
-                        break;
-                      case 'restricted':
-                        backgroundColor = Colors.orange.withValues(alpha: 0.1);
-                        textColor = Colors.orange.shade700;
-                        break;
-                      case 'paid':
-                        backgroundColor = Colors.blue.withValues(alpha: 0.1);
-                        textColor = Colors.blue.shade700;
-                        break;
-                      default:
-                        backgroundColor = Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer.withValues(alpha: 0.3);
-                        textColor = Theme.of(context).colorScheme.primary;
+              children: keys.map((key) {
+                final label = SpotAttributes.getLabel('access', key);
+                final icon = SpotAttributes.getIcon('access', key);
+                final description = SpotAttributes.getFilterDescription(
+                  'access',
+                  key,
+                );
+                final selected = _spotAccess.contains(key);
+                Color? selectedColor;
+                Color? selectedForeground;
+                switch (key) {
+                  case 'public':
+                    selectedColor = Colors.green.withValues(alpha: 0.18);
+                    selectedForeground = Colors.green.shade800;
+                    break;
+                  case 'restricted':
+                    selectedColor = Colors.orange.withValues(alpha: 0.18);
+                    selectedForeground = Colors.orange.shade800;
+                    break;
+                  case 'paid':
+                    selectedColor = Colors.blue.withValues(alpha: 0.18);
+                    selectedForeground = Colors.blue.shade800;
+                    break;
+                  default:
+                    selectedColor = scheme.primaryContainer;
+                    selectedForeground = scheme.onPrimaryContainer;
+                }
+                return _buildExploreFilterChip(
+                  label: label,
+                  icon: icon,
+                  tooltip: description,
+                  selected: selected,
+                  selectedColor: selectedColor,
+                  selectedForeground: selectedForeground,
+                  onSelected: (_) {
+                    searchState.toggleSpotAccess(key);
+                    setState(() {
+                      if (selected) {
+                        _spotAccess = List<String>.from(_spotAccess)
+                          ..remove(key);
+                      } else {
+                        _spotAccess = List<String>.from(_spotAccess)..add(key);
+                      }
+                    });
+                    if (_mapController != null) {
+                      _loadMapDataForCurrentView();
                     }
-                  } else {
-                    backgroundColor = Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest;
-                    textColor = Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.6);
-                  }
-                  return Tooltip(
-                    message: description,
-                    child: GestureDetector(
-                      onTap: () {
-                        searchState.toggleSpotAccess(key);
-                        setState(() {
-                          if (selected) {
-                            _spotAccess = List<String>.from(_spotAccess)
-                              ..remove(key);
-                          } else {
-                            _spotAccess = List<String>.from(_spotAccess)
-                              ..add(key);
-                          }
-                        });
-                        if (_mapController != null) {
-                          _loadMapDataForCurrentView();
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: backgroundColor,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: textColor.withValues(alpha: 0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(icon, size: 16, color: textColor),
-                            const SizedBox(width: 6),
-                            Text(
-                              label,
-                              style: TextStyle(
-                                color: textColor,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ],
+                  },
+                );
+              }).toList(),
             ),
           ],
         ),
@@ -1777,60 +1727,12 @@ class SearchScreenState extends State<SearchScreen>
                   key,
                 );
                 final selected = getFacility(key);
-                Color backgroundColor;
-                Color textColor;
-                IconData statusIcon;
-                if (selected) {
-                  backgroundColor = Colors.green.withValues(alpha: 0.1);
-                  textColor = Colors.green.shade700;
-                  statusIcon = Icons.check;
-                } else {
-                  backgroundColor = Theme.of(
-                    context,
-                  ).colorScheme.surfaceContainerHighest;
-                  textColor = Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.6);
-                  statusIcon = Icons.help_outline;
-                }
-                return Tooltip(
-                  message: description,
-                  child: GestureDetector(
-                    onTap: () => setFacility(key, !selected),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: backgroundColor,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: textColor.withValues(alpha: 0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(icon, size: 16, color: textColor),
-                          const SizedBox(width: 6),
-                          Text(
-                            label,
-                            style: TextStyle(
-                              color: textColor,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                            ),
-                          ),
-                          if (selected) ...[
-                            const SizedBox(width: 4),
-                            Icon(statusIcon, size: 14, color: textColor),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
+                return _buildExploreFilterChip(
+                  label: label,
+                  icon: icon,
+                  tooltip: description,
+                  selected: selected,
+                  onSelected: (value) => setFacility(key, value),
                 );
               }).toList(),
             ),
@@ -1840,50 +1742,31 @@ class SearchScreenState extends State<SearchScreen>
     );
   }
 
-  Widget _buildFilterChip({
+  /// Shared FilterChip styling for Explore amenity filters (matches Sources).
+  Widget _buildExploreFilterChip({
     required String label,
-    required IconData icon,
     required bool selected,
-    required VoidCallback onTap,
+    required ValueChanged<bool> onSelected,
+    IconData? icon,
+    String? tooltip,
+    Color? selectedColor,
+    Color? selectedForeground,
   }) {
-    final backgroundColor = selected
-        ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
-        : Theme.of(context).colorScheme.surfaceContainerHighest;
-    final textColor = selected
-        ? Theme.of(context).colorScheme.primary
-        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color:
-                (selected
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.outline)
-                    .withValues(alpha: 0.3),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: textColor),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: textColor,
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      ),
+    final scheme = Theme.of(context).colorScheme;
+    final selectedBg = selectedColor ?? scheme.primaryContainer;
+    final selectedFg = selectedForeground ?? scheme.onPrimaryContainer;
+    return FilterChip(
+      avatar: icon == null
+          ? null
+          : Icon(icon, size: 18, color: selected ? selectedFg : null),
+      label: Text(label),
+      selected: selected,
+      onSelected: onSelected,
+      tooltip: tooltip,
+      showCheckmark: icon == null,
+      selectedColor: selectedBg,
+      checkmarkColor: selectedFg,
+      labelStyle: TextStyle(color: selected ? selectedFg : null),
     );
   }
 
@@ -1943,30 +1826,26 @@ class SearchScreenState extends State<SearchScreen>
                     key,
                   );
                   final selected = _spotFeatures.contains(key);
-                  return Tooltip(
-                    message: description,
-                    child: GestureDetector(
-                      onTap: () {
-                        searchState.toggleSpotFeatures(key);
-                        setState(() {
-                          if (selected) {
-                            _spotFeatures = List<String>.from(_spotFeatures)
-                              ..remove(key);
-                          } else {
-                            _spotFeatures = List<String>.from(_spotFeatures)
-                              ..add(key);
-                          }
-                        });
-                        if (_mapController != null) {
-                          _loadMapDataForCurrentView();
+                  return _buildExploreFilterChip(
+                    label: label,
+                    icon: icon,
+                    tooltip: description,
+                    selected: selected,
+                    onSelected: (_) {
+                      searchState.toggleSpotFeatures(key);
+                      setState(() {
+                        if (selected) {
+                          _spotFeatures = List<String>.from(_spotFeatures)
+                            ..remove(key);
+                        } else {
+                          _spotFeatures = List<String>.from(_spotFeatures)
+                            ..add(key);
                         }
-                      },
-                      child: _buildAttributeChip(
-                        label: label,
-                        icon: icon,
-                        selected: selected,
-                      ),
-                    ),
+                      });
+                      if (_mapController != null) {
+                        _loadMapDataForCurrentView();
+                      }
+                    },
                   );
                 }).toList(),
               )
@@ -1982,76 +1861,29 @@ class SearchScreenState extends State<SearchScreen>
                     key,
                   );
                   final selected = _goodFor.contains(key);
-                  return Tooltip(
-                    message: description,
-                    child: GestureDetector(
-                      onTap: () {
-                        searchState.toggleGoodFor(key);
-                        setState(() {
-                          if (selected) {
-                            _goodFor = List<String>.from(_goodFor)..remove(key);
-                          } else {
-                            _goodFor = List<String>.from(_goodFor)..add(key);
-                          }
-                        });
-                        if (_mapController != null) {
-                          _loadMapDataForCurrentView();
+                  return _buildExploreFilterChip(
+                    label: label,
+                    icon: icon,
+                    tooltip: description,
+                    selected: selected,
+                    onSelected: (_) {
+                      searchState.toggleGoodFor(key);
+                      setState(() {
+                        if (selected) {
+                          _goodFor = List<String>.from(_goodFor)..remove(key);
+                        } else {
+                          _goodFor = List<String>.from(_goodFor)..add(key);
                         }
-                      },
-                      child: _buildAttributeChip(
-                        label: label,
-                        icon: icon,
-                        selected: selected,
-                      ),
-                    ),
+                      });
+                      if (_mapController != null) {
+                        _loadMapDataForCurrentView();
+                      }
+                    },
                   );
                 }).toList(),
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildAttributeChip({
-    required String label,
-    required IconData icon,
-    required bool selected,
-  }) {
-    final backgroundColor = selected
-        ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
-        : Theme.of(context).colorScheme.surfaceContainerHighest;
-    final textColor = selected
-        ? Theme.of(context).colorScheme.primary
-        : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color:
-              (selected
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.outline)
-                  .withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: textColor),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: textColor,
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-            ),
-          ),
-        ],
       ),
     );
   }

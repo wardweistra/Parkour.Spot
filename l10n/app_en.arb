@@ -741,21 +741,21 @@
   "@explorePickerLoading": {
     "description": "Explore entity picker: loading indicator"
   },
-  "exploreFilterBy": "Filter by",
+  "exploreFilterBy": "Filter spots by",
   "@exploreFilterBy": {
-    "description": "Filters: section label"
+    "description": "Filters: section label above Attributes/Sources tabs"
   },
   "exploreFilterHasImages": "Has photos",
   "@exploreFilterHasImages": {
     "description": "Amenity chip: only spots that have at least one photo"
   },
-  "exploreFilterAmenities": "Spots",
+  "exploreFilterAmenities": "Attributes",
   "@exploreFilterAmenities": {
     "description": "Filter mode: spot attributes (photos, access, facilities, skills)"
   },
   "exploreFilterSources": "Sources",
   "@exploreFilterSources": {
-    "description": "Filter mode: data sources"
+    "description": "Filter mode: spot data sources"
   },
   "exploreSpotPhotosTitle": "Photos",
   "@exploreSpotPhotosTitle": {
@@ -764,10 +764,6 @@
   "exploreSpotAccessTitle": "Access",
   "@exploreSpotAccessTitle": {
     "description": "Filter card: access"
-  },
-  "exploreFilterAny": "Any",
-  "@exploreFilterAny": {
-    "description": "Access filter: any access level"
   },
   "exploreSpotFacilitiesTitle": "Facilities",
   "@exploreSpotFacilitiesTitle": {
