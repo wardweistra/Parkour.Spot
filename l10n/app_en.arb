@@ -745,13 +745,13 @@
   "@exploreFilterBy": {
     "description": "Filters: section label"
   },
-  "exploreFilterHasImages": "With images",
+  "exploreFilterHasImages": "Has photos",
   "@exploreFilterHasImages": {
-    "description": "Amenity chip: only spots that have at least one image"
+    "description": "Amenity chip: only spots that have at least one photo"
   },
-  "exploreFilterAmenities": "Amenities",
+  "exploreFilterAmenities": "Spots",
   "@exploreFilterAmenities": {
-    "description": "Filter mode: amenities"
+    "description": "Filter mode: spot attributes (photos, access, facilities, skills)"
   },
   "exploreFilterSources": "Sources",
   "@exploreFilterSources": {
@@ -761,43 +761,31 @@
   "@exploreSpotPhotosTitle": {
     "description": "Filter card: photos"
   },
-  "exploreSpotPhotosSubtitle": "Show spots that have at least one photo",
-  "@exploreSpotPhotosSubtitle": {
-    "description": "Filter card: photos description"
-  },
-  "exploreSpotAccessTitle": "Spot Access",
+  "exploreSpotAccessTitle": "Access",
   "@exploreSpotAccessTitle": {
     "description": "Filter card: access"
-  },
-  "exploreSpotAccessSubtitle": "Filter spots by access level",
-  "@exploreSpotAccessSubtitle": {
-    "description": "Filter card: access description"
   },
   "exploreFilterAny": "Any",
   "@exploreFilterAny": {
     "description": "Access filter: any access level"
   },
-  "exploreSpotFacilitiesTitle": "Spot Facilities",
+  "exploreSpotFacilitiesTitle": "Facilities",
   "@exploreSpotFacilitiesTitle": {
     "description": "Filter card: facilities"
   },
-  "exploreSpotFacilitiesSubtitle": "Show spots with these amenities",
-  "@exploreSpotFacilitiesSubtitle": {
-    "description": "Filter card: facilities description"
+  "exploreFacilitiesMatchAllHint": "Must have all selected",
+  "@exploreFacilitiesMatchAllHint": {
+    "description": "Facilities filter: AND match logic"
   },
-  "exploreAttributesTitle": "With any of these attributes",
-  "@exploreAttributesTitle": {
-    "description": "Filter card: skills/features"
+  "exploreAttributesMatchAnyHint": "Match any selected",
+  "@exploreAttributesMatchAnyHint": {
+    "description": "Skills/features filter: OR match logic"
   },
-  "exploreAttributesSubtitle": "Filter spots that have any of the selected skills or features",
-  "@exploreAttributesSubtitle": {
-    "description": "Filter card: skills/features description"
-  },
-  "exploreGoodForSegment": "Good For",
+  "exploreGoodForSegment": "Good for",
   "@exploreGoodForSegment": {
-    "description": "Attribute filter: good-for mode"
+    "description": "Attribute filter: good-for mode; also used on spot detail"
   },
-  "exploreSpotFeaturesSegment": "Spot Features",
+  "exploreSpotFeaturesSegment": "Features",
   "@exploreSpotFeaturesSegment": {
     "description": "Attribute filter: features mode"
   },

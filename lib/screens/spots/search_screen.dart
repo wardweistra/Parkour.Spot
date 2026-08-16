@@ -1539,15 +1539,6 @@ class SearchScreenState extends State<SearchScreen>
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.exploreSpotPhotosSubtitle,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-            ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -1589,15 +1580,6 @@ class SearchScreenState extends State<SearchScreen>
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.exploreSpotAccessSubtitle,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-            ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -1616,7 +1598,7 @@ class SearchScreenState extends State<SearchScreen>
                 ...keys.map((key) {
                   final label = SpotAttributes.getLabel('access', key);
                   final icon = SpotAttributes.getIcon('access', key);
-                  final description = SpotAttributes.getDescription(
+                  final description = SpotAttributes.getFilterDescription(
                     'access',
                     key,
                   );
@@ -1776,7 +1758,7 @@ class SearchScreenState extends State<SearchScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              l10n.exploreSpotFacilitiesSubtitle,
+              l10n.exploreFacilitiesMatchAllHint,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(
                   context,
@@ -1790,7 +1772,7 @@ class SearchScreenState extends State<SearchScreen>
               children: facilityKeys.map((key) {
                 final label = SpotAttributes.getLabel('facilities', key);
                 final icon = SpotAttributes.getIcon('facilities', key);
-                final description = SpotAttributes.getDescription(
+                final description = SpotAttributes.getFilterDescription(
                   'facilities',
                   key,
                 );
@@ -1913,22 +1895,6 @@ class SearchScreenState extends State<SearchScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              l10n.exploreAttributesTitle,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.exploreAttributesSubtitle,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-            ),
-            const SizedBox(height: 12),
             SegmentedButton<String>(
               segments: [
                 ButtonSegment(
@@ -1955,6 +1921,15 @@ class SearchScreenState extends State<SearchScreen>
                 if (_mapController != null) _loadMapDataForCurrentView();
               },
             ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.exploreAttributesMatchAnyHint,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
             const SizedBox(height: 12),
             if (_attributeFilterMode == 'spotFeatures')
               Wrap(
@@ -1963,7 +1938,7 @@ class SearchScreenState extends State<SearchScreen>
                 children: SpotAttributes.getKeys('features').map((key) {
                   final label = SpotAttributes.getLabel('features', key);
                   final icon = SpotAttributes.getIcon('features', key);
-                  final description = SpotAttributes.getDescription(
+                  final description = SpotAttributes.getFilterDescription(
                     'features',
                     key,
                   );
@@ -2002,7 +1977,7 @@ class SearchScreenState extends State<SearchScreen>
                 children: SpotAttributes.getKeys('goodFor').map((key) {
                   final label = SpotAttributes.getLabel('goodFor', key);
                   final icon = SpotAttributes.getIcon('goodFor', key);
-                  final description = SpotAttributes.getDescription(
+                  final description = SpotAttributes.getFilterDescription(
                     'goodFor',
                     key,
                   );

@@ -1096,16 +1096,16 @@ abstract class AppLocalizations {
   /// **'Filter by'**
   String get exploreFilterBy;
 
-  /// Amenity chip: only spots that have at least one image
+  /// Amenity chip: only spots that have at least one photo
   ///
   /// In en, this message translates to:
-  /// **'With images'**
+  /// **'Has photos'**
   String get exploreFilterHasImages;
 
-  /// Filter mode: amenities
+  /// Filter mode: spot attributes (photos, access, facilities, skills)
   ///
   /// In en, this message translates to:
-  /// **'Amenities'**
+  /// **'Spots'**
   String get exploreFilterAmenities;
 
   /// Filter mode: data sources
@@ -1120,23 +1120,11 @@ abstract class AppLocalizations {
   /// **'Photos'**
   String get exploreSpotPhotosTitle;
 
-  /// Filter card: photos description
-  ///
-  /// In en, this message translates to:
-  /// **'Show spots that have at least one photo'**
-  String get exploreSpotPhotosSubtitle;
-
   /// Filter card: access
   ///
   /// In en, this message translates to:
-  /// **'Spot Access'**
+  /// **'Access'**
   String get exploreSpotAccessTitle;
-
-  /// Filter card: access description
-  ///
-  /// In en, this message translates to:
-  /// **'Filter spots by access level'**
-  String get exploreSpotAccessSubtitle;
 
   /// Access filter: any access level
   ///
@@ -1147,37 +1135,31 @@ abstract class AppLocalizations {
   /// Filter card: facilities
   ///
   /// In en, this message translates to:
-  /// **'Spot Facilities'**
+  /// **'Facilities'**
   String get exploreSpotFacilitiesTitle;
 
-  /// Filter card: facilities description
+  /// Facilities filter: AND match logic
   ///
   /// In en, this message translates to:
-  /// **'Show spots with these amenities'**
-  String get exploreSpotFacilitiesSubtitle;
+  /// **'Must have all selected'**
+  String get exploreFacilitiesMatchAllHint;
 
-  /// Filter card: skills/features
+  /// Skills/features filter: OR match logic
   ///
   /// In en, this message translates to:
-  /// **'With any of these attributes'**
-  String get exploreAttributesTitle;
+  /// **'Match any selected'**
+  String get exploreAttributesMatchAnyHint;
 
-  /// Filter card: skills/features description
+  /// Attribute filter: good-for mode; also used on spot detail
   ///
   /// In en, this message translates to:
-  /// **'Filter spots that have any of the selected skills or features'**
-  String get exploreAttributesSubtitle;
-
-  /// Attribute filter: good-for mode
-  ///
-  /// In en, this message translates to:
-  /// **'Good For'**
+  /// **'Good for'**
   String get exploreGoodForSegment;
 
   /// Attribute filter: features mode
   ///
   /// In en, this message translates to:
-  /// **'Spot Features'**
+  /// **'Features'**
   String get exploreSpotFeaturesSegment;
 
   /// Source filter section label

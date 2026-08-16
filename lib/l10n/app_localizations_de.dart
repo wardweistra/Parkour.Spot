@@ -597,10 +597,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get exploreFilterBy => 'Filtern nach';
 
   @override
-  String get exploreFilterHasImages => 'Mit Bildern';
+  String get exploreFilterHasImages => 'Mit Fotos';
 
   @override
-  String get exploreFilterAmenities => 'Ausstattung';
+  String get exploreFilterAmenities => 'Spots';
 
   @override
   String get exploreFilterSources => 'Quellen';
@@ -609,37 +609,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String get exploreSpotPhotosTitle => 'Fotos';
 
   @override
-  String get exploreSpotPhotosSubtitle =>
-      'Nur Spots mit mindestens einem Foto anzeigen';
-
-  @override
-  String get exploreSpotAccessTitle => 'Spot-Zugang';
-
-  @override
-  String get exploreSpotAccessSubtitle => 'Spots nach Zugangstyp filtern';
+  String get exploreSpotAccessTitle => 'Zugang';
 
   @override
   String get exploreFilterAny => 'Beliebig';
 
   @override
-  String get exploreSpotFacilitiesTitle => 'Spot-Ausstattung';
+  String get exploreSpotFacilitiesTitle => 'Ausstattung';
 
   @override
-  String get exploreSpotFacilitiesSubtitle =>
-      'Spots mit diesen Annehmlichkeiten anzeigen';
+  String get exploreFacilitiesMatchAllHint =>
+      'Alle ausgewählten müssen vorhanden sein';
 
   @override
-  String get exploreAttributesTitle => 'Mit einer dieser Eigenschaften';
-
-  @override
-  String get exploreAttributesSubtitle =>
-      'Spots, die mindestens eine der gewählten Skills oder Features haben';
+  String get exploreAttributesMatchAnyHint => 'Eine der ausgewählten reicht';
 
   @override
   String get exploreGoodForSegment => 'Geeignet für';
 
   @override
-  String get exploreSpotFeaturesSegment => 'Spot-Features';
+  String get exploreSpotFeaturesSegment => 'Features';
 
   @override
   String get exploreSpotSourceLabel => 'Spot-Quelle';

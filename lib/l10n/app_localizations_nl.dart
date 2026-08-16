@@ -591,10 +591,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get exploreFilterBy => 'Filteren op';
 
   @override
-  String get exploreFilterHasImages => 'Met afbeeldingen';
+  String get exploreFilterHasImages => 'Met foto\'s';
 
   @override
-  String get exploreFilterAmenities => 'Voorzieningen';
+  String get exploreFilterAmenities => 'Spots';
 
   @override
   String get exploreFilterSources => 'Bronnen';
@@ -603,36 +603,26 @@ class AppLocalizationsNl extends AppLocalizations {
   String get exploreSpotPhotosTitle => 'Foto\'s';
 
   @override
-  String get exploreSpotPhotosSubtitle => 'Toon spots met minstens één foto';
-
-  @override
-  String get exploreSpotAccessTitle => 'Spottoegang';
-
-  @override
-  String get exploreSpotAccessSubtitle => 'Filter spots op toegangsniveau';
+  String get exploreSpotAccessTitle => 'Toegang';
 
   @override
   String get exploreFilterAny => 'Alle';
 
   @override
-  String get exploreSpotFacilitiesTitle => 'Spotvoorzieningen';
+  String get exploreSpotFacilitiesTitle => 'Voorzieningen';
 
   @override
-  String get exploreSpotFacilitiesSubtitle =>
-      'Toon spots met deze voorzieningen';
+  String get exploreFacilitiesMatchAllHint => 'Moet alle geselecteerde hebben';
 
   @override
-  String get exploreAttributesTitle => 'Met een van deze kenmerken';
-
-  @override
-  String get exploreAttributesSubtitle =>
-      'Filter spots die minstens een van de gekozen skills of features hebben';
+  String get exploreAttributesMatchAnyHint =>
+      'Eén van de geselecteerde volstaat';
 
   @override
   String get exploreGoodForSegment => 'Geschikt voor';
 
   @override
-  String get exploreSpotFeaturesSegment => 'Spotfeatures';
+  String get exploreSpotFeaturesSegment => 'Features';
 
   @override
   String get exploreSpotSourceLabel => 'Spotbron';

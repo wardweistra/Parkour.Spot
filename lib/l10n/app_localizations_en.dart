@@ -591,10 +591,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exploreFilterBy => 'Filter by';
 
   @override
-  String get exploreFilterHasImages => 'With images';
+  String get exploreFilterHasImages => 'Has photos';
 
   @override
-  String get exploreFilterAmenities => 'Amenities';
+  String get exploreFilterAmenities => 'Spots';
 
   @override
   String get exploreFilterSources => 'Sources';
@@ -603,36 +603,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exploreSpotPhotosTitle => 'Photos';
 
   @override
-  String get exploreSpotPhotosSubtitle =>
-      'Show spots that have at least one photo';
-
-  @override
-  String get exploreSpotAccessTitle => 'Spot Access';
-
-  @override
-  String get exploreSpotAccessSubtitle => 'Filter spots by access level';
+  String get exploreSpotAccessTitle => 'Access';
 
   @override
   String get exploreFilterAny => 'Any';
 
   @override
-  String get exploreSpotFacilitiesTitle => 'Spot Facilities';
+  String get exploreSpotFacilitiesTitle => 'Facilities';
 
   @override
-  String get exploreSpotFacilitiesSubtitle => 'Show spots with these amenities';
+  String get exploreFacilitiesMatchAllHint => 'Must have all selected';
 
   @override
-  String get exploreAttributesTitle => 'With any of these attributes';
+  String get exploreAttributesMatchAnyHint => 'Match any selected';
 
   @override
-  String get exploreAttributesSubtitle =>
-      'Filter spots that have any of the selected skills or features';
+  String get exploreGoodForSegment => 'Good for';
 
   @override
-  String get exploreGoodForSegment => 'Good For';
-
-  @override
-  String get exploreSpotFeaturesSegment => 'Spot Features';
+  String get exploreSpotFeaturesSegment => 'Features';
 
   @override
   String get exploreSpotSourceLabel => 'Spot Source';
