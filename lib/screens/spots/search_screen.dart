@@ -679,6 +679,14 @@ class SearchScreenState extends State<SearchScreen>
 
   void _toggleFiltersDialog() {
     final shouldOpen = !_showFiltersDialog;
+    if (shouldOpen) {
+      // Autocomplete options live in the root Overlay and would paint over the
+      // filters dialog; collapse them before showing filters.
+      if (_autocompleteFocusNode != null && _autocompleteFocusNode!.hasFocus) {
+        _autocompleteFocusNode!.unfocus();
+      }
+      _hasAutocompleteOptions = false;
+    }
     setState(() {
       _showFiltersDialog = shouldOpen;
     });
@@ -3818,6 +3826,9 @@ class SearchScreenState extends State<SearchScreen>
                                       onSelected,
                                       Iterable<Map<String, dynamic>> options,
                                     ) {
+                                      if (_showFiltersDialog) {
+                                        return const SizedBox.shrink();
+                                      }
                                       final optionsList = options.toList();
                                       WidgetsBinding.instance
                                           .addPostFrameCallback((_) {
