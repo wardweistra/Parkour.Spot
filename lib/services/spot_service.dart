@@ -71,6 +71,17 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  /// Warms the spot-title search Cloud Function without querying Firestore.
+  Future<void> warmupSearchSpotsByTitle() async {
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable('searchSpotsByTitle');
+      await callable.call({'warmup': true});
+    } catch (e) {
+      debugPrint('Error warming searchSpotsByTitle: $e');
+    }
+  }
+
   // Create a native spot from an existing spot (copies name, description, location, photos, youtube link)
   Future<String?> createNativeSpotFromExisting(
     Spot sourceSpot,

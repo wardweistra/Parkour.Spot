@@ -51,8 +51,7 @@ class AdminEventsService extends ChangeNotifier {
   bool get upcomingOnly => _upcomingOnly;
   bool get excludeDuplicates => _excludeDuplicates;
   bool get withoutLocationOnly => _withoutLocationOnly;
-  bool get hasEventSourceFilter =>
-      _eventSourceFilter != eventSourceFilterAll;
+  bool get hasEventSourceFilter => _eventSourceFilter != eventSourceFilterAll;
   bool get hasActiveListFilters =>
       hasEventSourceFilter ||
       !_upcomingOnly ||
@@ -114,10 +113,7 @@ class AdminEventsService extends ChangeNotifier {
 
     try {
       if (_usesClientSidePaging) {
-        await _fetchUntilPageFull(
-          replaceExisting: true,
-          pageSize: pageSize,
-        );
+        await _fetchUntilPageFull(replaceExisting: true, pageSize: pageSize);
       } else {
         final snapshot = await _buildEventsQuery().limit(pageSize).get();
         _applyPage(snapshot, pageSize, replaceExisting: true);
@@ -145,10 +141,7 @@ class AdminEventsService extends ChangeNotifier {
 
     try {
       if (_usesClientSidePaging) {
-        await _fetchUntilPageFull(
-          replaceExisting: false,
-          pageSize: pageSize,
-        );
+        await _fetchUntilPageFull(replaceExisting: false, pageSize: pageSize);
       } else {
         final snapshot = await _buildEventsQuery()
             .startAfterDocument(_lastEventDocument!)
@@ -472,6 +465,16 @@ class AdminEventsService extends ChangeNotifier {
     }
   }
 
+  /// Warms the event-title search Cloud Function without querying Firestore.
+  Future<void> warmupSearchEventsByTitle() async {
+    try {
+      final callable = _functions.httpsCallable('searchEventsByTitle');
+      await callable.call({'warmup': true});
+    } catch (e, st) {
+      debugPrint('AdminEventsService.warmupSearchEventsByTitle error: $e\n$st');
+    }
+  }
+
   Future<ParkourEvent?> getNextUpcomingEventForSpot(String spotId) async {
     final events = await getUpcomingEventsForSpot(spotId);
     return events.isEmpty ? null : events.first;
@@ -606,9 +609,7 @@ class AdminEventsService extends ChangeNotifier {
       _hasMore = true;
     }
 
-    final targetCount = replaceExisting
-        ? pageSize
-        : _events.length + pageSize;
+    final targetCount = replaceExisting ? pageSize : _events.length + pageSize;
     var batches = 0;
 
     while (_hasMore && _events.length < targetCount) {
@@ -1134,7 +1135,9 @@ class AdminEventsService extends ChangeNotifier {
   }
 
   /// Populates [eventSearchTerms] for all events (Explore autocomplete).
-  Future<Map<String, dynamic>?> backfillEventSearchTerms({bool purge = false}) async {
+  Future<Map<String, dynamic>?> backfillEventSearchTerms({
+    bool purge = false,
+  }) async {
     _error = null;
     try {
       final callable = _functions.httpsCallable(

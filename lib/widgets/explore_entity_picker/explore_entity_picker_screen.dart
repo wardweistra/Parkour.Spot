@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
@@ -63,6 +64,8 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
   Timer? _cameraDebounce;
   String? _placesSessionToken;
   double _lastKnownZoom = 14;
+  LatLng? _lastMapCenter;
+  late final ExploreAutocompleteSession _autocompleteSession;
 
   LatLng? _pickedLocation;
   List<Spot> _loadedSpots = [];
@@ -92,6 +95,39 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
     if (_config.includesLocationPin) {
       _pickedLocation = _config.initialLocation ?? _config.initialCenter;
     }
+    _lastMapCenter = _config.initialLocation ?? _config.initialCenter;
+    _autocompleteSession = ExploreAutocompleteSession(
+      config: _config,
+      fetchPlaces: ({required query, sessionToken, mapCenter}) {
+        return context.read<GeocodingService>().placesAutocomplete(
+          input: query,
+          sessionToken: sessionToken,
+          biasLat: mapCenter?.latitude,
+          biasLng: mapCenter?.longitude,
+          radiusMeters: 50000,
+        );
+      },
+      fetchSpots: ({required query}) {
+        return context.read<SpotService>().searchSpotsByTitle(
+          query: query,
+          limit: 6,
+        );
+      },
+      fetchEvents: ({required query}) {
+        return context.read<AdminEventsService>().searchEventsByTitle(
+          query: query,
+          limit: 6,
+        );
+      },
+      mapCenterProvider: () => _lastMapCenter,
+      placesSessionTokenProvider: () {
+        _placesSessionToken ??= const Uuid().v4();
+        return _placesSessionToken;
+      },
+    );
+    _autocompleteSession.addListener(_onAutocompleteSessionChanged);
+    _searchFocusNode.addListener(_onSearchFocusChanged);
+    _searchController.addListener(_onSearchChanged);
     _loadMarkerIcons();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _searchStateServiceRef = context.read<SearchStateService>();
@@ -165,9 +201,36 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
   void dispose() {
     _searchStateServiceRef?.removeListener(_onSearchStateChanged);
     _releaseMapController();
+    _searchController.removeListener(_onSearchChanged);
+    _searchFocusNode.removeListener(_onSearchFocusChanged);
+    _autocompleteSession.removeListener(_onAutocompleteSessionChanged);
+    _autocompleteSession.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged() {
+    if (_searchFocusNode.hasFocus) {
+      _autocompleteSession.onQueryChanged(_searchController.text);
+    }
+    if (mounted) setState(() {});
+  }
+
+  void _onSearchFocusChanged() {
+    if (_searchFocusNode.hasFocus) {
+      final query = _searchController.text.trim();
+      if (query.isNotEmpty) {
+        _autocompleteSession.onQueryChanged(query);
+      }
+    } else {
+      _autocompleteSession.clear();
+    }
+    if (mounted) setState(() {});
+  }
+
+  void _onAutocompleteSessionChanged() {
+    if (mounted) setState(() {});
   }
 
   bool _isSpotExcluded(Spot spot) {
@@ -258,6 +321,7 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
 
   void _onCameraMove(CameraPosition position) {
     _lastKnownZoom = position.zoom;
+    _lastMapCenter = position.target;
     if (!_config.includesSpots && !_config.includesEvents) return;
     _cameraDebounce?.cancel();
     _cameraDebounce = Timer(const Duration(seconds: 1), () {
@@ -343,7 +407,9 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
         final isPreviewSelected = _previewEventPin?.id == pin.id;
 
         final icon = isPreviewSelected
-            ? (_eventSelectedIcon ?? _eventIcon ?? BitmapDescriptor.defaultMarker)
+            ? (_eventSelectedIcon ??
+                  _eventIcon ??
+                  BitmapDescriptor.defaultMarker)
             : (_eventIcon ?? BitmapDescriptor.defaultMarker);
 
         markers.add(
@@ -366,34 +432,6 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
     }
 
     return markers;
-  }
-
-  Future<LatLng?> _mapCenter() async {
-    if (_mapController == null) return null;
-    try {
-      final bounds = await _mapController!.getVisibleRegion();
-      return LatLng(
-        (bounds.northeast.latitude + bounds.southwest.latitude) / 2,
-        (bounds.northeast.longitude + bounds.southwest.longitude) / 2,
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> _buildAutocompleteOptions(
-    String query,
-  ) async {
-    _placesSessionToken ??= const Uuid().v4();
-    return buildExploreAutocompleteOptions(
-      query: query,
-      config: _config,
-      geocoding: context.read<GeocodingService>(),
-      spotService: context.read<SpotService>(),
-      eventsService: context.read<AdminEventsService>(),
-      placesSessionToken: _placesSessionToken,
-      mapCenter: await _mapCenter(),
-    );
   }
 
   Future<void> _selectPlaceSuggestion(Map<String, dynamic> suggestion) async {
@@ -446,8 +484,9 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
   Future<void> _locateSpot(Spot spot) async {
     if (_mapController != null) {
       const desiredZoom = 15.0;
-      final targetZoom =
-          _lastKnownZoom < desiredZoom ? desiredZoom : _lastKnownZoom;
+      final targetZoom = _lastKnownZoom < desiredZoom
+          ? desiredZoom
+          : _lastKnownZoom;
       await _mapController!.animateCamera(
         CameraUpdate.newLatLng(LatLng(spot.latitude, spot.longitude)),
       );
@@ -470,7 +509,9 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
   }
 
   Future<void> _locateEventById(String eventId) async {
-    final event = await context.read<AdminEventsService>().getEventById(eventId);
+    final event = await context.read<AdminEventsService>().getEventById(
+      eventId,
+    );
     if (event == null || !mounted) return;
 
     final eventMapService = context.read<EventMapService>();
@@ -519,8 +560,9 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
   Future<void> _focusEventPin(EventMapPin pin) async {
     if (_mapController != null) {
       const desiredZoom = 15.0;
-      final targetZoom =
-          _lastKnownZoom < desiredZoom ? desiredZoom : _lastKnownZoom;
+      final targetZoom = _lastKnownZoom < desiredZoom
+          ? desiredZoom
+          : _lastKnownZoom;
       await _mapController!.animateCamera(
         CameraUpdate.newLatLng(LatLng(pin.latitude, pin.longitude)),
       );
@@ -698,8 +740,7 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final usageTip = _usageTipText(l10n);
-    final showEntityPreview =
-        _previewSpot != null || _previewEventPin != null;
+    final showEntityPreview = _previewSpot != null || _previewEventPin != null;
 
     return Scaffold(
       body: SafeArea(
@@ -744,8 +785,7 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
                         liteModeEnabled: kIsWeb,
                         onMapCreated: (controller) {
                           _mapController = controller;
-                          if (_config.includesSpots ||
-                              _config.includesEvents) {
+                          if (_config.includesSpots || _config.includesEvents) {
                             Future.delayed(
                               const Duration(milliseconds: 500),
                               () {
@@ -917,40 +957,51 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
   }
 
   Widget _buildSearchField(AppLocalizations l10n, ThemeData theme) {
+    final options = _autocompleteSession.options;
+    final showOverlay =
+        _searchFocusNode.hasFocus && _autocompleteSession.showOverlay;
+
     return PointerInterceptor(
-      child: RawAutocomplete<Map<String, dynamic>>(
-        textEditingController: _searchController,
-        focusNode: _searchFocusNode,
-        optionsBuilder: (textEditingValue) async {
-          return _buildAutocompleteOptions(textEditingValue.text);
-        },
-        onSelected: _selectAutocompleteOption,
-        displayStringForOption: (option) =>
-            option['description'] as String? ?? '',
-        fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-          return SearchBar(
-            controller: controller,
-            focusNode: focusNode,
-            hintText: _searchHint(l10n),
-            leading: const Icon(Icons.search),
-            trailing: controller.text.isNotEmpty
-                ? [
-                    IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        controller.clear();
-                        _dismissPreview();
-                      },
-                    ),
-                  ]
-                : null,
-            onSubmitted: (_) {},
-          );
-        },
-        optionsViewBuilder: (context, onSelected, options) {
-          return Align(
-            alignment: Alignment.topCenter,
-            child: PointerInterceptor(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          CallbackShortcuts(
+            bindings: {
+              const SingleActivator(LogicalKeyboardKey.arrowDown):
+                  _autocompleteSession.highlightNext,
+              const SingleActivator(LogicalKeyboardKey.arrowUp):
+                  _autocompleteSession.highlightPrevious,
+              const SingleActivator(LogicalKeyboardKey.escape):
+                  _searchFocusNode.unfocus,
+            },
+            child: SearchBar(
+              controller: _searchController,
+              focusNode: _searchFocusNode,
+              hintText: _searchHint(l10n),
+              leading: const Icon(Icons.search),
+              trailing: _searchController.text.isNotEmpty
+                  ? [
+                      IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          _autocompleteSession.clear();
+                          _dismissPreview();
+                        },
+                      ),
+                    ]
+                  : null,
+              onSubmitted: (_) {
+                final selected = _autocompleteSession.highlightedOption;
+                if (selected != null) {
+                  _selectAutocompleteOption(selected);
+                }
+              },
+            ),
+          ),
+          if (showOverlay)
+            TextFieldTapRegion(
               child: Material(
                 elevation: 4,
                 borderRadius: BorderRadius.circular(8),
@@ -962,14 +1013,28 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
                   child: ListView.builder(
                     padding: EdgeInsets.zero,
                     shrinkWrap: true,
-                    itemCount: options.length,
+                    itemCount:
+                        options.length +
+                        (_autocompleteSession.isLoading ? 1 : 0),
                     itemBuilder: (context, index) {
-                      final option = options.elementAt(index);
+                      if (index >= options.length) {
+                        return const ListTile(
+                          dense: true,
+                          leading: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        );
+                      }
+                      final option = options[index];
                       final optionType =
                           option['optionType'] as String? ?? 'place';
                       final description =
                           option['description'] as String? ?? '';
                       final secondary = option['secondary'] as String?;
+                      final isSelected =
+                          _autocompleteSession.highlightIndex == index;
                       final leadingIcon = switch (optionType) {
                         'spot' => Icons.place_outlined,
                         'event' => Icons.event_outlined,
@@ -978,6 +1043,7 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
                       return ListTile(
                         leading: Icon(leadingIcon),
                         dense: true,
+                        selected: isSelected,
                         title: Text(
                           description,
                           maxLines: 1,
@@ -990,15 +1056,14 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
                                 overflow: TextOverflow.ellipsis,
                               )
                             : null,
-                        onTap: () => onSelected(option),
+                        onTap: () => _selectAutocompleteOption(option),
                       );
                     },
                   ),
                 ),
               ),
             ),
-          );
-        },
+        ],
       ),
     );
   }

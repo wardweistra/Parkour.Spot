@@ -2,8 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 class GeocodingService extends ChangeNotifier {
-  final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
-  
+  final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(
+    region: 'europe-west1',
+  );
+
   bool _isLoading = false;
   String? _error;
 
@@ -42,7 +44,10 @@ class GeocodingService extends ChangeNotifier {
 
   /// Geocodes coordinates silently (without notifying listeners)
   /// Used for background geocoding operations
-  Future<String?> geocodeCoordinatesSilently(double latitude, double longitude) async {
+  Future<String?> geocodeCoordinatesSilently(
+    double latitude,
+    double longitude,
+  ) async {
     try {
       final callable = _functions.httpsCallable('geocodeCoordinates');
       final result = await callable.call({
@@ -64,7 +69,10 @@ class GeocodingService extends ChangeNotifier {
 
   /// Geocodes coordinates and returns address details including city and country code
   /// Notifies listeners during the operation
-  Future<Map<String, String?>> geocodeCoordinatesDetails(double latitude, double longitude) async {
+  Future<Map<String, String?>> geocodeCoordinatesDetails(
+    double latitude,
+    double longitude,
+  ) async {
     try {
       _isLoading = true;
       _error = null;
@@ -84,20 +92,12 @@ class GeocodingService extends ChangeNotifier {
         };
       } else {
         _error = result.data['error'] ?? 'Failed to geocode coordinates';
-        return {
-          'address': null,
-          'city': null,
-          'countryCode': null,
-        };
+        return {'address': null, 'city': null, 'countryCode': null};
       }
     } catch (e) {
       _error = 'Failed to geocode coordinates: $e';
       debugPrint('Error geocoding coordinates details: $e');
-      return {
-        'address': null,
-        'city': null,
-        'countryCode': null,
-      };
+      return {'address': null, 'city': null, 'countryCode': null};
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -105,7 +105,10 @@ class GeocodingService extends ChangeNotifier {
   }
 
   /// Geocodes coordinates silently and returns address details including city and country code
-  Future<Map<String, String?>> geocodeCoordinatesDetailsSilently(double latitude, double longitude) async {
+  Future<Map<String, String?>> geocodeCoordinatesDetailsSilently(
+    double latitude,
+    double longitude,
+  ) async {
     try {
       final callable = _functions.httpsCallable('geocodeCoordinates');
       final result = await callable.call({
@@ -121,19 +124,11 @@ class GeocodingService extends ChangeNotifier {
         };
       } else {
         debugPrint('Geocoding failed: ${result.data['error']}');
-        return {
-          'address': null,
-          'city': null,
-          'countryCode': null,
-        };
+        return {'address': null, 'city': null, 'countryCode': null};
       }
     } catch (e) {
       debugPrint('Error geocoding coordinates silently (details): $e');
-      return {
-        'address': null,
-        'city': null,
-        'countryCode': null,
-      };
+      return {'address': null, 'city': null, 'countryCode': null};
     }
   }
 
@@ -148,9 +143,7 @@ class GeocodingService extends ChangeNotifier {
       notifyListeners();
 
       final callable = _functions.httpsCallable('reverseGeocodeAddress');
-      final result = await callable.call({
-        'address': address,
-      });
+      final result = await callable.call({'address': address});
 
       if (result.data['success'] == true) {
         return {
@@ -242,8 +235,6 @@ class GeocodingService extends ChangeNotifier {
     }
   }
 
-
-
   /// Google Places Autocomplete (server-key via backend function)
   /// Returns list of suggestions with description and placeId
   Future<List<Map<String, dynamic>>> placesAutocomplete({
@@ -261,23 +252,33 @@ class GeocodingService extends ChangeNotifier {
         'input': input,
         if (sessionToken != null) 'sessionToken': sessionToken,
         if (biasLat != null && biasLng != null)
-          'location': {
-            'lat': biasLat,
-            'lng': biasLng,
-          },
+          'location': {'lat': biasLat, 'lng': biasLng},
         if (radiusMeters != null) 'radiusMeters': radiusMeters,
         if (language != null) 'language': language,
         'types': 'geocode',
       });
-      
-      if (result.data['success'] == true && result.data['suggestions'] is List) {
-        final list = List<Map<String, dynamic>>.from(result.data['suggestions']);
+
+      if (result.data['success'] == true &&
+          result.data['suggestions'] is List) {
+        final list = List<Map<String, dynamic>>.from(
+          result.data['suggestions'],
+        );
         return list;
       }
       return [];
     } catch (e) {
       debugPrint('Error fetching places autocomplete: $e');
       return [];
+    }
+  }
+
+  /// Warms the Places Autocomplete Cloud Function without calling Google Places.
+  Future<void> warmupPlacesAutocomplete() async {
+    try {
+      final callable = _functions.httpsCallable('placesAutocomplete');
+      await callable.call({'warmup': true});
+    } catch (e) {
+      debugPrint('Error warming places autocomplete: $e');
     }
   }
 

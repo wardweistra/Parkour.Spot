@@ -7058,6 +7058,9 @@ exports.searchSpotsByTitle = onCall(
     {region: "europe-west1", memory: "256MiB", timeoutSeconds: 10},
     async (request) => {
       try {
+        if (request.data?.warmup === true) {
+          return {success: true, spots: []};
+        }
         const result = await executeSearchSpotsByTitle(request.data || {});
         if (!result.success) return {success: false, error: result.error};
         // Flutter autocomplete needs reduced shape
@@ -7083,6 +7086,9 @@ exports.searchEventsByTitle = onCall(
     {region: "europe-west1", memory: "256MiB", timeoutSeconds: 10},
     async (request) => {
       try {
+        if (request.data?.warmup === true) {
+          return {success: true, events: []};
+        }
         const result = await executeSearchEventsByTitle(request.data || {});
         if (!result.success) return {success: false, error: result.error};
         return {success: true, events: result.events || []};
@@ -7105,7 +7111,12 @@ exports.placesAutocomplete = onCall(
           radiusMeters,
           types = "geocode",
           language,
+          warmup,
         } = request.data || {};
+
+        if (warmup === true) {
+          return {success: true, suggestions: []};
+        }
 
         if (!input || typeof input !== "string") {
           throw new Error("input is required");
