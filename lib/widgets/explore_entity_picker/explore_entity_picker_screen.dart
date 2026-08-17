@@ -1005,13 +1005,14 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
               child: Material(
                 elevation: 4,
                 borderRadius: BorderRadius.circular(8),
+                clipBehavior: Clip.antiAlias,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(
                     maxHeight: 240,
                     maxWidth: 560,
                   ),
                   child: ListView.builder(
-                    padding: EdgeInsets.zero,
+                    padding: const EdgeInsets.all(4),
                     shrinkWrap: true,
                     itemCount:
                         options.length +
@@ -1035,6 +1036,7 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
                       final secondary = option['secondary'] as String?;
                       final isSelected =
                           _autocompleteSession.highlightIndex == index;
+                      final colorScheme = Theme.of(context).colorScheme;
                       final leadingIcon = switch (optionType) {
                         'spot' => Icons.place_outlined,
                         'event' => Icons.event_outlined,
@@ -1043,7 +1045,13 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
                       return ListTile(
                         leading: Icon(leadingIcon),
                         dense: true,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         selected: isSelected,
+                        selectedTileColor: colorScheme.primary.withValues(
+                          alpha: 0.15,
+                        ),
                         title: Text(
                           description,
                           maxLines: 1,

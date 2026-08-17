@@ -138,11 +138,12 @@ class _AutocompleteOverlayContentState
         child: Material(
           elevation: 4.0,
           borderRadius: BorderRadius.circular(8),
+          clipBehavior: Clip.antiAlias,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 200),
             child: ListView.builder(
               controller: _scrollController,
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.all(4),
               shrinkWrap: true,
               itemCount: optionsList.length + (widget.isLoading ? 1 : 0),
               itemBuilder: (context, index) {
@@ -163,60 +164,49 @@ class _AutocompleteOverlayContentState
                 final description = option['description'] as String? ?? '';
                 final secondary = option['secondary'] as String?;
                 final isSelected = currentSelection == index;
+                final colorScheme = Theme.of(context).colorScheme;
                 final leadingIcon = isSpotSuggestion
                     ? (isSelected ? Icons.place : Icons.place_outlined)
                     : isEventSuggestion
                     ? (isSelected ? Icons.event : Icons.event_outlined)
                     : (isSelected ? Icons.public : Icons.public_outlined);
 
-                return Container(
-                  decoration: isSelected
-                      ? BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.15),
-                          border: Border(
-                            left: BorderSide(
-                              color: Theme.of(context).colorScheme.primary,
-                              width: 3,
-                            ),
-                          ),
-                        )
-                      : null,
-                  child: ListTile(
-                    leading: Icon(
-                      leadingIcon,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    dense: true,
-                    title: Text(
-                      description,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: isSelected
-                          ? TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.primary,
-                            )
-                          : null,
-                    ),
-                    subtitle: secondary != null
-                        ? Text(
-                            secondary,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: isSelected
-                                ? TextStyle(
-                                    color: Theme.of(context).colorScheme.primary
-                                        .withValues(alpha: 0.8),
-                                  )
-                                : null,
+                return ListTile(
+                  leading: Icon(leadingIcon, color: colorScheme.primary),
+                  dense: true,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  selected: isSelected,
+                  selectedTileColor: colorScheme.primary.withValues(
+                    alpha: 0.15,
+                  ),
+                  title: Text(
+                    description,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: isSelected
+                        ? TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.primary,
                           )
                         : null,
-                    selected: isSelected,
-                    selectedTileColor: Colors.transparent,
-                    onTap: () => widget.onSelected(option),
                   ),
+                  subtitle: secondary != null
+                      ? Text(
+                          secondary,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: isSelected
+                              ? TextStyle(
+                                  color: colorScheme.primary.withValues(
+                                    alpha: 0.8,
+                                  ),
+                                )
+                              : null,
+                        )
+                      : null,
+                  onTap: () => widget.onSelected(option),
                 );
               },
             ),

@@ -329,11 +329,7 @@ class _EventDuplicatePickerState extends State<EventDuplicatePicker> {
       dense: true,
       selected: isSelected,
       enabled: onTap != null,
-      title: Text(
-        event.title,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
+      title: Text(event.title, maxLines: 2, overflow: TextOverflow.ellipsis),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -367,8 +363,7 @@ class _EventDuplicatePickerState extends State<EventDuplicatePicker> {
     final theme = Theme.of(context);
     final selected = widget.selectedEvent;
     final foundEvent = _foundEvent;
-    final foundCanConfirm =
-        foundEvent != null && _canConfirm(foundEvent);
+    final foundCanConfirm = foundEvent != null && _canConfirm(foundEvent);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -414,13 +409,14 @@ class _EventDuplicatePickerState extends State<EventDuplicatePicker> {
                 child: Material(
                   elevation: 4,
                   borderRadius: BorderRadius.circular(8),
+                  clipBehavior: Clip.antiAlias,
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(
                       maxHeight: 240,
                       maxWidth: 420,
                     ),
                     child: ListView.builder(
-                      padding: EdgeInsets.zero,
+                      padding: const EdgeInsets.all(4),
                       shrinkWrap: true,
                       itemCount: options.length,
                       itemBuilder: (context, index) {
@@ -431,6 +427,9 @@ class _EventDuplicatePickerState extends State<EventDuplicatePicker> {
                         return ListTile(
                           leading: const Icon(Icons.event_outlined),
                           dense: true,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                           title: Text(
                             description,
                             maxLines: 1,
@@ -517,21 +516,18 @@ class _EventDuplicatePickerState extends State<EventDuplicatePicker> {
             ),
           )
         else
-          ..._suggestions.map(
-            (event) {
-              final canConfirm = _canConfirm(event);
-              return _buildEventCandidateTile(
-                l10n,
-                event,
-                isSelected: selected?.id == event.id,
-                showBlockedHint:
-                    widget.nativeOnlyOriginals && !canConfirm,
-                onTap: event.id == null || !canConfirm
-                    ? null
-                    : () => _selectEvent(event),
-              );
-            },
-          ),
+          ..._suggestions.map((event) {
+            final canConfirm = _canConfirm(event);
+            return _buildEventCandidateTile(
+              l10n,
+              event,
+              isSelected: selected?.id == event.id,
+              showBlockedHint: widget.nativeOnlyOriginals && !canConfirm,
+              onTap: event.id == null || !canConfirm
+                  ? null
+                  : () => _selectEvent(event),
+            );
+          }),
       ],
     );
   }
