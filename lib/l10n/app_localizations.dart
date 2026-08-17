@@ -955,7 +955,7 @@ abstract class AppLocalizations {
   /// Add tab hub: spot card title
   ///
   /// In en, this message translates to:
-  /// **'Add spot'**
+  /// **'Add New Spot'**
   String get addHubSpotTitle;
 
   /// Add tab hub: spot card description
@@ -973,7 +973,7 @@ abstract class AppLocalizations {
   /// Add tab hub: spot card action
   ///
   /// In en, this message translates to:
-  /// **'Create spot'**
+  /// **'Add New Spot'**
   String get addHubSpotButton;
 
   /// Add tab hub: event card title
@@ -997,7 +997,7 @@ abstract class AppLocalizations {
   /// Add tab hub: event card action
   ///
   /// In en, this message translates to:
-  /// **'Add new event'**
+  /// **'Add New Event'**
   String get addHubEventButton;
 
   /// Add tab sign-in callout: heading
@@ -1042,11 +1042,17 @@ abstract class AppLocalizations {
   /// **'Choose event'**
   String get explorePickerTitleEvents;
 
-  /// Explore entity picker: title when choosing spot or event
+  /// Explore entity picker: title when choosing a spot or event
   ///
   /// In en, this message translates to:
   /// **'Choose spot or event'**
   String get explorePickerTitleSpotsAndEvents;
+
+  /// Explore entity picker: title when choosing an event pin or spots
+  ///
+  /// In en, this message translates to:
+  /// **'Choose location or spots'**
+  String get explorePickerTitleEventWhere;
 
   /// Explore entity picker: search placeholder for events mode
   ///
@@ -1071,6 +1077,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add'**
   String get explorePickerConfirmAdd;
+
+  /// Event where picker: title when a map pin would replace selected spots
+  ///
+  /// In en, this message translates to:
+  /// **'Use this location?'**
+  String get explorePickerReplaceSpotsTitle;
+
+  /// Event where picker: explain that confirming a pin drops selected spots
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{This replaces the selected spot.} other{This replaces {count} selected spots.}}'**
+  String explorePickerReplaceSpotsBody(int count);
+
+  /// Event where picker: cancel replacing selected spots with a pin
+  ///
+  /// In en, this message translates to:
+  /// **'Keep spots'**
+  String get explorePickerKeepSpots;
+
+  /// Event where picker: confirm replacing selected spots with a pin
+  ///
+  /// In en, this message translates to:
+  /// **'Use location'**
+  String get explorePickerUseLocation;
+
+  /// Event where picker: explain that adding a spot drops the pin
+  ///
+  /// In en, this message translates to:
+  /// **'This replaces the exact location.'**
+  String get explorePickerReplaceLocationBody;
+
+  /// Event where picker: cancel replacing a pin with a spot
+  ///
+  /// In en, this message translates to:
+  /// **'Keep location'**
+  String get explorePickerKeepLocation;
+
+  /// Event where picker: confirm replacing a pin with a spot
+  ///
+  /// In en, this message translates to:
+  /// **'Add spot'**
+  String get explorePickerUseSpotInstead;
+
+  /// Event where picker: short instruction above the map
+  ///
+  /// In en, this message translates to:
+  /// **'Select an exact location, or one or more spots.'**
+  String get explorePickerEventWhereHint;
+
+  /// Event where picker: warn that pin or spots replace a linked list
+  ///
+  /// In en, this message translates to:
+  /// **'Choosing a location or spots will replace {name}.'**
+  String explorePickerEventWhereReplacesListHint(String name);
+
+  /// Event where picker: summary while a list is linked and nothing else is chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Linked list: {name}'**
+  String explorePickerEventWhereListLinked(String name);
+
+  /// Event where picker: summary when neither pin nor spots are chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing selected yet.'**
+  String get explorePickerEventWhereNone;
+
+  /// Event where picker: summary when a map pin is chosen
+  ///
+  /// In en, this message translates to:
+  /// **'Exact location set.'**
+  String get explorePickerEventWherePin;
+
+  /// Event where picker: summary of selected spots
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{name}} other{{count} spots selected}}'**
+  String explorePickerEventWhereSpots(int count, String name);
+
+  /// Event where picker: confirm the current pin or spots
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get explorePickerConfirmDone;
 
   /// Explore entity picker: entity already in selection
   ///
@@ -1435,13 +1525,13 @@ abstract class AppLocalizations {
   /// Add spot: submit in progress
   ///
   /// In en, this message translates to:
-  /// **'Creating Spot...'**
+  /// **'Adding Spot...'**
   String get addSpotCreating;
 
   /// Add spot: primary submit
   ///
   /// In en, this message translates to:
-  /// **'Create Spot'**
+  /// **'Add Spot'**
   String get addSpotCreateButton;
 
   /// Add spot: map card title
@@ -1605,12 +1695,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add New Event'**
   String get addEventTitle;
-
-  /// Add event page: moderation info banner
-  ///
-  /// In en, this message translates to:
-  /// **'Event proposals are reviewed by moderators before they become public.'**
-  String get addEventModerationNotice;
 
   /// Add event page: title field label
   ///
@@ -1792,11 +1876,53 @@ abstract class AppLocalizations {
   /// **'Location'**
   String get addEventLocationSectionTitle;
 
-  /// Add event page: explains spots and venue location can both be set
+  /// Add event page: explains where is pin or spots or a list, not a mix
   ///
   /// In en, this message translates to:
-  /// **'Add one or more spots and/or one exact event location.'**
+  /// **'Choose an exact location, one or more spots, or a spot list.'**
   String get addEventLocationSectionHint;
+
+  /// Add event page: overlay on the location preview map
+  ///
+  /// In en, this message translates to:
+  /// **'Choose on map'**
+  String get addEventChooseOnMapHint;
+
+  /// Add event page: open dialog to link a spot list
+  ///
+  /// In en, this message translates to:
+  /// **'Link list'**
+  String get addEventLinkListButton;
+
+  /// Add event page: snackbar when a pin replaces spots
+  ///
+  /// In en, this message translates to:
+  /// **'Exact location replaced the linked spots.'**
+  String get addEventWhereReplacedSpots;
+
+  /// Add event page: snackbar when spots replace a pin
+  ///
+  /// In en, this message translates to:
+  /// **'Linked spots replaced the exact location.'**
+  String get addEventWhereReplacedLocation;
+
+  /// Add event page: snackbar when a list replaces pin or spots
+  ///
+  /// In en, this message translates to:
+  /// **'Spot list replaced the previous location.'**
+  String get addEventWhereReplacedWithList;
+
+  /// Add event page: snackbar when a pin replaces a linked list
+  ///
+  /// In en, this message translates to:
+  /// **'Exact location replaced {name}.'**
+  String addEventWhereReplacedListWithLocation(String name);
+
+  /// Add event page: snackbar when spots replace a linked list
+  ///
+  /// In en, this message translates to:
+  /// **'Linked spots replaced {name}.'**
+  String addEventWhereReplacedListWithSpots(String name);
 
   /// Add event page: address input label
   ///
@@ -1888,10 +2014,10 @@ abstract class AppLocalizations {
   /// **'End time cannot be before start time.'**
   String get addEventEndBeforeStart;
 
-  /// Add event page: location/link validation
+  /// Add event page: location validation when none is selected
   ///
   /// In en, this message translates to:
-  /// **'Add a map location or link a spot before submitting.'**
+  /// **'Location is required.'**
   String get addEventNeedLocationOrLink;
 
   /// Add event page: photo count validation

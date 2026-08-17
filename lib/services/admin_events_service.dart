@@ -4,11 +4,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../models/parkour_event.dart';
 import '../utils/event_date_window.dart';
 import '../utils/event_duplicate_merge.dart';
 import '../utils/event_linked_spot_loader.dart';
+import '../utils/event_location_utils.dart';
 import '../utils/image_preparation.dart';
 import 'audit_log_service.dart';
 
@@ -170,20 +172,30 @@ class AdminEventsService extends ChangeNotifier {
       return null;
     }
 
+    final collapsed = collapseEventWhere<String>(
+      pin: sourceEvent.latitude != null && sourceEvent.longitude != null
+          ? LatLng(sourceEvent.latitude!, sourceEvent.longitude!)
+          : null,
+      spots: sourceEvent.spotIds,
+      spotListIds: sourceEvent.spotListIds,
+    );
+    final keepPin = collapsed.kind == EventWhereKind.pin;
     final normalized = _normalizeEventInput(
       title: sourceEvent.title,
       description: sourceEvent.description,
       imageUrls: sourceEvent.imageUrls,
       websiteUrl: sourceEvent.websiteUrl,
-      address: sourceEvent.address,
-      spotIds: sourceEvent.spotIds,
-      spotListIds: sourceEvent.spotListIds,
+      address: keepPin ? sourceEvent.address : null,
+      spotIds: collapsed.kind == EventWhereKind.spots
+          ? collapsed.spots
+          : const <String>[],
+      spotListIds: collapsed.spotListIds,
       startAt: sourceEvent.startAt,
       endAt: sourceEvent.endAt,
       isDateOnly: sourceEvent.isDateOnly,
       timeZone: sourceEvent.timeZone,
-      latitude: sourceEvent.latitude,
-      longitude: sourceEvent.longitude,
+      latitude: keepPin ? collapsed.pin?.latitude : null,
+      longitude: keepPin ? collapsed.pin?.longitude : null,
       city: sourceEvent.city,
       countryCode: sourceEvent.countryCode,
     );
@@ -354,7 +366,7 @@ class AdminEventsService extends ChangeNotifier {
       } else {
         updateData['timeZone'] = trimmedTimeZone;
       }
-      _applyFieldDeletesForClearedEventLocation(updateData, updated);
+      applyFieldDeletesForClearedEventLocation(updateData, updated);
       await _firestore.collection('events').doc(trimmedId).update(updateData);
 
       final index = _events.indexWhere((e) => e.id == trimmedId);
@@ -833,7 +845,8 @@ class AdminEventsService extends ChangeNotifier {
   }
 
   /// [toFirestore] omits null location fields; Firestore [update] would keep old values.
-  void _applyFieldDeletesForClearedEventLocation(
+  @visibleForTesting
+  static void applyFieldDeletesForClearedEventLocation(
     Map<String, dynamic> updateData,
     ParkourEvent updated,
   ) {

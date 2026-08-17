@@ -39,6 +39,7 @@ class EventReport {
     this.suggestedStartAt,
     this.suggestedEndAt,
     this.suggestedSpotIds,
+    this.suggestedSpotListIds,
     this.suggestedLatitude,
     this.suggestedLongitude,
     this.suggestedAddress,
@@ -90,6 +91,7 @@ class EventReport {
   final DateTime? suggestedStartAt;
   final DateTime? suggestedEndAt;
   final List<String>? suggestedSpotIds;
+  final List<String>? suggestedSpotListIds;
   final double? suggestedLatitude;
   final double? suggestedLongitude;
   final String? suggestedAddress;
@@ -183,6 +185,7 @@ class EventReport {
       suggestedStartAt: parseDate(data['suggestedStartAt']),
       suggestedEndAt: parseDate(data['suggestedEndAt']),
       suggestedSpotIds: parseNullableStringList('suggestedSpotIds'),
+      suggestedSpotListIds: parseNullableStringList('suggestedSpotListIds'),
       suggestedLatitude: parseDouble(data['suggestedLatitude']),
       suggestedLongitude: parseDouble(data['suggestedLongitude']),
       suggestedAddress: data['suggestedAddress'] as String?,
@@ -219,6 +222,7 @@ class EventReport {
         suggestedStartAt != null ||
         suggestedEndAt != null ||
         suggestedSpotIds != null ||
+        suggestedSpotListIds != null ||
         (suggestedLatitude != null && suggestedLongitude != null) ||
         suggestedLocationRemoved;
   }

@@ -32,6 +32,7 @@ class SpotLocationSection extends StatefulWidget {
   /// links (e.g. Google Maps "Keyboard shortcuts") cannot receive clicks while
   /// a Flutter dialog/picker is open above the map on web.
   final bool blockMapPointers;
+  final String? pickOnMapHint;
 
   const SpotLocationSection({
     super.key,
@@ -55,6 +56,7 @@ class SpotLocationSection extends StatefulWidget {
     this.showLocationDetails = true,
     this.linkedSpots = const <Spot>[],
     this.blockMapPointers = false,
+    this.pickOnMapHint,
   });
 
   @override
@@ -266,7 +268,7 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                l10n.addSpotPickLocationHint,
+                                widget.pickOnMapHint ?? l10n.addSpotPickLocationHint,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 11,

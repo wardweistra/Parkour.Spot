@@ -6,6 +6,8 @@ import '../models/event_report.dart';
 import '../utils/event_schedule_utils.dart';
 import 'location_review_map.dart';
 
+enum _SuggestedWhereKind { none, pin, spots, list, cleared }
+
 /// Summarizes which fields a user suggested changing on an existing event.
 ///
 /// Shows compact field chips for quick scanning, plus optional detail rows
@@ -61,9 +63,7 @@ class EventSuggestedEditsSummary extends StatelessWidget {
           const SizedBox(height: 8),
           ..._buildDetailRows(context, l10n),
         ],
-        if (showLocationMap) ...[
-          ..._buildLocationMap(context, l10n),
-        ],
+        if (showLocationMap) ...[..._buildLocationMap(context, l10n)],
       ],
     );
   }
@@ -79,7 +79,28 @@ class EventSuggestedEditsSummary extends StatelessWidget {
     return null;
   }
 
+  bool _hasSuggestedIds(List<String>? ids) {
+    return ids != null && ids.any((id) => id.trim().isNotEmpty);
+  }
+
+  _SuggestedWhereKind get _suggestedWhereKind {
+    if (_hasSuggestedIds(report.suggestedSpotListIds)) {
+      return _SuggestedWhereKind.list;
+    }
+    if (_hasSuggestedIds(report.suggestedSpotIds)) {
+      return _SuggestedWhereKind.spots;
+    }
+    if (report.suggestedLatitude != null && report.suggestedLongitude != null) {
+      return _SuggestedWhereKind.pin;
+    }
+    if (report.suggestedLocationRemoved) {
+      return _SuggestedWhereKind.cleared;
+    }
+    return _SuggestedWhereKind.none;
+  }
+
   LatLng? _resolvedSuggestedLocation() {
+    if (_suggestedWhereKind != _SuggestedWhereKind.pin) return null;
     if (report.suggestedLatitude != null && report.suggestedLongitude != null) {
       return LatLng(report.suggestedLatitude!, report.suggestedLongitude!);
     }
@@ -90,7 +111,7 @@ class EventSuggestedEditsSummary extends StatelessWidget {
     final current = _resolvedCurrentLocation();
     final suggested = _resolvedSuggestedLocation();
 
-    if (report.suggestedLocationRemoved) {
+    if (_suggestedWhereKind == _SuggestedWhereKind.cleared) {
       if (current == null) return const <Widget>[];
       return [
         const SizedBox(height: 12),
@@ -121,12 +142,7 @@ class EventSuggestedEditsSummary extends StatelessWidget {
     final chips = <Widget>[];
 
     void addChip(String label) {
-      chips.add(
-        Chip(
-          label: Text(label),
-          visualDensity: VisualDensity.compact,
-        ),
-      );
+      chips.add(Chip(label: Text(label), visualDensity: VisualDensity.compact));
     }
 
     if (report.suggestedTitle?.trim().isNotEmpty ?? false) {
@@ -150,14 +166,17 @@ class EventSuggestedEditsSummary extends StatelessWidget {
     if (report.suggestedEndAt != null) {
       addChip(l10n.eventDetailEndsLabel);
     }
-    if (report.suggestedSpotIds != null) {
-      addChip(l10n.addEventLinkingSectionTitle);
-    }
-    if (report.suggestedLocationRemoved) {
-      addChip(l10n.eventSuggestionLocationRemoved);
-    } else if (report.suggestedLatitude != null &&
-        report.suggestedLongitude != null) {
-      addChip(l10n.addEventLocationSectionTitle);
+    switch (_suggestedWhereKind) {
+      case _SuggestedWhereKind.spots:
+        addChip(l10n.addEventLinkingSectionTitle);
+      case _SuggestedWhereKind.list:
+        addChip(l10n.addEventLinkListButton);
+      case _SuggestedWhereKind.cleared:
+        addChip(l10n.eventSuggestionLocationRemoved);
+      case _SuggestedWhereKind.pin:
+        addChip(l10n.addEventLocationSectionTitle);
+      case _SuggestedWhereKind.none:
+        break;
     }
 
     return chips;
@@ -192,7 +211,10 @@ class EventSuggestedEditsSummary extends StatelessWidget {
       );
     }
     if (report.suggestedWebsiteUrl?.trim().isNotEmpty ?? false) {
-      addRow('${l10n.addEventWebsiteLabel.replaceAll(' (optional)', '')}: ${report.suggestedWebsiteUrl!.trim()}', isLink: true);
+      addRow(
+        '${l10n.addEventWebsiteLabel.replaceAll(' (optional)', '')}: ${report.suggestedWebsiteUrl!.trim()}',
+        isLink: true,
+      );
     }
     if (report.suggestedIsDateOnly != null) {
       addRow(
@@ -214,16 +236,26 @@ class EventSuggestedEditsSummary extends StatelessWidget {
         '${l10n.eventDetailEndsLabel}: ${_formatSuggestedDateTime(context, report.suggestedEndAt!)}',
       );
     }
-    if (report.suggestedSpotIds != null) {
-      addRow(
-        '${l10n.addEventLinkingSectionTitle}: ${l10n.eventSuggestionLinkedSpotsCount(report.suggestedSpotIds!.length)}',
-      );
+    switch (_suggestedWhereKind) {
+      case _SuggestedWhereKind.spots:
+        addRow(
+          '${l10n.addEventLinkingSectionTitle}: ${l10n.eventSuggestionLinkedSpotsCount(report.suggestedSpotIds!.length)}',
+        );
+      case _SuggestedWhereKind.list:
+        addRow(
+          '${l10n.addEventLinkListButton}: ${report.suggestedSpotListIds!.length}',
+        );
+      case _SuggestedWhereKind.cleared:
+        addRow(
+          '${l10n.addEventLocationSectionTitle}: ${l10n.eventSuggestionLocationRemoved}',
+        );
+      case _SuggestedWhereKind.pin:
+        break;
+      case _SuggestedWhereKind.none:
+        break;
     }
-    if (report.suggestedLocationRemoved) {
-      addRow(
-        '${l10n.addEventLocationSectionTitle}: ${l10n.eventSuggestionLocationRemoved}',
-      );
-    } else if (report.suggestedLatitude != null &&
+    if (_suggestedWhereKind == _SuggestedWhereKind.pin &&
+        report.suggestedLatitude != null &&
         report.suggestedLongitude != null) {
       final locationParts = <String>[
         '${report.suggestedLatitude!.toStringAsFixed(5)}, ${report.suggestedLongitude!.toStringAsFixed(5)}',

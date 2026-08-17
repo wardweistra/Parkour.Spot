@@ -2,8 +2,56 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../models/spot.dart';
 
-bool spotHasCoordinates(Spot spot) =>
-    spot.latitude != 0 || spot.longitude != 0;
+enum EventWhereKind { none, pin, spots, list }
+
+/// One exclusive where-type after collapsing a mixed pin / spots / lists value.
+class CollapsedEventWhere<T> {
+  const CollapsedEventWhere({
+    required this.kind,
+    this.pin,
+    this.spots = const [],
+    this.spotListIds = const [],
+  });
+
+  final EventWhereKind kind;
+  final LatLng? pin;
+  final List<T> spots;
+  final List<String> spotListIds;
+
+  bool get hasPin => kind == EventWhereKind.pin && pin != null;
+  bool get hasSpots => kind == EventWhereKind.spots && spots.isNotEmpty;
+  bool get hasList => kind == EventWhereKind.list && spotListIds.isNotEmpty;
+}
+
+/// Picks exactly one where-type: list, then spots, then pin.
+CollapsedEventWhere<T> collapseEventWhere<T>({
+  LatLng? pin,
+  List<T> spots = const [],
+  List<String> spotListIds = const [],
+}) {
+  final lists = spotListIds
+      .map((id) => id.trim())
+      .where((id) => id.isNotEmpty)
+      .toList(growable: false);
+  if (lists.isNotEmpty) {
+    return CollapsedEventWhere<T>(
+      kind: EventWhereKind.list,
+      spotListIds: lists,
+    );
+  }
+  if (spots.isNotEmpty) {
+    return CollapsedEventWhere<T>(
+      kind: EventWhereKind.spots,
+      spots: List<T>.from(spots),
+    );
+  }
+  if (pin != null) {
+    return CollapsedEventWhere<T>(kind: EventWhereKind.pin, pin: pin);
+  }
+  return CollapsedEventWhere<T>(kind: EventWhereKind.none);
+}
+
+bool spotHasCoordinates(Spot spot) => spot.latitude != 0 || spot.longitude != 0;
 
 /// Whether the event has its own location (map pin or address), not just linked spots.
 bool eventHasDirectLocation({
@@ -88,6 +136,14 @@ Spot? pickSourceSpotForCityCountry({
     countryCode: countryCode,
     sourceSpot: sourceSpot,
   );
+}
+
+/// Camera center for the event where-picker.
+///
+/// A selected pin wins. Otherwise last-known GPS is used so clearing where
+/// does not fall back to the app default map center (Évry).
+LatLng? resolveEventWherePickerCenter({LatLng? pin, LatLng? gps}) {
+  return pin ?? gps;
 }
 
 /// Resolves coordinates used to infer an event's timezone.

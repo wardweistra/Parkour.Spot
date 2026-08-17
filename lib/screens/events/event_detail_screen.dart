@@ -22,6 +22,7 @@ import '../../services/spot_service.dart';
 import '../../services/search_state_service.dart';
 import '../../services/event_report_service.dart';
 import '../../utils/browser_timezone_utils.dart';
+import '../../utils/event_linked_spot_loader.dart';
 import '../../utils/event_location_utils.dart';
 import '../../utils/event_schedule_utils.dart';
 import '../../utils/location_permission_utils.dart';
@@ -800,8 +801,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         final admin = context.read<AdminEventsService>();
         final origEvent = await admin.getEventById(originalId);
         if (!context.mounted || origEvent == null) return;
-        final transferResult =
-            await showDialog<EventDuplicateTransferResult>(
+        final transferResult = await showDialog<EventDuplicateTransferResult>(
           context: context,
           builder: (c) => EventDuplicateTransferDialog(
             duplicateEvent: event,
@@ -811,7 +811,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         if (transferResult == null || !context.mounted) return;
         final auth = context.read<AuthService>();
         final userId = auth.currentUser?.uid;
-        final userName = auth.userProfile?.displayName ??
+        final userName =
+            auth.userProfile?.displayName ??
             auth.currentUser?.displayName ??
             auth.currentUser?.email;
         final ok = await admin.markEventAsDuplicate(
@@ -1058,8 +1059,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                                   .withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: Theme.of(context).colorScheme.error
-                                    .withValues(alpha: 0.6),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.error.withValues(alpha: 0.6),
                                 width: 1,
                               ),
                             ),
@@ -1078,9 +1080,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                                         .textTheme
                                         .bodyMedium
                                         ?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onErrorContainer,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onErrorContainer,
                                         ),
                                   ),
                                 ),
@@ -1248,7 +1250,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final hasLocation = event.latitude != null && event.longitude != null;
     final hasLinkedSpots = event.spotIds.isNotEmpty;
     final hasLinkedSpotLists = event.spotListIds.isNotEmpty;
-    final locationSources = (hasLocation ? 1 : 0) +
+    final locationSources =
+        (hasLocation ? 1 : 0) +
         (hasLinkedSpots ? 1 : 0) +
         (hasLinkedSpotLists ? 1 : 0);
     if (locationSources > 1 || hasLinkedSpots || hasLinkedSpotLists) {
@@ -2084,9 +2087,7 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
               ],
               if (_isUploading) ...[
                 const SizedBox(height: 12),
-                ImageProcessingBanner(
-                  message: l10n.publicProfileUploading,
-                ),
+                ImageProcessingBanner(message: l10n.publicProfileUploading),
               ],
               if (_error != null) ...[
                 const SizedBox(height: 10),
@@ -2158,7 +2159,13 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
   late DateTime _suggestedStartAt;
   DateTime? _suggestedEndAt;
   late List<Spot> _suggestedLinkedSpots;
+  late List<String> _suggestedSpotListIds;
+  List<Spot> _suggestedSpotListSpots = [];
+  String? _suggestedSpotListName;
   LatLng? _suggestedLocation;
+
+  /// Last-known GPS. Kept after a pin/spots are chosen so clearing where
+  /// can recenter like an empty location picker.
   Position? _currentPosition;
   late LatLng _mapFallbackCenter;
   String? _suggestedAddress;
@@ -2178,15 +2185,27 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
 
   static final RegExp _emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
-  LatLng get _displayLocationForMap {
-    if (_suggestedLocation != null) return _suggestedLocation!;
-    if (_currentPosition != null) {
-      return LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
-    }
-    return _mapFallbackCenter;
+  LatLng? get _gpsLatLng {
+    final position = _currentPosition;
+    if (position == null) return null;
+    return LatLng(position.latitude, position.longitude);
   }
 
-  List<Spot> get _mapDisplaySpots => List<Spot>.from(_suggestedLinkedSpots);
+  bool get _hasSelectedWhere =>
+      _suggestedLocation != null ||
+      _suggestedLinkedSpots.isNotEmpty ||
+      _suggestedSpotListIds.isNotEmpty;
+
+  LatLng get _displayLocationForMap {
+    return _suggestedLocation ?? _gpsLatLng ?? _mapFallbackCenter;
+  }
+
+  List<Spot> get _mapDisplaySpots {
+    if (_suggestedSpotListIds.isNotEmpty) {
+      return List<Spot>.from(_suggestedSpotListSpots);
+    }
+    return List<Spot>.from(_suggestedLinkedSpots);
+  }
 
   List<LatLng> _mapMarkerLocations() {
     final locations = <LatLng>[];
@@ -2199,13 +2218,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
       }
     }
     if (locations.isNotEmpty) return locations;
-
-    if (_currentPosition != null) {
-      return [
-        LatLng(_currentPosition!.latitude, _currentPosition!.longitude),
-      ];
-    }
-    return [_mapFallbackCenter];
+    return [_gpsLatLng ?? _mapFallbackCenter];
   }
 
   void _recenterMapForDisplay() {
@@ -2247,7 +2260,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
     _suggestedIsDateOnly = widget.event.isDateOnly;
     _suggestedStartAt = widget.event.startAt;
     _suggestedEndAt = widget.event.endAt;
-    _suggestedLinkedSpots = widget.event.spotIds
+    final initialSpots = widget.event.spotIds
         .map(
           (id) => Spot(
             id: id,
@@ -2258,18 +2271,37 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
           ),
         )
         .toList(growable: true);
-    if (widget.event.latitude != null && widget.event.longitude != null) {
-      _suggestedLocation = LatLng(
-        widget.event.latitude!,
-        widget.event.longitude!,
-      );
+    final initialPin =
+        widget.event.latitude != null && widget.event.longitude != null
+        ? LatLng(widget.event.latitude!, widget.event.longitude!)
+        : null;
+    final collapsed = collapseEventWhere(
+      pin: initialPin,
+      spots: initialSpots,
+      spotListIds: widget.event.spotListIds,
+    );
+    _suggestedLinkedSpots = List<Spot>.from(collapsed.spots);
+    _suggestedLocation = collapsed.pin;
+    _suggestedSpotListIds = List<String>.from(collapsed.spotListIds);
+    if (collapsed.kind != EventWhereKind.pin) {
+      _locationAddressController.clear();
+      if (initialPin != null ||
+          (originalAddress?.isNotEmpty == true) ||
+          (widget.event.city?.trim().isNotEmpty ?? false) ||
+          (widget.event.countryCode?.trim().isNotEmpty ?? false)) {
+        _locationCleared = true;
+      }
     }
-    _suggestedAddress = originalAddress?.isNotEmpty == true
-        ? originalAddress
+    _suggestedAddress = collapsed.kind == EventWhereKind.pin
+        ? (originalAddress?.isNotEmpty == true ? originalAddress : null)
         : null;
     _resolvedAddressInput = _suggestedAddress;
-    _suggestedCity = widget.event.city;
-    _suggestedCountryCode = widget.event.countryCode;
+    _suggestedCity = collapsed.kind == EventWhereKind.pin
+        ? widget.event.city
+        : null;
+    _suggestedCountryCode = collapsed.kind == EventWhereKind.pin
+        ? widget.event.countryCode
+        : null;
     _loadSuggestedLinkedSpots();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _searchStateServiceRef = Provider.of<SearchStateService>(
@@ -2409,21 +2441,59 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
   }
 
   Future<void> _loadSuggestedLinkedSpots() async {
-    if (widget.event.spotIds.isEmpty) return;
-    final spotService = context.read<SpotService>();
-    final spots = await Future.wait(
-      widget.event.spotIds.map((id) async {
-        final spot = await spotService.getSpotById(id);
-        return spot ??
-            Spot(id: id, name: id, description: '', latitude: 0, longitude: 0);
-      }),
+    if (_suggestedLinkedSpots.isEmpty && _suggestedSpotListIds.isEmpty) return;
+    if (_suggestedLinkedSpots.isNotEmpty) {
+      final spotService = context.read<SpotService>();
+      final ids = _suggestedLinkedSpots
+          .map((spot) => spot.id)
+          .whereType<String>()
+          .toList(growable: false);
+      final spots = await Future.wait(
+        ids.map((id) async {
+          final spot = await spotService.getSpotById(id);
+          return spot ??
+              Spot(
+                id: id,
+                name: id,
+                description: '',
+                latitude: 0,
+                longitude: 0,
+              );
+        }),
+      );
+      if (!mounted) return;
+      setState(() {
+        _suggestedLinkedSpots = spots.toList(growable: true);
+      });
+    }
+    if (_suggestedSpotListIds.isNotEmpty) {
+      await _loadSuggestedSpotLists();
+    }
+    if (!mounted) return;
+    _recenterMapForDisplay();
+    _syncTimeZoneFromLocation();
+  }
+
+  Future<void> _loadSuggestedSpotLists() async {
+    if (_suggestedSpotListIds.isEmpty) return;
+    final listService = context.read<SpotListService>();
+    final names = <String>[];
+    for (final listId in _suggestedSpotListIds) {
+      final list = await listService.getSpotListById(listId);
+      if (list != null && list.name.trim().isNotEmpty) {
+        names.add(list.name.trim());
+      }
+    }
+    final spots = await loadEligibleSpotsForEventPins(
+      firestore: context.read<EventMapService>().firestore,
+      spotIds: const [],
+      spotListIds: _suggestedSpotListIds,
     );
     if (!mounted) return;
     setState(() {
-      _suggestedLinkedSpots = spots.toList(growable: true);
+      _suggestedSpotListName = names.isEmpty ? null : names.join(', ');
+      _suggestedSpotListSpots = spots;
     });
-    _recenterMapForDisplay();
-    _syncTimeZoneFromLocation();
   }
 
   List<String> _normalizedSpotIds(Iterable<String?> ids) {
@@ -2481,6 +2551,9 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
   }
 
   bool _typedAddressNeedsResolution() {
+    if (_suggestedLinkedSpots.isNotEmpty || _suggestedSpotListIds.isNotEmpty) {
+      return false;
+    }
     final typed = _locationAddressController.text.trim();
     if (typed.isEmpty) return false;
     return typed != _resolvedAddressInput || _suggestedLocation == null;
@@ -2518,8 +2591,9 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
       final latLng = LatLng(position.latitude, position.longitude);
       setState(() {
         _currentPosition = position;
+        _mapFallbackCenter = latLng;
         if (setAsPickedPin) {
-          _suggestedLocation = latLng;
+          _applyPinType(latLng, notify: false);
           _locationCleared = false;
         }
         _isLocationPermissionDenied = false;
@@ -2527,8 +2601,8 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
       _recenterMapForDisplay();
       if (setAsPickedPin) {
         _syncTimeZoneFromLocation();
+        await _geocodeLocation(latLng);
       }
-      await _geocodeLocation(latLng);
     } catch (_) {
       // Best-effort current location lookup.
     } finally {
@@ -2630,6 +2704,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
           ? typedAddress
           : (formattedAddress?.isNotEmpty == true ? formattedAddress! : '');
       setState(() {
+        _applyPinType(LatLng(latitude, longitude), notify: false);
         _suggestedLocation = LatLng(latitude, longitude);
         _suggestedAddress = acceptedAddress;
         _suggestedCity = result?['city'] as String?;
@@ -2637,7 +2712,6 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
         _locationAddressController.text = acceptedAddress;
         _resolvedAddressInput = acceptedAddress;
         _locationCleared = false;
-        _currentPosition = null;
         _error = null;
       });
       _recenterMapForDisplay();
@@ -2651,57 +2725,125 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
     }
   }
 
-  Future<void> _pickLocationOnMap() async {
+  void _showWhereReplacedSnack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _clearSuggestedPinFields() {
+    _suggestedLocation = null;
+    _suggestedAddress = null;
+    _suggestedCity = null;
+    _suggestedCountryCode = null;
+    _resolvedAddressInput = null;
+    _locationAddressController.clear();
+    _locationCleared = true;
+  }
+
+  void _applyPinType(LatLng latLng, {bool notify = true}) {
+    final replacedListName = _suggestedSpotListIds.isEmpty
+        ? null
+        : _suggestedSpotListName?.trim();
+    final replacedSpots = _suggestedLinkedSpots.isNotEmpty;
+    _suggestedLocation = latLng;
+    _locationCleared = false;
+    _suggestedLinkedSpots = [];
+    _suggestedSpotListIds = [];
+    _suggestedSpotListSpots = [];
+    _suggestedSpotListName = null;
+    if (notify) {
+      setState(() => _error = null);
+      final l10n = AppLocalizations.of(context)!;
+      if (replacedListName != null && replacedListName.isNotEmpty) {
+        _showWhereReplacedSnack(
+          l10n.addEventWhereReplacedListWithLocation(replacedListName),
+        );
+      } else if (replacedSpots) {
+        _showWhereReplacedSnack(l10n.addEventWhereReplacedSpots);
+      }
+    }
+  }
+
+  void _applySpotsType(List<Spot> spots) {
+    final replacedListName = _suggestedSpotListIds.isEmpty
+        ? null
+        : _suggestedSpotListName?.trim();
+    final replacedPin = _suggestedLocation != null;
+    _suggestedLinkedSpots = List<Spot>.from(spots);
+    _suggestedSpotListIds = [];
+    _suggestedSpotListSpots = [];
+    _suggestedSpotListName = null;
+    _clearSuggestedPinFields();
+    setState(() => _error = null);
+    final l10n = AppLocalizations.of(context)!;
+    if (replacedListName != null && replacedListName.isNotEmpty) {
+      _showWhereReplacedSnack(
+        l10n.addEventWhereReplacedListWithSpots(replacedListName),
+      );
+    } else if (replacedPin) {
+      _showWhereReplacedSnack(l10n.addEventWhereReplacedLocation);
+    }
+  }
+
+  Future<void> _ensureGpsForEmptyWhere() async {
+    if (_hasSelectedWhere) return;
+    if (_currentPosition != null || _isLocationPermissionDenied) return;
+    await _getCurrentLocation(setAsPickedPin: false);
+  }
+
+  void _restoreEmptyWhereMapCenter() {
+    _recenterMapForDisplay();
+    _syncTimeZoneFromLocation();
+    _ensureGpsForEmptyWhere();
+  }
+
+  Future<void> _openEventWherePicker() async {
     if (_isSchedulePickerOpen) return;
+    await _ensureGpsForEmptyWhere();
+    if (!mounted) return;
+    final listFit = _suggestedSpotListIds.isEmpty
+        ? const <LatLng>[]
+        : _mapDisplaySpots
+              .where(spotHasCoordinates)
+              .map((spot) => LatLng(spot.latitude, spot.longitude))
+              .toList(growable: false);
     final result = await ExploreEntityPickerScreen.show(
       context,
       config: ExploreEntityPickerConfig(
-        mode: ExploreEntityPickerMode.locationOnly,
+        mode: ExploreEntityPickerMode.eventWhere,
         initialLocation: _suggestedLocation,
+        initialSpots: List<Spot>.from(_suggestedLinkedSpots),
+        initialCenter: resolveEventWherePickerCenter(
+          pin: _suggestedLocation,
+          gps: _gpsLatLng,
+        ),
+        cameraFitLocations: listFit,
+        linkedSpotListName: _suggestedSpotListIds.isEmpty
+            ? null
+            : _suggestedSpotListName,
         usageTip: LocationPickerUsageTip.addEvent,
       ),
     );
-    final latLng = result?.location;
-    if (latLng == null || !mounted) return;
-    setState(() {
-      _suggestedLocation = latLng;
-      _suggestedAddress = null;
-      _suggestedCity = null;
-      _suggestedCountryCode = null;
-      _resolvedAddressInput = null;
-      _locationAddressController.clear();
-      _locationCleared = false;
-      _currentPosition = null;
-      _error = null;
-    });
+    if (result == null || !mounted) return;
+    if (result.spots.isNotEmpty) {
+      _applySpotsType(result.spots);
+      _recenterMapForDisplay();
+      _syncTimeZoneFromLocation();
+      return;
+    }
+    final latLng = result.location;
+    if (latLng == null) return;
+    _applyPinType(latLng);
     _recenterMapForDisplay();
     await _geocodeLocation(latLng);
-    _syncTimeZoneFromLocation();
-  }
-
-  Future<void> _linkSpotOnMap() async {
-    final result = await ExploreEntityPickerScreen.show(
-      context,
-      config: ExploreEntityPickerConfig(
-        mode: ExploreEntityPickerMode.spotsOnly,
-        initialCenter: _suggestedLocation,
-      ),
-    );
-    final spot = result?.spot;
-    if (spot == null || !mounted) return;
-    if (_suggestedLinkedSpots.any((s) => s.id == spot.id)) return;
-    setState(() {
-      _suggestedLinkedSpots.add(spot);
-      _error = null;
-    });
-    _recenterMapForDisplay();
     _syncTimeZoneFromLocation();
   }
 
   void _clearLocation() {
     setState(() {
       _suggestedLocation = null;
-      _currentPosition = null;
       _suggestedAddress = null;
       _suggestedCity = null;
       _suggestedCountryCode = null;
@@ -2710,8 +2852,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
       _locationCleared = true;
       _error = null;
     });
-    _recenterMapForDisplay();
-    _syncTimeZoneFromLocation();
+    _restoreEmptyWhereMapCenter();
   }
 
   Widget _buildLocationAddressSuffixIcon({
@@ -2765,7 +2906,9 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
     String? timeCancelText,
   }) async {
     final displayInitial = _displayInSelectedTimeZone(initial);
-    final displayMin = minUtc == null ? null : _displayInSelectedTimeZone(minUtc);
+    final displayMin = minUtc == null
+        ? null
+        : _displayInSelectedTimeZone(minUtc);
     final pickedDate = await showDatePicker(
       context: context,
       helpText: dateHelpText,
@@ -2849,11 +2992,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
           initialDate.month,
           initialDate.day,
         ),
-        firstDate: DateTime(
-          minDate.year,
-          minDate.month,
-          minDate.day,
-        ),
+        firstDate: DateTime(minDate.year, minDate.month, minDate.day),
         lastDate: DateTime.now().add(const Duration(days: 3650)),
         builder: interceptingPickerBuilder,
       );
@@ -3015,22 +3154,39 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
     }
     if (!mounted) return;
 
-    final suggestedSpotIds = _linkedSpotsChanged()
-        ? _suggestedLinkedSpots
-              .map((spot) => spot.id)
-              .whereType<String>()
-              .toList(growable: false)
-        : null;
-    final suggestedLocationRemoved =
-        _locationCleared &&
-        _hasOriginalLocationData() &&
-        _suggestedLocation == null;
-    final suggestedLatitude = _locationChanged() && !suggestedLocationRemoved
-        ? _suggestedLocation?.latitude
-        : null;
-    final suggestedLongitude = _locationChanged() && !suggestedLocationRemoved
-        ? _suggestedLocation?.longitude
-        : null;
+    List<String>? suggestedSpotIds;
+    List<String>? suggestedSpotListIds;
+    double? suggestedLatitude;
+    double? suggestedLongitude;
+    var suggestedLocationRemoved = false;
+
+    final whereChanged =
+        _linkedSpotsChanged() ||
+        !_sameSpotIds(_suggestedSpotListIds, widget.event.spotListIds) ||
+        _locationChanged();
+    if (whereChanged) {
+      if (_suggestedLocation != null) {
+        suggestedLatitude = _suggestedLocation!.latitude;
+        suggestedLongitude = _suggestedLocation!.longitude;
+        suggestedSpotIds = const <String>[];
+        suggestedSpotListIds = const <String>[];
+      } else if (_suggestedLinkedSpots.isNotEmpty) {
+        suggestedSpotIds = _suggestedLinkedSpots
+            .map((spot) => spot.id)
+            .whereType<String>()
+            .toList(growable: false);
+        suggestedSpotListIds = const <String>[];
+        suggestedLocationRemoved = _hasOriginalLocationData();
+      } else if (_suggestedSpotListIds.isNotEmpty) {
+        suggestedSpotListIds = List<String>.from(_suggestedSpotListIds);
+        suggestedSpotIds = const <String>[];
+        suggestedLocationRemoved = _hasOriginalLocationData();
+      } else {
+        suggestedSpotIds = const <String>[];
+        suggestedSpotListIds = const <String>[];
+        suggestedLocationRemoved = _hasOriginalLocationData();
+      }
+    }
 
     if (suggestedTitle == null &&
         suggestedDescription == null &&
@@ -3040,6 +3196,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
         suggestedStartAt == null &&
         suggestedEndAt == null &&
         suggestedSpotIds == null &&
+        suggestedSpotListIds == null &&
         suggestedLatitude == null &&
         suggestedLongitude == null &&
         !suggestedLocationRemoved) {
@@ -3082,6 +3239,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
             suggestedStartAt: suggestedStartAt,
             suggestedEndAt: suggestedEndAt,
             suggestedSpotIds: suggestedSpotIds,
+            suggestedSpotListIds: suggestedSpotListIds,
             suggestedLatitude: suggestedLatitude,
             suggestedLongitude: suggestedLongitude,
             suggestedAddress:
@@ -3121,10 +3279,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
     }
   }
 
-  Widget _buildEventBasicsSection(
-    AppLocalizations l10n,
-    bool fieldsEnabled,
-  ) {
+  Widget _buildEventBasicsSection(AppLocalizations l10n, bool fieldsEnabled) {
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
@@ -3195,49 +3350,6 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
               ),
             ),
             const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: _submitting ? null : _linkSpotOnMap,
-                icon: const Icon(Icons.add_location_alt_outlined, size: 18),
-                label: Text(l10n.addEventLinkSpotButton),
-              ),
-            ),
-            if (_suggestedLinkedSpots.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: _suggestedLinkedSpots
-                    .map(
-                      (spot) => Chip(
-                        avatar: const Icon(
-                          Icons.location_on_outlined,
-                          size: 18,
-                        ),
-                        label: Text(
-                          l10n.addEventLinkedSpotLabel(
-                            spot.name.isNotEmpty ? spot.name : (spot.id ?? ''),
-                          ),
-                        ),
-                        onDeleted: _submitting
-                            ? null
-                            : () {
-                                setState(() {
-                                  _suggestedLinkedSpots.removeWhere(
-                                    (s) => s.id == spot.id,
-                                  );
-                                  _error = null;
-                                });
-                                _recenterMapForDisplay();
-                                _syncTimeZoneFromLocation();
-                              },
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-            const SizedBox(height: 12),
             SpotLocationSection(
               embedded: true,
               showRequiredIndicator: false,
@@ -3253,8 +3365,10 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
               isSatelliteView: _isSatelliteView,
               isLocationPermissionDenied: _isLocationPermissionDenied,
               blockMapPointers: _isSchedulePickerOpen,
-              onRefreshLocation: () => _getCurrentLocation(setAsPickedPin: true),
-              onPickOnMap: _pickLocationOnMap,
+              pickOnMapHint: l10n.addEventChooseOnMapHint,
+              onRefreshLocation: () =>
+                  _getCurrentLocation(setAsPickedPin: true),
+              onPickOnMap: _openEventWherePicker,
               onToggleSatellite: (value) {
                 if (_isSchedulePickerOpen) return;
                 setState(() => _isSatelliteView = value);
@@ -3266,7 +3380,9 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
               },
               onMapCreated: onMapCreated,
             ),
-            if (!hasSelectedPin) ...[
+            if (!hasSelectedPin &&
+                _suggestedLinkedSpots.isEmpty &&
+                _suggestedSpotListIds.isEmpty) ...[
               const SizedBox(height: 8),
               Text(
                 l10n.addEventLocationNotSet,
@@ -3274,37 +3390,99 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-            ],
-            const SizedBox(height: 12),
-            CustomTextField(
-              controller: _locationAddressController,
-              labelText: l10n.addEventAddressLabel,
-              hintText: l10n.addEventAddressHint,
-              prefixIcon: Icons.place_outlined,
-              keyboardType: TextInputType.streetAddress,
-              textInputAction: TextInputAction.search,
-              enabled: fieldsEnabled,
-              onChanged: (value) {
-                setState(() {
-                  if (value.trim().isEmpty) {
-                    _suggestedAddress = null;
-                    _resolvedAddressInput = null;
-                    if (_suggestedLocation == null) _locationCleared = true;
-                  } else {
-                    _locationCleared = false;
-                  }
-                  _error = null;
-                });
-              },
-              onFieldSubmitted: (_) {
-                if (fieldsEnabled) _resolveTypedAddress();
-              },
-              suffixIconWidget: _buildLocationAddressSuffixIcon(
-                l10n: l10n,
-                fieldsEnabled: fieldsEnabled,
-                hasSelectedPin: hasSelectedPin,
+            ] else if (hasSelectedPin) ...[
+              const SizedBox(height: 8),
+              Text(
+                l10n.addEventExactLocationSet,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
+            ] else ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  ..._suggestedLinkedSpots.map(
+                    (spot) => Chip(
+                      avatar: const Icon(Icons.location_on_outlined, size: 18),
+                      label: Text(
+                        l10n.addEventLinkedSpotLabel(
+                          spot.name.isNotEmpty ? spot.name : (spot.id ?? ''),
+                        ),
+                      ),
+                      onDeleted: _submitting
+                          ? null
+                          : () {
+                              setState(() {
+                                _suggestedLinkedSpots.removeWhere(
+                                  (s) => s.id == spot.id,
+                                );
+                                _error = null;
+                              });
+                              _restoreEmptyWhereMapCenter();
+                            },
+                    ),
+                  ),
+                  ..._suggestedSpotListIds.map(
+                    (listId) => Chip(
+                      avatar: const Icon(Icons.list_alt_outlined, size: 18),
+                      label: Text(
+                        l10n.addEventLinkedSpotListLabel(
+                          _suggestedSpotListName?.isNotEmpty == true
+                              ? _suggestedSpotListName!
+                              : listId,
+                        ),
+                      ),
+                      onDeleted: _submitting
+                          ? null
+                          : () {
+                              setState(() {
+                                _suggestedSpotListIds = [];
+                                _suggestedSpotListName = null;
+                                _suggestedSpotListSpots = [];
+                                _error = null;
+                              });
+                              _restoreEmptyWhereMapCenter();
+                            },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (hasSelectedPin) ...[
+              const SizedBox(height: 12),
+              CustomTextField(
+                controller: _locationAddressController,
+                labelText: l10n.addEventAddressLabel,
+                hintText: l10n.addEventAddressHint,
+                prefixIcon: Icons.place_outlined,
+                keyboardType: TextInputType.streetAddress,
+                textInputAction: TextInputAction.search,
+                enabled: fieldsEnabled,
+                onChanged: (value) {
+                  setState(() {
+                    if (value.trim().isEmpty) {
+                      _suggestedAddress = null;
+                      _resolvedAddressInput = null;
+                      if (_suggestedLocation == null) _locationCleared = true;
+                    } else {
+                      _locationCleared = false;
+                    }
+                    _error = null;
+                  });
+                },
+                onFieldSubmitted: (_) {
+                  if (fieldsEnabled) _resolveTypedAddress();
+                },
+                suffixIconWidget: _buildLocationAddressSuffixIcon(
+                  l10n: l10n,
+                  fieldsEnabled: fieldsEnabled,
+                  hasSelectedPin: hasSelectedPin,
+                ),
+              ),
+            ],
           ],
         ),
       ),

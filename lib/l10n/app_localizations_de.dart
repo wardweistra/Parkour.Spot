@@ -520,7 +520,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addHubSubtitle => 'Teile dein Wissen auf der Community-Karte.';
 
   @override
-  String get addHubSpotTitle => 'Spot hinzufügen';
+  String get addHubSpotTitle => 'Neuen Spot hinzufügen';
 
   @override
   String get addHubSpotDescription =>
@@ -530,7 +530,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addHubSpotPublishBadge => 'Sofort live auf der Karte';
 
   @override
-  String get addHubSpotButton => 'Spot erstellen';
+  String get addHubSpotButton => 'Neuen Spot hinzufügen';
 
   @override
   String get addHubEventTitle => 'Neues Event hinzufügen';
@@ -571,6 +571,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get explorePickerTitleSpotsAndEvents => 'Spot oder Event auswählen';
 
   @override
+  String get explorePickerTitleEventWhere => 'Ort oder Spots wählen';
+
+  @override
   String get explorePickerSearchHintEvents => 'Ort oder Event suchen…';
 
   @override
@@ -581,6 +584,69 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get explorePickerConfirmAdd => 'Hinzufügen';
+
+  @override
+  String get explorePickerReplaceSpotsTitle => 'Diesen Ort verwenden?';
+
+  @override
+  String explorePickerReplaceSpotsBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Das ersetzt $count ausgewählte Spots.',
+      one: 'Das ersetzt den ausgewählten Spot.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get explorePickerKeepSpots => 'Spots behalten';
+
+  @override
+  String get explorePickerUseLocation => 'Ort verwenden';
+
+  @override
+  String get explorePickerReplaceLocationBody => 'Das ersetzt den genauen Ort.';
+
+  @override
+  String get explorePickerKeepLocation => 'Ort behalten';
+
+  @override
+  String get explorePickerUseSpotInstead => 'Spot hinzufügen';
+
+  @override
+  String get explorePickerEventWhereHint =>
+      'Wähle einen genauen Ort oder einen oder mehrere Spots.';
+
+  @override
+  String explorePickerEventWhereReplacesListHint(String name) {
+    return 'Wenn du einen Ort oder Spots wählst, wird $name ersetzt.';
+  }
+
+  @override
+  String explorePickerEventWhereListLinked(String name) {
+    return 'Verknüpfte Liste: $name';
+  }
+
+  @override
+  String get explorePickerEventWhereNone => 'Noch nichts ausgewählt.';
+
+  @override
+  String get explorePickerEventWherePin => 'Genauer Ort festgelegt.';
+
+  @override
+  String explorePickerEventWhereSpots(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Spots ausgewählt',
+      one: '$name',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get explorePickerConfirmDone => 'Fertig';
 
   @override
   String get explorePickerAlreadyAdded => 'Hinzugefügt';
@@ -807,10 +873,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Beschreibung muss mindestens 10 Zeichen haben';
 
   @override
-  String get addSpotCreating => 'Spot wird erstellt…';
+  String get addSpotCreating => 'Spot wird hinzugefügt…';
 
   @override
-  String get addSpotCreateButton => 'Spot erstellen';
+  String get addSpotCreateButton => 'Spot hinzufügen';
 
   @override
   String get addSpotLocationSectionTitle => 'Spot-Standort wählen';
@@ -902,10 +968,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get addEventTitle => 'Neues Event hinzufügen';
-
-  @override
-  String get addEventModerationNotice =>
-      'Event-Vorschläge werden von Moderatoren geprüft, bevor sie öffentlich werden.';
 
   @override
   String get addEventTitleLabel => 'Event-Titel *';
@@ -1005,7 +1067,35 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get addEventLocationSectionHint =>
-      'Füge einen oder mehrere Spots und/oder einen genauen Event-Ort hinzu.';
+      'Wähle einen genauen Ort, einen oder mehrere Spots oder eine Spotliste.';
+
+  @override
+  String get addEventChooseOnMapHint => 'Auf der Karte wählen';
+
+  @override
+  String get addEventLinkListButton => 'Liste verknüpfen';
+
+  @override
+  String get addEventWhereReplacedSpots =>
+      'Der genaue Ort hat die verknüpften Spots ersetzt.';
+
+  @override
+  String get addEventWhereReplacedLocation =>
+      'Verknüpfte Spots haben den genauen Ort ersetzt.';
+
+  @override
+  String get addEventWhereReplacedWithList =>
+      'Die Spotliste hat den bisherigen Ort ersetzt.';
+
+  @override
+  String addEventWhereReplacedListWithLocation(String name) {
+    return 'Der genaue Ort hat $name ersetzt.';
+  }
+
+  @override
+  String addEventWhereReplacedListWithSpots(String name) {
+    return 'Verknüpfte Spots haben $name ersetzt.';
+  }
 
   @override
   String get addEventAddressLabel => 'Genaue Adresse (optional)';
@@ -1060,8 +1150,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Endzeit darf nicht vor der Startzeit liegen.';
 
   @override
-  String get addEventNeedLocationOrLink =>
-      'Füge einen Kartenstandort hinzu oder verknüpfe einen Spot, bevor du einreichst.';
+  String get addEventNeedLocationOrLink => 'Standort ist erforderlich.';
 
   @override
   String addEventMaxPhotos(int count) {

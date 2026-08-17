@@ -11,7 +11,11 @@ mixin MapRecenteringMixin<T extends StatefulWidget> on State<T> {
   /// Sets the map controller when the map is created
   void onMapCreated(GoogleMapController controller) {
     _mapController = controller;
+    onMapControllerReady();
   }
+
+  /// Called after [onMapCreated] once [mapController] is available.
+  void onMapControllerReady() {}
 
   /// Centers the map on the given location with zoom level 16
   void centerMapOnLocation(LatLng location) {

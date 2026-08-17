@@ -106,6 +106,7 @@ class EventReportService {
     DateTime? suggestedStartAt,
     DateTime? suggestedEndAt,
     List<String>? suggestedSpotIds,
+    List<String>? suggestedSpotListIds,
     double? suggestedLatitude,
     double? suggestedLongitude,
     String? suggestedAddress,
@@ -138,6 +139,13 @@ class EventReportService {
         .toList(growable: false);
     final normalizedSuggestedSpotIds =
         suggestedSpotIds
+            ?.map((id) => id.trim())
+            .where((id) => id.isNotEmpty)
+            .toSet()
+            .toList(growable: false)
+          ?..sort();
+    final normalizedSuggestedSpotListIds =
+        suggestedSpotListIds
             ?.map((id) => id.trim())
             .where((id) => id.isNotEmpty)
             .toSet()
@@ -259,6 +267,9 @@ class EventReportService {
       if (normalizedSuggestedSpotIds != null) {
         reportData['suggestedSpotIds'] = normalizedSuggestedSpotIds;
       }
+      if (normalizedSuggestedSpotListIds != null) {
+        reportData['suggestedSpotListIds'] = normalizedSuggestedSpotListIds;
+      }
       await _firestore.collection('eventReports').add(reportData);
       return true;
     } catch (e) {
@@ -320,6 +331,7 @@ class EventReportService {
     DateTime? suggestedStartAt,
     DateTime? suggestedEndAt,
     List<String>? suggestedSpotIds,
+    List<String>? suggestedSpotListIds,
     double? suggestedLatitude,
     double? suggestedLongitude,
     String? suggestedAddress,
@@ -356,6 +368,7 @@ class EventReportService {
       suggestedStartAt: suggestedStartAt,
       suggestedEndAt: suggestedEndAt,
       suggestedSpotIds: suggestedSpotIds,
+      suggestedSpotListIds: suggestedSpotListIds,
       suggestedLatitude: suggestedLatitude,
       suggestedLongitude: suggestedLongitude,
       suggestedAddress: suggestedAddress,
@@ -954,14 +967,44 @@ class EventReportService {
             ..sort();
     }
 
-    if (report.suggestedLocationRemoved) {
+    if (report.suggestedSpotListIds != null) {
+      updates['spotListIds'] =
+          report.suggestedSpotListIds!
+              .map((id) => id.trim())
+              .where((id) => id.isNotEmpty)
+              .toSet()
+              .toList(growable: false)
+            ..sort();
+    }
+
+    void deleteLocationFields() {
       updates['latitude'] = FieldValue.delete();
       updates['longitude'] = FieldValue.delete();
       updates['address'] = FieldValue.delete();
       updates['city'] = FieldValue.delete();
       updates['countryCode'] = FieldValue.delete();
-    } else if (report.suggestedLatitude != null &&
-        report.suggestedLongitude != null) {
+    }
+
+    final suggestedLists = report.suggestedSpotListIds
+        ?.map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false);
+    final suggestedSpots = report.suggestedSpotIds
+        ?.map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false);
+    final hasPinSuggestion =
+        report.suggestedLatitude != null && report.suggestedLongitude != null;
+
+    if (suggestedLists != null && suggestedLists.isNotEmpty) {
+      updates['spotIds'] = <String>[];
+      deleteLocationFields();
+    } else if (suggestedSpots != null && suggestedSpots.isNotEmpty) {
+      updates['spotListIds'] = <String>[];
+      deleteLocationFields();
+    } else if (hasPinSuggestion) {
+      updates['spotIds'] = <String>[];
+      updates['spotListIds'] = <String>[];
       updates['latitude'] = report.suggestedLatitude;
       updates['longitude'] = report.suggestedLongitude;
       final address = report.suggestedAddress?.trim();
@@ -974,6 +1017,8 @@ class EventReportService {
       updates['countryCode'] = countryCode?.isNotEmpty == true
           ? countryCode
           : FieldValue.delete();
+    } else if (report.suggestedLocationRemoved) {
+      deleteLocationFields();
     }
 
     final effectiveStartAt = (updates['startAt'] is Timestamp)

@@ -19,6 +19,7 @@ import '../../services/geocoding_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/search_state_service.dart';
 import '../../services/spot_service.dart';
+import '../../utils/event_location_utils.dart';
 import '../../utils/explore_events_utils.dart';
 import '../../utils/explore_search_autocomplete.dart';
 import '../../utils/event_linked_spot_loader.dart';
@@ -68,6 +69,8 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
   late final ExploreAutocompleteSession _autocompleteSession;
 
   LatLng? _pickedLocation;
+  LatLng? _pendingLocation;
+  final List<Spot> _selectedSpots = [];
   List<Spot> _loadedSpots = [];
   List<EventMapPin> _loadedEventPins = [];
   Set<Marker> _markers = {};
@@ -92,10 +95,17 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
   @override
   void initState() {
     super.initState();
-    if (_config.includesLocationPin) {
+    if (_config.isEventWhere) {
+      final collapsed = collapseEventWhere(
+        pin: _config.initialLocation,
+        spots: _config.initialSpots,
+      );
+      _pickedLocation = collapsed.pin;
+      _selectedSpots.addAll(collapsed.spots);
+    } else if (_config.includesLocationPin) {
       _pickedLocation = _config.initialLocation ?? _config.initialCenter;
     }
-    _lastMapCenter = _config.initialLocation ?? _config.initialCenter;
+    _lastMapCenter = _initialCameraTarget;
     _autocompleteSession = ExploreAutocompleteSession(
       config: _config,
       fetchPlaces: ({required query, sessionToken, mapCenter}) {
@@ -332,31 +342,50 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
   Set<Marker> _rebuildMarkers() {
     final markers = <Marker>{};
 
-    if (_config.includesLocationPin && _pickedLocation != null) {
-      markers.add(
-        Marker(
-          markerId: const MarkerId('picked'),
-          position: _pickedLocation!,
-          icon: _pickedLocationPinIcon ?? BitmapDescriptor.defaultMarker,
-          anchor: const Offset(0.5, 1.0),
-          draggable: true,
-          onDragEnd: (LatLng position) {
-            setState(() {
-              _pickedLocation = position;
-            });
-          },
-        ),
-      );
-      return markers;
+    if (_config.includesLocationPin) {
+      final pinLocation = _pendingLocation ?? _pickedLocation;
+      if (pinLocation != null) {
+        markers.add(
+          Marker(
+            markerId: const MarkerId('picked'),
+            position: pinLocation,
+            icon: _pickedLocationPinIcon ?? BitmapDescriptor.defaultMarker,
+            anchor: const Offset(0.5, 1.0),
+            draggable: true,
+            zIndexInt: _selectedMarkerZBase + 2000,
+            onDragEnd: (LatLng position) {
+              setState(() {
+                if (_pendingLocation != null) {
+                  _pendingLocation = position;
+                } else {
+                  _pickedLocation = position;
+                }
+              });
+            },
+          ),
+        );
+        if (!_config.includesSpots) {
+          return markers;
+        }
+      }
     }
 
-    final visibleSpotIds = _visibleSpots
-        .map((s) => s.id)
-        .whereType<String>()
-        .toSet();
+    final spotsById = <String, Spot>{};
+    for (final spot in _visibleSpots) {
+      final id = spot.id;
+      if (id != null) spotsById[id] = spot;
+    }
+    if (_config.isEventWhere) {
+      for (final spot in _selectedSpots) {
+        final id = spot.id;
+        if (id != null) spotsById.putIfAbsent(id, () => spot);
+      }
+    }
+
+    final visibleSpotIds = spotsById.keys.toSet();
 
     final spotEntries = MarkerIconUtils.sortByLatitudeNorthFirst(
-      _visibleSpots,
+      spotsById.values.toList(growable: false),
       (spot) => spot.latitude,
     );
 
@@ -365,8 +394,9 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
       final isPreviewSelected = _previewSpot?.id != null
           ? _previewSpot!.id == spot.id
           : _previewSpot?.name == spot.name;
+      final isSessionSelected = _config.isEventWhere && _isSpotSelected(spot);
 
-      final icon = isPreviewSelected
+      final icon = (isPreviewSelected || isSessionSelected)
           ? (_spotSelectedIcon ?? BitmapDescriptor.defaultMarker)
           : (_spotDefaultIcon ?? BitmapDescriptor.defaultMarker);
 
@@ -376,9 +406,12 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
           position: LatLng(spot.latitude, spot.longitude),
           icon: icon,
           anchor: const Offset(0.5, 1.0),
-          zIndexInt: isPreviewSelected ? _selectedMarkerZBase + i : i,
+          zIndexInt: (isPreviewSelected || isSessionSelected)
+              ? _selectedMarkerZBase + i
+              : i,
           onTap: () {
             setState(() {
+              _pendingLocation = null;
               _previewSpot = spot;
               _previewEventPin = null;
               _markers = _rebuildMarkers();
@@ -457,14 +490,18 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
           '';
 
       if (lat != null && lng != null) {
+        final location = LatLng(lat, lng);
         await _mapController!.animateCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
-              target: LatLng(lat, lng),
+              target: location,
               zoom: zoomLevelForPlaceDetails(details),
             ),
           ),
         );
+        if (_config.includesLocationPin) {
+          _requestPickedLocation(location);
+        }
       }
 
       setState(() {
@@ -495,6 +532,7 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
       }
     }
     setState(() {
+      _pendingLocation = null;
       _previewSpot = spot;
       _previewEventPin = null;
       _markers = _rebuildMarkers();
@@ -610,8 +648,77 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
 
   void _onMapTap(LatLng position) {
     if (!_config.includesLocationPin) return;
+    _requestPickedLocation(position);
+  }
+
+  void _requestPickedLocation(LatLng position) {
+    if (_config.isEventWhere && _selectedSpots.isNotEmpty) {
+      setState(() {
+        _pendingLocation = position;
+        _previewSpot = null;
+        _previewEventPin = null;
+        _markers = _rebuildMarkers();
+      });
+      return;
+    }
+    _applyPickedLocation(position);
+  }
+
+  void _applyPickedLocation(LatLng position) {
     setState(() {
       _pickedLocation = position;
+      _pendingLocation = null;
+      if (_config.isEventWhere) {
+        _selectedSpots.clear();
+      }
+      _previewSpot = null;
+      _previewEventPin = null;
+      _markers = _rebuildMarkers();
+    });
+  }
+
+  void _cancelPendingLocation() {
+    setState(() {
+      _pendingLocation = null;
+      _markers = _rebuildMarkers();
+    });
+  }
+
+  void _confirmPendingLocation() {
+    final location = _pendingLocation;
+    if (location == null) return;
+    _applyPickedLocation(location);
+  }
+
+  bool _isSpotSelected(Spot spot) {
+    final id = spot.id;
+    if (id == null) return false;
+    return _selectedSpots.any((selected) => selected.id == id);
+  }
+
+  void _toggleSelectedSpot(Spot spot) {
+    if (spot.id == null) return;
+    setState(() {
+      _pendingLocation = null;
+      _pickedLocation = null;
+      final index = _selectedSpots.indexWhere((s) => s.id == spot.id);
+      if (index >= 0) {
+        _selectedSpots.removeAt(index);
+      } else {
+        _selectedSpots.add(spot);
+      }
+      _markers = _rebuildMarkers();
+    });
+  }
+
+  void _applySpotReplacingPin(Spot spot) {
+    if (spot.id == null) return;
+    setState(() {
+      _pendingLocation = null;
+      _pickedLocation = null;
+      if (!_isSpotSelected(spot)) {
+        _selectedSpots.add(spot);
+      }
       _previewSpot = null;
       _previewEventPin = null;
       _markers = _rebuildMarkers();
@@ -630,12 +737,9 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
 
     if (mounted && position != null) {
       final location = LatLng(position.latitude, position.longitude);
-      setState(() {
-        if (_config.includesLocationPin) {
-          _pickedLocation = location;
-          _markers = _rebuildMarkers();
-        }
-      });
+      if (_config.includesLocationPin) {
+        _requestPickedLocation(location);
+      }
       if (_mapController != null) {
         await _mapController!.animateCamera(
           CameraUpdate.newCameraPosition(
@@ -650,7 +754,28 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
 
   void _confirmSpot(Spot spot) {
     if (spot.id == null) return;
+    if (_config.isEventWhere) {
+      if (_pickedLocation != null && !_isSpotSelected(spot)) {
+        _applySpotReplacingPin(spot);
+        return;
+      }
+      _toggleSelectedSpot(spot);
+      return;
+    }
     _closePicker(ExploreEntityPickerResult.spot(spot));
+  }
+
+  void _confirmEventWhereSession() {
+    if (_selectedSpots.isNotEmpty) {
+      _closePicker(
+        ExploreEntityPickerResult.spots(List<Spot>.from(_selectedSpots)),
+      );
+      return;
+    }
+    final location = _pickedLocation;
+    if (location != null) {
+      _closePicker(ExploreEntityPickerResult.location(location));
+    }
   }
 
   Future<void> _confirmEvent(EventMapPin pin) async {
@@ -679,6 +804,7 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
       ExploreEntityPickerMode.eventsOnly => l10n.explorePickerTitleEvents,
       ExploreEntityPickerMode.spotsAndEvents =>
         l10n.explorePickerTitleSpotsAndEvents,
+      ExploreEntityPickerMode.eventWhere => l10n.explorePickerTitleEventWhere,
     };
   }
 
@@ -688,7 +814,8 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
         l10n.explorePickerSearchHintLocation,
       ExploreEntityPickerMode.eventsOnly => l10n.explorePickerSearchHintEvents,
       ExploreEntityPickerMode.spotsOnly ||
-      ExploreEntityPickerMode.spotsAndEvents => l10n.exploreSearchHint,
+      ExploreEntityPickerMode.spotsAndEvents ||
+      ExploreEntityPickerMode.eventWhere => l10n.exploreSearchHint,
     };
   }
 
@@ -707,6 +834,8 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
   }
 
   LatLng get _initialCameraTarget {
+    final points = _cameraFitPoints;
+    if (points.isNotEmpty) return points.first;
     return _config.initialLocation ??
         _config.initialCenter ??
         const LatLng(
@@ -716,11 +845,42 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
   }
 
   double get _initialZoom {
-    if (_config.initialLocation != null || _config.initialCenter != null) {
+    final points = _cameraFitPoints;
+    if (points.length > 1) return 12;
+    if (points.isNotEmpty ||
+        _config.initialLocation != null ||
+        _config.initialCenter != null) {
       return 16;
     }
     return _config.includesLocationPin ? 10 : 14;
   }
+
+  List<LatLng> get _cameraFitPoints {
+    final points = <LatLng>[];
+    if (_pickedLocation != null) points.add(_pickedLocation!);
+    for (final spot in _selectedSpots) {
+      if (spotHasCoordinates(spot)) {
+        points.add(LatLng(spot.latitude, spot.longitude));
+      }
+    }
+    if (points.isEmpty) {
+      points.addAll(_config.cameraFitLocations);
+    }
+    return points;
+  }
+
+  Future<void> _fitCameraToSelection() async {
+    final points = _cameraFitPoints;
+    if (_mapController == null || points.length < 2) return;
+    final bounds = calculateBoundsForLatLngs(points);
+    if (bounds == null) return;
+    await _mapController!.animateCamera(
+      CameraUpdate.newLatLngBounds(bounds, 48),
+    );
+  }
+
+  bool get _canConfirmEventWhere =>
+      _selectedSpots.isNotEmpty || _pickedLocation != null;
 
   double _fabRightOffset(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
@@ -741,6 +901,8 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
     final theme = Theme.of(context);
     final usageTip = _usageTipText(l10n);
     final showEntityPreview = _previewSpot != null || _previewEventPin != null;
+    final showReplaceBanner = _pendingLocation != null;
+    final hideMapFabs = showEntityPreview || showReplaceBanner;
 
     return Scaffold(
       body: SafeArea(
@@ -751,7 +913,9 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildAppBar(l10n, theme),
-                if (usageTip != null)
+                if (_config.isEventWhere)
+                  _buildEventWhereStatusBar(l10n, theme)
+                else if (usageTip != null)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                     child: Text(
@@ -785,16 +949,21 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
                         liteModeEnabled: kIsWeb,
                         onMapCreated: (controller) {
                           _mapController = controller;
+                          if (_pickedLocation != null ||
+                              _selectedSpots.isNotEmpty) {
+                            setState(() => _markers = _rebuildMarkers());
+                          }
                           if (_config.includesSpots || _config.includesEvents) {
                             Future.delayed(
                               const Duration(milliseconds: 500),
                               () {
-                                if (mounted) _loadMapDataForCurrentView();
+                                if (!mounted) return;
+                                _loadMapDataForCurrentView();
+                                _fitCameraToSelection();
                               },
                             );
-                          } else if (_config.includesLocationPin &&
-                              _pickedLocation != null) {
-                            setState(() => _markers = _rebuildMarkers());
+                          } else {
+                            _fitCameraToSelection();
                           }
                         },
                         onCameraMove: _onCameraMove,
@@ -844,38 +1013,33 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
                             ),
                           ),
                         ),
-                      if (!showEntityPreview) ...[
+                      if (!hideMapFabs) ...[
                         _buildSatelliteFab(l10n),
                         _buildLocationFab(l10n),
                       ],
-                      if (_config.includesLocationPin && !showEntityPreview)
+                      if (_showConfirmFab ||
+                          showReplaceBanner ||
+                          showEntityPreview)
                         Positioned(
-                          bottom: 24,
-                          left: 0,
-                          right: 0,
-                          child: Center(
-                            child: PointerInterceptor(
-                              child: FloatingActionButton.extended(
-                                onPressed: _pickedLocation == null
-                                    ? null
-                                    : _confirmLocation,
-                                icon: const Icon(Icons.check),
-                                label: Text(l10n.addSpotUseThisLocation),
-                              ),
-                            ),
+                          left: 16,
+                          right: 16,
+                          bottom: 16,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (_showConfirmFab)
+                                Center(child: _buildConfirmFab(l10n)),
+                              if (_showConfirmFab &&
+                                  (showReplaceBanner || showEntityPreview))
+                                const SizedBox(height: 12),
+                              if (showReplaceBanner)
+                                _buildReplaceSpotsBanner(l10n, theme),
+                              if (_previewSpot != null) _buildSpotPreview(l10n),
+                              if (_previewEventPin != null)
+                                _buildEventPreview(l10n),
+                            ],
                           ),
-                        ),
-                      if (_previewSpot != null)
-                        Positioned(
-                          left: 16,
-                          bottom: 16,
-                          child: _buildSpotPreview(l10n),
-                        ),
-                      if (_previewEventPin != null)
-                        Positioned(
-                          left: 16,
-                          bottom: 16,
-                          child: _buildEventPreview(l10n),
                         ),
                     ],
                   ),
@@ -883,6 +1047,96 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  bool get _showConfirmFab =>
+      _config.mode == ExploreEntityPickerMode.locationOnly &&
+      _pickedLocation != null;
+
+  Widget _buildConfirmFab(AppLocalizations l10n) {
+    return PointerInterceptor(
+      child: FloatingActionButton.extended(
+        onPressed: _confirmLocation,
+        icon: const Icon(Icons.check),
+        label: Text(l10n.addSpotUseThisLocation),
+      ),
+    );
+  }
+
+  String _eventWhereHint(AppLocalizations l10n) {
+    final listName = _config.trimmedLinkedSpotListName;
+    if (listName != null) {
+      return l10n.explorePickerEventWhereReplacesListHint(listName);
+    }
+    return l10n.explorePickerEventWhereHint;
+  }
+
+  String _eventWhereSummary(AppLocalizations l10n) {
+    if (_pickedLocation != null) return l10n.explorePickerEventWherePin;
+    if (_selectedSpots.isEmpty) {
+      final listName = _config.trimmedLinkedSpotListName;
+      if (listName != null) {
+        return l10n.explorePickerEventWhereListLinked(listName);
+      }
+      return l10n.explorePickerEventWhereNone;
+    }
+    final name = _selectedSpots.first.name.trim();
+    return l10n.explorePickerEventWhereSpots(
+      _selectedSpots.length,
+      name.isEmpty ? _selectedSpots.first.id ?? '' : name,
+    );
+  }
+
+  Widget _buildEventWhereStatusBar(AppLocalizations l10n, ThemeData theme) {
+    final scheme = theme.colorScheme;
+    final canConfirm = _canConfirmEventWhere && _pendingLocation == null;
+    return Material(
+      color: scheme.surfaceContainerLow,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _eventWhereHint(l10n),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: _config.trimmedLinkedSpotListName != null
+                          ? scheme.onSurface
+                          : scheme.onSurfaceVariant,
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _eventWhereSummary(l10n),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            FilledButton.icon(
+              onPressed: canConfirm ? _confirmEventWhereSession : null,
+              icon: const Icon(Icons.check, size: 20),
+              label: Text(l10n.explorePickerConfirmDone),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(0, 40),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1094,11 +1348,105 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
               onClose: _dismissPreview,
             ),
             const SizedBox(height: 8),
+            if (_config.isEventWhere &&
+                _pickedLocation != null &&
+                !_isSpotSelected(spot))
+              _buildReplaceLocationActions(l10n)
+            else
+              FilledButton(
+                onPressed: spot.id == null ? null : () => _confirmSpot(spot),
+                child: Text(
+                  _config.isEventWhere
+                      ? (_isSpotSelected(spot)
+                            ? l10n.explorePickerAlreadyAdded
+                            : l10n.explorePickerConfirmAdd)
+                      : l10n.explorePickerConfirmSelect,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReplaceLocationActions(AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Material(
+      elevation: 2,
+      color: scheme.surface,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.explorePickerReplaceLocationBody,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: 12),
             FilledButton(
-              onPressed: spot.id == null ? null : () => _confirmSpot(spot),
-              child: Text(l10n.explorePickerConfirmSelect),
+              onPressed: _previewSpot?.id == null
+                  ? null
+                  : () => _applySpotReplacingPin(_previewSpot!),
+              child: Text(l10n.explorePickerUseSpotInstead),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: _dismissPreview,
+              child: Text(l10n.explorePickerKeepLocation),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReplaceSpotsBanner(AppLocalizations l10n, ThemeData theme) {
+    final scheme = theme.colorScheme;
+    return PointerInterceptor(
+      child: SizedBox(
+        width: _previewPanelWidth(context),
+        child: Material(
+          elevation: 2,
+          color: scheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  l10n.explorePickerReplaceSpotsTitle,
+                  style: theme.textTheme.titleSmall,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.explorePickerReplaceSpotsBody(_selectedSpots.length),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: _confirmPendingLocation,
+                  child: Text(l10n.explorePickerUseLocation),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton(
+                  onPressed: _cancelPendingLocation,
+                  child: Text(l10n.explorePickerKeepSpots),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

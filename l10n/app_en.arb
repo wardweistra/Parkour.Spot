@@ -644,7 +644,7 @@
   "@addHubSubtitle": {
     "description": "Add tab hub: supporting text"
   },
-  "addHubSpotTitle": "Add spot",
+  "addHubSpotTitle": "Add New Spot",
   "@addHubSpotTitle": {
     "description": "Add tab hub: spot card title"
   },
@@ -656,7 +656,7 @@
   "@addHubSpotPublishBadge": {
     "description": "Add tab hub: spot publish status badge"
   },
-  "addHubSpotButton": "Create spot",
+  "addHubSpotButton": "Add New Spot",
   "@addHubSpotButton": {
     "description": "Add tab hub: spot card action"
   },
@@ -672,7 +672,7 @@
   "@addHubEventModerationBadge": {
     "description": "Add tab hub: event moderation status badge"
   },
-  "addHubEventButton": "Add new event",
+  "addHubEventButton": "Add New Event",
   "@addHubEventButton": {
     "description": "Add tab hub: event card action"
   },
@@ -706,7 +706,11 @@
   },
   "explorePickerTitleSpotsAndEvents": "Choose spot or event",
   "@explorePickerTitleSpotsAndEvents": {
-    "description": "Explore entity picker: title when choosing spot or event"
+    "description": "Explore entity picker: title when choosing a spot or event"
+  },
+  "explorePickerTitleEventWhere": "Choose location or spots",
+  "@explorePickerTitleEventWhere": {
+    "description": "Explore entity picker: title when choosing an event pin or spots"
   },
   "explorePickerSearchHintEvents": "Search location or event…",
   "@explorePickerSearchHintEvents": {
@@ -723,6 +727,85 @@
   "explorePickerConfirmAdd": "Add",
   "@explorePickerConfirmAdd": {
     "description": "Explore entity picker: add to multi selection"
+  },
+  "explorePickerReplaceSpotsTitle": "Use this location?",
+  "@explorePickerReplaceSpotsTitle": {
+    "description": "Event where picker: title when a map pin would replace selected spots"
+  },
+  "explorePickerReplaceSpotsBody": "{count, plural, =1{This replaces the selected spot.} other{This replaces {count} selected spots.}}",
+  "@explorePickerReplaceSpotsBody": {
+    "description": "Event where picker: explain that confirming a pin drops selected spots",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "explorePickerKeepSpots": "Keep spots",
+  "@explorePickerKeepSpots": {
+    "description": "Event where picker: cancel replacing selected spots with a pin"
+  },
+  "explorePickerUseLocation": "Use location",
+  "@explorePickerUseLocation": {
+    "description": "Event where picker: confirm replacing selected spots with a pin"
+  },
+  "explorePickerReplaceLocationBody": "This replaces the exact location.",
+  "@explorePickerReplaceLocationBody": {
+    "description": "Event where picker: explain that adding a spot drops the pin"
+  },
+  "explorePickerKeepLocation": "Keep location",
+  "@explorePickerKeepLocation": {
+    "description": "Event where picker: cancel replacing a pin with a spot"
+  },
+  "explorePickerUseSpotInstead": "Add spot",
+  "@explorePickerUseSpotInstead": {
+    "description": "Event where picker: confirm replacing a pin with a spot"
+  },
+  "explorePickerEventWhereHint": "Select an exact location, or one or more spots.",
+  "@explorePickerEventWhereHint": {
+    "description": "Event where picker: short instruction above the map"
+  },
+  "explorePickerEventWhereReplacesListHint": "Choosing a location or spots will replace {name}.",
+  "@explorePickerEventWhereReplacesListHint": {
+    "description": "Event where picker: warn that pin or spots replace a linked list",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "explorePickerEventWhereListLinked": "Linked list: {name}",
+  "@explorePickerEventWhereListLinked": {
+    "description": "Event where picker: summary while a list is linked and nothing else is chosen",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "explorePickerEventWhereNone": "Nothing selected yet.",
+  "@explorePickerEventWhereNone": {
+    "description": "Event where picker: summary when neither pin nor spots are chosen"
+  },
+  "explorePickerEventWherePin": "Exact location set.",
+  "@explorePickerEventWherePin": {
+    "description": "Event where picker: summary when a map pin is chosen"
+  },
+  "explorePickerEventWhereSpots": "{count, plural, =1{{name}} other{{count} spots selected}}",
+  "@explorePickerEventWhereSpots": {
+    "description": "Event where picker: summary of selected spots",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "explorePickerConfirmDone": "Done",
+  "@explorePickerConfirmDone": {
+    "description": "Event where picker: confirm the current pin or spots"
   },
   "explorePickerAlreadyAdded": "Added",
   "@explorePickerAlreadyAdded": {
@@ -1005,11 +1088,11 @@
   "@addSpotDescriptionMinLength": {
     "description": "Add spot: description validation length"
   },
-  "addSpotCreating": "Creating Spot...",
+  "addSpotCreating": "Adding Spot...",
   "@addSpotCreating": {
     "description": "Add spot: submit in progress"
   },
-  "addSpotCreateButton": "Create Spot",
+  "addSpotCreateButton": "Add Spot",
   "@addSpotCreateButton": {
     "description": "Add spot: primary submit"
   },
@@ -1120,10 +1203,6 @@
   "addEventTitle": "Add New Event",
   "@addEventTitle": {
     "description": "Add event page: app bar title"
-  },
-  "addEventModerationNotice": "Event proposals are reviewed by moderators before they become public.",
-  "@addEventModerationNotice": {
-    "description": "Add event page: moderation info banner"
   },
   "addEventTitleLabel": "Event title *",
   "@addEventTitleLabel": {
@@ -1255,9 +1334,47 @@
   "@addEventLocationSectionTitle": {
     "description": "Add event page: location section title"
   },
-  "addEventLocationSectionHint": "Add one or more spots and/or one exact event location.",
+  "addEventLocationSectionHint": "Choose an exact location, one or more spots, or a spot list.",
   "@addEventLocationSectionHint": {
-    "description": "Add event page: explains spots and venue location can both be set"
+    "description": "Add event page: explains where is pin or spots or a list, not a mix"
+  },
+  "addEventChooseOnMapHint": "Choose on map",
+  "@addEventChooseOnMapHint": {
+    "description": "Add event page: overlay on the location preview map"
+  },
+  "addEventLinkListButton": "Link list",
+  "@addEventLinkListButton": {
+    "description": "Add event page: open dialog to link a spot list"
+  },
+  "addEventWhereReplacedSpots": "Exact location replaced the linked spots.",
+  "@addEventWhereReplacedSpots": {
+    "description": "Add event page: snackbar when a pin replaces spots"
+  },
+  "addEventWhereReplacedLocation": "Linked spots replaced the exact location.",
+  "@addEventWhereReplacedLocation": {
+    "description": "Add event page: snackbar when spots replace a pin"
+  },
+  "addEventWhereReplacedWithList": "Spot list replaced the previous location.",
+  "@addEventWhereReplacedWithList": {
+    "description": "Add event page: snackbar when a list replaces pin or spots"
+  },
+  "addEventWhereReplacedListWithLocation": "Exact location replaced {name}.",
+  "@addEventWhereReplacedListWithLocation": {
+    "description": "Add event page: snackbar when a pin replaces a linked list",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addEventWhereReplacedListWithSpots": "Linked spots replaced {name}.",
+  "@addEventWhereReplacedListWithSpots": {
+    "description": "Add event page: snackbar when spots replace a linked list",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "addEventAddressLabel": "Exact address (optional)",
   "@addEventAddressLabel": {
@@ -1327,9 +1444,9 @@
   "@addEventEndBeforeStart": {
     "description": "Add event page: schedule validation"
   },
-  "addEventNeedLocationOrLink": "Add a map location or link a spot before submitting.",
+  "addEventNeedLocationOrLink": "Location is required.",
   "@addEventNeedLocationOrLink": {
-    "description": "Add event page: location/link validation"
+    "description": "Add event page: location validation when none is selected"
   },
   "addEventMaxPhotos": "At most {count} photos allowed.",
   "@addEventMaxPhotos": {

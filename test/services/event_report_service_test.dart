@@ -27,6 +27,7 @@ void main() {
   group('EventReportService.buildExistingEventSuggestionUpdateForTest', () {
     EventReport report({
       List<String>? suggestedSpotIds,
+      List<String>? suggestedSpotListIds,
       double? suggestedLatitude,
       double? suggestedLongitude,
       String? suggestedAddress,
@@ -40,6 +41,7 @@ void main() {
         status: 'New',
         startAt: DateTime.utc(2026, 5, 28, 18),
         suggestedSpotIds: suggestedSpotIds,
+        suggestedSpotListIds: suggestedSpotListIds,
         suggestedLatitude: suggestedLatitude,
         suggestedLongitude: suggestedLongitude,
         suggestedAddress: suggestedAddress,
@@ -60,6 +62,63 @@ void main() {
 
       expect(updates, isNotNull);
       expect(updates!['spotIds'], <String>['spot-a', 'spot-b']);
+      expect(updates['spotListIds'], <String>[]);
+      expect(updates['latitude'], isA<FieldValue>());
+    });
+
+    test('spots suggestion clears pin and lists', () {
+      final updates =
+          EventReportService.buildExistingEventSuggestionUpdateForTest(
+            report: report(suggestedSpotIds: const <String>['spot-1']),
+            existingEventData: const <String, dynamic>{
+              'latitude': 1.0,
+              'longitude': 2.0,
+              'spotListIds': <String>['list-1'],
+            },
+          );
+
+      expect(updates, isNotNull);
+      expect(updates!['spotIds'], <String>['spot-1']);
+      expect(updates['spotListIds'], <String>[]);
+      expect(updates['latitude'], isA<FieldValue>());
+    });
+
+    test('pin suggestion clears spots and lists', () {
+      final updates =
+          EventReportService.buildExistingEventSuggestionUpdateForTest(
+            report: report(
+              suggestedLatitude: 52.3728,
+              suggestedLongitude: 4.8936,
+              suggestedAddress: 'Dam Square, Amsterdam',
+              suggestedCity: 'Amsterdam',
+              suggestedCountryCode: 'nl',
+            ),
+            existingEventData: const <String, dynamic>{
+              'spotIds': <String>['spot-1'],
+              'spotListIds': <String>['list-1'],
+            },
+          );
+
+      expect(updates, isNotNull);
+      expect(updates!['spotIds'], <String>[]);
+      expect(updates['spotListIds'], <String>[]);
+      expect(updates['latitude'], 52.3728);
+    });
+
+    test('list suggestion clears pin and spots', () {
+      final updates =
+          EventReportService.buildExistingEventSuggestionUpdateForTest(
+            report: report(suggestedSpotListIds: const <String>['list-1']),
+            existingEventData: const <String, dynamic>{
+              'latitude': 1.0,
+              'spotIds': <String>['spot-1'],
+            },
+          );
+
+      expect(updates, isNotNull);
+      expect(updates!['spotListIds'], <String>['list-1']);
+      expect(updates['spotIds'], <String>[]);
+      expect(updates['latitude'], isA<FieldValue>());
     });
 
     test('updates venue coordinates and address when suggested', () {
