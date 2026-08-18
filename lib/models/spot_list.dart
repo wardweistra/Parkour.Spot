@@ -50,7 +50,13 @@ class SpotListSection {
       title: data['title'] as String?,
       text: data['text'] as String?,
       entries: entriesList is List
-          ? (entriesList).map((e) => SpotListEntry.fromMap(Map<String, dynamic>.from(e as Map))).toList()
+          ? (entriesList)
+                .map(
+                  (e) => SpotListEntry.fromMap(
+                    Map<String, dynamic>.from(e as Map),
+                  ),
+                )
+                .toList()
           : [],
     );
   }
@@ -135,6 +141,7 @@ class SpotList {
   final String? id;
   final String name;
   final String? description;
+
   /// Optional link (http/https) to a page with more about this list.
   final String? moreInfoUrl;
   final List<String> spotIds;
@@ -177,8 +184,22 @@ class SpotList {
   }
 
   /// True when this list uses advanced organization (sections).
-  bool get hasAdvancedOrganization =>
-      sections != null && sections!.isNotEmpty;
+  bool get hasAdvancedOrganization => sections != null && sections!.isNotEmpty;
+
+  /// No sections, or exactly one untitled section with no intro text.
+  static bool sectionsArePlain(List<SpotListSection>? sections) {
+    if (sections == null || sections.isEmpty) return true;
+    if (sections.length != 1) return false;
+    final section = sections.first;
+    final title = section.title?.trim() ?? '';
+    final text = section.text?.trim() ?? '';
+    return title.isEmpty && text.isEmpty;
+  }
+
+  bool get isPlainList => sectionsArePlain(sections);
+
+  /// Named section or more than one section: the add-to-list sheet asks where.
+  bool get needsSectionChoice => !isPlainList;
 
   factory SpotList.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
@@ -193,8 +214,12 @@ class SpotList {
           : [],
       sections: sectionsData is List && sectionsData.isNotEmpty
           ? (sectionsData)
-              .map((s) => SpotListSection.fromMap(Map<String, dynamic>.from(s as Map)))
-              .toList()
+                .map(
+                  (s) => SpotListSection.fromMap(
+                    Map<String, dynamic>.from(s as Map),
+                  ),
+                )
+                .toList()
           : null,
       visibility: SpotListVisibility.fromString(data['visibility'] as String?),
       createdBy: data['createdBy'] ?? '',
@@ -228,8 +253,12 @@ class SpotList {
           : [],
       sections: sectionsData is List && sectionsData.isNotEmpty
           ? (sectionsData)
-              .map((s) => SpotListSection.fromMap(Map<String, dynamic>.from(s as Map)))
-              .toList()
+                .map(
+                  (s) => SpotListSection.fromMap(
+                    Map<String, dynamic>.from(s as Map),
+                  ),
+                )
+                .toList()
           : null,
       visibility: SpotListVisibility.fromString(data['visibility'] as String?),
       createdBy: (data['createdBy'] ?? '') as String,
@@ -242,9 +271,11 @@ class SpotList {
     return {
       'name': name,
       if (description != null) 'description': description,
-      if (moreInfoUrl != null && moreInfoUrl!.isNotEmpty) 'moreInfoUrl': moreInfoUrl,
+      if (moreInfoUrl != null && moreInfoUrl!.isNotEmpty)
+        'moreInfoUrl': moreInfoUrl,
       'spotIds': spotIds,
-      if (sections != null) 'sections': sections!.map((s) => s.toMap()).toList(),
+      if (sections != null)
+        'sections': sections!.map((s) => s.toMap()).toList(),
       'visibility': visibility.firestoreValue,
       'createdBy': createdBy,
       'createdAt': createdAt,
@@ -285,4 +316,3 @@ class SpotList {
     return 'SpotList(id: $id, name: $name, visibility: ${visibility.label}, spotCount: $spotCount)';
   }
 }
-

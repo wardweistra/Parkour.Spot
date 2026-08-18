@@ -3744,7 +3744,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotDetailSelectSections.
   ///
   /// In en, this message translates to:
-  /// **'Select sections:'**
+  /// **'Choose a section'**
   String get spotDetailSelectSections;
 
   /// No description provided for @spotDetailSectionEntryCount.
@@ -3804,7 +3804,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotDetailSelectListsPrompt.
   ///
   /// In en, this message translates to:
-  /// **'Select lists to add this spot to:'**
+  /// **'Choose a list'**
   String get spotDetailSelectListsPrompt;
 
   /// No description provided for @spotDetailCreateNewList.

@@ -257,7 +257,11 @@ class SpotListService extends ChangeNotifier {
   }
 
   /// Add a spot to a list. For lists with sections, adds to the first section.
-  Future<bool> addSpotToList(String listId, String spotId) async {
+  Future<bool> addSpotToList(
+    String listId,
+    String spotId, {
+    String? note,
+  }) async {
     if (!_isAuthenticated()) {
       _error = 'You must be signed in to add spots to a list';
       notifyListeners();
@@ -278,16 +282,28 @@ class SpotListService extends ChangeNotifier {
       return false;
     }
 
+    final trimmedNote = note?.trim();
+    final hasNote = trimmedNote != null && trimmedNote.isNotEmpty;
+
     if (list.hasAdvancedOrganization &&
         list.sections != null &&
         list.sections!.isNotEmpty) {
-      return addSpotToSection(listId, list.sections!.first.id, spotId);
+      return addSpotToSection(
+        listId,
+        list.sections!.first.id,
+        spotId,
+        note: hasNote ? trimmedNote : null,
+      );
     }
 
     if (list.spotIds.contains(spotId)) {
       _error = 'Spot is already in this list';
       notifyListeners();
       return false;
+    }
+
+    if (hasNote) {
+      return addSpotToNewSection(listId, spotId, note: trimmedNote);
     }
 
     try {

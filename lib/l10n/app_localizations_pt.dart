@@ -2202,7 +2202,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get spotDetailSelectSections => 'Selecionar secções:';
+  String get spotDetailSelectSections => 'Escolhe uma secção';
 
   @override
   String spotDetailSectionEntryCount(int count) {
@@ -2235,8 +2235,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Ainda não tens listas. Cria uma para começar!';
 
   @override
-  String get spotDetailSelectListsPrompt =>
-      'Seleciona as listas a adicionar este spot:';
+  String get spotDetailSelectListsPrompt => 'Escolhe uma lista';
 
   @override
   String get spotDetailCreateNewList => 'Criar lista nova';

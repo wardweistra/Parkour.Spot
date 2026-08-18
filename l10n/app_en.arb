@@ -2140,7 +2140,7 @@
       }
     }
   },
-  "spotDetailSelectSections": "Select sections:",
+  "spotDetailSelectSections": "Choose a section",
   "spotDetailSectionEntryCount": "Section ({count} spots)",
   "@spotDetailSectionEntryCount": {
     "placeholders": {
@@ -2157,7 +2157,7 @@
   "spotDetailAddToListDialogTitle": "Add to List",
   "spotDetailAlreadyInLists": "Already in these lists:",
   "spotDetailNoListsYet": "You don’t have any lists yet. Create one to get started!",
-  "spotDetailSelectListsPrompt": "Select lists to add this spot to:",
+  "spotDetailSelectListsPrompt": "Choose a list",
   "spotDetailCreateNewList": "Create New List",
   "spotDetailListNameLabel": "List Name",
   "spotDetailListNameHint": "e.g., My Favorite Spots",

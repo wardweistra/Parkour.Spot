@@ -95,13 +95,7 @@ class SpotListEditDraft {
   bool get isSingleSection => sections.length == 1;
 
   /// One untitled section with no intro text: treat the editor as a flat list.
-  bool get isPlainList {
-    if (!isSingleSection) return false;
-    final section = sections.first;
-    final title = section.title?.trim() ?? '';
-    final text = section.text?.trim() ?? '';
-    return title.isEmpty && text.isEmpty;
-  }
+  bool get isPlainList => SpotList.sectionsArePlain(sections);
 
   void reorderSections(int oldIndex, int newIndex) {
     if (newIndex > oldIndex) newIndex -= 1;

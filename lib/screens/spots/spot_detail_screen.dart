@@ -10,6 +10,7 @@ import '../../models/spot.dart';
 import '../../models/spot_check_in.dart';
 import '../../models/spot_training_plan.dart';
 import '../../widgets/spot_check_in_dialog.dart';
+import '../../widgets/add_to_spot_list_dialog.dart';
 import '../../widgets/spot_training_plan_dialog.dart';
 import '../../utils/spot_check_in_flow.dart';
 import '../../services/spot_service.dart';
@@ -503,8 +504,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       _upcomingSpotEventsFuture = _loadUpcomingSpotEvents(widget.spot.id!);
     } else {
       _jumpflixVideosFuture = Future<List<JumpflixVideo>>.value([]);
-      _upcomingSpotEventsFuture =
-          Future<List<UpcomingLinkedEvent>>.value(const []);
+      _upcomingSpotEventsFuture = Future<List<UpcomingLinkedEvent>>.value(
+        const [],
+      );
     }
 
     // Initialize satellite view from SearchStateService
@@ -543,16 +545,18 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         _upcomingSpotEventsFuture = _loadUpcomingSpotEvents(widget.spot.id!);
       } else {
         _jumpflixVideosFuture = Future<List<JumpflixVideo>>.value([]);
-        _upcomingSpotEventsFuture =
-            Future<List<UpcomingLinkedEvent>>.value(const []);
+        _upcomingSpotEventsFuture = Future<List<UpcomingLinkedEvent>>.value(
+          const [],
+        );
       }
     }
   }
 
   Future<List<UpcomingLinkedEvent>> _loadUpcomingSpotEvents(String spotId) {
-    return Provider.of<EventMapService>(context, listen: false)
-        .getUpcomingPinsForSpot(spotId)
-        .then(upcomingLinkedEventsFromPins);
+    return Provider.of<EventMapService>(
+      context,
+      listen: false,
+    ).getUpcomingPinsForSpot(spotId).then(upcomingLinkedEventsFromPins);
   }
 
   String _formatSpotDocumentTitle(Spot s, AppLocalizations l10n) {
@@ -1880,10 +1884,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         context.push(
           Uri(
             path: '/events/add',
-            queryParameters: {
-              'spotId': spotId,
-              'spotName': _spot.name,
-            },
+            queryParameters: {'spotId': spotId, 'spotName': _spot.name},
           ).toString(),
           extra: _spot,
         );
@@ -2204,37 +2205,54 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
     if (!mounted) return;
 
-    final result = await showDialog<Map<String, dynamic>>(
+    final result = await showDialog<AddToSpotListDialogResult>(
       context: context,
-      builder: (dialogContext) => _AddToListDialog(
-        spotId: spotId,
+      builder: (dialogContext) => AddToSpotListDialog(
         lists: availableLists,
         listsWithSpot: listsWithSpot,
-        spotListService: spotListService,
+        addSpot: (listId, {sectionId}) {
+          if (sectionId == null) {
+            return spotListService.addSpotToList(listId, spotId);
+          }
+          return spotListService.addSpotToSection(listId, sectionId, spotId);
+        },
+        addToNewSection: (listId, {sectionTitle}) {
+          return spotListService.addSpotToNewSection(
+            listId,
+            spotId,
+            sectionTitle: sectionTitle,
+          );
+        },
+        createList: ({required name, description, required visibility}) {
+          return spotListService.createSpotList(
+            name,
+            description: description,
+            visibility: visibility,
+          );
+        },
+        onOpenList: (listId) => dialogContext.push('/list/$listId'),
+        errorMessage: () => spotListService.error,
       ),
     );
 
     if (!mounted) return;
     if (result != null) {
-      if (result['created'] == true) {
+      if (result.created) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_l10n.spotDetailListCreatedAndAdded),
             backgroundColor: Colors.green,
           ),
         );
-      } else if (result['added'] == true) {
+      } else if (result.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result.error!), backgroundColor: Colors.red),
+        );
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_l10n.spotDetailSpotAddedToList),
             backgroundColor: Colors.green,
-          ),
-        );
-      } else if (result['error'] != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['error'] as String),
-            backgroundColor: Colors.red,
           ),
         );
       }
@@ -6923,9 +6941,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                 ],
                 if (_isUploading) ...[
                   const SizedBox(height: 12),
-                  ImageProcessingBanner(
-                    message: l10n.publicProfileUploading,
-                  ),
+                  ImageProcessingBanner(message: l10n.publicProfileUploading),
                 ],
                 const SizedBox(height: 16),
                 // Display selected images
@@ -6933,9 +6949,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: List.generate(_selectedImages.length, (
-                      index,
-                    ) {
+                    children: List.generate(_selectedImages.length, (index) {
                       return Stack(
                         children: [
                           Container(
@@ -7070,7 +7084,9 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
         ),
         actions: [
           TextButton(
-            onPressed: _isBusy ? null : () => Navigator.of(dialogContext).pop(false),
+            onPressed: _isBusy
+                ? null
+                : () => Navigator.of(dialogContext).pop(false),
             child: Text(l10n.profileCancel),
           ),
           ElevatedButton(
@@ -7999,550 +8015,6 @@ class _SpotSaveMenu extends StatelessWidget {
           },
         );
       },
-    );
-  }
-}
-
-class _AddToListDialog extends StatefulWidget {
-  final String spotId;
-  final List<SpotList> lists;
-  final List<SpotList> listsWithSpot;
-  final SpotListService spotListService;
-
-  const _AddToListDialog({
-    required this.spotId,
-    required this.lists,
-    required this.listsWithSpot,
-    required this.spotListService,
-  });
-
-  @override
-  State<_AddToListDialog> createState() => _AddToListDialogState();
-}
-
-class _AddToListDialogState extends State<_AddToListDialog> {
-  final Set<String> _selectedListIds = {};
-  final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  SpotListVisibility _newListVisibility = SpotListVisibility.unlisted;
-  bool _showCreateForm = false;
-  bool _isCreating = false;
-  bool _isAdding = false;
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _createListAndAdd() async {
-    final l10n = AppLocalizations.of(context)!;
-    if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.spotDetailListNameEmpty)));
-      return;
-    }
-
-    setState(() {
-      _isCreating = true;
-    });
-
-    final listId = await widget.spotListService.createSpotList(
-      _nameController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
-      visibility: _newListVisibility,
-    );
-
-    if (!mounted) return;
-
-    if (listId != null) {
-      // Add spot to the newly created list
-      setState(() {
-        _isCreating = false;
-        _isAdding = true;
-      });
-
-      final success = await widget.spotListService.addSpotToList(
-        listId,
-        widget.spotId,
-      );
-
-      if (!mounted) return;
-
-      if (success) {
-        Navigator.of(context).pop({'created': true, 'added': true});
-      } else {
-        setState(() {
-          _isAdding = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.spotListService.error ??
-                  l10n.spotDetailFailedAddToListGeneric,
-            ),
-          ),
-        );
-      }
-    } else {
-      setState(() {
-        _isCreating = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.spotListService.error ?? l10n.spotDetailFailedCreateList,
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _addToSelectedLists() async {
-    if (_selectedListIds.isEmpty) {
-      Navigator.of(context).pop();
-      return;
-    }
-
-    final l10n = AppLocalizations.of(context)!;
-
-    setState(() {
-      _isAdding = true;
-    });
-
-    bool allSuccess = true;
-    String? errorMessage;
-    final selectedLists = widget.lists
-        .where((l) => l.id != null && _selectedListIds.contains(l.id!))
-        .toList();
-
-    for (final list in selectedLists) {
-      if (list.hasAdvancedOrganization) {
-        final sectionResult = await _showSectionPickerForList(list);
-        if (sectionResult == null) continue; // User cancelled
-        if (sectionResult['cancelled'] == true) continue;
-        final sectionIds = sectionResult['sectionIds'] as List<String>? ?? [];
-        final note = sectionResult['note'] as String?;
-        final addToNewSection = sectionResult['newSection'] == true;
-        final newSectionTitle = sectionResult['newSectionTitle'] as String?;
-
-        for (final sectionId in sectionIds) {
-          final success = await widget.spotListService.addSpotToSection(
-            list.id!,
-            sectionId,
-            widget.spotId,
-            note: note,
-          );
-          if (!success) {
-            allSuccess = false;
-            errorMessage =
-                widget.spotListService.error ??
-                l10n.spotDetailFailedAddToSomeLists;
-            break;
-          }
-        }
-        if (allSuccess && addToNewSection) {
-          final success = await widget.spotListService.addSpotToNewSection(
-            list.id!,
-            widget.spotId,
-            sectionTitle: newSectionTitle?.isEmpty == true
-                ? null
-                : newSectionTitle,
-            note: note,
-          );
-          if (!success) {
-            allSuccess = false;
-            errorMessage =
-                widget.spotListService.error ??
-                l10n.spotDetailFailedAddToSomeLists;
-          }
-        }
-      } else {
-        final success = await widget.spotListService.addSpotToList(
-          list.id!,
-          widget.spotId,
-        );
-        if (!success) {
-          allSuccess = false;
-          errorMessage =
-              widget.spotListService.error ??
-              l10n.spotDetailFailedAddToSomeLists;
-          break;
-        }
-      }
-    }
-
-    if (!mounted) return;
-
-    setState(() {
-      _isAdding = false;
-    });
-
-    if (allSuccess) {
-      Navigator.of(context).pop({'added': true});
-    } else {
-      Navigator.of(
-        context,
-      ).pop({'error': errorMessage ?? l10n.spotDetailFailedAddToListGeneric});
-    }
-  }
-
-  Future<Map<String, dynamic>?> _showSectionPickerForList(SpotList list) async {
-    final selectedSectionIds = <String>{};
-    bool addToNewSection = false;
-    final noteController = TextEditingController();
-    final newSectionTitleController = TextEditingController();
-
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          final l10n = AppLocalizations.of(context)!;
-          final hasSelection = selectedSectionIds.isNotEmpty || addToNewSection;
-          return AlertDialog(
-            title: Text(l10n.spotDetailAddToListTitle(list.name)),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.spotDetailSelectSections,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  ...(list.sections ?? []).map(
-                    (section) => CheckboxListTile(
-                      title: Text(
-                        section.title?.trim().isEmpty != false
-                            ? l10n.spotDetailSectionEntryCount(
-                                section.entries.length,
-                              )
-                            : section.title!,
-                      ),
-                      value: selectedSectionIds.contains(section.id),
-                      onChanged: (value) {
-                        setDialogState(() {
-                          if (value == true) {
-                            selectedSectionIds.add(section.id);
-                          } else {
-                            selectedSectionIds.remove(section.id);
-                          }
-                        });
-                      },
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  CheckboxListTile(
-                    title: Text(l10n.spotDetailAddToNewSection),
-                    value: addToNewSection,
-                    onChanged: (value) {
-                      setDialogState(() => addToNewSection = value ?? false);
-                    },
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  if (addToNewSection) ...[
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: newSectionTitleController,
-                      decoration: InputDecoration(
-                        labelText: l10n.spotDetailSectionNameOptional,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: noteController,
-                    decoration: InputDecoration(
-                      labelText: l10n.spotDetailNoteOptional,
-                    ),
-                    maxLines: 2,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, {'cancelled': true}),
-                child: Text(l10n.spotDetailSkip),
-              ),
-              TextButton(
-                onPressed: hasSelection
-                    ? () => Navigator.pop(context, {
-                        'sectionIds': selectedSectionIds.toList(),
-                        'newSection': addToNewSection,
-                        'newSectionTitle': addToNewSection
-                            ? newSectionTitleController.text.trim()
-                            : null,
-                        'note': noteController.text.trim().isEmpty
-                            ? null
-                            : noteController.text.trim(),
-                      })
-                    : null,
-                child: Text(l10n.spotDetailAdd),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-
-    noteController.dispose();
-    newSectionTitleController.dispose();
-    return result;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-
-    return AlertDialog(
-      title: Text(l10n.spotDetailAddToListDialogTitle),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (!_showCreateForm) ...[
-                if (widget.listsWithSpot.isNotEmpty) ...[
-                  Text(
-                    l10n.spotDetailAlreadyInLists,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ...widget.listsWithSpot.map(
-                    (list) => Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.check_circle,
-                            size: 16,
-                            color: theme.colorScheme.primary,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              list.name,
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                          ),
-                          if (list.id != null)
-                            IconButton(
-                              tooltip: l10n.spotDetailViewFullListTooltip,
-                              icon: Icon(
-                                Icons.list_alt_outlined,
-                                size: 20,
-                                color: theme.colorScheme.primary,
-                              ),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                minWidth: 40,
-                                minHeight: 40,
-                              ),
-                              onPressed: _isAdding
-                                  ? null
-                                  : () {
-                                      context.push('/list/${list.id}');
-                                    },
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                if (widget.lists.isEmpty) ...[
-                  Text(
-                    l10n.spotDetailNoListsYet,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                ] else ...[
-                  Text(
-                    l10n.spotDetailSelectListsPrompt,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  ...widget.lists.map(
-                    (list) => CheckboxListTile(
-                      title: Text(list.name),
-                      subtitle:
-                          list.description != null &&
-                              list.description!.isNotEmpty
-                          ? Text(
-                              list.description!,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall,
-                            )
-                          : null,
-                      value: _selectedListIds.contains(list.id),
-                      onChanged: _isAdding
-                          ? null
-                          : (value) {
-                              setState(() {
-                                if (value == true && list.id != null) {
-                                  _selectedListIds.add(list.id!);
-                                } else if (list.id != null) {
-                                  _selectedListIds.remove(list.id);
-                                }
-                              });
-                            },
-                      secondary: list.id == null
-                          ? null
-                          : IconButton(
-                              tooltip: l10n.spotDetailViewFullListTooltip,
-                              icon: Icon(
-                                Icons.list_alt_outlined,
-                                size: 20,
-                                color: theme.colorScheme.primary,
-                              ),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                minWidth: 40,
-                                minHeight: 40,
-                              ),
-                              onPressed: _isAdding
-                                  ? null
-                                  : () {
-                                      context.push('/list/${list.id}');
-                                    },
-                            ),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: _isAdding
-                      ? null
-                      : () {
-                          setState(() {
-                            _showCreateForm = true;
-                          });
-                        },
-                  icon: const Icon(Icons.add),
-                  label: Text(l10n.spotDetailCreateNewList),
-                ),
-              ] else ...[
-                Text(
-                  l10n.spotDetailCreateNewList,
-                  style: theme.textTheme.titleMedium,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: l10n.spotDetailListNameLabel,
-                    hintText: l10n.spotDetailListNameHint,
-                  ),
-                  autofocus: true,
-                  enabled: !_isCreating && !_isAdding,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _descriptionController,
-                  decoration: InputDecoration(
-                    labelText: l10n.spotDetailListDescriptionLabel,
-                    hintText: l10n.spotDetailListDescriptionHint,
-                  ),
-                  maxLines: 3,
-                  enabled: !_isCreating && !_isAdding,
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<SpotListVisibility>(
-                  initialValue: _newListVisibility,
-                  decoration: InputDecoration(
-                    labelText: l10n.spotDetailVisibilityLabel,
-                  ),
-                  items: SpotListVisibility.values
-                      .map(
-                        (visibility) => DropdownMenuItem<SpotListVisibility>(
-                          value: visibility,
-                          child: Text(visibility.label),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (_isCreating || _isAdding)
-                      ? null
-                      : (value) {
-                          if (value == null) return;
-                          setState(() {
-                            _newListVisibility = value;
-                          });
-                        },
-                ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    _newListVisibility.description,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: (_isCreating || _isAdding)
-                      ? null
-                      : () {
-                          setState(() {
-                            _showCreateForm = false;
-                            _nameController.clear();
-                            _descriptionController.clear();
-                            _newListVisibility = SpotListVisibility.unlisted;
-                          });
-                        },
-                  child: Text(l10n.profileCancel),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: (_isCreating || _isAdding)
-              ? null
-              : () => Navigator.of(context).pop(),
-          child: Text(l10n.profileCancel),
-        ),
-        if (!_showCreateForm && widget.lists.isNotEmpty)
-          ElevatedButton(
-            onPressed: (_isAdding || _selectedListIds.isEmpty)
-                ? null
-                : _addToSelectedLists,
-            child: _isAdding
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(l10n.spotDetailAdd),
-          ),
-        if (_showCreateForm)
-          ElevatedButton(
-            onPressed: (_isCreating || _isAdding) ? null : _createListAndAdd,
-            child: (_isCreating || _isAdding)
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(l10n.spotDetailCreateAndAdd),
-          ),
-      ],
     );
   }
 }
