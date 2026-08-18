@@ -179,7 +179,8 @@ class SpotListService extends ChangeNotifier {
       if (doc.exists) {
         final list = SpotList.fromFirestore(doc);
         final currentUserId = _getCurrentUserId();
-        final canView = list.visibility != SpotListVisibility.private ||
+        final canView =
+            list.visibility != SpotListVisibility.private ||
             list.createdBy == currentUserId;
         return canView ? list : null;
       }
@@ -224,46 +225,22 @@ class SpotListService extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
+      final metadata = _buildMetadataUpdates(
+        name: name,
+        description: description,
+        visibility: visibility,
+        moreInfoUrl: moreInfoUrl,
+      );
+      if (metadata == null) {
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
       final updates = <String, dynamic>{
+        ...metadata,
         'updatedAt': FieldValue.serverTimestamp(),
       };
-
-      if (name != null) {
-        if (name.trim().isEmpty) {
-          _error = 'List name cannot be empty';
-          _isLoading = false;
-          notifyListeners();
-          return false;
-        }
-        updates['name'] = name.trim();
-      }
-
-      if (description != null) {
-        updates['description'] = description.trim().isEmpty
-            ? FieldValue.delete()
-            : description.trim();
-      }
-
-      if (visibility != null) {
-        updates['visibility'] = visibility.firestoreValue;
-      }
-
-      if (moreInfoUrl != null) {
-        final trimmed = moreInfoUrl.trim();
-        if (trimmed.isEmpty) {
-          updates['moreInfoUrl'] = FieldValue.delete();
-        } else {
-          final normalized = http_url.normalizeHttpOrHttpsUrl(trimmed);
-          if (normalized == null) {
-            _error =
-                'Enter a valid URL (http or https), e.g. example.com or https://example.com/page';
-            _isLoading = false;
-            notifyListeners();
-            return false;
-          }
-          updates['moreInfoUrl'] = normalized;
-        }
-      }
 
       await _firestore.collection('spotLists').doc(listId).update(updates);
 
@@ -301,7 +278,9 @@ class SpotListService extends ChangeNotifier {
       return false;
     }
 
-    if (list.hasAdvancedOrganization && list.sections != null && list.sections!.isNotEmpty) {
+    if (list.hasAdvancedOrganization &&
+        list.sections != null &&
+        list.sections!.isNotEmpty) {
       return addSpotToSection(listId, list.sections!.first.id, spotId);
     }
 
@@ -358,8 +337,9 @@ class SpotListService extends ChangeNotifier {
     if (list.hasAdvancedOrganization && list.sections != null) {
       final sections = <SpotListSection>[];
       for (final section in list.sections!) {
-        final remainingEntries =
-            section.entries.where((e) => e.spotId != spotId).toList();
+        final remainingEntries = section.entries
+            .where((e) => e.spotId != spotId)
+            .toList();
         if (remainingEntries.isNotEmpty) {
           sections.add(section.copyWith(entries: remainingEntries));
         }
@@ -387,6 +367,127 @@ class SpotListService extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  /// Persist list metadata and organization in a single write.
+  Future<bool> saveSpotListEdits(
+    String listId, {
+    required String name,
+    required String description,
+    required SpotListVisibility visibility,
+    required String moreInfoUrl,
+    required List<SpotListSection> sections,
+  }) async {
+    if (!_isAuthenticated()) {
+      _error = 'You must be signed in to update a list';
+      notifyListeners();
+      return false;
+    }
+
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      _error = 'User ID not found';
+      notifyListeners();
+      return false;
+    }
+
+    final list = await getSpotListById(listId);
+    if (list == null || list.createdBy != userId) {
+      _error = 'You do not have permission to update this list';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final metadata = _buildMetadataUpdates(
+        name: name,
+        description: description,
+        visibility: visibility,
+        moreInfoUrl: moreInfoUrl,
+      );
+      if (metadata == null) {
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      final nonEmptySections = sections
+          .where((s) => s.entries.isNotEmpty)
+          .toList();
+      final effectiveSpotIds = _deriveSpotIdsFromSections(nonEmptySections);
+
+      final updates = <String, dynamic>{
+        ...metadata,
+        'spotIds': effectiveSpotIds,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      if (nonEmptySections.isEmpty) {
+        updates['sections'] = FieldValue.delete();
+      } else {
+        updates['sections'] = nonEmptySections.map((s) => s.toMap()).toList();
+      }
+
+      await _firestore.collection('spotLists').doc(listId).update(updates);
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'Failed to update list: $e';
+      debugPrint('Error saving spot list edits: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Map<String, dynamic>? _buildMetadataUpdates({
+    String? name,
+    String? description,
+    SpotListVisibility? visibility,
+    String? moreInfoUrl,
+  }) {
+    final updates = <String, dynamic>{};
+
+    if (name != null) {
+      if (name.trim().isEmpty) {
+        _error = 'List name cannot be empty';
+        return null;
+      }
+      updates['name'] = name.trim();
+    }
+
+    if (description != null) {
+      updates['description'] = description.trim().isEmpty
+          ? FieldValue.delete()
+          : description.trim();
+    }
+
+    if (visibility != null) {
+      updates['visibility'] = visibility.firestoreValue;
+    }
+
+    if (moreInfoUrl != null) {
+      final trimmed = moreInfoUrl.trim();
+      if (trimmed.isEmpty) {
+        updates['moreInfoUrl'] = FieldValue.delete();
+      } else {
+        final normalized = http_url.normalizeHttpOrHttpsUrl(trimmed);
+        if (normalized == null) {
+          _error =
+              'Enter a valid URL (http or https), e.g. example.com or https://example.com/page';
+          return null;
+        }
+        updates['moreInfoUrl'] = normalized;
+      }
+    }
+
+    return updates;
   }
 
   /// Update section organization. Persists sections and
@@ -506,7 +607,12 @@ class SpotListService extends ChangeNotifier {
 
     final section = sections[sectionIndex];
     final newEntries = List<SpotListEntry>.from(section.entries)
-      ..add(SpotListEntry(spotId: spotId, note: note?.trim().isEmpty == true ? null : note));
+      ..add(
+        SpotListEntry(
+          spotId: spotId,
+          note: note?.trim().isEmpty == true ? null : note,
+        ),
+      );
     sections[sectionIndex] = section.copyWith(entries: newEntries);
 
     return updateSpotListOrganization(listId, sections);
@@ -543,7 +649,12 @@ class SpotListService extends ChangeNotifier {
     final newSection = SpotListSection(
       id: const Uuid().v4(),
       title: sectionTitle?.trim().isEmpty == true ? null : sectionTitle?.trim(),
-      entries: [SpotListEntry(spotId: spotId, note: note?.trim().isEmpty == true ? null : note)],
+      entries: [
+        SpotListEntry(
+          spotId: spotId,
+          note: note?.trim().isEmpty == true ? null : note,
+        ),
+      ],
     );
     sections.add(newSection);
 
@@ -597,7 +708,8 @@ class SpotListService extends ChangeNotifier {
       return false;
     }
 
-    final newEntries = List<SpotListEntry>.from(section.entries)..removeAt(entryIndex);
+    final newEntries = List<SpotListEntry>.from(section.entries)
+      ..removeAt(entryIndex);
     sections[sectionIndex] = section.copyWith(entries: newEntries);
 
     // Remove section if empty (allows list to become empty, converting to simple mode)
@@ -609,7 +721,10 @@ class SpotListService extends ChangeNotifier {
   }
 
   /// Reorder spots in a list (legacy flat lists only; section-based lists use Organize screen)
-  Future<bool> reorderSpotsInList(String listId, List<String> newSpotIds) async {
+  Future<bool> reorderSpotsInList(
+    String listId,
+    List<String> newSpotIds,
+  ) async {
     if (!_isAuthenticated()) {
       _error = 'You must be signed in to reorder spots in a list';
       notifyListeners();
@@ -706,4 +821,3 @@ class SpotListService extends ChangeNotifier {
     notifyListeners();
   }
 }
-

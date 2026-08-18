@@ -3001,10 +3001,104 @@ class AppLocalizationsDe extends AppLocalizations {
   String get spotListDetailEditListTooltip => 'Liste bearbeiten';
 
   @override
-  String get spotListDetailMenuListSettings => 'Listeneinstellungen';
+  String get spotListDetailMenuEditList => 'Liste bearbeiten';
 
   @override
-  String get spotListDetailMenuOrganizeList => 'Liste organisieren';
+  String get spotListEditDiscardTitle => 'Änderungen verwerfen?';
+
+  @override
+  String get spotListEditDiscardMessage =>
+      'Deine Bearbeitungen an dieser Liste gehen verloren.';
+
+  @override
+  String get spotListEditDiscardAction => 'Verwerfen';
+
+  @override
+  String get spotListEditAddSection => 'Abschnitt hinzufügen';
+
+  @override
+  String get spotListEditSectionTitleLabel => 'Abschnittstitel (optional)';
+
+  @override
+  String get spotListEditSectionTextLabel => 'Abschnittstext (optional)';
+
+  @override
+  String get spotListEditAddSectionTitle => 'Titel hinzufügen';
+
+  @override
+  String get spotListEditEditSectionTooltip => 'Abschnitt bearbeiten';
+
+  @override
+  String get spotListEditDoneSectionTooltip => 'Fertig';
+
+  @override
+  String get spotListEditNoSpotsInSection => 'Keine Spots in diesem Abschnitt';
+
+  @override
+  String get spotListEditEmptySectionsRemovedOnSave =>
+      'Leere Abschnitte werden beim Speichern entfernt';
+
+  @override
+  String get spotListEditRemoveSpotTitle => 'Aus Liste entfernen';
+
+  @override
+  String spotListEditRemoveSpotMessage(String name) {
+    return '„$name“ aus dieser Liste entfernen?';
+  }
+
+  @override
+  String get spotListEditRemoveSpotAction => 'Entfernen';
+
+  @override
+  String get spotListEditRemoveSpotTooltip => 'Aus Liste entfernen';
+
+  @override
+  String get spotListEditAddNoteTooltip => 'Notiz hinzufügen';
+
+  @override
+  String get spotListEditEditNoteTooltip => 'Notiz bearbeiten';
+
+  @override
+  String get spotListEditNoteLabel => 'Notiz zu diesem Spot';
+
+  @override
+  String get spotListEditRemoveNoteTooltip => 'Notiz entfernen';
+
+  @override
+  String get spotListEditDoneNoteTooltip => 'Fertig';
+
+  @override
+  String get spotListEditDeleteSectionTooltip => 'Abschnitt löschen';
+
+  @override
+  String get spotListEditDeleteSectionTitle => 'Abschnitt löschen?';
+
+  @override
+  String get spotListEditDeleteSectionMessage =>
+      'Spots in diesem Abschnitt werden aus der Liste entfernt.';
+
+  @override
+  String get spotListEditDragHandleTooltip => 'Ziehen zum Umsortieren';
+
+  @override
+  String get spotListEditVisibilityPublic => 'Öffentlich';
+
+  @override
+  String get spotListEditVisibilityUnlisted => 'Nicht gelistet';
+
+  @override
+  String get spotListEditVisibilityPrivate => 'Privat';
+
+  @override
+  String get spotListEditVisibilityPublicHelp =>
+      'Auf deinem Profil gelistet und für alle sichtbar';
+
+  @override
+  String get spotListEditVisibilityUnlistedHelp =>
+      'Über einen direkten Link sichtbar, aber auf deinem Profil verborgen';
+
+  @override
+  String get spotListEditVisibilityPrivateHelp => 'Nur für dich sichtbar';
 
   @override
   String get spotListDetailMenuDeleteList => 'Liste löschen';

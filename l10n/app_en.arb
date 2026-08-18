@@ -2698,13 +2698,134 @@
   "@spotListDetailEditListTooltip": {
     "description": "Tooltip for list management menu button"
   },
-  "spotListDetailMenuListSettings": "List Settings",
-  "@spotListDetailMenuListSettings": {
-    "description": "List management menu item"
+  "spotListDetailMenuEditList": "Edit list",
+  "@spotListDetailMenuEditList": {
+    "description": "List management menu item that enters inline list edit mode"
   },
-  "spotListDetailMenuOrganizeList": "Organize List",
-  "@spotListDetailMenuOrganizeList": {
-    "description": "List management menu item"
+  "spotListEditDiscardTitle": "Discard changes?",
+  "@spotListEditDiscardTitle": {
+    "description": "Title of unsaved list edits discard dialog"
+  },
+  "spotListEditDiscardMessage": "Your edits to this list will be lost.",
+  "@spotListEditDiscardMessage": {
+    "description": "Body of unsaved list edits discard dialog"
+  },
+  "spotListEditDiscardAction": "Discard",
+  "@spotListEditDiscardAction": {
+    "description": "Confirm discarding unsaved list edits"
+  },
+  "spotListEditAddSection": "Add section",
+  "@spotListEditAddSection": {
+    "description": "Button to add a section while editing a list"
+  },
+  "spotListEditSectionTitleLabel": "Section title (optional)",
+  "@spotListEditSectionTitleLabel": {
+    "description": "Hint for optional section title in list edit mode"
+  },
+  "spotListEditSectionTextLabel": "Section text (optional)",
+  "@spotListEditSectionTextLabel": {
+    "description": "Hint for optional section body in list edit mode"
+  },
+  "spotListEditAddSectionTitle": "Add title",
+  "@spotListEditAddSectionTitle": {
+    "description": "Empty-state action to add a section title while editing a list"
+  },
+  "spotListEditEditSectionTooltip": "Edit section",
+  "@spotListEditEditSectionTooltip": {
+    "description": "Tooltip to edit a section title and text"
+  },
+  "spotListEditDoneSectionTooltip": "Done",
+  "@spotListEditDoneSectionTooltip": {
+    "description": "Tooltip to finish editing a section title and text"
+  },
+  "spotListEditNoSpotsInSection": "No spots in this section",
+  "@spotListEditNoSpotsInSection": {
+    "description": "Empty state inside a list section while editing"
+  },
+  "spotListEditEmptySectionsRemovedOnSave": "Empty sections will be removed when you save",
+  "@spotListEditEmptySectionsRemovedOnSave": {
+    "description": "Hint that empty sections are dropped on save"
+  },
+  "spotListEditRemoveSpotTitle": "Remove from list",
+  "@spotListEditRemoveSpotTitle": {
+    "description": "Title of remove-spot confirmation"
+  },
+  "spotListEditRemoveSpotMessage": "Remove \"{name}\" from this list?",
+  "@spotListEditRemoveSpotMessage": {
+    "description": "Body of remove-spot confirmation",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "spotListEditRemoveSpotAction": "Remove",
+  "@spotListEditRemoveSpotAction": {
+    "description": "Confirm removing a spot from the list"
+  },
+  "spotListEditRemoveSpotTooltip": "Remove from list",
+  "@spotListEditRemoveSpotTooltip": {
+    "description": "Tooltip for removing a spot while editing a list"
+  },
+  "spotListEditAddNoteTooltip": "Add note",
+  "@spotListEditAddNoteTooltip": {
+    "description": "Tooltip to add a per-spot note"
+  },
+  "spotListEditEditNoteTooltip": "Edit note",
+  "@spotListEditEditNoteTooltip": {
+    "description": "Tooltip to edit a per-spot note"
+  },
+  "spotListEditNoteLabel": "Note for this spot",
+  "@spotListEditNoteLabel": {
+    "description": "Label for inline per-spot note field"
+  },
+  "spotListEditRemoveNoteTooltip": "Remove note",
+  "@spotListEditRemoveNoteTooltip": {
+    "description": "Tooltip to clear a per-spot note while editing a list"
+  },
+  "spotListEditDoneNoteTooltip": "Done",
+  "@spotListEditDoneNoteTooltip": {
+    "description": "Tooltip to finish editing a per-spot note"
+  },
+  "spotListEditDeleteSectionTooltip": "Delete section",
+  "@spotListEditDeleteSectionTooltip": {
+    "description": "Tooltip to delete a list section"
+  },
+  "spotListEditDeleteSectionTitle": "Delete section?",
+  "@spotListEditDeleteSectionTitle": {
+    "description": "Title of delete-section confirmation"
+  },
+  "spotListEditDeleteSectionMessage": "Spots in this section will be removed from the list.",
+  "@spotListEditDeleteSectionMessage": {
+    "description": "Body of delete-section confirmation"
+  },
+  "spotListEditDragHandleTooltip": "Drag to reorder",
+  "@spotListEditDragHandleTooltip": {
+    "description": "Semantics label for reorder drag handle"
+  },
+  "spotListEditVisibilityPublic": "Public",
+  "@spotListEditVisibilityPublic": {
+    "description": "Segmented control label for public list visibility"
+  },
+  "spotListEditVisibilityUnlisted": "Unlisted",
+  "@spotListEditVisibilityUnlisted": {
+    "description": "Segmented control label for unlisted list visibility"
+  },
+  "spotListEditVisibilityPrivate": "Private",
+  "@spotListEditVisibilityPrivate": {
+    "description": "Segmented control label for private list visibility"
+  },
+  "spotListEditVisibilityPublicHelp": "Listed on your profile and visible to everyone",
+  "@spotListEditVisibilityPublicHelp": {
+    "description": "Helper text for public list visibility"
+  },
+  "spotListEditVisibilityUnlistedHelp": "Visible with a direct link, but hidden from your profile",
+  "@spotListEditVisibilityUnlistedHelp": {
+    "description": "Helper text for unlisted list visibility"
+  },
+  "spotListEditVisibilityPrivateHelp": "Only visible to you",
+  "@spotListEditVisibilityPrivateHelp": {
+    "description": "Helper text for private list visibility"
   },
   "spotListDetailMenuDeleteList": "Delete List",
   "@spotListDetailMenuDeleteList": {

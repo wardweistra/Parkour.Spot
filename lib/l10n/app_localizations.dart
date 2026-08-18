@@ -5001,17 +5001,191 @@ abstract class AppLocalizations {
   /// **'Edit list'**
   String get spotListDetailEditListTooltip;
 
-  /// List management menu item
+  /// List management menu item that enters inline list edit mode
   ///
   /// In en, this message translates to:
-  /// **'List Settings'**
-  String get spotListDetailMenuListSettings;
+  /// **'Edit list'**
+  String get spotListDetailMenuEditList;
 
-  /// List management menu item
+  /// Title of unsaved list edits discard dialog
   ///
   /// In en, this message translates to:
-  /// **'Organize List'**
-  String get spotListDetailMenuOrganizeList;
+  /// **'Discard changes?'**
+  String get spotListEditDiscardTitle;
+
+  /// Body of unsaved list edits discard dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Your edits to this list will be lost.'**
+  String get spotListEditDiscardMessage;
+
+  /// Confirm discarding unsaved list edits
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get spotListEditDiscardAction;
+
+  /// Button to add a section while editing a list
+  ///
+  /// In en, this message translates to:
+  /// **'Add section'**
+  String get spotListEditAddSection;
+
+  /// Hint for optional section title in list edit mode
+  ///
+  /// In en, this message translates to:
+  /// **'Section title (optional)'**
+  String get spotListEditSectionTitleLabel;
+
+  /// Hint for optional section body in list edit mode
+  ///
+  /// In en, this message translates to:
+  /// **'Section text (optional)'**
+  String get spotListEditSectionTextLabel;
+
+  /// Empty-state action to add a section title while editing a list
+  ///
+  /// In en, this message translates to:
+  /// **'Add title'**
+  String get spotListEditAddSectionTitle;
+
+  /// Tooltip to edit a section title and text
+  ///
+  /// In en, this message translates to:
+  /// **'Edit section'**
+  String get spotListEditEditSectionTooltip;
+
+  /// Tooltip to finish editing a section title and text
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get spotListEditDoneSectionTooltip;
+
+  /// Empty state inside a list section while editing
+  ///
+  /// In en, this message translates to:
+  /// **'No spots in this section'**
+  String get spotListEditNoSpotsInSection;
+
+  /// Hint that empty sections are dropped on save
+  ///
+  /// In en, this message translates to:
+  /// **'Empty sections will be removed when you save'**
+  String get spotListEditEmptySectionsRemovedOnSave;
+
+  /// Title of remove-spot confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from list'**
+  String get spotListEditRemoveSpotTitle;
+
+  /// Body of remove-spot confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'Remove \"{name}\" from this list?'**
+  String spotListEditRemoveSpotMessage(String name);
+
+  /// Confirm removing a spot from the list
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get spotListEditRemoveSpotAction;
+
+  /// Tooltip for removing a spot while editing a list
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from list'**
+  String get spotListEditRemoveSpotTooltip;
+
+  /// Tooltip to add a per-spot note
+  ///
+  /// In en, this message translates to:
+  /// **'Add note'**
+  String get spotListEditAddNoteTooltip;
+
+  /// Tooltip to edit a per-spot note
+  ///
+  /// In en, this message translates to:
+  /// **'Edit note'**
+  String get spotListEditEditNoteTooltip;
+
+  /// Label for inline per-spot note field
+  ///
+  /// In en, this message translates to:
+  /// **'Note for this spot'**
+  String get spotListEditNoteLabel;
+
+  /// Tooltip to clear a per-spot note while editing a list
+  ///
+  /// In en, this message translates to:
+  /// **'Remove note'**
+  String get spotListEditRemoveNoteTooltip;
+
+  /// Tooltip to finish editing a per-spot note
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get spotListEditDoneNoteTooltip;
+
+  /// Tooltip to delete a list section
+  ///
+  /// In en, this message translates to:
+  /// **'Delete section'**
+  String get spotListEditDeleteSectionTooltip;
+
+  /// Title of delete-section confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'Delete section?'**
+  String get spotListEditDeleteSectionTitle;
+
+  /// Body of delete-section confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'Spots in this section will be removed from the list.'**
+  String get spotListEditDeleteSectionMessage;
+
+  /// Semantics label for reorder drag handle
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder'**
+  String get spotListEditDragHandleTooltip;
+
+  /// Segmented control label for public list visibility
+  ///
+  /// In en, this message translates to:
+  /// **'Public'**
+  String get spotListEditVisibilityPublic;
+
+  /// Segmented control label for unlisted list visibility
+  ///
+  /// In en, this message translates to:
+  /// **'Unlisted'**
+  String get spotListEditVisibilityUnlisted;
+
+  /// Segmented control label for private list visibility
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get spotListEditVisibilityPrivate;
+
+  /// Helper text for public list visibility
+  ///
+  /// In en, this message translates to:
+  /// **'Listed on your profile and visible to everyone'**
+  String get spotListEditVisibilityPublicHelp;
+
+  /// Helper text for unlisted list visibility
+  ///
+  /// In en, this message translates to:
+  /// **'Visible with a direct link, but hidden from your profile'**
+  String get spotListEditVisibilityUnlistedHelp;
+
+  /// Helper text for private list visibility
+  ///
+  /// In en, this message translates to:
+  /// **'Only visible to you'**
+  String get spotListEditVisibilityPrivateHelp;
 
   /// List management menu item
   ///

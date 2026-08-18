@@ -20,6 +20,7 @@ class CustomTextField extends StatelessWidget {
   final int? maxLength;
   final List<String>? autofillHints;
   final bool enabled;
+  final String? helperText;
 
   const CustomTextField({
     super.key,
@@ -42,6 +43,7 @@ class CustomTextField extends StatelessWidget {
     this.maxLength,
     this.autofillHints,
     this.enabled = true,
+    this.helperText,
   });
 
   @override
@@ -64,14 +66,13 @@ class CustomTextField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,
+        helperText: helperText,
         prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
-        suffixIcon: suffixIconWidget ??
-            (suffixIcon != null ? Icon(suffixIcon) : null),
+        suffixIcon:
+            suffixIconWidget ?? (suffixIcon != null ? Icon(suffixIcon) : null),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.outline,
-          ),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -88,9 +89,7 @@ class CustomTextField extends StatelessWidget {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.error,
-          ),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

@@ -2968,10 +2968,104 @@ class AppLocalizationsNl extends AppLocalizations {
   String get spotListDetailEditListTooltip => 'Lijst bewerken';
 
   @override
-  String get spotListDetailMenuListSettings => 'Lijstinstellingen';
+  String get spotListDetailMenuEditList => 'Lijst bewerken';
 
   @override
-  String get spotListDetailMenuOrganizeList => 'Lijst ordenen';
+  String get spotListEditDiscardTitle => 'Wijzigingen verwerpen?';
+
+  @override
+  String get spotListEditDiscardMessage =>
+      'Je bewerkingen aan deze lijst gaan verloren.';
+
+  @override
+  String get spotListEditDiscardAction => 'Verwerpen';
+
+  @override
+  String get spotListEditAddSection => 'Sectie toevoegen';
+
+  @override
+  String get spotListEditSectionTitleLabel => 'Sectietitel (optioneel)';
+
+  @override
+  String get spotListEditSectionTextLabel => 'Sectietekst (optioneel)';
+
+  @override
+  String get spotListEditAddSectionTitle => 'Titel toevoegen';
+
+  @override
+  String get spotListEditEditSectionTooltip => 'Sectie bewerken';
+
+  @override
+  String get spotListEditDoneSectionTooltip => 'Klaar';
+
+  @override
+  String get spotListEditNoSpotsInSection => 'Geen spots in deze sectie';
+
+  @override
+  String get spotListEditEmptySectionsRemovedOnSave =>
+      'Lege secties worden verwijderd als je opslaat';
+
+  @override
+  String get spotListEditRemoveSpotTitle => 'Verwijderen uit lijst';
+
+  @override
+  String spotListEditRemoveSpotMessage(String name) {
+    return '\"$name\" uit deze lijst verwijderen?';
+  }
+
+  @override
+  String get spotListEditRemoveSpotAction => 'Verwijderen';
+
+  @override
+  String get spotListEditRemoveSpotTooltip => 'Verwijderen uit lijst';
+
+  @override
+  String get spotListEditAddNoteTooltip => 'Notitie toevoegen';
+
+  @override
+  String get spotListEditEditNoteTooltip => 'Notitie bewerken';
+
+  @override
+  String get spotListEditNoteLabel => 'Notitie bij deze spot';
+
+  @override
+  String get spotListEditRemoveNoteTooltip => 'Notitie verwijderen';
+
+  @override
+  String get spotListEditDoneNoteTooltip => 'Klaar';
+
+  @override
+  String get spotListEditDeleteSectionTooltip => 'Sectie verwijderen';
+
+  @override
+  String get spotListEditDeleteSectionTitle => 'Sectie verwijderen?';
+
+  @override
+  String get spotListEditDeleteSectionMessage =>
+      'Spots in deze sectie worden uit de lijst verwijderd.';
+
+  @override
+  String get spotListEditDragHandleTooltip => 'Sleep om te herschikken';
+
+  @override
+  String get spotListEditVisibilityPublic => 'Openbaar';
+
+  @override
+  String get spotListEditVisibilityUnlisted => 'Niet vermeld';
+
+  @override
+  String get spotListEditVisibilityPrivate => 'Privé';
+
+  @override
+  String get spotListEditVisibilityPublicHelp =>
+      'Zichtbaar op je profiel en voor iedereen';
+
+  @override
+  String get spotListEditVisibilityUnlistedHelp =>
+      'Zichtbaar via een directe link, maar verborgen op je profiel';
+
+  @override
+  String get spotListEditVisibilityPrivateHelp => 'Alleen zichtbaar voor jou';
 
   @override
   String get spotListDetailMenuDeleteList => 'Lijst verwijderen';

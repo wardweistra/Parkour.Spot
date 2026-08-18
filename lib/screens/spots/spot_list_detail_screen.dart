@@ -30,13 +30,14 @@ import '../../widgets/spot_list_save_button.dart';
 import '../../widgets/linked_upcoming_event_panel.dart';
 import '../../widgets/detail_external_link_tile.dart';
 import 'package:flutter/services.dart';
-import 'spot_list_advanced_organization_screen.dart';
+import '../../models/spot_list_edit_draft.dart';
+import 'spot_list_detail_edit_body.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/spot_list_localization.dart';
 import '../../utils/relative_date_localization.dart';
 import '../../utils/upcoming_linked_events_utils.dart';
 
-enum _ListManageMenuAction { listSettings, organize, createEvent, delete }
+enum _ListManageMenuAction { editList, createEvent, delete }
 
 class SpotListDetailScreen extends StatefulWidget {
   final String listId;
@@ -62,6 +63,9 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   String? _creatorName;
   Future<List<UpcomingLinkedEvent>>? _linkedEventsFuture;
+  bool _isEditing = false;
+  bool _isSavingEdits = false;
+  SpotListEditDraft? _draft;
 
   @override
   void initState() {
@@ -193,19 +197,73 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     }
   }
 
-  Future<void> _openAdvancedOrganizationScreen() async {
+  void _enterEditMode() {
     if (_list == null) return;
-    final result = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
-        builder: (context) => SpotListAdvancedOrganizationScreen(
-          listName: _list!.name,
-          listId: widget.listId,
-          list: _list!,
-        ),
-      ),
+    setState(() {
+      _isEditing = true;
+      _draft = SpotListEditDraft.fromList(_list!);
+    });
+  }
+
+  Future<bool> _tryExitEditMode() async {
+    if (!_isEditing) return true;
+    if (_isSavingEdits) return false;
+    if (_draft?.isDirty == true) {
+      final discard = await confirmDiscardSpotListEdits(context);
+      if (discard != true) return false;
+    }
+    if (!mounted) return false;
+    setState(() {
+      _isEditing = false;
+      _draft = null;
+    });
+    return true;
+  }
+
+  Future<void> _saveEdits() async {
+    final listId = _list?.id;
+    final draft = _draft;
+    if (listId == null || draft == null || _isSavingEdits) return;
+
+    if (draft.name.trim().isEmpty) {
+      SnackbarService.showError(_l10n.spotDetailListNameEmpty);
+      return;
+    }
+    final link = draft.moreInfoUrl.trim();
+    if (link.isNotEmpty && !UrlService.isValidHttpOrHttpsUrl(link)) {
+      SnackbarService.showError(
+        _l10n.spotListDetailMoreInfoLinkValidationError,
+      );
+      return;
+    }
+
+    setState(() => _isSavingEdits = true);
+    final spotListService = Provider.of<SpotListService>(
+      context,
+      listen: false,
     );
-    if (mounted && result == true) {
+    final success = await spotListService.saveSpotListEdits(
+      listId,
+      name: draft.name,
+      description: draft.description,
+      visibility: draft.visibility,
+      moreInfoUrl: draft.moreInfoUrl,
+      sections: draft.sectionsForSave,
+    );
+
+    if (!mounted) return;
+    setState(() => _isSavingEdits = false);
+    if (success) {
+      SnackbarService.showSuccess(_l10n.spotListDetailListUpdated);
+      setState(() {
+        _isEditing = false;
+        _draft = null;
+      });
       await _loadList();
+    } else {
+      SnackbarService.showError(
+        spotListService.error ?? _l10n.spotListDetailFailedToUpdateList,
+      );
     }
   }
 
@@ -302,6 +360,23 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     for (final s in _spots)
       if (s.id != null) s.id!: s,
   };
+
+  /// Spots shown on the mini-map. In edit mode this follows the draft so
+  /// removed (and later added) spots update immediately.
+  List<Spot> get _mapSpots {
+    final draft = _draft;
+    if (!_isEditing || draft == null) return _spots;
+    final byId = _spotById;
+    return [
+      for (final id in draft.effectiveSpotIds)
+        if (byId[id] != null) byId[id]!,
+    ];
+  }
+
+  String get _mapMembershipKey {
+    final ids = _mapSpots.map((s) => s.id ?? s.name).toList()..sort();
+    return ids.join('|');
+  }
 
   Widget _buildSectionsList() {
     final theme = Theme.of(context);
@@ -510,152 +585,6 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     );
   }
 
-  Future<void> _editList() async {
-    if (_list == null) return;
-
-    final nameController = TextEditingController(text: _list!.name);
-    final descriptionController = TextEditingController(
-      text: _list!.description ?? '',
-    );
-    final moreInfoUrlController = TextEditingController(
-      text: _list!.moreInfoUrl ?? '',
-    );
-    SpotListVisibility selectedVisibility = _list!.visibility;
-
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: Text(_l10n.spotListDetailEditListTitle),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    labelText: _l10n.spotDetailListNameLabel,
-                  ),
-                  autofocus: true,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: descriptionController,
-                  decoration: InputDecoration(
-                    labelText: _l10n.spotDetailListDescriptionLabel,
-                  ),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: moreInfoUrlController,
-                  decoration: InputDecoration(
-                    labelText: _l10n.spotListDetailMoreInfoLinkLabel,
-                    hintText: _l10n.spotListDetailMoreInfoLinkHint,
-                    helperText: _l10n.spotListDetailMoreInfoLinkHelper,
-                  ),
-                  keyboardType: TextInputType.url,
-                  autocorrect: false,
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<SpotListVisibility>(
-                  initialValue: selectedVisibility,
-                  decoration: InputDecoration(
-                    labelText: _l10n.spotDetailVisibilityLabel,
-                  ),
-                  items: SpotListVisibility.values
-                      .map(
-                        (visibility) => DropdownMenuItem<SpotListVisibility>(
-                          value: visibility,
-                          child: Text(visibility.label),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setDialogState(() {
-                      selectedVisibility = value;
-                    });
-                  },
-                ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    selectedVisibility.description,
-                    style: Theme.of(dialogContext).textTheme.bodySmall
-                        ?.copyWith(
-                          color: Theme.of(
-                            dialogContext,
-                          ).colorScheme.onSurface.withValues(alpha: 0.7),
-                        ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text(_l10n.profileCancel),
-            ),
-            TextButton(
-              onPressed: () {
-                if (nameController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    SnackBar(content: Text(_l10n.spotDetailListNameEmpty)),
-                  );
-                  return;
-                }
-                final link = moreInfoUrlController.text.trim();
-                if (link.isNotEmpty &&
-                    !UrlService.isValidHttpOrHttpsUrl(link)) {
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        _l10n.spotListDetailMoreInfoLinkValidationError,
-                      ),
-                    ),
-                  );
-                  return;
-                }
-                Navigator.pop(dialogContext, true);
-              },
-              child: Text(_l10n.spotListDetailSave),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (result == true && _list?.id != null) {
-      if (!mounted) return;
-      final spotListService = Provider.of<SpotListService>(
-        context,
-        listen: false,
-      );
-      var success = await spotListService.updateSpotList(
-        _list!.id!,
-        name: nameController.text.trim(),
-        description: descriptionController.text.trim().isEmpty
-            ? null
-            : descriptionController.text.trim(),
-        visibility: selectedVisibility,
-        moreInfoUrl: moreInfoUrlController.text,
-      );
-
-      if (!mounted) return;
-      if (success) {
-        SnackbarService.showSuccess(_l10n.spotListDetailListUpdated);
-        await _loadList();
-      } else {
-        SnackbarService.showError(
-          spotListService.error ?? _l10n.spotListDetailFailedToUpdateList,
-        );
-      }
-    }
-  }
-
   bool _canManageList() {
     if (_list == null) return false;
     final authService = Provider.of<AuthService>(context, listen: false);
@@ -824,11 +753,8 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
   void _onListManageMenuSelected(_ListManageMenuAction action) {
     switch (action) {
-      case _ListManageMenuAction.listSettings:
-        _editList();
-        break;
-      case _ListManageMenuAction.organize:
-        _openAdvancedOrganizationScreen();
+      case _ListManageMenuAction.editList:
+        _enterEditMode();
         break;
       case _ListManageMenuAction.createEvent:
         if (_list == null || _list!.id == null) return;
@@ -851,12 +777,11 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
   // Calculate bounds to fit all spots with 5% margin
   LatLngBounds? _calculateBounds() {
-    return calculateBoundsForSpots(_spots);
+    return calculateBoundsForSpots(_mapSpots);
   }
 
-  // Build markers for all spots
   Set<Marker> _buildMarkers() {
-    return MarkerIconUtils.sortSpotsForMapDrawOrder(_spots).map((spot) {
+    return MarkerIconUtils.sortSpotsForMapDrawOrder(_mapSpots).map((spot) {
       final bool isSelected = _selectedSpot?.id != null
           ? _selectedSpot!.id == spot.id
           : _selectedSpot?.name == spot.name;
@@ -950,7 +875,8 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   }
 
   Widget _buildMap() {
-    if (_spots.isEmpty) {
+    if (_mapSpots.isEmpty) {
+      _mapController = null;
       return const SizedBox.shrink();
     }
 
@@ -959,110 +885,116 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      height: 200,
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+    return RepaintBoundary(
+      child: Container(
+        height: 200,
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+          ),
         ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          GoogleMap(
-            initialCameraPosition: initialCameraPosition,
-            mapType: _isSatelliteView ? MapType.hybrid : MapType.normal,
-            markers: _buildMarkers(),
-            onMapCreated: (GoogleMapController controller) {
-              _mapController = controller;
-              // Fit bounds after map is created
-              _fitBounds();
-            },
-            zoomControlsEnabled: false,
-            myLocationButtonEnabled: false,
-            mapToolbarEnabled: false,
-            liteModeEnabled: kIsWeb,
-            compassEnabled: false,
-            zoomGesturesEnabled: false,
-            scrollGesturesEnabled: false,
-            tiltGesturesEnabled: false,
-            rotateGesturesEnabled: false,
-            indoorViewEnabled: false,
-            trafficEnabled: false,
-          ),
-          Positioned.fill(
-            child: PointerInterceptor(
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _showListOnMap,
-                  borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            GoogleMap(
+              key: ValueKey(_mapMembershipKey),
+              initialCameraPosition: initialCameraPosition,
+              mapType: _isSatelliteView ? MapType.hybrid : MapType.normal,
+              markers: _buildMarkers(),
+              onMapCreated: (GoogleMapController controller) {
+                _mapController = controller;
+                // Fit bounds after map is created
+                _fitBounds();
+              },
+              zoomControlsEnabled: false,
+              myLocationButtonEnabled: false,
+              mapToolbarEnabled: false,
+              liteModeEnabled: kIsWeb,
+              compassEnabled: false,
+              zoomGesturesEnabled: false,
+              scrollGesturesEnabled: false,
+              tiltGesturesEnabled: false,
+              rotateGesturesEnabled: false,
+              indoorViewEnabled: false,
+              trafficEnabled: false,
+            ),
+            Positioned.fill(
+              child: PointerInterceptor(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _showListOnMap,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),
-          ),
-          // Map Type Toggle Button
-          Positioned(
-            bottom: 24,
-            right: 10,
-            child: PointerInterceptor(
-              child: FloatingActionButton(
-                onPressed: () {
-                  setState(() {
-                    _isSatelliteView = !_isSatelliteView;
-                  });
-                  final searchState = Provider.of<SearchStateService>(
-                    context,
-                    listen: false,
-                  );
-                  searchState.setSatellite(_isSatelliteView);
-                },
-                heroTag: 'mapTypeToggleFab',
-                mini: true,
-                tooltip: _isSatelliteView
-                    ? _l10n.spotDetailMapSwitchToMap
-                    : _l10n.spotDetailMapSwitchToSatellite,
-                child: Icon(_isSatelliteView ? Icons.map : Icons.terrain),
-              ),
-            ),
-          ),
-          // Hint text
-          Positioned(
-            top: 8,
-            right: 8,
-            child: PointerInterceptor(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      MobileDetectionService.isMobileDevice
-                          ? Icons.phone_android
-                          : Icons.touch_app,
-                      color: Colors.white,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _l10n.spotListDetailHighlightListOnMap,
-                      style: const TextStyle(color: Colors.white, fontSize: 11),
-                    ),
-                  ],
+            // Map Type Toggle Button
+            Positioned(
+              bottom: 24,
+              right: 10,
+              child: PointerInterceptor(
+                child: FloatingActionButton(
+                  onPressed: () {
+                    setState(() {
+                      _isSatelliteView = !_isSatelliteView;
+                    });
+                    final searchState = Provider.of<SearchStateService>(
+                      context,
+                      listen: false,
+                    );
+                    searchState.setSatellite(_isSatelliteView);
+                  },
+                  heroTag: 'mapTypeToggleFab',
+                  mini: true,
+                  tooltip: _isSatelliteView
+                      ? _l10n.spotDetailMapSwitchToMap
+                      : _l10n.spotDetailMapSwitchToSatellite,
+                  child: Icon(_isSatelliteView ? Icons.map : Icons.terrain),
                 ),
               ),
             ),
-          ),
-        ],
+            // Hint text
+            Positioned(
+              top: 8,
+              right: 8,
+              child: PointerInterceptor(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        MobileDetectionService.isMobileDevice
+                            ? Icons.phone_android
+                            : Icons.touch_app,
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _l10n.spotListDetailHighlightListOnMap,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1078,7 +1010,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
         if (_shouldShowListSaveButton()) {
           items.add(SpotListSaveButton(listId: widget.listId));
         }
-        if (_canManageList()) {
+        if (_canManageList() && !_isEditing) {
           items.add(
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
@@ -1093,33 +1025,14 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                   final primary = theme.colorScheme.primary;
                   return <PopupMenuEntry<_ListManageMenuAction>>[
                     PopupMenuItem<_ListManageMenuAction>(
-                      value: _ListManageMenuAction.listSettings,
+                      value: _ListManageMenuAction.editList,
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.settings_outlined,
-                            color: primary,
-                            size: 20,
-                          ),
+                          Icon(Icons.edit_outlined, color: primary, size: 20),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              _l10n.spotListDetailMenuListSettings,
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem<_ListManageMenuAction>(
-                      value: _ListManageMenuAction.organize,
-                      child: Row(
-                        children: [
-                          Icon(Icons.folder, color: primary, size: 20),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              _l10n.spotListDetailMenuOrganizeList,
+                              _l10n.spotListDetailMenuEditList,
                               style: theme.textTheme.bodyMedium,
                             ),
                           ),
@@ -1235,6 +1148,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   }
 
   void _handleBack() {
+    if (_isEditing) {
+      _tryExitEditMode();
+      return;
+    }
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {
@@ -1316,35 +1233,88 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       });
     }
 
-    return PageScaffold(
-      title: _list!.name,
-      onBack: _handleBack,
-      scrollable: false,
-      body: SingleChildScrollView(
-        controller: _scrollController,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Map showing all spots
-            if (_spots.isNotEmpty) _buildMap(),
-            _buildListActionsRow(),
-            LinkedUpcomingEventPanel(eventsFuture: _linkedEventsFuture),
-            // List info header
-            if (_list!.description != null && _list!.description!.isNotEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                child: SelectableText(
-                  _list!.description!,
-                  style: Theme.of(context).textTheme.bodyLarge,
+    final editingTitle = _draft?.name.trim().isNotEmpty == true
+        ? _draft!.name.trim()
+        : _list!.name;
+
+    return PopScope(
+      canPop: !_isEditing,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        await _tryExitEditMode();
+      },
+      child: PageScaffold(
+        title: _isEditing ? editingTitle : _list!.name,
+        onBack: _handleBack,
+        scrollable: false,
+        actions: _isEditing
+            ? [
+                if (_isSavingEdits)
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                else
+                  TextButton(
+                    onPressed: _draft?.isDirty == true ? _saveEdits : null,
+                    child: Text(_l10n.spotListDetailSave),
+                  ),
+              ]
+            : null,
+        body: CustomScrollView(
+          controller: _scrollController,
+          slivers: [
+            if (_mapSpots.isNotEmpty) SliverToBoxAdapter(child: _buildMap()),
+            if (!_isEditing) SliverToBoxAdapter(child: _buildListActionsRow()),
+            SliverToBoxAdapter(
+              child: LinkedUpcomingEventPanel(
+                eventsFuture: _linkedEventsFuture,
+              ),
+            ),
+            if (_isEditing && _draft != null)
+              SpotListDetailEditBody(
+                key: const ValueKey('list-edit'),
+                draft: _draft!,
+                spotsById: _spotById,
+                onChanged: () {
+                  final selectedId = _selectedSpot?.id;
+                  if (selectedId != null &&
+                      !_mapSpots.any((s) => s.id == selectedId)) {
+                    _selectedSpot = null;
+                  }
+                  setState(() {});
+                },
+              )
+            else
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_list!.description != null &&
+                        _list!.description!.isNotEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        child: SelectableText(
+                          _list!.description!,
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                      ),
+                    _buildMoreInfoLinkTile(),
+                    _buildSpotsList(),
+                  ],
                 ),
               ),
-            _buildMoreInfoLinkTile(),
-            // Spots list
-            _buildSpotsList(),
-            _buildProvenanceSentence(
-              compactTop:
-                  _list!.moreInfoUrl != null && _list!.moreInfoUrl!.isNotEmpty,
+            SliverToBoxAdapter(
+              child: _buildProvenanceSentence(
+                compactTop:
+                    _list!.moreInfoUrl != null &&
+                    _list!.moreInfoUrl!.isNotEmpty,
+              ),
             ),
           ],
         ),
