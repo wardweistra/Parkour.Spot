@@ -2223,10 +2223,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
             sectionTitle: sectionTitle,
           );
         },
-        createList: ({required name, description, required visibility}) {
+        createList: ({required name, required visibility}) {
           return spotListService.createSpotList(
             name,
-            description: description,
             visibility: visibility,
           );
         },

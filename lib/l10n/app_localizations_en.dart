@@ -2224,7 +2224,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get spotDetailListNameHint => 'e.g., My Favorite Spots';
 
   @override
-  String get spotDetailListDescriptionLabel => 'Description (optional)';
+  String get spotDetailListDescriptionLabel => 'Description';
 
   @override
   String get spotDetailListDescriptionHint => 'Add a description for this list';
@@ -2891,7 +2891,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get spotListDetailEditListTitle => 'Edit List';
 
   @override
-  String get spotListDetailMoreInfoLinkLabel => 'More info link (optional)';
+  String get spotListEditNameLabel => 'List Name *';
+
+  @override
+  String get spotListDetailMoreInfoLinkLabel => 'More info link';
 
   @override
   String get spotListDetailMoreInfoLinkHint => 'https://…';
@@ -2992,10 +2995,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get spotListEditNoSpotsInList => 'No spots in this list yet';
 
   @override
-  String get spotListEditSectionTitleLabel => 'Section title (optional)';
+  String get spotListEditSectionTitleLabel => 'Section title';
 
   @override
-  String get spotListEditSectionTextLabel => 'Section text (optional)';
+  String get spotListEditSectionTextLabel => 'Section text';
 
   @override
   String get spotListEditAddSectionTitle => 'Add title';

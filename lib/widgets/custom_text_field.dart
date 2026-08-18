@@ -20,6 +20,7 @@ class CustomTextField extends StatelessWidget {
   final int? maxLength;
   final List<String>? autofillHints;
   final bool enabled;
+  final bool autofocus;
   final String? helperText;
 
   const CustomTextField({
@@ -43,14 +44,51 @@ class CustomTextField extends StatelessWidget {
     this.maxLength,
     this.autofillHints,
     this.enabled = true,
+    this.autofocus = false,
     this.helperText,
   });
+
+  static InputDecoration decoration(
+    BuildContext context, {
+    required String labelText,
+    String? hintText,
+    String? helperText,
+    IconData? prefixIcon,
+    Widget? suffixIcon,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    OutlineInputBorder border(Color color, {double width = 1}) {
+      return OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: color, width: width),
+      );
+    }
+
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      helperText: helperText,
+      prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
+      suffixIcon: suffixIcon,
+      border: border(scheme.outline),
+      enabledBorder: border(scheme.outline.withValues(alpha: 0.5)),
+      focusedBorder: border(scheme.primary, width: 2),
+      errorBorder: border(scheme.error),
+      focusedErrorBorder: border(scheme.error, width: 2),
+      filled: true,
+      fillColor: scheme.surface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      labelStyle: TextStyle(color: scheme.onSurface.withValues(alpha: 0.7)),
+      hintStyle: TextStyle(color: scheme.onSurface.withValues(alpha: 0.5)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
       enabled: enabled,
+      autofocus: autofocus,
       obscureText: obscureText,
       keyboardType: keyboardType,
       textCapitalization: textCapitalization,
@@ -63,53 +101,14 @@ class CustomTextField extends StatelessWidget {
       maxLines: maxLines,
       maxLength: maxLength,
       autofillHints: autofillHints,
-      decoration: InputDecoration(
+      decoration: decoration(
+        context,
         labelText: labelText,
         hintText: hintText,
         helperText: helperText,
-        prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
+        prefixIcon: prefixIcon,
         suffixIcon:
             suffixIconWidget ?? (suffixIcon != null ? Icon(suffixIcon) : null),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.5),
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.primary,
-            width: 2,
-          ),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.error),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.error,
-            width: 2,
-          ),
-        ),
-        filled: true,
-        fillColor: Theme.of(context).colorScheme.surface,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-        labelStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-        ),
-        hintStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-        ),
       ),
       style: TextStyle(
         color: Theme.of(context).colorScheme.onSurface,

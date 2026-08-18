@@ -32,7 +32,6 @@ Future<void> openDialog(
   addToNewSection,
   Future<String?> Function({
     required String name,
-    String? description,
     required SpotListVisibility visibility,
   })?
   createList,
@@ -56,11 +55,8 @@ Future<void> openDialog(
                       (listId, {sectionTitle}) async => true,
                   createList:
                       createList ??
-                      ({
-                        required name,
-                        description,
-                        required visibility,
-                      }) async => 'new-list',
+                      ({required name, required visibility}) async =>
+                          'new-list',
                 ),
               );
             },
@@ -216,6 +212,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('List Name'), findsOneWidget);
+    expect(find.text('Description (optional)'), findsNothing);
     expect(find.text('Create & Add'), findsOneWidget);
     expect(find.text('Add to new section'), findsNothing);
     expect(find.text('Add note'), findsNothing);

@@ -21,6 +21,7 @@ import '../../services/feature_access_service.dart';
 import '../../widgets/instagram_button.dart';
 import '../../utils/web_meta_utils.dart';
 import '../../widgets/page_scaffold.dart';
+import '../../widgets/custom_text_field.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/spot_list_localization.dart';
 import 'package:flutter/services.dart';
@@ -1184,7 +1185,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     SpotListService spotListService,
   ) {
     final nameController = TextEditingController();
-    final descriptionController = TextEditingController();
     SpotListVisibility selectedVisibility = SpotListVisibility.unlisted;
 
     showDialog(
@@ -1196,28 +1196,21 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(
+                CustomTextField(
                   controller: nameController,
-                  decoration: InputDecoration(
-                    labelText: _l10n.spotDetailListNameLabel,
-                    hintText: _l10n.spotDetailListNameHint,
-                  ),
+                  labelText: _l10n.spotDetailListNameLabel,
+                  hintText: _l10n.spotDetailListNameHint,
+                  prefixIcon: Icons.list_alt_outlined,
+                  textCapitalization: TextCapitalization.words,
                   autofocus: true,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: descriptionController,
-                  decoration: InputDecoration(
-                    labelText: _l10n.spotDetailListDescriptionLabel,
-                    hintText: _l10n.spotDetailListDescriptionHint,
-                  ),
-                  maxLines: 3,
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<SpotListVisibility>(
                   initialValue: selectedVisibility,
-                  decoration: InputDecoration(
+                  decoration: CustomTextField.decoration(
+                    dialogContext,
                     labelText: _l10n.spotDetailVisibilityLabel,
+                    prefixIcon: Icons.visibility_outlined,
                   ),
                   items: SpotListVisibility.values
                       .map(
@@ -1266,9 +1259,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
                 final listId = await spotListService.createSpotList(
                   nameController.text.trim(),
-                  description: descriptionController.text.trim().isEmpty
-                      ? null
-                      : descriptionController.text.trim(),
                   visibility: selectedVisibility,
                 );
 

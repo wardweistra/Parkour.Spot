@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/spot_list.dart';
+import '../widgets/custom_text_field.dart';
 
 class AddToSpotListDialogResult {
   const AddToSpotListDialogResult.added() : created = false, error = null;
@@ -31,7 +32,6 @@ class AddToSpotListDialog extends StatefulWidget {
   final Future<bool> Function(String listId, {String? sectionId}) addSpot;
   final Future<String?> Function({
     required String name,
-    String? description,
     required SpotListVisibility visibility,
   })
   createList;
@@ -46,7 +46,6 @@ class AddToSpotListDialog extends StatefulWidget {
 
 class _AddToSpotListDialogState extends State<AddToSpotListDialog> {
   final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
   final _newSectionTitleController = TextEditingController();
   SpotListVisibility _newListVisibility = SpotListVisibility.unlisted;
   bool _showCreateForm = false;
@@ -57,7 +56,6 @@ class _AddToSpotListDialogState extends State<AddToSpotListDialog> {
   @override
   void dispose() {
     _nameController.dispose();
-    _descriptionController.dispose();
     _newSectionTitleController.dispose();
     super.dispose();
   }
@@ -135,9 +133,6 @@ class _AddToSpotListDialogState extends State<AddToSpotListDialog> {
     setState(() => _isBusy = true);
     final listId = await widget.createList(
       name: _nameController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
       visibility: _newListVisibility,
     );
     if (!mounted) return;
@@ -379,30 +374,22 @@ class _AddToSpotListDialogState extends State<AddToSpotListDialog> {
       children: [
         Text(l10n.spotDetailCreateNewList, style: theme.textTheme.titleMedium),
         const SizedBox(height: 16),
-        TextField(
+        CustomTextField(
           controller: _nameController,
-          decoration: InputDecoration(
-            labelText: l10n.spotDetailListNameLabel,
-            hintText: l10n.spotDetailListNameHint,
-          ),
+          labelText: l10n.spotDetailListNameLabel,
+          hintText: l10n.spotDetailListNameHint,
+          prefixIcon: Icons.list_alt_outlined,
+          textCapitalization: TextCapitalization.words,
           autofocus: true,
-          enabled: !_isBusy,
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _descriptionController,
-          decoration: InputDecoration(
-            labelText: l10n.spotDetailListDescriptionLabel,
-            hintText: l10n.spotDetailListDescriptionHint,
-          ),
-          maxLines: 3,
           enabled: !_isBusy,
         ),
         const SizedBox(height: 16),
         DropdownButtonFormField<SpotListVisibility>(
           initialValue: _newListVisibility,
-          decoration: InputDecoration(
+          decoration: CustomTextField.decoration(
+            context,
             labelText: l10n.spotDetailVisibilityLabel,
+            prefixIcon: Icons.visibility_outlined,
           ),
           items: SpotListVisibility.values
               .map(
@@ -437,7 +424,6 @@ class _AddToSpotListDialogState extends State<AddToSpotListDialog> {
                   setState(() {
                     _showCreateForm = false;
                     _nameController.clear();
-                    _descriptionController.clear();
                     _newListVisibility = SpotListVisibility.unlisted;
                   });
                 },

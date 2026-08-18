@@ -3828,7 +3828,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotDetailListDescriptionLabel.
   ///
   /// In en, this message translates to:
-  /// **'Description (optional)'**
+  /// **'Description'**
   String get spotDetailListDescriptionLabel;
 
   /// No description provided for @spotDetailListDescriptionHint.
@@ -4887,10 +4887,16 @@ abstract class AppLocalizations {
   /// **'Edit List'**
   String get spotListDetailEditListTitle;
 
+  /// Edit list page label for required list name
+  ///
+  /// In en, this message translates to:
+  /// **'List Name *'**
+  String get spotListEditNameLabel;
+
   /// Edit list dialog label for optional external info URL
   ///
   /// In en, this message translates to:
-  /// **'More info link (optional)'**
+  /// **'More info link'**
   String get spotListDetailMoreInfoLinkLabel;
 
   /// Edit list dialog hint for optional external info URL
@@ -5067,16 +5073,16 @@ abstract class AppLocalizations {
   /// **'No spots in this list yet'**
   String get spotListEditNoSpotsInList;
 
-  /// Hint for optional section title in list edit mode
+  /// Hint for section title in list edit mode
   ///
   /// In en, this message translates to:
-  /// **'Section title (optional)'**
+  /// **'Section title'**
   String get spotListEditSectionTitleLabel;
 
-  /// Hint for optional section body in list edit mode
+  /// Hint for section body in list edit mode
   ///
   /// In en, this message translates to:
-  /// **'Section text (optional)'**
+  /// **'Section text'**
   String get spotListEditSectionTextLabel;
 
   /// Empty-state action to add a section title while editing a list

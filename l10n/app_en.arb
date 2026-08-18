@@ -2161,7 +2161,7 @@
   "spotDetailCreateNewList": "Create New List",
   "spotDetailListNameLabel": "List Name",
   "spotDetailListNameHint": "e.g., My Favorite Spots",
-  "spotDetailListDescriptionLabel": "Description (optional)",
+  "spotDetailListDescriptionLabel": "Description",
   "spotDetailListDescriptionHint": "Add a description for this list",
   "spotDetailVisibilityLabel": "Visibility",
   "spotDetailCreateAndAdd": "Create & Add",
@@ -2607,7 +2607,11 @@
   "@spotListDetailEditListTitle": {
     "description": "Edit list dialog title"
   },
-  "spotListDetailMoreInfoLinkLabel": "More info link (optional)",
+  "spotListEditNameLabel": "List Name *",
+  "@spotListEditNameLabel": {
+    "description": "Edit list page label for required list name"
+  },
+  "spotListDetailMoreInfoLinkLabel": "More info link",
   "@spotListDetailMoreInfoLinkLabel": {
     "description": "Edit list dialog label for optional external info URL"
   },
@@ -2750,13 +2754,13 @@
   "@spotListEditNoSpotsInList": {
     "description": "Empty state when a simple list has no spots"
   },
-  "spotListEditSectionTitleLabel": "Section title (optional)",
+  "spotListEditSectionTitleLabel": "Section title",
   "@spotListEditSectionTitleLabel": {
-    "description": "Hint for optional section title in list edit mode"
+    "description": "Hint for section title in list edit mode"
   },
-  "spotListEditSectionTextLabel": "Section text (optional)",
+  "spotListEditSectionTextLabel": "Section text",
   "@spotListEditSectionTextLabel": {
-    "description": "Hint for optional section body in list edit mode"
+    "description": "Hint for section body in list edit mode"
   },
   "spotListEditAddSectionTitle": "Add title",
   "@spotListEditAddSectionTitle": {

@@ -455,7 +455,9 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
                   children: [
                     CustomTextField(
                       controller: _nameController,
-                      labelText: l10n.spotDetailListNameLabel,
+                      labelText: l10n.spotListEditNameLabel,
+                      prefixIcon: Icons.list_alt_outlined,
+                      textCapitalization: TextCapitalization.words,
                       onChanged: (value) {
                         _draft.name = value;
                         _notify();
@@ -465,7 +467,9 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
                     CustomTextField(
                       controller: _descriptionController,
                       labelText: l10n.spotDetailListDescriptionLabel,
+                      prefixIcon: Icons.description_outlined,
                       maxLines: 3,
+                      textCapitalization: TextCapitalization.sentences,
                       onChanged: (value) {
                         _draft.description = value;
                         _notify();
@@ -476,6 +480,7 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
                       controller: _moreInfoUrlController,
                       labelText: l10n.spotListDetailMoreInfoLinkLabel,
                       hintText: l10n.spotListDetailMoreInfoLinkHint,
+                      prefixIcon: Icons.link,
                       keyboardType: TextInputType.url,
                       onChanged: (value) {
                         _draft.moreInfoUrl = value;
@@ -483,12 +488,19 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
                       },
                     ),
                     const SizedBox(height: 16),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        l10n.spotDetailVisibilityLabel,
-                        style: theme.textTheme.labelLarge,
-                      ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.visibility_outlined,
+                          size: 20,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          l10n.spotDetailVisibilityLabel,
+                          style: theme.textTheme.labelLarge,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     SegmentedButton<SpotListVisibility>(
