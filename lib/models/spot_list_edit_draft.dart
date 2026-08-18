@@ -131,6 +131,16 @@ class SpotListEditDraft {
     );
   }
 
+  void addEntries(int sectionIndex, Iterable<String> spotIds) {
+    final section = sections[sectionIndex];
+    final entries = List<SpotListEntry>.from(section.entries);
+    for (final id in spotIds) {
+      if (id.isEmpty) continue;
+      entries.add(SpotListEntry(spotId: id));
+    }
+    sections[sectionIndex] = _copySection(section, entries: entries);
+  }
+
   void removeEntry(int sectionIndex, int entryIndex) {
     final section = sections[sectionIndex];
     final entries = List<SpotListEntry>.from(section.entries)

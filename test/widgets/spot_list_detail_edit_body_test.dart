@@ -41,7 +41,13 @@ Spot buildSpot(String id, String name) {
   );
 }
 
-Future<void> pumpEditBody(WidgetTester tester, SpotListEditDraft draft) async {
+Future<void> pumpEditBody(
+  WidgetTester tester,
+  SpotListEditDraft draft, {
+  Future<List<Spot>?> Function()? pickSpots,
+  ValueChanged<List<Spot>>? onSpotsAdded,
+  Map<String, Spot>? spotsById,
+}) async {
   tester.view.physicalSize = const Size(800, 2000);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
@@ -56,11 +62,15 @@ Future<void> pumpEditBody(WidgetTester tester, SpotListEditDraft draft) async {
           slivers: [
             SpotListDetailEditBody(
               draft: draft,
-              spotsById: {
-                's1': buildSpot('s1', 'Library wall'),
-                's2': buildSpot('s2', 'Station rails'),
-              },
+              spotsById:
+                  spotsById ??
+                  {
+                    's1': buildSpot('s1', 'Library wall'),
+                    's2': buildSpot('s2', 'Station rails'),
+                  },
               onChanged: () {},
+              onSpotsAdded: onSpotsAdded,
+              pickSpots: pickSpots ?? () async => null,
             ),
           ],
         ),
@@ -164,5 +174,55 @@ void main() {
     expect(find.text('Your edits to this list will be lost.'), findsOneWidget);
     expect(find.text('Discard'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
+  });
+
+  testWidgets('section header has an add-spots control', (tester) async {
+    final draft = SpotListEditDraft.fromList(buildList());
+    await pumpEditBody(tester, draft);
+
+    expect(find.byTooltip('Add spots to this section'), findsOneWidget);
+    expect(find.byIcon(Icons.add_location_alt_outlined), findsOneWidget);
+  });
+
+  testWidgets('empty section add-spots button appends picker results', (
+    tester,
+  ) async {
+    final draft = SpotListEditDraft.fromList(
+      SpotList(
+        id: 'list-1',
+        name: 'Downtown session',
+        spotIds: const [],
+        sections: [SpotListSection(id: 'sec-1', title: 'Warmup', entries: [])],
+        createdBy: 'user-1',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 2),
+      ),
+    );
+    final added = <Spot>[];
+
+    await pumpEditBody(
+      tester,
+      draft,
+      spotsById: {
+        's3': buildSpot('s3', 'Canal ledge'),
+        's4': buildSpot('s4', 'Roof gap'),
+      },
+      pickSpots: () async => [
+        buildSpot('s3', 'Canal ledge'),
+        buildSpot('s4', 'Roof gap'),
+      ],
+      onSpotsAdded: added.addAll,
+    );
+
+    expect(find.text('No spots in this section'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Add spots'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Add spots'));
+    await tester.pumpAndSettle();
+
+    expect(draft.sections.single.entries.map((e) => e.spotId), ['s3', 's4']);
+    expect(added.map((s) => s.id), ['s3', 's4']);
+    expect(find.text('Canal ledge'), findsOneWidget);
+    expect(find.text('Roof gap'), findsOneWidget);
   });
 }

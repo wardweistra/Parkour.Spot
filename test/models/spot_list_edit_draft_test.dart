@@ -261,5 +261,32 @@ void main() {
       expect(draft.sections.single.entries.single.note, isNull);
       expect(draft.isDirty, isTrue);
     });
+
+    test('addEntries appends spots, allows duplicates, and marks dirty', () {
+      final draft = SpotListEditDraft.fromList(
+        buildList(
+          sections: [
+            SpotListSection(
+              id: 'sec-1',
+              entries: [
+                SpotListEntry(spotId: 's1'),
+                SpotListEntry(spotId: 's2'),
+              ],
+            ),
+          ],
+        ),
+      );
+
+      expect(draft.isDirty, isFalse);
+      draft.addEntries(0, ['s3', 's1', '']);
+      expect(draft.sections.single.entries.map((e) => e.spotId), [
+        's1',
+        's2',
+        's3',
+        's1',
+      ]);
+      expect(draft.effectiveSpotIds, ['s1', 's2', 's3']);
+      expect(draft.isDirty, isTrue);
+    });
   });
 }

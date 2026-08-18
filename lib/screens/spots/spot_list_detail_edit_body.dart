@@ -38,12 +38,16 @@ class SpotListDetailEditBody extends StatefulWidget {
   final SpotListEditDraft draft;
   final Map<String, Spot> spotsById;
   final VoidCallback onChanged;
+  final ValueChanged<List<Spot>>? onSpotsAdded;
+  final Future<List<Spot>?> Function() pickSpots;
 
   const SpotListDetailEditBody({
     super.key,
     required this.draft,
     required this.spotsById,
     required this.onChanged,
+    required this.pickSpots,
+    this.onSpotsAdded,
   });
 
   @override
@@ -119,6 +123,21 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
   }
 
   void _notify() => widget.onChanged();
+
+  Future<void> _openAddSpotsPicker(int sectionIndex) async {
+    final spots = await widget.pickSpots();
+    if (!mounted || spots == null || spots.isEmpty) return;
+    final ids = [
+      for (final spot in spots)
+        if (spot.id != null && spot.id!.isNotEmpty) spot.id!,
+    ];
+    if (ids.isEmpty) return;
+    setState(() {
+      _draft.addEntries(sectionIndex, ids);
+    });
+    widget.onSpotsAdded?.call(spots);
+    _notify();
+  }
 
   void _syncSectionControllers() {
     final ids = _draft.sections.map((s) => s.id).toSet();
@@ -585,6 +604,12 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
                         color: theme.colorScheme.primary,
                       ),
                     ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () => _openAddSpotsPicker(item.sectionIndex),
+                      icon: const Icon(Icons.add_location_alt_outlined),
+                      label: Text(l10n.spotListEditAddSpots),
+                    ),
                   ],
                 ),
               ),
@@ -739,6 +764,11 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
                       ? l10n.spotListEditDoneSectionTooltip
                       : l10n.spotListEditEditSectionTooltip,
                   onPressed: () => _toggleSectionEditing(section.id),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add_location_alt_outlined),
+                  tooltip: l10n.spotListEditAddSpotsTooltip,
+                  onPressed: () => _openAddSpotsPicker(sectionIndex),
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),

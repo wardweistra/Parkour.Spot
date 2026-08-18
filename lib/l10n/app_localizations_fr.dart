@@ -651,6 +651,21 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get explorePickerMultiSpotsHint =>
+      'Touche des spots sur la carte pour les ajouter. Confirme quand tu as fini.';
+
+  @override
+  String explorePickerMultiSpotsSummary(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count spots sélectionnés',
+      one: '$name',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get explorePickerConfirmDone => 'Terminé';
 
   @override
@@ -3017,6 +3032,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get spotListEditAddSection => 'Ajouter une section';
+
+  @override
+  String get spotListEditAddSpots => 'Ajouter des spots';
+
+  @override
+  String get spotListEditAddSpotsTooltip => 'Ajouter des spots à cette section';
 
   @override
   String get spotListEditSectionTitleLabel =>

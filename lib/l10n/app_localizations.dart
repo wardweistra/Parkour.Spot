@@ -1156,6 +1156,18 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{{name}} other{{count} spots selected}}'**
   String explorePickerEventWhereSpots(int count, String name);
 
+  /// Multi-spot picker: short instruction above the map
+  ///
+  /// In en, this message translates to:
+  /// **'Tap spots on the map to add them. Confirm when done.'**
+  String get explorePickerMultiSpotsHint;
+
+  /// Multi-spot picker: summary of selected spots
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{{name}} other{{count} spots selected}}'**
+  String explorePickerMultiSpotsSummary(int count, String name);
+
   /// Event where picker: confirm the current pin or spots
   ///
   /// In en, this message translates to:
@@ -5030,6 +5042,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add section'**
   String get spotListEditAddSection;
+
+  /// Spot list edit: add spots to the current section
+  ///
+  /// In en, this message translates to:
+  /// **'Add spots'**
+  String get spotListEditAddSpots;
+
+  /// Spot list edit: tooltip for adding spots to a section
+  ///
+  /// In en, this message translates to:
+  /// **'Add spots to this section'**
+  String get spotListEditAddSpotsTooltip;
 
   /// Hint for optional section title in list edit mode
   ///

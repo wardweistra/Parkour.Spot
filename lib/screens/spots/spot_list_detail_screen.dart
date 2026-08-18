@@ -29,6 +29,8 @@ import '../../widgets/spot_detail_quick_action_chip.dart';
 import '../../widgets/spot_list_save_button.dart';
 import '../../widgets/linked_upcoming_event_panel.dart';
 import '../../widgets/detail_external_link_tile.dart';
+import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
+import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
 import 'package:flutter/services.dart';
 import '../../models/spot_list_edit_draft.dart';
 import 'spot_list_detail_edit_body.dart';
@@ -195,6 +197,20 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
         _fitBounds();
       });
     }
+  }
+
+  Future<List<Spot>?> _pickSpotsForSection() async {
+    final result = await ExploreEntityPickerScreen.show(
+      context,
+      config: const ExploreEntityPickerConfig(
+        mode: ExploreEntityPickerMode.spotsOnly,
+        allowMultipleSpots: true,
+      ),
+    );
+    if (result == null) return null;
+    if (result.spots.isNotEmpty) return result.spots;
+    if (result.spot != null) return [result.spot!];
+    return null;
   }
 
   void _enterEditMode() {
@@ -1280,6 +1296,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                 key: const ValueKey('list-edit'),
                 draft: _draft!,
                 spotsById: _spotById,
+                pickSpots: _pickSpotsForSection,
                 onChanged: () {
                   final selectedId = _selectedSpot?.id;
                   if (selectedId != null &&
@@ -1287,6 +1304,23 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                     _selectedSpot = null;
                   }
                   setState(() {});
+                },
+                onSpotsAdded: (spots) {
+                  var addedNew = false;
+                  setState(() {
+                    for (final spot in spots) {
+                      if (spot.id != null &&
+                          !_spots.any((s) => s.id == spot.id)) {
+                        _spots.add(spot);
+                        addedNew = true;
+                      }
+                    }
+                  });
+                  if (addedNew) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _fitBounds();
+                    });
+                  }
                 },
               )
             else

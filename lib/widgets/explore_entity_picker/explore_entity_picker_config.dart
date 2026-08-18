@@ -24,6 +24,7 @@ class ExploreEntityPickerConfig {
     this.linkedSpotListName,
     this.usageTip,
     this.allowExternalSources = false,
+    this.allowMultipleSpots = false,
   });
 
   final ExploreEntityPickerMode mode;
@@ -36,8 +37,12 @@ class ExploreEntityPickerConfig {
   final String? linkedSpotListName;
   final LocationPickerUsageTip? usageTip;
   final bool allowExternalSources;
+  final bool allowMultipleSpots;
 
   bool get isEventWhere => mode == ExploreEntityPickerMode.eventWhere;
+
+  bool get isMultiSpotSelection =>
+      allowMultipleSpots && mode == ExploreEntityPickerMode.spotsOnly;
 
   String? get trimmedLinkedSpotListName {
     final name = linkedSpotListName?.trim();

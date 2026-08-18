@@ -18,4 +18,27 @@ void main() {
       isNull,
     );
   });
+
+  test('isMultiSpotSelection is spotsOnly plus allowMultipleSpots', () {
+    expect(
+      const ExploreEntityPickerConfig(
+        mode: ExploreEntityPickerMode.spotsOnly,
+        allowMultipleSpots: true,
+      ).isMultiSpotSelection,
+      isTrue,
+    );
+    expect(
+      const ExploreEntityPickerConfig(
+        mode: ExploreEntityPickerMode.spotsOnly,
+      ).isMultiSpotSelection,
+      isFalse,
+    );
+    expect(
+      const ExploreEntityPickerConfig(
+        mode: ExploreEntityPickerMode.eventWhere,
+        allowMultipleSpots: true,
+      ).isMultiSpotSelection,
+      isFalse,
+    );
+  });
 }

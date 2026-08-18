@@ -803,6 +803,22 @@
       }
     }
   },
+  "explorePickerMultiSpotsHint": "Tap spots on the map to add them. Confirm when done.",
+  "@explorePickerMultiSpotsHint": {
+    "description": "Multi-spot picker: short instruction above the map"
+  },
+  "explorePickerMultiSpotsSummary": "{count, plural, =1{{name}} other{{count} spots selected}}",
+  "@explorePickerMultiSpotsSummary": {
+    "description": "Multi-spot picker: summary of selected spots",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "explorePickerConfirmDone": "Done",
   "@explorePickerConfirmDone": {
     "description": "Event where picker: confirm the current pin or spots"
@@ -2717,6 +2733,14 @@
   "spotListEditAddSection": "Add section",
   "@spotListEditAddSection": {
     "description": "Button to add a section while editing a list"
+  },
+  "spotListEditAddSpots": "Add spots",
+  "@spotListEditAddSpots": {
+    "description": "Spot list edit: add spots to the current section"
+  },
+  "spotListEditAddSpotsTooltip": "Add spots to this section",
+  "@spotListEditAddSpotsTooltip": {
+    "description": "Spot list edit: tooltip for adding spots to a section"
   },
   "spotListEditSectionTitleLabel": "Section title (optional)",
   "@spotListEditSectionTitleLabel": {

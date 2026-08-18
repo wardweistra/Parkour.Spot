@@ -92,6 +92,9 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
 
   ExploreEntityPickerConfig get _config => widget.config;
 
+  bool get _isMultiSpotSession =>
+      _config.isEventWhere || _config.isMultiSpotSelection;
+
   @override
   void initState() {
     super.initState();
@@ -375,7 +378,7 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
       final id = spot.id;
       if (id != null) spotsById[id] = spot;
     }
-    if (_config.isEventWhere) {
+    if (_isMultiSpotSession) {
       for (final spot in _selectedSpots) {
         final id = spot.id;
         if (id != null) spotsById.putIfAbsent(id, () => spot);
@@ -394,7 +397,7 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
       final isPreviewSelected = _previewSpot?.id != null
           ? _previewSpot!.id == spot.id
           : _previewSpot?.name == spot.name;
-      final isSessionSelected = _config.isEventWhere && _isSpotSelected(spot);
+      final isSessionSelected = _isMultiSpotSession && _isSpotSelected(spot);
 
       final icon = (isPreviewSelected || isSessionSelected)
           ? (_spotSelectedIcon ?? BitmapDescriptor.defaultMarker)
@@ -759,6 +762,8 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
         _applySpotReplacingPin(spot);
         return;
       }
+    }
+    if (_isMultiSpotSession) {
       _toggleSelectedSpot(spot);
       return;
     }
@@ -879,8 +884,9 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
     );
   }
 
-  bool get _canConfirmEventWhere =>
-      _selectedSpots.isNotEmpty || _pickedLocation != null;
+  bool get _canConfirmSelection =>
+      _selectedSpots.isNotEmpty ||
+      (_config.isEventWhere && _pickedLocation != null);
 
   double _fabRightOffset(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
@@ -913,8 +919,8 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildAppBar(l10n, theme),
-                if (_config.isEventWhere)
-                  _buildEventWhereStatusBar(l10n, theme)
+                if (_config.isEventWhere || _config.isMultiSpotSelection)
+                  _buildSelectionStatusBar(l10n, theme)
                 else if (usageTip != null)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -1066,7 +1072,10 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
     );
   }
 
-  String _eventWhereHint(AppLocalizations l10n) {
+  String _selectionHint(AppLocalizations l10n) {
+    if (_config.isMultiSpotSelection) {
+      return l10n.explorePickerMultiSpotsHint;
+    }
     final listName = _config.trimmedLinkedSpotListName;
     if (listName != null) {
       return l10n.explorePickerEventWhereReplacesListHint(listName);
@@ -1074,7 +1083,15 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
     return l10n.explorePickerEventWhereHint;
   }
 
-  String _eventWhereSummary(AppLocalizations l10n) {
+  String _selectionSummary(AppLocalizations l10n) {
+    if (_config.isMultiSpotSelection) {
+      if (_selectedSpots.isEmpty) return l10n.explorePickerEventWhereNone;
+      final name = _selectedSpots.first.name.trim();
+      return l10n.explorePickerMultiSpotsSummary(
+        _selectedSpots.length,
+        name.isEmpty ? _selectedSpots.first.id ?? '' : name,
+      );
+    }
     if (_pickedLocation != null) return l10n.explorePickerEventWherePin;
     if (_selectedSpots.isEmpty) {
       final listName = _config.trimmedLinkedSpotListName;
@@ -1090,9 +1107,9 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
     );
   }
 
-  Widget _buildEventWhereStatusBar(AppLocalizations l10n, ThemeData theme) {
+  Widget _buildSelectionStatusBar(AppLocalizations l10n, ThemeData theme) {
     final scheme = theme.colorScheme;
-    final canConfirm = _canConfirmEventWhere && _pendingLocation == null;
+    final canConfirm = _canConfirmSelection && _pendingLocation == null;
     return Material(
       color: scheme.surfaceContainerLow,
       child: Padding(
@@ -1105,7 +1122,7 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _eventWhereHint(l10n),
+                    _selectionHint(l10n),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -1117,7 +1134,7 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _eventWhereSummary(l10n),
+                    _selectionSummary(l10n),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.titleSmall,
@@ -1356,7 +1373,7 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
               FilledButton(
                 onPressed: spot.id == null ? null : () => _confirmSpot(spot),
                 child: Text(
-                  _config.isEventWhere
+                  _isMultiSpotSession
                       ? (_isSpotSelected(spot)
                             ? l10n.explorePickerAlreadyAdded
                             : l10n.explorePickerConfirmAdd)
