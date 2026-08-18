@@ -6,6 +6,7 @@ import '../../models/spot.dart';
 import '../../models/spot_list.dart';
 import '../../models/spot_list_edit_draft.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../widgets/spot_list_visibility_selector.dart';
 import '../../widgets/resized_spot_image.dart';
 import '../../widgets/spot_list_edit_spot_row.dart';
 
@@ -179,17 +180,6 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
     }
     _noteControllers.clear();
     _expandedNotes.clear();
-  }
-
-  String _visibilityHelp(AppLocalizations l10n, SpotListVisibility visibility) {
-    switch (visibility) {
-      case SpotListVisibility.public:
-        return l10n.spotListEditVisibilityPublicHelp;
-      case SpotListVisibility.unlisted:
-        return l10n.spotListEditVisibilityUnlistedHelp;
-      case SpotListVisibility.private:
-        return l10n.spotListEditVisibilityPrivateHelp;
-    }
   }
 
   Future<void> _confirmRemoveEntry(
@@ -488,54 +478,14 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
                       },
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.visibility_outlined,
-                          size: 20,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          l10n.spotDetailVisibilityLabel,
-                          style: theme.textTheme.labelLarge,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    SegmentedButton<SpotListVisibility>(
-                      showSelectedIcon: false,
-                      segments: [
-                        ButtonSegment(
-                          value: SpotListVisibility.public,
-                          label: Text(l10n.spotListEditVisibilityPublic),
-                        ),
-                        ButtonSegment(
-                          value: SpotListVisibility.unlisted,
-                          label: Text(l10n.spotListEditVisibilityUnlisted),
-                        ),
-                        ButtonSegment(
-                          value: SpotListVisibility.private,
-                          label: Text(l10n.spotListEditVisibilityPrivate),
-                        ),
-                      ],
-                      selected: {_draft.visibility},
-                      onSelectionChanged: (selected) {
-                        if (selected.isEmpty) return;
+                    SpotListVisibilitySelector(
+                      value: _draft.visibility,
+                      onChanged: (value) {
                         setState(() {
-                          _draft.visibility = selected.first;
+                          _draft.visibility = value;
                         });
                         _notify();
                       },
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _visibilityHelp(l10n, _draft.visibility),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.7,
-                        ),
-                      ),
                     ),
                     const SizedBox(height: 8),
                   ],

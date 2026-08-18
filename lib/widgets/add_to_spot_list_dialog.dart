@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../models/spot_list.dart';
 import '../widgets/custom_text_field.dart';
+import '../widgets/spot_list_visibility_selector.dart';
 
 class AddToSpotListDialogResult {
   const AddToSpotListDialogResult.added() : created = false, error = null;
@@ -384,37 +385,10 @@ class _AddToSpotListDialogState extends State<AddToSpotListDialog> {
           enabled: !_isBusy,
         ),
         const SizedBox(height: 16),
-        DropdownButtonFormField<SpotListVisibility>(
-          initialValue: _newListVisibility,
-          decoration: CustomTextField.decoration(
-            context,
-            labelText: l10n.spotDetailVisibilityLabel,
-            prefixIcon: Icons.visibility_outlined,
-          ),
-          items: SpotListVisibility.values
-              .map(
-                (visibility) => DropdownMenuItem<SpotListVisibility>(
-                  value: visibility,
-                  child: Text(visibility.label),
-                ),
-              )
-              .toList(),
-          onChanged: _isBusy
-              ? null
-              : (value) {
-                  if (value == null) return;
-                  setState(() => _newListVisibility = value);
-                },
-        ),
-        const SizedBox(height: 8),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Text(
-            _newListVisibility.description,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-            ),
-          ),
+        SpotListVisibilitySelector(
+          value: _newListVisibility,
+          enabled: !_isBusy,
+          onChanged: (value) => setState(() => _newListVisibility = value),
         ),
         const SizedBox(height: 16),
         TextButton(

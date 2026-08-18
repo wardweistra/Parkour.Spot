@@ -22,6 +22,7 @@ import '../../widgets/instagram_button.dart';
 import '../../utils/web_meta_utils.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../widgets/spot_list_visibility_selector.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/spot_list_localization.dart';
 import 'package:flutter/services.dart';
@@ -1205,40 +1206,13 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   autofocus: true,
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<SpotListVisibility>(
-                  initialValue: selectedVisibility,
-                  decoration: CustomTextField.decoration(
-                    dialogContext,
-                    labelText: _l10n.spotDetailVisibilityLabel,
-                    prefixIcon: Icons.visibility_outlined,
-                  ),
-                  items: SpotListVisibility.values
-                      .map(
-                        (visibility) => DropdownMenuItem<SpotListVisibility>(
-                          value: visibility,
-                          child: Text(visibility.label),
-                        ),
-                      )
-                      .toList(),
+                SpotListVisibilitySelector(
+                  value: selectedVisibility,
                   onChanged: (value) {
-                    if (value == null) return;
                     setDialogState(() {
                       selectedVisibility = value;
                     });
                   },
-                ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    selectedVisibility.description,
-                    style: Theme.of(dialogContext).textTheme.bodySmall
-                        ?.copyWith(
-                          color: Theme.of(
-                            dialogContext,
-                          ).colorScheme.onSurface.withValues(alpha: 0.7),
-                        ),
-                  ),
                 ),
               ],
             ),
