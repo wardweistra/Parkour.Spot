@@ -792,6 +792,8 @@
   "spotListEditAddSection": "Abschnitt hinzufügen",
   "spotListEditAddSpots": "Spots hinzufügen",
   "spotListEditAddSpotsTooltip": "Spots zu diesem Abschnitt hinzufügen",
+  "spotListEditAddSpotsToListTooltip": "Spots hinzufügen",
+  "spotListEditNoSpotsInList": "Noch keine Spots in dieser Liste",
   "spotListEditSectionTitleLabel": "Abschnittstitel (optional)",
   "spotListEditSectionTextLabel": "Abschnittstext (optional)",
   "spotListEditAddSectionTitle": "Titel hinzufügen",

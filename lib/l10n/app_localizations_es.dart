@@ -3014,6 +3014,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get spotListEditAddSpotsTooltip => 'Añadir spots a esta sección';
 
   @override
+  String get spotListEditAddSpotsToListTooltip => 'Añadir spots';
+
+  @override
+  String get spotListEditNoSpotsInList => 'Aún no hay spots en esta lista';
+
+  @override
   String get spotListEditSectionTitleLabel => 'Título de la sección (opcional)';
 
   @override

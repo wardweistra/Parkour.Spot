@@ -5055,6 +5055,18 @@ abstract class AppLocalizations {
   /// **'Add spots to this section'**
   String get spotListEditAddSpotsTooltip;
 
+  /// Spot list edit: tooltip for adding spots to a list without sections
+  ///
+  /// In en, this message translates to:
+  /// **'Add spots'**
+  String get spotListEditAddSpotsToListTooltip;
+
+  /// Empty state when a simple list has no spots
+  ///
+  /// In en, this message translates to:
+  /// **'No spots in this list yet'**
+  String get spotListEditNoSpotsInList;
+
   /// Hint for optional section title in list edit mode
   ///
   /// In en, this message translates to:

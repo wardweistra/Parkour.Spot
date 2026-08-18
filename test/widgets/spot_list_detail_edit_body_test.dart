@@ -97,12 +97,13 @@ void main() {
     expect(find.byType(SliverReorderableList), findsOneWidget);
     expect(find.byType(SliverLayoutBuilder), findsNothing);
     expect(find.byType(ReorderableDragStartListener), findsNWidgets(2));
-    expect(find.byIcon(Icons.drag_handle), findsNWidgets(3));
+    expect(find.byIcon(Icons.drag_handle), findsNWidgets(2));
     expect(find.byIcon(Icons.sticky_note_2_outlined), findsOneWidget);
     expect(find.byIcon(Icons.note_add_outlined), findsOneWidget);
     expect(find.byIcon(Icons.note), findsNothing);
     expect(find.text('Add note'), findsOneWidget);
     expect(find.byTooltip('Edit section'), findsOneWidget);
+    expect(find.byTooltip('Delete section'), findsNothing);
     expect(find.widgetWithText(TextField, 'Warmup'), findsNothing);
   });
 
@@ -176,12 +177,78 @@ void main() {
     expect(find.text('Cancel'), findsOneWidget);
   });
 
-  testWidgets('section header has an add-spots control', (tester) async {
+  testWidgets('named single section uses list-level add spots', (tester) async {
     final draft = SpotListEditDraft.fromList(buildList());
     await pumpEditBody(tester, draft);
 
-    expect(find.byTooltip('Add spots to this section'), findsOneWidget);
+    expect(find.byTooltip('Add spots'), findsOneWidget);
+    expect(find.byTooltip('Add spots to this section'), findsNothing);
+    expect(find.widgetWithText(OutlinedButton, 'Add spots'), findsOneWidget);
     expect(find.byIcon(Icons.add_location_alt_outlined), findsOneWidget);
+  });
+
+  testWidgets('plain list hides section chrome until a section is added', (
+    tester,
+  ) async {
+    final draft = SpotListEditDraft.fromList(
+      SpotList(
+        id: 'list-1',
+        name: 'Downtown session',
+        spotIds: const ['s1', 's2'],
+        sections: [
+          SpotListSection(
+            id: 'sec-1',
+            entries: [
+              SpotListEntry(spotId: 's1'),
+              SpotListEntry(spotId: 's2'),
+            ],
+          ),
+        ],
+        createdBy: 'user-1',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 2),
+      ),
+    );
+    await pumpEditBody(tester, draft);
+
+    expect(find.text('Add title'), findsNothing);
+    expect(find.byTooltip('Edit section'), findsNothing);
+    expect(find.byTooltip('Delete section'), findsNothing);
+    expect(find.byTooltip('Add spots to this section'), findsNothing);
+    expect(find.widgetWithText(OutlinedButton, 'Add spots'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, 'Add section'), findsOneWidget);
+    expect(find.byIcon(Icons.drag_handle), findsNWidgets(2));
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Add section'));
+    await tester.pump();
+
+    expect(find.text('Add title'), findsOneWidget);
+    expect(find.byTooltip('Add spots to this section'), findsNWidgets(2));
+    expect(find.byTooltip('Delete section'), findsNWidgets(2));
+    expect(draft.sections, hasLength(2));
+  });
+
+  testWidgets('simple empty list does not mention sections', (tester) async {
+    final draft = SpotListEditDraft.fromList(
+      SpotList(
+        id: 'list-1',
+        name: 'Downtown session',
+        spotIds: const [],
+        sections: [SpotListSection(id: 'sec-1', entries: [])],
+        createdBy: 'user-1',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 2),
+      ),
+    );
+    await pumpEditBody(tester, draft);
+
+    expect(find.text('No spots in this list yet'), findsOneWidget);
+    expect(find.text('No spots in this section'), findsNothing);
+    expect(
+      find.text('Empty sections will be removed when you save'),
+      findsNothing,
+    );
+    expect(find.widgetWithText(OutlinedButton, 'Add spots'), findsOneWidget);
   });
 
   testWidgets('empty section add-spots button appends picker results', (
@@ -191,8 +258,15 @@ void main() {
       SpotList(
         id: 'list-1',
         name: 'Downtown session',
-        spotIds: const [],
-        sections: [SpotListSection(id: 'sec-1', title: 'Warmup', entries: [])],
+        spotIds: const ['s1'],
+        sections: [
+          SpotListSection(
+            id: 'sec-1',
+            title: 'Warmup',
+            entries: [SpotListEntry(spotId: 's1')],
+          ),
+          SpotListSection(id: 'sec-2', title: 'Lines', entries: []),
+        ],
         createdBy: 'user-1',
         createdAt: DateTime.utc(2026, 1, 1),
         updatedAt: DateTime.utc(2026, 1, 2),
@@ -204,6 +278,7 @@ void main() {
       tester,
       draft,
       spotsById: {
+        's1': buildSpot('s1', 'Library wall'),
         's3': buildSpot('s3', 'Canal ledge'),
         's4': buildSpot('s4', 'Roof gap'),
       },
@@ -220,7 +295,7 @@ void main() {
     await tester.tap(find.widgetWithText(OutlinedButton, 'Add spots'));
     await tester.pumpAndSettle();
 
-    expect(draft.sections.single.entries.map((e) => e.spotId), ['s3', 's4']);
+    expect(draft.sections[1].entries.map((e) => e.spotId), ['s3', 's4']);
     expect(added.map((s) => s.id), ['s3', 's4']);
     expect(find.text('Canal ledge'), findsOneWidget);
     expect(find.text('Roof gap'), findsOneWidget);

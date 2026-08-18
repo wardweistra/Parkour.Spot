@@ -2742,6 +2742,14 @@
   "@spotListEditAddSpotsTooltip": {
     "description": "Spot list edit: tooltip for adding spots to a section"
   },
+  "spotListEditAddSpotsToListTooltip": "Add spots",
+  "@spotListEditAddSpotsToListTooltip": {
+    "description": "Spot list edit: tooltip for adding spots to a list without sections"
+  },
+  "spotListEditNoSpotsInList": "No spots in this list yet",
+  "@spotListEditNoSpotsInList": {
+    "description": "Empty state when a simple list has no spots"
+  },
   "spotListEditSectionTitleLabel": "Section title (optional)",
   "@spotListEditSectionTitleLabel": {
     "description": "Hint for optional section title in list edit mode"

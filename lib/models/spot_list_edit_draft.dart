@@ -92,6 +92,17 @@ class SpotListEditDraft {
   List<SpotListSection> get sectionsForSave =>
       sections.where((s) => s.entries.isNotEmpty).toList();
 
+  bool get isSingleSection => sections.length == 1;
+
+  /// One untitled section with no intro text: treat the editor as a flat list.
+  bool get isPlainList {
+    if (!isSingleSection) return false;
+    final section = sections.first;
+    final title = section.title?.trim() ?? '';
+    final text = section.text?.trim() ?? '';
+    return title.isEmpty && text.isEmpty;
+  }
+
   void reorderSections(int oldIndex, int newIndex) {
     if (newIndex > oldIndex) newIndex -= 1;
     final item = sections.removeAt(oldIndex);
@@ -114,6 +125,8 @@ class SpotListEditDraft {
   }
 
   void deleteSection(int index) {
+    if (sections.length <= 1) return;
+    if (index < 0 || index >= sections.length) return;
     sections.removeAt(index);
   }
 

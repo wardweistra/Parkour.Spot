@@ -2986,6 +2986,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get spotListEditAddSpotsTooltip => 'Add spots to this section';
 
   @override
+  String get spotListEditAddSpotsToListTooltip => 'Add spots';
+
+  @override
+  String get spotListEditNoSpotsInList => 'No spots in this list yet';
+
+  @override
   String get spotListEditSectionTitleLabel => 'Section title (optional)';
 
   @override

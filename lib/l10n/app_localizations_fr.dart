@@ -3040,6 +3040,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get spotListEditAddSpotsTooltip => 'Ajouter des spots à cette section';
 
   @override
+  String get spotListEditAddSpotsToListTooltip => 'Ajouter des spots';
+
+  @override
+  String get spotListEditNoSpotsInList =>
+      'Pas encore de spots dans cette liste';
+
+  @override
   String get spotListEditSectionTitleLabel =>
       'Titre de la section (facultatif)';
 

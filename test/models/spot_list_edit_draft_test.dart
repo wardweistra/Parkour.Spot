@@ -288,5 +288,56 @@ void main() {
       expect(draft.effectiveSpotIds, ['s1', 's2', 's3']);
       expect(draft.isDirty, isTrue);
     });
+
+    test('plain list is a single untitled section', () {
+      final plain = SpotListEditDraft.fromList(
+        buildList(spotIds: const ['a', 'b']),
+      );
+      expect(plain.isSingleSection, isTrue);
+      expect(plain.isPlainList, isTrue);
+
+      final named = SpotListEditDraft.fromList(
+        buildList(
+          sections: [
+            SpotListSection(
+              id: 'sec-1',
+              title: 'Warmup',
+              entries: [SpotListEntry(spotId: 's1')],
+            ),
+          ],
+        ),
+      );
+      expect(named.isSingleSection, isTrue);
+      expect(named.isPlainList, isFalse);
+
+      named.addSection();
+      expect(named.isSingleSection, isFalse);
+      expect(named.isPlainList, isFalse);
+    });
+
+    test('deleteSection refuses to drop the last section', () {
+      final draft = SpotListEditDraft.fromList(
+        buildList(
+          sections: [
+            SpotListSection(
+              id: 'sec-1',
+              entries: [SpotListEntry(spotId: 's1')],
+            ),
+            SpotListSection(
+              id: 'sec-2',
+              entries: [SpotListEntry(spotId: 's2')],
+            ),
+          ],
+        ),
+      );
+
+      draft.deleteSection(1);
+      expect(draft.sections, hasLength(1));
+      expect(draft.sections.single.id, 'sec-1');
+
+      draft.deleteSection(0);
+      expect(draft.sections, hasLength(1));
+      expect(draft.sections.single.id, 'sec-1');
+    });
   });
 }

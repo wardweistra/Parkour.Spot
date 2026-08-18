@@ -227,6 +227,7 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
   }
 
   Future<void> _confirmDeleteSection(int index) async {
+    if (_draft.isSingleSection) return;
     final l10n = AppLocalizations.of(context)!;
     final hasSpots = _draft.sections[index].entries.isNotEmpty;
     if (hasSpots) {
@@ -262,11 +263,18 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
 
   List<_FlatItem> _flatten() {
     final items = <_FlatItem>[];
+    final plain = _draft.isPlainList;
+    final single = _draft.isSingleSection;
     for (var s = 0; s < _draft.sections.length; s++) {
       final section = _draft.sections[s];
-      items.add(_FlatItem.header(s, section.id));
+      final editing = _editingSectionIds.contains(section.id);
+      if (!plain || editing) {
+        items.add(_FlatItem.header(s, section.id));
+      }
       if (section.entries.isEmpty) {
-        items.add(_FlatItem.empty(s, section.id));
+        if (!single) {
+          items.add(_FlatItem.empty(s, section.id));
+        }
       } else {
         for (var e = 0; e < section.entries.length; e++) {
           items.add(_FlatItem.spot(s, section.id, e, section.entries[e]));
@@ -557,10 +565,36 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
               _commitSectionMoveToEnd(details.data.sectionId);
             },
             builder: (context, _, __) {
+              final single = _draft.isSingleSection;
+              final emptySingle =
+                  single && _draft.sections.first.entries.isEmpty;
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (_dropAtEnd) _sectionDropLine(theme),
+                  if (emptySingle) ...[
+                    Text(
+                      l10n.spotListEditNoSpotsInList,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (single) ...[
+                    Tooltip(
+                      message: l10n.spotListEditAddSpotsToListTooltip,
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _openAddSpotsPicker(0),
+                          icon: const Icon(Icons.add_location_alt_outlined),
+                          label: Text(l10n.spotListEditAddSpots),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   OutlinedButton.icon(
                     onPressed: () {
                       setState(() {
@@ -637,12 +671,81 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
     final body = textController.text.trim();
     final hasTitle = title.isNotEmpty;
     final hasText = body.isNotEmpty;
+    final structured = !_draft.isSingleSection;
+    final showAddTitle = structured && !hasTitle && !hasText;
+
+    final titleBlock = editing
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: titleController,
+                autofocus: true,
+                style: theme.textTheme.titleLarge,
+                decoration: InputDecoration(
+                  hintText: l10n.spotListEditSectionTitleLabel,
+                  border: InputBorder.none,
+                  isCollapsed: true,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onChanged: (value) {
+                  _draft.updateSection(sectionIndex, title: value);
+                  _notify();
+                },
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: textController,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                ),
+                maxLines: 3,
+                minLines: 1,
+                decoration: InputDecoration(
+                  hintText: l10n.spotListEditSectionTextLabel,
+                  border: InputBorder.none,
+                  isCollapsed: true,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onChanged: (value) {
+                  _draft.updateSection(sectionIndex, text: value);
+                  _notify();
+                },
+              ),
+            ],
+          )
+        : InkWell(
+            onTap: () => _toggleSectionEditing(section.id),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (hasTitle) Text(title, style: theme.textTheme.titleLarge),
+                if (hasTitle && hasText) const SizedBox(height: 10),
+                if (hasText)
+                  Text(
+                    body,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                    ),
+                  ),
+                if (showAddTitle)
+                  Text(
+                    l10n.spotListEditAddSectionTitle,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+              ],
+            ),
+          );
 
     return KeyedSubtree(
       key: ValueKey('header-${section.id}'),
       child: _withSectionDropTarget(
         sectionId: section.id,
-        showDropLine: true,
+        showDropLine: structured,
         child: _fadeIfDraggingSection(
           section.id,
           Padding(
@@ -650,112 +753,34 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Draggable<_SectionDragData>(
-                  key: _sectionDragKeys[section.id],
-                  data: _SectionDragData(section.id),
-                  dragAnchorStrategy: childDragAnchorStrategy,
-                  rootOverlay: true,
-                  onDragStarted: () {
-                    setState(() {
-                      _draggingSectionId = section.id;
-                      _dropBeforeSectionId = null;
-                      _dropAtEnd = false;
-                    });
-                  },
-                  onDragUpdate: (details) {
-                    _updateSectionAutoScroll(details.globalPosition);
-                  },
-                  onDragEnd: (_) => _clearSectionDrag(),
-                  feedback: _buildSectionDragFeedback(section, theme, l10n),
-                  childWhenDragging: Opacity(opacity: 0.35, child: handle),
-                  child: MouseRegion(
-                    cursor: SystemMouseCursors.grab,
-                    child: handle,
+                if (structured)
+                  Draggable<_SectionDragData>(
+                    key: _sectionDragKeys[section.id],
+                    data: _SectionDragData(section.id),
+                    dragAnchorStrategy: childDragAnchorStrategy,
+                    rootOverlay: true,
+                    onDragStarted: () {
+                      setState(() {
+                        _draggingSectionId = section.id;
+                        _dropBeforeSectionId = null;
+                        _dropAtEnd = false;
+                      });
+                    },
+                    onDragUpdate: (details) {
+                      _updateSectionAutoScroll(details.globalPosition);
+                    },
+                    onDragEnd: (_) => _clearSectionDrag(),
+                    feedback: _buildSectionDragFeedback(section, theme, l10n),
+                    childWhenDragging: Opacity(opacity: 0.35, child: handle),
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.grab,
+                      child: handle,
+                    ),
                   ),
-                ),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.only(top: 12, bottom: 8),
-                    child: editing
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              TextField(
-                                controller: titleController,
-                                autofocus: true,
-                                style: theme.textTheme.titleLarge,
-                                decoration: InputDecoration(
-                                  hintText: l10n.spotListEditSectionTitleLabel,
-                                  border: InputBorder.none,
-                                  isCollapsed: true,
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.zero,
-                                ),
-                                onChanged: (value) {
-                                  _draft.updateSection(
-                                    sectionIndex,
-                                    title: value,
-                                  );
-                                  _notify();
-                                },
-                              ),
-                              const SizedBox(height: 10),
-                              TextField(
-                                controller: textController,
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: theme.colorScheme.onSurface.withValues(
-                                    alpha: 0.8,
-                                  ),
-                                ),
-                                maxLines: 3,
-                                minLines: 1,
-                                decoration: InputDecoration(
-                                  hintText: l10n.spotListEditSectionTextLabel,
-                                  border: InputBorder.none,
-                                  isCollapsed: true,
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.zero,
-                                ),
-                                onChanged: (value) {
-                                  _draft.updateSection(
-                                    sectionIndex,
-                                    text: value,
-                                  );
-                                  _notify();
-                                },
-                              ),
-                            ],
-                          )
-                        : InkWell(
-                            onTap: () => _toggleSectionEditing(section.id),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (hasTitle)
-                                  Text(
-                                    title,
-                                    style: theme.textTheme.titleLarge,
-                                  ),
-                                if (hasTitle && hasText)
-                                  const SizedBox(height: 10),
-                                if (hasText)
-                                  Text(
-                                    body,
-                                    style: theme.textTheme.bodyLarge?.copyWith(
-                                      color: theme.colorScheme.onSurface
-                                          .withValues(alpha: 0.8),
-                                    ),
-                                  ),
-                                if (!hasTitle && !hasText)
-                                  Text(
-                                    l10n.spotListEditAddSectionTitle,
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
+                    child: titleBlock,
                   ),
                 ),
                 IconButton(
@@ -765,17 +790,19 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
                       : l10n.spotListEditEditSectionTooltip,
                   onPressed: () => _toggleSectionEditing(section.id),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.add_location_alt_outlined),
-                  tooltip: l10n.spotListEditAddSpotsTooltip,
-                  onPressed: () => _openAddSpotsPicker(sectionIndex),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  tooltip: l10n.spotListEditDeleteSectionTooltip,
-                  color: theme.colorScheme.error,
-                  onPressed: () => _confirmDeleteSection(sectionIndex),
-                ),
+                if (structured)
+                  IconButton(
+                    icon: const Icon(Icons.add_location_alt_outlined),
+                    tooltip: l10n.spotListEditAddSpotsTooltip,
+                    onPressed: () => _openAddSpotsPicker(sectionIndex),
+                  ),
+                if (structured)
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    tooltip: l10n.spotListEditDeleteSectionTooltip,
+                    color: theme.colorScheme.error,
+                    onPressed: () => _confirmDeleteSection(sectionIndex),
+                  ),
               ],
             ),
           ),

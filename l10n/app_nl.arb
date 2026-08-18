@@ -832,6 +832,8 @@
   "spotListEditAddSection": "Sectie toevoegen",
   "spotListEditAddSpots": "Spots toevoegen",
   "spotListEditAddSpotsTooltip": "Spots aan deze sectie toevoegen",
+  "spotListEditAddSpotsToListTooltip": "Spots toevoegen",
+  "spotListEditNoSpotsInList": "Nog geen spots in deze lijst",
   "spotListEditSectionTitleLabel": "Sectietitel (optioneel)",
   "spotListEditSectionTextLabel": "Sectietekst (optioneel)",
   "spotListEditAddSectionTitle": "Titel toevoegen",
