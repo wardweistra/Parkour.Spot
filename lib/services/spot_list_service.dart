@@ -3,13 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import '../models/spot_list.dart';
 import '../services/auth_service.dart';
-import '../services/feature_access_service.dart';
 import '../utils/http_url_utils.dart' as http_url;
 
 class SpotListService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final AuthService _authService;
-  final FeatureAccessService _featureAccessService;
 
   bool _isLoading = false;
   String? _error;
@@ -17,12 +15,7 @@ class SpotListService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  SpotListService(this._authService, this._featureAccessService);
-
-  /// Check if the current user has access to spot lists feature
-  bool _hasFeatureAccess() {
-    return _featureAccessService.hasFeatureAccess('spotLists');
-  }
+  SpotListService(this._authService);
 
   /// Check if the current user is authenticated
   bool _isAuthenticated() {
@@ -42,12 +35,6 @@ class SpotListService extends ChangeNotifier {
   }) async {
     if (!_isAuthenticated()) {
       _error = 'You must be signed in to create a list';
-      notifyListeners();
-      return null;
-    }
-
-    if (!_hasFeatureAccess()) {
-      _error = 'You do not have access to create spot lists';
       notifyListeners();
       return null;
     }
@@ -99,15 +86,11 @@ class SpotListService extends ChangeNotifier {
     }
   }
 
-  /// Get all spot lists for the current user (requires feature access for management)
+  /// Get all spot lists for the current user.
   /// Note: This method does not update loading state or notify listeners
   /// as it's typically called from FutureBuilder which manages its own loading state
   Future<List<SpotList>> getUserSpotLists() async {
     if (!_isAuthenticated()) {
-      return [];
-    }
-
-    if (!_hasFeatureAccess()) {
       return [];
     }
 

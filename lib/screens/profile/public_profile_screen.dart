@@ -16,13 +16,10 @@ import '../../services/snackbar_service.dart';
 import '../../models/user.dart' as app_user;
 import '../../models/spot_list.dart';
 import '../../services/spot_list_service.dart';
-import '../../services/saved_spot_list_service.dart';
-import '../../services/feature_access_service.dart';
 import '../../widgets/instagram_button.dart';
 import '../../utils/web_meta_utils.dart';
 import '../../widgets/page_scaffold.dart';
-import '../../widgets/custom_text_field.dart';
-import '../../widgets/spot_list_visibility_selector.dart';
+import '../../widgets/spot_list_summary_tile.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/spot_list_localization.dart';
 import 'package:flutter/services.dart';
@@ -44,10 +41,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   _lastUserIdOrUsername; // Track the last userIdOrUsername used to create the future
   bool _isUploadingProfilePicture = false;
   final ProfilePictureService _profilePictureService = ProfilePictureService();
-  final GlobalKey _savedSpotListsSectionKey = GlobalKey();
-  bool _didScrollToSavedSpotListsSection = false;
-
-  String _spotCountLabel(int count) => _l10n.exploreSpotCountShort(count);
 
   @override
   void didChangeDependencies() {
@@ -57,7 +50,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         _lastUserIdOrUsername != widget.userIdOrUsername) {
       _loadProfile();
     }
-    _scheduleScrollToSavedSpotListsSection();
   }
 
   @override
@@ -66,32 +58,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     // If userIdOrUsername changed, reload the profile
     if (oldWidget.userIdOrUsername != widget.userIdOrUsername) {
       _loadProfile();
-      _didScrollToSavedSpotListsSection = false;
     }
-  }
-
-  void _scheduleScrollToSavedSpotListsSection() {
-    final section = GoRouterState.of(context).uri.queryParameters['section'];
-    if (section != 'saved-lists') {
-      _didScrollToSavedSpotListsSection = false;
-      return;
-    }
-    if (_didScrollToSavedSpotListsSection) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final ctx = _savedSpotListsSectionKey.currentContext;
-      if (ctx != null) {
-        Scrollable.ensureVisible(
-          ctx,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-          alignment: 0.12,
-        );
-        setState(() {
-          _didScrollToSavedSpotListsSection = true;
-        });
-      }
-    });
   }
 
   @override
@@ -155,7 +122,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       future: _profileFuture,
       builder: (context, snapshot) {
         final user = snapshot.data;
-        final displayName = user?.displayName ?? _l10n.profileDefaultDisplayName;
+        final displayName =
+            user?.displayName ?? _l10n.profileDefaultDisplayName;
         final userIdOrUsername =
             user?.username != null && user!.username!.isNotEmpty
             ? user.username!
@@ -287,975 +255,315 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     return SingleChildScrollView(
       child: Column(
         children: [
-              // Profile Header
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Stack(
-                    children: [
-                      Column(
-                        children: [
-                          // Private profile badge (only for own profile)
-                          if (isOwnProfile && !user.isPublicProfile) ...[
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.outline.withValues(alpha: 0.3),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.visibility_off,
-                                    size: 16,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    spotListVisibilityDescription(
-                                      _l10n,
-                                      SpotListVisibility.private,
-                                    ),
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-
-                          // Profile Picture
-                          Stack(
-                            children: [
-                              GestureDetector(
-                                onTap:
-                                    isOwnProfile && !_isUploadingProfilePicture
-                                    ? _showProfilePictureOptions
-                                    : null,
-                                child: CircleAvatar(
-                                  key: ValueKey(user.photoURL ?? 'no-photo'),
-                                  radius: 50,
-                                  backgroundColor: Theme.of(
-                                    context,
-                                  ).colorScheme.primary,
-                                  backgroundImage:
-                                      user.photoURL != null &&
-                                          user.photoURL!.isNotEmpty
-                                      ? NetworkImage(
-                                          _getCacheBustedImageUrl(
-                                            user.photoURL!,
-                                          ),
-                                        )
-                                      : null,
-                                  child: _isUploadingProfilePicture
-                                      ? const CircularProgressIndicator(
-                                          color: Colors.white,
-                                        )
-                                      : (user.photoURL == null ||
-                                            user.photoURL!.isEmpty)
-                                      ? Text(
-                                          user.displayName
-                                                  ?.substring(0, 1)
-                                                  .toUpperCase() ??
-                                              'U',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .headlineMedium
-                                              ?.copyWith(
-                                                color: Colors.white,
-                                              ),
-                                        )
-                                      : null,
-                                ),
-                              ),
-                              if (isOwnProfile && !_isUploadingProfilePicture)
-                                Positioned(
-                                  bottom: 0,
-                                  right: 0,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.surface,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    padding: const EdgeInsets.all(6),
-                                    child: Icon(
-                                      Icons.camera_alt,
-                                      size: 20,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onPrimary,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // User Name
-                          Text(
-                            user.displayName ?? _l10n.profileDefaultDisplayName,
-                            style: Theme.of(context).textTheme.headlineSmall,
-                          ),
-
-                          // Username (if set)
-                          if (user.username != null &&
-                              user.username!.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              '@${user.username}',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                  ),
-                            ),
-                          ],
-
-                          if (user.instagramUrl != null &&
-                              user.instagramUrl!.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Builder(
-                              builder: (context) {
-                                final handle =
-                                    UrlService.extractInstagramHandle(
-                                      user.instagramUrl!,
-                                    );
-                                return handle != null
-                                    ? ConstrainedBox(
-                                        constraints: const BoxConstraints(
-                                          maxWidth: 350,
-                                        ),
-                                        child: InstagramButton(
-                                          handle: handle,
-                                          label: '@$handle',
-                                        ),
-                                      )
-                                    : TextButton.icon(
-                                        onPressed: () =>
-                                            UrlService.openInstagramProfile(
-                                              user.instagramUrl!,
-                                              context,
-                                            ),
-                                        icon: const Icon(
-                                          Icons.camera_alt_outlined,
-                                          size: 18,
-                                        ),
-                                        label: Text(
-                                          UrlService.getInstagramDisplayText(
-                                            user.instagramUrl!,
-                                          ),
-                                        ),
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                          visualDensity: VisualDensity.compact,
-                                        ),
-                                      );
-                              },
-                            ),
-                          ],
-
-                          // Member since
-                          if (user.createdAt != null) ...[
-                            const SizedBox(height: 16),
-                            Text(
-                              _l10n.publicProfileMemberSince(
-                                _formatDate(user.createdAt!),
-                              ),
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.6),
-                                  ),
-                            ),
-                          ],
-
-                          // User Stats
-                          const SizedBox(height: 16),
-                          _buildUserStats(context, user.id),
-                        ],
-                      ),
-                      if (isOwnProfile)
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: IconButton(
-                            icon: const Icon(Icons.edit),
-                            tooltip: _l10n.publicProfileEditProfileTooltip,
-                            onPressed: () =>
-                                _showProfileSettingsSheet(context, user),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Spot tracking (Want to visit / Been to) - own profile only
-              if (isOwnProfile) _buildSpotTrackingSection(context),
-
-              // Spot lists (owned + saved from others when applicable)
-              _buildSpotListsSection(
-                context,
-                profileUserId: user.id,
-                isOwnProfile: isOwnProfile,
-              ),
-            ],
-          ),
-    );
-  }
-
-  Widget _buildSpotTrackingSection(BuildContext context) {
-    return Consumer<AuthService>(
-      builder: (context, authService, child) {
-        final wantToVisit = authService.userProfile?.wantToVisit ?? [];
-        final visited = authService.userProfile?.visited ?? [];
-        final wantCount = wantToVisit.length;
-        final visitedCount = visited.length;
-
-        return Padding(
-          padding: const EdgeInsets.only(top: 16),
-          child: Card(
+          // Profile Header
+          Card(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              padding: const EdgeInsets.all(24.0),
+              child: Stack(
                 children: [
-                  Text(
-                    _l10n.publicProfileSpotTracking,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  if (wantCount == 0 && visitedCount == 0)
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.bookmark_border,
-                            size: 40,
+                  Column(
+                    children: [
+                      // Private profile badge (only for own profile)
+                      if (isOwnProfile && !user.isPublicProfile) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
                             color: Theme.of(
                               context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.3),
+                            ).colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outline.withValues(alpha: 0.3),
+                            ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _l10n.publicProfileNoSpotsYet,
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface
-                                      .withValues(alpha: 0.6),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.visibility_off,
+                                size: 16,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                spotListVisibilityDescription(
+                                  _l10n,
+                                  SpotListVisibility.private,
                                 ),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _l10n.publicProfileAddSpotsFromSpotDetailPages,
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface
-                                      .withValues(alpha: 0.5),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // Profile Picture
+                      Stack(
+                        children: [
+                          GestureDetector(
+                            onTap: isOwnProfile && !_isUploadingProfilePicture
+                                ? _showProfilePictureOptions
+                                : null,
+                            child: CircleAvatar(
+                              key: ValueKey(user.photoURL ?? 'no-photo'),
+                              radius: 50,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.primary,
+                              backgroundImage:
+                                  user.photoURL != null &&
+                                      user.photoURL!.isNotEmpty
+                                  ? NetworkImage(
+                                      _getCacheBustedImageUrl(user.photoURL!),
+                                    )
+                                  : null,
+                              child: _isUploadingProfilePicture
+                                  ? const CircularProgressIndicator(
+                                      color: Colors.white,
+                                    )
+                                  : (user.photoURL == null ||
+                                        user.photoURL!.isEmpty)
+                                  ? Text(
+                                      user.displayName
+                                              ?.substring(0, 1)
+                                              .toUpperCase() ??
+                                          'U',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineMedium
+                                          ?.copyWith(color: Colors.white),
+                                    )
+                                  : null,
+                            ),
+                          ),
+                          if (isOwnProfile && !_isUploadingProfilePicture)
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surface,
+                                    width: 2,
+                                  ),
                                 ),
-                          ),
+                                padding: const EdgeInsets.all(6),
+                                child: Icon(
+                                  Icons.camera_alt,
+                                  size: 20,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimary,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
-                    ),
-                  if (wantCount > 0)
-                    Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: const Icon(Icons.bookmark_outlined),
-                        title: Text(_l10n.spotDetailWantToVisit),
-                        subtitle: Text(
-                          _spotCountLabel(wantCount),
-                          style: Theme.of(context).textTheme.bodySmall
+
+                      const SizedBox(height: 16),
+
+                      // User Name
+                      Text(
+                        user.displayName ?? _l10n.profileDefaultDisplayName,
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+
+                      // Username (if set)
+                      if (user.username != null &&
+                          user.username!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          '@${user.username}',
+                          style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface
-                                    .withValues(alpha: 0.6),
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                         ),
-                        trailing: const Icon(
-                          Icons.arrow_forward_ios,
-                          size: 16,
+                      ],
+
+                      if (user.instagramUrl != null &&
+                          user.instagramUrl!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Builder(
+                          builder: (context) {
+                            final handle = UrlService.extractInstagramHandle(
+                              user.instagramUrl!,
+                            );
+                            return handle != null
+                                ? ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 350,
+                                    ),
+                                    child: InstagramButton(
+                                      handle: handle,
+                                      label: '@$handle',
+                                    ),
+                                  )
+                                : TextButton.icon(
+                                    onPressed: () =>
+                                        UrlService.openInstagramProfile(
+                                          user.instagramUrl!,
+                                          context,
+                                        ),
+                                    icon: const Icon(
+                                      Icons.camera_alt_outlined,
+                                      size: 18,
+                                    ),
+                                    label: Text(
+                                      UrlService.getInstagramDisplayText(
+                                        user.instagramUrl!,
+                                      ),
+                                    ),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                  );
+                          },
                         ),
-                        onTap: () => context.push('/profile/want-to-visit'),
-                      ),
-                    ),
-                  if (visitedCount > 0)
-                    Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: const Icon(Icons.check_circle_outline),
-                        title: Text(_l10n.publicProfileBeenTo),
-                        subtitle: Text(
-                          _spotCountLabel(visitedCount),
+                      ],
+
+                      // Member since
+                      if (user.createdAt != null) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          _l10n.publicProfileMemberSince(
+                            _formatDate(user.createdAt!),
+                          ),
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface
-                                    .withValues(alpha: 0.6),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.6),
                               ),
                         ),
-                        trailing: const Icon(
-                          Icons.arrow_forward_ios,
-                          size: 16,
-                        ),
-                        onTap: () => context.push('/profile/visited'),
-                      ),
-                    ),
-                  Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: const Icon(Icons.how_to_reg_outlined),
-                      title: Text(_l10n.publicProfileMyCheckIns),
-                      subtitle: Text(
-                        _l10n.publicProfileMyCheckInsSubtitle,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.6),
-                            ),
-                      ),
-                      trailing: const Icon(
-                        Icons.arrow_forward_ios,
-                        size: 16,
-                      ),
-                      onTap: () => context.push('/profile/check-ins'),
-                    ),
+                      ],
+
+                      // User Stats
+                      const SizedBox(height: 16),
+                      _buildUserStats(context, user.id),
+                    ],
                   ),
+                  if (isOwnProfile)
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: IconButton(
+                        icon: const Icon(Icons.edit),
+                        tooltip: _l10n.publicProfileEditProfileTooltip,
+                        onPressed: () =>
+                            _showProfileSettingsSheet(context, user),
+                      ),
+                    ),
                 ],
               ),
             ),
           ),
-        );
-      },
+
+          // Public lists only (Want to visit, training, and list management
+          // live on Account).
+          _buildPublicSpotListsSection(context, profileUserId: user.id),
+        ],
+      ),
     );
   }
 
-  Widget _buildSpotListsSection(
+  Widget _buildPublicSpotListsSection(
     BuildContext context, {
     required String profileUserId,
-    required bool isOwnProfile,
   }) {
-    // Listen to AuthService so when userProfile / featureAccess loads after the first
-    // frame we rebuild. Otherwise unifiedOwnAndSaved stays false and the Saved subsection
-    // never appears (Consumer2 alone does not subscribe to AuthService).
-    return Consumer<AuthService>(
-      builder: (context, authService, _) {
-        final featureAccessService = FeatureAccessService(authService);
-        final canManageLists =
-            isOwnProfile && featureAccessService.hasFeatureAccess('spotLists');
-        // Unified card: owned + saved for any signed-in user on own profile (saved lists
-        // are not gated on spotLists; Yours / + only when canManageLists).
-        final unifiedSpotListsCard =
-            isOwnProfile && authService.isAuthenticated;
-
-        return Consumer2<SpotListService, SavedSpotListService>(
-          builder: (context, spotListService, savedSpotListService, _) {
-            return FutureBuilder<List<SpotList>>(
-              future: spotListService.getSpotListsByUser(profileUserId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Card(
-                      key: unifiedSpotListsCard
-                          ? _savedSpotListsSectionKey
-                          : null,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          'Error loading lists: ${snapshot.error}',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                        ),
-                      ),
-                    ),
-                  );
-                }
-
-                final lists = snapshot.data ?? [];
-
-                if (lists.isEmpty && !isOwnProfile) {
-                  return const SizedBox.shrink();
-                }
-
-                if (unifiedSpotListsCard) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Card(
-                      key: _savedSpotListsSectionKey,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  _l10n.publicProfileSpotLists,
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                ),
-                                if (canManageLists)
-                                  IconButton(
-                                    icon: const Icon(Icons.add),
-                                    tooltip: _l10n.spotDetailCreateNewList,
-                                    onPressed: () => _showCreateListDialog(
-                                      context,
-                                      spotListService,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            if (canManageLists || lists.isNotEmpty) ...[
-                              const SizedBox(height: 12),
-                              Text(
-                                _l10n.publicProfileYours,
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 8),
-                              if (lists.isEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.list_outlined,
-                                        size: 48,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withValues(alpha: 0.3),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        _l10n.spotDetailNoListsYet,
-                                        textAlign: TextAlign.center,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withValues(alpha: 0.6),
-                                            ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      if (canManageLists)
-                                        TextButton(
-                                          onPressed: () =>
-                                              _showCreateListDialog(
-                                                context,
-                                                spotListService,
-                                              ),
-                                          child: Text(
-                                            _l10n.publicProfileCreateYourFirstList,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                )
-                              else
-                                Column(
-                                  children: lists.map((list) {
-                                    final visibilityAndCount =
-                                        '${list.visibility.label} • ${list.spotCount} ${list.spotCount == 1 ? 'spot' : 'spots'}';
-                                    return Card(
-                                      margin: const EdgeInsets.only(bottom: 8),
-                                      child: ListTile(
-                                        title: Text(list.name),
-                                        subtitle: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            if (list.description != null &&
-                                                list.description!.isNotEmpty)
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                  top: 4,
-                                                ),
-                                                child: Text(
-                                                  list.description!,
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                  maxLines: 2,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                top: 4,
-                                              ),
-                                              child: Text(
-                                                visibilityAndCount,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodySmall
-                                                    ?.copyWith(
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .onSurface
-                                                          .withValues(
-                                                            alpha: 0.6,
-                                                          ),
-                                                    ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        trailing: const Icon(
-                                          Icons.arrow_forward_ios,
-                                          size: 16,
-                                        ),
-                                        onTap: () {
-                                          if (list.id != null) {
-                                            context.push('/list/${list.id}');
-                                          }
-                                        },
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                              const SizedBox(height: 20),
-                            ] else ...[
-                              const SizedBox(height: 12),
-                            ],
-                            Text(
-                              _l10n.publicProfileSaved,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            _buildSavedSpotListsSubsection(
-                              context,
-                              savedSpotListService,
-                              spotListService,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }
-
-                return Padding(
-                  padding: const EdgeInsets.only(top: 16),
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                isOwnProfile
-                                    ? _l10n.publicProfileSpotLists
-                                    : _l10n.publicProfilePublicSpotLists,
-                                style: Theme.of(context).textTheme.titleLarge,
-                              ),
-                              if (canManageLists)
-                                IconButton(
-                                  icon: const Icon(Icons.add),
-                                  tooltip: _l10n.spotDetailCreateNewList,
-                                  onPressed: () => _showCreateListDialog(
-                                    context,
-                                    spotListService,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          if (lists.isEmpty) ...[
-                            Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.list_outlined,
-                                    size: 48,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.3),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    _l10n.spotDetailNoListsYet,
-                                    textAlign: TextAlign.center,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.6),
-                                        ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  if (canManageLists)
-                                    TextButton(
-                                      onPressed: () => _showCreateListDialog(
-                                        context,
-                                        spotListService,
-                                      ),
-                                      child: Text(
-                                        _l10n.publicProfileCreateYourFirstList,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ] else ...[
-                            Column(
-                              children: lists.map((list) {
-                                final visibilityAndCount =
-                                    '${list.visibility.label} • ${list.spotCount} ${list.spotCount == 1 ? 'spot' : 'spots'}';
-                                return Card(
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  child: ListTile(
-                                    title: Text(list.name),
-                                    subtitle: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        if (list.description != null &&
-                                            list.description!.isNotEmpty)
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                              top: 4,
-                                            ),
-                                            child: Text(
-                                              list.description!,
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 4,
-                                          ),
-                                          child: Text(
-                                            visibilityAndCount,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall
-                                                ?.copyWith(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurface
-                                                      .withValues(alpha: 0.6),
-                                                ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    trailing: const Icon(
-                                      Icons.arrow_forward_ios,
-                                      size: 16,
-                                    ),
-                                    onTap: () {
-                                      if (list.id != null) {
-                                        context.push('/list/${list.id}');
-                                      }
-                                    },
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-  /// Saved lists subsection (stream + resolve). Used inside unified Spot lists card.
-  Widget _buildSavedSpotListsSubsection(
-    BuildContext context,
-    SavedSpotListService savedSpotListService,
-    SpotListService spotListService,
-  ) {
-    return StreamBuilder<List<String>>(
-      stream: savedSpotListService.watchSavedListIdsOrdered(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting &&
-            !snapshot.hasData) {
-          return const Padding(
-            padding: EdgeInsets.all(24.0),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-        final ids = snapshot.data ?? [];
-        if (ids.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.collections_bookmark_outlined,
-                  size: 48,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.3),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _l10n.publicProfileNoSavedListsYet,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _l10n.publicProfileSaveListsHint,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.5),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
+    return Consumer<SpotListService>(
+      builder: (context, spotListService, _) {
         return FutureBuilder<List<SpotList>>(
-          key: ValueKey(ids.join(',')),
-          future: savedSpotListService.resolveSavedListIds(
-            spotListService,
-            ids,
-          ),
-          builder: (context, listSnap) {
-            if (listSnap.connectionState == ConnectionState.waiting) {
+          future: spotListService.getSpotListsByUser(profileUserId),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
               return const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-            final savedLists = listSnap.data ?? [];
-            if (savedLists.isEmpty) {
-              return Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  _l10n.publicProfileSavedListsUnavailable,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+                padding: EdgeInsets.only(top: 16),
+                child: Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Center(child: CircularProgressIndicator()),
                   ),
                 ),
               );
             }
 
-            return Column(
-              children: savedLists.map((list) {
-                final visibilityAndCount =
-                    '${list.visibility.label} • ${list.spotCount} ${list.spotCount == 1 ? 'spot' : 'spots'}';
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: Icon(
-                      Icons.bookmark,
-                      color: Theme.of(context).colorScheme.primary,
+            if (snapshot.hasError) {
+              return Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      _l10n.spotListsHubCouldNotLoad,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
                     ),
-                    title: Text(list.name),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (list.description != null &&
-                            list.description!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              list.description!,
-                              style: Theme.of(context).textTheme.bodySmall,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            visibilityAndCount,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface
-                                      .withValues(alpha: 0.6),
-                                ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      if (list.id != null) {
-                        context.push('/list/${list.id}');
-                      }
-                    },
                   ),
-                );
-              }).toList(),
+                ),
+              );
+            }
+
+            final lists = (snapshot.data ?? [])
+                .where((list) => list.visibility == SpotListVisibility.public)
+                .toList();
+            if (lists.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            return Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        _l10n.publicProfileSpotLists,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      ...lists.map(
+                        (list) => SpotListSummaryTile(
+                          list: list,
+                          onTap: () {
+                            final id = list.id;
+                            if (id != null) {
+                              context.push('/list/$id');
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             );
           },
         );
       },
-    );
-  }
-
-  void _showCreateListDialog(
-    BuildContext context,
-    SpotListService spotListService,
-  ) {
-    final nameController = TextEditingController();
-    SpotListVisibility selectedVisibility = SpotListVisibility.unlisted;
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: Text(_l10n.spotDetailCreateNewList),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CustomTextField(
-                  controller: nameController,
-                  labelText: _l10n.spotDetailListNameLabel,
-                  hintText: _l10n.spotDetailListNameHint,
-                  prefixIcon: Icons.list_alt_outlined,
-                  textCapitalization: TextCapitalization.words,
-                  autofocus: true,
-                ),
-                const SizedBox(height: 16),
-                SpotListVisibilitySelector(
-                  value: selectedVisibility,
-                  onChanged: (value) {
-                    setDialogState(() {
-                      selectedVisibility = value;
-                    });
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(_l10n.profileCancel),
-            ),
-            TextButton(
-              onPressed: () async {
-                if (nameController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    SnackBar(content: Text(_l10n.spotDetailListNameEmpty)),
-                  );
-                  return;
-                }
-
-                final listId = await spotListService.createSpotList(
-                  nameController.text.trim(),
-                  visibility: selectedVisibility,
-                );
-
-                if (dialogContext.mounted) {
-                  Navigator.pop(dialogContext);
-                  if (listId != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(_l10n.publicProfileListCreatedSuccessfully),
-                      ),
-                    );
-                  } else if (spotListService.error != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(spotListService.error!)),
-                    );
-                  }
-                }
-              },
-              child: Text(_l10n.spotDetailCreateButton),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1554,7 +862,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           );
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(_l10n.publicProfileProfilePictureUpdatedSuccessfully),
+              content: Text(
+                _l10n.publicProfileProfilePictureUpdatedSuccessfully,
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -1661,7 +971,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(_l10n.publicProfileProfilePictureRemovedSuccessfully),
+              content: Text(
+                _l10n.publicProfileProfilePictureRemovedSuccessfully,
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -1791,12 +1103,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       children: [
         Icon(icon, size: 24, color: Theme.of(context).colorScheme.primary),
         const SizedBox(height: 4),
-        Text(
-          count.toString(),
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge,
-        ),
+        Text(count.toString(), style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 2),
         Text(
           label,
@@ -1912,9 +1219,7 @@ class _ProfileSettingsSheetContentState
             children: [
               Text(
                 _l10n.publicProfileSettingsTitle,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge,
+                style: Theme.of(context).textTheme.titleLarge,
               ),
               const Spacer(),
               IconButton(
@@ -1957,9 +1262,7 @@ class _ProfileSettingsSheetContentState
       children: [
         Text(
           _l10n.publicProfileEmailLabel,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium,
+          style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
         Text(
@@ -1992,9 +1295,7 @@ class _ProfileSettingsSheetContentState
       children: [
         Text(
           _l10n.publicProfileDisplayNameLabel,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium,
+          style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
         if (!_isEditingDisplayName) ...[
@@ -2062,10 +1363,10 @@ class _ProfileSettingsSheetContentState
 
                         if (rawInput.length > _displayNameMaxLength) {
                           setState(() {
-                            _displayNameError =
-                                _l10n.publicProfileDisplayNameMaxLengthError(
-                              _displayNameMaxLength,
-                            );
+                            _displayNameError = _l10n
+                                .publicProfileDisplayNameMaxLengthError(
+                                  _displayNameMaxLength,
+                                );
                           });
                           return;
                         }
@@ -2135,9 +1436,7 @@ class _ProfileSettingsSheetContentState
       children: [
         Text(
           _l10n.publicProfileUsernameLabel,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium,
+          style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
         if (!_isEditingUsername) ...[
@@ -2229,8 +1528,7 @@ class _ProfileSettingsSheetContentState
                           if (mounted) {
                             setState(() {
                               _isCheckingUsername = false;
-                              _usernameError =
-                                  _l10n.publicProfileUsernameTaken;
+                              _usernameError = _l10n.publicProfileUsernameTaken;
                             });
                           }
                           return;
@@ -2298,9 +1596,7 @@ class _ProfileSettingsSheetContentState
       children: [
         Text(
           _l10n.publicProfileInstagramLabel,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium,
+          style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
         if (!_isEditingInstagramUrl) ...[
@@ -2462,9 +1758,7 @@ class _ProfileSettingsSheetContentState
       children: [
         Text(
           _l10n.publicProfilePrivacyTitle,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium,
+          style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
         Row(

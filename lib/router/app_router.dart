@@ -42,6 +42,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/profile/my_check_ins_screen.dart';
 import '../screens/profile/account_settings_screen.dart';
 import '../screens/profile/notifications_screen.dart';
+import '../screens/profile/spot_lists_hub_screen.dart';
 import '../screens/profile/public_profile_screen.dart';
 import '../models/spot.dart';
 import '../services/spot_service.dart';
@@ -359,6 +360,7 @@ class AppRouter {
             if (path == '/profile/want-to-visit' ||
                 path == '/profile/visited' ||
                 path == '/profile/check-ins' ||
+                path == '/profile/lists' ||
                 path == '/profile/settings' ||
                 path == '/profile/notifications') {
               return null;
@@ -381,6 +383,10 @@ class AppRouter {
             GoRoute(
               path: 'check-ins',
               builder: (context, state) => const MyCheckInsScreen(),
+            ),
+            GoRoute(
+              path: 'lists',
+              builder: (context, state) => const SpotListsHubScreen(),
             ),
             GoRoute(
               path: 'settings',
@@ -513,9 +519,7 @@ class AppRouter {
                   builder: (context, state) {
                     final runId = state.pathParameters['runId']!;
                     final pairIndex =
-                        int.tryParse(
-                          state.pathParameters['pairIndex'] ?? '',
-                        ) ??
+                        int.tryParse(state.pathParameters['pairIndex'] ?? '') ??
                         0;
                     return DuplicateSpotsPairReviewScreen(
                       runId: runId,

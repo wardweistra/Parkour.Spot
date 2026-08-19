@@ -10,7 +10,6 @@ import '../../models/spot.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
-import '../../services/feature_access_service.dart';
 import '../../services/search_state_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../widgets/spot_card.dart';
@@ -609,8 +608,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     final userId = authService.currentUser?.uid;
     if (userId == null || _list!.createdBy != userId) return false;
 
-    final featureAccessService = FeatureAccessService(authService);
-    return featureAccessService.hasFeatureAccess('spotLists');
+    return true;
   }
 
   /// Show save affordance for guests and non-owners (not for the list creator).

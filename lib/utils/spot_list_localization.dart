@@ -70,6 +70,10 @@ extension SpotListVisibilityLocalization on SpotListVisibility {
   String localizedListLabel(AppLocalizations l10n) =>
       spotListVisibilitySummary(l10n, this);
 
+  String localizedVisibilityAndCount(AppLocalizations l10n, int spotCount) {
+    return '${localizedListLabel(l10n)} • ${l10n.exploreSpotCountShort(spotCount)}';
+  }
+
   IconData get icon {
     switch (this) {
       case SpotListVisibility.public:

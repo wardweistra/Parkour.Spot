@@ -66,6 +66,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileViewEditSubtitle => 'View and edit your profile';
 
   @override
+  String get accountSpotListsSubtitle =>
+      'Want to visit, been to, and lists you create or save';
+
+  @override
+  String get spotListsHubSignInPrompt =>
+      'Sign in to view and manage your lists';
+
+  @override
+  String get spotListsHubCouldNotLoad =>
+      'Could not load lists. Check your connection and try again.';
+
+  @override
   String get notificationsTitle => 'Notifications';
 
   @override
@@ -2840,10 +2852,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get spotListSaveSignInBody =>
-      'Save someone else’s spot list to your profile so you can open it again later.';
+      'Save someone else’s spot list to your lists so you can open it again later.';
 
   @override
-  String get spotListSaveSavedToProfile => 'List saved to your profile';
+  String get spotListSaveSavedToProfile => 'List saved to your lists';
 
   @override
   String get spotListSaveCouldNotSaveList => 'Could not save list';

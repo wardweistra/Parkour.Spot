@@ -66,6 +66,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileViewEditSubtitle => 'Ver e editar o seu perfil';
 
   @override
+  String get accountSpotListsSubtitle =>
+      'Quero visitar, já visitei e listas que crias ou guardas';
+
+  @override
+  String get spotListsHubSignInPrompt =>
+      'Inicia sessão para ver e gerir as tuas listas';
+
+  @override
+  String get spotListsHubCouldNotLoad =>
+      'Não foi possível carregar as listas. Verifica a ligação e tenta novamente.';
+
+  @override
   String get notificationsTitle => 'Notificações';
 
   @override
@@ -2870,10 +2882,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get spotListSaveSignInBody =>
-      'Guarda a lista de spots de outra pessoa no teu perfil para poderes abri-la novamente mais tarde.';
+      'Guarda a lista de spots de outra pessoa nas tuas listas para poderes abri-la novamente mais tarde.';
 
   @override
-  String get spotListSaveSavedToProfile => 'Lista guardada no teu perfil';
+  String get spotListSaveSavedToProfile => 'Lista guardada nas tuas listas';
 
   @override
   String get spotListSaveCouldNotSaveList => 'Não foi possível guardar a lista';

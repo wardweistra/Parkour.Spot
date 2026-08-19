@@ -5,7 +5,7 @@ import '../services/auth_service.dart';
 import '../services/spot_list_service.dart';
 
 /// Bookmarks of other users' spot lists under `users/{uid}/savedSpotLists/{listId}`.
-/// Available to all signed-in users (not gated on the `spotLists` feature flag).
+/// Available to all signed-in users.
 class SavedSpotListService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final AuthService _authService;
@@ -31,7 +31,7 @@ class SavedSpotListService extends ChangeNotifier {
         .collection('savedSpotLists');
   }
 
-  /// Signed-in users can save others' lists (no `spotLists` feature flag).
+  /// Signed-in users can save others' lists.
   bool canUseSavedSpotLists() {
     return _authService.isAuthenticated;
   }

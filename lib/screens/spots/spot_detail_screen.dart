@@ -38,7 +38,6 @@ import '../../services/spot_list_service.dart';
 import '../../services/spot_tracking_service.dart';
 import '../../services/spot_check_in_service.dart';
 import '../../services/spot_training_plan_service.dart';
-import '../../services/feature_access_service.dart';
 import '../../utils/marker_icon_utils.dart';
 import '../../utils/upcoming_linked_events_utils.dart';
 import '../../widgets/linked_upcoming_event_panel.dart';
@@ -2177,20 +2176,6 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       context,
       listen: false,
     );
-    final authService = Provider.of<AuthService>(context, listen: false);
-    final featureAccessService = FeatureAccessService(authService);
-
-    if (!featureAccessService.hasFeatureAccess('spotLists')) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_l10n.spotDetailNoSpotListsAccess),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
     final lists = await spotListService.getUserSpotLists();
     final spotId = widget.spot.id!;
 
@@ -2223,10 +2208,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           );
         },
         createList: ({required name, required visibility}) {
-          return spotListService.createSpotList(
-            name,
-            visibility: visibility,
-          );
+          return spotListService.createSpotList(name, visibility: visibility);
         },
         onOpenList: (listId) => dialogContext.push('/list/$listId'),
         errorMessage: () => spotListService.error,
@@ -7771,10 +7753,7 @@ class _SpotSaveMenu extends StatelessWidget {
         final visited = authService.userProfile?.visited ?? [];
         final inWantToVisit = wantToVisit.contains(spotId);
         final inVisited = visited.contains(spotId);
-        final featureAccessService = FeatureAccessService(authService);
-        final hasSpotListAccess =
-            authService.isAuthenticated &&
-            featureAccessService.hasFeatureAccess('spotLists');
+        final canUseCustomLists = authService.isAuthenticated;
 
         return Consumer<SpotTrackingService>(
           builder: (context, trackingService, _) {
@@ -7959,7 +7938,7 @@ class _SpotSaveMenu extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (hasSpotListAccess) ...[
+                  if (canUseCustomLists) ...[
                     const PopupMenuDivider(),
                     PopupMenuItem<_SpotSaveMenuAction>(
                       value: _SpotSaveMenuAction.addToCustomList,

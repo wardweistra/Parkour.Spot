@@ -289,9 +289,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                         user.photoURL != null &&
                                         user.photoURL!.isNotEmpty
                                     ? NetworkImage(
-                                        _getCacheBustedImageUrl(
-                                          user.photoURL!,
-                                        ),
+                                        _getCacheBustedImageUrl(user.photoURL!),
                                       )
                                     : null,
                                 child: (user?.photoURL?.isEmpty ?? true)
@@ -343,8 +341,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                               Icon(
                                 Icons.arrow_forward_ios,
                                 size: 16,
-                                color: Theme.of(context).colorScheme.onSurface
-                                    .withValues(alpha: 0.5),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.5),
                               ),
                             ],
                           ),
@@ -353,10 +352,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                       const SizedBox(height: 8),
                       Divider(
                         height: 1,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .outlineVariant
-                            .withValues(alpha: 0.5),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outlineVariant.withValues(alpha: 0.5),
                       ),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -386,6 +384,20 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ),
                             _buildActionTile(
                               context,
+                              Icons.list_alt_outlined,
+                              l10n.publicProfileSpotLists,
+                              l10n.accountSpotListsSubtitle,
+                              () => context.push('/profile/lists'),
+                            ),
+                            _buildActionTile(
+                              context,
+                              Icons.how_to_reg_outlined,
+                              l10n.publicProfileMyCheckIns,
+                              l10n.publicProfileMyCheckInsSubtitle,
+                              () => context.push('/profile/check-ins'),
+                            ),
+                            _buildActionTile(
+                              context,
                               Icons.settings_outlined,
                               l10n.profileSettingsTitle,
                               l10n.profileSettingsSubtitle,
@@ -407,16 +419,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   return StreamBuilder<int>(
                                     initialData:
                                         Provider.of<EventReportService>(
-                                      context,
-                                      listen: false,
-                                    ).newReportCount,
+                                          context,
+                                          listen: false,
+                                        ).newReportCount,
                                     stream: Provider.of<EventReportService>(
                                       context,
                                       listen: false,
                                     ).watchNewReportCount(),
                                     builder: (context, eventSnapshot) {
-                                      final totalNew = spotNew +
-                                          (eventSnapshot.data ?? 0);
+                                      final totalNew =
+                                          spotNew + (eventSnapshot.data ?? 0);
                                       return _buildActionTile(
                                         context,
                                         Icons.shield,
@@ -427,8 +439,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                                           // release Firestore listeners before moderator flows.
                                           context.go('/moderator');
                                         },
-                                        badgeCount:
-                                            totalNew > 0 ? totalNew : null,
+                                        badgeCount: totalNew > 0
+                                            ? totalNew
+                                            : null,
                                       );
                                     },
                                   );
@@ -873,10 +886,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     final scheme = Theme.of(context).colorScheme;
     Widget leading = Icon(icon, color: scheme.primary);
     if (badgeCount != null && badgeCount > 0) {
-      leading = Badge(
-        label: Text('$badgeCount'),
-        child: leading,
-      );
+      leading = Badge(label: Text('$badgeCount'), child: leading);
     }
     return Material(
       color: Colors.transparent,

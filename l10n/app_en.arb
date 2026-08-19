@@ -72,6 +72,18 @@
   "@profileViewEditSubtitle": {
     "description": "Account card subtitle linking to full profile"
   },
+  "accountSpotListsSubtitle": "Want to visit, been to, and lists you create or save",
+  "@accountSpotListsSubtitle": {
+    "description": "Account tab: subtitle for the Spot lists row"
+  },
+  "spotListsHubSignInPrompt": "Sign in to view and manage your lists",
+  "@spotListsHubSignInPrompt": {
+    "description": "Spot lists hub: prompt when signed out"
+  },
+  "spotListsHubCouldNotLoad": "Could not load lists. Check your connection and try again.",
+  "@spotListsHubCouldNotLoad": {
+    "description": "Spot lists hub: error loading owned lists"
+  },
   "notificationsTitle": "Notifications",
   "@notificationsTitle": {
     "description": "Notifications inbox screen title and Account tab row"
@@ -2538,11 +2550,11 @@
   "@spotListSaveSignInTitle": {
     "description": "Title in save-list popup shown to signed-out users"
   },
-  "spotListSaveSignInBody": "Save someone else’s spot list to your profile so you can open it again later.",
+  "spotListSaveSignInBody": "Save someone else’s spot list to your lists so you can open it again later.",
   "@spotListSaveSignInBody": {
     "description": "Description in save-list popup shown to signed-out users"
   },
-  "spotListSaveSavedToProfile": "List saved to your profile",
+  "spotListSaveSavedToProfile": "List saved to your lists",
   "@spotListSaveSavedToProfile": {
     "description": "Snackbar when a list is saved"
   },

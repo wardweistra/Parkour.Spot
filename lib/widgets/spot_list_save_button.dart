@@ -175,14 +175,8 @@ class SpotListSaveButton extends StatelessWidget {
                   }
                   return;
                 case _SpotListSaveAction.viewSaved:
-                  final auth = Provider.of<AuthService>(context, listen: false);
-                  final uid = auth.currentUser?.uid;
-                  if (uid == null || !context.mounted) return;
-                  final profile = auth.userProfile;
-                  final path = profile?.username?.isNotEmpty == true
-                      ? '/user/${profile!.username}'
-                      : '/user/$uid';
-                  context.push('$path?section=saved-lists');
+                  if (!context.mounted) return;
+                  context.push('/profile/lists');
                   return;
               }
             }
@@ -195,7 +189,9 @@ class SpotListSaveButton extends StatelessWidget {
                   enabled: !isBusy,
                   tooltip: tooltip,
                   position: PopupMenuPosition.under,
-                  borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+                  borderRadius: BorderRadius.circular(
+                    SpotDetailUi.surfaceRadius,
+                  ),
                   splashRadius: 20,
                   onSelected: handleAction,
                   itemBuilder: (menuContext) {

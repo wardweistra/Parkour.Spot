@@ -214,6 +214,24 @@ abstract class AppLocalizations {
   /// **'View and edit your profile'**
   String get profileViewEditSubtitle;
 
+  /// Account tab: subtitle for the Spot lists row
+  ///
+  /// In en, this message translates to:
+  /// **'Want to visit, been to, and lists you create or save'**
+  String get accountSpotListsSubtitle;
+
+  /// Spot lists hub: prompt when signed out
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to view and manage your lists'**
+  String get spotListsHubSignInPrompt;
+
+  /// Spot lists hub: error loading owned lists
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load lists. Check your connection and try again.'**
+  String get spotListsHubCouldNotLoad;
+
   /// Notifications inbox screen title and Account tab row
   ///
   /// In en, this message translates to:
@@ -4794,13 +4812,13 @@ abstract class AppLocalizations {
   /// Description in save-list popup shown to signed-out users
   ///
   /// In en, this message translates to:
-  /// **'Save someone else’s spot list to your profile so you can open it again later.'**
+  /// **'Save someone else’s spot list to your lists so you can open it again later.'**
   String get spotListSaveSignInBody;
 
   /// Snackbar when a list is saved
   ///
   /// In en, this message translates to:
-  /// **'List saved to your profile'**
+  /// **'List saved to your lists'**
   String get spotListSaveSavedToProfile;
 
   /// Snackbar when saving a list fails

@@ -33,7 +33,6 @@ import 'package:parkour_spot/services/saved_spot_list_service.dart';
 import 'package:parkour_spot/services/spot_tracking_service.dart';
 import 'package:parkour_spot/services/spot_check_in_service.dart';
 import 'package:parkour_spot/services/spot_training_plan_service.dart';
-import 'package:parkour_spot/services/feature_access_service.dart';
 import 'package:parkour_spot/services/pwa_install_service.dart';
 import 'package:parkour_spot/services/user_profile_service.dart';
 import 'package:parkour_spot/services/user_locations_of_interest_service.dart';
@@ -207,13 +206,10 @@ class ParkourSpotApp extends StatelessWidget {
               context,
               listen: false,
             );
-            final featureAccessService = FeatureAccessService(authService);
-            return SpotListService(authService, featureAccessService);
+            return SpotListService(authService);
           },
           update: (context, authService, previous) {
-            final featureAccessService = FeatureAccessService(authService);
-            return previous ??
-                SpotListService(authService, featureAccessService);
+            return previous ?? SpotListService(authService);
           },
         ),
         ChangeNotifierProxyProvider<AuthService, SavedSpotListService>(

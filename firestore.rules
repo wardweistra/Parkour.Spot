@@ -612,7 +612,7 @@ service cloud.firestore {
       allow read: if (request.auth != null &&
         resource.data.createdBy == request.auth.uid) ||
         canReadSpotList(resource.data);
-      // Users can create lists (service validates feature access)
+      // Users can create lists
       allow create: if request.auth != null &&
         request.resource.data.createdBy == request.auth.uid &&
         hasValidSpotListVisibility(request.resource.data);
