@@ -127,6 +127,7 @@ class EventScheduleUtils {
     DateTime? endAt,
     required bool isDateOnly,
     String? timeZone,
+    DateTime? now,
   }) {
     final localizations = MaterialLocalizations.of(context);
     final start = toDisplayDateTime(startAt, timeZone: timeZone);
@@ -134,10 +135,16 @@ class EventScheduleUtils {
         ? null
         : toDisplayDateTime(endAt, timeZone: timeZone);
     final sameDay =
-        end != null && isSameCalendarDay(startAt, end, timeZone: timeZone);
+        end != null && isSameCalendarDay(startAt, endAt!, timeZone: timeZone);
+    final currentYear = toDisplayDateTime(
+      (now ?? DateTime.now()).toUtc(),
+      timeZone: timeZone,
+    ).year;
 
-    final startDate = localizations.formatMediumDate(start);
-    final endDate = end == null ? null : localizations.formatMediumDate(end);
+    final startDate = _formatMediumDate(localizations, start, currentYear);
+    final endDate = end == null
+        ? null
+        : _formatMediumDate(localizations, end, currentYear);
     final startTime = localizations.formatTimeOfDay(
       TimeOfDay.fromDateTime(start),
     );
@@ -154,6 +161,17 @@ class EventScheduleUtils {
     if (end == null) return '$startDate · $startTime$zoneSuffix';
     if (sameDay) return '$startDate · $startTime – $endTime$zoneSuffix';
     return '$startDate $startTime – $endDate $endTime$zoneSuffix';
+  }
+
+  /// Medium date plus year when [display] is not in [currentYear].
+  static String _formatMediumDate(
+    MaterialLocalizations localizations,
+    DateTime display,
+    int currentYear,
+  ) {
+    final base = localizations.formatMediumDate(display);
+    if (display.year == currentYear) return base;
+    return '$base ${display.year}';
   }
 
   static String _timeZoneSuffix(String? timeZone, DateTime displayStart) {
