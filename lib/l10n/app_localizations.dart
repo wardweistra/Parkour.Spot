@@ -5277,17 +5277,41 @@ abstract class AppLocalizations {
   /// **'{count, plural, one{Upcoming event} other{Upcoming events}}'**
   String detailUpcomingEventLabel(int count);
 
-  /// Secondary action under upcoming-event callout to open the full list of other upcoming events
+  /// Secondary action under the linked-event callout when more events remain (upcoming and/or past)
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{1 more event} other{{count} more events}}'**
+  /// **'{count, plural, one{1 more} other{{count} more}}'**
   String detailUpcomingEventsAndMore(int count);
 
-  /// Title for bottom sheet listing all upcoming events at a spot or list
+  /// Title for bottom sheet listing all linked events at a spot or list
   ///
   /// In en, this message translates to:
-  /// **'Upcoming events'**
+  /// **'Events'**
   String get detailUpcomingEventsSheetTitle;
+
+  /// Heading for linked past event callout on spot or list detail
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Past event} other{Past events}}'**
+  String detailPastEventLabel(int count);
+
+  /// Secondary action under an upcoming callout when the only remaining linked events are in the past
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 past event} other{{count} past events}}'**
+  String detailPastEventsAndMore(int count);
+
+  /// Label for an in-progress event on the spot callout and events sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Happening now'**
+  String get detailLinkedEventHappeningLabel;
+
+  /// Short status label for a past event in the linked-events sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Past'**
+  String get detailLinkedEventPastLabel;
 
   /// Page title for public profile screen
   ///

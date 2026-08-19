@@ -3126,14 +3126,42 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count more events',
-      one: '1 more event',
+      other: '$count more',
+      one: '1 more',
     );
     return '$_temp0';
   }
 
   @override
-  String get detailUpcomingEventsSheetTitle => 'Upcoming events';
+  String get detailUpcomingEventsSheetTitle => 'Events';
+
+  @override
+  String detailPastEventLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Past events',
+      one: 'Past event',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String detailPastEventsAndMore(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count past events',
+      one: '1 past event',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get detailLinkedEventHappeningLabel => 'Happening now';
+
+  @override
+  String get detailLinkedEventPastLabel => 'Past';
 
   @override
   String get publicProfilePageTitle => 'Profile';

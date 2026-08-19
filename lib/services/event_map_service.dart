@@ -89,8 +89,10 @@ class EventMapService extends ChangeNotifier {
     }
   }
 
-  /// Upcoming/in-progress spot pins for [spotId], including list-linked events.
+  /// Spot pins for [spotId], including list-linked events.
   ///
+  /// May include stale past pins until the event is rematerialized. Callers
+  /// that need upcoming-only should partition with [isLinkedEventPast].
   /// Dedupes by event id and sorts by [EventMapPin.startAt] ascending.
   Future<List<EventMapPin>> getUpcomingPinsForSpot(String spotId) async {
     final trimmed = spotId.trim();

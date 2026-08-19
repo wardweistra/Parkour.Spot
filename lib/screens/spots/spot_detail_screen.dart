@@ -17,6 +17,7 @@ import '../../services/spot_service.dart';
 import '../../services/spot_report_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/event_map_service.dart';
+import '../../services/admin_events_service.dart';
 import '../../services/url_service.dart';
 import '../../services/web_share_service.dart';
 import '../../utils/share_link_text.dart';
@@ -208,7 +209,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   /// Cached future for Jumpflix videos (avoids refetch on rebuild).
   Future<List<JumpflixVideo>>? _jumpflixVideosFuture;
-  Future<List<UpcomingLinkedEvent>>? _upcomingSpotEventsFuture;
+  Future<LinkedSpotEvents>? _upcomingSpotEventsFuture;
 
   // Getter for the current spot (falls back to widget.spot if not updated)
   Spot get _spot => _currentSpot ?? widget.spot;
@@ -502,8 +503,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       _upcomingSpotEventsFuture = _loadUpcomingSpotEvents(widget.spot.id!);
     } else {
       _jumpflixVideosFuture = Future<List<JumpflixVideo>>.value([]);
-      _upcomingSpotEventsFuture = Future<List<UpcomingLinkedEvent>>.value(
-        const [],
+      _upcomingSpotEventsFuture = Future<LinkedSpotEvents>.value(
+        const LinkedSpotEvents(),
       );
     }
 
@@ -543,18 +544,27 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         _upcomingSpotEventsFuture = _loadUpcomingSpotEvents(widget.spot.id!);
       } else {
         _jumpflixVideosFuture = Future<List<JumpflixVideo>>.value([]);
-        _upcomingSpotEventsFuture = Future<List<UpcomingLinkedEvent>>.value(
-          const [],
+        _upcomingSpotEventsFuture = Future<LinkedSpotEvents>.value(
+          const LinkedSpotEvents(),
         );
       }
     }
   }
 
-  Future<List<UpcomingLinkedEvent>> _loadUpcomingSpotEvents(String spotId) {
-    return Provider.of<EventMapService>(
+  Future<LinkedSpotEvents> _loadUpcomingSpotEvents(String spotId) async {
+    final mapService = Provider.of<EventMapService>(context, listen: false);
+    final eventsService = Provider.of<AdminEventsService>(
       context,
       listen: false,
-    ).getUpcomingPinsForSpot(spotId).then(upcomingLinkedEventsFromPins);
+    );
+    final pinsFuture = mapService.getUpcomingPinsForSpot(spotId);
+    final eventsFuture = eventsService.getEventsForSpot(spotId);
+    final pins = await pinsFuture;
+    final events = await eventsFuture;
+    return mergeAndPartitionLinkedEvents(
+      fromPins: upcomingLinkedEventsFromPins(pins),
+      fromEvents: upcomingLinkedEventsFromParkourEvents(events),
+    );
   }
 
   String _formatSpotDocumentTitle(Spot s, AppLocalizations l10n) {

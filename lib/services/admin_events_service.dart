@@ -12,6 +12,7 @@ import '../utils/event_duplicate_merge.dart';
 import '../utils/event_linked_spot_loader.dart';
 import '../utils/event_location_utils.dart';
 import '../utils/image_preparation.dart';
+import '../utils/upcoming_linked_events_utils.dart';
 import 'audit_log_service.dart';
 
 class AdminEventsService extends ChangeNotifier {
@@ -499,31 +500,52 @@ class AdminEventsService extends ChangeNotifier {
     return events.isEmpty ? null : events.first;
   }
 
+  /// Public events directly linked to [spotId] via `spotIds` (upcoming and past).
+  Future<List<ParkourEvent>> getEventsForSpot(String spotId) {
+    return _getLinkedEvents(
+      field: 'spotIds',
+      id: spotId,
+      logLabel: 'getEventsForSpot',
+    );
+  }
+
   /// Upcoming events directly linked to [spotId] via `spotIds`.
   Future<List<ParkourEvent>> getUpcomingEventsForSpot(String spotId) {
-    return _getUpcomingEvents(
+    return _getLinkedEvents(
       field: 'spotIds',
       id: spotId,
       logLabel: 'getUpcomingEventsForSpot',
+      upcomingOnly: true,
+    );
+  }
+
+  /// Public events linked to [spotListId] via `spotListIds` (upcoming and past).
+  Future<List<ParkourEvent>> getEventsForSpotList(String spotListId) {
+    return _getLinkedEvents(
+      field: 'spotListIds',
+      id: spotListId,
+      logLabel: 'getEventsForSpotList',
     );
   }
 
   /// Upcoming events linked to [spotListId] via `spotListIds`.
   Future<List<ParkourEvent>> getUpcomingEventsForSpotList(String spotListId) {
-    return _getUpcomingEvents(
+    return _getLinkedEvents(
       field: 'spotListIds',
       id: spotListId,
       logLabel: 'getUpcomingEventsForSpotList',
+      upcomingOnly: true,
     );
   }
 
-  Future<List<ParkourEvent>> _getUpcomingEvents({
+  Future<List<ParkourEvent>> _getLinkedEvents({
     required String field,
     required String id,
     required String logLabel,
+    bool upcomingOnly = false,
   }) async {
     try {
-      final now = DateTime.now().toUtc();
+      final now = DateTime.now();
       final snapshot = await _firestore
           .collection('events')
           .where(field, arrayContains: id)
@@ -533,13 +555,10 @@ class AdminEventsService extends ChangeNotifier {
       for (final doc in snapshot.docs) {
         try {
           final event = ParkourEvent.fromFirestore(doc);
-          if (event.duplicateOf != null &&
-              event.duplicateOf!.trim().isNotEmpty) {
-            continue;
-          }
-          if (event.startAt.toUtc().isAfter(now)) {
-            events.add(event);
-          }
+          if (_isDuplicate(event)) continue;
+          if (event.hidden) continue;
+          if (upcomingOnly && !_isUpcoming(event, now)) continue;
+          events.add(event);
         } catch (e) {
           debugPrint(
             'AdminEventsService.$logLabel skipping malformed event ${doc.id}: $e',
@@ -584,11 +603,11 @@ class AdminEventsService extends ChangeNotifier {
   }
 
   bool _isUpcoming(ParkourEvent event, DateTime now) {
-    final utcNow = now.toUtc();
-    if (event.endAt != null) {
-      return !event.endAt!.toUtc().isBefore(utcNow);
-    }
-    return !event.startAt.toUtc().isBefore(utcNow);
+    return !isLinkedEventPast(
+      startAt: event.startAt,
+      endAt: event.endAt,
+      now: now,
+    );
   }
 
   bool _isDuplicate(ParkourEvent event) {

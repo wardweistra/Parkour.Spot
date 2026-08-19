@@ -358,7 +358,7 @@ class SearchScreenState extends State<SearchScreen>
   String? _selectedListName; // Name of the selected spot list
   SpotList? _selectedList; // Full spot list object for preview
   bool _showListPreview = false; // Whether to show the list preview card
-  Future<List<UpcomingLinkedEvent>>? _linkedSpotListEventsFuture;
+  Future<LinkedSpotEvents>? _linkedSpotListEventsFuture;
   Set<String> _highlightedSpotIds = {}; // Spot IDs from selected list
   DateTime? _lastAutocompleteSpotSelection; // Guard against mobile tap-through
 
@@ -2300,8 +2300,12 @@ class SearchScreenState extends State<SearchScreen>
         listen: false,
       );
       final linkedEventsFuture = eventsService
-          .getUpcomingEventsForSpotList(listId)
-          .then(upcomingLinkedEventsFromParkourEvents);
+          .getEventsForSpotList(listId)
+          .then(
+            (events) => partitionLinkedEvents(
+              upcomingLinkedEventsFromParkourEvents(events),
+            ),
+          );
 
       setState(() {
         _selectedList = list;

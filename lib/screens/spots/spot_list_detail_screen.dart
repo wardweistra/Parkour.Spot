@@ -63,7 +63,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   Spot? _selectedSpot; // Currently selected/highlighted spot
   final ScrollController _scrollController = ScrollController();
   String? _creatorName;
-  Future<List<UpcomingLinkedEvent>>? _linkedEventsFuture;
+  Future<LinkedSpotEvents>? _linkedEventsFuture;
   bool _isEditing = false;
   bool _isSavingEdits = false;
   SpotListEditDraft? _draft;
@@ -142,8 +142,12 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       listen: false,
     );
     _linkedEventsFuture = eventsService
-        .getUpcomingEventsForSpotList(widget.listId)
-        .then(upcomingLinkedEventsFromParkourEvents);
+        .getEventsForSpotList(widget.listId)
+        .then(
+          (events) => partitionLinkedEvents(
+            upcomingLinkedEventsFromParkourEvents(events),
+          ),
+        );
 
     // Load creator display name
     if (list.createdBy.isNotEmpty) {

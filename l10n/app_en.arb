@@ -2905,18 +2905,44 @@
       }
     }
   },
-  "detailUpcomingEventsAndMore": "{count, plural, one{1 more event} other{{count} more events}}",
+  "detailUpcomingEventsAndMore": "{count, plural, one{1 more} other{{count} more}}",
   "@detailUpcomingEventsAndMore": {
-    "description": "Secondary action under upcoming-event callout to open the full list of other upcoming events",
+    "description": "Secondary action under the linked-event callout when more events remain (upcoming and/or past)",
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "detailUpcomingEventsSheetTitle": "Upcoming events",
+  "detailUpcomingEventsSheetTitle": "Events",
   "@detailUpcomingEventsSheetTitle": {
-    "description": "Title for bottom sheet listing all upcoming events at a spot or list"
+    "description": "Title for bottom sheet listing all linked events at a spot or list"
+  },
+  "detailPastEventLabel": "{count, plural, one{Past event} other{Past events}}",
+  "@detailPastEventLabel": {
+    "description": "Heading for linked past event callout on spot or list detail",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "detailPastEventsAndMore": "{count, plural, one{1 past event} other{{count} past events}}",
+  "@detailPastEventsAndMore": {
+    "description": "Secondary action under an upcoming callout when the only remaining linked events are in the past",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "detailLinkedEventHappeningLabel": "Happening now",
+  "@detailLinkedEventHappeningLabel": {
+    "description": "Label for an in-progress event on the spot callout and events sheet"
+  },
+  "detailLinkedEventPastLabel": "Past",
+  "@detailLinkedEventPastLabel": {
+    "description": "Short status label for a past event in the linked-events sheet"
   },
   "publicProfilePageTitle": "Profile",
   "@publicProfilePageTitle": {
