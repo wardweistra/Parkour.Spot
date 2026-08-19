@@ -39,7 +39,6 @@ import '../../services/spot_tracking_service.dart';
 import '../../services/spot_check_in_service.dart';
 import '../../services/spot_training_plan_service.dart';
 import '../../services/feature_access_service.dart';
-import '../../models/spot_list.dart';
 import '../../utils/marker_icon_utils.dart';
 import '../../utils/upcoming_linked_events_utils.dart';
 import '../../widgets/linked_upcoming_event_panel.dart';

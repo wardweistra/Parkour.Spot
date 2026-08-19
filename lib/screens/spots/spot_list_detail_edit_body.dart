@@ -393,7 +393,7 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
       onAcceptWithDetails: (details) {
         _commitSectionMoveBefore(details.data.sectionId, sectionId);
       },
-      builder: (context, _, __) {
+      builder: (context, _, _) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
@@ -526,7 +526,7 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
             onAcceptWithDetails: (details) {
               _commitSectionMoveToEnd(details.data.sectionId);
             },
-            builder: (context, _, __) {
+            builder: (context, _, _) {
               final single = _draft.isSingleSection;
               final emptySingle =
                   single && _draft.sections.first.entries.isEmpty;

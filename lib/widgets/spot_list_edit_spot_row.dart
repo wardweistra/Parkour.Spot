@@ -138,6 +138,18 @@ class SpotListEditSpotRow extends StatelessWidget {
               const SizedBox(height: 8),
               if (editingNote)
                 SpotListNoteBlock(
+                  actions: [
+                    _noteAction(
+                      icon: Icons.check,
+                      tooltip: l10n.spotListEditDoneNoteTooltip,
+                      onPressed: onToggleNote,
+                    ),
+                    _noteAction(
+                      icon: Icons.delete_outline,
+                      tooltip: l10n.spotListEditRemoveNoteTooltip,
+                      onPressed: onRemoveNote,
+                    ),
+                  ],
                   child: TextField(
                     controller: noteController,
                     onChanged: onNoteChanged,
@@ -159,31 +171,10 @@ class SpotListEditSpotRow extends StatelessWidget {
                       ),
                     ),
                   ),
-                  actions: [
-                    _noteAction(
-                      icon: Icons.check,
-                      tooltip: l10n.spotListEditDoneNoteTooltip,
-                      onPressed: onToggleNote,
-                    ),
-                    _noteAction(
-                      icon: Icons.delete_outline,
-                      tooltip: l10n.spotListEditRemoveNoteTooltip,
-                      onPressed: onRemoveNote,
-                    ),
-                  ],
                 )
               else if (hasNote)
                 SpotListNoteBlock(
                   onTap: onToggleNote,
-                  child: Text(
-                    note!,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontStyle: FontStyle.italic,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
                   actions: [
                     _noteAction(
                       icon: Icons.edit_outlined,
@@ -196,6 +187,15 @@ class SpotListEditSpotRow extends StatelessWidget {
                       onPressed: onRemoveNote,
                     ),
                   ],
+                  child: Text(
+                    note!,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 )
               else
                 SpotListNoteBlock(
