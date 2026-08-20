@@ -40,6 +40,9 @@ class ParkourEvent {
   /// Whether the event is hidden from public view (map, search, etc.).
   final bool hidden;
 
+  /// Whether moderators should review this event (e.g. after external sync).
+  final bool needsModeratorReview;
+
   ParkourEvent({
     this.id,
     required this.title,
@@ -72,6 +75,7 @@ class ParkourEvent {
     this.duplicateOf,
     this.createdFromCreateNative = false,
     this.hidden = false,
+    this.needsModeratorReview = false,
   });
 
   /// Native events are authored on parkour.spot (not imported from an external calendar source).
@@ -132,6 +136,7 @@ class ParkourEvent {
       duplicateOf: data['duplicateOf'] as String?,
       createdFromCreateNative: data['createdFromCreateNative'] == true,
       hidden: data['hidden'] == true,
+      needsModeratorReview: data['needsModeratorReview'] == true,
     );
   }
 
@@ -186,6 +191,7 @@ class ParkourEvent {
       duplicateOf: data['duplicateOf'] as String?,
       createdFromCreateNative: data['createdFromCreateNative'] == true,
       hidden: data['hidden'] == true,
+      needsModeratorReview: data['needsModeratorReview'] == true,
     );
   }
 
@@ -236,6 +242,7 @@ class ParkourEvent {
         'duplicateOf': duplicateOf!.trim(),
       if (createdFromCreateNative) 'createdFromCreateNative': true,
       if (hidden) 'hidden': true,
+      if (needsModeratorReview) 'needsModeratorReview': true,
     };
   }
 
@@ -271,6 +278,7 @@ class ParkourEvent {
     Object? duplicateOf = _unset,
     bool? createdFromCreateNative,
     bool? hidden,
+    bool? needsModeratorReview,
   }) {
     return ParkourEvent(
       id: id ?? this.id,
@@ -339,6 +347,8 @@ class ParkourEvent {
       createdFromCreateNative:
           createdFromCreateNative ?? this.createdFromCreateNative,
       hidden: hidden ?? this.hidden,
+      needsModeratorReview:
+          needsModeratorReview ?? this.needsModeratorReview,
     );
   }
 

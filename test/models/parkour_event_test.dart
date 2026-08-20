@@ -135,6 +135,20 @@ void main() {
       expect(map['duplicateOf'], 'orig-id');
     });
 
+    test('fromMap and toFirestore round-trip needsModeratorReview', () {
+      final event = ParkourEvent.fromMap({
+        'title': 'Synced jam',
+        'startAt': Timestamp.fromDate(DateTime.utc(2026, 8, 1)),
+        'spotIds': const <String>[],
+        'eventSourceId': 'ics-source',
+        'needsModeratorReview': true,
+      });
+      expect(event.needsModeratorReview, isTrue);
+
+      final map = event.toFirestore();
+      expect(map['needsModeratorReview'], isTrue);
+    });
+
     test('toFirestore includes date-only schedule fields when set', () {
       final event = ParkourEvent(
         title: 'Holiday Jam',

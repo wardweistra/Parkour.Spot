@@ -155,6 +155,18 @@ class ModeratorToolsScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Card(
             child: ListTile(
+              leading: const Icon(Icons.event_available_outlined),
+              title: const Text('Event Review'),
+              subtitle: const Text(
+                'Review newly synced events for duplicates and location quality',
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () => context.go('/moderator/events'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
               leading: const Icon(Icons.compare_arrows),
               title: const Text('Duplicate Spot Detection'),
               subtitle: const Text(

@@ -44,6 +44,7 @@ class AdminEventsService extends ChangeNotifier {
   bool _upcomingOnly = true;
   bool _excludeDuplicates = true;
   bool _withoutLocationOnly = false;
+  bool _needsModeratorReviewOnly = false;
 
   List<ParkourEvent> get events => List<ParkourEvent>.unmodifiable(_events);
   bool get isLoading => _isLoading;
@@ -54,12 +55,14 @@ class AdminEventsService extends ChangeNotifier {
   bool get upcomingOnly => _upcomingOnly;
   bool get excludeDuplicates => _excludeDuplicates;
   bool get withoutLocationOnly => _withoutLocationOnly;
+  bool get needsModeratorReviewOnly => _needsModeratorReviewOnly;
   bool get hasEventSourceFilter => _eventSourceFilter != eventSourceFilterAll;
   bool get hasActiveListFilters =>
       hasEventSourceFilter ||
       !_upcomingOnly ||
       !_excludeDuplicates ||
-      _withoutLocationOnly;
+      _withoutLocationOnly ||
+      _needsModeratorReviewOnly;
 
   void setEventSourceFilter(String filter) {
     if (_eventSourceFilter == filter) return;
@@ -73,6 +76,7 @@ class AdminEventsService extends ChangeNotifier {
     bool? upcomingOnly,
     bool? excludeDuplicates,
     bool? withoutLocationOnly,
+    bool? needsModeratorReviewOnly,
   }) {
     var changed = false;
     if (eventSourceFilter != null && _eventSourceFilter != eventSourceFilter) {
@@ -90,6 +94,11 @@ class AdminEventsService extends ChangeNotifier {
     if (withoutLocationOnly != null &&
         _withoutLocationOnly != withoutLocationOnly) {
       _withoutLocationOnly = withoutLocationOnly;
+      changed = true;
+    }
+    if (needsModeratorReviewOnly != null &&
+        _needsModeratorReviewOnly != needsModeratorReviewOnly) {
+      _needsModeratorReviewOnly = needsModeratorReviewOnly;
       changed = true;
     }
     if (changed) {
@@ -589,7 +598,8 @@ class AdminEventsService extends ChangeNotifier {
       _eventSourceFilter == eventSourceFilterNative ||
       _upcomingOnly ||
       _excludeDuplicates ||
-      _withoutLocationOnly;
+      _withoutLocationOnly ||
+      _needsModeratorReviewOnly;
 
   bool _matchesEventSourceFilter(ParkourEvent event) {
     switch (_eventSourceFilter) {
@@ -627,6 +637,7 @@ class AdminEventsService extends ChangeNotifier {
     if (_upcomingOnly && !_isUpcoming(event, DateTime.now())) return false;
     if (_excludeDuplicates && _isDuplicate(event)) return false;
     if (_withoutLocationOnly && _hasLocation(event)) return false;
+    if (_needsModeratorReviewOnly && !event.needsModeratorReview) return false;
     return true;
   }
 
@@ -1234,6 +1245,39 @@ class AdminEventsService extends ChangeNotifier {
     } catch (e, st) {
       _error = 'Failed to remove duplicate status';
       debugPrint('AdminEventsService.clearEventDuplicateStatus error: $e\n$st');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Clears the moderator review flag after an event has been checked.
+  Future<bool> clearModeratorReviewFlag(String eventId) async {
+    _error = null;
+    notifyListeners();
+    final id = eventId.trim();
+    if (id.isEmpty) {
+      _error = 'Invalid event id';
+      notifyListeners();
+      return false;
+    }
+    try {
+      await _firestore.collection('events').doc(id).update({
+        'needsModeratorReview': false,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      final index = _events.indexWhere((e) => e.id == id);
+      if (index >= 0) {
+        _events[index] = _events[index].copyWith(
+          needsModeratorReview: false,
+          updatedAt: DateTime.now().toUtc(),
+        );
+      }
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      _error = 'Failed to mark event as reviewed';
+      debugPrint('AdminEventsService.clearModeratorReviewFlag error: $e\n$st');
       notifyListeners();
       return false;
     }
