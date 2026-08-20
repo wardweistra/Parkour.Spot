@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/auth_service.dart';
+import '../../services/admin_events_service.dart';
 import '../../services/event_report_service.dart';
 import '../../services/spot_report_service.dart';
 import '../../widgets/page_scaffold.dart';
@@ -153,16 +154,20 @@ class ModeratorToolsScreen extends StatelessWidget {
             },
           ),
           const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.event_available_outlined),
-              title: const Text('Event Review'),
-              subtitle: const Text(
-                'Review newly synced events for duplicates and location quality',
-              ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.go('/moderator/events'),
-            ),
+          StreamBuilder<int>(
+            initialData: context.read<AdminEventsService>().needsReviewCount,
+            stream: context.read<AdminEventsService>().watchNeedsReviewCount(),
+            builder: (context, snapshot) {
+              final reviewCount = snapshot.data ?? 0;
+              return _buildQueueTile(
+                icon: Icons.event_available_outlined,
+                title: 'Event Review',
+                subtitle:
+                    'Review newly synced events for duplicates and location quality',
+                badgeCount: reviewCount > 0 ? reviewCount : null,
+                onTap: () => context.go('/moderator/events'),
+              );
+            },
           ),
           const SizedBox(height: 8),
           Card(

@@ -12,6 +12,7 @@ import '../utils/event_duplicate_merge.dart';
 import '../utils/event_linked_spot_loader.dart';
 import '../utils/event_location_utils.dart';
 import '../utils/image_preparation.dart';
+import '../utils/replay_latest_stream.dart';
 import '../utils/upcoming_linked_events_utils.dart';
 import 'audit_log_service.dart';
 
@@ -33,6 +34,8 @@ class AdminEventsService extends ChangeNotifier {
   String? _error;
   QueryDocumentSnapshot<Map<String, dynamic>>? _lastEventDocument;
   bool _hasMore = true;
+  Stream<int>? _needsReviewCountStream;
+  int _needsReviewCount = 0;
 
   static const int _defaultPageSize = 30;
   static const int maxSpotListIds = 10;
@@ -63,6 +66,21 @@ class AdminEventsService extends ChangeNotifier {
       !_excludeDuplicates ||
       _withoutLocationOnly ||
       _needsModeratorReviewOnly;
+
+  /// Count of events still flagged for moderator review.
+  int get needsReviewCount => _needsReviewCount;
+
+  /// Streams the number of events with [needsModeratorReview] set.
+  Stream<int> watchNeedsReviewCount() {
+    return _needsReviewCountStream ??= replayLatest(
+      _firestore
+          .collection('events')
+          .where('needsModeratorReview', isEqualTo: true)
+          .snapshots()
+          .map((snapshot) => snapshot.docs.length),
+      onValue: (count) => _needsReviewCount = count,
+    );
+  }
 
   void setEventSourceFilter(String filter) {
     if (_eventSourceFilter == filter) return;
