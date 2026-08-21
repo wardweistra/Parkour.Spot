@@ -46,6 +46,7 @@ class AdminEventsService extends ChangeNotifier {
   String _eventSourceFilter = eventSourceFilterAll;
   bool _upcomingOnly = true;
   bool _excludeDuplicates = true;
+  bool _excludeHidden = false;
   bool _withoutLocationOnly = false;
   bool _needsModeratorReviewOnly = false;
 
@@ -57,6 +58,7 @@ class AdminEventsService extends ChangeNotifier {
   String get eventSourceFilter => _eventSourceFilter;
   bool get upcomingOnly => _upcomingOnly;
   bool get excludeDuplicates => _excludeDuplicates;
+  bool get excludeHidden => _excludeHidden;
   bool get withoutLocationOnly => _withoutLocationOnly;
   bool get needsModeratorReviewOnly => _needsModeratorReviewOnly;
   bool get hasEventSourceFilter => _eventSourceFilter != eventSourceFilterAll;
@@ -64,6 +66,7 @@ class AdminEventsService extends ChangeNotifier {
       hasEventSourceFilter ||
       !_upcomingOnly ||
       !_excludeDuplicates ||
+      _excludeHidden ||
       _withoutLocationOnly ||
       _needsModeratorReviewOnly;
 
@@ -93,6 +96,7 @@ class AdminEventsService extends ChangeNotifier {
     String? eventSourceFilter,
     bool? upcomingOnly,
     bool? excludeDuplicates,
+    bool? excludeHidden,
     bool? withoutLocationOnly,
     bool? needsModeratorReviewOnly,
   }) {
@@ -107,6 +111,10 @@ class AdminEventsService extends ChangeNotifier {
     }
     if (excludeDuplicates != null && _excludeDuplicates != excludeDuplicates) {
       _excludeDuplicates = excludeDuplicates;
+      changed = true;
+    }
+    if (excludeHidden != null && _excludeHidden != excludeHidden) {
+      _excludeHidden = excludeHidden;
       changed = true;
     }
     if (withoutLocationOnly != null &&
@@ -616,6 +624,7 @@ class AdminEventsService extends ChangeNotifier {
       _eventSourceFilter == eventSourceFilterNative ||
       _upcomingOnly ||
       _excludeDuplicates ||
+      _excludeHidden ||
       _withoutLocationOnly ||
       _needsModeratorReviewOnly;
 
@@ -654,6 +663,7 @@ class AdminEventsService extends ChangeNotifier {
     if (!_matchesEventSourceFilter(event)) return false;
     if (_upcomingOnly && !_isUpcoming(event, DateTime.now())) return false;
     if (_excludeDuplicates && _isDuplicate(event)) return false;
+    if (_excludeHidden && event.hidden) return false;
     if (_withoutLocationOnly && _hasLocation(event)) return false;
     if (_needsModeratorReviewOnly && !event.needsModeratorReview) return false;
     return true;

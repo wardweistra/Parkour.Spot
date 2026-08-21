@@ -16,6 +16,7 @@ class EventsOverviewFilterBar extends StatelessWidget {
     required this.onEventSourceChanged,
     required this.onUpcomingOnlyChanged,
     required this.onExcludeDuplicatesChanged,
+    required this.onExcludeHiddenChanged,
     required this.onWithoutLocationOnlyChanged,
     this.onNeedsModeratorReviewOnlyChanged,
     this.showNeedsModeratorReviewFilter = false,
@@ -25,6 +26,7 @@ class EventsOverviewFilterBar extends StatelessWidget {
   final ValueChanged<String?>? onEventSourceChanged;
   final ValueChanged<bool>? onUpcomingOnlyChanged;
   final ValueChanged<bool>? onExcludeDuplicatesChanged;
+  final ValueChanged<bool>? onExcludeHiddenChanged;
   final ValueChanged<bool>? onWithoutLocationOnlyChanged;
   final ValueChanged<bool>? onNeedsModeratorReviewOnlyChanged;
   final bool showNeedsModeratorReviewFilter;
@@ -100,6 +102,13 @@ class EventsOverviewFilterBar extends StatelessWidget {
                   onSelected: onExcludeDuplicatesChanged == null
                       ? null
                       : (selected) => onExcludeDuplicatesChanged!(selected),
+                ),
+                FilterChip(
+                  label: const Text('Exclude hidden'),
+                  selected: service.excludeHidden,
+                  onSelected: onExcludeHiddenChanged == null
+                      ? null
+                      : (selected) => onExcludeHiddenChanged!(selected),
                 ),
                 FilterChip(
                   label: const Text('Without location only'),
@@ -286,6 +295,22 @@ class EventsOverviewCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
+                  if (event.hidden)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Chip(
+                        label: const Text('Hidden'),
+                        avatar: const Icon(
+                          Icons.visibility_off_outlined,
+                          size: 16,
+                        ),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.errorContainer,
+                      ),
+                    ),
                   if (event.needsModeratorReview)
                     Padding(
                       padding: const EdgeInsets.only(right: 4),

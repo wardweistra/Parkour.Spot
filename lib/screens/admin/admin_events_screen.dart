@@ -40,6 +40,7 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
     String? eventSourceFilter,
     bool? upcomingOnly,
     bool? excludeDuplicates,
+    bool? excludeHidden,
     bool? withoutLocationOnly,
     bool? needsModeratorReviewOnly,
   }) async {
@@ -48,6 +49,7 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
       eventSourceFilter: eventSourceFilter,
       upcomingOnly: upcomingOnly,
       excludeDuplicates: excludeDuplicates,
+      excludeHidden: excludeHidden,
       withoutLocationOnly: withoutLocationOnly,
       needsModeratorReviewOnly: needsModeratorReviewOnly,
     );
@@ -226,7 +228,9 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
     );
 
     try {
-      final result = await eventsService.backfillEventSearchTerms(purge: purgeTerms);
+      final result = await eventsService.backfillEventSearchTerms(
+        purge: purgeTerms,
+      );
       progressNavigator.pop();
       if (!mounted) return;
 
@@ -407,10 +411,12 @@ class _AdminEventsScreenState extends State<AdminEventsScreen> {
                 onExcludeDuplicatesChanged: service.isLoading
                     ? null
                     : (value) => _onFiltersChanged(excludeDuplicates: value),
+                onExcludeHiddenChanged: service.isLoading
+                    ? null
+                    : (value) => _onFiltersChanged(excludeHidden: value),
                 onWithoutLocationOnlyChanged: service.isLoading
                     ? null
-                    : (value) =>
-                          _onFiltersChanged(withoutLocationOnly: value),
+                    : (value) => _onFiltersChanged(withoutLocationOnly: value),
                 onNeedsModeratorReviewOnlyChanged: service.isLoading
                     ? null
                     : (value) =>

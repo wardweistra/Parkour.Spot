@@ -28,6 +28,7 @@ class _ModeratorEventsReviewScreenState
     String eventSourceFilter,
     bool upcomingOnly,
     bool excludeDuplicates,
+    bool excludeHidden,
     bool withoutLocationOnly,
     bool needsModeratorReviewOnly,
   })?
@@ -51,13 +52,15 @@ class _ModeratorEventsReviewScreenState
       eventSourceFilter: _eventsService.eventSourceFilter,
       upcomingOnly: _eventsService.upcomingOnly,
       excludeDuplicates: _eventsService.excludeDuplicates,
+      excludeHidden: _eventsService.excludeHidden,
       withoutLocationOnly: _eventsService.withoutLocationOnly,
       needsModeratorReviewOnly: _eventsService.needsModeratorReviewOnly,
     );
     _eventsService.updateListFilters(
       eventSourceFilter: AdminEventsService.eventSourceFilterAll,
-      upcomingOnly: true,
-      excludeDuplicates: true,
+      upcomingOnly: false,
+      excludeDuplicates: false,
+      excludeHidden: false,
       withoutLocationOnly: false,
       needsModeratorReviewOnly: true,
     );
@@ -71,6 +74,7 @@ class _ModeratorEventsReviewScreenState
       eventSourceFilter: saved.eventSourceFilter,
       upcomingOnly: saved.upcomingOnly,
       excludeDuplicates: saved.excludeDuplicates,
+      excludeHidden: saved.excludeHidden,
       withoutLocationOnly: saved.withoutLocationOnly,
       needsModeratorReviewOnly: saved.needsModeratorReviewOnly,
     );
@@ -86,6 +90,7 @@ class _ModeratorEventsReviewScreenState
     String? eventSourceFilter,
     bool? upcomingOnly,
     bool? excludeDuplicates,
+    bool? excludeHidden,
     bool? withoutLocationOnly,
     bool? needsModeratorReviewOnly,
   }) async {
@@ -94,6 +99,7 @@ class _ModeratorEventsReviewScreenState
       eventSourceFilter: eventSourceFilter,
       upcomingOnly: upcomingOnly,
       excludeDuplicates: excludeDuplicates,
+      excludeHidden: excludeHidden,
       withoutLocationOnly: withoutLocationOnly,
       needsModeratorReviewOnly: needsModeratorReviewOnly,
     );
@@ -267,10 +273,12 @@ class _ModeratorEventsReviewScreenState
                 onExcludeDuplicatesChanged: service.isLoading
                     ? null
                     : (value) => _onFiltersChanged(excludeDuplicates: value),
+                onExcludeHiddenChanged: service.isLoading
+                    ? null
+                    : (value) => _onFiltersChanged(excludeHidden: value),
                 onWithoutLocationOnlyChanged: service.isLoading
                     ? null
-                    : (value) =>
-                          _onFiltersChanged(withoutLocationOnly: value),
+                    : (value) => _onFiltersChanged(withoutLocationOnly: value),
                 onNeedsModeratorReviewOnlyChanged: service.isLoading
                     ? null
                     : (value) =>
