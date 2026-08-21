@@ -157,6 +157,16 @@ service cloud.firestore {
           request.resource.data.hidden is bool;
       }
 
+      function eventModeratorReviewStatusUpdateShape() {
+        return request.auth != null &&
+          request.resource.data.createdBy == resource.data.createdBy &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['needsModeratorReview', 'updatedAt']) &&
+          eventUpdatedAtOk(request.resource.data) &&
+          request.resource.data.needsModeratorReview is bool;
+      }
+
       // Native events have no external calendar source id.
       function eventIsNative() {
         return !('eventSourceId' in resource.data) ||
@@ -176,6 +186,8 @@ service cloud.firestore {
         eventDuplicateStatusUpdateShape() && requestingUserIsStaff()
       ) || (
         eventHiddenStatusUpdateShape() && requestingUserIsStaff()
+      ) || (
+        eventModeratorReviewStatusUpdateShape() && requestingUserIsStaff()
       );
       allow delete: if requestingUserIsAdmin();
     }

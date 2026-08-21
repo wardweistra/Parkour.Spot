@@ -29,6 +29,7 @@ import '../screens/debug/support_debug_screen.dart';
 import '../screens/admin/api_clients_screen.dart';
 import '../screens/moderator/moderator_tools_screen.dart';
 import '../screens/moderator/event_report_queue_screen.dart';
+import '../screens/moderator/moderator_events_review_screen.dart';
 import '../screens/moderator/spot_report_queue_screen.dart';
 import '../screens/events/add_event_report_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
@@ -502,6 +503,10 @@ class AppRouter {
         GoRoute(
           path: '/moderator/event-reports',
           builder: (context, state) => const EventReportQueueScreen(),
+        ),
+        GoRoute(
+          path: '/moderator/events',
+          builder: (context, state) => const ModeratorEventsReviewScreen(),
         ),
         GoRoute(
           path: '/moderator/duplicate-spots',
