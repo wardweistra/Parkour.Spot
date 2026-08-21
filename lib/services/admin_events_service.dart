@@ -647,24 +647,14 @@ class AdminEventsService extends ChangeNotifier {
     );
   }
 
-  bool _isDuplicate(ParkourEvent event) {
-    final duplicateOf = event.duplicateOf?.trim();
-    return duplicateOf != null && duplicateOf.isNotEmpty;
-  }
-
-  bool _hasLocation(ParkourEvent event) {
-    if (event.latitude != null && event.longitude != null) return true;
-    if (event.spotIds.isNotEmpty) return true;
-    if (event.spotListIds.isNotEmpty) return true;
-    return false;
-  }
+  bool _isDuplicate(ParkourEvent event) => event.isDuplicate;
 
   bool _matchesEventFilters(ParkourEvent event) {
     if (!_matchesEventSourceFilter(event)) return false;
     if (_upcomingOnly && !_isUpcoming(event, DateTime.now())) return false;
     if (_excludeDuplicates && _isDuplicate(event)) return false;
     if (_excludeHidden && event.hidden) return false;
-    if (_withoutLocationOnly && _hasLocation(event)) return false;
+    if (_withoutLocationOnly && event.hasLocation) return false;
     if (_needsModeratorReviewOnly && !event.needsModeratorReview) return false;
     return true;
   }

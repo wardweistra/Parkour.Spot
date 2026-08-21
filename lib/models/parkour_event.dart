@@ -10,6 +10,7 @@ class ParkourEvent {
   final DateTime? endAt;
   final bool isDateOnly;
   final String? timeZone;
+
   /// `feed` when from ICS; `sourceDefault` when from sync source default.
   final String? timeZoneSource;
   final double? latitude;
@@ -81,6 +82,20 @@ class ParkourEvent {
   /// Native events are authored on parkour.spot (not imported from an external calendar source).
   bool get isNativeEvent =>
       eventSourceId == null || eventSourceId!.trim().isEmpty;
+
+  /// Whether this event is marked as a duplicate of another event.
+  bool get isDuplicate {
+    final originalId = duplicateOf?.trim();
+    return originalId != null && originalId.isNotEmpty;
+  }
+
+  /// Whether the event has a pin, linked spots, or linked lists.
+  bool get hasLocation {
+    if (latitude != null && longitude != null) return true;
+    if (spotIds.isNotEmpty) return true;
+    if (spotListIds.isNotEmpty) return true;
+    return false;
+  }
 
   factory ParkourEvent.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -347,8 +362,7 @@ class ParkourEvent {
       createdFromCreateNative:
           createdFromCreateNative ?? this.createdFromCreateNative,
       hidden: hidden ?? this.hidden,
-      needsModeratorReview:
-          needsModeratorReview ?? this.needsModeratorReview,
+      needsModeratorReview: needsModeratorReview ?? this.needsModeratorReview,
     );
   }
 

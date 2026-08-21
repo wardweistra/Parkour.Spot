@@ -60,20 +60,55 @@ void main() {
       expect(event.isNativeEvent, isTrue);
     });
 
-    test(
-      'fromMap parses duplicateOf and external source for isNativeEvent',
-      () {
-        final event = ParkourEvent.fromMap({
-          'title': 'Synced',
-          'startAt': Timestamp.fromDate(DateTime.utc(2026, 1, 1)),
-          'spotIds': const ['spot-x'],
-          'eventSourceId': 'ics-source',
-          'duplicateOf': 'native-original',
-        });
-        expect(event.duplicateOf, 'native-original');
-        expect(event.isNativeEvent, isFalse);
-      },
-    );
+    test('fromMap parses duplicateOf and external source for isNativeEvent', () {
+      final event = ParkourEvent.fromMap({
+        'title': 'Synced',
+        'startAt': Timestamp.fromDate(DateTime.utc(2026, 1, 1)),
+        'spotIds': const ['spot-x'],
+        'eventSourceId': 'ics-source',
+        'duplicateOf': 'native-original',
+      });
+      expect(event.duplicateOf, 'native-original');
+      expect(event.isNativeEvent, isFalse);
+      expect(event.isDuplicate, isTrue);
+    });
+
+    test('isDuplicate ignores blank duplicateOf', () {
+      final event = ParkourEvent(
+        title: 'Jam',
+        startAt: DateTime.utc(2026, 1, 1),
+        duplicateOf: '  ',
+      );
+      expect(event.isDuplicate, isFalse);
+    });
+
+    test('hasLocation is true for coordinates, spots, or lists', () {
+      final withCoords = ParkourEvent(
+        title: 'Jam',
+        startAt: DateTime.utc(2026, 1, 1),
+        latitude: 52.37,
+        longitude: 4.89,
+      );
+      final withSpots = ParkourEvent(
+        title: 'Jam',
+        startAt: DateTime.utc(2026, 1, 1),
+        spotIds: const ['spot-1'],
+      );
+      final withLists = ParkourEvent(
+        title: 'Jam',
+        startAt: DateTime.utc(2026, 1, 1),
+        spotListIds: const ['list-1'],
+      );
+      final missing = ParkourEvent(
+        title: 'Jam',
+        startAt: DateTime.utc(2026, 1, 1),
+      );
+
+      expect(withCoords.hasLocation, isTrue);
+      expect(withSpots.hasLocation, isTrue);
+      expect(withLists.hasLocation, isTrue);
+      expect(missing.hasLocation, isFalse);
+    });
 
     test('toFirestore keeps linked spots and trims description', () {
       final event = ParkourEvent(

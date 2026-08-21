@@ -252,78 +252,48 @@ class EventsOverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final l10n = AppLocalizations.of(context)!;
-    final startLabel = _formatScheduleMoment(
-      context,
-      event.startAt,
-      isDateOnly: event.isDateOnly,
-      timeZone: event.timeZone,
-    );
-    final endLabel = event.endAt == null
-        ? null
-        : _formatScheduleMoment(
-            context,
-            event.endAt!,
-            isDateOnly: event.isDateOnly,
-            timeZone: event.timeZone,
-          );
     final websiteUrl = event.websiteUrl?.trim();
     final hasWebsite = websiteUrl != null && websiteUrl.isNotEmpty;
-    final hasLocation = event.latitude != null && event.longitude != null;
     final sourceName = event.eventSourceName?.trim();
     final hasSource = sourceName != null && sourceName.isNotEmpty;
     final duplicateOfId = event.duplicateOf?.trim();
     final hasDuplicateLink = duplicateOfId != null && duplicateOfId.isNotEmpty;
+    final description = event.description?.trim() ?? '';
     final openEventPage = event.id == null
         ? null
         : () => context.push('/event/${event.id}');
+    final statusChips = _statusChips(colors);
 
     return Card(
+      elevation: 0,
       clipBehavior: Clip.antiAlias,
+      color: colors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colors.outlineVariant),
+      ),
       child: InkWell(
         onTap: openEventPage,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+          padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Text(
                       event.title,
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        height: 1.3,
+                      ),
                     ),
                   ),
-                  if (event.hidden)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: Chip(
-                        label: const Text('Hidden'),
-                        avatar: const Icon(
-                          Icons.visibility_off_outlined,
-                          size: 16,
-                        ),
-                        visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.errorContainer,
-                      ),
-                    ),
-                  if (event.needsModeratorReview)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: Chip(
-                        label: const Text('Needs review'),
-                        avatar: const Icon(Icons.flag_outlined, size: 16),
-                        visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.tertiaryContainer,
-                      ),
-                    ),
                   if (event.id != null) ...[
                     if (showAdminEditAction)
                       IconButton(
@@ -331,110 +301,71 @@ class EventsOverviewCard extends StatelessWidget {
                           context.push('/admin/events/${event.id}/edit');
                         },
                         tooltip: 'Edit event',
+                        visualDensity: VisualDensity.compact,
                         icon: const Icon(Icons.edit_outlined),
                       ),
                     IconButton(
                       onPressed: openEventPage,
                       tooltip: 'Open event page',
+                      visualDensity: VisualDensity.compact,
                       icon: const Icon(Icons.open_in_new),
                     ),
                   ],
                 ],
               ),
-              if (event.description != null &&
-                  event.description!.trim().isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(event.description!),
-                ),
+              const SizedBox(height: 8),
+              _EventsOverviewWhen(
+                startAt: event.startAt,
+                endAt: event.endAt,
+                isDateOnly: event.isDateOnly,
+                timeZone: event.timeZone,
+                todayLabel: l10n.spotDetailDateToday,
+              ),
+              if (statusChips.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Wrap(spacing: 8, runSpacing: 8, children: statusChips),
+              ],
               if (hasDuplicateLink) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 EventDuplicateChip(
                   originalEventId: duplicateOfId,
                   duplicateOfLabel: l10n.spotDetailDuplicateOf,
                   originalTitleFallback: l10n.eventDetailOriginalEventFallback,
                 ),
               ],
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: [
-                  Chip(
-                    avatar: const Icon(Icons.schedule, size: 16),
-                    label: Text(startLabel),
-                    visualDensity: VisualDensity.compact,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              if (description.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  description,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.onSurface.withValues(alpha: 0.7),
+                    height: 1.4,
                   ),
-                  if (endLabel != null)
-                    Chip(
-                      avatar: const Icon(Icons.hourglass_bottom, size: 16),
-                      label: Text(endLabel),
-                      visualDensity: VisualDensity.compact,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  Chip(
-                    avatar: const Icon(Icons.place_outlined, size: 16),
-                    label: Text('${event.spotIds.length} linked spot(s)'),
-                    visualDensity: VisualDensity.compact,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  Chip(
-                    avatar: const Icon(Icons.list, size: 16),
-                    label: Text('${event.spotListIds.length} linked list(s)'),
-                    visualDensity: VisualDensity.compact,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  if (hasSource)
-                    Chip(
-                      avatar: const Icon(Icons.sync, size: 16),
-                      label: Text(sourceName),
-                      visualDensity: VisualDensity.compact,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                ],
-              ),
+                ),
+              ],
+              if (_metaItems(sourceName).isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 6,
+                  children: _metaItems(sourceName),
+                ),
+              ],
               if (hasSource &&
                   (event.externalSyncLastSeenAt != null ||
                       event.externalSyncLastChangedAt != null)) ...[
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    if (event.externalSyncLastSeenAt != null)
-                      Chip(
-                        avatar: const Icon(Icons.update, size: 16),
-                        label: Text(
-                          'Seen: ${_formatUtc(context, event.externalSyncLastSeenAt!)}',
-                        ),
-                        visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                    if (event.externalSyncLastChangedAt != null)
-                      Chip(
-                        avatar: const Icon(Icons.edit_calendar, size: 16),
-                        label: Text(
-                          'Changed: ${_formatUtc(context, event.externalSyncLastChangedAt!)}',
-                        ),
-                        visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                  ],
+                const SizedBox(height: 6),
+                Text(
+                  _syncMetaLine(context),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
                 ),
               ],
-              const SizedBox(height: 10),
-              SelectableText(
-                'Spot IDs: ${event.spotIds.join(', ')}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              if (event.spotListIds.isNotEmpty)
-                SelectableText(
-                  'List IDs: ${event.spotListIds.join(', ')}',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
               if (event.imageUrls.isNotEmpty) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 SizedBox(
                   height: 72,
                   child: ListView.separated(
@@ -452,9 +383,7 @@ class EventsOverviewCard extends StatelessWidget {
                           errorBuilder: (_, _, _) => Container(
                             width: 72,
                             height: 72,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
+                            color: colors.surfaceContainerHighest,
                             child: const Icon(Icons.broken_image_outlined),
                           ),
                         ),
@@ -469,20 +398,11 @@ class EventsOverviewCard extends StatelessWidget {
                   onTap: () => _openWebsite(websiteUrl),
                   child: Text(
                     websiteUrl,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.primary,
                       decoration: TextDecoration.underline,
                     ),
                   ),
-                ),
-              ],
-              if (hasLocation) ...[
-                const SizedBox(height: 10),
-                Text(
-                  event.address?.trim().isNotEmpty == true
-                      ? event.address!
-                      : '${event.latitude!.toStringAsFixed(5)}, ${event.longitude!.toStringAsFixed(5)}',
-                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
               if (event.id != null) ...[
@@ -517,23 +437,85 @@ class EventsOverviewCard extends StatelessWidget {
     );
   }
 
-  String _formatScheduleMoment(
-    BuildContext context,
-    DateTime value, {
-    required bool isDateOnly,
-    String? timeZone,
-  }) {
-    final localizations = MaterialLocalizations.of(context);
-    final display = EventScheduleUtils.toDisplayDateTime(
-      value,
-      timeZone: timeZone,
-    );
-    final date = localizations.formatMediumDate(display);
-    if (isDateOnly) return date;
-    final time = localizations.formatTimeOfDay(TimeOfDay.fromDateTime(display));
-    final normalizedTimeZone = EventScheduleUtils.normalizeTimeZone(timeZone);
-    final suffix = normalizedTimeZone == null ? '' : ' ${display.timeZoneName}';
-    return '$date · $time$suffix';
+  List<Widget> _statusChips(ColorScheme colors) {
+    return [
+      if (event.needsModeratorReview)
+        _EventStatusChip(
+          label: 'Needs review',
+          icon: Icons.flag_outlined,
+          background: colors.tertiaryContainer,
+          foreground: colors.onTertiaryContainer,
+        ),
+      if (!event.hasLocation)
+        _EventStatusChip(
+          label: 'No location',
+          icon: Icons.location_off_outlined,
+          background: colors.surfaceContainerHighest,
+          foreground: colors.onSurface,
+          outlined: true,
+          outlineColor: colors.outline.withValues(alpha: 0.35),
+        ),
+      if (event.hidden)
+        _EventStatusChip(
+          label: 'Hidden',
+          icon: Icons.visibility_off_outlined,
+          background: colors.errorContainer,
+          foreground: colors.onErrorContainer,
+        ),
+      if (event.isDuplicate)
+        _EventStatusChip(
+          label: 'Duplicate',
+          icon: Icons.copy_all_outlined,
+          background: colors.secondaryContainer,
+          foreground: colors.onSecondaryContainer,
+        ),
+    ];
+  }
+
+  List<Widget> _metaItems(String? sourceName) {
+    final city = event.city?.trim();
+    final address = event.address?.trim();
+    final locationLabel = (city != null && city.isNotEmpty)
+        ? city
+        : (address != null && address.isNotEmpty)
+        ? address
+        : (event.latitude != null && event.longitude != null)
+        ? '${event.latitude!.toStringAsFixed(5)}, ${event.longitude!.toStringAsFixed(5)}'
+        : null;
+
+    return [
+      if (locationLabel != null)
+        _EventMetaItem(icon: Icons.place_outlined, label: locationLabel),
+      if (event.spotIds.isNotEmpty)
+        _EventMetaItem(
+          icon: Icons.place_outlined,
+          label: event.spotIds.length == 1
+              ? '1 linked spot'
+              : '${event.spotIds.length} linked spots',
+        ),
+      if (event.spotListIds.isNotEmpty)
+        _EventMetaItem(
+          icon: Icons.list_outlined,
+          label: event.spotListIds.length == 1
+              ? '1 linked list'
+              : '${event.spotListIds.length} linked lists',
+        ),
+      if (sourceName != null && sourceName.isNotEmpty)
+        _EventMetaItem(icon: Icons.sync, label: sourceName),
+    ];
+  }
+
+  String _syncMetaLine(BuildContext context) {
+    final parts = <String>[];
+    if (event.externalSyncLastSeenAt != null) {
+      parts.add('Seen ${_formatUtc(context, event.externalSyncLastSeenAt!)}');
+    }
+    if (event.externalSyncLastChangedAt != null) {
+      parts.add(
+        'changed ${_formatUtc(context, event.externalSyncLastChangedAt!)}',
+      );
+    }
+    return parts.join(' · ');
   }
 
   String _formatUtc(BuildContext context, DateTime value) {
@@ -551,6 +533,220 @@ class EventsOverviewCard extends StatelessWidget {
     final uri = Uri.tryParse(url);
     if (uri == null) return;
     await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
+
+class _EventsOverviewWhen extends StatelessWidget {
+  const _EventsOverviewWhen({
+    required this.startAt,
+    this.endAt,
+    required this.isDateOnly,
+    this.timeZone,
+    required this.todayLabel,
+  });
+
+  final DateTime startAt;
+  final DateTime? endAt;
+  final bool isDateOnly;
+  final String? timeZone;
+  final String todayLabel;
+
+  bool _isToday(DateTime instant) {
+    final local = EventScheduleUtils.toDisplayDateTime(
+      instant,
+      timeZone: timeZone,
+    );
+    final now = EventScheduleUtils.toDisplayDateTime(
+      DateTime.now().toUtc(),
+      timeZone: timeZone,
+    );
+    return local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day;
+  }
+
+  String _formatDate(MaterialLocalizations localizations, DateTime display) {
+    final base = localizations.formatMediumDate(display);
+    final currentYear = EventScheduleUtils.toDisplayDateTime(
+      DateTime.now().toUtc(),
+      timeZone: timeZone,
+    ).year;
+    return display.year == currentYear ? base : '$base ${display.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final localizations = MaterialLocalizations.of(context);
+    final start = EventScheduleUtils.toDisplayDateTime(
+      startAt,
+      timeZone: timeZone,
+    );
+    final end = endAt == null
+        ? null
+        : EventScheduleUtils.toDisplayDateTime(endAt!, timeZone: timeZone);
+    final sameDay =
+        endAt != null &&
+        EventScheduleUtils.isSameCalendarDay(
+          startAt,
+          endAt!,
+          timeZone: timeZone,
+        );
+    final showToday = _isToday(startAt) || (endAt != null && _isToday(endAt!));
+    final zoneSuffix = EventScheduleUtils.normalizeTimeZone(timeZone) == null
+        ? ''
+        : ' ${start.timeZoneName}';
+
+    final startDate = _formatDate(localizations, start);
+    final endDate = end == null ? null : _formatDate(localizations, end);
+    final dateLine = (end == null || sameDay)
+        ? startDate
+        : '$startDate – $endDate';
+
+    String? timeLine;
+    if (!isDateOnly) {
+      final startTime = localizations.formatTimeOfDay(
+        TimeOfDay.fromDateTime(start),
+      );
+      if (end == null) {
+        timeLine = '$startTime$zoneSuffix';
+      } else {
+        final endTime = localizations.formatTimeOfDay(
+          TimeOfDay.fromDateTime(end),
+        );
+        timeLine = '$startTime – $endTime$zoneSuffix';
+      }
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: EdgeInsets.only(top: showToday ? 2 : 1),
+          child: Icon(
+            Icons.event_available_outlined,
+            size: 20,
+            color: colors.primary,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (showToday) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.primaryContainer.withValues(alpha: 0.65),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    todayLabel,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colors.onPrimaryContainer,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+              ],
+              Text(
+                dateLine,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  height: 1.25,
+                ),
+              ),
+              if (timeLine != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  timeLine,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EventStatusChip extends StatelessWidget {
+  const _EventStatusChip({
+    required this.label,
+    required this.icon,
+    required this.background,
+    required this.foreground,
+    this.outlined = false,
+    this.outlineColor,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color background;
+  final Color foreground;
+  final bool outlined;
+  final Color? outlineColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      avatar: Icon(icon, size: 16, color: foreground),
+      label: Text(label),
+      labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+        color: foreground,
+        fontWeight: FontWeight.w600,
+      ),
+      backgroundColor: background,
+      side: outlined
+          ? BorderSide(color: outlineColor ?? foreground, width: 1)
+          : BorderSide.none,
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+    );
+  }
+}
+
+class _EventMetaItem extends StatelessWidget {
+  const _EventMetaItem({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 280),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: colors.onSurfaceVariant),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
