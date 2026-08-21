@@ -139,13 +139,11 @@ class EventsOverviewBody extends StatelessWidget {
   const EventsOverviewBody({
     super.key,
     required this.service,
-    this.showAdminEditAction = false,
     this.showModeratorReviewActions = false,
     this.onMarkReviewed,
   });
 
   final AdminEventsService service;
-  final bool showAdminEditAction;
   final bool showModeratorReviewActions;
   final Future<void> Function(ParkourEvent event)? onMarkReviewed;
 
@@ -226,7 +224,6 @@ class EventsOverviewBody extends StatelessWidget {
           }
           return EventsOverviewCard(
             event: service.events[index],
-            showAdminEditAction: showAdminEditAction,
             showModeratorReviewActions: showModeratorReviewActions,
             onMarkReviewed: onMarkReviewed,
           );
@@ -240,13 +237,11 @@ class EventsOverviewCard extends StatelessWidget {
   const EventsOverviewCard({
     super.key,
     required this.event,
-    this.showAdminEditAction = false,
     this.showModeratorReviewActions = false,
     this.onMarkReviewed,
   });
 
   final ParkourEvent event;
-  final bool showAdminEditAction;
   final bool showModeratorReviewActions;
   final Future<void> Function(ParkourEvent event)? onMarkReviewed;
 
@@ -295,15 +290,6 @@ class EventsOverviewCard extends StatelessWidget {
                     ),
                   ),
                   if (event.id != null) ...[
-                    if (showAdminEditAction)
-                      IconButton(
-                        onPressed: () {
-                          context.push('/admin/events/${event.id}/edit');
-                        },
-                        tooltip: 'Edit event',
-                        visualDensity: VisualDensity.compact,
-                        icon: const Icon(Icons.edit_outlined),
-                      ),
                     IconButton(
                       onPressed: openEventPage,
                       tooltip: 'Open event page',

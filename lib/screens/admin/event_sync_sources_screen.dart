@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../services/auth_service.dart';
 import '../../services/event_sync_source_service.dart';
 import '../../utils/event_schedule_utils.dart';
+import 'event_backfill_actions.dart';
 
 const TextStyle _kEventSyncChipLabelText = TextStyle(
   fontSize: 11,
@@ -121,6 +122,18 @@ class _EventSyncSourcesScreenState extends State<EventSyncSourcesScreen> {
           },
         ),
         actions: [
+          IconButton(
+            tooltip: 'Backfill event name search (eventSearchTerms)',
+            icon: const Icon(Icons.search),
+            onPressed: () =>
+                EventBackfillActions.backfillEventSearchTerms(context),
+          ),
+          IconButton(
+            tooltip: 'Backfill event map pins',
+            icon: const Icon(Icons.map_outlined),
+            onPressed: () =>
+                EventBackfillActions.showBackfillEventMapPinsDialog(context),
+          ),
           Consumer<EventSyncSourceService>(
             builder: (context, service, _) {
               return IconButton(
@@ -453,8 +466,7 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
     _selectedDefaultTimeZone =
         EventScheduleUtils.normalizeTimeZone(widget.source?.defaultTimeZone) ??
         _noDefaultTimeZoneValue;
-    _sourceType =
-        widget.source?.sourceType ?? EventSyncSource.sourceTypeIcs;
+    _sourceType = widget.source?.sourceType ?? EventSyncSource.sourceTypeIcs;
     _isActive = widget.source?.isActive ?? true;
     _autoSyncEnabled = widget.source?.autoSyncEnabled ?? false;
   }
@@ -686,7 +698,8 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                       defaultTimeZone: defaultTimeZoneChanged
                           ? selectedDefaultTimeZone
                           : null,
-                      clearDefaultTimeZone: defaultTimeZoneChanged &&
+                      clearDefaultTimeZone:
+                          defaultTimeZoneChanged &&
                           selectedDefaultTimeZone == null,
                     );
                   }

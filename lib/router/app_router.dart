@@ -13,8 +13,8 @@ import '../screens/admin/geocoding_admin_screen.dart';
 import '../screens/admin/spot_management_screen.dart';
 import '../screens/admin/user_management_screen.dart';
 import '../screens/admin/admin_notifications_screen.dart';
-import '../screens/admin/admin_events_screen.dart';
 import '../screens/admin/admin_event_edit_screen.dart';
+import '../screens/admin/spot_data_screen.dart';
 import '../screens/admin/event_sync_sources_screen.dart';
 import '../screens/admin/admin_push_subscriptions_screen.dart';
 import '../screens/admin/user_activity_metrics_screen.dart';
@@ -435,6 +435,10 @@ class AppRouter {
           builder: (context, state) => const SpotManagementScreen(),
         ),
         GoRoute(
+          path: '/admin/spot-data',
+          builder: (context, state) => const SpotDataScreen(),
+        ),
+        GoRoute(
           path: '/admin/users',
           builder: (context, state) => const UserManagementScreen(),
         ),
@@ -444,7 +448,7 @@ class AppRouter {
         ),
         GoRoute(
           path: '/admin/events',
-          builder: (context, state) => const AdminEventsScreen(),
+          redirect: (context, state) => '/admin/event-sources',
         ),
         GoRoute(
           path: '/admin/events/:eventId/edit',

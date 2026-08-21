@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
-import '../../services/jumpflix_service.dart';
 import '../../services/spot_service.dart';
 import '../../widgets/page_scaffold.dart';
+import 'admin_tool_widgets.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -47,414 +47,156 @@ class AdminHomeScreen extends StatelessWidget {
       scrollable: false,
       body: ListView(
         children: [
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.sync),
-              title: const Text('Sync Sources'),
-              subtitle: const Text(
-                'Add, edit, delete, and sync external sources',
+          const AdminSectionHeader(title: 'Spots'),
+          AdminSectionCard(
+            children: [
+              AdminToolTile(
+                icon: Icons.sync,
+                title: 'Sync Sources',
+                subtitle: 'Add, edit, delete, and sync external sources',
+                onTap: () => context.push('/admin/sources'),
               ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.push('/admin/sources'),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.api),
-              title: const Text('API Clients'),
-              subtitle: const Text(
-                'Register clients and track Spot Details API usage',
+              AdminToolTile(
+                icon: Icons.delete_sweep,
+                title: 'Spot Management',
+                subtitle:
+                    'Search and delete spots by source and last updated date',
+                onTap: () => context.push('/admin/spot-management'),
               ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.push('/admin/api-clients'),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.people_outline),
-              title: const Text('User Management'),
-              subtitle: const Text('Review users, stats, and moderator access'),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.push('/admin/users'),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.notifications_outlined),
-              title: const Text('All notifications'),
-              subtitle: const Text(
-                'Browse every in-app notification across users (newest first)',
+              AdminToolTile(
+                icon: Icons.image_outlined,
+                title: 'Spot data and images',
+                subtitle:
+                    'Geocode, image cleanup, ratings, rankings, and Jumpflix links',
+                onTap: () => context.push('/admin/spot-data'),
               ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.push('/admin/notifications'),
-            ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.event_note_outlined),
-              title: const Text('Events'),
-              subtitle: const Text(
-                'Browse and create parkour events linked to spots',
+          const SizedBox(height: 24),
+          const AdminSectionHeader(title: 'Events'),
+          AdminSectionCard(
+            children: [
+              AdminToolTile(
+                icon: Icons.event_repeat_outlined,
+                title: 'Event Sync Sources',
+                subtitle: 'Configure and sync external calendar sources',
+                onTap: () => context.push('/admin/event-sources'),
               ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.push('/admin/events'),
-            ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.event_repeat_outlined),
-              title: const Text('Event Sync Sources'),
-              subtitle: const Text(
-                'Configure and sync external calendar sources',
+          const SizedBox(height: 24),
+          const AdminSectionHeader(title: 'Users'),
+          AdminSectionCard(
+            children: [
+              AdminToolTile(
+                icon: Icons.people_outline,
+                title: 'User Management',
+                subtitle: 'Review users, stats, and moderator access',
+                onTap: () => context.push('/admin/users'),
               ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.push('/admin/event-sources'),
-            ),
+              AdminToolTile(
+                icon: Icons.notifications_outlined,
+                title: 'All notifications',
+                subtitle:
+                    'Browse every in-app notification across users (newest first)',
+                onTap: () => context.push('/admin/notifications'),
+              ),
+              AdminToolTile(
+                icon: Icons.phonelink_ring_outlined,
+                title: 'Web push subscriptions',
+                subtitle:
+                    'Pick a user, select devices, send a push notification',
+                onTap: () => context.push('/admin/push-subscriptions'),
+              ),
+              AdminToolTile(
+                icon: Icons.analytics,
+                title: 'User Activity Metrics',
+                subtitle:
+                    'Calculate and sync DAU/WAU/MAU metrics, Spots, Users, and Events to Google Sheets',
+                onTap: () => context.push('/admin/user-activity-metrics'),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.phonelink_ring_outlined),
-              title: const Text('Web push subscriptions'),
-              subtitle: const Text(
-                'Pick a user, select devices, send a push notification',
+          const SizedBox(height: 24),
+          const AdminSectionHeader(title: 'Site'),
+          AdminSectionCard(
+            children: [
+              AdminToolTile(
+                icon: Icons.api,
+                title: 'API Clients',
+                subtitle: 'Register clients and track Spot Details API usage',
+                onTap: () => context.push('/admin/api-clients'),
               ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.push('/admin/push-subscriptions'),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.analytics),
-              title: const Text('User Activity Metrics'),
-              subtitle: const Text(
-                'Calculate and sync DAU/WAU/MAU metrics, Spots, Users, and Events to Google Sheets',
+              AdminToolTile(
+                icon: Icons.history,
+                title: 'Audit Log Viewer',
+                subtitle:
+                    'View spot creations, user creations, and audit log actions',
+                onTap: () => context.push('/admin/audit-log'),
               ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.push('/admin/user-activity-metrics'),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.place),
-              title: const Text('Geocode Missing Addresses'),
-              subtitle: const Text(
-                'Fill address, city, country for spots with empty fields',
+              AdminToolTile(
+                icon: Icons.map,
+                title: 'Generate Sitemaps',
+                subtitle:
+                    'Regenerate XML sitemaps for search engines (spots, lists, users)',
+                showChevron: false,
+                onTap: () => _generateSitemaps(context),
               ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.push('/admin/geocoding'),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.delete_sweep),
-              title: const Text('Spot Management'),
-              subtitle: const Text(
-                'Search and delete spots by source and last updated date',
+              AdminToolTile(
+                icon: Icons.phone_android,
+                title: 'Device Detection Info',
+                subtitle:
+                    'View device detection and PWA install service status',
+                onTap: () => context.push('/admin/device-detection'),
               ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.push('/admin/spot-management'),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text('Audit Log Viewer'),
-              subtitle: const Text(
-                'View spot creations, user creations, and audit log actions',
-              ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.push('/admin/audit-log'),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.image_search),
-              title: const Text('Duplicate Image URLs'),
-              subtitle: const Text(
-                'Find all spots with duplicate image URLs in their image array',
-              ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.push('/admin/duplicate-images'),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.image_not_supported),
-              title: const Text('Missing Resized Images'),
-              subtitle: const Text(
-                'Find spot images that do not have a resized version available',
-              ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.push('/admin/missing-resized-images'),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.phone_android),
-              title: const Text('Device Detection Info'),
-              subtitle: const Text(
-                'View device detection and PWA install service status',
-              ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.push('/admin/device-detection'),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.star_rate),
-              title: const Text('Recompute Ratings for Rated Spots'),
-              subtitle: const Text(
-                'Recalculate average, count, and Wilson lower bound from ratings',
-              ),
-              onTap: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Recompute Ratings'),
-                    content: const Text(
-                      'This will recompute rating aggregates for all spots that have ratings. Continue?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(false),
-                        child: const Text('Cancel'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.of(ctx).pop(true),
-                        child: const Text('Run'),
-                      ),
-                    ],
-                  ),
-                );
-
-                if (confirmed != true) return;
-
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Recomputing ratings...')),
-                );
-
-                try {
-                  final spotService = Provider.of<SpotService>(
-                    context,
-                    listen: false,
-                  );
-                  final result = await spotService.recomputeAllRatedSpots();
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Done. Processed ${result['processed']}, updated ${result['updated']}, failed ${result['failed']}',
-                      ),
-                    ),
-                  );
-                } catch (e) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
-                }
-              },
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.map),
-              title: const Text('Generate Sitemaps'),
-              subtitle: const Text(
-                'Regenerate XML sitemaps for search engines (spots, lists, users)',
-              ),
-              onTap: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Generate Sitemaps'),
-                    content: const Text(
-                      'This will regenerate all sitemaps (country pages, unlocated spots, '
-                      'public lists, user profiles) and upload them to Storage. '
-                      'This may take a few minutes. Continue?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(false),
-                        child: const Text('Cancel'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.of(ctx).pop(true),
-                        child: const Text('Generate'),
-                      ),
-                    ],
-                  ),
-                );
-
-                if (confirmed != true) return;
-
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Generating sitemaps...')),
-                );
-
-                try {
-                  final spotService = Provider.of<SpotService>(
-                    context,
-                    listen: false,
-                  );
-                  await spotService.generateSitemaps();
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Sitemaps generated successfully'),
-                    ),
-                  );
-                } catch (e) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
-                }
-              },
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.video_library),
-              title: const Text('Import Jumpflix Spot Links'),
-              subtitle: const Text(
-                'Fetch Jumpflix video-spot mappings and update the database (also runs nightly at 02:00 UTC)',
-              ),
-              onTap: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Import Jumpflix Spot Links'),
-                    content: const Text(
-                      'This will fetch video-spot mappings from Jumpflix and update the '
-                      'spotJumpflixVideos collection. Continue?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(false),
-                        child: const Text('Cancel'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.of(ctx).pop(true),
-                        child: const Text('Import'),
-                      ),
-                    ],
-                  ),
-                );
-
-                if (confirmed != true) return;
-
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Importing Jumpflix spot links...'),
-                  ),
-                );
-
-                try {
-                  final jumpflixService = Provider.of<JumpflixService>(
-                    context,
-                    listen: false,
-                  );
-                  final result = await jumpflixService.runJumpflixImport();
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Done. Spots updated: ${result['spotsUpdated']}, '
-                        'removed: ${result['spotsRemoved']}, '
-                        'Jumpflix videos: ${result['jumpflixVideoCount']}',
-                      ),
-                    ),
-                  );
-                } catch (e) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
-                }
-              },
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.signal_cellular_alt),
-              title: const Text('Recompute Spot Rankings'),
-              subtitle: const Text(
-                'Recalculate ranking field for all spots based on ratings',
-              ),
-              onTap: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) => AlertDialog(
-                    title: const Text('Recompute Spot Rankings'),
-                    content: const Text(
-                      'This will recalculate the ranking field for all spots based on their ratings and the average Wilson score. This is useful after changing the Wilson score threshold in settings. Continue?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(false),
-                        child: const Text('Cancel'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.of(ctx).pop(true),
-                        child: const Text('Run'),
-                      ),
-                    ],
-                  ),
-                );
-
-                if (confirmed != true) return;
-
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Recomputing spot rankings...')),
-                );
-
-                try {
-                  final spotService = Provider.of<SpotService>(
-                    context,
-                    listen: false,
-                  );
-                  final result = await spotService.recomputeSpotRankings();
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Done. Processed ${result['processed']}, updated ${result['updated']}, failed ${result['failed']}',
-                      ),
-                    ),
-                  );
-                } catch (e) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
-                }
-              },
-            ),
+            ],
           ),
         ],
       ),
     );
+  }
+}
+
+Future<void> _generateSitemaps(BuildContext context) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Generate Sitemaps'),
+      content: const Text(
+        'This will regenerate all sitemaps (country pages, unlocated spots, '
+        'public lists, user profiles) and upload them to Storage. '
+        'This may take a few minutes. Continue?',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(false),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.of(ctx).pop(true),
+          child: const Text('Generate'),
+        ),
+      ],
+    ),
+  );
+
+  if (confirmed != true || !context.mounted) return;
+
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(const SnackBar(content: Text('Generating sitemaps...')));
+
+  try {
+    final spotService = Provider.of<SpotService>(context, listen: false);
+    await spotService.generateSitemaps();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Sitemaps generated successfully')),
+    );
+  } catch (e) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Error: $e')));
   }
 }

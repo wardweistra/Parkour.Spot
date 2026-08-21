@@ -7,6 +7,7 @@ import '../../services/admin_events_service.dart';
 import '../../services/event_report_service.dart';
 import '../../services/spot_report_service.dart';
 import '../../widgets/page_scaffold.dart';
+import '../admin/admin_tool_widgets.dart';
 
 class ModeratorToolsScreen extends StatelessWidget {
   const ModeratorToolsScreen({super.key});
@@ -120,93 +121,77 @@ class ModeratorToolsScreen extends StatelessWidget {
       scrollable: false,
       onBack: () => _handleBack(context),
       body: ListView(
-        padding: EdgeInsets.zero,
         children: [
-          StreamBuilder<int>(
-            initialData: context.read<SpotReportService>().newReportCount,
-            stream: context.read<SpotReportService>().watchNewReportCount(),
-            builder: (context, snapshot) {
-              final newCount = snapshot.data ?? 0;
-              return _buildQueueTile(
-                icon: Icons.report_problem,
-                title: 'Spot Report Queue',
-                subtitle:
-                    'Work through new spot reports, keeping moderators aligned on progress',
-                badgeCount: newCount > 0 ? newCount : null,
-                onTap: () => context.go('/moderator/reports'),
-              );
-            },
-          ),
-          const SizedBox(height: 8),
-          StreamBuilder<int>(
-            initialData: context.read<EventReportService>().newReportCount,
-            stream: context.read<EventReportService>().watchNewReportCount(),
-            builder: (context, snapshot) {
-              final newCount = snapshot.data ?? 0;
-              return _buildQueueTile(
-                icon: Icons.event_note_outlined,
-                title: 'Event Report Queue',
-                subtitle:
-                    'Review user-submitted event proposals and publish approved events',
-                badgeCount: newCount > 0 ? newCount : null,
-                onTap: () => context.go('/moderator/event-reports'),
-              );
-            },
-          ),
-          const SizedBox(height: 8),
-          StreamBuilder<int>(
-            initialData: context.read<AdminEventsService>().needsReviewCount,
-            stream: context.read<AdminEventsService>().watchNeedsReviewCount(),
-            builder: (context, snapshot) {
-              final reviewCount = snapshot.data ?? 0;
-              return _buildQueueTile(
-                icon: Icons.event_available_outlined,
-                title: 'Event Review',
-                subtitle:
-                    'Review newly synced events for duplicates and location quality',
-                badgeCount: reviewCount > 0 ? reviewCount : null,
-                onTap: () => context.go('/moderator/events'),
-              );
-            },
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.compare_arrows),
-              title: const Text('Duplicate Spot Detection'),
-              subtitle: const Text(
-                'Find potential duplicate spots within 50m from different sources',
+          const AdminSectionHeader(title: 'Spots'),
+          AdminSectionCard(
+            children: [
+              StreamBuilder<int>(
+                initialData: context.read<SpotReportService>().newReportCount,
+                stream: context.read<SpotReportService>().watchNewReportCount(),
+                builder: (context, snapshot) {
+                  final newCount = snapshot.data ?? 0;
+                  return AdminToolTile(
+                    icon: Icons.report_problem,
+                    title: 'Spot Report Queue',
+                    subtitle:
+                        'Work through new spot reports, keeping moderators aligned on progress',
+                    badgeCount: newCount > 0 ? newCount : null,
+                    onTap: () => context.go('/moderator/reports'),
+                  );
+                },
               ),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.go('/moderator/duplicate-spots'),
-            ),
+              AdminToolTile(
+                icon: Icons.compare_arrows,
+                title: 'Duplicate Spot Detection',
+                subtitle:
+                    'Find potential duplicate spots within 50m from different sources',
+                onTap: () => context.go('/moderator/duplicate-spots'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          const AdminSectionHeader(title: 'Events'),
+          AdminSectionCard(
+            children: [
+              StreamBuilder<int>(
+                initialData: context.read<EventReportService>().newReportCount,
+                stream: context
+                    .read<EventReportService>()
+                    .watchNewReportCount(),
+                builder: (context, snapshot) {
+                  final newCount = snapshot.data ?? 0;
+                  return AdminToolTile(
+                    icon: Icons.event_note_outlined,
+                    title: 'Event Report Queue',
+                    subtitle:
+                        'Review user-submitted event proposals and publish approved events',
+                    badgeCount: newCount > 0 ? newCount : null,
+                    onTap: () => context.go('/moderator/event-reports'),
+                  );
+                },
+              ),
+              StreamBuilder<int>(
+                initialData: context
+                    .read<AdminEventsService>()
+                    .needsReviewCount,
+                stream: context
+                    .read<AdminEventsService>()
+                    .watchNeedsReviewCount(),
+                builder: (context, snapshot) {
+                  final reviewCount = snapshot.data ?? 0;
+                  return AdminToolTile(
+                    icon: Icons.event_available_outlined,
+                    title: 'Event Review',
+                    subtitle:
+                        'Review newly synced events for duplicates and location quality',
+                    badgeCount: reviewCount > 0 ? reviewCount : null,
+                    onTap: () => context.go('/moderator/events'),
+                  );
+                },
+              ),
+            ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildQueueTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    int? badgeCount,
-  }) {
-    Widget leading = Icon(icon);
-    if (badgeCount != null && badgeCount > 0) {
-      leading = Badge(
-        label: Text('$badgeCount'),
-        child: leading,
-      );
-    }
-    return Card(
-      child: ListTile(
-        leading: leading,
-        title: Text(title),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: onTap,
       ),
     );
   }
