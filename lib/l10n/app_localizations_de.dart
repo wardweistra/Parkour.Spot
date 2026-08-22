@@ -1006,13 +1006,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addEventTitleTooLong => 'Titel ist zu lang.';
 
   @override
-  String get addEventDescriptionLabel => 'Beschreibung (optional)';
+  String get addEventDescriptionLabel => 'Beschreibung';
 
   @override
   String get addEventDescriptionTooLong => 'Beschreibung ist zu lang.';
 
   @override
-  String get addEventWebsiteLabel => 'Website-URL (optional)';
+  String get addEventWebsiteLabel => 'Website-URL';
 
   @override
   String get addEventWebsiteHint => 'https://example.com';
@@ -1030,7 +1030,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addEventStartLabel => 'Start';
 
   @override
-  String get addEventEndLabel => 'Ende (optional)';
+  String get addEventEndLabel => 'Ende';
 
   @override
   String get addEventEndNotSet => 'Nicht festgelegt';
@@ -1045,11 +1045,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addEventSchedulePickStartTime => 'Startzeit wählen';
 
   @override
-  String get addEventSchedulePickEndDateOptional =>
-      'Enddatum wählen (optional)';
+  String get addEventSchedulePickEndDateOptional => 'Enddatum wählen';
 
   @override
-  String get addEventSchedulePickEndTimeOptional => 'Endzeit wählen (optional)';
+  String get addEventSchedulePickEndTimeOptional => 'Endzeit wählen';
 
   @override
   String get addEventScheduleSkipEnd => 'Überspringen';
@@ -1125,7 +1124,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get addEventAddressLabel => 'Genaue Adresse (optional)';
+  String get addEventAddressLabel => 'Genaue Adresse';
 
   @override
   String get addEventAddressHint => 'Straße, Hausnummer, Stadt';
@@ -1148,8 +1147,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Für diese Adresse konnten keine Koordinaten gefunden werden.';
 
   @override
-  String get addEventPickLocationHint =>
-      'Wähle einen Standort auf der Karte (optional, wenn Spot/Liste verknüpft ist).';
+  String get addEventPickLocationHint => 'Wähle einen Standort auf der Karte.';
 
   @override
   String get addEventClearLocationTooltip => 'Standort löschen';

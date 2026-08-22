@@ -44,3 +44,4 @@ No formal WCAG target is required right now. **Default to inclusion where it’s
 4. **Touch-friendly, mobile-aware** — Primary actions and targets sized for phones; PWA and web remain first-class alongside native.
 5. **Community-first, not extractive** — UX and copy reinforce shared ownership and open discovery; avoid patterns that feel like locking the community’s own map behind paywalls or unnecessary friction for core flows.
 6. **Motion with purpose** — Splash and transitions welcome; prefer respecting reduced-motion preferences when the platform exposes them, applied consistently as the app evolves.
+7. **Sentence case for UI copy** — Buttons, fields, titles, and menu items capitalize the first word only, plus proper nouns and acronyms (API, URLs, Jumpflix). Prefer “Add new spot” over “Add New Spot”.

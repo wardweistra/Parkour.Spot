@@ -1,0 +1,21 @@
+---
+description: Prefer sentence case for UI labels (buttons, fields, titles, menus)
+alwaysApply: true
+---
+
+# Sentence case for UI copy
+
+ParkourSpot UI strings use **sentence case**, not Title Case.
+
+- Capitalize the first word only.
+- Also capitalize proper nouns and acronyms (API, URLs, Jumpflix, ParkourSpot).
+- Apply to buttons, field labels, screen titles, section headings, and menu items.
+
+Examples:
+
+- Add new spot (not Add New Spot)
+- Spot management (not Spot Management)
+- Training activity (not My Training Activity)
+- Generate sitemaps (not Generate Sitemaps)
+
+When adding or changing user-facing English copy in `l10n/app_en.arb`, follow this convention. Other locales should follow their own language norms (e.g. German noun capitalization).

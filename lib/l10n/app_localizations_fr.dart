@@ -1011,13 +1011,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addEventTitleTooLong => 'Le titre est trop long.';
 
   @override
-  String get addEventDescriptionLabel => 'Description (facultatif)';
+  String get addEventDescriptionLabel => 'Description';
 
   @override
   String get addEventDescriptionTooLong => 'La description est trop longue.';
 
   @override
-  String get addEventWebsiteLabel => 'URL du site web (facultatif)';
+  String get addEventWebsiteLabel => 'URL du site web';
 
   @override
   String get addEventWebsiteHint => 'https://example.com';
@@ -1035,7 +1035,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addEventStartLabel => 'Début';
 
   @override
-  String get addEventEndLabel => 'Fin (facultatif)';
+  String get addEventEndLabel => 'Fin';
 
   @override
   String get addEventEndNotSet => 'Non défini';
@@ -1050,12 +1050,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addEventSchedulePickStartTime => 'Choisir l\'heure de début';
 
   @override
-  String get addEventSchedulePickEndDateOptional =>
-      'Choisir la date de fin (facultatif)';
+  String get addEventSchedulePickEndDateOptional => 'Choisir la date de fin';
 
   @override
-  String get addEventSchedulePickEndTimeOptional =>
-      'Choisir l\'heure de fin (facultatif)';
+  String get addEventSchedulePickEndTimeOptional => 'Choisir l\'heure de fin';
 
   @override
   String get addEventScheduleSkipEnd => 'Ignorer';
@@ -1133,7 +1131,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get addEventAddressLabel => 'Adresse exacte (facultatif)';
+  String get addEventAddressLabel => 'Adresse exacte';
 
   @override
   String get addEventAddressHint => 'Rue, numéro, ville';
@@ -1157,7 +1155,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get addEventPickLocationHint =>
-      'Choisissez un emplacement sur la carte (facultatif si un spot/liste est lié).';
+      'Choisissez un emplacement sur la carte.';
 
   @override
   String get addEventClearLocationTooltip => 'Effacer l\'emplacement';

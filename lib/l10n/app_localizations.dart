@@ -937,7 +937,7 @@ abstract class AppLocalizations {
   /// Add spot tab: heading when not signed in
   ///
   /// In en, this message translates to:
-  /// **'Add New Spot'**
+  /// **'Add new spot'**
   String get exploreAddSpotTitle;
 
   /// Add spot tab: supporting text when not signed in
@@ -973,7 +973,7 @@ abstract class AppLocalizations {
   /// Add tab hub: spot card title
   ///
   /// In en, this message translates to:
-  /// **'Add New Spot'**
+  /// **'Add new spot'**
   String get addHubSpotTitle;
 
   /// Add tab hub: spot card description
@@ -991,13 +991,13 @@ abstract class AppLocalizations {
   /// Add tab hub: spot card action
   ///
   /// In en, this message translates to:
-  /// **'Add New Spot'**
+  /// **'Add new spot'**
   String get addHubSpotButton;
 
   /// Add tab hub: event card title
   ///
   /// In en, this message translates to:
-  /// **'Add New Event'**
+  /// **'Add new event'**
   String get addHubEventTitle;
 
   /// Add tab hub: event card description
@@ -1015,7 +1015,7 @@ abstract class AppLocalizations {
   /// Add tab hub: event card action
   ///
   /// In en, this message translates to:
-  /// **'Add New Event'**
+  /// **'Add new event'**
   String get addHubEventButton;
 
   /// Add tab sign-in callout: heading
@@ -1525,7 +1525,7 @@ abstract class AppLocalizations {
   /// Add spot: name field label
   ///
   /// In en, this message translates to:
-  /// **'Spot Name *'**
+  /// **'Spot name *'**
   String get addSpotNameLabel;
 
   /// Add spot: name validation
@@ -1555,19 +1555,19 @@ abstract class AppLocalizations {
   /// Add spot: submit in progress
   ///
   /// In en, this message translates to:
-  /// **'Adding Spot...'**
+  /// **'Adding spot...'**
   String get addSpotCreating;
 
   /// Add spot: primary submit
   ///
   /// In en, this message translates to:
-  /// **'Add Spot'**
+  /// **'Add spot'**
   String get addSpotCreateButton;
 
   /// Add spot: map card title
   ///
   /// In en, this message translates to:
-  /// **'Select Spot Location'**
+  /// **'Select spot location'**
   String get addSpotLocationSectionTitle;
 
   /// Add spot: GPS loading row
@@ -1591,7 +1591,7 @@ abstract class AppLocalizations {
   /// Add spot: photos card title
   ///
   /// In en, this message translates to:
-  /// **'Select Spot Images'**
+  /// **'Select spot images'**
   String get addSpotImagesSectionTitle;
 
   /// Add spot: choose from gallery
@@ -1609,7 +1609,7 @@ abstract class AppLocalizations {
   /// Add spot attributes: good for card
   ///
   /// In en, this message translates to:
-  /// **'Good For'**
+  /// **'Good for'**
   String get addSpotGoodForTitle;
 
   /// Add spot attributes: good for hint
@@ -1621,7 +1621,7 @@ abstract class AppLocalizations {
   /// Add spot attributes: features card
   ///
   /// In en, this message translates to:
-  /// **'Spot Features'**
+  /// **'Spot features'**
   String get addSpotFeaturesTitle;
 
   /// Add spot attributes: features hint
@@ -1633,7 +1633,7 @@ abstract class AppLocalizations {
   /// Add spot attributes: access card
   ///
   /// In en, this message translates to:
-  /// **'Spot Access'**
+  /// **'Spot access'**
   String get addSpotAccessTitle;
 
   /// Add spot attributes: access hint
@@ -1645,7 +1645,7 @@ abstract class AppLocalizations {
   /// Add spot attributes: facilities card (form)
   ///
   /// In en, this message translates to:
-  /// **'Spot Facilities'**
+  /// **'Spot facilities'**
   String get addSpotFacilitiesFormTitle;
 
   /// Add spot attributes: facilities hint
@@ -1675,7 +1675,7 @@ abstract class AppLocalizations {
   /// Full-screen map: choose coordinates
   ///
   /// In en, this message translates to:
-  /// **'Pick Location'**
+  /// **'Pick location'**
   String get addSpotPickLocationAppBarTitle;
 
   /// Location picker hint on mobile
@@ -1723,7 +1723,7 @@ abstract class AppLocalizations {
   /// Add event page: app bar title
   ///
   /// In en, this message translates to:
-  /// **'Add New Event'**
+  /// **'Add new event'**
   String get addEventTitle;
 
   /// Add event page: title field label
@@ -1747,7 +1747,7 @@ abstract class AppLocalizations {
   /// Add event page: description field label
   ///
   /// In en, this message translates to:
-  /// **'Description (optional)'**
+  /// **'Description'**
   String get addEventDescriptionLabel;
 
   /// Add event page: description validation length
@@ -1759,7 +1759,7 @@ abstract class AppLocalizations {
   /// Add event page: website field label
   ///
   /// In en, this message translates to:
-  /// **'Website URL (optional)'**
+  /// **'Website URL'**
   String get addEventWebsiteLabel;
 
   /// Add event page: website field placeholder
@@ -1771,7 +1771,7 @@ abstract class AppLocalizations {
   /// Add event page: poster/cover image section title
   ///
   /// In en, this message translates to:
-  /// **'Select Event Images'**
+  /// **'Select event images'**
   String get addEventPhotosSectionTitle;
 
   /// Add event page: all-day toggle
@@ -1795,7 +1795,7 @@ abstract class AppLocalizations {
   /// Add event page: end date/time row
   ///
   /// In en, this message translates to:
-  /// **'End (optional)'**
+  /// **'End'**
   String get addEventEndLabel;
 
   /// Add event page: end time not chosen
@@ -1825,13 +1825,13 @@ abstract class AppLocalizations {
   /// Add event page: date picker title when choosing optional end date after start
   ///
   /// In en, this message translates to:
-  /// **'Select end date (optional)'**
+  /// **'Select end date'**
   String get addEventSchedulePickEndDateOptional;
 
   /// Add event page: time picker title when choosing optional end time after start
   ///
   /// In en, this message translates to:
-  /// **'Select end time (optional)'**
+  /// **'Select end time'**
   String get addEventSchedulePickEndTimeOptional;
 
   /// Add event page: skip optional end date/time in chained schedule picker
@@ -1855,13 +1855,13 @@ abstract class AppLocalizations {
   /// Add event page: combined spot link and location section
   ///
   /// In en, this message translates to:
-  /// **'Select Event Location'**
+  /// **'Select event location'**
   String get addEventWhereSectionTitle;
 
   /// Add event page: schedule section title
   ///
   /// In en, this message translates to:
-  /// **'Select Event Schedule'**
+  /// **'Select event schedule'**
   String get addEventWhenSectionTitle;
 
   /// Add event page: submit blocked until address is geocoded
@@ -1957,7 +1957,7 @@ abstract class AppLocalizations {
   /// Add event page: address input label
   ///
   /// In en, this message translates to:
-  /// **'Exact address (optional)'**
+  /// **'Exact address'**
   String get addEventAddressLabel;
 
   /// Add event page: address input hint
@@ -1999,7 +1999,7 @@ abstract class AppLocalizations {
   /// Add event page: map location helper text
   ///
   /// In en, this message translates to:
-  /// **'Pick a location on the map (optional when linked spot/list exists).'**
+  /// **'Pick a location on the map.'**
   String get addEventPickLocationHint;
 
   /// Add event page: clear map location button

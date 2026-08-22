@@ -632,7 +632,7 @@
       }
     }
   },
-  "exploreAddSpotTitle": "Add New Spot",
+  "exploreAddSpotTitle": "Add new spot",
   "@exploreAddSpotTitle": {
     "description": "Add spot tab: heading when not signed in"
   },
@@ -656,7 +656,7 @@
   "@addHubSubtitle": {
     "description": "Add tab hub: supporting text"
   },
-  "addHubSpotTitle": "Add New Spot",
+  "addHubSpotTitle": "Add new spot",
   "@addHubSpotTitle": {
     "description": "Add tab hub: spot card title"
   },
@@ -668,11 +668,11 @@
   "@addHubSpotPublishBadge": {
     "description": "Add tab hub: spot publish status badge"
   },
-  "addHubSpotButton": "Add New Spot",
+  "addHubSpotButton": "Add new spot",
   "@addHubSpotButton": {
     "description": "Add tab hub: spot card action"
   },
-  "addHubEventTitle": "Add New Event",
+  "addHubEventTitle": "Add new event",
   "@addHubEventTitle": {
     "description": "Add tab hub: event card title"
   },
@@ -684,7 +684,7 @@
   "@addHubEventModerationBadge": {
     "description": "Add tab hub: event moderation status badge"
   },
-  "addHubEventButton": "Add New Event",
+  "addHubEventButton": "Add new event",
   "@addHubEventButton": {
     "description": "Add tab hub: event card action"
   },
@@ -1096,7 +1096,7 @@
       }
     }
   },
-  "addSpotNameLabel": "Spot Name *",
+  "addSpotNameLabel": "Spot name *",
   "@addSpotNameLabel": {
     "description": "Add spot: name field label"
   },
@@ -1116,15 +1116,15 @@
   "@addSpotDescriptionMinLength": {
     "description": "Add spot: description validation length"
   },
-  "addSpotCreating": "Adding Spot...",
+  "addSpotCreating": "Adding spot...",
   "@addSpotCreating": {
     "description": "Add spot: submit in progress"
   },
-  "addSpotCreateButton": "Add Spot",
+  "addSpotCreateButton": "Add spot",
   "@addSpotCreateButton": {
     "description": "Add spot: primary submit"
   },
-  "addSpotLocationSectionTitle": "Select Spot Location",
+  "addSpotLocationSectionTitle": "Select spot location",
   "@addSpotLocationSectionTitle": {
     "description": "Add spot: map card title"
   },
@@ -1140,7 +1140,7 @@
   "@addSpotPickLocationHint": {
     "description": "Add spot: overlay on mini map"
   },
-  "addSpotImagesSectionTitle": "Select Spot Images",
+  "addSpotImagesSectionTitle": "Select spot images",
   "@addSpotImagesSectionTitle": {
     "description": "Add spot: photos card title"
   },
@@ -1152,7 +1152,7 @@
   "@addSpotCameraButton": {
     "description": "Add spot: take photo"
   },
-  "addSpotGoodForTitle": "Good For",
+  "addSpotGoodForTitle": "Good for",
   "@addSpotGoodForTitle": {
     "description": "Add spot attributes: good for card"
   },
@@ -1160,7 +1160,7 @@
   "@addSpotGoodForSubtitle": {
     "description": "Add spot attributes: good for hint"
   },
-  "addSpotFeaturesTitle": "Spot Features",
+  "addSpotFeaturesTitle": "Spot features",
   "@addSpotFeaturesTitle": {
     "description": "Add spot attributes: features card"
   },
@@ -1168,7 +1168,7 @@
   "@addSpotFeaturesSubtitle": {
     "description": "Add spot attributes: features hint"
   },
-  "addSpotAccessTitle": "Spot Access",
+  "addSpotAccessTitle": "Spot access",
   "@addSpotAccessTitle": {
     "description": "Add spot attributes: access card"
   },
@@ -1176,7 +1176,7 @@
   "@addSpotAccessSubtitle": {
     "description": "Add spot attributes: access hint"
   },
-  "addSpotFacilitiesFormTitle": "Spot Facilities",
+  "addSpotFacilitiesFormTitle": "Spot facilities",
   "@addSpotFacilitiesFormTitle": {
     "description": "Add spot attributes: facilities card (form)"
   },
@@ -1196,7 +1196,7 @@
   "@addSpotLongPressHintFacility": {
     "description": "Add spot: long-press hint for facilities"
   },
-  "addSpotPickLocationAppBarTitle": "Pick Location",
+  "addSpotPickLocationAppBarTitle": "Pick location",
   "@addSpotPickLocationAppBarTitle": {
     "description": "Full-screen map: choose coordinates"
   },
@@ -1228,7 +1228,7 @@
   "@addSpotGettingAddress": {
     "description": "While reverse-geocoding coordinates"
   },
-  "addEventTitle": "Add New Event",
+  "addEventTitle": "Add new event",
   "@addEventTitle": {
     "description": "Add event page: app bar title"
   },
@@ -1244,7 +1244,7 @@
   "@addEventTitleTooLong": {
     "description": "Add event page: title validation length"
   },
-  "addEventDescriptionLabel": "Description (optional)",
+  "addEventDescriptionLabel": "Description",
   "@addEventDescriptionLabel": {
     "description": "Add event page: description field label"
   },
@@ -1252,7 +1252,7 @@
   "@addEventDescriptionTooLong": {
     "description": "Add event page: description validation length"
   },
-  "addEventWebsiteLabel": "Website URL (optional)",
+  "addEventWebsiteLabel": "Website URL",
   "@addEventWebsiteLabel": {
     "description": "Add event page: website field label"
   },
@@ -1260,7 +1260,7 @@
   "@addEventWebsiteHint": {
     "description": "Add event page: website field placeholder"
   },
-  "addEventPhotosSectionTitle": "Select Event Images",
+  "addEventPhotosSectionTitle": "Select event images",
   "@addEventPhotosSectionTitle": {
     "description": "Add event page: poster/cover image section title"
   },
@@ -1276,7 +1276,7 @@
   "@addEventStartLabel": {
     "description": "Add event page: start date/time row"
   },
-  "addEventEndLabel": "End (optional)",
+  "addEventEndLabel": "End",
   "@addEventEndLabel": {
     "description": "Add event page: end date/time row"
   },
@@ -1296,11 +1296,11 @@
   "@addEventSchedulePickStartTime": {
     "description": "Add event page: time picker title when choosing start time"
   },
-  "addEventSchedulePickEndDateOptional": "Select end date (optional)",
+  "addEventSchedulePickEndDateOptional": "Select end date",
   "@addEventSchedulePickEndDateOptional": {
     "description": "Add event page: date picker title when choosing optional end date after start"
   },
-  "addEventSchedulePickEndTimeOptional": "Select end time (optional)",
+  "addEventSchedulePickEndTimeOptional": "Select end time",
   "@addEventSchedulePickEndTimeOptional": {
     "description": "Add event page: time picker title when choosing optional end time after start"
   },
@@ -1316,11 +1316,11 @@
   "@addEventLinkingSectionTitle": {
     "description": "Add event page: spot/list linking section"
   },
-  "addEventWhereSectionTitle": "Select Event Location",
+  "addEventWhereSectionTitle": "Select event location",
   "@addEventWhereSectionTitle": {
     "description": "Add event page: combined spot link and location section"
   },
-  "addEventWhenSectionTitle": "Select Event Schedule",
+  "addEventWhenSectionTitle": "Select event schedule",
   "@addEventWhenSectionTitle": {
     "description": "Add event page: schedule section title"
   },
@@ -1404,7 +1404,7 @@
       }
     }
   },
-  "addEventAddressLabel": "Exact address (optional)",
+  "addEventAddressLabel": "Exact address",
   "@addEventAddressLabel": {
     "description": "Add event page: address input label"
   },
@@ -1432,7 +1432,7 @@
   "@addEventAddressNotFound": {
     "description": "Add event page: typed address geocoding failed"
   },
-  "addEventPickLocationHint": "Pick a location on the map (optional when linked spot/list exists).",
+  "addEventPickLocationHint": "Pick a location on the map.",
   "@addEventPickLocationHint": {
     "description": "Add event page: map location helper text"
   },

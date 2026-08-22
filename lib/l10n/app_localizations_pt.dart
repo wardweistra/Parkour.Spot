@@ -1001,13 +1001,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addEventTitleTooLong => 'O título é demasiado longo.';
 
   @override
-  String get addEventDescriptionLabel => 'Descrição (opcional)';
+  String get addEventDescriptionLabel => 'Descrição';
 
   @override
   String get addEventDescriptionTooLong => 'A descrição é demasiado longa.';
 
   @override
-  String get addEventWebsiteLabel => 'URL do site (opcional)';
+  String get addEventWebsiteLabel => 'URL do site';
 
   @override
   String get addEventWebsiteHint => 'https://example.com';
@@ -1025,7 +1025,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addEventStartLabel => 'Início';
 
   @override
-  String get addEventEndLabel => 'Fim (opcional)';
+  String get addEventEndLabel => 'Fim';
 
   @override
   String get addEventEndNotSet => 'Não definido';
@@ -1040,12 +1040,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addEventSchedulePickStartTime => 'Escolher hora de início';
 
   @override
-  String get addEventSchedulePickEndDateOptional =>
-      'Escolher data de fim (opcional)';
+  String get addEventSchedulePickEndDateOptional => 'Escolher data de fim';
 
   @override
-  String get addEventSchedulePickEndTimeOptional =>
-      'Escolher hora de fim (opcional)';
+  String get addEventSchedulePickEndTimeOptional => 'Escolher hora de fim';
 
   @override
   String get addEventScheduleSkipEnd => 'Ignorar';
@@ -1121,7 +1119,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get addEventAddressLabel => 'Endereço exato (opcional)';
+  String get addEventAddressLabel => 'Endereço exato';
 
   @override
   String get addEventAddressHint => 'Rua, número, cidade';
@@ -1144,8 +1142,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível encontrar coordenadas para este endereço.';
 
   @override
-  String get addEventPickLocationHint =>
-      'Escolhe uma localização no mapa (opcional quando spot/lista está ligado).';
+  String get addEventPickLocationHint => 'Escolhe uma localização no mapa.';
 
   @override
   String get addEventClearLocationTooltip => 'Limpar localização';

@@ -998,13 +998,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addEventTitleTooLong => 'Titel is te lang.';
 
   @override
-  String get addEventDescriptionLabel => 'Beschrijving (optioneel)';
+  String get addEventDescriptionLabel => 'Beschrijving';
 
   @override
   String get addEventDescriptionTooLong => 'Beschrijving is te lang.';
 
   @override
-  String get addEventWebsiteLabel => 'Website-URL (optioneel)';
+  String get addEventWebsiteLabel => 'Website-URL';
 
   @override
   String get addEventWebsiteHint => 'https://example.com';
@@ -1022,7 +1022,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addEventStartLabel => 'Start';
 
   @override
-  String get addEventEndLabel => 'Einde (optioneel)';
+  String get addEventEndLabel => 'Einde';
 
   @override
   String get addEventEndNotSet => 'Niet ingesteld';
@@ -1037,11 +1037,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addEventSchedulePickStartTime => 'Kies starttijd';
 
   @override
-  String get addEventSchedulePickEndDateOptional =>
-      'Kies einddatum (optioneel)';
+  String get addEventSchedulePickEndDateOptional => 'Kies einddatum';
 
   @override
-  String get addEventSchedulePickEndTimeOptional => 'Kies eindtijd (optioneel)';
+  String get addEventSchedulePickEndTimeOptional => 'Kies eindtijd';
 
   @override
   String get addEventScheduleSkipEnd => 'Overslaan';
@@ -1117,7 +1116,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get addEventAddressLabel => 'Exact adres (optioneel)';
+  String get addEventAddressLabel => 'Exact adres';
 
   @override
   String get addEventAddressHint => 'Straat, huisnummer, plaats';
@@ -1140,8 +1139,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geen coördinaten gevonden voor dit adres.';
 
   @override
-  String get addEventPickLocationHint =>
-      'Kies een locatie op de kaart (optioneel wanneer spot/lijst gekoppeld is).';
+  String get addEventPickLocationHint => 'Kies een locatie op de kaart.';
 
   @override
   String get addEventClearLocationTooltip => 'Locatie wissen';

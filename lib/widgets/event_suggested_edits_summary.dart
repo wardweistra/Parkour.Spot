@@ -149,10 +149,10 @@ class EventSuggestedEditsSummary extends StatelessWidget {
       addChip(l10n.addEventTitleLabel);
     }
     if (report.suggestedDescription?.trim().isNotEmpty ?? false) {
-      addChip(l10n.addEventDescriptionLabel.replaceAll(' (optional)', ''));
+      addChip(l10n.addEventDescriptionLabel);
     }
     if (report.suggestedWebsiteUrl?.trim().isNotEmpty ?? false) {
-      addChip(l10n.addEventWebsiteLabel.replaceAll(' (optional)', ''));
+      addChip(l10n.addEventWebsiteLabel);
     }
     if (report.suggestedIsDateOnly != null) {
       addChip(l10n.addEventAllDay);
@@ -207,12 +207,12 @@ class EventSuggestedEditsSummary extends StatelessWidget {
     }
     if (report.suggestedDescription?.trim().isNotEmpty ?? false) {
       addRow(
-        '${l10n.addEventDescriptionLabel.replaceAll(' (optional)', '')}: ${report.suggestedDescription!.trim()}',
+        '${l10n.addEventDescriptionLabel}: ${report.suggestedDescription!.trim()}',
       );
     }
     if (report.suggestedWebsiteUrl?.trim().isNotEmpty ?? false) {
       addRow(
-        '${l10n.addEventWebsiteLabel.replaceAll(' (optional)', '')}: ${report.suggestedWebsiteUrl!.trim()}',
+        '${l10n.addEventWebsiteLabel}: ${report.suggestedWebsiteUrl!.trim()}',
         isLink: true,
       );
     }

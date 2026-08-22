@@ -506,7 +506,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get exploreAddSpotTitle => 'Add New Spot';
+  String get exploreAddSpotTitle => 'Add new spot';
 
   @override
   String get exploreAddSpotSubtitle =>
@@ -526,7 +526,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addHubSubtitle => 'Share what you know with the community map.';
 
   @override
-  String get addHubSpotTitle => 'Add New Spot';
+  String get addHubSpotTitle => 'Add new spot';
 
   @override
   String get addHubSpotDescription =>
@@ -536,10 +536,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addHubSpotPublishBadge => 'Live on the map right away';
 
   @override
-  String get addHubSpotButton => 'Add New Spot';
+  String get addHubSpotButton => 'Add new spot';
 
   @override
-  String get addHubEventTitle => 'Add New Event';
+  String get addHubEventTitle => 'Add new event';
 
   @override
   String get addHubEventDescription =>
@@ -549,7 +549,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addHubEventModerationBadge => 'Reviewed by moderators';
 
   @override
-  String get addHubEventButton => 'Add New Event';
+  String get addHubEventButton => 'Add new event';
 
   @override
   String get addHubSignInTitle => 'Sign in to contribute';
@@ -874,7 +874,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get addSpotNameLabel => 'Spot Name *';
+  String get addSpotNameLabel => 'Spot name *';
 
   @override
   String get addSpotNameRequired => 'Please enter a spot name';
@@ -890,13 +890,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Description must be at least 10 characters';
 
   @override
-  String get addSpotCreating => 'Adding Spot...';
+  String get addSpotCreating => 'Adding spot...';
 
   @override
-  String get addSpotCreateButton => 'Add Spot';
+  String get addSpotCreateButton => 'Add spot';
 
   @override
-  String get addSpotLocationSectionTitle => 'Select Spot Location';
+  String get addSpotLocationSectionTitle => 'Select spot location';
 
   @override
   String get addSpotGettingLocation => 'Getting your location...';
@@ -908,7 +908,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addSpotPickLocationHint => 'Pick location';
 
   @override
-  String get addSpotImagesSectionTitle => 'Select Spot Images';
+  String get addSpotImagesSectionTitle => 'Select spot images';
 
   @override
   String get addSpotGalleryButton => 'Gallery';
@@ -917,27 +917,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addSpotCameraButton => 'Camera';
 
   @override
-  String get addSpotGoodForTitle => 'Good For';
+  String get addSpotGoodForTitle => 'Good for';
 
   @override
   String get addSpotGoodForSubtitle =>
       'What parkour skills can be practiced here?';
 
   @override
-  String get addSpotFeaturesTitle => 'Spot Features';
+  String get addSpotFeaturesTitle => 'Spot features';
 
   @override
   String get addSpotFeaturesSubtitle =>
       'What physical features does this spot have?';
 
   @override
-  String get addSpotAccessTitle => 'Spot Access';
+  String get addSpotAccessTitle => 'Spot access';
 
   @override
   String get addSpotAccessSubtitle => 'What is the access level for this spot?';
 
   @override
-  String get addSpotFacilitiesFormTitle => 'Spot Facilities';
+  String get addSpotFacilitiesFormTitle => 'Spot facilities';
 
   @override
   String get addSpotFacilitiesSubtitle =>
@@ -955,7 +955,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Long press any facility for more info';
 
   @override
-  String get addSpotPickLocationAppBarTitle => 'Pick Location';
+  String get addSpotPickLocationAppBarTitle => 'Pick location';
 
   @override
   String get addSpotTipLongPressMobile =>
@@ -983,7 +983,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addSpotGettingAddress => 'Getting address...';
 
   @override
-  String get addEventTitle => 'Add New Event';
+  String get addEventTitle => 'Add new event';
 
   @override
   String get addEventTitleLabel => 'Event title *';
@@ -995,19 +995,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addEventTitleTooLong => 'Title is too long.';
 
   @override
-  String get addEventDescriptionLabel => 'Description (optional)';
+  String get addEventDescriptionLabel => 'Description';
 
   @override
   String get addEventDescriptionTooLong => 'Description is too long.';
 
   @override
-  String get addEventWebsiteLabel => 'Website URL (optional)';
+  String get addEventWebsiteLabel => 'Website URL';
 
   @override
   String get addEventWebsiteHint => 'https://example.com';
 
   @override
-  String get addEventPhotosSectionTitle => 'Select Event Images';
+  String get addEventPhotosSectionTitle => 'Select event images';
 
   @override
   String get addEventAllDay => 'All-day event';
@@ -1019,7 +1019,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addEventStartLabel => 'Start';
 
   @override
-  String get addEventEndLabel => 'End (optional)';
+  String get addEventEndLabel => 'End';
 
   @override
   String get addEventEndNotSet => 'Not set';
@@ -1034,12 +1034,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addEventSchedulePickStartTime => 'Select start time';
 
   @override
-  String get addEventSchedulePickEndDateOptional =>
-      'Select end date (optional)';
+  String get addEventSchedulePickEndDateOptional => 'Select end date';
 
   @override
-  String get addEventSchedulePickEndTimeOptional =>
-      'Select end time (optional)';
+  String get addEventSchedulePickEndTimeOptional => 'Select end time';
 
   @override
   String get addEventScheduleSkipEnd => 'Skip';
@@ -1051,10 +1049,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addEventLinkingSectionTitle => 'Linking';
 
   @override
-  String get addEventWhereSectionTitle => 'Select Event Location';
+  String get addEventWhereSectionTitle => 'Select event location';
 
   @override
-  String get addEventWhenSectionTitle => 'Select Event Schedule';
+  String get addEventWhenSectionTitle => 'Select event schedule';
 
   @override
   String get addEventAddressNeedsResolve =>
@@ -1115,7 +1113,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get addEventAddressLabel => 'Exact address (optional)';
+  String get addEventAddressLabel => 'Exact address';
 
   @override
   String get addEventAddressHint => 'Street, number, city';
@@ -1138,8 +1136,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not find coordinates for this address.';
 
   @override
-  String get addEventPickLocationHint =>
-      'Pick a location on the map (optional when linked spot/list exists).';
+  String get addEventPickLocationHint => 'Pick a location on the map.';
 
   @override
   String get addEventClearLocationTooltip => 'Clear location';
