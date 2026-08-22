@@ -240,7 +240,7 @@
   "@profileModeratorSectionTitle": {
     "description": "Account tab: moderator section heading"
   },
-  "profileModeratorToolsTitle": "Moderator Tools",
+  "profileModeratorToolsTitle": "Moderator tools",
   "@profileModeratorToolsTitle": {
     "description": "Account tab: moderator tools row title"
   },

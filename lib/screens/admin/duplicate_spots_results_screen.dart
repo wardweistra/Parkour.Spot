@@ -65,7 +65,7 @@ class _DuplicateSpotsResultsScreenState
     final hasModeratorAccess = authService.isModerator || authService.isAdmin;
     if (!hasModeratorAccess) {
       return PageScaffold(
-        title: 'Duplicate Spot Results',
+        title: 'Duplicate spot results',
         scrollable: false,
         onBack: () {
           if (Navigator.canPop(context)) {
@@ -79,7 +79,7 @@ class _DuplicateSpotsResultsScreenState
     }
 
     return PageScaffold(
-      title: 'Duplicate Spot Results',
+      title: 'Duplicate spot results',
       scrollable: false,
       onBack: () {
         if (Navigator.canPop(context)) {

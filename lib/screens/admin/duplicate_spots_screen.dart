@@ -81,7 +81,7 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
     final hasModeratorAccess = authService.isModerator || authService.isAdmin;
     if (!hasModeratorAccess) {
       return PageScaffold(
-        title: 'Duplicate Spot Detection',
+        title: 'Duplicate spot detection',
         scrollable: false,
         onBack: () {
           if (Navigator.canPop(context)) {
@@ -95,7 +95,7 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
     }
 
     return PageScaffold(
-      title: 'Duplicate Spot Detection',
+      title: 'Duplicate spot detection',
       scrollable: false,
       onBack: () {
         if (Navigator.canPop(context)) {
@@ -127,7 +127,7 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'How to use Duplicate Spot Detection',
+                  'How to use duplicate spot detection',
                   style: TextStyle(
                     color: colorScheme.onPrimaryContainer,
                     fontSize: 14,

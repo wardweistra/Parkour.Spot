@@ -234,7 +234,7 @@ class _DuplicateSpotsPairReviewScreenState
 
   Widget _buildScaffold({required Widget body}) {
     return PageScaffold(
-      title: 'Resolve Duplicate Cluster',
+      title: 'Resolve duplicate cluster',
       scrollable: false,
       onBack: () {
         if (Navigator.canPop(context)) {

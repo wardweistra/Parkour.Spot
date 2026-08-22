@@ -172,7 +172,7 @@ class _ModeratorEventsReviewScreenState
 
     if (!authService.isAuthenticated) {
       return PageScaffold(
-        title: 'Event Review',
+        title: 'Event review',
         scrollable: false,
         onBack: () => _handleBack(context),
         body: const Center(child: Text('Sign in required')),
@@ -181,7 +181,7 @@ class _ModeratorEventsReviewScreenState
 
     if (authService.isLoading) {
       return PageScaffold(
-        title: 'Event Review',
+        title: 'Event review',
         scrollable: false,
         onBack: () => _handleBack(context),
         body: const Center(child: CircularProgressIndicator()),
@@ -191,7 +191,7 @@ class _ModeratorEventsReviewScreenState
     final hasModeratorAccess = authService.isModerator || authService.isAdmin;
     if (!hasModeratorAccess) {
       return PageScaffold(
-        title: 'Event Review',
+        title: 'Event review',
         scrollable: false,
         onBack: () => _handleBack(context),
         body: const Center(child: Text('Moderator access required')),
@@ -200,7 +200,7 @@ class _ModeratorEventsReviewScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Event Review'),
+        title: const Text('Event review'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => _handleBack(context),

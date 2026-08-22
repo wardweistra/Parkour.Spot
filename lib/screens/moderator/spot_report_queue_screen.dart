@@ -36,7 +36,7 @@ class _SpotReportQueueScreenState extends State<SpotReportQueueScreen> {
     final dateFormat = DateFormat.yMMMd().add_jm();
 
     return PageScaffold(
-      title: 'Spot Report Queue',
+      title: 'Spot report queue',
       scrollable: false,
       onBack: () {
         if (Navigator.canPop(context)) {

@@ -1857,7 +1857,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                               Icons.report_problem,
                                               size: 20,
                                             ),
-                                            tooltip: 'Open Spot Report Queue',
+                                            tooltip: 'Open spot report queue',
                                             onPressed: () => context.push('/moderator/reports'),
                                             padding: EdgeInsets.zero,
                                             constraints: const BoxConstraints(),

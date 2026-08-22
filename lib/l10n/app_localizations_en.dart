@@ -194,7 +194,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileModeratorSectionTitle => 'Moderator';
 
   @override
-  String get profileModeratorToolsTitle => 'Moderator Tools';
+  String get profileModeratorToolsTitle => 'Moderator tools';
 
   @override
   String get profileModeratorToolsSubtitle =>

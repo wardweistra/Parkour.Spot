@@ -26,7 +26,7 @@ class ModeratorToolsScreen extends StatelessWidget {
 
     if (!authService.isAuthenticated) {
       return PageScaffold(
-        title: 'Moderator Tools',
+        title: 'Moderator tools',
         scrollable: false,
         onBack: () => _handleBack(context),
         body: Center(
@@ -65,7 +65,7 @@ class ModeratorToolsScreen extends StatelessWidget {
 
     if (authService.isLoading) {
       return PageScaffold(
-        title: 'Moderator Tools',
+        title: 'Moderator tools',
         scrollable: false,
         onBack: () => _handleBack(context),
         body: Center(
@@ -87,7 +87,7 @@ class ModeratorToolsScreen extends StatelessWidget {
     final hasModeratorAccess = authService.isModerator || authService.isAdmin;
     if (!hasModeratorAccess) {
       return PageScaffold(
-        title: 'Moderator Tools',
+        title: 'Moderator tools',
         scrollable: false,
         onBack: () => _handleBack(context),
         body: Center(
@@ -117,7 +117,7 @@ class ModeratorToolsScreen extends StatelessWidget {
     }
 
     return PageScaffold(
-      title: 'Moderator Tools',
+      title: 'Moderator tools',
       scrollable: false,
       onBack: () => _handleBack(context),
       body: ListView(
@@ -132,7 +132,7 @@ class ModeratorToolsScreen extends StatelessWidget {
                   final newCount = snapshot.data ?? 0;
                   return AdminToolTile(
                     icon: Icons.report_problem,
-                    title: 'Spot Report Queue',
+                    title: 'Spot report queue',
                     subtitle:
                         'Work through new spot reports, keeping moderators aligned on progress',
                     badgeCount: newCount > 0 ? newCount : null,
@@ -142,7 +142,7 @@ class ModeratorToolsScreen extends StatelessWidget {
               ),
               AdminToolTile(
                 icon: Icons.compare_arrows,
-                title: 'Duplicate Spot Detection',
+                title: 'Duplicate spot detection',
                 subtitle:
                     'Find potential duplicate spots within 50m from different sources',
                 onTap: () => context.go('/moderator/duplicate-spots'),
@@ -162,7 +162,7 @@ class ModeratorToolsScreen extends StatelessWidget {
                   final newCount = snapshot.data ?? 0;
                   return AdminToolTile(
                     icon: Icons.event_note_outlined,
-                    title: 'Event Report Queue',
+                    title: 'Event report queue',
                     subtitle:
                         'Review user-submitted event proposals and publish approved events',
                     badgeCount: newCount > 0 ? newCount : null,
@@ -181,7 +181,7 @@ class ModeratorToolsScreen extends StatelessWidget {
                   final reviewCount = snapshot.data ?? 0;
                   return AdminToolTile(
                     icon: Icons.event_available_outlined,
-                    title: 'Event Review',
+                    title: 'Event review',
                     subtitle:
                         'Review newly synced events for duplicates and location quality',
                     badgeCount: reviewCount > 0 ? reviewCount : null,

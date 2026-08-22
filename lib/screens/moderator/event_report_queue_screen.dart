@@ -62,7 +62,7 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
     final theme = Theme.of(context);
     final dateFormat = DateFormat.yMMMd().add_jm();
     return PageScaffold(
-      title: 'Event Report Queue',
+      title: 'Event report queue',
       scrollable: false,
       onBack: () {
         if (Navigator.canPop(context)) {

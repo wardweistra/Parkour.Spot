@@ -415,7 +415,7 @@ abstract class AppLocalizations {
   /// Account tab: moderator tools row title
   ///
   /// In en, this message translates to:
-  /// **'Moderator Tools'**
+  /// **'Moderator tools'**
   String get profileModeratorToolsTitle;
 
   /// Account tab: moderator tools row subtitle
