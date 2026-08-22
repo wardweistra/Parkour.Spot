@@ -5316,7 +5316,7 @@ abstract class AppLocalizations {
   /// Tooltip for profile share action
   ///
   /// In en, this message translates to:
-  /// **'Share Profile'**
+  /// **'Share profile'**
   String get publicProfileShareProfileTooltip;
 
   /// Error heading on public profile screen
@@ -5358,7 +5358,7 @@ abstract class AppLocalizations {
   /// Tooltip for opening profile settings sheet
   ///
   /// In en, this message translates to:
-  /// **'Edit Profile'**
+  /// **'Edit profile'**
   String get publicProfileEditProfileTooltip;
 
   /// Card title for tracking lists section on own profile
@@ -5508,7 +5508,7 @@ abstract class AppLocalizations {
   /// Card title when viewing someone else's profile lists
   ///
   /// In en, this message translates to:
-  /// **'Public Spot Lists'**
+  /// **'Public spot lists'**
   String get publicProfilePublicSpotLists;
 
   /// Empty state title for saved lists subsection
@@ -5538,25 +5538,25 @@ abstract class AppLocalizations {
   /// Dialog title for profile picture actions
   ///
   /// In en, this message translates to:
-  /// **'Change Profile Picture'**
+  /// **'Change profile picture'**
   String get publicProfileChangeProfilePicture;
 
   /// Option in profile picture dialog
   ///
   /// In en, this message translates to:
-  /// **'Choose from Gallery'**
+  /// **'Choose from gallery'**
   String get publicProfileChooseFromGallery;
 
   /// Option in profile picture dialog
   ///
   /// In en, this message translates to:
-  /// **'Take Photo'**
+  /// **'Take photo'**
   String get publicProfileTakePhoto;
 
   /// Option in profile picture dialog
   ///
   /// In en, this message translates to:
-  /// **'Remove Picture'**
+  /// **'Remove picture'**
   String get publicProfileRemovePicture;
 
   /// Snackbar when selecting gallery image fails
@@ -5622,7 +5622,7 @@ abstract class AppLocalizations {
   /// Confirmation dialog title for removing profile picture
   ///
   /// In en, this message translates to:
-  /// **'Remove Profile Picture'**
+  /// **'Remove profile picture'**
   String get publicProfileRemoveProfilePicture;
 
   /// Confirmation dialog body for removing profile picture
@@ -5676,7 +5676,7 @@ abstract class AppLocalizations {
   /// Bottom sheet title for editing profile
   ///
   /// In en, this message translates to:
-  /// **'Profile Settings'**
+  /// **'Profile settings'**
   String get publicProfileSettingsTitle;
 
   /// Profile settings: email field label
@@ -5694,7 +5694,7 @@ abstract class AppLocalizations {
   /// Profile settings: display name label
   ///
   /// In en, this message translates to:
-  /// **'Display Name'**
+  /// **'Display name'**
   String get publicProfileDisplayNameLabel;
 
   /// Profile settings: fallback when display name is empty
@@ -5820,7 +5820,7 @@ abstract class AppLocalizations {
   /// Profile settings: instagram URL field label
   ///
   /// In en, this message translates to:
-  /// **'Instagram Link'**
+  /// **'Instagram link'**
   String get publicProfileInstagramLinkLabel;
 
   /// Profile settings: instagram URL field hint
@@ -5862,19 +5862,19 @@ abstract class AppLocalizations {
   /// Profile settings: privacy section title
   ///
   /// In en, this message translates to:
-  /// **'Profile Privacy'**
+  /// **'Profile privacy'**
   String get publicProfilePrivacyTitle;
 
   /// Profile settings: label when profile is public
   ///
   /// In en, this message translates to:
-  /// **'Public Profile'**
+  /// **'Public profile'**
   String get publicProfilePrivacyPublicLabel;
 
   /// Profile settings: label when profile is private
   ///
   /// In en, this message translates to:
-  /// **'Private Profile'**
+  /// **'Private profile'**
   String get publicProfilePrivacyPrivateLabel;
 
   /// Profile settings: explanation when profile is public

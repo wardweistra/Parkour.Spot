@@ -2947,7 +2947,7 @@
   "@publicProfilePageTitle": {
     "description": "Page title for public profile screen"
   },
-  "publicProfileShareProfileTooltip": "Share Profile",
+  "publicProfileShareProfileTooltip": "Share profile",
   "@publicProfileShareProfileTooltip": {
     "description": "Tooltip for profile share action"
   },
@@ -2988,7 +2988,7 @@
       }
     }
   },
-  "publicProfileEditProfileTooltip": "Edit Profile",
+  "publicProfileEditProfileTooltip": "Edit profile",
   "@publicProfileEditProfileTooltip": {
     "description": "Tooltip for opening profile settings sheet"
   },
@@ -3103,7 +3103,7 @@
   "@publicProfileSaved": {
     "description": "Subheading for saved lists in unified card"
   },
-  "publicProfilePublicSpotLists": "Public Spot Lists",
+  "publicProfilePublicSpotLists": "Public spot lists",
   "@publicProfilePublicSpotLists": {
     "description": "Card title when viewing someone else's profile lists"
   },
@@ -3123,19 +3123,19 @@
   "@publicProfileListCreatedSuccessfully": {
     "description": "Snackbar after creating a list from profile"
   },
-  "publicProfileChangeProfilePicture": "Change Profile Picture",
+  "publicProfileChangeProfilePicture": "Change profile picture",
   "@publicProfileChangeProfilePicture": {
     "description": "Dialog title for profile picture actions"
   },
-  "publicProfileChooseFromGallery": "Choose from Gallery",
+  "publicProfileChooseFromGallery": "Choose from gallery",
   "@publicProfileChooseFromGallery": {
     "description": "Option in profile picture dialog"
   },
-  "publicProfileTakePhoto": "Take Photo",
+  "publicProfileTakePhoto": "Take photo",
   "@publicProfileTakePhoto": {
     "description": "Option in profile picture dialog"
   },
-  "publicProfileRemovePicture": "Remove Picture",
+  "publicProfileRemovePicture": "Remove picture",
   "@publicProfileRemovePicture": {
     "description": "Option in profile picture dialog"
   },
@@ -3194,7 +3194,7 @@
       }
     }
   },
-  "publicProfileRemoveProfilePicture": "Remove Profile Picture",
+  "publicProfileRemoveProfilePicture": "Remove profile picture",
   "@publicProfileRemoveProfilePicture": {
     "description": "Confirmation dialog title for removing profile picture"
   },
@@ -3240,7 +3240,7 @@
   "@publicProfileStatsRatings": {
     "description": "Stats label for ratings given"
   },
-  "publicProfileSettingsTitle": "Profile Settings",
+  "publicProfileSettingsTitle": "Profile settings",
   "@publicProfileSettingsTitle": {
     "description": "Bottom sheet title for editing profile"
   },
@@ -3252,7 +3252,7 @@
   "@publicProfileEmailNotShownHint": {
     "description": "Profile settings: email privacy hint"
   },
-  "publicProfileDisplayNameLabel": "Display Name",
+  "publicProfileDisplayNameLabel": "Display name",
   "@publicProfileDisplayNameLabel": {
     "description": "Profile settings: display name label"
   },
@@ -3346,7 +3346,7 @@
   "@publicProfileAddAction": {
     "description": "Generic add action in profile settings"
   },
-  "publicProfileInstagramLinkLabel": "Instagram Link",
+  "publicProfileInstagramLinkLabel": "Instagram link",
   "@publicProfileInstagramLinkLabel": {
     "description": "Profile settings: instagram URL field label"
   },
@@ -3374,15 +3374,15 @@
   "@publicProfileInstagramUpdateFailed": {
     "description": "Validation/error text when instagram update fails"
   },
-  "publicProfilePrivacyTitle": "Profile Privacy",
+  "publicProfilePrivacyTitle": "Profile privacy",
   "@publicProfilePrivacyTitle": {
     "description": "Profile settings: privacy section title"
   },
-  "publicProfilePrivacyPublicLabel": "Public Profile",
+  "publicProfilePrivacyPublicLabel": "Public profile",
   "@publicProfilePrivacyPublicLabel": {
     "description": "Profile settings: label when profile is public"
   },
-  "publicProfilePrivacyPrivateLabel": "Private Profile",
+  "publicProfilePrivacyPrivateLabel": "Private profile",
   "@publicProfilePrivacyPrivateLabel": {
     "description": "Profile settings: label when profile is private"
   },

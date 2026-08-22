@@ -3161,7 +3161,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get publicProfilePageTitle => 'Profile';
 
   @override
-  String get publicProfileShareProfileTooltip => 'Share Profile';
+  String get publicProfileShareProfileTooltip => 'Share profile';
 
   @override
   String get publicProfileErrorLoadingProfile => 'Error loading profile';
@@ -3187,7 +3187,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get publicProfileEditProfileTooltip => 'Edit Profile';
+  String get publicProfileEditProfileTooltip => 'Edit profile';
 
   @override
   String get publicProfileSpotTracking => 'Spot tracking';
@@ -3273,7 +3273,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get publicProfileSaved => 'Saved';
 
   @override
-  String get publicProfilePublicSpotLists => 'Public Spot Lists';
+  String get publicProfilePublicSpotLists => 'Public spot lists';
 
   @override
   String get publicProfileNoSavedListsYet => 'No saved lists yet';
@@ -3291,16 +3291,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'List created successfully';
 
   @override
-  String get publicProfileChangeProfilePicture => 'Change Profile Picture';
+  String get publicProfileChangeProfilePicture => 'Change profile picture';
 
   @override
-  String get publicProfileChooseFromGallery => 'Choose from Gallery';
+  String get publicProfileChooseFromGallery => 'Choose from gallery';
 
   @override
-  String get publicProfileTakePhoto => 'Take Photo';
+  String get publicProfileTakePhoto => 'Take photo';
 
   @override
-  String get publicProfileRemovePicture => 'Remove Picture';
+  String get publicProfileRemovePicture => 'Remove picture';
 
   @override
   String publicProfileErrorPickingImage(String error) {
@@ -3341,7 +3341,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get publicProfileRemoveProfilePicture => 'Remove Profile Picture';
+  String get publicProfileRemoveProfilePicture => 'Remove profile picture';
 
   @override
   String get publicProfileRemoveProfilePictureConfirmation =>
@@ -3376,7 +3376,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get publicProfileStatsRatings => 'Ratings';
 
   @override
-  String get publicProfileSettingsTitle => 'Profile Settings';
+  String get publicProfileSettingsTitle => 'Profile settings';
 
   @override
   String get publicProfileEmailLabel => 'Email';
@@ -3386,7 +3386,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Your email is not shown on your public profile.';
 
   @override
-  String get publicProfileDisplayNameLabel => 'Display Name';
+  String get publicProfileDisplayNameLabel => 'Display name';
 
   @override
   String get publicProfileNoDisplayNameSet => 'No display name set';
@@ -3456,7 +3456,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get publicProfileAddAction => 'Add';
 
   @override
-  String get publicProfileInstagramLinkLabel => 'Instagram Link';
+  String get publicProfileInstagramLinkLabel => 'Instagram link';
 
   @override
   String get publicProfileInstagramLinkHint =>
@@ -3482,13 +3482,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Failed to update Instagram link';
 
   @override
-  String get publicProfilePrivacyTitle => 'Profile Privacy';
+  String get publicProfilePrivacyTitle => 'Profile privacy';
 
   @override
-  String get publicProfilePrivacyPublicLabel => 'Public Profile';
+  String get publicProfilePrivacyPublicLabel => 'Public profile';
 
   @override
-  String get publicProfilePrivacyPrivateLabel => 'Private Profile';
+  String get publicProfilePrivacyPrivateLabel => 'Private profile';
 
   @override
   String get publicProfilePrivacyPublicDescription =>
