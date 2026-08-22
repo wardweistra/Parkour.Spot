@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -8,9 +6,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../constants/spot_attributes.dart';
 import '../../services/auth_service.dart';
 import '../../services/sync_source_service.dart';
-import '../../utils/image_preparation.dart';
-import '../../utils/image_picker_utils.dart';
-import '../../utils/search_index_backfill_message.dart';
 import '../../widgets/spot_form/attributes_section.dart';
 
 /// Material [Chip] / [ActionChip] labels use theme label styles that read as semi-bold.
@@ -59,36 +54,42 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
 
   void _startPeriodicRefresh() {
     if (!mounted) return;
-    
+
     // Cancel existing timer if any
     _refreshTimer?.cancel();
-    
+
     final service = context.read<SyncSourceService>();
-    final hasSyncInProgress = service.sources.any((s) => s.syncInProgress == true);
-    
+    final hasSyncInProgress = service.sources.any(
+      (s) => s.syncInProgress == true,
+    );
+
     // Use 5 seconds if sync is in progress, 30 seconds otherwise
-    final interval = hasSyncInProgress 
-        ? const Duration(seconds: 5) 
+    final interval = hasSyncInProgress
+        ? const Duration(seconds: 5)
         : const Duration(seconds: 30);
-    
+
     _refreshTimer = Timer.periodic(interval, (timer) async {
       if (!mounted) {
         timer.cancel();
         return;
       }
-      
+
       // Fetch latest sync sources
-      await context.read<SyncSourceService>().fetchSyncSources(includeInactive: true);
-      
+      await context.read<SyncSourceService>().fetchSyncSources(
+        includeInactive: true,
+      );
+
       if (!mounted) {
         timer.cancel();
         return;
       }
-      
+
       // Check if sync status changed after fetch
       final currentService = context.read<SyncSourceService>();
-      final stillHasSyncInProgress = currentService.sources.any((s) => s.syncInProgress == true);
-      
+      final stillHasSyncInProgress = currentService.sources.any(
+        (s) => s.syncInProgress == true,
+      );
+
       // If sync status changed, restart timer with new interval
       if (stillHasSyncInProgress != hasSyncInProgress) {
         timer.cancel();
@@ -102,29 +103,29 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     final isAdmin = context.select<AuthService, bool>((s) => s.isAdmin);
     if (!isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Sync Sources')),
+        appBar: AppBar(title: const Text('Spot sync sources')),
         body: const Center(child: Text('Administrator access required')),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sync Sources'),
+        title: const Text('Spot sync sources'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context);
-          } else {
-            context.go('/admin');
-          }
-        },
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              context.go('/admin');
+            }
+          },
         ),
         actions: [
           Consumer<SyncSourceService>(
             builder: (context, service, child) {
               return PopupMenuButton<String>(
-                icon: service.isSyncingAll 
+                icon: service.isSyncingAll
                     ? const SizedBox(
                         width: 20,
                         height: 20,
@@ -144,7 +145,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                   if (!mounted) return;
                   if (result != null) {
                     final stats = result['totalStats'] as Map<String, dynamic>?;
-                    final message = stats != null 
+                    final message = stats != null
                         ? 'Sync completed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
                         : 'Sync completed successfully';
                     scaffoldMessenger.showSnackBar(
@@ -177,7 +178,10 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                             Text('Default Sync'),
                             Text(
                               'Skip images for existing spots',
-                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
                             ),
                           ],
                         ),
@@ -197,7 +201,10 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                             Text('Full Sync'),
                             Text(
                               'Update images for existing spots',
-                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
                             ),
                           ],
                         ),
@@ -209,16 +216,6 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.cleaning_services),
-            tooltip: 'Cleanup Unused Images',
-            onPressed: () => _showCleanupDialog(context),
-          ),
-          IconButton(
-            icon: const Icon(Icons.broken_image),
-            tooltip: 'Find Missing Images',
-            onPressed: () => _showMissingImagesDialog(context),
-          ),
-          IconButton(
             icon: const Icon(Icons.link_off),
             tooltip: 'Find Orphaned Spots',
             onPressed: () => _showOrphanedSpotsDialog(context),
@@ -227,16 +224,6 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
             icon: const Icon(Icons.update),
             tooltip: 'Update Spot Source Names',
             onPressed: () => _showUpdateSourceNamesDialog(context),
-          ),
-          IconButton(
-            icon: const Icon(Icons.search),
-            tooltip: 'Backfill Spot Name Search (spotSearchTerms)',
-            onPressed: () => _backfillSpotNameLower(context),
-          ),
-          IconButton(
-            icon: const Icon(Icons.photo_library_outlined),
-            tooltip: 'Backfill Spot Image Flags (hasImages)',
-            onPressed: () => _backfillSpotHasImages(context),
           ),
           IconButton(
             icon: const Icon(Icons.auto_fix_high),
@@ -258,519 +245,679 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
           if (service.error != null && service.sources.isEmpty) {
             return Center(child: Text(service.error!));
           }
-          final sources = service.sources..sort((a, b) => a.name.compareTo(b.name));
+          final sources = service.sources
+            ..sort((a, b) => a.name.compareTo(b.name));
           return Stack(
             children: [
               ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: sources.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final s = sources[index];
-              return Card(
-                child: ListTile(
-                  title: Text(s.name),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (s.publicUrl != null && s.publicUrl!.isNotEmpty) ...[
-                        InkWell(
-                          onTap: () async {
-                            final uri = Uri.parse(s.publicUrl!);
-                            if (await canLaunchUrl(uri)) {
-                              await launchUrl(uri, mode: LaunchMode.externalApplication);
-                            }
-                          },
-                          child: Row(
-                            children: [
-                              const Icon(Icons.link, size: 16, color: Colors.blue),
-                              const SizedBox(width: 4),
-                              Text(
-                                s.publicUrl!,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.blue,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      if (s.instagramHandle != null && s.instagramHandle!.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        InkWell(
-                          onTap: () async {
-                            final handle = s.instagramHandle!.startsWith('@') 
-                                ? s.instagramHandle!.substring(1) 
-                                : s.instagramHandle!;
-                            final uri = Uri.parse('https://instagram.com/$handle');
-                            if (await canLaunchUrl(uri)) {
-                              await launchUrl(uri, mode: LaunchMode.externalApplication);
-                            }
-                          },
-                          child: Row(
-                            children: [
-                              const Icon(Icons.camera_alt, size: 16, color: Colors.purple),
-                              const SizedBox(width: 4),
-                              Text(
-                                '@${s.instagramHandle!.startsWith('@') ? s.instagramHandle!.substring(1) : s.instagramHandle!}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.purple,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 4),
-                      Row(
+                padding: const EdgeInsets.all(16),
+                itemCount: sources.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final s = sources[index];
+                  return Card(
+                    child: ListTile(
+                      title: Text(s.name),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Chip(
-                            label: Text(s.isActive ? 'Active' : 'Inactive'),
-                            labelStyle: _kSyncChipPlainLabel,
-                          ),
-                          if (s.syncInProgress == true) ...[
-                            const SizedBox(width: 8),
-                            Chip(
-                              label: Row(
-                                mainAxisSize: MainAxisSize.min,
+                          if (s.publicUrl != null &&
+                              s.publicUrl!.isNotEmpty) ...[
+                            InkWell(
+                              onTap: () async {
+                                final uri = Uri.parse(s.publicUrl!);
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(
+                                    uri,
+                                    mode: LaunchMode.externalApplication,
+                                  );
+                                }
+                              },
+                              child: Row(
                                 children: [
-                                  const SizedBox(
-                                    width: 12,
-                                    height: 12,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  const Icon(
+                                    Icons.link,
+                                    size: 16,
+                                    color: Colors.blue,
                                   ),
                                   const SizedBox(width: 4),
-                                  Text('Syncing ${s.syncType ?? 'unknown'}...'),
-                                ],
-                              ),
-                              labelStyle: _kSyncChipPlainLabel,
-                              backgroundColor: Colors.orange.shade100,
-                            ),
-                          ] else if (s.autoSyncEnabled == true) ...[
-                            const SizedBox(width: 8),
-                            Chip(
-                              label: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.schedule, size: 16),
-                                  SizedBox(width: 4),
-                                  Text('Auto-Sync ON'),
-                                ],
-                              ),
-                              labelStyle: _kSyncChipPlainLabel,
-                              backgroundColor: Colors.green.shade100,
-                            ),
-                          ],
-                          if (s.lastSyncAt != null) ...[
-                            const SizedBox(width: 8),
-                            Chip(
-                              label: Text('Last sync: ${s.lastSyncAt}'),
-                              labelStyle: _kSyncChipPlainLabel,
-                            ),
-                          ],
-                        ],
-                      ),
-                      if (s.syncInProgress == true && s.syncProgress != null) ...[
-                        const SizedBox(height: 8),
-                        Card(
-                          color: Colors.orange.shade50,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Icon(Icons.sync, size: 16, color: Colors.orange),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Sync in Progress (${s.syncType ?? 'unknown'})',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                      ),
+                                  Text(
+                                    s.publicUrl!,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.blue,
+                                      decoration: TextDecoration.underline,
                                     ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                if (s.syncProgress!['totalCount'] != null &&
-                                    s.syncProgress!['processedCount'] != null)
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          if (s.instagramHandle != null &&
+                              s.instagramHandle!.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            InkWell(
+                              onTap: () async {
+                                final handle =
+                                    s.instagramHandle!.startsWith('@')
+                                    ? s.instagramHandle!.substring(1)
+                                    : s.instagramHandle!;
+                                final uri = Uri.parse(
+                                  'https://instagram.com/$handle',
+                                );
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(
+                                    uri,
+                                    mode: LaunchMode.externalApplication,
+                                  );
+                                }
+                              },
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.camera_alt,
+                                    size: 16,
+                                    color: Colors.purple,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '@${s.instagramHandle!.startsWith('@') ? s.instagramHandle!.substring(1) : s.instagramHandle!}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.purple,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Chip(
+                                label: Text(s.isActive ? 'Active' : 'Inactive'),
+                                labelStyle: _kSyncChipPlainLabel,
+                              ),
+                              if (s.syncInProgress == true) ...[
+                                const SizedBox(width: 8),
+                                Chip(
+                                  label: Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            'Progress: ${s.syncProgress!['processedCount']}/${s.syncProgress!['totalCount']} spots',
-                                            style: _kSyncChipLabelText,
-                                          ),
-                                          Text(
-                                            '${((s.syncProgress!['processedCount'] as num) / (s.syncProgress!['totalCount'] as num) * 100).toStringAsFixed(1)}%',
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                            ),
-                                          ),
-                                        ],
+                                      const SizedBox(
+                                        width: 12,
+                                        height: 12,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
                                       ),
-                                      const SizedBox(height: 4),
-                                      LinearProgressIndicator(
-                                        value: (s.syncProgress!['processedCount'] as num) /
-                                            (s.syncProgress!['totalCount'] as num),
-                                        backgroundColor: Colors.grey.shade300,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Syncing ${s.syncType ?? 'unknown'}...',
                                       ),
                                     ],
-                                  )
-                                else
-                                  const Text(
-                                    'Processing...',
-                                    style: _kSyncChipLabelText,
+                                  ),
+                                  labelStyle: _kSyncChipPlainLabel,
+                                  backgroundColor: Colors.orange.shade100,
+                                ),
+                              ] else if (s.autoSyncEnabled == true) ...[
+                                const SizedBox(width: 8),
+                                Chip(
+                                  label: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.schedule, size: 16),
+                                      SizedBox(width: 4),
+                                      Text('Auto-Sync ON'),
+                                    ],
+                                  ),
+                                  labelStyle: _kSyncChipPlainLabel,
+                                  backgroundColor: Colors.green.shade100,
+                                ),
+                              ],
+                              if (s.lastSyncAt != null) ...[
+                                const SizedBox(width: 8),
+                                Chip(
+                                  label: Text('Last sync: ${s.lastSyncAt}'),
+                                  labelStyle: _kSyncChipPlainLabel,
+                                ),
+                              ],
+                            ],
+                          ),
+                          if (s.syncInProgress == true &&
+                              s.syncProgress != null) ...[
+                            const SizedBox(height: 8),
+                            Card(
+                              color: Colors.orange.shade50,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.sync,
+                                          size: 16,
+                                          color: Colors.orange,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Sync in Progress (${s.syncType ?? 'unknown'})',
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    if (s.syncProgress!['totalCount'] != null &&
+                                        s.syncProgress!['processedCount'] !=
+                                            null)
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                'Progress: ${s.syncProgress!['processedCount']}/${s.syncProgress!['totalCount']} spots',
+                                                style: _kSyncChipLabelText,
+                                              ),
+                                              Text(
+                                                '${((s.syncProgress!['processedCount'] as num) / (s.syncProgress!['totalCount'] as num) * 100).toStringAsFixed(1)}%',
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          LinearProgressIndicator(
+                                            value:
+                                                (s.syncProgress!['processedCount']
+                                                    as num) /
+                                                (s.syncProgress!['totalCount']
+                                                    as num),
+                                            backgroundColor:
+                                                Colors.grey.shade300,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  Colors.orange,
+                                                ),
+                                          ),
+                                        ],
+                                      )
+                                    else
+                                      const Text(
+                                        'Processing...',
+                                        style: _kSyncChipLabelText,
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                          if (s.autoSyncEnabled == true) ...[
+                            const SizedBox(height: 4),
+                            Wrap(
+                              spacing: 4,
+                              runSpacing: 2,
+                              children: [
+                                const Text(
+                                  'Auto-Sync Details:',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                                if (s.lightSyncSchedule != null &&
+                                    s.lightSyncSchedule!.isNotEmpty)
+                                  Chip(
+                                    label: Text(
+                                      'Light: ${s.lightSyncSchedule}',
+                                      style: _kSyncChipLabelText,
+                                    ),
+                                    labelStyle: _kSyncChipLabelText,
+                                    backgroundColor: Colors.blue.shade50,
+                                  ),
+                                if (s.fullSyncSchedule != null &&
+                                    s.fullSyncSchedule!.isNotEmpty)
+                                  Chip(
+                                    label: Text(
+                                      'Full: ${s.fullSyncSchedule}',
+                                      style: _kSyncChipLabelText,
+                                    ),
+                                    labelStyle: _kSyncChipLabelText,
+                                    backgroundColor: Colors.purple.shade50,
                                   ),
                               ],
                             ),
-                          ),
-                        ),
-                      ],
-                      if (s.autoSyncEnabled == true) ...[
-                        const SizedBox(height: 4),
-                        Wrap(
-                          spacing: 4,
-                          runSpacing: 2,
-                          children: [
-                            const Text('Auto-Sync Details:', style: TextStyle( fontSize: 12)),
-                            if (s.lightSyncSchedule != null && s.lightSyncSchedule!.isNotEmpty)
-                              Chip(
-                                label: Text('Light: ${s.lightSyncSchedule}', style: _kSyncChipLabelText),
-                                labelStyle: _kSyncChipLabelText,
-                                backgroundColor: Colors.blue.shade50,
+                            if (s.lastLightSyncAt != null ||
+                                s.lastFullSyncAt != null) ...[
+                              const SizedBox(height: 4),
+                              Wrap(
+                                spacing: 4,
+                                runSpacing: 2,
+                                children: [
+                                  if (s.lastLightSyncAt != null)
+                                    Chip(
+                                      label: Text(
+                                        'Last light sync: ${s.lastLightSyncAt}',
+                                        style: _kSyncChipLabelText,
+                                      ),
+                                      labelStyle: _kSyncChipLabelText,
+                                      backgroundColor: Colors.blue.shade100,
+                                    ),
+                                  if (s.lastFullSyncAt != null)
+                                    Chip(
+                                      label: Text(
+                                        'Last full sync: ${s.lastFullSyncAt}',
+                                        style: _kSyncChipLabelText,
+                                      ),
+                                      labelStyle: _kSyncChipLabelText,
+                                      backgroundColor: Colors.purple.shade100,
+                                    ),
+                                ],
                               ),
-                            if (s.fullSyncSchedule != null && s.fullSyncSchedule!.isNotEmpty)
-                              Chip(
-                                label: Text('Full: ${s.fullSyncSchedule}', style: _kSyncChipLabelText),
-                                labelStyle: _kSyncChipLabelText,
-                                backgroundColor: Colors.purple.shade50,
-                              ),
+                            ],
                           ],
-                        ),
-                        if (s.lastLightSyncAt != null || s.lastFullSyncAt != null) ...[
-                          const SizedBox(height: 4),
-                          Wrap(
-                            spacing: 4,
-                            runSpacing: 2,
-                            children: [
-                              if (s.lastLightSyncAt != null)
-                                Chip(
-                                  label: Text('Last light sync: ${s.lastLightSyncAt}', style: _kSyncChipLabelText),
-                                  labelStyle: _kSyncChipLabelText,
-                                  backgroundColor: Colors.blue.shade100,
+                          if (s.lastSyncStats != null) ...[
+                            const SizedBox(height: 4),
+                            Wrap(
+                              spacing: 4,
+                              runSpacing: 2,
+                              children: [
+                                const Text(
+                                  'Last sync stats:',
+                                  style: TextStyle(fontSize: 12),
                                 ),
-                              if (s.lastFullSyncAt != null)
-                                Chip(
-                                  label: Text('Last full sync: ${s.lastFullSyncAt}', style: _kSyncChipLabelText),
-                                  labelStyle: _kSyncChipLabelText,
-                                  backgroundColor: Colors.purple.shade100,
+                                if (s.lastSyncStats!['created'] != null)
+                                  Chip(
+                                    label: Text(
+                                      'Created: ${_formatStatInt(s.lastSyncStats!['created'])}',
+                                      style: _kSyncChipLabelText,
+                                    ),
+                                    labelStyle: _kSyncChipLabelText,
+                                    backgroundColor: Colors.green.shade100,
+                                  ),
+                                if (s.lastSyncStats!['updated'] != null)
+                                  Chip(
+                                    label: Text(
+                                      'Updated: ${_formatStatInt(s.lastSyncStats!['updated'])}',
+                                      style: _kSyncChipLabelText,
+                                    ),
+                                    labelStyle: _kSyncChipLabelText,
+                                    backgroundColor: Colors.blue.shade100,
+                                  ),
+                                if (s.lastSyncStats!['removed'] != null)
+                                  Chip(
+                                    label: Text(
+                                      'Removed: ${_formatStatInt(s.lastSyncStats!['removed'])}',
+                                      style: _kSyncChipLabelText,
+                                    ),
+                                    labelStyle: _kSyncChipLabelText,
+                                    backgroundColor: Colors.red.shade100,
+                                  ),
+                                if (s.lastSyncStats!['skipped'] != null)
+                                  Chip(
+                                    label: Text(
+                                      'Skipped: ${_formatStatInt(s.lastSyncStats!['skipped'])}',
+                                      style: _kSyncChipLabelText,
+                                    ),
+                                    labelStyle: _kSyncChipLabelText,
+                                    backgroundColor: Colors.orange.shade100,
+                                  ),
+                                if (s.lastSyncStats!['total'] != null)
+                                  Chip(
+                                    label: Text(
+                                      'Total: ${_formatStatInt(s.lastSyncStats!['total'])}',
+                                      style: _kSyncChipLabelText,
+                                    ),
+                                    labelStyle: _kSyncChipLabelText,
+                                    backgroundColor: Colors.grey.shade200,
+                                  ),
+                              ],
+                            ),
+                          ],
+                          if (s.includeFolders != null &&
+                              s.includeFolders!.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Wrap(
+                              spacing: 4,
+                              runSpacing: 2,
+                              children: [
+                                const Text(
+                                  'Include folders:',
+                                  style: TextStyle(fontSize: 12),
                                 ),
+                                ...s.includeFolders!.map(
+                                  (folder) => Chip(
+                                    label: Text(
+                                      folder,
+                                      style: _kSyncChipLabelText,
+                                    ),
+                                    labelStyle: _kSyncChipLabelText,
+                                    backgroundColor: Colors.green.shade100,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                          if (s.excludeFolders != null &&
+                              s.excludeFolders!.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Wrap(
+                              spacing: 4,
+                              runSpacing: 2,
+                              children: [
+                                const Text(
+                                  'Exclude folders:',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                                ...s.excludeFolders!.map(
+                                  (folder) => Chip(
+                                    label: Text(
+                                      folder,
+                                      style: _kSyncChipLabelText,
+                                    ),
+                                    labelStyle: _kSyncChipLabelText,
+                                    backgroundColor: Colors.orange.shade100,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                          if (s.allFolders != null &&
+                              s.allFolders!.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Wrap(
+                              spacing: 4,
+                              runSpacing: 2,
+                              children: [
+                                const Text(
+                                  'All folders:',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                                ...s.allFolders!.map(
+                                  (folder) => Chip(
+                                    label: Text(
+                                      folder,
+                                      style: _kSyncChipLabelText,
+                                    ),
+                                    labelStyle: _kSyncChipLabelText,
+                                    backgroundColor: Colors.blue.shade100,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                          if ((s.defaultSpotAttributes?.isNotEmpty ?? false) ||
+                              (s.folderSpotAttributes?.isNotEmpty ??
+                                  false)) ...[
+                            const SizedBox(height: 4),
+                            Wrap(
+                              spacing: 4,
+                              runSpacing: 2,
+                              children: [
+                                if (s.defaultSpotAttributes?.isNotEmpty ??
+                                    false)
+                                  Chip(
+                                    label: const Text(
+                                      'Source defaults enabled',
+                                      style: _kSyncChipLabelText,
+                                    ),
+                                    labelStyle: _kSyncChipLabelText,
+                                    backgroundColor: Colors.teal.shade100,
+                                  ),
+                                if (s.folderSpotAttributes?.isNotEmpty ?? false)
+                                  Chip(
+                                    label: Text(
+                                      'Folder defaults: ${s.folderSpotAttributes!.length}',
+                                      style: _kSyncChipLabelText,
+                                    ),
+                                    labelStyle: _kSyncChipLabelText,
+                                    backgroundColor: Colors.indigo.shade100,
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                      isThreeLine: true,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (s.isActive && s.kmzUrl.isNotEmpty)
+                            Consumer<SyncSourceService>(
+                              builder: (context, service, child) {
+                                final isThisSourceSyncing = service
+                                    .syncingSources
+                                    .contains(s.id);
+                                // Show resume button if sync is in progress, otherwise show sync button
+                                if (s.syncInProgress == true) {
+                                  return IconButton(
+                                    icon: isThisSourceSyncing
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : const Icon(Icons.play_arrow),
+                                    tooltip: 'Resume sync',
+                                    onPressed: isThisSourceSyncing
+                                        ? null
+                                        : () async {
+                                            if (!mounted) return;
+                                            final syncService = context
+                                                .read<SyncSourceService>();
+                                            final scaffoldMessenger =
+                                                ScaffoldMessenger.of(context);
+                                            final result = await syncService
+                                                .resumeSync(s.id);
+                                            if (!mounted) return;
+                                            if (result != null) {
+                                              final stats =
+                                                  result['stats']
+                                                      as Map<String, dynamic>?;
+                                              final message = stats != null
+                                                  ? '${s.name} sync resumed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
+                                                  : result['message'] ??
+                                                        '${s.name} sync resumed successfully';
+                                              scaffoldMessenger.showSnackBar(
+                                                SnackBar(
+                                                  content: Text(message),
+                                                  backgroundColor: Colors.green,
+                                                  duration: const Duration(
+                                                    seconds: 4,
+                                                  ),
+                                                ),
+                                              );
+                                            } else {
+                                              scaffoldMessenger.showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    syncService.error ??
+                                                        'Resume sync failed for ${s.name}',
+                                                  ),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                            }
+                                          },
+                                  );
+                                } else {
+                                  return PopupMenuButton<String>(
+                                    icon: isThisSourceSyncing
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : const Icon(Icons.sync),
+                                    tooltip: 'Sync this source',
+                                    enabled: !isThisSourceSyncing,
+                                    onSelected: (mode) async {
+                                      if (!mounted) return;
+                                      final updateImages = mode == 'full';
+                                      final syncService = context
+                                          .read<SyncSourceService>();
+                                      final scaffoldMessenger =
+                                          ScaffoldMessenger.of(context);
+                                      final result = await syncService
+                                          .syncSingleSource(
+                                            s.id,
+                                            updateImagesForExistingSpots:
+                                                updateImages,
+                                          );
+                                      if (!mounted) return;
+                                      if (result != null) {
+                                        final stats =
+                                            result['stats']
+                                                as Map<String, dynamic>?;
+                                        final message = stats != null
+                                            ? '${s.name} sync completed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
+                                            : '${s.name} sync completed successfully';
+                                        scaffoldMessenger.showSnackBar(
+                                          SnackBar(
+                                            content: Text(message),
+                                            backgroundColor: Colors.green,
+                                            duration: const Duration(
+                                              seconds: 4,
+                                            ),
+                                          ),
+                                        );
+                                      } else {
+                                        scaffoldMessenger.showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              syncService.error ??
+                                                  'Sync failed for ${s.name}',
+                                            ),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    itemBuilder: (context) => [
+                                      const PopupMenuItem(
+                                        value: 'default',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.sync, size: 20),
+                                            SizedBox(width: 8),
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text('Default Sync'),
+                                                Text(
+                                                  'Skip images for existing spots',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'full',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.sync_problem, size: 20),
+                                            SizedBox(width: 8),
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text('Full Sync'),
+                                                Text(
+                                                  'Update images for existing spots',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }
+                              },
+                            ),
+                          PopupMenuButton<String>(
+                            onSelected: (v) async {
+                              final syncService = context
+                                  .read<SyncSourceService>();
+                              switch (v) {
+                                case 'edit':
+                                  _openEditDialog(context, source: s);
+                                  break;
+                                case 'toggleActive':
+                                  await syncService.updateSource(
+                                    sourceId: s.id,
+                                    isActive: !s.isActive,
+                                  );
+                                  break;
+                                case 'delete':
+                                  final confirmed = await showDialog<bool>(
+                                    context: context,
+                                    builder: (c) => AlertDialog(
+                                      title: const Text('Delete Source'),
+                                      content: Text('Delete \'${s.name}\'?'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(c, false),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(c, true),
+                                          child: const Text('Delete'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (confirmed == true) {
+                                    await syncService.deleteSource(s.id);
+                                  }
+                                  break;
+                              }
+                            },
+                            itemBuilder: (c) => [
+                              const PopupMenuItem(
+                                value: 'edit',
+                                child: Text('Edit'),
+                              ),
+                              PopupMenuItem(
+                                value: 'toggleActive',
+                                child: Text(
+                                  s.isActive ? 'Deactivate' : 'Activate',
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Text('Delete'),
+                              ),
                             ],
                           ),
                         ],
-                      ],
-                      if (s.lastSyncStats != null) ...[
-                        const SizedBox(height: 4),
-                        Wrap(
-                          spacing: 4,
-                          runSpacing: 2,
-                          children: [
-                            const Text('Last sync stats:', style: TextStyle( fontSize: 12)),
-                            if (s.lastSyncStats!['created'] != null)
-                              Chip(
-                                label: Text('Created: ${_formatStatInt(s.lastSyncStats!['created'])}', style: _kSyncChipLabelText),
-                                labelStyle: _kSyncChipLabelText,
-                                backgroundColor: Colors.green.shade100,
-                              ),
-                            if (s.lastSyncStats!['updated'] != null)
-                              Chip(
-                                label: Text('Updated: ${_formatStatInt(s.lastSyncStats!['updated'])}', style: _kSyncChipLabelText),
-                                labelStyle: _kSyncChipLabelText,
-                                backgroundColor: Colors.blue.shade100,
-                              ),
-                            if (s.lastSyncStats!['removed'] != null)
-                              Chip(
-                                label: Text('Removed: ${_formatStatInt(s.lastSyncStats!['removed'])}', style: _kSyncChipLabelText),
-                                labelStyle: _kSyncChipLabelText,
-                                backgroundColor: Colors.red.shade100,
-                              ),
-                            if (s.lastSyncStats!['skipped'] != null)
-                              Chip(
-                                label: Text('Skipped: ${_formatStatInt(s.lastSyncStats!['skipped'])}', style: _kSyncChipLabelText),
-                                labelStyle: _kSyncChipLabelText,
-                                backgroundColor: Colors.orange.shade100,
-                              ),
-                            if (s.lastSyncStats!['total'] != null)
-                              Chip(
-                                label: Text('Total: ${_formatStatInt(s.lastSyncStats!['total'])}', style: _kSyncChipLabelText),
-                                labelStyle: _kSyncChipLabelText,
-                                backgroundColor: Colors.grey.shade200,
-                              ),
-                          ],
-                        ),
-                      ],
-                      if (s.includeFolders != null && s.includeFolders!.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Wrap(
-                          spacing: 4,
-                          runSpacing: 2,
-                          children: [
-                            const Text('Include folders:', style: TextStyle( fontSize: 12)),
-                            ...s.includeFolders!.map((folder) => Chip(
-                              label: Text(folder, style: _kSyncChipLabelText),
-                              labelStyle: _kSyncChipLabelText,
-                              backgroundColor: Colors.green.shade100,
-                            )),
-                          ],
-                        ),
-                      ],
-                      if (s.excludeFolders != null && s.excludeFolders!.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Wrap(
-                          spacing: 4,
-                          runSpacing: 2,
-                          children: [
-                            const Text('Exclude folders:', style: TextStyle( fontSize: 12)),
-                            ...s.excludeFolders!.map((folder) => Chip(
-                              label: Text(folder, style: _kSyncChipLabelText),
-                              labelStyle: _kSyncChipLabelText,
-                              backgroundColor: Colors.orange.shade100,
-                            )),
-                          ],
-                        ),
-                      ],
-                      if (s.allFolders != null && s.allFolders!.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Wrap(
-                          spacing: 4,
-                          runSpacing: 2,
-                          children: [
-                            const Text('All folders:', style: TextStyle( fontSize: 12)),
-                            ...s.allFolders!.map((folder) => Chip(
-                              label: Text(folder, style: _kSyncChipLabelText),
-                              labelStyle: _kSyncChipLabelText,
-                              backgroundColor: Colors.blue.shade100,
-                            )),
-                          ],
-                        ),
-                      ],
-                      if ((s.defaultSpotAttributes?.isNotEmpty ?? false) ||
-                          (s.folderSpotAttributes?.isNotEmpty ?? false)) ...[
-                        const SizedBox(height: 4),
-                        Wrap(
-                          spacing: 4,
-                          runSpacing: 2,
-                          children: [
-                            if (s.defaultSpotAttributes?.isNotEmpty ?? false)
-                              Chip(
-                                label: const Text(
-                                  'Source defaults enabled',
-                                  style: _kSyncChipLabelText,
-                                ),
-                                labelStyle: _kSyncChipLabelText,
-                                backgroundColor: Colors.teal.shade100,
-                              ),
-                            if (s.folderSpotAttributes?.isNotEmpty ?? false)
-                              Chip(
-                                label: Text(
-                                  'Folder defaults: ${s.folderSpotAttributes!.length}',
-                                  style: _kSyncChipLabelText,
-                                ),
-                                labelStyle: _kSyncChipLabelText,
-                                backgroundColor: Colors.indigo.shade100,
-                              ),
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
-                  isThreeLine: true,
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (s.isActive && s.kmzUrl.isNotEmpty)
-                        Consumer<SyncSourceService>(
-                          builder: (context, service, child) {
-                            final isThisSourceSyncing = service.syncingSources.contains(s.id);
-                            // Show resume button if sync is in progress, otherwise show sync button
-                            if (s.syncInProgress == true) {
-                              return IconButton(
-                                icon: isThisSourceSyncing 
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
-                                      )
-                                    : const Icon(Icons.play_arrow),
-                                tooltip: 'Resume sync',
-                                onPressed: isThisSourceSyncing ? null : () async {
-                                  if (!mounted) return;
-                                  final syncService = context.read<SyncSourceService>();
-                                  final scaffoldMessenger = ScaffoldMessenger.of(context);
-                                  final result = await syncService.resumeSync(s.id);
-                                  if (!mounted) return;
-                                  if (result != null) {
-                                    final stats = result['stats'] as Map<String, dynamic>?;
-                                    final message = stats != null 
-                                        ? '${s.name} sync resumed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
-                                        : result['message'] ?? '${s.name} sync resumed successfully';
-                                    scaffoldMessenger.showSnackBar(
-                                      SnackBar(
-                                        content: Text(message),
-                                        backgroundColor: Colors.green,
-                                        duration: const Duration(seconds: 4),
-                                      ),
-                                    );
-                                  } else {
-                                    scaffoldMessenger.showSnackBar(
-                                      SnackBar(
-                                        content: Text(syncService.error ?? 'Resume sync failed for ${s.name}'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-                                },
-                              );
-                            } else {
-                              return PopupMenuButton<String>(
-                                icon: isThisSourceSyncing 
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
-                                      )
-                                    : const Icon(Icons.sync),
-                                tooltip: 'Sync this source',
-                                enabled: !isThisSourceSyncing,
-                                onSelected: (mode) async {
-                                  if (!mounted) return;
-                                  final updateImages = mode == 'full';
-                                  final syncService = context.read<SyncSourceService>();
-                                  final scaffoldMessenger = ScaffoldMessenger.of(context);
-                                  final result = await syncService.syncSingleSource(
-                                    s.id,
-                                    updateImagesForExistingSpots: updateImages,
-                                  );
-                                  if (!mounted) return;
-                                  if (result != null) {
-                                    final stats = result['stats'] as Map<String, dynamic>?;
-                                    final message = stats != null 
-                                        ? '${s.name} sync completed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
-                                        : '${s.name} sync completed successfully';
-                                    scaffoldMessenger.showSnackBar(
-                                      SnackBar(
-                                        content: Text(message),
-                                        backgroundColor: Colors.green,
-                                        duration: const Duration(seconds: 4),
-                                      ),
-                                    );
-                                  } else {
-                                    scaffoldMessenger.showSnackBar(
-                                      SnackBar(
-                                        content: Text(syncService.error ?? 'Sync failed for ${s.name}'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  const PopupMenuItem(
-                                    value: 'default',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.sync, size: 20),
-                                        SizedBox(width: 8),
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text('Default Sync'),
-                                            Text(
-                                              'Skip images for existing spots',
-                                              style: TextStyle(fontSize: 12, color: Colors.grey),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const PopupMenuItem(
-                                    value: 'full',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.sync_problem, size: 20),
-                                        SizedBox(width: 8),
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text('Full Sync'),
-                                            Text(
-                                              'Update images for existing spots',
-                                              style: TextStyle(fontSize: 12, color: Colors.grey),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }
-                          },
-                        ),
-                      PopupMenuButton<String>(
-                        onSelected: (v) async {
-                          final syncService = context.read<SyncSourceService>();
-                          switch (v) {
-                            case 'edit':
-                              _openEditDialog(context, source: s);
-                              break;
-                            case 'toggleActive':
-                              await syncService.updateSource(
-                                sourceId: s.id,
-                                isActive: !s.isActive,
-                              );
-                              break;
-                            case 'delete':
-                              final confirmed = await showDialog<bool>(
-                                context: context,
-                                builder: (c) => AlertDialog(
-                                  title: const Text('Delete Source'),
-                                  content: Text('Delete \'${s.name}\'?'),
-                                  actions: [
-                                    TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-                                    TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Delete')),
-                                  ],
-                                ),
-                              );
-                              if (confirmed == true) {
-                                await syncService.deleteSource(s.id);
-                              }
-                              break;
-                          }
-                        },
-                        itemBuilder: (c) => [
-                          const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                          PopupMenuItem(value: 'toggleActive', child: Text(s.isActive ? 'Deactivate' : 'Activate')),
-                          const PopupMenuItem(value: 'delete', child: Text('Delete')),
-                        ],
                       ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
+                    ),
+                  );
+                },
+              ),
               // Loading overlay when syncing all sources
               if (service.isSyncingAll && service.sources.isNotEmpty)
                 Container(
@@ -784,7 +931,10 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                           children: [
                             CircularProgressIndicator(),
                             SizedBox(height: 16),
-                            Text('Syncing all sources...', style: TextStyle(fontSize: 16)),
+                            Text(
+                              'Syncing all sources...',
+                              style: TextStyle(fontSize: 16),
+                            ),
                           ],
                         ),
                       ),
@@ -798,7 +948,10 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     );
   }
 
-  Future<void> _openEditDialog(BuildContext context, {SyncSource? source}) async {
+  Future<void> _openEditDialog(
+    BuildContext context, {
+    SyncSource? source,
+  }) async {
     final saved = await showDialog<bool>(
       context: context,
       builder: (c) => SyncSourceEditDialog(source: source),
@@ -809,195 +962,6 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       final syncService = context.read<SyncSourceService>();
       if (!mounted) return;
       await syncService.fetchSyncSources(includeInactive: true);
-    }
-  }
-
-  Future<void> _showCleanupDialog(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: const Text('Cleanup Unused Images'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'This will move all unused images (including resized versions) to /spots/trash folder.',
-              style: TextStyle(fontSize: 14),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'The function will:',
-              style: TextStyle(fontSize: 12),
-            ),
-            SizedBox(height: 4),
-            Text('• List all files in /spots folder (including /spots/resized)', style: TextStyle(fontSize: 12)),
-            Text('• List all image files referenced by spots', style: TextStyle(fontSize: 12)),
-            Text('• Move unreferenced images and resized versions to /spots/trash', style: TextStyle(fontSize: 12)),
-            SizedBox(height: 8),
-            Text(
-              'This is safe - images are moved, not deleted. You can restore them from trash if needed.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(c, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.orange),
-            child: const Text('Cleanup'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      if (!mounted) return;
-      // Show loading indicator
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (c) => const AlertDialog(
-          content: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Cleaning up unused images...'),
-            ],
-          ),
-        ),
-      );
-
-      try {
-        if (!mounted) return;
-        final syncService = context.read<SyncSourceService>();
-        if (!mounted) return;
-        final scaffoldMessenger = ScaffoldMessenger.of(context);
-        if (!mounted) return;
-        final navigator = Navigator.of(context);
-        final cleanupResult = await syncService.cleanupUnusedImages();
-        
-        if (!mounted) return;
-        navigator.pop(); // Close loading dialog
-        
-        if (cleanupResult != null && cleanupResult['success'] == true) {
-          final movedCount = cleanupResult['movedCount'] ?? 0;
-          final skippedCount = cleanupResult['skippedCount'] ?? 0;
-          final totalFiles = cleanupResult['totalFiles'] ?? 0;
-          
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text(
-                'Cleanup completed: $movedCount images moved to trash, $skippedCount skipped (out of $totalFiles total)',
-              ),
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        } else {
-          scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: Text(
-                'Cleanup failed: ${cleanupResult?['error'] ?? 'Unknown error'}',
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } catch (e) {
-        if (!mounted) return;
-        final navigator = Navigator.of(context);
-        if (!mounted) return;
-        final scaffoldMessenger = ScaffoldMessenger.of(context);
-        navigator.pop(); // Close loading dialog
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text('Cleanup failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _showMissingImagesDialog(BuildContext context) async {
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (c) => const AlertDialog(
-        content: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Checking for missing images...'),
-          ],
-        ),
-      ),
-    );
-
-    try {
-      if (!mounted) return;
-      final syncService = context.read<SyncSourceService>();
-      if (!mounted) return;
-      final scaffoldMessenger = ScaffoldMessenger.of(context);
-      if (!mounted) return;
-      final navigator = Navigator.of(context);
-      final result = await syncService.findMissingImages();
-      
-      if (!mounted) return;
-      navigator.pop(); // Close loading dialog
-      
-      if (result != null && result['success'] == true) {
-        final missingImages = result['missingImages'] as List<dynamic>? ?? [];
-        final totalReferenced = result['totalReferencedImages'] ?? 0;
-        final totalExisting = result['totalExistingFiles'] ?? 0;
-        final missingCount = result['missingImagesCount'] ?? 0;
-        
-        if (missingCount == 0) {
-          scaffoldMessenger.showSnackBar(
-            const SnackBar(
-              content: Text('No missing images found! All referenced images exist.'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        } else {
-          // Navigate to missing images screen
-          navigator.push(
-            MaterialPageRoute(
-              builder: (context) => MissingImagesScreen(
-                missingImages: missingImages,
-                totalReferenced: totalReferenced,
-                totalExisting: totalExisting,
-              ),
-            ),
-          );
-        }
-      } else {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text('Failed to check missing images: ${result?['error'] ?? 'Unknown error'}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      final navigator = Navigator.of(context);
-      if (!mounted) return;
-      final scaffoldMessenger = ScaffoldMessenger.of(context);
-      navigator.pop(); // Close loading dialog
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Failed to check missing images: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
 
@@ -1026,105 +990,124 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       if (!mounted) return;
       final navigator = Navigator.of(context);
       final result = await syncService.findOrphanedSpots();
-      
+
       if (!mounted) return;
       navigator.pop(); // Close loading dialog
-      
+
       if (result != null && result['success'] == true) {
-          final orphanedSpots = result['orphanedSpots'] as List<dynamic>? ?? [];
-          final totalSpotsWithSource = result['totalSpotsWithSource'] ?? 0;
-          final orphanedCount = result['orphanedSpotsCount'] ?? 0;
-          
-          if (orphanedCount == 0) {
-            scaffoldMessenger.showSnackBar(
-              const SnackBar(
-                content: Text('No orphaned spots found! All spots have valid sources.'),
-                backgroundColor: Colors.green,
+        final orphanedSpots = result['orphanedSpots'] as List<dynamic>? ?? [];
+        final totalSpotsWithSource = result['totalSpotsWithSource'] ?? 0;
+        final orphanedCount = result['orphanedSpotsCount'] ?? 0;
+
+        if (orphanedCount == 0) {
+          scaffoldMessenger.showSnackBar(
+            const SnackBar(
+              content: Text(
+                'No orphaned spots found! All spots have valid sources.',
               ),
-            );
-          } else {
-            // Show detailed dialog with orphaned spots
-            if (!mounted) return;
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Orphaned Spots Found'),
-                content: SizedBox(
-                  width: double.maxFinite,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Found $orphanedCount orphaned spots out of $totalSpotsWithSource spots with spotSource field.'),
-                      const SizedBox(height: 16),
-                      const Text('Orphaned spots:', style: TextStyle()),
-                      const SizedBox(height: 8),
-                      Flexible(
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: orphanedSpots.length,
-                          itemBuilder: (context, index) {
-                            final spot = orphanedSpots[index];
-                            return Card(
-                              margin: const EdgeInsets.symmetric(vertical: 4),
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                spot['spotName'] ?? 'Unnamed Spot',
-                                                style: const TextStyle(),
-                                              ),
-                                              Text('ID: ${spot['spotId']}'),
-                                              Text('Source: ${spot['spotSource']}'),
-                                              if (spot['address'] != null) Text('Address: ${spot['address']}'),
-                                              if (spot['city'] != null) Text('City: ${spot['city']}'),
-                                            ],
-                                          ),
-                                        ),
-                                        IconButton(
-                                          icon: const Icon(Icons.delete, color: Colors.red),
-                                          tooltip: 'Delete Spot',
-                                          onPressed: () => _confirmDeleteSpot(context, spot),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                actions: [
-                  if (orphanedCount > 0)
-                    TextButton(
-                      onPressed: () => _confirmDeleteAllSpots(context, orphanedSpots),
-                      style: TextButton.styleFrom(foregroundColor: Colors.red),
-                      child: const Text('Delete All'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          // Show detailed dialog with orphaned spots
+          if (!mounted) return;
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Orphaned Spots Found'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Found $orphanedCount orphaned spots out of $totalSpotsWithSource spots with spotSource field.',
                     ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Close'),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    const Text('Orphaned spots:', style: TextStyle()),
+                    const SizedBox(height: 8),
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: orphanedSpots.length,
+                        itemBuilder: (context, index) {
+                          final spot = orphanedSpots[index];
+                          return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              spot['spotName'] ??
+                                                  'Unnamed Spot',
+                                              style: const TextStyle(),
+                                            ),
+                                            Text('ID: ${spot['spotId']}'),
+                                            Text(
+                                              'Source: ${spot['spotSource']}',
+                                            ),
+                                            if (spot['address'] != null)
+                                              Text(
+                                                'Address: ${spot['address']}',
+                                              ),
+                                            if (spot['city'] != null)
+                                              Text('City: ${spot['city']}'),
+                                          ],
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.delete,
+                                          color: Colors.red,
+                                        ),
+                                        tooltip: 'Delete Spot',
+                                        onPressed: () =>
+                                            _confirmDeleteSpot(context, spot),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            );
-          }
+              actions: [
+                if (orphanedCount > 0)
+                  TextButton(
+                    onPressed: () =>
+                        _confirmDeleteAllSpots(context, orphanedSpots),
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    child: const Text('Delete All'),
+                  ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          );
+        }
       } else {
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Failed to check orphaned spots: ${result?['error'] ?? 'Unknown error'}'),
+            content: Text(
+              'Failed to check orphaned spots: ${result?['error'] ?? 'Unknown error'}',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -1144,15 +1127,20 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     }
   }
 
-  Future<void> _confirmDeleteSpot(BuildContext context, Map<String, dynamic> spot) async {
+  Future<void> _confirmDeleteSpot(
+    BuildContext context,
+    Map<String, dynamic> spot,
+  ) async {
     final spotName = spot['spotName'] ?? 'Unnamed Spot';
     final spotId = spot['spotId'];
-    
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Spot'),
-        content: Text('Are you sure you want to delete "$spotName"?\n\nThis action cannot be undone.'),
+        content: Text(
+          'Are you sure you want to delete "$spotName"?\n\nThis action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -1202,7 +1190,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       final navigator = Navigator.of(context);
       if (!mounted) return;
       navigator.pop(); // Close loading dialog
-      
+
       if (result != null && result['success'] == true) {
         if (!mounted) return;
         final scaffoldMessenger = ScaffoldMessenger.of(context);
@@ -1226,7 +1214,9 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
         if (!mounted) return;
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Failed to delete spot: ${result?['error'] ?? 'Unknown error'}'),
+            content: Text(
+              'Failed to delete spot: ${result?['error'] ?? 'Unknown error'}',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -1246,14 +1236,19 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     }
   }
 
-  Future<void> _confirmDeleteAllSpots(BuildContext context, List<dynamic> orphanedSpots) async {
+  Future<void> _confirmDeleteAllSpots(
+    BuildContext context,
+    List<dynamic> orphanedSpots,
+  ) async {
     final count = orphanedSpots.length;
-    
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete All Orphaned Spots'),
-        content: Text('Are you sure you want to delete all $count orphaned spots?\n\nThis action cannot be undone.'),
+        content: Text(
+          'Are you sure you want to delete all $count orphaned spots?\n\nThis action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -1274,7 +1269,10 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     }
   }
 
-  Future<void> _deleteAllSpots(BuildContext context, List<dynamic> orphanedSpots) async {
+  Future<void> _deleteAllSpots(
+    BuildContext context,
+    List<dynamic> orphanedSpots,
+  ) async {
     try {
       if (!mounted) return;
       // Show loading indicator
@@ -1294,7 +1292,9 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       );
 
       // Extract spot IDs
-      final spotIds = orphanedSpots.map((spot) => spot['spotId'] as String).toList();
+      final spotIds = orphanedSpots
+          .map((spot) => spot['spotId'] as String)
+          .toList();
 
       // Delete all spots using cloud function
       if (!mounted) return;
@@ -1306,14 +1306,17 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       final navigator = Navigator.of(context);
       if (!mounted) return;
       navigator.pop(); // Close loading dialog
-      
+
       if (result != null && result['success'] == true) {
         if (!mounted) return;
         final scaffoldMessenger = ScaffoldMessenger.of(context);
         if (!mounted) return;
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text(result['message'] ?? 'Successfully deleted ${orphanedSpots.length} orphaned spots'),
+            content: Text(
+              result['message'] ??
+                  'Successfully deleted ${orphanedSpots.length} orphaned spots',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -1329,7 +1332,9 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
         if (!mounted) return;
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Failed to delete spots: ${result?['error'] ?? 'Unknown error'}'),
+            content: Text(
+              'Failed to delete spots: ${result?['error'] ?? 'Unknown error'}',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -1359,7 +1364,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
           content: const Text(
             'This will apply configured source/folder default attributes to existing spots. '
             'If a matching source spot is marked as duplicateOf another spot, the defaults are also merged into that original spot.\n\n'
-            'Do you want to backfill all sources or select one source?'
+            'Do you want to backfill all sources or select one source?',
           ),
           actions: <Widget>[
             TextButton(
@@ -1390,7 +1395,8 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
 
   Future<void> _showBackfillSourceSelectionDialog(BuildContext context) async {
     final syncService = context.read<SyncSourceService>();
-    final sortedSources = [...syncService.sources]..sort((a, b) => a.name.compareTo(b.name));
+    final sortedSources = [...syncService.sources]
+      ..sort((a, b) => a.name.compareTo(b.name));
 
     return showDialog<void>(
       context: context,
@@ -1428,7 +1434,10 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     );
   }
 
-  Future<void> _runBackfillSpotAttributes(BuildContext context, String? sourceId) async {
+  Future<void> _runBackfillSpotAttributes(
+    BuildContext context,
+    String? sourceId,
+  ) async {
     final syncService = context.read<SyncSourceService>();
     final scaffoldMessenger = ScaffoldMessenger.of(context);
 
@@ -1451,7 +1460,9 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     );
 
     try {
-      final result = await syncService.backfillSourceSpotAttributes(sourceId: sourceId);
+      final result = await syncService.backfillSourceSpotAttributes(
+        sourceId: sourceId,
+      );
 
       navigator.pop();
 
@@ -1460,8 +1471,8 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
         final summary = result['summary'] as Map<String, dynamic>?;
         final message = summary != null
             ? 'Backfill done! Sources: ${summary['sourcesRequested']}, '
-                'spots updated: ${summary['spotsUpdated']}, '
-                'originals updated: ${summary['originalSpotsUpdated']}'
+                  'spots updated: ${summary['spotsUpdated']}, '
+                  'originals updated: ${summary['originalSpotsUpdated']}'
             : (result['message']?.toString() ?? 'Backfill completed');
         scaffoldMessenger.showSnackBar(
           SnackBar(
@@ -1500,7 +1511,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
           content: const Text(
             'This will update the cached source names for all spots. '
             'This is useful for spots created before the source name caching feature was added.\n\n'
-            'Do you want to update all spots or select a specific source?'
+            'Do you want to update all spots or select a specific source?',
           ),
           actions: <Widget>[
             TextButton(
@@ -1531,7 +1542,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
 
   Future<void> _showSourceSelectionDialog(BuildContext context) async {
     final syncService = context.read<SyncSourceService>();
-    
+
     return showDialog<void>(
       context: context,
       builder: (BuildContext context) {
@@ -1568,10 +1579,13 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     );
   }
 
-  Future<void> _updateSpotSourceNames(BuildContext context, String? sourceId) async {
+  Future<void> _updateSpotSourceNames(
+    BuildContext context,
+    String? sourceId,
+  ) async {
     final syncService = context.read<SyncSourceService>();
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-    
+
     // Show loading dialog and store the navigator context
     late NavigatorState navigator;
     showDialog<void>(
@@ -1592,15 +1606,17 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     );
 
     try {
-      final result = await syncService.updateSpotSourceNames(sourceId: sourceId);
-      
+      final result = await syncService.updateSpotSourceNames(
+        sourceId: sourceId,
+      );
+
       // Close loading dialog using the stored navigator
       navigator.pop();
-      
+
       if (mounted) {
         if (result != null && result['success'] == true) {
           final stats = result['stats'] as Map<String, dynamic>?;
-          final message = stats != null 
+          final message = stats != null
               ? 'Update completed! Total: ${stats['totalSpots']}, Updated: ${stats['updated']}, Skipped: ${stats['skipped']}'
               : 'Update completed successfully';
           scaffoldMessenger.showSnackBar(
@@ -1622,7 +1638,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     } catch (e) {
       // Close loading dialog using the stored navigator
       navigator.pop();
-      
+
       if (mounted) {
         scaffoldMessenger.showSnackBar(
           SnackBar(
@@ -1631,177 +1647,6 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
           ),
         );
       }
-    }
-  }
-
-  Future<void> _backfillSpotNameLower(BuildContext context) async {
-    var purgeTerms = false;
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (c) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Backfill Spot Name Search'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Populates spotSearchTerms for visible spots (Explore autocomplete). '
-                'This may take a few minutes for large databases.',
-              ),
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                value: purgeTerms,
-                onChanged: (v) => setState(() => purgeTerms = v ?? false),
-                title: const Text('Purge existing terms first'),
-                subtitle: const Text(
-                  'Deletes all spotSearchTerms, then rebuilds only for spots '
-                  'shown on the map (not hidden or duplicates).',
-                ),
-                controlAffinity: ListTileControlAffinity.leading,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(c, false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(c, true),
-              child: const Text('Run'),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (confirm != true || !mounted) return;
-    final syncService = context.read<SyncSourceService>();
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    late NavigatorState navigator;
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (c) {
-        navigator = Navigator.of(c);
-        return const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Backfilling spotSearchTerms...'),
-            ],
-          ),
-        );
-      },
-    );
-    try {
-      final result = await syncService.backfillSpotNameLower(purge: purgeTerms);
-      navigator.pop();
-      if (mounted) {
-        if (result != null && result['success'] == true) {
-          final stats = result['stats'] as Map<String, dynamic>?;
-          final msg = stats != null
-              ? formatSearchIndexBackfillMessage(
-                  entityLabel: 'Spots',
-                  totalProcessed: stats['totalProcessed'],
-                  searchTermsWritten: stats['searchTermsWritten'],
-                  searchTermsDeleted: stats['searchTermsDeleted'],
-                  purged: stats['purged'] == true,
-                )
-              : 'Backfill completed';
-          scaffoldMessenger.showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.green));
-        } else {
-          scaffoldMessenger.showSnackBar(SnackBar(content: Text(syncService.error ?? 'Backfill failed'), backgroundColor: Colors.red));
-        }
-      }
-    } catch (e) {
-      navigator.pop();
-      if (mounted) {
-        scaffoldMessenger.showSnackBar(SnackBar(content: Text('Backfill failed: $e'), backgroundColor: Colors.red));
-      }
-    }
-  }
-
-  Future<void> _backfillSpotHasImages(BuildContext context) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: const Text('Backfill Spot Image Flags'),
-        content: const Text(
-          'Sets hasImages from imageUrls for every existing spot. '
-          'The operation is safe to run again and only updates stale values.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(c, true),
-            child: const Text('Run'),
-          ),
-        ],
-      ),
-    );
-    if (confirm != true || !context.mounted) return;
-
-    final syncService = context.read<SyncSourceService>();
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    late NavigatorState navigator;
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (c) {
-        navigator = Navigator.of(c);
-        return const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Backfilling spot image flags...'),
-            ],
-          ),
-        );
-      },
-    );
-
-    try {
-      final result = await syncService.backfillSpotHasImages();
-      navigator.pop();
-      if (!mounted) return;
-
-      if (result != null && result['success'] == true) {
-        final statsValue = result['stats'];
-        final stats = statsValue is Map
-            ? Map<String, dynamic>.from(statsValue)
-            : null;
-        final message = stats == null
-            ? 'Backfill completed'
-            : 'Backfill completed. Processed: '
-                  '${_formatStatInt(stats['totalProcessed'])}, updated: '
-                  '${_formatStatInt(stats['totalUpdated'])}, with images: '
-                  '${_formatStatInt(stats['spotsWithImages'])}.';
-        scaffoldMessenger.showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: Colors.green),
-        );
-      } else {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: Text(syncService.error ?? 'Backfill failed'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      navigator.pop();
-      if (!mounted) return;
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Backfill failed: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
 }
@@ -1830,6 +1675,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
   late bool isActive;
   late bool recordFolderName;
   late bool autoSyncEnabled;
+
   /// 'include' or 'exclude' — mutually exclusive folder filter mode
   late String folderFilterMode;
   late _EditableSpotAttributes _sourceDefaultAttributes;
@@ -1842,30 +1688,42 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
     urlCtrl = TextEditingController(text: widget.source?.kmzUrl ?? '');
     descCtrl = TextEditingController(text: widget.source?.description ?? '');
     publicUrlCtrl = TextEditingController(text: widget.source?.publicUrl ?? '');
-    instagramHandleCtrl = TextEditingController(text: widget.source?.instagramHandle ?? '');
+    instagramHandleCtrl = TextEditingController(
+      text: widget.source?.instagramHandle ?? '',
+    );
     includeFoldersCtrl = TextEditingController(
-      text: (widget.source?.includeFolders == null || widget.source?.includeFolders?.isEmpty == true)
+      text:
+          (widget.source?.includeFolders == null ||
+              widget.source?.includeFolders?.isEmpty == true)
           ? ''
           : widget.source!.includeFolders!.join('\n'),
     );
     excludeFoldersCtrl = TextEditingController(
-      text: (widget.source?.excludeFolders == null || widget.source?.excludeFolders?.isEmpty == true)
+      text:
+          (widget.source?.excludeFolders == null ||
+              widget.source?.excludeFolders?.isEmpty == true)
           ? ''
           : widget.source!.excludeFolders!.join('\n'),
     );
-    final hasExclude = widget.source?.excludeFolders != null &&
+    final hasExclude =
+        widget.source?.excludeFolders != null &&
         widget.source!.excludeFolders!.isNotEmpty;
     folderFilterMode = hasExclude ? 'exclude' : 'include';
     folderRuleNameCtrl = TextEditingController();
-    lightSyncScheduleCtrl = TextEditingController(text: widget.source?.lightSyncSchedule ?? '');
-    fullSyncScheduleCtrl = TextEditingController(text: widget.source?.fullSyncSchedule ?? '');
+    lightSyncScheduleCtrl = TextEditingController(
+      text: widget.source?.lightSyncSchedule ?? '',
+    );
+    fullSyncScheduleCtrl = TextEditingController(
+      text: widget.source?.fullSyncSchedule ?? '',
+    );
     isActive = widget.source?.isActive ?? true;
     recordFolderName = widget.source?.recordFolderName ?? false;
     autoSyncEnabled = widget.source?.autoSyncEnabled ?? false;
     _sourceDefaultAttributes = _EditableSpotAttributes.fromMap(
       widget.source?.defaultSpotAttributes,
     );
-    final existingFolderDefaults = widget.source?.folderSpotAttributes ?? const {};
+    final existingFolderDefaults =
+        widget.source?.folderSpotAttributes ?? const {};
     for (final entry in existingFolderDefaults.entries) {
       final folderName = entry.key.trim();
       if (folderName.isEmpty) continue;
@@ -1952,31 +1810,39 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
               TextFormField(
                 controller: nameCtrl,
                 decoration: const InputDecoration(labelText: 'Name'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
               TextFormField(
                 controller: urlCtrl,
                 decoration: const InputDecoration(
                   labelText: 'Source URL (KMZ/KML/GeoJSON)',
-                  helperText: 'Paste Google My Maps KMZ/KML or OpenStreetMap uMap GeoJSON URL',
+                  helperText:
+                      'Paste Google My Maps KMZ/KML or OpenStreetMap uMap GeoJSON URL',
                 ),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
               TextFormField(
                 controller: descCtrl,
-                decoration: const InputDecoration(labelText: 'Description (optional)'),
+                decoration: const InputDecoration(
+                  labelText: 'Description (optional)',
+                ),
                 maxLines: 3,
               ),
               TextFormField(
                 controller: publicUrlCtrl,
-                decoration: const InputDecoration(labelText: 'Public URL (optional)'),
+                decoration: const InputDecoration(
+                  labelText: 'Public URL (optional)',
+                ),
                 keyboardType: TextInputType.url,
               ),
               TextFormField(
                 controller: instagramHandleCtrl,
                 decoration: const InputDecoration(
                   labelText: 'Instagram Handle (optional)',
-                  helperText: 'Instagram username without @ symbol (e.g., parkour_spots)',
+                  helperText:
+                      'Instagram username without @ symbol (e.g., parkour_spots)',
                 ),
               ),
               const SizedBox(height: 8),
@@ -1990,14 +1856,8 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
               const SizedBox(height: 8),
               SegmentedButton<String>(
                 segments: const [
-                  ButtonSegment(
-                    value: 'include',
-                    label: Text('Include'),
-                  ),
-                  ButtonSegment(
-                    value: 'exclude',
-                    label: Text('Exclude'),
-                  ),
+                  ButtonSegment(value: 'include', label: Text('Include')),
+                  ButtonSegment(value: 'exclude', label: Text('Exclude')),
                 ],
                 selected: {folderFilterMode},
                 onSelectionChanged: (Set<String> selected) {
@@ -2131,13 +1991,17 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                     spacing: 6,
                     runSpacing: 6,
                     children: widget.source!.allFolders!
-                        .where((folder) =>
-                            _findExistingFolderRuleKey(folder) == null)
-                        .map((folder) => ActionChip(
-                              label: Text(folder),
-                              labelStyle: _kSyncChipPlainLabel,
-                              onPressed: () => _addFolderRule(folder),
-                            ))
+                        .where(
+                          (folder) =>
+                              _findExistingFolderRuleKey(folder) == null,
+                        )
+                        .map(
+                          (folder) => ActionChip(
+                            label: Text(folder),
+                            labelStyle: _kSyncChipPlainLabel,
+                            onPressed: () => _addFolderRule(folder),
+                          ),
+                        )
                         .toList(),
                   ),
                 ),
@@ -2172,14 +2036,11 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                         Padding(
                           padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                           child: SpotAttributesSection(
-                            selectedAccess:
-                                folderAttributes.selectedAccess,
-                            selectedFeatures:
-                                folderAttributes.selectedFeatures,
+                            selectedAccess: folderAttributes.selectedAccess,
+                            selectedFeatures: folderAttributes.selectedFeatures,
                             selectedFacilities:
                                 folderAttributes.selectedFacilities,
-                            selectedGoodFor:
-                                folderAttributes.selectedGoodFor,
+                            selectedGoodFor: folderAttributes.selectedGoodFor,
                             onAccessChanged: (value) {
                               setState(() {
                                 folderAttributes.selectedAccess = value;
@@ -2197,9 +2058,12 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                             onFacilityChanged: (key, value) {
                               setState(() {
                                 if (value == 'unknown') {
-                                  folderAttributes.selectedFacilities.remove(key);
+                                  folderAttributes.selectedFacilities.remove(
+                                    key,
+                                  );
                                 } else {
-                                  folderAttributes.selectedFacilities[key] = value;
+                                  folderAttributes.selectedFacilities[key] =
+                                      value;
                                 }
                               });
                             },
@@ -2229,20 +2093,24 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Record Folder/Layer on Spots'),
-                subtitle: const Text('If enabled, store the KML folder name or uMap layer on each imported spot'),
+                subtitle: const Text(
+                  'If enabled, store the KML folder name or uMap layer on each imported spot',
+                ),
                 value: recordFolderName,
                 onChanged: (v) => setState(() => recordFolderName = v),
               ),
               const Divider(),
               const Text(
                 'Auto-Sync Configuration',
-                style: TextStyle( fontSize: 16),
+                style: TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 8),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Enable Auto-Sync'),
-                subtitle: const Text('Automatically sync this source according to schedules below'),
+                subtitle: const Text(
+                  'Automatically sync this source according to schedules below',
+                ),
                 value: autoSyncEnabled,
                 onChanged: (v) => setState(() => autoSyncEnabled = v),
               ),
@@ -2250,14 +2118,16 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 controller: lightSyncScheduleCtrl,
                 decoration: const InputDecoration(
                   labelText: 'Light Sync Schedule (Cron)',
-                  helperText: 'Cron expression for light sync (e.g., "0 2 */3 * *" for every 3 days at 2 AM UTC). Leave empty to disable.',
+                  helperText:
+                      'Cron expression for light sync (e.g., "0 2 */3 * *" for every 3 days at 2 AM UTC). Leave empty to disable.',
                 ),
               ),
               TextFormField(
                 controller: fullSyncScheduleCtrl,
                 decoration: const InputDecoration(
                   labelText: 'Full Sync Schedule (Cron)',
-                  helperText: 'Cron expression for full sync (e.g., "0 3 * * 0" for weekly on Sunday at 3 AM UTC). Leave empty to disable.',
+                  helperText:
+                      'Cron expression for full sync (e.g., "0 3 * * 0" for weekly on Sunday at 3 AM UTC). Leave empty to disable.',
                 ),
               ),
               if (widget.source != null) ...[
@@ -2267,10 +2137,16 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
                       children: [
-                        const Text('Last light sync: ', style: TextStyle(fontSize: 12)),
+                        const Text(
+                          'Last light sync: ',
+                          style: TextStyle(fontSize: 12),
+                        ),
                         Text(
                           widget.source!.lastLightSyncAt.toString(),
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
                         ),
                       ],
                     ),
@@ -2280,10 +2156,16 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
                       children: [
-                        const Text('Last full sync: ', style: TextStyle(fontSize: 12)),
+                        const Text(
+                          'Last full sync: ',
+                          style: TextStyle(fontSize: 12),
+                        ),
                         Text(
                           widget.source!.lastFullSyncAt.toString(),
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
                         ),
                       ],
                     ),
@@ -2294,13 +2176,16 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
         TextButton(
           onPressed: () async {
             if (!formKey.currentState!.validate()) return;
             final service = context.read<SyncSourceService>();
-            final sourceDefaultAttributesPayload =
-                _sourceDefaultAttributes.toMapOrNull();
+            final sourceDefaultAttributesPayload = _sourceDefaultAttributes
+                .toMapOrNull();
             final folderDefaultAttributesPayload =
                 _serializeFolderDefaultAttributes();
             bool ok;
@@ -2314,17 +2199,27 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
               ok = await service.createSource(
                 name: nameCtrl.text.trim(),
                 kmzUrl: urlCtrl.text.trim(),
-                description: descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim(),
-                publicUrl: publicUrlCtrl.text.trim().isEmpty ? null : publicUrlCtrl.text.trim(),
-                instagramHandle: instagramHandleCtrl.text.trim().isEmpty ? null : instagramHandleCtrl.text.trim(),
+                description: descCtrl.text.trim().isEmpty
+                    ? null
+                    : descCtrl.text.trim(),
+                publicUrl: publicUrlCtrl.text.trim().isEmpty
+                    ? null
+                    : publicUrlCtrl.text.trim(),
+                instagramHandle: instagramHandleCtrl.text.trim().isEmpty
+                    ? null
+                    : instagramHandleCtrl.text.trim(),
                 isActive: isActive,
                 includeFolders: includeList.isEmpty ? null : includeList,
                 excludeFolders: excludeList.isEmpty ? null : excludeList,
                 recordFolderName: recordFolderName,
                 defaultSpotAttributes: sourceDefaultAttributesPayload,
                 folderSpotAttributes: folderDefaultAttributesPayload,
-                lightSyncSchedule: lightSyncScheduleCtrl.text.trim().isEmpty ? null : lightSyncScheduleCtrl.text.trim(),
-                fullSyncSchedule: fullSyncScheduleCtrl.text.trim().isEmpty ? null : fullSyncScheduleCtrl.text.trim(),
+                lightSyncSchedule: lightSyncScheduleCtrl.text.trim().isEmpty
+                    ? null
+                    : lightSyncScheduleCtrl.text.trim(),
+                fullSyncSchedule: fullSyncScheduleCtrl.text.trim().isEmpty
+                    ? null
+                    : fullSyncScheduleCtrl.text.trim(),
                 autoSyncEnabled: autoSyncEnabled,
               );
             } else {
@@ -2370,9 +2265,9 @@ class _EditableSpotAttributes {
     required Set<String> selectedFeatures,
     required Map<String, String> selectedFacilities,
     required Set<String> selectedGoodFor,
-  })  : selectedFeatures = selectedFeatures,
-        selectedFacilities = selectedFacilities,
-        selectedGoodFor = selectedGoodFor;
+  }) : selectedFeatures = selectedFeatures,
+       selectedFacilities = selectedFacilities,
+       selectedGoodFor = selectedGoodFor;
 
   factory _EditableSpotAttributes.empty() {
     return _EditableSpotAttributes(
@@ -2475,202 +2370,23 @@ class _EditableSpotAttributes {
   String get summary {
     final parts = <String>[];
     if (selectedAccess != null) {
-      parts.add('Access: ${SpotAttributes.getLabel('access', selectedAccess!)}');
+      parts.add(
+        'Access: ${SpotAttributes.getLabel('access', selectedAccess!)}',
+      );
     }
     if (selectedFeatures.isNotEmpty) {
-      parts.add('${selectedFeatures.length} feature${selectedFeatures.length == 1 ? '' : 's'}');
+      parts.add(
+        '${selectedFeatures.length} feature${selectedFeatures.length == 1 ? '' : 's'}',
+      );
     }
     if (selectedGoodFor.isNotEmpty) {
       parts.add('${selectedGoodFor.length} good-for');
     }
     if (selectedFacilities.isNotEmpty) {
-      parts.add('${selectedFacilities.length} facilit${selectedFacilities.length == 1 ? 'y' : 'ies'}');
-    }
-    return parts.isEmpty ? 'No attributes configured' : parts.join(' • ');
-  }
-}
-
-class MissingImagesScreen extends StatefulWidget {
-  final List<dynamic> missingImages;
-  final int totalReferenced;
-  final int totalExisting;
-
-  const MissingImagesScreen({
-    super.key,
-    required this.missingImages,
-    required this.totalReferenced,
-    required this.totalExisting,
-  });
-
-  @override
-  State<MissingImagesScreen> createState() => _MissingImagesScreenState();
-}
-
-class _MissingImagesScreenState extends State<MissingImagesScreen> {
-  final Map<String, Uint8List?> _selectedImages = {};
-  bool _isUploading = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Missing Images (${widget.missingImages.length})'),
-        actions: [
-          if (_selectedImages.isNotEmpty)
-            TextButton(
-              onPressed: _isUploading ? null : _uploadSelectedImages,
-              child: Text(_isUploading ? 'Uploading...' : 'Upload Selected'),
-            ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Summary
-          Card(
-            margin: const EdgeInsets.all(16),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Missing Images Summary',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text('Total referenced images: ${widget.totalReferenced}'),
-                  Text('Total existing files: ${widget.totalExisting}'),
-                  Text('Missing images: ${widget.missingImages.length}'),
-                ],
-              ),
-            ),
-          ),
-          // Missing images list
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: widget.missingImages.length,
-              itemBuilder: (context, index) {
-                final missingImage = widget.missingImages[index];
-                final filename = missingImage['filename'] as String;
-                final spots = missingImage['spots'] as List<dynamic>;
-                
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    title: SelectableText(filename),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Referenced by ${spots.length} spot(s):'),
-                        ...spots.map((spot) => SelectableText(
-                          '• ${spot['spotName']} (${spot['spotId']})',
-                          style: const TextStyle(fontSize: 12),
-                        )),
-                      ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_selectedImages.containsKey(filename))
-                          Icon(
-                            Icons.check_circle,
-                            color: Colors.green,
-                          )
-                        else
-                          IconButton(
-                            icon: const Icon(Icons.upload),
-                            onPressed: () => _selectImage(filename),
-                          ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _selectImage(String filename) async {
-    try {
-      final image = await pickImage(source: ImageSource.gallery);
-
-      if (image != null) {
-        final bytes = await image.readAsBytes();
-        final prepared = await preparePickedImageBytes(bytes);
-        setState(() {
-          _selectedImages[filename] = prepared.bytes;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to select image: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _uploadSelectedImages() async {
-    if (_selectedImages.isEmpty) return;
-    
-    setState(() {
-      _isUploading = true;
-    });
-
-    int successCount = 0;
-    int failCount = 0;
-
-    final syncService = context.read<SyncSourceService>();
-    for (final entry in _selectedImages.entries) {
-      if (entry.value == null) continue;
-
-      try {
-        final prepared = await prepareImageForUpload(entry.value!);
-        final base64Image = base64Encode(prepared.bytes);
-        final result = await syncService.uploadReplacementImage(
-          filename: entry.key,
-          imageData: base64Image,
-          contentType: prepared.contentType,
-        );
-
-        if (result != null && result['success'] == true) {
-          successCount++;
-        } else {
-          failCount++;
-        }
-      } catch (e) {
-        failCount++;
-        debugPrint('Failed to upload ${entry.key}: $e');
-        if (mounted && e is ImagePreparationException) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.message),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
-
-    setState(() {
-      _isUploading = false;
-      _selectedImages.clear();
-    });
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Upload completed: $successCount successful, $failCount failed'),
-          backgroundColor: failCount == 0 ? Colors.green : Colors.orange,
-        ),
+      parts.add(
+        '${selectedFacilities.length} facilit${selectedFacilities.length == 1 ? 'y' : 'ies'}',
       );
     }
+    return parts.isEmpty ? 'No attributes configured' : parts.join(' • ');
   }
 }

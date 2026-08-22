@@ -252,7 +252,7 @@
   "@profileAdminSectionTitle": {
     "description": "Account tab: admin section heading"
   },
-  "profileAdminToolsTitle": "Admin Tools",
+  "profileAdminToolsTitle": "Admin tools",
   "@profileAdminToolsTitle": {
     "description": "Account tab: admin tools row title"
   },

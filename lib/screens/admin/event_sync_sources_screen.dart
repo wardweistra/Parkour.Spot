@@ -6,7 +6,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../services/auth_service.dart';
 import '../../services/event_sync_source_service.dart';
 import '../../utils/event_schedule_utils.dart';
-import 'event_backfill_actions.dart';
 
 const TextStyle _kEventSyncChipLabelText = TextStyle(
   fontSize: 11,
@@ -103,14 +102,14 @@ class _EventSyncSourcesScreenState extends State<EventSyncSourcesScreen> {
     final isAdmin = context.select<AuthService, bool>((s) => s.isAdmin);
     if (!isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Event Sync Sources')),
+        appBar: AppBar(title: const Text('Event sync sources')),
         body: const Center(child: Text('Administrator access required')),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Event Sync Sources'),
+        title: const Text('Event sync sources'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -122,18 +121,6 @@ class _EventSyncSourcesScreenState extends State<EventSyncSourcesScreen> {
           },
         ),
         actions: [
-          IconButton(
-            tooltip: 'Backfill event name search (eventSearchTerms)',
-            icon: const Icon(Icons.search),
-            onPressed: () =>
-                EventBackfillActions.backfillEventSearchTerms(context),
-          ),
-          IconButton(
-            tooltip: 'Backfill event map pins',
-            icon: const Icon(Icons.map_outlined),
-            onPressed: () =>
-                EventBackfillActions.showBackfillEventMapPinsDialog(context),
-          ),
           Consumer<EventSyncSourceService>(
             builder: (context, service, _) {
               return IconButton(

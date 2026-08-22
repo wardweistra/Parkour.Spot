@@ -1638,7 +1638,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
     final isAdmin = context.select<AuthService, bool>((s) => s.isAdmin);
     if (!isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Audit Log')),
+        appBar: AppBar(title: const Text('Audit log viewer')),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -1668,7 +1668,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Audit Log Viewer'),
+            const Text('Audit log viewer'),
             Text(
               dateRangeText,
               style: const TextStyle(fontSize: 12),

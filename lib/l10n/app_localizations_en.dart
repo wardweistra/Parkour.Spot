@@ -204,7 +204,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileAdminSectionTitle => 'Administrator';
 
   @override
-  String get profileAdminToolsTitle => 'Admin Tools';
+  String get profileAdminToolsTitle => 'Admin tools';
 
   @override
   String get profileAdminToolsSubtitle =>

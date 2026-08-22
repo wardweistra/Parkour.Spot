@@ -97,13 +97,13 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
     // Wait for auth state to be restored before deciding (avoids false "access required" on refresh)
     if (authService.isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Duplicate Images')),
+        appBar: AppBar(title: const Text('Duplicate images')),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (!authService.isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Duplicate Images')),
+        appBar: AppBar(title: const Text('Duplicate images')),
         body: const Center(
           child: Text('Administrator access required'),
         ),

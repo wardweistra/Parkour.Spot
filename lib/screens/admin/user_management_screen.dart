@@ -48,14 +48,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     final bool isAdmin = context.select<AuthService, bool>((service) => service.isAdmin);
     if (!isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('User Management')),
+        appBar: AppBar(title: const Text('User management')),
         body: const Center(child: Text('Administrator access required')),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('User Management'),
+        title: const Text('User management'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {

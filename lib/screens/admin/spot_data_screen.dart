@@ -7,6 +7,7 @@ import '../../services/jumpflix_service.dart';
 import '../../services/spot_service.dart';
 import '../../widgets/page_scaffold.dart';
 import 'admin_tool_widgets.dart';
+import 'spot_data_actions.dart';
 
 class SpotDataScreen extends StatelessWidget {
   const SpotDataScreen({super.key});
@@ -24,7 +25,7 @@ class SpotDataScreen extends StatelessWidget {
     final isAdmin = context.select<AuthService, bool>((s) => s.isAdmin);
     if (!isAdmin) {
       return PageScaffold(
-        title: 'Spot data and images',
+        title: 'Spot data',
         onBack: () => _handleBack(context),
         body: const Center(child: Text('Administrator access required')),
         scrollable: false,
@@ -33,7 +34,7 @@ class SpotDataScreen extends StatelessWidget {
     }
 
     return PageScaffold(
-      title: 'Spot data and images',
+      title: 'Spot data',
       onBack: () => _handleBack(context),
       scrollable: false,
       body: ListView(
@@ -42,28 +43,21 @@ class SpotDataScreen extends StatelessWidget {
             children: [
               AdminToolTile(
                 icon: Icons.place,
-                title: 'Geocode Missing Addresses',
+                title: 'Geocode missing addresses',
                 subtitle:
                     'Fill address, city, country for spots with empty fields',
                 onTap: () => context.push('/admin/geocoding'),
               ),
               AdminToolTile(
-                icon: Icons.image_search,
-                title: 'Duplicate Image URLs',
-                subtitle:
-                    'Find all spots with duplicate image URLs in their image array',
-                onTap: () => context.push('/admin/duplicate-images'),
-              ),
-              AdminToolTile(
-                icon: Icons.image_not_supported,
-                title: 'Missing Resized Images',
-                subtitle:
-                    'Find spot images that do not have a resized version available',
-                onTap: () => context.push('/admin/missing-resized-images'),
+                icon: Icons.search,
+                title: 'Backfill spot name search',
+                subtitle: 'Populate spotSearchTerms for Explore autocomplete',
+                showChevron: false,
+                onTap: () => SpotDataActions.backfillSpotNameSearch(context),
               ),
               AdminToolTile(
                 icon: Icons.star_rate,
-                title: 'Recompute Ratings for Rated Spots',
+                title: 'Recompute ratings for rated spots',
                 subtitle:
                     'Recalculate average, count, and Wilson lower bound from ratings',
                 showChevron: false,
@@ -71,7 +65,7 @@ class SpotDataScreen extends StatelessWidget {
               ),
               AdminToolTile(
                 icon: Icons.signal_cellular_alt,
-                title: 'Recompute Spot Rankings',
+                title: 'Recompute spot rankings',
                 subtitle:
                     'Recalculate ranking field for all spots based on ratings',
                 showChevron: false,
@@ -79,7 +73,7 @@ class SpotDataScreen extends StatelessWidget {
               ),
               AdminToolTile(
                 icon: Icons.video_library,
-                title: 'Import Jumpflix Spot Links',
+                title: 'Import Jumpflix spot links',
                 subtitle:
                     'Fetch Jumpflix video-spot mappings and update the database (also runs nightly at 02:00 UTC)',
                 showChevron: false,
@@ -122,7 +116,7 @@ Future<bool> _confirmAction({
 Future<void> _recomputeRatings(BuildContext context) async {
   final confirmed = await _confirmAction(
     context: context,
-    title: 'Recompute Ratings',
+    title: 'Recompute ratings',
     content:
         'This will recompute rating aggregates for all spots that have ratings. Continue?',
     confirmLabel: 'Run',
@@ -155,7 +149,7 @@ Future<void> _recomputeRatings(BuildContext context) async {
 Future<void> _recomputeSpotRankings(BuildContext context) async {
   final confirmed = await _confirmAction(
     context: context,
-    title: 'Recompute Spot Rankings',
+    title: 'Recompute spot rankings',
     content:
         'This will recalculate the ranking field for all spots based on their ratings and the average Wilson score. This is useful after changing the Wilson score threshold in settings. Continue?',
     confirmLabel: 'Run',
@@ -188,7 +182,7 @@ Future<void> _recomputeSpotRankings(BuildContext context) async {
 Future<void> _importJumpflixSpotLinks(BuildContext context) async {
   final confirmed = await _confirmAction(
     context: context,
-    title: 'Import Jumpflix Spot Links',
+    title: 'Import Jumpflix spot links',
     content:
         'This will fetch video-spot mappings from Jumpflix and update the '
         'spotJumpflixVideos collection. Continue?',

@@ -89,13 +89,13 @@ class _MissingResizedImagesScreenState extends State<MissingResizedImagesScreen>
     final authService = context.watch<AuthService>();
     if (authService.isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Missing Resized Images')),
+        appBar: AppBar(title: const Text('Missing resized images')),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (!authService.isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Missing Resized Images')),
+        appBar: AppBar(title: const Text('Missing resized images')),
         body: const Center(
           child: Text('Administrator access required'),
         ),

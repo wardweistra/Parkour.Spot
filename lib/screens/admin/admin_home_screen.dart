@@ -36,7 +36,7 @@ class AdminHomeScreen extends StatelessWidget {
     }
 
     return PageScaffold(
-      title: 'Admin Tools',
+      title: 'Admin tools',
       onBack: () {
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
@@ -52,23 +52,30 @@ class AdminHomeScreen extends StatelessWidget {
             children: [
               AdminToolTile(
                 icon: Icons.sync,
-                title: 'Sync Sources',
+                title: 'Spot sync sources',
                 subtitle: 'Add, edit, delete, and sync external sources',
                 onTap: () => context.push('/admin/sources'),
               ),
               AdminToolTile(
                 icon: Icons.delete_sweep,
-                title: 'Spot Management',
+                title: 'Spot management',
                 subtitle:
                     'Search and delete spots by source and last updated date',
                 onTap: () => context.push('/admin/spot-management'),
               ),
               AdminToolTile(
-                icon: Icons.image_outlined,
-                title: 'Spot data and images',
+                icon: Icons.dataset_outlined,
+                title: 'Spot data',
                 subtitle:
-                    'Geocode, image cleanup, ratings, rankings, and Jumpflix links',
+                    'Geocode, search backfill, ratings, rankings, and Jumpflix',
                 onTap: () => context.push('/admin/spot-data'),
+              ),
+              AdminToolTile(
+                icon: Icons.image_outlined,
+                title: 'Spot images',
+                subtitle:
+                    'Duplicate URLs, missing files, cleanup, and image flags',
+                onTap: () => context.push('/admin/spot-images'),
               ),
             ],
           ),
@@ -78,9 +85,15 @@ class AdminHomeScreen extends StatelessWidget {
             children: [
               AdminToolTile(
                 icon: Icons.event_repeat_outlined,
-                title: 'Event Sync Sources',
+                title: 'Event sync sources',
                 subtitle: 'Configure and sync external calendar sources',
                 onTap: () => context.push('/admin/event-sources'),
+              ),
+              AdminToolTile(
+                icon: Icons.event_note_outlined,
+                title: 'Event data',
+                subtitle: 'Search index and map pin backfills',
+                onTap: () => context.push('/admin/event-data'),
               ),
             ],
           ),
@@ -90,7 +103,7 @@ class AdminHomeScreen extends StatelessWidget {
             children: [
               AdminToolTile(
                 icon: Icons.people_outline,
-                title: 'User Management',
+                title: 'User management',
                 subtitle: 'Review users, stats, and moderator access',
                 onTap: () => context.push('/admin/users'),
               ),
@@ -110,7 +123,7 @@ class AdminHomeScreen extends StatelessWidget {
               ),
               AdminToolTile(
                 icon: Icons.analytics,
-                title: 'User Activity Metrics',
+                title: 'User activity metrics',
                 subtitle:
                     'Calculate and sync DAU/WAU/MAU metrics, Spots, Users, and Events to Google Sheets',
                 onTap: () => context.push('/admin/user-activity-metrics'),
@@ -123,20 +136,20 @@ class AdminHomeScreen extends StatelessWidget {
             children: [
               AdminToolTile(
                 icon: Icons.api,
-                title: 'API Clients',
+                title: 'API clients',
                 subtitle: 'Register clients and track Spot Details API usage',
                 onTap: () => context.push('/admin/api-clients'),
               ),
               AdminToolTile(
                 icon: Icons.history,
-                title: 'Audit Log Viewer',
+                title: 'Audit log viewer',
                 subtitle:
                     'View spot creations, user creations, and audit log actions',
                 onTap: () => context.push('/admin/audit-log'),
               ),
               AdminToolTile(
                 icon: Icons.map,
-                title: 'Generate Sitemaps',
+                title: 'Generate sitemaps',
                 subtitle:
                     'Regenerate XML sitemaps for search engines (spots, lists, users)',
                 showChevron: false,
@@ -144,7 +157,7 @@ class AdminHomeScreen extends StatelessWidget {
               ),
               AdminToolTile(
                 icon: Icons.phone_android,
-                title: 'Device Detection Info',
+                title: 'Device detection info',
                 subtitle:
                     'View device detection and PWA install service status',
                 onTap: () => context.push('/admin/device-detection'),
@@ -161,7 +174,7 @@ Future<void> _generateSitemaps(BuildContext context) async {
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Generate Sitemaps'),
+      title: const Text('Generate sitemaps'),
       content: const Text(
         'This will regenerate all sitemaps (country pages, unlocated spots, '
         'public lists, user profiles) and upload them to Storage. '

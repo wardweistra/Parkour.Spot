@@ -29,7 +29,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Geocode Missing Addresses'),
+        title: const Text('Geocode missing addresses'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {

@@ -23,7 +23,7 @@ class _UserActivityMetricsScreenState extends State<UserActivityMetricsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Calculate User Activity Metrics'),
+        title: const Text('Calculate user activity metrics'),
         content: const Text(
           'This will calculate Daily Active Users (DAU), Weekly Active Users (WAU), '
           'and Monthly Active Users (MAU) based on user lastActiveAt timestamps. '
@@ -98,7 +98,7 @@ class _UserActivityMetricsScreenState extends State<UserActivityMetricsScreen> {
     final isAdmin = context.select<AuthService, bool>((s) => s.isAdmin);
     if (!isAdmin) {
       return PageScaffold(
-        title: 'User Activity Metrics',
+        title: 'User activity metrics',
         body: const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -120,7 +120,7 @@ class _UserActivityMetricsScreenState extends State<UserActivityMetricsScreen> {
     final lastResult = userManagementService.lastMetricsResult;
 
     return PageScaffold(
-      title: 'User Activity Metrics',
+      title: 'User activity metrics',
       onBack: () {
         if (Navigator.canPop(context)) {
           Navigator.pop(context);

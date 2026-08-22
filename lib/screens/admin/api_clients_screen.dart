@@ -256,14 +256,14 @@ class _ApiClientsScreenState extends State<ApiClientsScreen> {
     final isAdmin = context.select<AuthService, bool>((s) => s.isAdmin);
     if (!isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('API Clients')),
+        appBar: AppBar(title: const Text('API clients')),
         body: const Center(child: Text('Administrator access required')),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('API Clients'),
+        title: const Text('API clients'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {

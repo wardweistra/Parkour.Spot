@@ -433,7 +433,7 @@ abstract class AppLocalizations {
   /// Account tab: admin tools row title
   ///
   /// In en, this message translates to:
-  /// **'Admin Tools'**
+  /// **'Admin tools'**
   String get profileAdminToolsTitle;
 
   /// Account tab: admin tools row subtitle

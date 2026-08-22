@@ -186,7 +186,7 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
     final isAdmin = context.select<AuthService, bool>((s) => s.isAdmin);
     if (!isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Spot Management')),
+        appBar: AppBar(title: const Text('Spot management')),
         body: const Center(
           child: Text('Administrator access required'),
         ),
@@ -195,7 +195,7 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Spot Management'),
+        title: const Text('Spot management'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {

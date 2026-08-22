@@ -510,7 +510,7 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
     final isAdmin = context.select<AuthService, bool>((s) => s.isAdmin);
     if (!isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Device Detection')),
+        appBar: AppBar(title: const Text('Device detection info')),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -534,7 +534,7 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Device Detection Info'),
+        title: const Text('Device detection info'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {

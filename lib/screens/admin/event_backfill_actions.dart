@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../services/admin_events_service.dart';
 import '../../utils/search_index_backfill_message.dart';
 
-/// Admin-only event index backfills, shown from Event Sync Sources.
+/// Admin-only event index backfills, shown from Event data.
 class EventBackfillActions {
   EventBackfillActions._();
 
@@ -14,7 +14,7 @@ class EventBackfillActions {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('Backfill Event Name Search'),
+          title: const Text('Backfill event name search'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,7 +122,7 @@ class EventBackfillActions {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Backfill Event Map Pins'),
+          title: const Text('Backfill event map pins'),
           content: const Text(
             'Materializes eventMapPins for map display from each event\'s '
             'linked spots and spot lists. This may take several minutes for '
