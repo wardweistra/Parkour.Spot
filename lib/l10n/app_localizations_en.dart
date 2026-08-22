@@ -3276,6 +3276,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get publicProfilePublicSpotLists => 'Public spot lists';
 
   @override
+  String get publicProfileManageLists => 'Manage lists';
+
+  @override
   String get publicProfileNoSavedListsYet => 'No saved lists yet';
 
   @override

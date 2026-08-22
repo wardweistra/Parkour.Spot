@@ -3105,7 +3105,11 @@
   },
   "publicProfilePublicSpotLists": "Public spot lists",
   "@publicProfilePublicSpotLists": {
-    "description": "Card title when viewing someone else's profile lists"
+    "description": "Card title for public lists on a user profile"
+  },
+  "publicProfileManageLists": "Manage lists",
+  "@publicProfileManageLists": {
+    "description": "Link from own public profile to the Account spot lists hub"
   },
   "publicProfileNoSavedListsYet": "No saved lists yet",
   "@publicProfileNoSavedListsYet": {

@@ -3296,6 +3296,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get publicProfilePublicSpotLists => 'Openbare spotlijsten';
 
   @override
+  String get publicProfileManageLists => 'Lijsten beheren';
+
+  @override
   String get publicProfileNoSavedListsYet => 'Nog geen opgeslagen lijsten';
 
   @override

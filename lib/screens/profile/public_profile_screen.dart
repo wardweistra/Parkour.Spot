@@ -481,7 +481,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
           // Public lists only (Want to visit, training, and list management
           // live on Account).
-          _buildPublicSpotListsSection(context, profileUserId: user.id),
+          _buildPublicSpotListsSection(
+            context,
+            profileUserId: user.id,
+            isOwnProfile: isOwnProfile,
+          ),
         ],
       ),
     );
@@ -490,6 +494,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   Widget _buildPublicSpotListsSection(
     BuildContext context, {
     required String profileUserId,
+    required bool isOwnProfile,
   }) {
     return Consumer<SpotListService>(
       builder: (context, spotListService, _) {
@@ -528,10 +533,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             final lists = (snapshot.data ?? [])
                 .where((list) => list.visibility == SpotListVisibility.public)
                 .toList();
-            if (lists.isEmpty) {
+            if (lists.isEmpty && !isOwnProfile) {
               return const SizedBox.shrink();
             }
 
+            final theme = Theme.of(context);
             return Padding(
               padding: const EdgeInsets.only(top: 16),
               child: Card(
@@ -540,22 +546,35 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        _l10n.publicProfileSpotLists,
-                        style: Theme.of(context).textTheme.titleLarge,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _l10n.publicProfilePublicSpotLists,
+                              style: theme.textTheme.titleLarge,
+                            ),
+                          ),
+                          if (isOwnProfile)
+                            TextButton(
+                              onPressed: () => context.push('/profile/lists'),
+                              child: Text(_l10n.publicProfileManageLists),
+                            ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      ...lists.map(
-                        (list) => SpotListSummaryTile(
-                          list: list,
-                          onTap: () {
-                            final id = list.id;
-                            if (id != null) {
-                              context.push('/list/$id');
-                            }
-                          },
+                      if (lists.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        ...lists.map(
+                          (list) => SpotListSummaryTile(
+                            list: list,
+                            onTap: () {
+                              final id = list.id;
+                              if (id != null) {
+                                context.push('/list/$id');
+                              }
+                            },
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),

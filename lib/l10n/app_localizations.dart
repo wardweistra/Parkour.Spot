@@ -5505,11 +5505,17 @@ abstract class AppLocalizations {
   /// **'Saved'**
   String get publicProfileSaved;
 
-  /// Card title when viewing someone else's profile lists
+  /// Card title for public lists on a user profile
   ///
   /// In en, this message translates to:
   /// **'Public spot lists'**
   String get publicProfilePublicSpotLists;
+
+  /// Link from own public profile to the Account spot lists hub
+  ///
+  /// In en, this message translates to:
+  /// **'Manage lists'**
+  String get publicProfileManageLists;
 
   /// Empty state title for saved lists subsection
   ///
