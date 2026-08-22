@@ -52,7 +52,7 @@
   "@profileSignInSubtitle": {
     "description": "Account tab signed-out: supporting text"
   },
-  "profileSignInButton": "Sign In",
+  "profileSignInButton": "Sign in",
   "@profileSignInButton": {
     "description": "Account tab: primary sign-in button"
   },
@@ -60,7 +60,7 @@
   "@profileOrDivider": {
     "description": "Account tab: divider between sign-in and sign-up"
   },
-  "profileCreateAccount": "Create an Account",
+  "profileCreateAccount": "Create an account",
   "@profileCreateAccount": {
     "description": "Account tab: secondary sign-up button"
   },
@@ -260,7 +260,7 @@
   "@profileAdminToolsSubtitle": {
     "description": "Account tab: admin tools row subtitle"
   },
-  "profileSignOut": "Sign Out",
+  "profileSignOut": "Sign out",
   "@profileSignOut": {
     "description": "Account tab: sign out button and dialog action"
   },
@@ -3009,7 +3009,7 @@
   "@publicProfileBeenTo": {
     "description": "Tracking list title"
   },
-  "publicProfileMyCheckIns": "My training activity",
+  "publicProfileMyCheckIns": "Training activity",
   "@publicProfileMyCheckIns": {
     "description": "Row title to open check-in history"
   },

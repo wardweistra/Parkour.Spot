@@ -847,7 +847,7 @@
   "publicProfileNoSpotsYet": "Pas encore de spots",
   "publicProfileAddSpotsFromSpotDetailPages": "Ajoutez des spots depuis les pages de détail des spots",
   "publicProfileBeenTo": "Déjà visité",
-  "publicProfileMyCheckIns": "Mon activité d'entraînement",
+  "publicProfileMyCheckIns": "Activité d'entraînement",
   "publicProfileMyCheckInsSubtitle": "Vos plans à venir et votre historique de check-ins",
   "myCheckInsSignInPrompt": "Connectez-vous pour voir vos check-ins et plans d’entraînement",
   "myCheckInsLoadMore": "Charger plus",

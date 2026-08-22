@@ -187,7 +187,7 @@ abstract class AppLocalizations {
   /// Account tab: primary sign-in button
   ///
   /// In en, this message translates to:
-  /// **'Sign In'**
+  /// **'Sign in'**
   String get profileSignInButton;
 
   /// Account tab: divider between sign-in and sign-up
@@ -199,7 +199,7 @@ abstract class AppLocalizations {
   /// Account tab: secondary sign-up button
   ///
   /// In en, this message translates to:
-  /// **'Create an Account'**
+  /// **'Create an account'**
   String get profileCreateAccount;
 
   /// Fallback display name when missing
@@ -445,7 +445,7 @@ abstract class AppLocalizations {
   /// Account tab: sign out button and dialog action
   ///
   /// In en, this message translates to:
-  /// **'Sign Out'**
+  /// **'Sign out'**
   String get profileSignOut;
 
   /// Account tab: sign out confirmation body
@@ -5394,7 +5394,7 @@ abstract class AppLocalizations {
   /// Row title to open check-in history
   ///
   /// In en, this message translates to:
-  /// **'My training activity'**
+  /// **'Training activity'**
   String get publicProfileMyCheckIns;
 
   /// Subtitle for check-in history row

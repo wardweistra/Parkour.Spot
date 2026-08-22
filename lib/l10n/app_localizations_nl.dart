@@ -3227,7 +3227,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get publicProfileBeenTo => 'Geweest';
 
   @override
-  String get publicProfileMyCheckIns => 'Mijn trainingsactiviteit';
+  String get publicProfileMyCheckIns => 'Trainingsactiviteit';
 
   @override
   String get publicProfileMyCheckInsSubtitle =>

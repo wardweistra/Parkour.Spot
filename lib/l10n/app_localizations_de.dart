@@ -3262,7 +3262,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get publicProfileBeenTo => 'Schon besucht';
 
   @override
-  String get publicProfileMyCheckIns => 'Meine Trainingsaktivität';
+  String get publicProfileMyCheckIns => 'Trainingsaktivität';
 
   @override
   String get publicProfileMyCheckInsSubtitle =>

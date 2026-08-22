@@ -3235,7 +3235,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get publicProfileBeenTo => 'Visitados';
 
   @override
-  String get publicProfileMyCheckIns => 'Mi actividad de entrenamiento';
+  String get publicProfileMyCheckIns => 'Actividad de entrenamiento';
 
   @override
   String get publicProfileMyCheckInsSubtitle =>

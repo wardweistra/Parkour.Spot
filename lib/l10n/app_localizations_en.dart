@@ -51,13 +51,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sign in to manage your spots and rate locations.';
 
   @override
-  String get profileSignInButton => 'Sign In';
+  String get profileSignInButton => 'Sign in';
 
   @override
   String get profileOrDivider => 'OR';
 
   @override
-  String get profileCreateAccount => 'Create an Account';
+  String get profileCreateAccount => 'Create an account';
 
   @override
   String get profileDefaultDisplayName => 'User';
@@ -211,7 +211,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Manage sources and administrative tasks';
 
   @override
-  String get profileSignOut => 'Sign Out';
+  String get profileSignOut => 'Sign out';
 
   @override
   String get profileSignOutMessage => 'Are you sure you want to sign out?';
@@ -3209,7 +3209,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get publicProfileBeenTo => 'Been to';
 
   @override
-  String get publicProfileMyCheckIns => 'My training activity';
+  String get publicProfileMyCheckIns => 'Training activity';
 
   @override
   String get publicProfileMyCheckInsSubtitle =>
