@@ -2164,10 +2164,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get spotDetailViewFullListTooltip => 'View full list';
 
   @override
-  String get spotDetailAddToCustomList => 'Add to custom list';
-
-  @override
-  String get spotDetailAddToCustomListSubtitle => 'Choose or create a list';
+  String get spotDetailAddToCustomList => 'Add to a list';
 
   @override
   String get spotDetailListNameEmpty => 'List name cannot be empty';

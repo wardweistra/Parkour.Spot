@@ -3720,14 +3720,8 @@ abstract class AppLocalizations {
   /// No description provided for @spotDetailAddToCustomList.
   ///
   /// In en, this message translates to:
-  /// **'Add to custom list'**
+  /// **'Add to a list'**
   String get spotDetailAddToCustomList;
-
-  /// No description provided for @spotDetailAddToCustomListSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose or create a list'**
-  String get spotDetailAddToCustomListSubtitle;
 
   /// No description provided for @spotDetailListNameEmpty.
   ///

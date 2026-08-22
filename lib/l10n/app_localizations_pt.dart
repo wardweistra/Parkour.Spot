@@ -2186,10 +2186,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailViewFullListTooltip => 'Ver lista completa';
 
   @override
-  String get spotDetailAddToCustomList => 'Adicionar a lista própria';
-
-  @override
-  String get spotDetailAddToCustomListSubtitle => 'Escolhe ou cria uma lista';
+  String get spotDetailAddToCustomList => 'Adicionar a uma lista';
 
   @override
   String get spotDetailListNameEmpty => 'O nome da lista não pode estar vazio';

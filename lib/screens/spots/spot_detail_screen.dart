@@ -7872,15 +7872,20 @@ class _SpotSaveMenu extends StatelessWidget {
                 return <PopupMenuEntry<_SpotSaveMenuAction>>[
                   PopupMenuItem<_SpotSaveMenuAction>(
                     value: _SpotSaveMenuAction.toggleWantToVisit,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Row(
                       children: [
-                        SizedBox(
-                          width: 24,
-                          child: inWantToVisit
-                              ? Icon(Icons.check, size: 20, color: primary)
-                              : null,
+                        Icon(
+                          inWantToVisit
+                              ? Icons.bookmark
+                              : Icons.bookmark_outlined,
+                          size: 20,
+                          color: inWantToVisit
+                              ? primary
+                              : menuTheme.colorScheme.onSurface.withValues(
+                                  alpha: 0.75,
+                                ),
                         ),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             menuL10n.spotDetailWantToVisit,
@@ -7911,15 +7916,20 @@ class _SpotSaveMenu extends StatelessWidget {
                   ),
                   PopupMenuItem<_SpotSaveMenuAction>(
                     value: _SpotSaveMenuAction.toggleVisited,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: Row(
                       children: [
-                        SizedBox(
-                          width: 24,
-                          child: inVisited
-                              ? Icon(Icons.check, size: 20, color: primary)
-                              : null,
+                        Icon(
+                          inVisited
+                              ? Icons.check_circle
+                              : Icons.check_circle_outline,
+                          size: 20,
+                          color: inVisited
+                              ? primary
+                              : menuTheme.colorScheme.onSurface.withValues(
+                                  alpha: 0.75,
+                                ),
                         ),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             menuL10n.spotDetailBeenHere,
@@ -7957,28 +7967,13 @@ class _SpotSaveMenu extends StatelessWidget {
                           Icon(
                             Icons.playlist_add,
                             size: 20,
-                            color: menuTheme.colorScheme.primary,
+                            color: primary,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  menuL10n.spotDetailAddToCustomList,
-                                  style: menuTheme.textTheme.bodyMedium,
-                                ),
-                                Text(
-                                  menuL10n.spotDetailAddToCustomListSubtitle,
-                                  style: menuTheme.textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: menuTheme.colorScheme.onSurface
-                                            .withValues(alpha: 0.6),
-                                        fontSize: 11,
-                                      ),
-                                ),
-                              ],
+                            child: Text(
+                              menuL10n.spotDetailAddToCustomList,
+                              style: menuTheme.textTheme.bodyMedium,
                             ),
                           ),
                         ],
