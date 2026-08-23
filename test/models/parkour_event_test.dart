@@ -60,18 +60,21 @@ void main() {
       expect(event.isNativeEvent, isTrue);
     });
 
-    test('fromMap parses duplicateOf and external source for isNativeEvent', () {
-      final event = ParkourEvent.fromMap({
-        'title': 'Synced',
-        'startAt': Timestamp.fromDate(DateTime.utc(2026, 1, 1)),
-        'spotIds': const ['spot-x'],
-        'eventSourceId': 'ics-source',
-        'duplicateOf': 'native-original',
-      });
-      expect(event.duplicateOf, 'native-original');
-      expect(event.isNativeEvent, isFalse);
-      expect(event.isDuplicate, isTrue);
-    });
+    test(
+      'fromMap parses duplicateOf and external source for isNativeEvent',
+      () {
+        final event = ParkourEvent.fromMap({
+          'title': 'Synced',
+          'startAt': Timestamp.fromDate(DateTime.utc(2026, 1, 1)),
+          'spotIds': const ['spot-x'],
+          'eventSourceId': 'ics-source',
+          'duplicateOf': 'native-original',
+        });
+        expect(event.duplicateOf, 'native-original');
+        expect(event.isNativeEvent, isFalse);
+        expect(event.isDuplicate, isTrue);
+      },
+    );
 
     test('isDuplicate ignores blank duplicateOf', () {
       final event = ParkourEvent(
@@ -168,6 +171,42 @@ void main() {
       );
       final map = event.toFirestore();
       expect(map['duplicateOf'], 'orig-id');
+    });
+
+    test('fromMap parses duplicate pending-change fields', () {
+      final event = ParkourEvent.fromMap({
+        'title': 'Synced',
+        'startAt': Timestamp.fromDate(DateTime.utc(2026, 1, 1)),
+        'duplicateOf': 'native-original',
+        'duplicateHasPendingChanges': true,
+        'duplicateChangedFields': ['title', 'schedule', 'unknown'],
+      });
+      expect(event.duplicateHasPendingChanges, isTrue);
+      expect(event.duplicateChangedFields, ['title', 'schedule', 'unknown']);
+      expect(event.hasDuplicatePendingChanges, isTrue);
+    });
+
+    test('toFirestore omits duplicate review snapshot fields', () {
+      final event = ParkourEvent(
+        title: 'Dup',
+        startAt: DateTime.utc(2026, 7, 1, 12, 0),
+        duplicateOf: 'orig-id',
+        duplicateHasPendingChanges: true,
+        duplicateChangedFields: const ['title'],
+      );
+      final map = event.toFirestore();
+      expect(map.containsKey('duplicateHasPendingChanges'), isFalse);
+      expect(map.containsKey('duplicateChangedFields'), isFalse);
+      expect(map.containsKey('duplicateReviewBaseline'), isFalse);
+    });
+
+    test('hasDuplicatePendingChanges requires a duplicate link', () {
+      final event = ParkourEvent(
+        title: 'Jam',
+        startAt: DateTime.utc(2026, 1, 1),
+        duplicateHasPendingChanges: true,
+      );
+      expect(event.hasDuplicatePendingChanges, isFalse);
     });
 
     test('fromMap and toFirestore round-trip needsModeratorReview', () {

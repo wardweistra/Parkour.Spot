@@ -3910,6 +3910,76 @@ class AppLocalizationsEs extends AppLocalizations {
       'Evento marcado como duplicado.';
 
   @override
+  String get eventDuplicateChangesTitle => 'Duplicado actualizado';
+
+  @override
+  String eventDuplicateChangesBody(String title) {
+    return 'Este duplicado cambió después de marcarse como tal. Elige valores para copiar a «$title» o descártalos.';
+  }
+
+  @override
+  String get eventDuplicateChangesReview => 'Revisar cambios';
+
+  @override
+  String get eventDuplicateChangesApply => 'Aplicar';
+
+  @override
+  String get eventDuplicateChangesDismiss => 'Descartar';
+
+  @override
+  String get eventDuplicateChangesApplySuccess =>
+      'Evento original actualizado.';
+
+  @override
+  String get eventDuplicateChangesDismissSuccess =>
+      'Cambios del duplicado descartados.';
+
+  @override
+  String get eventDuplicateChangesChip => 'Duplicado actualizado';
+
+  @override
+  String get eventDuplicateChangesQueueTitle => 'Actualizaciones de duplicados';
+
+  @override
+  String get eventDuplicateChangesQueueSubtitle =>
+      'Revisa duplicados que cambiaron después de vincularse';
+
+  @override
+  String get eventDuplicateChangesQueueEmpty =>
+      'No hay eventos duplicados con cambios pendientes';
+
+  @override
+  String get eventDuplicateChangesBannerTitle => 'Duplicado actualizado';
+
+  @override
+  String get eventDuplicateChangesBannerBody =>
+      'Los campos cambiaron después de marcar este evento como duplicado.';
+
+  @override
+  String get eventDuplicateChangesMenuItem => 'Revisar cambios del duplicado';
+
+  @override
+  String get eventDuplicateChangesMenuSubtitle =>
+      'Copia los campos actualizados al original o descártalos';
+
+  @override
+  String get eventDuplicateChangesFailed =>
+      'No se pudieron actualizar los cambios del duplicado';
+
+  @override
+  String eventDuplicateChangesPhotosValue(int count) {
+    return '$count fotos';
+  }
+
+  @override
+  String eventDuplicateChangesLinkedSpotsValue(int count) {
+    return '$count spots vinculados';
+  }
+
+  @override
+  String get eventDuplicateChangesNoValue => '(vacío)';
+
+  @override
   String get eventDetailRemoveDuplicateConfirmBody =>
       '¿Quitar el estado de duplicado de este evento? Dejará de apuntar a otro evento como original.';
 

@@ -140,6 +140,7 @@ const {
   rematerializeEventsForSpotList,
   isEventPast,
 } = require("./lib/event-map-pins");
+const {buildDuplicateReviewUpdate} = require("./lib/event-duplicate-review");
 const {executeEventsInBoundsQuery} = require("./lib/events-in-bounds");
 const {
   lookupTimeZoneFromCoordinates,
@@ -5401,6 +5402,17 @@ exports.onEventWritten = onDocumentWritten(
           return;
         }
         const eventData = event.data.after.data() || {};
+        const beforeData = event.data.before.exists ?
+          (event.data.before.data() || {}) :
+          null;
+        const reviewUpdate = buildDuplicateReviewUpdate(
+            beforeData,
+            eventData,
+            FieldValue.delete(),
+        );
+        if (reviewUpdate) {
+          await db.collection("events").doc(eventId).update(reviewUpdate);
+        }
         const termsWritten = await replaceEventSearchTerms(eventId, eventData);
         await materializeEventMapPins(db, eventId, eventData);
         console.log("Indexed event search terms:", {

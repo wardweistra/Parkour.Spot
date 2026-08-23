@@ -3823,6 +3823,97 @@
   "@eventDetailMarkDuplicateSuccess": {
     "description": "Snackbar after duplicate link saved"
   },
+  "eventDuplicateChangesTitle": "Duplicate updated",
+  "@eventDuplicateChangesTitle": {
+    "description": "Dialog title when a linked duplicate’s fields changed"
+  },
+  "eventDuplicateChangesBody": "This duplicate changed after it was marked. Choose values to copy to “{title}”, or dismiss.",
+  "@eventDuplicateChangesBody": {
+    "description": "Dialog body for reviewing post-link duplicate changes",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "eventDuplicateChangesReview": "Review changes",
+  "@eventDuplicateChangesReview": {
+    "description": "Button to open the duplicate-changes dialog"
+  },
+  "eventDuplicateChangesApply": "Apply",
+  "@eventDuplicateChangesApply": {
+    "description": "Apply selected duplicate field values to the original"
+  },
+  "eventDuplicateChangesDismiss": "Dismiss",
+  "@eventDuplicateChangesDismiss": {
+    "description": "Dismiss pending duplicate field changes without copying"
+  },
+  "eventDuplicateChangesApplySuccess": "Original event updated.",
+  "@eventDuplicateChangesApplySuccess": {
+    "description": "Snackbar after applying duplicate field changes"
+  },
+  "eventDuplicateChangesDismissSuccess": "Duplicate changes dismissed.",
+  "@eventDuplicateChangesDismissSuccess": {
+    "description": "Snackbar after dismissing duplicate field changes"
+  },
+  "eventDuplicateChangesChip": "Duplicate updated",
+  "@eventDuplicateChangesChip": {
+    "description": "Status chip when a duplicate has unreviewed field changes"
+  },
+  "eventDuplicateChangesQueueTitle": "Duplicate updates",
+  "@eventDuplicateChangesQueueTitle": {
+    "description": "Moderator queue title for post-link duplicate changes"
+  },
+  "eventDuplicateChangesQueueSubtitle": "Review duplicates that changed after they were linked",
+  "@eventDuplicateChangesQueueSubtitle": {
+    "description": "Moderator tools tile subtitle for duplicate updates"
+  },
+  "eventDuplicateChangesQueueEmpty": "No duplicate events with pending changes",
+  "@eventDuplicateChangesQueueEmpty": {
+    "description": "Empty state for the duplicate-updates queue"
+  },
+  "eventDuplicateChangesBannerTitle": "Duplicate updated",
+  "@eventDuplicateChangesBannerTitle": {
+    "description": "Event detail banner title for pending duplicate changes"
+  },
+  "eventDuplicateChangesBannerBody": "Fields changed after this event was marked as a duplicate.",
+  "@eventDuplicateChangesBannerBody": {
+    "description": "Event detail banner body for pending duplicate changes"
+  },
+  "eventDuplicateChangesMenuItem": "Review duplicate changes",
+  "@eventDuplicateChangesMenuItem": {
+    "description": "Staff menu item to review post-link duplicate changes"
+  },
+  "eventDuplicateChangesMenuSubtitle": "Copy updated fields to the original, or dismiss",
+  "@eventDuplicateChangesMenuSubtitle": {
+    "description": "Staff menu subtitle for reviewing duplicate changes"
+  },
+  "eventDuplicateChangesFailed": "Failed to update duplicate changes",
+  "@eventDuplicateChangesFailed": {
+    "description": "Error snackbar when apply/dismiss of duplicate changes fails"
+  },
+  "eventDuplicateChangesPhotosValue": "{count} photos",
+  "@eventDuplicateChangesPhotosValue": {
+    "description": "Subtitle showing how many photos changed on a duplicate",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventDuplicateChangesLinkedSpotsValue": "{count} linked spots",
+  "@eventDuplicateChangesLinkedSpotsValue": {
+    "description": "Subtitle showing how many linked spots/lists changed",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventDuplicateChangesNoValue": "(empty)",
+  "@eventDuplicateChangesNoValue": {
+    "description": "Fallback when a changed duplicate field has no value"
+  },
   "eventDetailRemoveDuplicateConfirmBody": "Remove duplicate status from this event? It will no longer point to another event as its original.",
   "@eventDetailRemoveDuplicateConfirmBody": {
     "description": "Confirm clearing duplicateOf"

@@ -53,7 +53,10 @@ class AuditLogService {
   }) async {
     try {
       await _firestore.collection('auditLog').add({
-        'action': AuditLogAction.spotMarkedAsDuplicate.toString().split('.').last,
+        'action': AuditLogAction.spotMarkedAsDuplicate
+            .toString()
+            .split('.')
+            .last,
         'spotId': spotId,
         if (reportId != null) 'reportId': reportId,
         'userId': userId,
@@ -77,7 +80,10 @@ class AuditLogService {
   }
 
   /// Get audit logs for a specific spot
-  Future<List<AuditLog>> getAuditLogsForSpot(String spotId, {int limit = 100}) async {
+  Future<List<AuditLog>> getAuditLogsForSpot(
+    String spotId, {
+    int limit = 100,
+  }) async {
     try {
       final querySnapshot = await _firestore
           .collection('auditLog')
@@ -106,7 +112,11 @@ class AuditLogService {
   }) async {
     try {
       await _firestore.collection('auditLog').add({
-        'action': (hidden ? AuditLogAction.spotHidden : AuditLogAction.spotUnhidden).toString().split('.').last,
+        'action':
+            (hidden ? AuditLogAction.spotHidden : AuditLogAction.spotUnhidden)
+                .toString()
+                .split('.')
+                .last,
         'spotId': spotId,
         if (reportId != null) 'reportId': reportId,
         'userId': userId,
@@ -141,8 +151,10 @@ class AuditLogService {
   }) async {
     try {
       await _firestore.collection('auditLog').add({
-        'action':
-            AuditLogAction.eventMarkedAsDuplicate.toString().split('.').last,
+        'action': AuditLogAction.eventMarkedAsDuplicate
+            .toString()
+            .split('.')
+            .last,
         'eventId': eventId,
         if (reportId != null) 'reportId': reportId,
         'userId': userId,
@@ -166,6 +178,51 @@ class AuditLogService {
     }
   }
 
+  Future<void> logEventDuplicateChangesReviewed({
+    required String eventId,
+    required String originalEventId,
+    required bool applied,
+    required String? userId,
+    required String? userName,
+    bool transferPhotos = false,
+    bool transferLinkedSpots = false,
+    bool overwriteTitle = false,
+    bool overwriteDescription = false,
+    bool overwriteLocation = false,
+    bool overwriteSchedule = false,
+    bool overwriteWebsite = false,
+  }) async {
+    try {
+      await _firestore.collection('auditLog').add({
+        'action':
+            (applied
+                    ? AuditLogAction.eventDuplicateChangesApplied
+                    : AuditLogAction.eventDuplicateChangesDismissed)
+                .toString()
+                .split('.')
+                .last,
+        'eventId': eventId,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'metadata': {
+          'originalEventId': originalEventId,
+          if (applied) ...{
+            'transferPhotos': transferPhotos,
+            'transferLinkedSpots': transferLinkedSpots,
+            'overwriteTitle': overwriteTitle,
+            'overwriteDescription': overwriteDescription,
+            'overwriteLocation': overwriteLocation,
+            'overwriteSchedule': overwriteSchedule,
+            'overwriteWebsite': overwriteWebsite,
+          },
+        },
+      });
+    } catch (e) {
+      debugPrint('Error logging event duplicate change review: $e');
+    }
+  }
+
   /// Log when an event is hidden or unhidden
   Future<void> logEventHidden({
     required String eventId,
@@ -177,10 +234,11 @@ class AuditLogService {
   }) async {
     try {
       await _firestore.collection('auditLog').add({
-        'action': (hidden ? AuditLogAction.eventHidden : AuditLogAction.eventUnhidden)
-            .toString()
-            .split('.')
-            .last,
+        'action':
+            (hidden ? AuditLogAction.eventHidden : AuditLogAction.eventUnhidden)
+                .toString()
+                .split('.')
+                .last,
         'eventId': eventId,
         if (reportId != null) 'reportId': reportId,
         'userId': userId,
@@ -198,7 +256,10 @@ class AuditLogService {
   }
 
   /// Get audit logs for a specific user
-  Future<List<AuditLog>> getAuditLogsForUser(String userId, {int limit = 100}) async {
+  Future<List<AuditLog>> getAuditLogsForUser(
+    String userId, {
+    int limit = 100,
+  }) async {
     try {
       final querySnapshot = await _firestore
           .collection('auditLog')
@@ -227,17 +288,17 @@ class AuditLogService {
   }) async {
     try {
       await _firestore.collection('auditLog').add({
-        'action': AuditLogAction.spotReportStatusChange.toString().split('.').last,
+        'action': AuditLogAction.spotReportStatusChange
+            .toString()
+            .split('.')
+            .last,
         'reportId': reportId,
         'spotId': spotId,
         'userId': userId,
         'userName': userName,
         'timestamp': FieldValue.serverTimestamp(),
         'changes': {
-          'status': {
-            'from': oldStatus,
-            'to': newStatus,
-          },
+          'status': {'from': oldStatus, 'to': newStatus},
         },
       });
     } catch (e) {
@@ -291,10 +352,7 @@ class AuditLogService {
         'metadata': {
           'photoUrls': photoUrls,
           if (originalPhotoUrls != null) 'originalPhotoUrls': originalPhotoUrls,
-          'contributor': {
-            'userId': userId,
-            'userName': userName,
-          },
+          'contributor': {'userId': userId, 'userName': userName},
           if (notes != null && notes.isNotEmpty) 'notes': notes,
         },
       });
@@ -334,4 +392,3 @@ class AuditLogService {
     }
   }
 }
-

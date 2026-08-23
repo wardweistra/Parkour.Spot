@@ -3874,6 +3874,75 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventDetailMarkDuplicateSuccess => 'Event marked as duplicate.';
 
   @override
+  String get eventDuplicateChangesTitle => 'Duplicate updated';
+
+  @override
+  String eventDuplicateChangesBody(String title) {
+    return 'This duplicate changed after it was marked. Choose values to copy to “$title”, or dismiss.';
+  }
+
+  @override
+  String get eventDuplicateChangesReview => 'Review changes';
+
+  @override
+  String get eventDuplicateChangesApply => 'Apply';
+
+  @override
+  String get eventDuplicateChangesDismiss => 'Dismiss';
+
+  @override
+  String get eventDuplicateChangesApplySuccess => 'Original event updated.';
+
+  @override
+  String get eventDuplicateChangesDismissSuccess =>
+      'Duplicate changes dismissed.';
+
+  @override
+  String get eventDuplicateChangesChip => 'Duplicate updated';
+
+  @override
+  String get eventDuplicateChangesQueueTitle => 'Duplicate updates';
+
+  @override
+  String get eventDuplicateChangesQueueSubtitle =>
+      'Review duplicates that changed after they were linked';
+
+  @override
+  String get eventDuplicateChangesQueueEmpty =>
+      'No duplicate events with pending changes';
+
+  @override
+  String get eventDuplicateChangesBannerTitle => 'Duplicate updated';
+
+  @override
+  String get eventDuplicateChangesBannerBody =>
+      'Fields changed after this event was marked as a duplicate.';
+
+  @override
+  String get eventDuplicateChangesMenuItem => 'Review duplicate changes';
+
+  @override
+  String get eventDuplicateChangesMenuSubtitle =>
+      'Copy updated fields to the original, or dismiss';
+
+  @override
+  String get eventDuplicateChangesFailed =>
+      'Failed to update duplicate changes';
+
+  @override
+  String eventDuplicateChangesPhotosValue(int count) {
+    return '$count photos';
+  }
+
+  @override
+  String eventDuplicateChangesLinkedSpotsValue(int count) {
+    return '$count linked spots';
+  }
+
+  @override
+  String get eventDuplicateChangesNoValue => '(empty)';
+
+  @override
   String get eventDetailRemoveDuplicateConfirmBody =>
       'Remove duplicate status from this event? It will no longer point to another event as its original.';
 

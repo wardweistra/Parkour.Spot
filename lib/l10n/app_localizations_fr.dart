@@ -3945,6 +3945,77 @@ class AppLocalizationsFr extends AppLocalizations {
       'Événement marqué comme doublon.';
 
   @override
+  String get eventDuplicateChangesTitle => 'Doublon mis à jour';
+
+  @override
+  String eventDuplicateChangesBody(String title) {
+    return 'Ce doublon a changé après avoir été marqué. Choisissez les valeurs à copier vers « $title », ou ignorez-les.';
+  }
+
+  @override
+  String get eventDuplicateChangesReview => 'Examiner les modifications';
+
+  @override
+  String get eventDuplicateChangesApply => 'Appliquer';
+
+  @override
+  String get eventDuplicateChangesDismiss => 'Ignorer';
+
+  @override
+  String get eventDuplicateChangesApplySuccess =>
+      'Événement original mis à jour.';
+
+  @override
+  String get eventDuplicateChangesDismissSuccess =>
+      'Modifications du doublon ignorées.';
+
+  @override
+  String get eventDuplicateChangesChip => 'Doublon mis à jour';
+
+  @override
+  String get eventDuplicateChangesQueueTitle => 'Mises à jour de doublons';
+
+  @override
+  String get eventDuplicateChangesQueueSubtitle =>
+      'Examiner les doublons modifiés après leur liaison';
+
+  @override
+  String get eventDuplicateChangesQueueEmpty =>
+      'Aucun événement doublon avec des modifications en attente';
+
+  @override
+  String get eventDuplicateChangesBannerTitle => 'Doublon mis à jour';
+
+  @override
+  String get eventDuplicateChangesBannerBody =>
+      'Des champs ont changé après que cet événement a été marqué comme doublon.';
+
+  @override
+  String get eventDuplicateChangesMenuItem =>
+      'Examiner les modifications du doublon';
+
+  @override
+  String get eventDuplicateChangesMenuSubtitle =>
+      'Copier les champs mis à jour vers l’original, ou les ignorer';
+
+  @override
+  String get eventDuplicateChangesFailed =>
+      'Impossible de mettre à jour les modifications du doublon';
+
+  @override
+  String eventDuplicateChangesPhotosValue(int count) {
+    return '$count photos';
+  }
+
+  @override
+  String eventDuplicateChangesLinkedSpotsValue(int count) {
+    return '$count spots liés';
+  }
+
+  @override
+  String get eventDuplicateChangesNoValue => '(vide)';
+
+  @override
   String get eventDetailRemoveDuplicateConfirmBody =>
       'Retirer le statut de doublon pour cet événement ? Il ne pointera plus vers un autre événement comme original.';
 

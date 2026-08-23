@@ -28,6 +28,7 @@ import '../../utils/event_schedule_utils.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../utils/map_recentering_mixin.dart';
 import '../../utils/event_suggestion_utils.dart';
+import '../../utils/event_duplicate_review.dart';
 import '../../utils/image_preparation.dart';
 import '../../utils/image_picker_utils.dart';
 import '../../utils/ui_yield.dart';
@@ -50,6 +51,7 @@ import '../../widgets/event_detail_when_block.dart';
 import '../../widgets/event_duplicate_report_dialog.dart';
 import '../../widgets/event_selection_dialog.dart';
 import '../../widgets/event_duplicate_transfer_dialog.dart';
+import '../../widgets/event_duplicate_changes_dialog.dart';
 import '../../widgets/moderator_action_fields.dart';
 import '../../services/url_service.dart';
 import '../../widgets/detail_duplicate_relationship.dart';
@@ -253,6 +255,20 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   Future<void> _reloadAfterMutation() async {
     await _loadEvent();
+  }
+
+  Future<void> _reviewDuplicateChanges(
+    ParkourEvent event, {
+    bool dismissWithoutDialog = false,
+  }) async {
+    final ok = await reviewEventDuplicateChanges(
+      context: context,
+      duplicateEvent: event,
+      dismissWithoutDialog: dismissWithoutDialog,
+    );
+    if (ok && mounted) {
+      await _reloadAfterMutation();
+    }
   }
 
   void _goBack() {
@@ -604,6 +620,18 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 ),
               ),
             );
+            if (event.hasDuplicatePendingChanges) {
+              items.add(
+                PopupMenuItem<_EventEditMenuAction>(
+                  value: _EventEditMenuAction.reviewDuplicateChanges,
+                  child: DetailActionMenuItem(
+                    icon: Icons.flag_outlined,
+                    title: l10n.eventDuplicateChangesMenuItem,
+                    subtitle: l10n.eventDuplicateChangesMenuSubtitle,
+                  ),
+                ),
+              );
+            }
           }
 
           items.add(
@@ -713,6 +741,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           isAdmin,
           isModeratorOnly,
         );
+        return;
+      case _EventEditMenuAction.reviewDuplicateChanges:
+        await _reviewDuplicateChanges(event);
         return;
       case _EventEditMenuAction.toggleHide:
         final result = await _showHideEventConfirmationDialog(event);
@@ -1022,6 +1053,22 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                             ),
                           ],
                         ),
+                        if (hasStaffAccess &&
+                            event.hasDuplicatePendingChanges) ...[
+                          const SizedBox(
+                            height: SpotDetailUi.detailSubsectionGap,
+                          ),
+                          EventDuplicateChangesBanner(
+                            changedGroups: parseDuplicateChangedFieldGroups(
+                              event.duplicateChangedFields,
+                            ),
+                            onReview: () => _reviewDuplicateChanges(event),
+                            onDismiss: () => _reviewDuplicateChanges(
+                              event,
+                              dismissWithoutDialog: true,
+                            ),
+                          ),
+                        ],
                         if (showDuplicateCallout) ...[
                           const SizedBox(
                             height: SpotDetailUi.detailSubsectionGap,
@@ -3740,6 +3787,7 @@ enum _EventEditMenuAction {
   createNativeEvent,
   markDuplicate,
   removeDuplicate,
+  reviewDuplicateChanges,
   toggleHide,
   viewImageUrls,
 }

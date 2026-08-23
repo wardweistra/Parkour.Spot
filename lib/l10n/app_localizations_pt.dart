@@ -3916,6 +3916,75 @@ class AppLocalizationsPt extends AppLocalizations {
       'Evento marcado como duplicado.';
 
   @override
+  String get eventDuplicateChangesTitle => 'Duplicado atualizado';
+
+  @override
+  String eventDuplicateChangesBody(String title) {
+    return 'Este duplicado mudou depois de ser marcado como tal. Escolhe valores para copiar para «$title» ou ignora-os.';
+  }
+
+  @override
+  String get eventDuplicateChangesReview => 'Rever alterações';
+
+  @override
+  String get eventDuplicateChangesApply => 'Aplicar';
+
+  @override
+  String get eventDuplicateChangesDismiss => 'Ignorar';
+
+  @override
+  String get eventDuplicateChangesApplySuccess => 'Evento original atualizado.';
+
+  @override
+  String get eventDuplicateChangesDismissSuccess =>
+      'Alterações do duplicado ignoradas.';
+
+  @override
+  String get eventDuplicateChangesChip => 'Duplicado atualizado';
+
+  @override
+  String get eventDuplicateChangesQueueTitle => 'Atualizações de duplicados';
+
+  @override
+  String get eventDuplicateChangesQueueSubtitle =>
+      'Rever duplicados que mudaram depois de serem ligados';
+
+  @override
+  String get eventDuplicateChangesQueueEmpty =>
+      'Nenhum evento duplicado com alterações pendentes';
+
+  @override
+  String get eventDuplicateChangesBannerTitle => 'Duplicado atualizado';
+
+  @override
+  String get eventDuplicateChangesBannerBody =>
+      'Os campos mudaram depois de este evento ter sido marcado como duplicado.';
+
+  @override
+  String get eventDuplicateChangesMenuItem => 'Rever alterações do duplicado';
+
+  @override
+  String get eventDuplicateChangesMenuSubtitle =>
+      'Copiar campos atualizados para o original, ou ignorar';
+
+  @override
+  String get eventDuplicateChangesFailed =>
+      'Falha ao atualizar as alterações do duplicado';
+
+  @override
+  String eventDuplicateChangesPhotosValue(int count) {
+    return '$count fotos';
+  }
+
+  @override
+  String eventDuplicateChangesLinkedSpotsValue(int count) {
+    return '$count spots ligados';
+  }
+
+  @override
+  String get eventDuplicateChangesNoValue => '(vazio)';
+
+  @override
   String get eventDetailRemoveDuplicateConfirmBody =>
       'Remover o estado de duplicado deste evento? Deixará de apontar para outro evento como original.';
 

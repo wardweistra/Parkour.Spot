@@ -239,11 +239,17 @@ class EventsOverviewCard extends StatelessWidget {
     required this.event,
     this.showModeratorReviewActions = false,
     this.onMarkReviewed,
+    this.showDuplicatePendingActions = false,
+    this.onReviewDuplicateChanges,
+    this.onDismissDuplicateChanges,
   });
 
   final ParkourEvent event;
   final bool showModeratorReviewActions;
   final Future<void> Function(ParkourEvent event)? onMarkReviewed;
+  final bool showDuplicatePendingActions;
+  final Future<void> Function()? onReviewDuplicateChanges;
+  final Future<void> Function()? onDismissDuplicateChanges;
 
   @override
   Widget build(BuildContext context) {
@@ -260,7 +266,7 @@ class EventsOverviewCard extends StatelessWidget {
     final openEventPage = event.id == null
         ? null
         : () => context.push('/event/${event.id}');
-    final statusChips = _statusChips(colors);
+    final statusChips = _statusChips(colors, l10n);
 
     return Card(
       elevation: 0,
@@ -393,8 +399,10 @@ class EventsOverviewCard extends StatelessWidget {
               ],
               if (event.id != null) ...[
                 const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     if (showModeratorReviewActions &&
                         event.needsModeratorReview &&
@@ -404,10 +412,21 @@ class EventsOverviewCard extends StatelessWidget {
                         icon: const Icon(Icons.check_circle_outline),
                         label: const Text('Mark reviewed'),
                       ),
-                    if (showModeratorReviewActions &&
-                        event.needsModeratorReview &&
-                        onMarkReviewed != null)
-                      const SizedBox(width: 8),
+                    if (showDuplicatePendingActions &&
+                        event.hasDuplicatePendingChanges &&
+                        onReviewDuplicateChanges != null)
+                      FilledButton.icon(
+                        onPressed: onReviewDuplicateChanges,
+                        icon: const Icon(Icons.flag_outlined),
+                        label: Text(l10n.eventDuplicateChangesReview),
+                      ),
+                    if (showDuplicatePendingActions &&
+                        event.hasDuplicatePendingChanges &&
+                        onDismissDuplicateChanges != null)
+                      TextButton(
+                        onPressed: onDismissDuplicateChanges,
+                        child: Text(l10n.eventDuplicateChangesDismiss),
+                      ),
                     FilledButton.tonalIcon(
                       onPressed: openEventPage,
                       icon: const Icon(Icons.open_in_new),
@@ -423,8 +442,15 @@ class EventsOverviewCard extends StatelessWidget {
     );
   }
 
-  List<Widget> _statusChips(ColorScheme colors) {
+  List<Widget> _statusChips(ColorScheme colors, AppLocalizations l10n) {
     return [
+      if (event.hasDuplicatePendingChanges)
+        _EventStatusChip(
+          label: l10n.eventDuplicateChangesChip,
+          icon: Icons.flag_outlined,
+          background: colors.tertiaryContainer,
+          foreground: colors.onTertiaryContainer,
+        ),
       if (event.needsModeratorReview)
         _EventStatusChip(
           label: 'Needs review',

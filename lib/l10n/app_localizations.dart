@@ -6543,6 +6543,120 @@ abstract class AppLocalizations {
   /// **'Event marked as duplicate.'**
   String get eventDetailMarkDuplicateSuccess;
 
+  /// Dialog title when a linked duplicate’s fields changed
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate updated'**
+  String get eventDuplicateChangesTitle;
+
+  /// Dialog body for reviewing post-link duplicate changes
+  ///
+  /// In en, this message translates to:
+  /// **'This duplicate changed after it was marked. Choose values to copy to “{title}”, or dismiss.'**
+  String eventDuplicateChangesBody(String title);
+
+  /// Button to open the duplicate-changes dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Review changes'**
+  String get eventDuplicateChangesReview;
+
+  /// Apply selected duplicate field values to the original
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get eventDuplicateChangesApply;
+
+  /// Dismiss pending duplicate field changes without copying
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get eventDuplicateChangesDismiss;
+
+  /// Snackbar after applying duplicate field changes
+  ///
+  /// In en, this message translates to:
+  /// **'Original event updated.'**
+  String get eventDuplicateChangesApplySuccess;
+
+  /// Snackbar after dismissing duplicate field changes
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate changes dismissed.'**
+  String get eventDuplicateChangesDismissSuccess;
+
+  /// Status chip when a duplicate has unreviewed field changes
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate updated'**
+  String get eventDuplicateChangesChip;
+
+  /// Moderator queue title for post-link duplicate changes
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate updates'**
+  String get eventDuplicateChangesQueueTitle;
+
+  /// Moderator tools tile subtitle for duplicate updates
+  ///
+  /// In en, this message translates to:
+  /// **'Review duplicates that changed after they were linked'**
+  String get eventDuplicateChangesQueueSubtitle;
+
+  /// Empty state for the duplicate-updates queue
+  ///
+  /// In en, this message translates to:
+  /// **'No duplicate events with pending changes'**
+  String get eventDuplicateChangesQueueEmpty;
+
+  /// Event detail banner title for pending duplicate changes
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate updated'**
+  String get eventDuplicateChangesBannerTitle;
+
+  /// Event detail banner body for pending duplicate changes
+  ///
+  /// In en, this message translates to:
+  /// **'Fields changed after this event was marked as a duplicate.'**
+  String get eventDuplicateChangesBannerBody;
+
+  /// Staff menu item to review post-link duplicate changes
+  ///
+  /// In en, this message translates to:
+  /// **'Review duplicate changes'**
+  String get eventDuplicateChangesMenuItem;
+
+  /// Staff menu subtitle for reviewing duplicate changes
+  ///
+  /// In en, this message translates to:
+  /// **'Copy updated fields to the original, or dismiss'**
+  String get eventDuplicateChangesMenuSubtitle;
+
+  /// Error snackbar when apply/dismiss of duplicate changes fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update duplicate changes'**
+  String get eventDuplicateChangesFailed;
+
+  /// Subtitle showing how many photos changed on a duplicate
+  ///
+  /// In en, this message translates to:
+  /// **'{count} photos'**
+  String eventDuplicateChangesPhotosValue(int count);
+
+  /// Subtitle showing how many linked spots/lists changed
+  ///
+  /// In en, this message translates to:
+  /// **'{count} linked spots'**
+  String eventDuplicateChangesLinkedSpotsValue(int count);
+
+  /// Fallback when a changed duplicate field has no value
+  ///
+  /// In en, this message translates to:
+  /// **'(empty)'**
+  String get eventDuplicateChangesNoValue;
+
   /// Confirm clearing duplicateOf
   ///
   /// In en, this message translates to:

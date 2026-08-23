@@ -9,6 +9,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/parkour_event.dart';
 import '../utils/event_date_window.dart';
 import '../utils/event_duplicate_merge.dart';
+import '../utils/event_duplicate_review.dart';
 import '../utils/event_linked_spot_loader.dart';
 import '../utils/event_location_utils.dart';
 import '../utils/image_preparation.dart';
@@ -36,6 +37,8 @@ class AdminEventsService extends ChangeNotifier {
   bool _hasMore = true;
   Stream<int>? _needsReviewCountStream;
   int _needsReviewCount = 0;
+  Stream<int>? _duplicatePendingChangesCountStream;
+  int _duplicatePendingChangesCount = 0;
 
   static const int _defaultPageSize = 30;
   static const int maxSpotListIds = 10;
@@ -73,6 +76,9 @@ class AdminEventsService extends ChangeNotifier {
   /// Count of events still flagged for moderator review.
   int get needsReviewCount => _needsReviewCount;
 
+  /// Count of duplicates with unreviewed field changes.
+  int get duplicatePendingChangesCount => _duplicatePendingChangesCount;
+
   /// Streams the number of events with [needsModeratorReview] set.
   Stream<int> watchNeedsReviewCount() {
     return _needsReviewCountStream ??= replayLatest(
@@ -83,6 +89,31 @@ class AdminEventsService extends ChangeNotifier {
           .map((snapshot) => snapshot.docs.length),
       onValue: (count) => _needsReviewCount = count,
     );
+  }
+
+  /// Streams the number of duplicates with pending post-link changes.
+  Stream<int> watchDuplicatePendingChangesCount() {
+    return _duplicatePendingChangesCountStream ??= replayLatest(
+      _firestore
+          .collection('events')
+          .where('duplicateHasPendingChanges', isEqualTo: true)
+          .snapshots()
+          .map((snapshot) => snapshot.docs.length),
+      onValue: (count) => _duplicatePendingChangesCount = count,
+    );
+  }
+
+  /// Live list of duplicates whose transferable fields changed after linking.
+  Stream<List<ParkourEvent>> watchDuplicatePendingChangeEvents() {
+    return _firestore
+        .collection('events')
+        .where('duplicateHasPendingChanges', isEqualTo: true)
+        .snapshots()
+        .map((snapshot) {
+          final events = snapshot.docs.map(ParkourEvent.fromFirestore).toList();
+          events.sort((a, b) => b.startAt.compareTo(a.startAt));
+          return events;
+        });
   }
 
   void setEventSourceFilter(String filter) {
@@ -1256,6 +1287,7 @@ class AdminEventsService extends ChangeNotifier {
     try {
       await _firestore.collection('events').doc(id).update({
         'duplicateOf': FieldValue.delete(),
+        ...buildDuplicateReviewClearUpdates(),
         'updatedAt': Timestamp.fromDate(DateTime.now().toUtc()),
       });
       notifyListeners();
@@ -1265,6 +1297,178 @@ class AdminEventsService extends ChangeNotifier {
       debugPrint('AdminEventsService.clearEventDuplicateStatus error: $e\n$st');
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Copies selected changed fields from a duplicate onto its native original,
+  /// then acknowledges the remaining changes (same as dismiss).
+  Future<bool> applyDuplicatePendingChanges({
+    required String duplicateEventId,
+    bool transferPhotos = false,
+    bool transferLinkedSpots = false,
+    bool overwriteTitle = false,
+    bool overwriteDescription = false,
+    bool overwriteLocation = false,
+    bool overwriteSchedule = false,
+    bool overwriteWebsite = false,
+    String? userId,
+    String? userName,
+  }) {
+    return _reviewDuplicatePendingChanges(
+      duplicateEventId: duplicateEventId,
+      applySelected: true,
+      transferPhotos: transferPhotos,
+      transferLinkedSpots: transferLinkedSpots,
+      overwriteTitle: overwriteTitle,
+      overwriteDescription: overwriteDescription,
+      overwriteLocation: overwriteLocation,
+      overwriteSchedule: overwriteSchedule,
+      overwriteWebsite: overwriteWebsite,
+      userId: userId,
+      userName: userName,
+    );
+  }
+
+  /// Acknowledges pending duplicate field changes without updating the original.
+  Future<bool> dismissDuplicatePendingChanges({
+    required String duplicateEventId,
+    String? userId,
+    String? userName,
+  }) {
+    return _reviewDuplicatePendingChanges(
+      duplicateEventId: duplicateEventId,
+      applySelected: false,
+      userId: userId,
+      userName: userName,
+    );
+  }
+
+  Future<bool> _reviewDuplicatePendingChanges({
+    required String duplicateEventId,
+    required bool applySelected,
+    bool transferPhotos = false,
+    bool transferLinkedSpots = false,
+    bool overwriteTitle = false,
+    bool overwriteDescription = false,
+    bool overwriteLocation = false,
+    bool overwriteSchedule = false,
+    bool overwriteWebsite = false,
+    String? userId,
+    String? userName,
+  }) async {
+    _error = null;
+    notifyListeners();
+    final trimmedDup = duplicateEventId.trim();
+    if (trimmedDup.isEmpty) {
+      _error = 'Invalid event id';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      final dupSnap = await _firestore
+          .collection('events')
+          .doc(trimmedDup)
+          .get();
+      if (!dupSnap.exists) {
+        _error = 'Event not found';
+        notifyListeners();
+        return false;
+      }
+      final duplicate = ParkourEvent.fromFirestore(dupSnap);
+      final originalId = duplicate.duplicateOf?.trim();
+      if (originalId == null || originalId.isEmpty) {
+        _error = 'This event is not marked as a duplicate';
+        notifyListeners();
+        return false;
+      }
+
+      final originalSnap = await _firestore
+          .collection('events')
+          .doc(originalId)
+          .get();
+      if (!originalSnap.exists) {
+        _error = 'Original event not found';
+        notifyListeners();
+        return false;
+      }
+      final original = ParkourEvent.fromFirestore(originalSnap);
+      if (!original.isNativeEvent) {
+        _error =
+            'The original must be a native parkour.spot event, not from an external source';
+        notifyListeners();
+        return false;
+      }
+
+      if (applySelected) {
+        final originalUpdates = buildEventDuplicateMergeUpdates(
+          original: original,
+          duplicate: duplicate,
+          transferPhotos: transferPhotos,
+          transferLinkedSpots: transferLinkedSpots,
+          overwriteTitle: overwriteTitle,
+          overwriteDescription: overwriteDescription,
+          overwriteLocation: overwriteLocation,
+          overwriteSchedule: overwriteSchedule,
+          overwriteWebsite: overwriteWebsite,
+        );
+        if (originalUpdates.isNotEmpty) {
+          originalUpdates['updatedAt'] = FieldValue.serverTimestamp();
+          await _firestore
+              .collection('events')
+              .doc(originalId)
+              .update(originalUpdates);
+        }
+      }
+
+      await _firestore
+          .collection('events')
+          .doc(trimmedDup)
+          .update(buildDuplicateReviewAcknowledgedUpdates(duplicate));
+
+      _patchLocalEvent(
+        trimmedDup,
+        duplicate.copyWith(
+          duplicateHasPendingChanges: false,
+          duplicateChangedFields: const <String>[],
+        ),
+      );
+
+      if (userId != null && userName != null) {
+        await _auditLogService.logEventDuplicateChangesReviewed(
+          eventId: trimmedDup,
+          originalEventId: originalId,
+          applied: applySelected,
+          userId: userId,
+          userName: userName,
+          transferPhotos: transferPhotos,
+          transferLinkedSpots: transferLinkedSpots,
+          overwriteTitle: overwriteTitle,
+          overwriteDescription: overwriteDescription,
+          overwriteLocation: overwriteLocation,
+          overwriteSchedule: overwriteSchedule,
+          overwriteWebsite: overwriteWebsite,
+        );
+      }
+
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      _error = applySelected
+          ? 'Failed to apply duplicate changes'
+          : 'Failed to dismiss duplicate changes';
+      debugPrint(
+        'AdminEventsService._reviewDuplicatePendingChanges error: $e\n$st',
+      );
+      notifyListeners();
+      return false;
+    }
+  }
+
+  void _patchLocalEvent(String eventId, ParkourEvent updated) {
+    final index = _events.indexWhere((event) => event.id == eventId);
+    if (index >= 0) {
+      _events[index] = updated;
     }
   }
 

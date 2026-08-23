@@ -137,14 +137,46 @@ service cloud.firestore {
             data.duplicateOf.size() <= 200);
       }
 
+      function eventDuplicateReviewFieldsOk(data) {
+        return (!('duplicateHasPendingChanges' in data) ||
+            data.duplicateHasPendingChanges is bool) &&
+          (!('duplicateChangedFields' in data) ||
+            (data.duplicateChangedFields is list &&
+              data.duplicateChangedFields.size() <= 10)) &&
+          (!('duplicateReviewBaseline' in data) ||
+            data.duplicateReviewBaseline is map);
+      }
+
       function eventDuplicateStatusUpdateShape() {
         return request.auth != null &&
           request.resource.data.createdBy == resource.data.createdBy &&
           request.resource.data.createdAt == resource.data.createdAt &&
           request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['duplicateOf', 'updatedAt']) &&
+            .hasOnly([
+              'duplicateOf',
+              'updatedAt',
+              'duplicateHasPendingChanges',
+              'duplicateChangedFields',
+              'duplicateReviewBaseline'
+            ]) &&
           eventUpdatedAtOk(request.resource.data) &&
-          eventDuplicateOfOk(request.resource.data);
+          eventDuplicateOfOk(request.resource.data) &&
+          eventDuplicateReviewFieldsOk(request.resource.data);
+      }
+
+      function eventDuplicateReviewStatusUpdateShape() {
+        return request.auth != null &&
+          request.resource.data.createdBy == resource.data.createdBy &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly([
+              'duplicateHasPendingChanges',
+              'duplicateChangedFields',
+              'duplicateReviewBaseline',
+              'updatedAt'
+            ]) &&
+          eventUpdatedAtOk(request.resource.data) &&
+          eventDuplicateReviewFieldsOk(request.resource.data);
       }
 
       function eventHiddenStatusUpdateShape() {
@@ -188,6 +220,8 @@ service cloud.firestore {
         eventHiddenStatusUpdateShape() && requestingUserIsStaff()
       ) || (
         eventModeratorReviewStatusUpdateShape() && requestingUserIsStaff()
+      ) || (
+        eventDuplicateReviewStatusUpdateShape() && requestingUserIsStaff()
       );
       allow delete: if requestingUserIsAdmin();
     }

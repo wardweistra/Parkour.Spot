@@ -44,6 +44,12 @@ class ParkourEvent {
   /// Whether moderators should review this event (e.g. after external sync).
   final bool needsModeratorReview;
 
+  /// Whether transferable fields changed after this event was marked duplicate.
+  final bool duplicateHasPendingChanges;
+
+  /// Transferable field groups that differ from the last-reviewed baseline.
+  final List<String> duplicateChangedFields;
+
   ParkourEvent({
     this.id,
     required this.title,
@@ -77,6 +83,8 @@ class ParkourEvent {
     this.createdFromCreateNative = false,
     this.hidden = false,
     this.needsModeratorReview = false,
+    this.duplicateHasPendingChanges = false,
+    this.duplicateChangedFields = const <String>[],
   });
 
   /// Native events are authored on parkour.spot (not imported from an external calendar source).
@@ -88,6 +96,10 @@ class ParkourEvent {
     final originalId = duplicateOf?.trim();
     return originalId != null && originalId.isNotEmpty;
   }
+
+  /// Whether staff should review post-link changes on this duplicate.
+  bool get hasDuplicatePendingChanges =>
+      isDuplicate && duplicateHasPendingChanges;
 
   /// Whether the event has a pin, linked spots, or linked lists.
   bool get hasLocation {
@@ -152,6 +164,14 @@ class ParkourEvent {
       createdFromCreateNative: data['createdFromCreateNative'] == true,
       hidden: data['hidden'] == true,
       needsModeratorReview: data['needsModeratorReview'] == true,
+      duplicateHasPendingChanges: data['duplicateHasPendingChanges'] == true,
+      duplicateChangedFields: data['duplicateChangedFields'] is List
+          ? (data['duplicateChangedFields'] as List)
+                .whereType<String>()
+                .map((item) => item.trim())
+                .where((item) => item.isNotEmpty)
+                .toList()
+          : const <String>[],
     );
   }
 
@@ -207,6 +227,14 @@ class ParkourEvent {
       createdFromCreateNative: data['createdFromCreateNative'] == true,
       hidden: data['hidden'] == true,
       needsModeratorReview: data['needsModeratorReview'] == true,
+      duplicateHasPendingChanges: data['duplicateHasPendingChanges'] == true,
+      duplicateChangedFields: data['duplicateChangedFields'] is List
+          ? (data['duplicateChangedFields'] as List)
+                .whereType<String>()
+                .map((item) => item.trim())
+                .where((item) => item.isNotEmpty)
+                .toList()
+          : const <String>[],
     );
   }
 
@@ -294,6 +322,8 @@ class ParkourEvent {
     bool? createdFromCreateNative,
     bool? hidden,
     bool? needsModeratorReview,
+    bool? duplicateHasPendingChanges,
+    List<String>? duplicateChangedFields,
   }) {
     return ParkourEvent(
       id: id ?? this.id,
@@ -363,6 +393,10 @@ class ParkourEvent {
           createdFromCreateNative ?? this.createdFromCreateNative,
       hidden: hidden ?? this.hidden,
       needsModeratorReview: needsModeratorReview ?? this.needsModeratorReview,
+      duplicateHasPendingChanges:
+          duplicateHasPendingChanges ?? this.duplicateHasPendingChanges,
+      duplicateChangedFields:
+          duplicateChangedFields ?? this.duplicateChangedFields,
     );
   }
 

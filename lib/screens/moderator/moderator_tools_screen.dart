@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../services/auth_service.dart';
 import '../../services/admin_events_service.dart';
 import '../../services/event_report_service.dart';
@@ -186,6 +187,26 @@ class ModeratorToolsScreen extends StatelessWidget {
                         'Review newly synced events for duplicates and location quality',
                     badgeCount: reviewCount > 0 ? reviewCount : null,
                     onTap: () => context.go('/moderator/events'),
+                  );
+                },
+              ),
+              StreamBuilder<int>(
+                initialData: context
+                    .read<AdminEventsService>()
+                    .duplicatePendingChangesCount,
+                stream: context
+                    .read<AdminEventsService>()
+                    .watchDuplicatePendingChangesCount(),
+                builder: (context, snapshot) {
+                  final pendingCount = snapshot.data ?? 0;
+                  final l10n = AppLocalizations.of(context)!;
+                  return AdminToolTile(
+                    icon: Icons.copy_all_outlined,
+                    title: l10n.eventDuplicateChangesQueueTitle,
+                    subtitle: l10n.eventDuplicateChangesQueueSubtitle,
+                    badgeCount: pendingCount > 0 ? pendingCount : null,
+                    onTap: () =>
+                        context.go('/moderator/duplicate-event-updates'),
                   );
                 },
               ),

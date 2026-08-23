@@ -3937,6 +3937,76 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventDetailMarkDuplicateSuccess => 'Event als Duplikat markiert.';
 
   @override
+  String get eventDuplicateChangesTitle => 'Duplikat aktualisiert';
+
+  @override
+  String eventDuplicateChangesBody(String title) {
+    return 'Dieses Duplikat hat sich geändert, nachdem es als solches markiert wurde. Wähle Werte, die nach „$title“ kopiert werden sollen, oder verwirf sie.';
+  }
+
+  @override
+  String get eventDuplicateChangesReview => 'Änderungen prüfen';
+
+  @override
+  String get eventDuplicateChangesApply => 'Übernehmen';
+
+  @override
+  String get eventDuplicateChangesDismiss => 'Verwerfen';
+
+  @override
+  String get eventDuplicateChangesApplySuccess =>
+      'Original-Event aktualisiert.';
+
+  @override
+  String get eventDuplicateChangesDismissSuccess =>
+      'Duplikatänderungen verworfen.';
+
+  @override
+  String get eventDuplicateChangesChip => 'Duplikat aktualisiert';
+
+  @override
+  String get eventDuplicateChangesQueueTitle => 'Duplikat-Updates';
+
+  @override
+  String get eventDuplicateChangesQueueSubtitle =>
+      'Duplikate prüfen, die nach der Verknüpfung geändert wurden';
+
+  @override
+  String get eventDuplicateChangesQueueEmpty =>
+      'Keine Duplikat-Events mit ausstehenden Änderungen';
+
+  @override
+  String get eventDuplicateChangesBannerTitle => 'Duplikat aktualisiert';
+
+  @override
+  String get eventDuplicateChangesBannerBody =>
+      'Felder haben sich geändert, nachdem dieses Event als Duplikat markiert wurde.';
+
+  @override
+  String get eventDuplicateChangesMenuItem => 'Duplikatänderungen prüfen';
+
+  @override
+  String get eventDuplicateChangesMenuSubtitle =>
+      'Aktualisierte Felder ins Original kopieren oder verwerfen';
+
+  @override
+  String get eventDuplicateChangesFailed =>
+      'Duplikatänderungen konnten nicht aktualisiert werden';
+
+  @override
+  String eventDuplicateChangesPhotosValue(int count) {
+    return '$count Fotos';
+  }
+
+  @override
+  String eventDuplicateChangesLinkedSpotsValue(int count) {
+    return '$count verknüpfte Spots';
+  }
+
+  @override
+  String get eventDuplicateChangesNoValue => '(leer)';
+
+  @override
   String get eventDetailRemoveDuplicateConfirmBody =>
       'Duplikatstatus von diesem Event entfernen? Es verweist dann nicht mehr auf ein anderes Event als Original.';
 
