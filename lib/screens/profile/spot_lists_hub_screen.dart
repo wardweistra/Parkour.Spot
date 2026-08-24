@@ -7,12 +7,14 @@ import '../../models/spot_list.dart';
 import '../../services/auth_service.dart';
 import '../../services/saved_spot_list_service.dart';
 import '../../services/spot_list_service.dart';
+import '../../services/spot_service.dart';
+import '../../utils/spots_added_by_user.dart';
 import '../../widgets/create_spot_list_dialog.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_list_summary_tile.dart';
 
-/// Private atlas: Want to visit, Been to, lists you create, lists you save.
+/// Private atlas: Want to visit, Been to, spots you added, lists you create or save.
 class SpotListsHubScreen extends StatefulWidget {
   const SpotListsHubScreen({super.key});
 
@@ -22,7 +24,9 @@ class SpotListsHubScreen extends StatefulWidget {
 
 class _SpotListsHubScreenState extends State<SpotListsHubScreen> {
   Future<List<SpotList>>? _ownedListsFuture;
+  Future<int>? _addedCountFuture;
   int _ownedListsLoadToken = 0;
+  int _addedCountLoadToken = 0;
   String? _loadedForUserId;
 
   AppLocalizations get _l10n => AppLocalizations.of(context)!;
@@ -34,6 +38,9 @@ class _SpotListsHubScreenState extends State<SpotListsHubScreen> {
     if (userId != null && userId != _loadedForUserId) {
       _loadedForUserId = userId;
       _ownedListsFuture = context.read<SpotListService>().getUserSpotLists();
+      _addedCountFuture = context.read<SpotService>().countSpotsAddedByUser(
+        userId,
+      );
     }
   }
 
@@ -42,6 +49,16 @@ class _SpotListsHubScreenState extends State<SpotListsHubScreen> {
     setState(() {
       _ownedListsLoadToken++;
       _ownedListsFuture = spotListService.getUserSpotLists();
+    });
+  }
+
+  void _reloadAddedCount() {
+    final userId = context.read<AuthService>().currentUser?.uid;
+    if (userId == null) return;
+    final spotService = context.read<SpotService>();
+    setState(() {
+      _addedCountLoadToken++;
+      _addedCountFuture = spotService.countSpotsAddedByUser(userId);
     });
   }
 
@@ -113,6 +130,24 @@ class _SpotListsHubScreenState extends State<SpotListsHubScreen> {
                 title: _l10n.publicProfileBeenTo,
                 count: visitedCount,
                 onTap: () => context.push('/profile/visited'),
+              ),
+              FutureBuilder<int>(
+                key: ValueKey(_addedCountLoadToken),
+                future: _addedCountFuture,
+                builder: (context, snapshot) {
+                  return _HubTrackingRow(
+                    icon: Icons.add_location_alt_outlined,
+                    title: _l10n.spotListsHubAddedByYou,
+                    count: snapshot.data ?? 0,
+                    onTap: () => context
+                        .push(
+                          spotTrackingListRoutePath(SpotTrackingListType.added),
+                        )
+                        .then((_) {
+                          if (mounted) _reloadAddedCount();
+                        }),
+                  );
+                },
               ),
               if (trackingEmpty) ...[
                 const SizedBox(height: 8),

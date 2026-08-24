@@ -13,6 +13,7 @@ import '../utils/image_url_utils.dart';
 import '../utils/replay_latest_stream.dart';
 import '../utils/spot_duplicate_merge.dart';
 import '../utils/spot_duplicate_review.dart';
+import '../utils/spots_added_by_user.dart';
 import '../utils/ui_yield.dart';
 import 'audit_log_service.dart';
 
@@ -32,6 +33,44 @@ class SpotService extends ChangeNotifier {
 
   /// Count of duplicates with unreviewed field changes.
   int get duplicatePendingChangesCount => _duplicatePendingChangesCount;
+
+  /// Spots the given user added, newest first. Private list; query by creator.
+  Future<List<Spot>> getSpotsAddedByUser(String userId) async {
+    if (userId.isEmpty) return [];
+    try {
+      final snapshot = await _firestore
+          .collection('spots')
+          .where('createdBy', isEqualTo: userId)
+          .get();
+      final spots = snapshot.docs
+          .map(Spot.fromFirestore)
+          .where((spot) => isSpotAddedByUser(spot, userId))
+          .toList();
+      return sortSpotsAddedByUser(spots);
+    } catch (e) {
+      debugPrint('Error loading spots added by user: $e');
+      rethrow;
+    }
+  }
+
+  /// Count of spots the given user added.
+  Future<int> countSpotsAddedByUser(String userId) async {
+    if (userId.isEmpty) return 0;
+    final query = _firestore
+        .collection('spots')
+        .where('createdBy', isEqualTo: userId);
+    try {
+      final aggregateSnapshot = await query.count().get();
+      return aggregateSnapshot.count ?? 0;
+    } on FirebaseException catch (e) {
+      if (e.code == 'failed-precondition') {
+        final spots = await getSpotsAddedByUser(userId);
+        return spots.length;
+      }
+      debugPrint('Error counting spots added by user: $e');
+      rethrow;
+    }
+  }
 
   // Get a single spot by ID
   Future<Spot?> getSpotById(String spotId) async {

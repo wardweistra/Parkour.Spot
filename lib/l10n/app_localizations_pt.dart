@@ -67,7 +67,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get accountSpotListsSubtitle =>
-      'Quero visitar, já visitei e listas que crias ou guardas';
+      'Quero visitar, já visitei, spots que adicionaste e listas que crias ou guardas';
 
   @override
   String get spotListsHubSignInPrompt =>
@@ -76,6 +76,9 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get spotListsHubCouldNotLoad =>
       'Não foi possível carregar as listas. Verifica a ligação e tenta novamente.';
+
+  @override
+  String get spotListsHubAddedByYou => 'Adicionados por ti';
 
   @override
   String get notificationsTitle => 'Notificações';
@@ -2864,6 +2867,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String spotTrackingNoSpotsInList(String listName) {
     return 'Sem spots em $listName';
   }
+
+  @override
+  String get spotTrackingAddedEmptyHint =>
+      'Os spots que adicionas ao mapa aparecem aqui';
 
   @override
   String get spotListSaveTooltipSaveList => 'Guardar lista';
