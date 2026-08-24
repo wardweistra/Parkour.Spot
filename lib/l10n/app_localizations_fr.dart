@@ -4016,6 +4016,79 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eventDuplicateChangesNoValue => '(vide)';
 
   @override
+  String get spotDuplicateChangesTitle => 'Doublon mis à jour';
+
+  @override
+  String spotDuplicateChangesBody(String name) {
+    return 'Ce doublon a changé après avoir été marqué. Choisissez les valeurs à copier vers « $name », ou ignorez-les.';
+  }
+
+  @override
+  String get spotDuplicateChangesReview => 'Examiner les modifications';
+
+  @override
+  String get spotDuplicateChangesApply => 'Appliquer';
+
+  @override
+  String get spotDuplicateChangesDismiss => 'Ignorer';
+
+  @override
+  String get spotDuplicateChangesApplySuccess => 'Spot original mis à jour.';
+
+  @override
+  String get spotDuplicateChangesDismissSuccess =>
+      'Modifications du doublon ignorées.';
+
+  @override
+  String get spotDuplicateChangesChip => 'Doublon mis à jour';
+
+  @override
+  String get spotDuplicateChangesQueueTitle => 'Mises à jour de doublons';
+
+  @override
+  String get spotDuplicateChangesQueueSubtitle =>
+      'Examiner les doublons modifiés après leur liaison';
+
+  @override
+  String get spotDuplicateChangesQueueEmpty =>
+      'Aucun spot doublon avec des modifications en attente';
+
+  @override
+  String get spotDuplicateChangesBannerTitle => 'Doublon mis à jour';
+
+  @override
+  String get spotDuplicateChangesBannerBody =>
+      'Des champs ont changé après que ce spot a été marqué comme doublon.';
+
+  @override
+  String get spotDuplicateChangesMenuItem =>
+      'Examiner les modifications du doublon';
+
+  @override
+  String get spotDuplicateChangesMenuSubtitle =>
+      'Copier les champs mis à jour vers l’original, ou les ignorer';
+
+  @override
+  String get spotDuplicateChangesFailed =>
+      'Impossible de mettre à jour les modifications du doublon';
+
+  @override
+  String spotDuplicateChangesPhotosValue(int count) {
+    return '$count photos';
+  }
+
+  @override
+  String spotDuplicateChangesYoutubeValue(int count) {
+    return '$count liens YouTube';
+  }
+
+  @override
+  String get spotDuplicateChangesNoValue => '(vide)';
+
+  @override
+  String get spotDuplicateChangesOpenSpot => 'Ouvrir la page du spot';
+
+  @override
   String get eventDetailRemoveDuplicateConfirmBody =>
       'Retirer le statut de doublon pour cet événement ? Il ne pointera plus vers un autre événement comme original.';
 

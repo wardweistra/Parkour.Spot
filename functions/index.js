@@ -141,6 +141,9 @@ const {
   isEventPast,
 } = require("./lib/event-map-pins");
 const {buildDuplicateReviewUpdate} = require("./lib/event-duplicate-review");
+const {
+  buildDuplicateReviewUpdate: buildSpotDuplicateReviewUpdate,
+} = require("./lib/spot-duplicate-review");
 const {executeEventsInBoundsQuery} = require("./lib/events-in-bounds");
 const {
   lookupTimeZoneFromCoordinates,
@@ -1440,6 +1443,15 @@ exports.onSpotUpdated = onDocumentUpdated(
       const spotId = event.params.spotId;
       const beforeData = event.data.before.data();
       const afterData = event.data.after.data();
+
+      const reviewUpdate = buildSpotDuplicateReviewUpdate(
+          beforeData,
+          afterData,
+          FieldValue.delete(),
+      );
+      if (reviewUpdate) {
+        await db.collection("spots").doc(spotId).update(reviewUpdate);
+      }
 
       const beforeDup = beforeData?.duplicateOf;
       const afterDup = afterData?.duplicateOf;

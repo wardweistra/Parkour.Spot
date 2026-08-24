@@ -12,6 +12,8 @@ import '../../models/spot_training_plan.dart';
 import '../../widgets/spot_check_in_dialog.dart';
 import '../../widgets/add_to_spot_list_dialog.dart';
 import '../../widgets/spot_training_plan_dialog.dart';
+import '../../widgets/spot_duplicate_changes_dialog.dart';
+import '../../utils/spot_duplicate_review.dart';
 import '../../utils/spot_check_in_flow.dart';
 import '../../services/spot_service.dart';
 import '../../services/spot_report_service.dart';
@@ -162,6 +164,7 @@ enum _SpotMenuAction {
   createNativeSpot,
   toggleHide,
   removeDuplicateStatus,
+  reviewDuplicateChanges,
   triggerResize,
   viewImageUrls,
 }
@@ -1672,6 +1675,39 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   ],
                 ),
               ),
+            if (isAlreadyDuplicate && _spot.hasDuplicatePendingChanges)
+              PopupMenuItem<_SpotMenuAction>(
+                value: _SpotMenuAction.reviewDuplicateChanges,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.flag_outlined,
+                      color: theme.colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          l10n.spotDuplicateChangesMenuItem,
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                        Text(
+                          l10n.spotDuplicateChangesMenuSubtitle,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.6,
+                            ),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             // Create native spot menu item (only for spots from external sources)
             if (isSpotFromSource)
               PopupMenuItem<_SpotMenuAction>(
@@ -1986,6 +2022,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           );
         }
         break;
+      case _SpotMenuAction.reviewDuplicateChanges:
+        await _reviewDuplicateChanges();
+        break;
       case _SpotMenuAction.triggerResize:
         _triggerResizeForSpot();
         break;
@@ -1999,6 +2038,29 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           showSpotsApiUrls: true,
         );
         break;
+    }
+  }
+
+  Future<void> _reviewDuplicateChanges({
+    bool dismissWithoutDialog = false,
+  }) async {
+    final ok = await reviewSpotDuplicateChanges(
+      context: context,
+      duplicateSpot: _spot,
+      dismissWithoutDialog: dismissWithoutDialog,
+    );
+    if (!ok || !mounted) return;
+    final spotId = _spot.id;
+    if (spotId == null) return;
+    final reloaded = await Provider.of<SpotService>(
+      context,
+      listen: false,
+    ).getSpotById(spotId);
+    if (reloaded != null && mounted) {
+      setState(() {
+        _currentSpot = reloaded;
+      });
+      _updateDocumentTitle();
     }
   }
 
@@ -3542,10 +3604,42 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             widget.spot.createdByName != null ||
                             widget.spot.createdAt != null ||
                             widget.spot.duplicateOf != null ||
+                            _spot.hasDuplicatePendingChanges ||
                             _duplicateSpots.isNotEmpty ||
                             _isLoadingDuplicates) ...[
                           if (widget.spot.duplicateOf != null ||
                               _originalSpot != null) ...[
+                            Builder(
+                              builder: (context) {
+                                final authService = Provider.of<AuthService>(
+                                  context,
+                                );
+                                final hasStaffAccess =
+                                    authService.isAuthenticated &&
+                                    authService.userProfile != null &&
+                                    (authService.isAdmin ||
+                                        authService.isModerator);
+                                if (!hasStaffAccess ||
+                                    !_spot.hasDuplicatePendingChanges) {
+                                  return const SizedBox.shrink();
+                                }
+                                return Column(
+                                  children: [
+                                    SpotDuplicateChangesBanner(
+                                      changedGroups:
+                                          parseSpotDuplicateChangedFieldGroups(
+                                            _spot.duplicateChangedFields,
+                                          ),
+                                      onReview: () => _reviewDuplicateChanges(),
+                                      onDismiss: () => _reviewDuplicateChanges(
+                                        dismissWithoutDialog: true,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                  ],
+                                );
+                              },
+                            ),
                             GestureDetector(
                               onTap: _isLoadingOriginalSpot
                                   ? null
@@ -7964,11 +8058,7 @@ class _SpotSaveMenu extends StatelessWidget {
                       value: _SpotSaveMenuAction.addToCustomList,
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.playlist_add,
-                            size: 20,
-                            color: primary,
-                          ),
+                          Icon(Icons.playlist_add, size: 20, color: primary),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(

@@ -6657,6 +6657,126 @@ abstract class AppLocalizations {
   /// **'(empty)'**
   String get eventDuplicateChangesNoValue;
 
+  /// Dialog title when a linked duplicate spot changed
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate updated'**
+  String get spotDuplicateChangesTitle;
+
+  /// Dialog body for reviewing post-link duplicate spot changes
+  ///
+  /// In en, this message translates to:
+  /// **'This duplicate changed after it was marked. Choose values to copy to “{name}”, or dismiss.'**
+  String spotDuplicateChangesBody(String name);
+
+  /// Button to open the duplicate-spot-changes dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Review changes'**
+  String get spotDuplicateChangesReview;
+
+  /// Apply selected duplicate field values to the original spot
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get spotDuplicateChangesApply;
+
+  /// Dismiss pending duplicate spot field changes without copying
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get spotDuplicateChangesDismiss;
+
+  /// Snackbar after applying duplicate spot field changes
+  ///
+  /// In en, this message translates to:
+  /// **'Original spot updated.'**
+  String get spotDuplicateChangesApplySuccess;
+
+  /// Snackbar after dismissing duplicate spot field changes
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate changes dismissed.'**
+  String get spotDuplicateChangesDismissSuccess;
+
+  /// Status chip when a duplicate spot has unreviewed field changes
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate updated'**
+  String get spotDuplicateChangesChip;
+
+  /// Moderator queue title for post-link duplicate spot changes
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate updates'**
+  String get spotDuplicateChangesQueueTitle;
+
+  /// Moderator tools tile subtitle for duplicate spot updates
+  ///
+  /// In en, this message translates to:
+  /// **'Review duplicates that changed after they were linked'**
+  String get spotDuplicateChangesQueueSubtitle;
+
+  /// Empty state for the duplicate-spot-updates queue
+  ///
+  /// In en, this message translates to:
+  /// **'No duplicate spots with pending changes'**
+  String get spotDuplicateChangesQueueEmpty;
+
+  /// Spot detail banner title for pending duplicate changes
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate updated'**
+  String get spotDuplicateChangesBannerTitle;
+
+  /// Spot detail banner body for pending duplicate changes
+  ///
+  /// In en, this message translates to:
+  /// **'Fields changed after this spot was marked as a duplicate.'**
+  String get spotDuplicateChangesBannerBody;
+
+  /// Staff menu item to review post-link duplicate spot changes
+  ///
+  /// In en, this message translates to:
+  /// **'Review duplicate changes'**
+  String get spotDuplicateChangesMenuItem;
+
+  /// Staff menu subtitle for reviewing duplicate spot changes
+  ///
+  /// In en, this message translates to:
+  /// **'Copy updated fields to the original, or dismiss'**
+  String get spotDuplicateChangesMenuSubtitle;
+
+  /// Error snackbar when apply/dismiss of duplicate spot changes fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update duplicate changes'**
+  String get spotDuplicateChangesFailed;
+
+  /// Formatted photo count in the duplicate changes dialog
+  ///
+  /// In en, this message translates to:
+  /// **'{count} photos'**
+  String spotDuplicateChangesPhotosValue(int count);
+
+  /// Formatted YouTube count in the duplicate changes dialog
+  ///
+  /// In en, this message translates to:
+  /// **'{count} YouTube links'**
+  String spotDuplicateChangesYoutubeValue(int count);
+
+  /// Fallback when a changed duplicate spot field has no value
+  ///
+  /// In en, this message translates to:
+  /// **'(empty)'**
+  String get spotDuplicateChangesNoValue;
+
+  /// Button on the duplicate-spot-updates queue card to open the spot
+  ///
+  /// In en, this message translates to:
+  /// **'Open spot page'**
+  String get spotDuplicateChangesOpenSpot;
+
   /// Confirm clearing duplicateOf
   ///
   /// In en, this message translates to:

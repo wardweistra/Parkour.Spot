@@ -223,6 +223,49 @@ class AuditLogService {
     }
   }
 
+  Future<void> logSpotDuplicateChangesReviewed({
+    required String spotId,
+    required String originalSpotId,
+    required bool applied,
+    required String? userId,
+    required String? userName,
+    bool transferPhotos = false,
+    bool transferYoutubeLinks = false,
+    bool overwriteName = false,
+    bool overwriteDescription = false,
+    bool overwriteLocation = false,
+    bool overwriteSpotAttributes = false,
+  }) async {
+    try {
+      await _firestore.collection('auditLog').add({
+        'action':
+            (applied
+                    ? AuditLogAction.spotDuplicateChangesApplied
+                    : AuditLogAction.spotDuplicateChangesDismissed)
+                .toString()
+                .split('.')
+                .last,
+        'spotId': spotId,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'metadata': {
+          'originalSpotId': originalSpotId,
+          if (applied) ...{
+            'transferPhotos': transferPhotos,
+            'transferYoutubeLinks': transferYoutubeLinks,
+            'overwriteName': overwriteName,
+            'overwriteDescription': overwriteDescription,
+            'overwriteLocation': overwriteLocation,
+            'overwriteSpotAttributes': overwriteSpotAttributes,
+          },
+        },
+      });
+    } catch (e) {
+      debugPrint('Error logging spot duplicate change review: $e');
+    }
+  }
+
   /// Log when an event is hidden or unhidden
   Future<void> logEventHidden({
     required String eventId,

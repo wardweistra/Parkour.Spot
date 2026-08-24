@@ -10,6 +10,9 @@ import '../models/rating.dart';
 import '../utils/duplicate_spot_resolution_utils.dart';
 import '../utils/image_preparation.dart';
 import '../utils/image_url_utils.dart';
+import '../utils/replay_latest_stream.dart';
+import '../utils/spot_duplicate_merge.dart';
+import '../utils/spot_duplicate_review.dart';
 import '../utils/ui_yield.dart';
 import 'audit_log_service.dart';
 
@@ -21,8 +24,14 @@ class SpotService extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  Stream<int>? _duplicatePendingChangesCountStream;
+  int _duplicatePendingChangesCount = 0;
+
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+  /// Count of duplicates with unreviewed field changes.
+  int get duplicatePendingChangesCount => _duplicatePendingChangesCount;
 
   // Get a single spot by ID
   Future<Spot?> getSpotById(String spotId) async {
@@ -248,10 +257,13 @@ class SpotService extends ChangeNotifier {
         hidden: spot.hidden, // Preserve existing hidden field
       );
 
-      await _firestore
-          .collection('spots')
-          .doc(spot.id)
-          .update(updatedSpot.toFirestore(isUpdate: true));
+      final payload = updatedSpot.toFirestore(isUpdate: true);
+      if ((oldSpot?.duplicateOf ?? '').trim().isNotEmpty &&
+          (updatedSpot.duplicateOf ?? '').trim().isEmpty) {
+        payload.addAll(buildSpotDuplicateReviewClearUpdates());
+      }
+
+      await _firestore.collection('spots').doc(spot.id).update(payload);
 
       // Log audit trail if user info is provided (moderator edit)
       if (userId != null && userName != null && oldSpot != null) {
@@ -1606,115 +1618,18 @@ class SpotService extends ChangeNotifier {
         return false;
       }
 
-      // Prepare updates for the original spot
-      Map<String, dynamic> originalSpotUpdates = {};
-      bool needsOriginalUpdate = false;
+      final originalSpotUpdates = buildSpotDuplicateMergeUpdates(
+        original: originalSpot,
+        duplicate: duplicateSpot,
+        transferPhotos: transferPhotos,
+        transferYoutubeLinks: transferYoutubeLinks,
+        overwriteName: overwriteName,
+        overwriteDescription: overwriteDescription,
+        overwriteLocation: overwriteLocation,
+        overwriteSpotAttributes: overwriteSpotAttributes,
+      );
 
-      // Merge photos if requested
-      if (transferPhotos &&
-          duplicateSpot.imageUrls != null &&
-          duplicateSpot.imageUrls!.isNotEmpty) {
-        final existingPhotos = List<String>.from(originalSpot.imageUrls ?? []);
-        final newPhotos = duplicateSpot.imageUrls!
-            .where((url) => !existingPhotos.contains(url))
-            .toList();
-
-        if (newPhotos.isNotEmpty) {
-          originalSpotUpdates['imageUrls'] = [...existingPhotos, ...newPhotos];
-          originalSpotUpdates['hasImages'] = true;
-          needsOriginalUpdate = true;
-        }
-      }
-
-      // Merge YouTube links if requested
-      if (transferYoutubeLinks &&
-          duplicateSpot.youtubeVideoIds != null &&
-          duplicateSpot.youtubeVideoIds!.isNotEmpty) {
-        final existingYoutubeLinks = List<String>.from(
-          originalSpot.youtubeVideoIds ?? [],
-        );
-        final newYoutubeLinks = duplicateSpot.youtubeVideoIds!
-            .where((id) => !existingYoutubeLinks.contains(id))
-            .toList();
-
-        if (newYoutubeLinks.isNotEmpty) {
-          originalSpotUpdates['youtubeVideoIds'] = [
-            ...existingYoutubeLinks,
-            ...newYoutubeLinks,
-          ];
-          needsOriginalUpdate = true;
-        }
-      }
-
-      // Overwrite name if requested and duplicate has a name
-      if (overwriteName && duplicateSpot.name.isNotEmpty) {
-        originalSpotUpdates['name'] = duplicateSpot.name;
-        needsOriginalUpdate = true;
-      }
-
-      // Overwrite description if requested and duplicate has a description
-      if (overwriteDescription && duplicateSpot.description.isNotEmpty) {
-        originalSpotUpdates['description'] = duplicateSpot.description;
-        needsOriginalUpdate = true;
-      }
-
-      // Overwrite location if requested and duplicate has location data
-      if (overwriteLocation) {
-        bool hasLocationData = false;
-        if (duplicateSpot.latitude != 0.0 && duplicateSpot.longitude != 0.0) {
-          originalSpotUpdates['latitude'] = duplicateSpot.latitude;
-          originalSpotUpdates['longitude'] = duplicateSpot.longitude;
-          hasLocationData = true;
-        }
-        if (duplicateSpot.address != null &&
-            duplicateSpot.address!.isNotEmpty) {
-          originalSpotUpdates['address'] = duplicateSpot.address;
-          hasLocationData = true;
-        }
-        if (duplicateSpot.city != null && duplicateSpot.city!.isNotEmpty) {
-          originalSpotUpdates['city'] = duplicateSpot.city;
-          hasLocationData = true;
-        }
-        if (duplicateSpot.countryCode != null &&
-            duplicateSpot.countryCode!.isNotEmpty) {
-          originalSpotUpdates['countryCode'] = duplicateSpot.countryCode;
-          hasLocationData = true;
-        }
-        if (hasLocationData) {
-          needsOriginalUpdate = true;
-        }
-      }
-
-      // Overwrite spot attributes if requested and duplicate has attributes
-      if (overwriteSpotAttributes) {
-        bool hasAttributes = false;
-        if (duplicateSpot.spotAccess != null &&
-            duplicateSpot.spotAccess!.isNotEmpty) {
-          originalSpotUpdates['spotAccess'] = duplicateSpot.spotAccess;
-          hasAttributes = true;
-        }
-        if (duplicateSpot.spotFeatures != null &&
-            duplicateSpot.spotFeatures!.isNotEmpty) {
-          originalSpotUpdates['spotFeatures'] = duplicateSpot.spotFeatures;
-          hasAttributes = true;
-        }
-        if (duplicateSpot.spotFacilities != null &&
-            duplicateSpot.spotFacilities!.isNotEmpty) {
-          originalSpotUpdates['spotFacilities'] = duplicateSpot.spotFacilities;
-          hasAttributes = true;
-        }
-        if (duplicateSpot.goodFor != null &&
-            duplicateSpot.goodFor!.isNotEmpty) {
-          originalSpotUpdates['goodFor'] = duplicateSpot.goodFor;
-          hasAttributes = true;
-        }
-        if (hasAttributes) {
-          needsOriginalUpdate = true;
-        }
-      }
-
-      // Update the original spot if needed
-      if (needsOriginalUpdate) {
+      if (originalSpotUpdates.isNotEmpty) {
         originalSpotUpdates['updatedAt'] = FieldValue.serverTimestamp();
         await _firestore
             .collection('spots')
@@ -1753,6 +1668,175 @@ class SpotService extends ChangeNotifier {
       _error = 'Failed to mark spot as duplicate: $e';
       debugPrint('Error marking spot as duplicate: $e');
       _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Streams the number of duplicates with pending post-link changes.
+  Stream<int> watchDuplicatePendingChangesCount() {
+    return _duplicatePendingChangesCountStream ??= replayLatest(
+      _firestore
+          .collection('spots')
+          .where('duplicateHasPendingChanges', isEqualTo: true)
+          .snapshots()
+          .map((snapshot) => snapshot.docs.length),
+      onValue: (count) => _duplicatePendingChangesCount = count,
+    );
+  }
+
+  /// Live list of duplicates whose transferable fields changed after linking.
+  Stream<List<Spot>> watchDuplicatePendingChangeSpots() {
+    return _firestore
+        .collection('spots')
+        .where('duplicateHasPendingChanges', isEqualTo: true)
+        .snapshots()
+        .map((snapshot) {
+          final spots = snapshot.docs.map(Spot.fromFirestore).toList();
+          spots.sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
+          return spots;
+        });
+  }
+
+  /// Copies selected changed fields from a duplicate onto its native original,
+  /// then acknowledges the remaining changes (same as dismiss).
+  Future<bool> applyDuplicatePendingChanges({
+    required String duplicateSpotId,
+    bool transferPhotos = false,
+    bool transferYoutubeLinks = false,
+    bool overwriteName = false,
+    bool overwriteDescription = false,
+    bool overwriteLocation = false,
+    bool overwriteSpotAttributes = false,
+    String? userId,
+    String? userName,
+  }) {
+    return _reviewDuplicatePendingChanges(
+      duplicateSpotId: duplicateSpotId,
+      applySelected: true,
+      transferPhotos: transferPhotos,
+      transferYoutubeLinks: transferYoutubeLinks,
+      overwriteName: overwriteName,
+      overwriteDescription: overwriteDescription,
+      overwriteLocation: overwriteLocation,
+      overwriteSpotAttributes: overwriteSpotAttributes,
+      userId: userId,
+      userName: userName,
+    );
+  }
+
+  /// Acknowledges pending duplicate field changes without updating the original.
+  Future<bool> dismissDuplicatePendingChanges({
+    required String duplicateSpotId,
+    String? userId,
+    String? userName,
+  }) {
+    return _reviewDuplicatePendingChanges(
+      duplicateSpotId: duplicateSpotId,
+      applySelected: false,
+      userId: userId,
+      userName: userName,
+    );
+  }
+
+  Future<bool> _reviewDuplicatePendingChanges({
+    required String duplicateSpotId,
+    required bool applySelected,
+    bool transferPhotos = false,
+    bool transferYoutubeLinks = false,
+    bool overwriteName = false,
+    bool overwriteDescription = false,
+    bool overwriteLocation = false,
+    bool overwriteSpotAttributes = false,
+    String? userId,
+    String? userName,
+  }) async {
+    _error = null;
+    notifyListeners();
+    final trimmedDup = duplicateSpotId.trim();
+    if (trimmedDup.isEmpty) {
+      _error = 'Invalid spot id';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      final duplicate = await getSpotById(trimmedDup);
+      if (duplicate == null) {
+        _error = 'Spot not found';
+        notifyListeners();
+        return false;
+      }
+      final originalId = duplicate.duplicateOf?.trim();
+      if (originalId == null || originalId.isEmpty) {
+        _error = 'This spot is not marked as a duplicate';
+        notifyListeners();
+        return false;
+      }
+
+      final original = await getSpotById(originalId);
+      if (original == null) {
+        _error = 'Original spot not found';
+        notifyListeners();
+        return false;
+      }
+      if (!spotIsNative(original)) {
+        _error =
+            'The original must be a native parkour.spot spot, not from an external source';
+        notifyListeners();
+        return false;
+      }
+
+      if (applySelected) {
+        final originalUpdates = buildSpotDuplicateMergeUpdates(
+          original: original,
+          duplicate: duplicate,
+          transferPhotos: transferPhotos,
+          transferYoutubeLinks: transferYoutubeLinks,
+          overwriteName: overwriteName,
+          overwriteDescription: overwriteDescription,
+          overwriteLocation: overwriteLocation,
+          overwriteSpotAttributes: overwriteSpotAttributes,
+        );
+        if (originalUpdates.isNotEmpty) {
+          originalUpdates['updatedAt'] = FieldValue.serverTimestamp();
+          await _firestore
+              .collection('spots')
+              .doc(originalId)
+              .update(originalUpdates);
+        }
+      }
+
+      await _firestore
+          .collection('spots')
+          .doc(trimmedDup)
+          .update(buildSpotDuplicateReviewAcknowledgedUpdates(duplicate));
+
+      if (userId != null && userName != null) {
+        await _auditLogService.logSpotDuplicateChangesReviewed(
+          spotId: trimmedDup,
+          originalSpotId: originalId,
+          applied: applySelected,
+          userId: userId,
+          userName: userName,
+          transferPhotos: transferPhotos,
+          transferYoutubeLinks: transferYoutubeLinks,
+          overwriteName: overwriteName,
+          overwriteDescription: overwriteDescription,
+          overwriteLocation: overwriteLocation,
+          overwriteSpotAttributes: overwriteSpotAttributes,
+        );
+      }
+
+      notifyListeners();
+      return true;
+    } catch (e, st) {
+      _error = applySelected
+          ? 'Failed to apply duplicate changes'
+          : 'Failed to dismiss duplicate changes';
+      debugPrint('SpotService._reviewDuplicatePendingChanges error: $e\n$st');
       notifyListeners();
       return false;
     }

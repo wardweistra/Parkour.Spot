@@ -596,6 +596,32 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                   'Original event: ${auditLog.metadata!['originalEventId']}';
             }
             break;
+          case AuditLogAction.spotDuplicateChangesApplied:
+            title = 'Duplicate spot changes applied';
+            subtitle = auditLog.userName != null
+                ? 'Applied by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Applied by ${auditLog.userId}'
+                : 'Applied by unknown';
+            if (auditLog.metadata != null &&
+                auditLog.metadata!['originalSpotId'] != null) {
+              details =
+                  'Original spot: ${auditLog.metadata!['originalSpotId']}';
+            }
+            break;
+          case AuditLogAction.spotDuplicateChangesDismissed:
+            title = 'Duplicate spot changes dismissed';
+            subtitle = auditLog.userName != null
+                ? 'Dismissed by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Dismissed by ${auditLog.userId}'
+                : 'Dismissed by unknown';
+            if (auditLog.metadata != null &&
+                auditLog.metadata!['originalSpotId'] != null) {
+              details =
+                  'Original spot: ${auditLog.metadata!['originalSpotId']}';
+            }
+            break;
           case AuditLogAction.spotHidden:
             title = 'Spot Hidden';
             subtitle = auditLog.userName != null

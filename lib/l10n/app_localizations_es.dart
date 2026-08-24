@@ -3980,6 +3980,78 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventDuplicateChangesNoValue => '(vacío)';
 
   @override
+  String get spotDuplicateChangesTitle => 'Duplicado actualizado';
+
+  @override
+  String spotDuplicateChangesBody(String name) {
+    return 'Este duplicado cambió después de marcarse como tal. Elige valores para copiar a «$name» o descártalos.';
+  }
+
+  @override
+  String get spotDuplicateChangesReview => 'Revisar cambios';
+
+  @override
+  String get spotDuplicateChangesApply => 'Aplicar';
+
+  @override
+  String get spotDuplicateChangesDismiss => 'Descartar';
+
+  @override
+  String get spotDuplicateChangesApplySuccess => 'Spot original actualizado.';
+
+  @override
+  String get spotDuplicateChangesDismissSuccess =>
+      'Cambios del duplicado descartados.';
+
+  @override
+  String get spotDuplicateChangesChip => 'Duplicado actualizado';
+
+  @override
+  String get spotDuplicateChangesQueueTitle => 'Actualizaciones de duplicados';
+
+  @override
+  String get spotDuplicateChangesQueueSubtitle =>
+      'Revisa duplicados que cambiaron después de vincularse';
+
+  @override
+  String get spotDuplicateChangesQueueEmpty =>
+      'No hay spots duplicados con cambios pendientes';
+
+  @override
+  String get spotDuplicateChangesBannerTitle => 'Duplicado actualizado';
+
+  @override
+  String get spotDuplicateChangesBannerBody =>
+      'Los campos cambiaron después de marcar este spot como duplicado.';
+
+  @override
+  String get spotDuplicateChangesMenuItem => 'Revisar cambios del duplicado';
+
+  @override
+  String get spotDuplicateChangesMenuSubtitle =>
+      'Copia los campos actualizados al original o descártalos';
+
+  @override
+  String get spotDuplicateChangesFailed =>
+      'No se pudieron actualizar los cambios del duplicado';
+
+  @override
+  String spotDuplicateChangesPhotosValue(int count) {
+    return '$count fotos';
+  }
+
+  @override
+  String spotDuplicateChangesYoutubeValue(int count) {
+    return '$count enlaces de YouTube';
+  }
+
+  @override
+  String get spotDuplicateChangesNoValue => '(vacío)';
+
+  @override
+  String get spotDuplicateChangesOpenSpot => 'Abrir página del spot';
+
+  @override
   String get eventDetailRemoveDuplicateConfirmBody =>
       '¿Quitar el estado de duplicado de este evento? Dejará de apuntar a otro evento como original.';
 

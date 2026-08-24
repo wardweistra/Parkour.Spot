@@ -3943,6 +3943,77 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventDuplicateChangesNoValue => '(empty)';
 
   @override
+  String get spotDuplicateChangesTitle => 'Duplicate updated';
+
+  @override
+  String spotDuplicateChangesBody(String name) {
+    return 'This duplicate changed after it was marked. Choose values to copy to “$name”, or dismiss.';
+  }
+
+  @override
+  String get spotDuplicateChangesReview => 'Review changes';
+
+  @override
+  String get spotDuplicateChangesApply => 'Apply';
+
+  @override
+  String get spotDuplicateChangesDismiss => 'Dismiss';
+
+  @override
+  String get spotDuplicateChangesApplySuccess => 'Original spot updated.';
+
+  @override
+  String get spotDuplicateChangesDismissSuccess =>
+      'Duplicate changes dismissed.';
+
+  @override
+  String get spotDuplicateChangesChip => 'Duplicate updated';
+
+  @override
+  String get spotDuplicateChangesQueueTitle => 'Duplicate updates';
+
+  @override
+  String get spotDuplicateChangesQueueSubtitle =>
+      'Review duplicates that changed after they were linked';
+
+  @override
+  String get spotDuplicateChangesQueueEmpty =>
+      'No duplicate spots with pending changes';
+
+  @override
+  String get spotDuplicateChangesBannerTitle => 'Duplicate updated';
+
+  @override
+  String get spotDuplicateChangesBannerBody =>
+      'Fields changed after this spot was marked as a duplicate.';
+
+  @override
+  String get spotDuplicateChangesMenuItem => 'Review duplicate changes';
+
+  @override
+  String get spotDuplicateChangesMenuSubtitle =>
+      'Copy updated fields to the original, or dismiss';
+
+  @override
+  String get spotDuplicateChangesFailed => 'Failed to update duplicate changes';
+
+  @override
+  String spotDuplicateChangesPhotosValue(int count) {
+    return '$count photos';
+  }
+
+  @override
+  String spotDuplicateChangesYoutubeValue(int count) {
+    return '$count YouTube links';
+  }
+
+  @override
+  String get spotDuplicateChangesNoValue => '(empty)';
+
+  @override
+  String get spotDuplicateChangesOpenSpot => 'Open spot page';
+
+  @override
   String get eventDetailRemoveDuplicateConfirmBody =>
       'Remove duplicate status from this event? It will no longer point to another event as its original.';
 

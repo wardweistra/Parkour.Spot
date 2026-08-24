@@ -8,6 +8,8 @@ enum AuditLogAction {
   eventMarkedAsDuplicate,
   eventDuplicateChangesApplied,
   eventDuplicateChangesDismissed,
+  spotDuplicateChangesApplied,
+  spotDuplicateChangesDismissed,
   eventHidden,
   eventUnhidden,
   spotReportStatusChange,

@@ -30,6 +30,11 @@ class Spot {
   final Map<String, String>? spotFacilities;
   final List<String>? goodFor;
   final String? duplicateOf; // ID of the original spot if this is a duplicate
+  /// Whether transferable fields changed after this spot was marked duplicate.
+  final bool duplicateHasPendingChanges;
+
+  /// Transferable field groups that differ from the last-reviewed baseline.
+  final List<String> duplicateChangedFields;
   final bool hidden; // Whether the spot is hidden from public view
   final List<Map<String, String>>?
   contributors; // List of contributors who improved the spot
@@ -37,6 +42,16 @@ class Spot {
   createdFromCreateNative; // Whether spot was created via "Create Native"
 
   static const Object _unset = Object();
+
+  /// Whether this spot is marked as a duplicate of another spot.
+  bool get isDuplicate {
+    final originalId = duplicateOf?.trim();
+    return originalId != null && originalId.isNotEmpty;
+  }
+
+  /// Whether staff should review post-link changes on this duplicate.
+  bool get hasDuplicatePendingChanges =>
+      isDuplicate && duplicateHasPendingChanges;
 
   Spot({
     this.id,
@@ -67,6 +82,8 @@ class Spot {
     this.spotFacilities,
     this.goodFor,
     this.duplicateOf,
+    this.duplicateHasPendingChanges = false,
+    this.duplicateChangedFields = const <String>[],
     this.hidden = false,
     this.contributors,
     this.createdFromCreateNative = false,
@@ -170,6 +187,14 @@ class Spot {
           ? List<String>.from(data['goodFor'])
           : null,
       duplicateOf: data['duplicateOf'],
+      duplicateHasPendingChanges: data['duplicateHasPendingChanges'] == true,
+      duplicateChangedFields: data['duplicateChangedFields'] is List
+          ? (data['duplicateChangedFields'] as List)
+                .whereType<String>()
+                .map((item) => item.trim())
+                .where((item) => item.isNotEmpty)
+                .toList()
+          : const <String>[],
       hidden: data['hidden'] == true,
       contributors: data['contributors'] != null
           ? (data['contributors'] as List)
@@ -279,6 +304,14 @@ class Spot {
           ? List<String>.from(data['goodFor'])
           : null,
       duplicateOf: data['duplicateOf'] as String?,
+      duplicateHasPendingChanges: data['duplicateHasPendingChanges'] == true,
+      duplicateChangedFields: data['duplicateChangedFields'] is List
+          ? (data['duplicateChangedFields'] as List)
+                .whereType<String>()
+                .map((item) => item.trim())
+                .where((item) => item.isNotEmpty)
+                .toList()
+          : const <String>[],
       hidden: data['hidden'] == true,
       contributors: data['contributors'] is List
           ? (data['contributors'] as List)
@@ -358,6 +391,8 @@ class Spot {
     Map<String, String>? spotFacilities,
     List<String>? goodFor,
     Object? duplicateOf = _unset,
+    bool? duplicateHasPendingChanges,
+    List<String>? duplicateChangedFields,
     bool? hidden,
     List<Map<String, String>>? contributors,
     bool? createdFromCreateNative,
@@ -397,6 +432,10 @@ class Spot {
       duplicateOf: identical(duplicateOf, _unset)
           ? this.duplicateOf
           : duplicateOf as String?,
+      duplicateHasPendingChanges:
+          duplicateHasPendingChanges ?? this.duplicateHasPendingChanges,
+      duplicateChangedFields:
+          duplicateChangedFields ?? this.duplicateChangedFields,
       hidden: hidden ?? this.hidden,
       contributors: contributors ?? this.contributors,
       createdFromCreateNative:

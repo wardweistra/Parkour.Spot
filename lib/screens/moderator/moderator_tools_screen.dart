@@ -7,6 +7,7 @@ import '../../services/auth_service.dart';
 import '../../services/admin_events_service.dart';
 import '../../services/event_report_service.dart';
 import '../../services/spot_report_service.dart';
+import '../../services/spot_service.dart';
 import '../../widgets/page_scaffold.dart';
 import '../admin/admin_tool_widgets.dart';
 
@@ -147,6 +148,26 @@ class ModeratorToolsScreen extends StatelessWidget {
                 subtitle:
                     'Find potential duplicate spots within 50m from different sources',
                 onTap: () => context.go('/moderator/duplicate-spots'),
+              ),
+              StreamBuilder<int>(
+                initialData: context
+                    .read<SpotService>()
+                    .duplicatePendingChangesCount,
+                stream: context
+                    .read<SpotService>()
+                    .watchDuplicatePendingChangesCount(),
+                builder: (context, snapshot) {
+                  final pendingCount = snapshot.data ?? 0;
+                  final l10n = AppLocalizations.of(context)!;
+                  return AdminToolTile(
+                    icon: Icons.copy_all_outlined,
+                    title: l10n.spotDuplicateChangesQueueTitle,
+                    subtitle: l10n.spotDuplicateChangesQueueSubtitle,
+                    badgeCount: pendingCount > 0 ? pendingCount : null,
+                    onTap: () =>
+                        context.go('/moderator/duplicate-spot-updates'),
+                  );
+                },
               ),
             ],
           ),

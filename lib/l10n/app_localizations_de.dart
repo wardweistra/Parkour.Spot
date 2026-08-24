@@ -4007,6 +4007,78 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventDuplicateChangesNoValue => '(leer)';
 
   @override
+  String get spotDuplicateChangesTitle => 'Duplikat aktualisiert';
+
+  @override
+  String spotDuplicateChangesBody(String name) {
+    return 'Dieses Duplikat hat sich geändert, nachdem es als solches markiert wurde. Wähle Werte, die nach „$name“ kopiert werden sollen, oder verwirf sie.';
+  }
+
+  @override
+  String get spotDuplicateChangesReview => 'Änderungen prüfen';
+
+  @override
+  String get spotDuplicateChangesApply => 'Übernehmen';
+
+  @override
+  String get spotDuplicateChangesDismiss => 'Verwerfen';
+
+  @override
+  String get spotDuplicateChangesApplySuccess => 'Original-Spot aktualisiert.';
+
+  @override
+  String get spotDuplicateChangesDismissSuccess =>
+      'Duplikatänderungen verworfen.';
+
+  @override
+  String get spotDuplicateChangesChip => 'Duplikat aktualisiert';
+
+  @override
+  String get spotDuplicateChangesQueueTitle => 'Duplikat-Updates';
+
+  @override
+  String get spotDuplicateChangesQueueSubtitle =>
+      'Duplikate prüfen, die nach der Verknüpfung geändert wurden';
+
+  @override
+  String get spotDuplicateChangesQueueEmpty =>
+      'Keine Duplikat-Spots mit ausstehenden Änderungen';
+
+  @override
+  String get spotDuplicateChangesBannerTitle => 'Duplikat aktualisiert';
+
+  @override
+  String get spotDuplicateChangesBannerBody =>
+      'Felder haben sich geändert, nachdem dieser Spot als Duplikat markiert wurde.';
+
+  @override
+  String get spotDuplicateChangesMenuItem => 'Duplikatänderungen prüfen';
+
+  @override
+  String get spotDuplicateChangesMenuSubtitle =>
+      'Aktualisierte Felder ins Original kopieren oder verwerfen';
+
+  @override
+  String get spotDuplicateChangesFailed =>
+      'Duplikatänderungen konnten nicht aktualisiert werden';
+
+  @override
+  String spotDuplicateChangesPhotosValue(int count) {
+    return '$count Fotos';
+  }
+
+  @override
+  String spotDuplicateChangesYoutubeValue(int count) {
+    return '$count YouTube-Links';
+  }
+
+  @override
+  String get spotDuplicateChangesNoValue => '(leer)';
+
+  @override
+  String get spotDuplicateChangesOpenSpot => 'Spot-Seite öffnen';
+
+  @override
   String get eventDetailRemoveDuplicateConfirmBody =>
       'Duplikatstatus von diesem Event entfernen? Es verweist dann nicht mehr auf ein anderes Event als Original.';
 

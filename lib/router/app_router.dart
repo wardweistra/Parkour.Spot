@@ -33,6 +33,7 @@ import '../screens/moderator/moderator_tools_screen.dart';
 import '../screens/moderator/event_report_queue_screen.dart';
 import '../screens/moderator/moderator_events_review_screen.dart';
 import '../screens/moderator/moderator_duplicate_event_updates_screen.dart';
+import '../screens/moderator/moderator_duplicate_spot_updates_screen.dart';
 import '../screens/moderator/spot_report_queue_screen.dart';
 import '../screens/events/add_event_report_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
@@ -527,6 +528,11 @@ class AppRouter {
           path: '/moderator/duplicate-event-updates',
           builder: (context, state) =>
               const ModeratorDuplicateEventUpdatesScreen(),
+        ),
+        GoRoute(
+          path: '/moderator/duplicate-spot-updates',
+          builder: (context, state) =>
+              const ModeratorDuplicateSpotUpdatesScreen(),
         ),
         GoRoute(
           path: '/moderator/duplicate-spots',

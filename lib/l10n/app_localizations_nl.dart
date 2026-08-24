@@ -3966,6 +3966,78 @@ class AppLocalizationsNl extends AppLocalizations {
   String get eventDuplicateChangesNoValue => '(leeg)';
 
   @override
+  String get spotDuplicateChangesTitle => 'Duplicaat bijgewerkt';
+
+  @override
+  String spotDuplicateChangesBody(String name) {
+    return 'Dit duplicaat is gewijzigd nadat het als zodanig is gemarkeerd. Kies waarden om naar «$name» te kopiëren, of negeer ze.';
+  }
+
+  @override
+  String get spotDuplicateChangesReview => 'Wijzigingen beoordelen';
+
+  @override
+  String get spotDuplicateChangesApply => 'Toepassen';
+
+  @override
+  String get spotDuplicateChangesDismiss => 'Negeren';
+
+  @override
+  String get spotDuplicateChangesApplySuccess => 'Originele spot bijgewerkt.';
+
+  @override
+  String get spotDuplicateChangesDismissSuccess =>
+      'Duplicaatwijzigingen genegeerd.';
+
+  @override
+  String get spotDuplicateChangesChip => 'Duplicaat bijgewerkt';
+
+  @override
+  String get spotDuplicateChangesQueueTitle => 'Duplicaatupdates';
+
+  @override
+  String get spotDuplicateChangesQueueSubtitle =>
+      'Beoordeel duplicaten die na koppeling zijn gewijzigd';
+
+  @override
+  String get spotDuplicateChangesQueueEmpty =>
+      'Geen duplicaatspots met openstaande wijzigingen';
+
+  @override
+  String get spotDuplicateChangesBannerTitle => 'Duplicaat bijgewerkt';
+
+  @override
+  String get spotDuplicateChangesBannerBody =>
+      'Velden zijn gewijzigd nadat deze spot als duplicaat is gemarkeerd.';
+
+  @override
+  String get spotDuplicateChangesMenuItem => 'Duplicaatwijzigingen beoordelen';
+
+  @override
+  String get spotDuplicateChangesMenuSubtitle =>
+      'Kopieer bijgewerkte velden naar het origineel, of negeer ze';
+
+  @override
+  String get spotDuplicateChangesFailed =>
+      'Duplicaatwijzigingen bijwerken mislukt';
+
+  @override
+  String spotDuplicateChangesPhotosValue(int count) {
+    return '$count foto’s';
+  }
+
+  @override
+  String spotDuplicateChangesYoutubeValue(int count) {
+    return '$count YouTube-links';
+  }
+
+  @override
+  String get spotDuplicateChangesNoValue => '(leeg)';
+
+  @override
+  String get spotDuplicateChangesOpenSpot => 'Spotpagina openen';
+
+  @override
   String get eventDetailRemoveDuplicateConfirmBody =>
       'Duplicaatstatus van dit event verwijderen? Het wijst dan niet meer naar een ander event als origineel.';
 

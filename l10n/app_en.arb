@@ -3914,6 +3914,101 @@
   "@eventDuplicateChangesNoValue": {
     "description": "Fallback when a changed duplicate field has no value"
   },
+  "spotDuplicateChangesTitle": "Duplicate updated",
+  "@spotDuplicateChangesTitle": {
+    "description": "Dialog title when a linked duplicate spot changed"
+  },
+  "spotDuplicateChangesBody": "This duplicate changed after it was marked. Choose values to copy to “{name}”, or dismiss.",
+  "@spotDuplicateChangesBody": {
+    "description": "Dialog body for reviewing post-link duplicate spot changes",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "spotDuplicateChangesReview": "Review changes",
+  "@spotDuplicateChangesReview": {
+    "description": "Button to open the duplicate-spot-changes dialog"
+  },
+  "spotDuplicateChangesApply": "Apply",
+  "@spotDuplicateChangesApply": {
+    "description": "Apply selected duplicate field values to the original spot"
+  },
+  "spotDuplicateChangesDismiss": "Dismiss",
+  "@spotDuplicateChangesDismiss": {
+    "description": "Dismiss pending duplicate spot field changes without copying"
+  },
+  "spotDuplicateChangesApplySuccess": "Original spot updated.",
+  "@spotDuplicateChangesApplySuccess": {
+    "description": "Snackbar after applying duplicate spot field changes"
+  },
+  "spotDuplicateChangesDismissSuccess": "Duplicate changes dismissed.",
+  "@spotDuplicateChangesDismissSuccess": {
+    "description": "Snackbar after dismissing duplicate spot field changes"
+  },
+  "spotDuplicateChangesChip": "Duplicate updated",
+  "@spotDuplicateChangesChip": {
+    "description": "Status chip when a duplicate spot has unreviewed field changes"
+  },
+  "spotDuplicateChangesQueueTitle": "Duplicate updates",
+  "@spotDuplicateChangesQueueTitle": {
+    "description": "Moderator queue title for post-link duplicate spot changes"
+  },
+  "spotDuplicateChangesQueueSubtitle": "Review duplicates that changed after they were linked",
+  "@spotDuplicateChangesQueueSubtitle": {
+    "description": "Moderator tools tile subtitle for duplicate spot updates"
+  },
+  "spotDuplicateChangesQueueEmpty": "No duplicate spots with pending changes",
+  "@spotDuplicateChangesQueueEmpty": {
+    "description": "Empty state for the duplicate-spot-updates queue"
+  },
+  "spotDuplicateChangesBannerTitle": "Duplicate updated",
+  "@spotDuplicateChangesBannerTitle": {
+    "description": "Spot detail banner title for pending duplicate changes"
+  },
+  "spotDuplicateChangesBannerBody": "Fields changed after this spot was marked as a duplicate.",
+  "@spotDuplicateChangesBannerBody": {
+    "description": "Spot detail banner body for pending duplicate changes"
+  },
+  "spotDuplicateChangesMenuItem": "Review duplicate changes",
+  "@spotDuplicateChangesMenuItem": {
+    "description": "Staff menu item to review post-link duplicate spot changes"
+  },
+  "spotDuplicateChangesMenuSubtitle": "Copy updated fields to the original, or dismiss",
+  "@spotDuplicateChangesMenuSubtitle": {
+    "description": "Staff menu subtitle for reviewing duplicate spot changes"
+  },
+  "spotDuplicateChangesFailed": "Failed to update duplicate changes",
+  "@spotDuplicateChangesFailed": {
+    "description": "Error snackbar when apply/dismiss of duplicate spot changes fails"
+  },
+  "spotDuplicateChangesPhotosValue": "{count} photos",
+  "@spotDuplicateChangesPhotosValue": {
+    "description": "Formatted photo count in the duplicate changes dialog",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "spotDuplicateChangesYoutubeValue": "{count} YouTube links",
+  "@spotDuplicateChangesYoutubeValue": {
+    "description": "Formatted YouTube count in the duplicate changes dialog",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "spotDuplicateChangesNoValue": "(empty)",
+  "@spotDuplicateChangesNoValue": {
+    "description": "Fallback when a changed duplicate spot field has no value"
+  },
+  "spotDuplicateChangesOpenSpot": "Open spot page",
+  "@spotDuplicateChangesOpenSpot": {
+    "description": "Button on the duplicate-spot-updates queue card to open the spot"
+  },
   "eventDetailRemoveDuplicateConfirmBody": "Remove duplicate status from this event? It will no longer point to another event as its original.",
   "@eventDetailRemoveDuplicateConfirmBody": {
     "description": "Confirm clearing duplicateOf"
