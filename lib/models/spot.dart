@@ -55,6 +55,20 @@ class Spot {
   bool get hasDuplicatePendingChanges =>
       isDuplicate && duplicateHasPendingChanges;
 
+  /// Whether public UI can treat [updatedAt] as a real content change.
+  ///
+  /// Native spots always trust [updatedAt]. Imported spots used to bump it on
+  /// every sync encounter, so it is only shown after a detected source change
+  /// or a later native edit (updatedAt after last seen).
+  bool get hasTrustedUpdatedAt {
+    if (updatedAt == null) return false;
+    final source = spotSource?.trim();
+    if (source == null || source.isEmpty) return true;
+    if (externalSyncLastChangedAt != null) return true;
+    final seen = externalSyncLastSeenAt;
+    return seen != null && updatedAt!.isAfter(seen);
+  }
+
   Spot({
     this.id,
     required this.name,

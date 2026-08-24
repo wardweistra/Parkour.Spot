@@ -691,10 +691,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
     // Check if there will be an updated date part (to determine if we should use commas)
     final bool willHaveUpdatedDate =
-        (_spot.updatedAt != null &&
-            _spot.createdAt != null &&
-            _spot.updatedAt != _spot.createdAt) ||
-        (_spot.updatedAt != null && _spot.createdAt == null);
+        _spot.hasTrustedUpdatedAt &&
+        ((_spot.createdAt != null && _spot.updatedAt != _spot.createdAt) ||
+            _spot.createdAt == null);
 
     // Created by
     if (createdById != null || createdByName != null) {
@@ -851,9 +850,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       }
     }
 
-    // Last updated date (only if different from created date)
+    // Last updated date (only if trusted and different from created date)
     bool hasUpdatedDate = false;
-    if (_spot.updatedAt != null &&
+    if (_spot.hasTrustedUpdatedAt &&
         _spot.createdAt != null &&
         _spot.updatedAt != _spot.createdAt) {
       final updatedDateText = _formatRelativeDate(_spot.updatedAt!, l10n);
@@ -866,8 +865,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         ),
       );
       hasUpdatedDate = true;
-    } else if (_spot.updatedAt != null && _spot.createdAt == null) {
-      // If no created date but there's an updated date
+    } else if (_spot.hasTrustedUpdatedAt && _spot.createdAt == null) {
+      // If no created date but there's a trusted updated date
       final updatedDateText = _formatRelativeDate(_spot.updatedAt!, l10n);
       textSpans.add(
         TextSpan(

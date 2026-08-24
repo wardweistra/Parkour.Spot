@@ -118,5 +118,78 @@ void main() {
       expect(map.containsKey('externalSyncLastSeenAt'), isFalse);
       expect(map.containsKey('externalSyncLastChangedAt'), isFalse);
     });
+
+    test('hasTrustedUpdatedAt is true for native spots', () {
+      final spot = Spot(
+        name: 'Native',
+        description: 'Desc',
+        latitude: 1,
+        longitude: 2,
+        updatedAt: DateTime.utc(2026, 8, 20),
+      );
+      expect(spot.hasTrustedUpdatedAt, isTrue);
+    });
+
+    test(
+      'hasTrustedUpdatedAt is false for imported spots with only inflated updatedAt',
+      () {
+        final spot = Spot(
+          name: 'Imported',
+          description: 'Desc',
+          latitude: 1,
+          longitude: 2,
+          spotSource: 'source-1',
+          updatedAt: DateTime.utc(2026, 8, 24, 10),
+        );
+        expect(spot.hasTrustedUpdatedAt, isFalse);
+      },
+    );
+
+    test('hasTrustedUpdatedAt is true after a detected source change', () {
+      final spot = Spot(
+        name: 'Imported',
+        description: 'Desc',
+        latitude: 1,
+        longitude: 2,
+        spotSource: 'source-1',
+        updatedAt: DateTime.utc(2026, 8, 25, 12),
+        externalSyncLastSeenAt: DateTime.utc(2026, 8, 25, 12),
+        externalSyncLastChangedAt: DateTime.utc(2026, 8, 25, 12),
+      );
+      expect(spot.hasTrustedUpdatedAt, isTrue);
+    });
+
+    test(
+      'hasTrustedUpdatedAt is true after a native edit later than last seen',
+      () {
+        final spot = Spot(
+          name: 'Imported',
+          description: 'Desc',
+          latitude: 1,
+          longitude: 2,
+          spotSource: 'source-1',
+          updatedAt: DateTime.utc(2026, 8, 26, 9),
+          externalSyncLastSeenAt: DateTime.utc(2026, 8, 25, 12),
+        );
+        expect(spot.hasTrustedUpdatedAt, isTrue);
+      },
+    );
+
+    test(
+      'hasTrustedUpdatedAt is false when updatedAt is not after last seen',
+      () {
+        final seenAt = DateTime.utc(2026, 8, 25, 12);
+        final spot = Spot(
+          name: 'Imported',
+          description: 'Desc',
+          latitude: 1,
+          longitude: 2,
+          spotSource: 'source-1',
+          updatedAt: DateTime.utc(2026, 8, 24, 10),
+          externalSyncLastSeenAt: seenAt,
+        );
+        expect(spot.hasTrustedUpdatedAt, isFalse);
+      },
+    );
   });
 }
