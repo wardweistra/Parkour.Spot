@@ -238,6 +238,12 @@ abstract class AppLocalizations {
   /// **'Added by you'**
   String get spotListsHubAddedByYou;
 
+  /// Public profile and list title for another user's added-spots list
+  ///
+  /// In en, this message translates to:
+  /// **'Added by {name}'**
+  String publicProfileAddedByUser(String name);
+
   /// Notifications inbox screen title and Account tab row
   ///
   /// In en, this message translates to:
@@ -4796,6 +4802,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Spots you add to the map show up here'**
   String get spotTrackingAddedEmptyHint;
+
+  /// Error when toggling added-by-you list public/private
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update list visibility'**
+  String get spotTrackingAddedVisibilityUpdateFailed;
 
   /// Tooltip on list save button when list is not saved
   ///

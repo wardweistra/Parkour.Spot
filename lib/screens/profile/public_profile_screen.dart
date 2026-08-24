@@ -16,12 +16,14 @@ import '../../services/snackbar_service.dart';
 import '../../models/user.dart' as app_user;
 import '../../models/spot_list.dart';
 import '../../services/spot_list_service.dart';
+import '../../services/spot_service.dart';
 import '../../widgets/instagram_button.dart';
 import '../../utils/web_meta_utils.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_list_summary_tile.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/spot_list_localization.dart';
+import '../../utils/spots_added_by_user.dart';
 import 'package:flutter/services.dart';
 
 class PublicProfileScreen extends StatefulWidget {
@@ -41,6 +43,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   _lastUserIdOrUsername; // Track the last userIdOrUsername used to create the future
   bool _isUploadingProfilePicture = false;
   final ProfilePictureService _profilePictureService = ProfilePictureService();
+  Future<(List<SpotList>, int)>? _publicListsFuture;
+  String? _publicListsUserId;
+  bool? _publicListsIncludeAdded;
 
   @override
   void didChangeDependencies() {
@@ -81,6 +86,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       widget.userIdOrUsername,
       currentUserId: currentUserId,
     );
+    _publicListsFuture = null;
+    _publicListsUserId = null;
+    _publicListsIncludeAdded = null;
     // Force a rebuild to show the new data
     if (mounted) {
       setState(() {});
@@ -483,7 +491,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           // live on Account).
           _buildPublicSpotListsSection(
             context,
-            profileUserId: user.id,
+            user: user,
             isOwnProfile: isOwnProfile,
           ),
         ],
@@ -491,96 +499,143 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     );
   }
 
+  Future<(List<SpotList>, int)> _publicListsForUser(app_user.User user) {
+    if (_publicListsFuture != null &&
+        _publicListsUserId == user.id &&
+        _publicListsIncludeAdded == user.isAddedSpotsListPublic) {
+      return _publicListsFuture!;
+    }
+    final spotListService = context.read<SpotListService>();
+    final spotService = context.read<SpotService>();
+    _publicListsUserId = user.id;
+    _publicListsIncludeAdded = user.isAddedSpotsListPublic;
+    _publicListsFuture = () async {
+      final lists = await spotListService.getSpotListsByUser(user.id);
+      final addedCount = user.isAddedSpotsListPublic
+          ? await spotService.countSpotsAddedByUser(user.id)
+          : 0;
+      return (lists, addedCount);
+    }();
+    return _publicListsFuture!;
+  }
+
   Widget _buildPublicSpotListsSection(
     BuildContext context, {
-    required String profileUserId,
+    required app_user.User user,
     required bool isOwnProfile,
   }) {
-    return Consumer<SpotListService>(
-      builder: (context, spotListService, _) {
-        return FutureBuilder<List<SpotList>>(
-          future: spotListService.getSpotListsByUser(profileUserId),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Padding(
-                padding: EdgeInsets.only(top: 16),
-                child: Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                ),
-              );
-            }
+    final authService = context.watch<AuthService>();
+    final isAddedPublic = isOwnProfile
+        ? (authService.userProfile?.isAddedSpotsListPublic ??
+              user.isAddedSpotsListPublic)
+        : user.isAddedSpotsListPublic;
+    final userForLists = user.copyWith(isAddedSpotsListPublic: isAddedPublic);
+    return FutureBuilder<(List<SpotList>, int)>(
+      future: _publicListsForUser(userForLists),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.only(top: 16),
+            child: Card(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            ),
+          );
+        }
 
-            if (snapshot.hasError) {
-              return Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      _l10n.spotListsHubCouldNotLoad,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }
-
-            final lists = (snapshot.data ?? [])
-                .where((list) => list.visibility == SpotListVisibility.public)
-                .toList();
-            if (lists.isEmpty && !isOwnProfile) {
-              return const SizedBox.shrink();
-            }
-
-            final theme = Theme.of(context);
-            return Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _l10n.publicProfilePublicSpotLists,
-                              style: theme.textTheme.titleLarge,
-                            ),
-                          ),
-                          if (isOwnProfile)
-                            TextButton(
-                              onPressed: () => context.push('/profile/lists'),
-                              child: Text(_l10n.publicProfileManageLists),
-                            ),
-                        ],
-                      ),
-                      if (lists.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        ...lists.map(
-                          (list) => SpotListSummaryTile(
-                            list: list,
-                            onTap: () {
-                              final id = list.id;
-                              if (id != null) {
-                                context.push('/list/$id');
-                              }
-                            },
-                          ),
-                        ),
-                      ],
-                    ],
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  _l10n.spotListsHubCouldNotLoad,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
                   ),
                 ),
               ),
-            );
-          },
+            ),
+          );
+        }
+
+        final lists = (snapshot.data?.$1 ?? [])
+            .where((list) => list.visibility == SpotListVisibility.public)
+            .toList();
+        if (userForLists.isAddedSpotsListPublic) {
+          final displayName =
+              user.displayName ??
+              user.username ??
+              _l10n.profileDefaultDisplayName;
+          lists.insert(
+            0,
+            buildAddedByUserSpotList(
+              userId: user.id,
+              name: isOwnProfile
+                  ? _l10n.spotListsHubAddedByYou
+                  : _l10n.publicProfileAddedByUser(displayName),
+              spotCount: snapshot.data?.$2 ?? 0,
+            ),
+          );
+        }
+        if (lists.isEmpty && !isOwnProfile) {
+          return const SizedBox.shrink();
+        }
+
+        final theme = Theme.of(context);
+        return Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _l10n.publicProfilePublicSpotLists,
+                          style: theme.textTheme.titleLarge,
+                        ),
+                      ),
+                      if (isOwnProfile)
+                        TextButton(
+                          onPressed: () => context.push('/profile/lists'),
+                          child: Text(_l10n.publicProfileManageLists),
+                        ),
+                    ],
+                  ),
+                  if (lists.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    ...lists.map(
+                      (list) => SpotListSummaryTile(
+                        list: list,
+                        onTap: () {
+                          if (isAddedByUserListId(list.id)) {
+                            final segment =
+                                (user.username != null &&
+                                    user.username!.trim().isNotEmpty)
+                                ? user.username!.trim()
+                                : user.id;
+                            context.push(addedByUserPublicListPath(segment));
+                            return;
+                          }
+                          final id = list.id;
+                          if (id != null) {
+                            context.push('/list/$id');
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
         );
       },
     );

@@ -81,6 +81,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get spotListsHubAddedByYou => 'Añadidos por ti';
 
   @override
+  String publicProfileAddedByUser(String name) {
+    return 'Añadidos por $name';
+  }
+
+  @override
   String get notificationsTitle => 'Notificaciones';
 
   @override
@@ -2865,6 +2870,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get spotTrackingAddedEmptyHint =>
       'Los spots que añades al mapa aparecen aquí';
+
+  @override
+  String get spotTrackingAddedVisibilityUpdateFailed =>
+      'No se pudo actualizar la visibilidad de la lista';
 
   @override
   String get spotListSaveTooltipSaveList => 'Guardar lista';

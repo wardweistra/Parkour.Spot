@@ -1,15 +1,16 @@
 import '../models/spot.dart';
+import '../models/spot_list.dart';
 
-/// Built-in private lists on the Spot lists hub (not shareable SpotList docs).
+/// Built-in lists on the Spot lists hub. Added-by-you can be made public.
 enum SpotTrackingListType { wantToVisit, visited, added }
 
-/// Whether [spot] belongs on the signed-in user's private added-spots list.
+/// Whether [spot] belongs on the signed-in user's added-spots list.
 bool isSpotAddedByUser(Spot spot, String userId) {
   final createdBy = spot.createdBy?.trim() ?? '';
   return userId.isNotEmpty && createdBy == userId;
 }
 
-/// Newest first, then name. Used for the private "added by you" list.
+/// Newest first, then name. Used for the "added by you" list.
 List<Spot> sortSpotsAddedByUser(Iterable<Spot> spots) {
   final sorted = List<Spot>.from(spots);
   sorted.sort((a, b) {
@@ -22,7 +23,7 @@ List<Spot> sortSpotsAddedByUser(Iterable<Spot> spots) {
   return sorted;
 }
 
-/// Profile route for a built-in tracking list. These lists are private.
+/// Owner route for a built-in tracking list.
 String spotTrackingListRoutePath(SpotTrackingListType type) {
   switch (type) {
     case SpotTrackingListType.wantToVisit:
@@ -32,4 +33,33 @@ String spotTrackingListRoutePath(SpotTrackingListType type) {
     case SpotTrackingListType.added:
       return '/profile/added';
   }
+}
+
+/// Public URL for another user's added-spots list.
+String addedByUserPublicListPath(String userIdOrUsername) {
+  return '/user/$userIdOrUsername/added';
+}
+
+String addedByUserListId(String userId) => 'added-by:$userId';
+
+bool isAddedByUserListId(String? id) {
+  return id != null && id.startsWith('added-by:');
+}
+
+/// Synthetic public list used on profiles when the owner opts in.
+SpotList buildAddedByUserSpotList({
+  required String userId,
+  required String name,
+  required int spotCount,
+}) {
+  final epoch = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+  return SpotList(
+    id: addedByUserListId(userId),
+    name: name,
+    spotIds: List<String>.generate(spotCount, (index) => '$index'),
+    visibility: SpotListVisibility.public,
+    createdBy: userId,
+    createdAt: epoch,
+    updatedAt: epoch,
+  );
 }

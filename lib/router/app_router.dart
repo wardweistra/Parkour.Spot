@@ -427,6 +427,19 @@ class AppRouter {
             final userIdOrUsername = state.pathParameters['userIdOrUsername']!;
             return PublicProfileScreen(userIdOrUsername: userIdOrUsername);
           },
+          routes: [
+            GoRoute(
+              path: 'added',
+              builder: (context, state) {
+                final userIdOrUsername =
+                    state.pathParameters['userIdOrUsername']!;
+                return SpotTrackingListScreen(
+                  type: SpotTrackingListType.added,
+                  profileUserIdOrUsername: userIdOrUsername,
+                );
+              },
+            ),
+          ],
         ),
         // Admin routes (screen will self-guard on admin status)
         GoRoute(

@@ -88,6 +88,15 @@
   "@spotListsHubAddedByYou": {
     "description": "Private list of spots the signed-in user added"
   },
+  "publicProfileAddedByUser": "Added by {name}",
+  "@publicProfileAddedByUser": {
+    "description": "Public profile and list title for another user's added-spots list",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "notificationsTitle": "Notifications",
   "@notificationsTitle": {
     "description": "Notifications inbox screen title and Account tab row"
@@ -2544,6 +2553,10 @@
   "spotTrackingAddedEmptyHint": "Spots you add to the map show up here",
   "@spotTrackingAddedEmptyHint": {
     "description": "Empty state hint for the private added-by-you spot list"
+  },
+  "spotTrackingAddedVisibilityUpdateFailed": "Could not update list visibility",
+  "@spotTrackingAddedVisibilityUpdateFailed": {
+    "description": "Error when toggling added-by-you list public/private"
   },
   "spotListSaveTooltipSaveList": "Save list",
   "@spotListSaveTooltipSaveList": {

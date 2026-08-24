@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parkour_spot/models/spot.dart';
+import 'package:parkour_spot/models/spot_list.dart';
 import 'package:parkour_spot/utils/spots_added_by_user.dart';
 
 Spot buildSpot({required String name, String? createdBy, DateTime? createdAt}) {
@@ -73,7 +74,7 @@ void main() {
   });
 
   group('spotTrackingListRoutePath', () {
-    test('keeps built-in lists on private profile routes', () {
+    test('keeps owner tracking lists on private profile routes', () {
       expect(
         spotTrackingListRoutePath(SpotTrackingListType.wantToVisit),
         '/profile/want-to-visit',
@@ -86,6 +87,24 @@ void main() {
         spotTrackingListRoutePath(SpotTrackingListType.added),
         '/profile/added',
       );
+    });
+  });
+
+  group('added-by-you public list', () {
+    test('builds a public synthetic list as the first profile entry', () {
+      final list = buildAddedByUserSpotList(
+        userId: 'user-1',
+        name: 'Added by you',
+        spotCount: 4,
+      );
+
+      expect(list.id, 'added-by:user-1');
+      expect(isAddedByUserListId(list.id), isTrue);
+      expect(list.visibility, SpotListVisibility.public);
+      expect(list.spotCount, 4);
+      expect(list.createdBy, 'user-1');
+      expect(addedByUserPublicListPath('hank'), '/user/hank/added');
+      expect(isAddedByUserListId('list-1'), isFalse);
     });
   });
 }
