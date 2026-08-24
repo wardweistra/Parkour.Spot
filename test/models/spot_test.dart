@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parkour_spot/models/spot.dart';
 
@@ -76,6 +77,46 @@ void main() {
         duplicateHasPendingChanges: true,
       );
       expect(spot.hasDuplicatePendingChanges, isFalse);
+    });
+  });
+
+  group('Spot external sync timestamps', () {
+    test('fromMap parses last-seen and last-changed', () {
+      final seenAt = DateTime.utc(2026, 8, 24, 10, 0);
+      final changedAt = DateTime.utc(2026, 8, 20, 9, 0);
+      final spot = Spot.fromMap({
+        'name': 'Imported rails',
+        'description': 'Desc',
+        'latitude': 1.0,
+        'longitude': 2.0,
+        'externalSyncLastSeenAt': Timestamp.fromDate(seenAt),
+        'externalSyncLastChangedAt': Timestamp.fromDate(changedAt),
+      });
+      expect(spot.externalSyncLastSeenAt?.toUtc(), seenAt);
+      expect(spot.externalSyncLastChangedAt?.toUtc(), changedAt);
+    });
+
+    test('toFirestore includes sync timestamps when set', () {
+      final seenAt = DateTime.utc(2026, 8, 24, 10, 0);
+      final changedAt = DateTime.utc(2026, 8, 20, 9, 0);
+      final spot = Spot(
+        name: 'Imported rails',
+        description: 'Desc',
+        latitude: 1,
+        longitude: 2,
+        externalSyncLastSeenAt: seenAt,
+        externalSyncLastChangedAt: changedAt,
+      );
+      final map = spot.toFirestore();
+      expect(map['externalSyncLastSeenAt'], seenAt);
+      expect(map['externalSyncLastChangedAt'], changedAt);
+    });
+
+    test('toFirestore omits sync timestamps when unset', () {
+      final spot = buildSpot();
+      final map = spot.toFirestore();
+      expect(map.containsKey('externalSyncLastSeenAt'), isFalse);
+      expect(map.containsKey('externalSyncLastChangedAt'), isFalse);
     });
   });
 }

@@ -14,10 +14,7 @@ class SpotManagementScreen extends StatefulWidget {
   State<SpotManagementScreen> createState() => _SpotManagementScreenState();
 }
 
-enum SearchMode {
-  lastUpdatedBefore,
-  removedSpots,
-}
+enum SearchMode { lastUpdatedBefore, removedSpots }
 
 class _SpotManagementScreenState extends State<SpotManagementScreen> {
   String? _selectedSourceId;
@@ -37,12 +34,16 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
   }
 
   Future<void> _loadSyncSources() async {
-    final syncSourceService = Provider.of<SyncSourceService>(context, listen: false);
+    final syncSourceService = Provider.of<SyncSourceService>(
+      context,
+      listen: false,
+    );
     await syncSourceService.fetchSyncSources(includeInactive: true);
   }
 
   Future<void> _searchSpots() async {
-    if (_searchMode == SearchMode.lastUpdatedBefore && _selectedTimestamp == null) {
+    if (_searchMode == SearchMode.lastUpdatedBefore &&
+        _selectedTimestamp == null) {
       setState(() {
         _error = 'Please select a timestamp';
       });
@@ -59,7 +60,7 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
     try {
       final spotService = Provider.of<SpotService>(context, listen: false);
       List<Spot> spots;
-      
+
       if (_searchMode == SearchMode.removedSpots) {
         // Search for removed spots
         // If source is selected, use it; otherwise search all sources (null)
@@ -71,7 +72,7 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
           _selectedTimestamp!,
         );
       }
-      
+
       setState(() {
         _spots = spots;
         _isLoading = false;
@@ -96,7 +97,9 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Selected Spots'),
-        content: Text('Are you sure you want to delete ${_selectedSpotIds.length} selected spots? This action cannot be undone.'),
+        content: Text(
+          'Are you sure you want to delete ${_selectedSpotIds.length} selected spots? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -142,7 +145,9 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Deleted $deletedCount spots${failedCount > 0 ? ', $failedCount failed' : ''}'),
+          content: Text(
+            'Deleted $deletedCount spots${failedCount > 0 ? ', $failedCount failed' : ''}',
+          ),
           backgroundColor: failedCount > 0 ? Colors.orange : Colors.green,
         ),
       );
@@ -171,7 +176,9 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
   void _selectAllSpots() {
     setState(() {
       _selectedSpotIds.clear();
-      _selectedSpotIds.addAll(_spots.map((spot) => spot.id!).whereType<String>());
+      _selectedSpotIds.addAll(
+        _spots.map((spot) => spot.id!).whereType<String>(),
+      );
     });
   }
 
@@ -187,9 +194,7 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
     if (!isAdmin) {
       return Scaffold(
         appBar: AppBar(title: const Text('Spot management')),
-        body: const Center(
-          child: Text('Administrator access required'),
-        ),
+        body: const Center(child: Text('Administrator access required')),
       );
     }
 
@@ -225,20 +230,14 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Search Spots',
-                    style: TextStyle(fontSize: 18),
-                  ),
+                  const Text('Search Spots', style: TextStyle(fontSize: 18)),
                   const SizedBox(height: 16),
-                  
+
                   // Search mode selection
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Search Mode',
-                        style: TextStyle(fontSize: 14),
-                      ),
+                      const Text('Search Mode', style: TextStyle(fontSize: 14)),
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -276,16 +275,17 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Source selection
                   Consumer<SyncSourceService>(
                     builder: (context, syncSourceService, child) {
                       // Sort sources alphabetically by name
-                      final sortedSources = List<SyncSource>.from(syncSourceService.sources)
-                        ..sort((a, b) => a.name.compareTo(b.name));
-                      
+                      final sortedSources = List<SyncSource>.from(
+                        syncSourceService.sources,
+                      )..sort((a, b) => a.name.compareTo(b.name));
+
                       return DropdownButtonFormField<String?>(
                         initialValue: _selectedSourceId,
                         decoration: const InputDecoration(
@@ -297,10 +297,12 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                             value: null,
                             child: Text('Native Spots (No Source)'),
                           ),
-                          ...sortedSources.map((source) => DropdownMenuItem<String?>(
-                            value: source.id,
-                            child: Text(source.name),
-                          )),
+                          ...sortedSources.map(
+                            (source) => DropdownMenuItem<String?>(
+                              value: source.id,
+                              child: Text(source.name),
+                            ),
+                          ),
                         ],
                         onChanged: (value) {
                           setState(() {
@@ -310,9 +312,9 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                       );
                     },
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Timestamp selection (only shown for lastUpdatedBefore mode)
                   if (_searchMode == SearchMode.lastUpdatedBefore)
                     InkWell(
@@ -334,7 +336,8 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                           labelText: 'Last Updated Before',
                           border: OutlineInputBorder(),
                           suffixIcon: Icon(Icons.calendar_today),
-                          helperText: 'Find spots last updated before this date',
+                          helperText:
+                              'Find spots last updated before this date',
                         ),
                         child: Text(
                           _selectedTimestamp != null
@@ -343,7 +346,7 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                         ),
                       ),
                     ),
-                  
+
                   // Info text for removed spots mode
                   if (_searchMode == SearchMode.removedSpots)
                     Container(
@@ -355,22 +358,29 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.blue[700],
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               _selectedSourceId == null
                                   ? 'Searching for removed spots from all sources'
                                   : 'Searching for removed spots from selected source',
-                              style: TextStyle(color: Colors.blue[900], fontSize: 12),
+                              style: TextStyle(
+                                color: Colors.blue[900],
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Search button
                   SizedBox(
                     width: double.infinity,
@@ -389,11 +399,9 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
               ),
             ),
           ),
-          
+
           // Results section
-          Expanded(
-            child: _buildResultsSection(),
-          ),
+          Expanded(child: _buildResultsSection()),
         ],
       ),
     );
@@ -427,12 +435,12 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
     }
 
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
-    if (_spots.isEmpty && _searchMode == SearchMode.lastUpdatedBefore && _selectedTimestamp != null) {
+    if (_spots.isEmpty &&
+        _searchMode == SearchMode.lastUpdatedBefore &&
+        _selectedTimestamp != null) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -490,27 +498,25 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
           color: Colors.grey[100],
           child: Row(
             children: [
-              Expanded(
-                child: Text(
-                  'Found ${_spots.length} spots',
-                ),
-              ),
+              Expanded(child: Text('Found ${_spots.length} spots')),
               if (_spots.isNotEmpty) ...[
                 TextButton(
-                  onPressed: _selectedSpotIds.length == _spots.length ? _clearSelection : _selectAllSpots,
+                  onPressed: _selectedSpotIds.length == _spots.length
+                      ? _clearSelection
+                      : _selectAllSpots,
                   child: Text(
-                    _selectedSpotIds.length == _spots.length ? 'Clear All' : 'Select All',
+                    _selectedSpotIds.length == _spots.length
+                        ? 'Clear All'
+                        : 'Select All',
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  '${_selectedSpotIds.length} selected',
-                ),
+                Text('${_selectedSpotIds.length} selected'),
               ],
             ],
           ),
         ),
-        
+
         // Spots list
         Expanded(
           child: ListView.builder(
@@ -518,7 +524,7 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
             itemBuilder: (context, index) {
               final spot = _spots[index];
               final isSelected = _selectedSpotIds.contains(spot.id);
-              
+
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: ListTile(
@@ -530,9 +536,7 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                       }
                     },
                   ),
-                  title: Text(
-                    spot.name,
-                  ),
+                  title: Text(spot.name),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -545,12 +549,20 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                          Icon(
+                            Icons.location_on,
+                            size: 16,
+                            color: Colors.grey[600],
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              spot.address ?? '${spot.latitude.toStringAsFixed(4)}, ${spot.longitude.toStringAsFixed(4)}',
-                              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                              spot.address ??
+                                  '${spot.latitude.toStringAsFixed(4)}, ${spot.longitude.toStringAsFixed(4)}',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         ],
@@ -559,24 +571,50 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Icon(Icons.update, size: 16, color: Colors.grey[600]),
+                            Icon(
+                              Icons.update,
+                              size: 16,
+                              color: Colors.grey[600],
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               'Last updated: ${spot.updatedAt!.day}/${spot.updatedAt!.month}/${spot.updatedAt!.year}',
-                              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                              ),
                             ),
                           ],
                         ),
                       ],
-                      if (spot.spotSourceRemoved && spot.spotSourceRemovedAt != null) ...[
+                      if (spot.externalSyncLastSeenAt != null ||
+                          spot.externalSyncLastChangedAt != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          _syncMetaLine(spot),
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                      if (spot.spotSourceRemoved &&
+                          spot.spotSourceRemovedAt != null) ...[
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Icon(Icons.remove_circle_outline, size: 16, color: Colors.red[600]),
+                            Icon(
+                              Icons.remove_circle_outline,
+                              size: 16,
+                              color: Colors.red[600],
+                            ),
                             const SizedBox(width: 4),
                             Text(
                               'Removed: ${spot.spotSourceRemovedAt!.day}/${spot.spotSourceRemovedAt!.month}/${spot.spotSourceRemovedAt!.year}',
-                              style: TextStyle(color: Colors.red[600], fontSize: 12),
+                              style: TextStyle(
+                                color: Colors.red[600],
+                                fontSize: 12,
+                              ),
                             ),
                           ],
                         ),
@@ -592,11 +630,12 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                         tooltip: 'View spot',
                         onPressed: spot.id != null
                             ? () {
-                                final navigationUrl = UrlService.generateNavigationUrl(
-                                  spot.id!,
-                                  countryCode: spot.countryCode,
-                                  city: spot.city,
-                                );
+                                final navigationUrl =
+                                    UrlService.generateNavigationUrl(
+                                      spot.id!,
+                                      countryCode: spot.countryCode,
+                                      city: spot.city,
+                                    );
                                 context.push(navigationUrl);
                               }
                             : null,
@@ -615,7 +654,9 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                                 if (mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Spot URL copied to clipboard'),
+                                      content: Text(
+                                        'Spot URL copied to clipboard',
+                                      ),
                                       duration: Duration(seconds: 2),
                                     ),
                                   );
@@ -637,7 +678,10 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                                 width: 60,
                                 height: 60,
                                 color: Colors.grey[300],
-                                child: const Icon(Icons.image_not_supported, size: 20),
+                                child: const Icon(
+                                  Icons.image_not_supported,
+                                  size: 20,
+                                ),
                               );
                             },
                           ),
@@ -647,7 +691,10 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                           width: 60,
                           height: 60,
                           color: Colors.grey[300],
-                          child: const Icon(Icons.image_not_supported, size: 20),
+                          child: const Icon(
+                            Icons.image_not_supported,
+                            size: 20,
+                          ),
                         ),
                     ],
                   ),
@@ -658,5 +705,27 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
         ),
       ],
     );
+  }
+
+  String _syncMetaLine(Spot spot) {
+    final parts = <String>[];
+    if (spot.externalSyncLastSeenAt != null) {
+      parts.add('Seen ${_formatUtc(spot.externalSyncLastSeenAt!)}');
+    }
+    if (spot.externalSyncLastChangedAt != null) {
+      parts.add('changed ${_formatUtc(spot.externalSyncLastChangedAt!)}');
+    }
+    return parts.join(' · ');
+  }
+
+  String _formatUtc(DateTime value) {
+    final localizations = MaterialLocalizations.of(context);
+    final utc = value.toUtc();
+    final date = localizations.formatMediumDate(utc);
+    final time = localizations.formatTimeOfDay(
+      TimeOfDay.fromDateTime(utc),
+      alwaysUse24HourFormat: true,
+    );
+    return '$date $time UTC';
   }
 }

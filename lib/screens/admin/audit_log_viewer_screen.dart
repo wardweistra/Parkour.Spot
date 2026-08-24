@@ -807,10 +807,11 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
               final total = statsMap['total'] ?? 0;
               final created = statsMap['created'] ?? 0;
               final updatedCount = statsMap['updated'] ?? 0;
+              final unchangedCount = statsMap['unchanged'] ?? 0;
               final removedCount = statsMap['removed'] ?? 0;
               summaryLines.add('Total spots in feed: $total');
               summaryLines.add(
-                'Created: $created • Updated: $updatedCount • Removed: $removedCount',
+                'Created: $created • Updated: $updatedCount • Unchanged: $unchangedCount • Removed: $removedCount',
               );
             }
             if (addedNames.isNotEmpty) {

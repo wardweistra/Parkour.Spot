@@ -146,7 +146,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                   if (result != null) {
                     final stats = result['totalStats'] as Map<String, dynamic>?;
                     final message = stats != null
-                        ? 'Sync completed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
+                        ? 'Sync completed! Created: ${stats['created']}, Updated: ${stats['updated']}, Unchanged: ${stats['unchanged'] ?? 0}, Geocoded: ${stats['geocoded']}'
                         : 'Sync completed successfully';
                     scaffoldMessenger.showSnackBar(
                       SnackBar(
@@ -548,6 +548,15 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                                     labelStyle: _kSyncChipLabelText,
                                     backgroundColor: Colors.blue.shade100,
                                   ),
+                                if (s.lastSyncStats!['unchanged'] != null)
+                                  Chip(
+                                    label: Text(
+                                      'Unchanged: ${_formatStatInt(s.lastSyncStats!['unchanged'])}',
+                                      style: _kSyncChipLabelText,
+                                    ),
+                                    labelStyle: _kSyncChipLabelText,
+                                    backgroundColor: Colors.grey.shade200,
+                                  ),
                                 if (s.lastSyncStats!['removed'] != null)
                                   Chip(
                                     label: Text(
@@ -721,7 +730,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                                                   result['stats']
                                                       as Map<String, dynamic>?;
                                               final message = stats != null
-                                                  ? '${s.name} sync resumed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
+                                                  ? '${s.name} sync resumed! Created: ${stats['created']}, Updated: ${stats['updated']}, Unchanged: ${stats['unchanged'] ?? 0}, Geocoded: ${stats['geocoded']}'
                                                   : result['message'] ??
                                                         '${s.name} sync resumed successfully';
                                               scaffoldMessenger.showSnackBar(
@@ -778,7 +787,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                                             result['stats']
                                                 as Map<String, dynamic>?;
                                         final message = stats != null
-                                            ? '${s.name} sync completed! Created: ${stats['created']}, Updated: ${stats['updated']}, Geocoded: ${stats['geocoded']}'
+                                            ? '${s.name} sync completed! Created: ${stats['created']}, Updated: ${stats['updated']}, Unchanged: ${stats['unchanged'] ?? 0}, Geocoded: ${stats['geocoded']}'
                                             : '${s.name} sync completed successfully';
                                         scaffoldMessenger.showSnackBar(
                                           SnackBar(

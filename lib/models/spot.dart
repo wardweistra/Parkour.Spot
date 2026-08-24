@@ -17,6 +17,8 @@ class Spot {
   final String? createdByName;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final DateTime? externalSyncLastSeenAt;
+  final DateTime? externalSyncLastChangedAt;
   final String? spotSource;
   final String? spotSourceName;
   final bool spotSourceRemoved;
@@ -69,6 +71,8 @@ class Spot {
     this.createdByName,
     this.createdAt,
     this.updatedAt,
+    this.externalSyncLastSeenAt,
+    this.externalSyncLastChangedAt,
     this.spotSource,
     this.spotSourceName,
     this.spotSourceRemoved = false,
@@ -160,6 +164,12 @@ class Spot {
       createdByName: data['createdByName'],
       createdAt: data['createdAt']?.toDate(),
       updatedAt: data['updatedAt']?.toDate(),
+      externalSyncLastSeenAt: data['externalSyncLastSeenAt'] is Timestamp
+          ? (data['externalSyncLastSeenAt'] as Timestamp).toDate()
+          : null,
+      externalSyncLastChangedAt: data['externalSyncLastChangedAt'] is Timestamp
+          ? (data['externalSyncLastChangedAt'] as Timestamp).toDate()
+          : null,
       spotSource: data['spotSource'],
       spotSourceName: data['spotSourceName'],
       spotSourceRemoved: data['spotSourceRemoved'] == true,
@@ -283,6 +293,8 @@ class Spot {
       createdByName: data['createdByName'] as String?,
       createdAt: parseDate(data['createdAt']),
       updatedAt: parseDate(data['updatedAt']),
+      externalSyncLastSeenAt: parseDate(data['externalSyncLastSeenAt']),
+      externalSyncLastChangedAt: parseDate(data['externalSyncLastChangedAt']),
       spotSource: data['spotSource'] as String?,
       spotSourceName: data['spotSourceName'] as String?,
       spotSourceRemoved: data['spotSourceRemoved'] == true,
@@ -342,6 +354,10 @@ class Spot {
       'createdByName': createdByName,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      if (externalSyncLastSeenAt != null)
+        'externalSyncLastSeenAt': externalSyncLastSeenAt,
+      if (externalSyncLastChangedAt != null)
+        'externalSyncLastChangedAt': externalSyncLastChangedAt,
       'spotSource': spotSource,
       'spotSourceName': spotSourceName,
       'spotSourceRemoved': spotSourceRemoved,
@@ -378,6 +394,8 @@ class Spot {
     String? createdByName,
     DateTime? createdAt,
     DateTime? updatedAt,
+    Object? externalSyncLastSeenAt = _unset,
+    Object? externalSyncLastChangedAt = _unset,
     String? spotSource,
     String? spotSourceName,
     bool? spotSourceRemoved,
@@ -415,6 +433,12 @@ class Spot {
       createdByName: createdByName ?? this.createdByName,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      externalSyncLastSeenAt: identical(externalSyncLastSeenAt, _unset)
+          ? this.externalSyncLastSeenAt
+          : externalSyncLastSeenAt as DateTime?,
+      externalSyncLastChangedAt: identical(externalSyncLastChangedAt, _unset)
+          ? this.externalSyncLastChangedAt
+          : externalSyncLastChangedAt as DateTime?,
       spotSource: spotSource ?? this.spotSource,
       spotSourceName: spotSourceName ?? this.spotSourceName,
       spotSourceRemoved: spotSourceRemoved ?? this.spotSourceRemoved,

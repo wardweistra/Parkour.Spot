@@ -115,6 +115,7 @@ const {
   detectImportFormat,
   generateImageHash,
 } = require("./lib/import-helpers");
+const {hasImportedSpotContentChanges} = require("./lib/spot-sync");
 const {shouldRunSync} = require("./lib/sync-helpers");
 const {
   normalizeFolderList,
@@ -2759,6 +2760,7 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
 
   let created = 0;
   let updated = 0;
+  let unchanged = 0;
   let geocoded = 0;
   let geocodingFailed = 0;
   let removed = 0;
@@ -2837,6 +2839,7 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
           total: placemarks.length,
           created,
           updated,
+          unchanged,
           removed,
           skipped,
           geocoded,
@@ -3026,6 +3029,8 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
       spotSourceName: source.name,
       spotSourceRemoved: false,
       updatedAt: FieldValue.serverTimestamp(),
+      externalSyncLastSeenAt: FieldValue.serverTimestamp(),
+      externalSyncLastChangedAt: FieldValue.serverTimestamp(),
     };
 
     // Optionally record folder name on spot if configured and available
@@ -3168,16 +3173,26 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
       // Remove spotSourceRemovedAt field if it exists (only valid in update operations)
       spotData.spotSourceRemovedAt = FieldValue.delete();
 
-      await existingSpot.ref.update(cleanUndefinedValues(spotData));
       processedSpotIds.add(existingSpot.id);
-      updatedSpotSummaries.push({
-        id: existingSpot.id,
-        name: spotData.name,
-      });
-      updated++;
-      console.log(
-          `Updated existing spot: ${name} from source: ${source.name} with ${imageResult.imageUrls.length} images (preserved rating: ${existingData.averageRating || 0}, count: ${existingData.ratingCount || 0})`,
-      );
+      if (hasImportedSpotContentChanges(existingData, spotData)) {
+        await existingSpot.ref.update(cleanUndefinedValues(spotData));
+        updatedSpotSummaries.push({
+          id: existingSpot.id,
+          name: spotData.name,
+        });
+        updated++;
+        console.log(
+            `Updated existing spot: ${name} from source: ${source.name} with ${imageResult.imageUrls.length} images (preserved rating: ${existingData.averageRating || 0}, count: ${existingData.ratingCount || 0})`,
+        );
+      } else {
+        await existingSpot.ref.update({
+          externalSyncLastSeenAt: FieldValue.serverTimestamp(),
+        });
+        unchanged++;
+        console.log(
+            `Unchanged existing spot: ${name} from source: ${source.name}`,
+        );
+      }
     }
 
     // Collect folder name from successfully processed spot if recordFolderName is enabled
@@ -3258,6 +3273,7 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
     total: placemarks.length,
     created,
     updated,
+    unchanged,
     removed,
     skipped,
     geocoded,
@@ -3676,6 +3692,7 @@ exports.syncAllSources = onCall(
         const results = [];
         let totalCreated = 0;
         let totalUpdated = 0;
+        let totalUnchanged = 0;
         let totalSkipped = 0;
         let totalGeocoded = 0;
         let totalGeocodingFailed = 0;
@@ -3699,6 +3716,7 @@ exports.syncAllSources = onCall(
             results.push(sourceResult);
             totalCreated += result.stats.created;
             totalUpdated += result.stats.updated;
+            totalUnchanged += result.stats.unchanged || 0;
             totalSkipped += result.stats.skipped;
             totalGeocoded += result.stats.geocoded;
             totalGeocodingFailed += result.stats.geocodingFailed;
@@ -3718,6 +3736,7 @@ exports.syncAllSources = onCall(
                 total: 0,
                 created: 0,
                 updated: 0,
+                unchanged: 0,
                 skipped: 0,
                 geocoded: 0,
                 geocodingFailed: 0,
@@ -3731,9 +3750,10 @@ exports.syncAllSources = onCall(
           success: true,
           message: `Sync completed for ${results.length} sources with geocoding`,
           totalStats: {
-            total: totalCreated + totalUpdated + totalSkipped,
+            total: totalCreated + totalUpdated + totalUnchanged + totalSkipped,
             created: totalCreated,
             updated: totalUpdated,
+            unchanged: totalUnchanged,
             skipped: totalSkipped,
             geocoded: totalGeocoded,
             geocodingFailed: totalGeocodingFailed,
