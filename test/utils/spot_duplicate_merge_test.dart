@@ -109,6 +109,8 @@ void main() {
         longitude: 2,
         address: 'Old St',
         spotAccess: 'public',
+        spotFeatures: ['rails'],
+        goodFor: ['beginners'],
       );
       final duplicate = _spot(
         name: 'Duplicate Name',
@@ -119,9 +121,9 @@ void main() {
         city: 'Brussels',
         countryCode: 'BE',
         spotAccess: 'restricted',
-        spotFeatures: ['walls'],
+        spotFeatures: ['rails', 'walls'],
         spotFacilities: {'water': 'yes'},
-        goodFor: ['balance'],
+        goodFor: ['beginners', 'balance'],
       );
 
       final updates = buildSpotDuplicateMergeUpdates(
@@ -141,9 +143,47 @@ void main() {
       expect(updates['city'], 'Brussels');
       expect(updates['countryCode'], 'BE');
       expect(updates['spotAccess'], 'restricted');
-      expect(updates['spotFeatures'], ['walls']);
+      expect(updates['spotFeatures'], ['rails', 'walls']);
       expect(updates['spotFacilities'], {'water': 'yes'});
-      expect(updates['goodFor'], ['balance']);
+      expect(updates['goodFor'], ['beginners', 'balance']);
+    });
+
+    test(
+      'unions goodFor and spotFeatures without dropping original values',
+      () {
+        final original = _spot(spotFeatures: ['walls'], goodFor: ['beginners']);
+        final duplicate = _spot(
+          spotFeatures: ['walls', 'rails'],
+          goodFor: ['balance'],
+        );
+
+        final updates = buildSpotDuplicateMergeUpdates(
+          original: original,
+          duplicate: duplicate,
+          overwriteSpotAttributes: true,
+        );
+
+        expect(updates['spotFeatures'], ['walls', 'rails']);
+        expect(updates['goodFor'], ['beginners', 'balance']);
+        expect(updates.containsKey('spotAccess'), isFalse);
+        expect(updates.containsKey('spotFacilities'), isFalse);
+      },
+    );
+
+    test('does not update goodFor or features when all already present', () {
+      final original = _spot(
+        spotFeatures: ['walls', 'rails'],
+        goodFor: ['beginners', 'balance'],
+      );
+      final duplicate = _spot(spotFeatures: ['walls'], goodFor: ['beginners']);
+
+      final updates = buildSpotDuplicateMergeUpdates(
+        original: original,
+        duplicate: duplicate,
+        overwriteSpotAttributes: true,
+      );
+
+      expect(updates, isEmpty);
     });
 
     test('skips overwrite fields when duplicate lacks values', () {

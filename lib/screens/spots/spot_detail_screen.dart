@@ -6584,9 +6584,9 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final hasTransferOptions = widget.hasPhotos || widget.hasYoutubeLinks;
-    final hasOverwriteOptions =
-        _hasName || _hasDescription || _hasLocation || _hasSpotAttributes;
+    final hasTransferOptions =
+        widget.hasPhotos || widget.hasYoutubeLinks || _hasSpotAttributes;
+    final hasOverwriteOptions = _hasName || _hasDescription || _hasLocation;
 
     return AlertDialog(
       title: Text(l10n.spotDetailMarkDuplicateTitle),
@@ -6628,6 +6628,18 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
                     contentPadding: EdgeInsets.zero,
                     controlAffinity: ListTileControlAffinity.leading,
                   ),
+                if (_hasSpotAttributes)
+                  CheckboxListTile(
+                    title: Text(l10n.spotDetailMarkDuplicateSpotAttributes),
+                    value: _overwriteSpotAttributes,
+                    onChanged: (value) {
+                      setState(() {
+                        _overwriteSpotAttributes = value ?? false;
+                      });
+                    },
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
               ],
               if (hasOverwriteOptions) ...[
                 if (hasTransferOptions) const SizedBox(height: 16),
@@ -6664,18 +6676,6 @@ class _DuplicateTransferDialogState extends State<_DuplicateTransferDialog> {
                     onChanged: (value) {
                       setState(() {
                         _overwriteLocation = value ?? false;
-                      });
-                    },
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                  ),
-                if (_hasSpotAttributes)
-                  CheckboxListTile(
-                    title: Text(l10n.spotDetailMarkDuplicateSpotAttributes),
-                    value: _overwriteSpotAttributes,
-                    onChanged: (value) {
-                      setState(() {
-                        _overwriteSpotAttributes = value ?? false;
                       });
                     },
                     contentPadding: EdgeInsets.zero,

@@ -82,14 +82,32 @@ Map<String, dynamic> buildSpotDuplicateMergeUpdates({
       updates['spotAccess'] = duplicate.spotAccess;
     }
     if (duplicate.spotFeatures != null && duplicate.spotFeatures!.isNotEmpty) {
-      updates['spotFeatures'] = duplicate.spotFeatures;
+      final existingFeatures = List<String>.from(original.spotFeatures ?? []);
+      final newFeatures = duplicate.spotFeatures!
+          .where(
+            (value) =>
+                value.trim().isNotEmpty && !existingFeatures.contains(value),
+          )
+          .toList();
+      if (newFeatures.isNotEmpty) {
+        updates['spotFeatures'] = [...existingFeatures, ...newFeatures];
+      }
     }
     if (duplicate.spotFacilities != null &&
         duplicate.spotFacilities!.isNotEmpty) {
       updates['spotFacilities'] = duplicate.spotFacilities;
     }
     if (duplicate.goodFor != null && duplicate.goodFor!.isNotEmpty) {
-      updates['goodFor'] = duplicate.goodFor;
+      final existingGoodFor = List<String>.from(original.goodFor ?? []);
+      final newGoodFor = duplicate.goodFor!
+          .where(
+            (value) =>
+                value.trim().isNotEmpty && !existingGoodFor.contains(value),
+          )
+          .toList();
+      if (newGoodFor.isNotEmpty) {
+        updates['goodFor'] = [...existingGoodFor, ...newGoodFor];
+      }
     }
   }
 
