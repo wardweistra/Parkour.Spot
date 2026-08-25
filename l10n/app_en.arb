@@ -3774,11 +3774,11 @@
   "@eventDetailMarkDuplicateUseButton": {
     "description": "Confirm picked search result in duplicate dialog"
   },
-  "eventDetailMarkDuplicateSuggestionsHeader": "Events around these dates",
+  "eventDetailMarkDuplicateSuggestionsHeader": "Nearby events around these dates",
   "@eventDetailMarkDuplicateSuggestionsHeader": {
     "description": "Section header in duplicate picker"
   },
-  "eventDetailMarkDuplicateNoSuggestions": "No events found within a week of this event's dates.",
+  "eventDetailMarkDuplicateNoSuggestions": "No nearby events found within a week of this event's dates.",
   "@eventDetailMarkDuplicateNoSuggestions": {
     "description": "Empty suggestions in duplicate picker"
   },
@@ -4111,7 +4111,7 @@
   "@eventDetailFlagDuplicateWhichQuestion": {
     "description": "Dialog question for picking duplicate original event"
   },
-  "eventDetailFlagDuplicateSuggestionsHeader": "Events around these dates",
+  "eventDetailFlagDuplicateSuggestionsHeader": "Nearby events around these dates",
   "@eventDetailFlagDuplicateSuggestionsHeader": {
     "description": "Header for permissive duplicate report date suggestions"
   },

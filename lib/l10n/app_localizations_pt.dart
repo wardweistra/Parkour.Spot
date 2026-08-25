@@ -3879,11 +3879,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get eventDetailMarkDuplicateSuggestionsHeader =>
-      'Eventos nestas datas';
+      'Eventos próximos nestas datas';
 
   @override
   String get eventDetailMarkDuplicateNoSuggestions =>
-      'Nenhum evento encontrado numa semana das datas deste evento.';
+      'Nenhum evento próximo encontrado numa semana das datas deste evento.';
 
   @override
   String get eventDetailDuplicatePickerNativeChip => 'Nativo';
@@ -4146,7 +4146,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get eventDetailFlagDuplicateSuggestionsHeader =>
-      'Eventos nestas datas';
+      'Eventos próximos nestas datas';
 
   @override
   String get eventDetailThanksDuplicateSuggestion =>

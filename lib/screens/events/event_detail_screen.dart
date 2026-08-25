@@ -826,6 +826,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             currentEventId: id,
             referenceStartAt: event.startAt,
             referenceEndAt: event.endAt,
+            referenceCountryCode: event.countryCode,
           ),
         );
         if (!context.mounted || originalId == null) return;

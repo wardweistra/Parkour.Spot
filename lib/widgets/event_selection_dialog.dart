@@ -10,11 +10,13 @@ class EventSelectionDialog extends StatefulWidget {
     required this.currentEventId,
     required this.referenceStartAt,
     this.referenceEndAt,
+    this.referenceCountryCode,
   });
 
   final String currentEventId;
   final DateTime referenceStartAt;
   final DateTime? referenceEndAt;
+  final String? referenceCountryCode;
 
   @override
   State<EventSelectionDialog> createState() => _EventSelectionDialogState();
@@ -34,6 +36,7 @@ class _EventSelectionDialogState extends State<EventSelectionDialog> {
             currentEventId: widget.currentEventId,
             referenceStartAt: widget.referenceStartAt,
             referenceEndAt: widget.referenceEndAt,
+            referenceCountryCode: widget.referenceCountryCode,
             nativeOnlyOriginals: true,
             onEventSelected: (event) {
               final id = event.id;

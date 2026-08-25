@@ -31,7 +31,8 @@ bool canConfirmEventDuplicateSelection({
 /// Picks an event as the suggested original for a duplicate link.
 ///
 /// Suggestions include native and external events in a ±7 day window, ordered
-/// by datetime proximity. User report mode allows confirming any found event;
+/// by datetime proximity. When the reference event has a country code, events
+/// known to be in another country are excluded.
 /// moderator mark mode only allows native non-duplicate events, with native
 /// events labeled and external events visible but not selectable.
 class EventDuplicatePicker extends StatefulWidget {
@@ -40,6 +41,7 @@ class EventDuplicatePicker extends StatefulWidget {
     required this.currentEventId,
     required this.referenceStartAt,
     this.referenceEndAt,
+    this.referenceCountryCode,
     this.nativeOnlyOriginals = true,
     this.onEventSelected,
     this.selectedEvent,
@@ -49,6 +51,7 @@ class EventDuplicatePicker extends StatefulWidget {
   final String currentEventId;
   final DateTime referenceStartAt;
   final DateTime? referenceEndAt;
+  final String? referenceCountryCode;
   final bool nativeOnlyOriginals;
   final ValueChanged<ParkourEvent>? onEventSelected;
   final ParkourEvent? selectedEvent;
@@ -104,6 +107,7 @@ class _EventDuplicatePickerState extends State<EventDuplicatePicker> {
         excludeEventId: widget.currentEventId,
         aroundStartAt: widget.referenceStartAt,
         aroundEndAt: widget.referenceEndAt,
+        referenceCountryCode: widget.referenceCountryCode,
       );
       if (mounted) {
         setState(() {

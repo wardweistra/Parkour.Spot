@@ -6480,13 +6480,13 @@ abstract class AppLocalizations {
   /// Section header in duplicate picker
   ///
   /// In en, this message translates to:
-  /// **'Events around these dates'**
+  /// **'Nearby events around these dates'**
   String get eventDetailMarkDuplicateSuggestionsHeader;
 
   /// Empty suggestions in duplicate picker
   ///
   /// In en, this message translates to:
-  /// **'No events found within a week of this event\'s dates.'**
+  /// **'No nearby events found within a week of this event\'s dates.'**
   String get eventDetailMarkDuplicateNoSuggestions;
 
   /// Chip label for a parkour.spot native event in the duplicate picker
@@ -6918,7 +6918,7 @@ abstract class AppLocalizations {
   /// Header for permissive duplicate report date suggestions
   ///
   /// In en, this message translates to:
-  /// **'Events around these dates'**
+  /// **'Nearby events around these dates'**
   String get eventDetailFlagDuplicateSuggestionsHeader;
 
   /// Success message after submitting event duplicate suggestion

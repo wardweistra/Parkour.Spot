@@ -100,6 +100,8 @@ class _EventDuplicateApprovalDialogState
         currentEventId: targetId,
         referenceStartAt: widget.report.startAt,
         referenceEndAt: widget.report.endAt,
+        referenceCountryCode:
+            _targetEvent?.countryCode ?? widget.report.countryCode,
       ),
     );
     if (pickedId == null || !mounted) return;

@@ -197,6 +197,7 @@ class _EventDuplicateReportDialogState extends State<EventDuplicateReportDialog>
                     currentEventId: eventId,
                     referenceStartAt: widget.event.startAt,
                     referenceEndAt: widget.event.endAt,
+                    referenceCountryCode: widget.event.countryCode,
                     nativeOnlyOriginals: false,
                     showNativeOnlyHint: false,
                     selectedEvent: _selectedOriginal,

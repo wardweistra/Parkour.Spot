@@ -3908,11 +3908,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get eventDetailMarkDuplicateSuggestionsHeader =>
-      'Événements autour de ces dates';
+      'Événements à proximité autour de ces dates';
 
   @override
   String get eventDetailMarkDuplicateNoSuggestions =>
-      'Aucun événement trouvé dans la semaine autour des dates de cet événement.';
+      'Aucun événement à proximité trouvé dans la semaine autour des dates de cet événement.';
 
   @override
   String get eventDetailDuplicatePickerNativeChip => 'Natif';
@@ -4177,7 +4177,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get eventDetailFlagDuplicateSuggestionsHeader =>
-      'Événements autour de ces dates';
+      'Événements à proximité autour de ces dates';
 
   @override
   String get eventDetailThanksDuplicateSuggestion =>

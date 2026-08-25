@@ -964,11 +964,13 @@ class AdminEventsService extends ChangeNotifier {
   ///
   /// When [aroundStartAt] is set, results are limited to events whose dates
   /// overlap a padded window around the reference event (see [EventDateWindow]),
-  /// then ordered by datetime proximity to that reference.
+  /// optionally filtered by country when [referenceCountryCode] is set, then
+  /// ordered by datetime proximity.
   Future<List<ParkourEvent>> fetchEventDuplicateReportCandidates({
     required String excludeEventId,
     DateTime? aroundStartAt,
     DateTime? aroundEndAt,
+    String? referenceCountryCode,
     int limit = 40,
   }) async {
     try {
@@ -1007,17 +1009,21 @@ class AdminEventsService extends ChangeNotifier {
         }
         out.add(event);
       }
+      var filtered = filterEventsByDuplicateCountry(
+        out,
+        referenceCountryCode: referenceCountryCode,
+      );
       if (aroundStartAt != null) {
         sortEventsByDatetimeProximity(
-          out,
+          filtered,
           referenceStartAt: aroundStartAt,
           referenceEndAt: aroundEndAt,
         );
       }
-      if (out.length > limit) {
-        return out.sublist(0, limit);
+      if (filtered.length > limit) {
+        return filtered.sublist(0, limit);
       }
-      return out;
+      return filtered;
     } catch (e, st) {
       debugPrint(
         'AdminEventsService.fetchEventDuplicateReportCandidates error: $e\n$st',

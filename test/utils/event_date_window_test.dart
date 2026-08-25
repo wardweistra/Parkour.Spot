@@ -176,4 +176,68 @@ void main() {
       ]);
     });
   });
+
+  group('filterEventsByDuplicateCountry', () {
+    ParkourEvent event({
+      required String id,
+      required DateTime startAt,
+      String? countryCode,
+    }) {
+      return ParkourEvent(
+        id: id,
+        title: id,
+        startAt: startAt,
+        countryCode: countryCode,
+      );
+    }
+
+    test('excludes candidates in a different country', () {
+      final sameCountry = event(
+        id: 'nl',
+        startAt: DateTime.utc(2026, 6, 10),
+        countryCode: 'NL',
+      );
+      final otherCountry = event(
+        id: 'be',
+        startAt: DateTime.utc(2026, 6, 10),
+        countryCode: 'BE',
+      );
+
+      final filtered = filterEventsByDuplicateCountry(
+        [sameCountry, otherCountry],
+        referenceCountryCode: 'nl',
+      );
+
+      expect(filtered.map((e) => e.id).toList(), ['nl']);
+    });
+
+    test('keeps candidates when reference country is missing', () {
+      final withCountry = event(
+        id: 'de',
+        startAt: DateTime.utc(2026, 6, 10),
+        countryCode: 'DE',
+      );
+
+      final filtered = filterEventsByDuplicateCountry(
+        [withCountry],
+        referenceCountryCode: null,
+      );
+
+      expect(filtered, [withCountry]);
+    });
+
+    test('keeps candidates when their country is missing', () {
+      final noCountry = event(
+        id: 'unknown',
+        startAt: DateTime.utc(2026, 6, 10),
+      );
+
+      final filtered = filterEventsByDuplicateCountry(
+        [noCountry],
+        referenceCountryCode: 'NL',
+      );
+
+      expect(filtered, [noCountry]);
+    });
+  });
 }

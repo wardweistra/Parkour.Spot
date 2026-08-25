@@ -100,3 +100,41 @@ void sortEventsByDatetimeProximity(
     ),
   );
 }
+
+/// Normalizes an ISO country code for duplicate-picker comparisons.
+String? normalizedEventCountryCode(String? countryCode) {
+  final normalized = countryCode?.trim().toUpperCase();
+  if (normalized == null || normalized.isEmpty) return null;
+  return normalized;
+}
+
+/// Whether [candidate] should stay in duplicate suggestions for [referenceCountryCode].
+///
+/// When either side has no country code, the candidate is kept. Otherwise only
+/// matching countries are kept.
+bool isEventInDuplicateCountry(
+  ParkourEvent candidate, {
+  required String? referenceCountryCode,
+}) {
+  final reference = normalizedEventCountryCode(referenceCountryCode);
+  if (reference == null) return true;
+
+  final candidateCountry = normalizedEventCountryCode(candidate.countryCode);
+  if (candidateCountry == null) return true;
+
+  return candidateCountry == reference;
+}
+
+List<ParkourEvent> filterEventsByDuplicateCountry(
+  Iterable<ParkourEvent> events, {
+  required String? referenceCountryCode,
+}) {
+  return events
+      .where(
+        (event) => isEventInDuplicateCountry(
+          event,
+          referenceCountryCode: referenceCountryCode,
+        ),
+      )
+      .toList(growable: false);
+}
