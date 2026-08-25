@@ -132,7 +132,7 @@ class _SpotListsHubScreenState extends State<SpotListsHubScreen> {
                 onTap: () => context.push('/profile/visited'),
               ),
               FutureBuilder<int>(
-                key: ValueKey(_addedCountLoadToken),
+                key: ValueKey('added-count-$_addedCountLoadToken'),
                 future: _addedCountFuture,
                 builder: (context, snapshot) {
                   return _HubTrackingRow(
@@ -172,7 +172,7 @@ class _SpotListsHubScreenState extends State<SpotListsHubScreen> {
               ),
               const SizedBox(height: 8),
               FutureBuilder<List<SpotList>>(
-                key: ValueKey(_ownedListsLoadToken),
+                key: ValueKey('owned-lists-$_ownedListsLoadToken'),
                 future: _ownedListsFuture ?? Future.value(const <SpotList>[]),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting &&

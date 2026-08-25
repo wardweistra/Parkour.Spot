@@ -5,9 +5,13 @@ import '../models/spot_list.dart';
 enum SpotTrackingListType { wantToVisit, visited, added }
 
 /// Whether [spot] belongs on the signed-in user's added-spots list.
+///
+/// Spots created via staff "Create native" are copies of an existing source
+/// and do not count as spots the user added.
 bool isSpotAddedByUser(Spot spot, String userId) {
   final createdBy = spot.createdBy?.trim() ?? '';
-  return userId.isNotEmpty && createdBy == userId;
+  if (userId.isEmpty || createdBy != userId) return false;
+  return !spot.createdFromCreateNative;
 }
 
 /// Newest first, then name. Used for the "added by you" list.

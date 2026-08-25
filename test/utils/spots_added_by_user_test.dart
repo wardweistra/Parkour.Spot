@@ -3,7 +3,12 @@ import 'package:parkour_spot/models/spot.dart';
 import 'package:parkour_spot/models/spot_list.dart';
 import 'package:parkour_spot/utils/spots_added_by_user.dart';
 
-Spot buildSpot({required String name, String? createdBy, DateTime? createdAt}) {
+Spot buildSpot({
+  required String name,
+  String? createdBy,
+  DateTime? createdAt,
+  bool createdFromCreateNative = false,
+}) {
   return Spot(
     name: name,
     description: 'Description',
@@ -11,6 +16,7 @@ Spot buildSpot({required String name, String? createdBy, DateTime? createdAt}) {
     longitude: 2.4,
     createdBy: createdBy,
     createdAt: createdAt,
+    createdFromCreateNative: createdFromCreateNative,
   );
 }
 
@@ -36,6 +42,15 @@ void main() {
         isSpotAddedByUser(buildSpot(name: 'Rail', createdBy: '  '), '  '),
         isFalse,
       );
+    });
+
+    test('rejects spots created via Create native', () {
+      final spot = buildSpot(
+        name: 'Copied rail',
+        createdBy: 'user-1',
+        createdFromCreateNative: true,
+      );
+      expect(isSpotAddedByUser(spot, 'user-1'), isFalse);
     });
   });
 

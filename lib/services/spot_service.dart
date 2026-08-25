@@ -34,7 +34,7 @@ class SpotService extends ChangeNotifier {
   /// Count of duplicates with unreviewed field changes.
   int get duplicatePendingChangesCount => _duplicatePendingChangesCount;
 
-  /// Spots the given user added, newest first. Private list; query by creator.
+  /// Spots the given user added, newest first. Excludes Create native copies.
   Future<List<Spot>> getSpotsAddedByUser(String userId) async {
     if (userId.isEmpty) return [];
     try {
@@ -53,15 +53,21 @@ class SpotService extends ChangeNotifier {
     }
   }
 
-  /// Count of spots the given user added.
+  /// Count of spots the given user added, excluding Create native copies.
   Future<int> countSpotsAddedByUser(String userId) async {
     if (userId.isEmpty) return 0;
-    final query = _firestore
+    final createdByQuery = _firestore
         .collection('spots')
         .where('createdBy', isEqualTo: userId);
     try {
-      final aggregateSnapshot = await query.count().get();
-      return aggregateSnapshot.count ?? 0;
+      final totalSnapshot = await createdByQuery.count().get();
+      final createNativeSnapshot = await createdByQuery
+          .where('createdFromCreateNative', isEqualTo: true)
+          .count()
+          .get();
+      final total = totalSnapshot.count ?? 0;
+      final createNative = createNativeSnapshot.count ?? 0;
+      return (total - createNative).clamp(0, total);
     } on FirebaseException catch (e) {
       if (e.code == 'failed-precondition') {
         final spots = await getSpotsAddedByUser(userId);
