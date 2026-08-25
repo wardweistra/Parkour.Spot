@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'emoji_text.dart';
+
 /// A reusable scaffold widget that provides consistent layout across pages.
 /// 
 /// Features:
@@ -89,7 +91,7 @@ class PageScaffold extends StatelessWidget {
                         Expanded(
                           child: Align(
                             alignment: Alignment.centerLeft,
-                            child: Text(
+                            child: EmojiText(
                               title!,
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,

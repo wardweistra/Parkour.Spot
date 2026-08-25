@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../models/spot_list.dart';
 import '../widgets/custom_text_field.dart';
+import '../widgets/emoji_text.dart';
 import '../widgets/spot_list_visibility_selector.dart';
 
 class AddToSpotListDialogResult {
@@ -265,7 +266,10 @@ class _AddToSpotListDialogState extends State<AddToSpotListDialog> {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(list.name, style: theme.textTheme.bodyMedium),
+                    child: EmojiText(
+                      list.name,
+                      style: theme.textTheme.bodyMedium,
+                    ),
                   ),
                   _openListButton(theme, l10n, list.id),
                 ],
@@ -279,7 +283,7 @@ class _AddToSpotListDialogState extends State<AddToSpotListDialog> {
         else
           ...widget.lists.map(
             (list) => ListTile(
-              title: Text(list.name),
+              title: EmojiText(list.name),
               subtitle: list.description != null && list.description!.isNotEmpty
                   ? Text(
                       list.description!,

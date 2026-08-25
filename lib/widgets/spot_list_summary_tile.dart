@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../models/spot_list.dart';
 import '../utils/spot_list_localization.dart';
+import 'emoji_text.dart';
 
 /// One list in a hub or public profile: name, optional description, visibility
 /// and count. Not wrapped in a Card so parents can group with spacing, not nesting.
@@ -32,7 +33,7 @@ class SpotListSummaryTile extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       leading: leading,
-      title: Text(
+      title: EmojiText(
         list.name,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
