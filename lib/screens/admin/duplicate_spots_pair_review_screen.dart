@@ -15,6 +15,7 @@ import '../../services/spot_service.dart';
 import '../../services/url_service.dart';
 import '../../utils/duplicate_spot_resolution_utils.dart';
 import '../../utils/marker_icon_utils.dart';
+import '../../utils/spot_duplicate_merge.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/detail_network_gallery_viewer.dart';
 import '../../widgets/moderator_action_fields.dart';
@@ -60,7 +61,7 @@ class _DuplicateSpotsPairReviewScreenState
   String? _descriptionSpotId;
   String? _locationSpotId;
   String? _accessSpotId;
-  String? _facilitiesSpotId;
+  final Set<String> _facilitiesSpotIds = {};
   final Set<String> _featureSpotIds = {};
   final Set<String> _goodForSpotIds = {};
   final Set<String> _includedSpotIds = {};
@@ -74,16 +75,18 @@ class _DuplicateSpotsPairReviewScreenState
   @override
   void initState() {
     super.initState();
-    _loadReviewData().then((data) {
-      if (!mounted) return;
-      setState(() {
-        _ensureSelectionDefaults(data);
-        _loadedData = data;
-      });
-    }).catchError((Object error) {
-      if (!mounted) return;
-      setState(() => _loadError = error);
-    });
+    _loadReviewData()
+        .then((data) {
+          if (!mounted) return;
+          setState(() {
+            _ensureSelectionDefaults(data);
+            _loadedData = data;
+          });
+        })
+        .catchError((Object error) {
+          if (!mounted) return;
+          setState(() => _loadError = error);
+        });
   }
 
   @override
@@ -153,9 +156,9 @@ class _DuplicateSpotsPairReviewScreenState
   }
 
   void _ensureSelectionDefaults(_DuplicateClusterReviewData data) {
-    final clusterKey = (data.spots.map((spot) => spot.id).whereType<String>().toList()
-          ..sort())
-        .join('|');
+    final clusterKey =
+        (data.spots.map((spot) => spot.id).whereType<String>().toList()..sort())
+            .join('|');
     if (_initializedForClusterKey == clusterKey) return;
 
     final defaults = buildDuplicateClusterMergeDefaults(data.spots);
@@ -174,7 +177,9 @@ class _DuplicateSpotsPairReviewScreenState
     _descriptionSpotId = defaults.descriptionSpotId;
     _locationSpotId = defaults.locationSpotId;
     _accessSpotId = defaults.accessSpotId;
-    _facilitiesSpotId = defaults.facilitiesSpotId;
+    _facilitiesSpotIds
+      ..clear()
+      ..addAll(defaults.facilitiesSpotIds);
     _featureSpotIds
       ..clear()
       ..addAll(defaults.featureSpotIds);
@@ -254,11 +259,13 @@ class _DuplicateSpotsPairReviewScreenState
   }
 
   List<int> _resolvedPairIndicesForMerge(_DuplicateClusterReviewData data) {
-    return data.resolvedPairIndices.where((index) {
-      final pair = data.pairRefs[index];
-      return _includedSpotIds.contains(pair.spot1Id) &&
-          _includedSpotIds.contains(pair.spot2Id);
-    }).toList(growable: false);
+    return data.resolvedPairIndices
+        .where((index) {
+          final pair = data.pairRefs[index];
+          return _includedSpotIds.contains(pair.spot1Id) &&
+              _includedSpotIds.contains(pair.spot2Id);
+        })
+        .toList(growable: false);
   }
 
   void _reconcileSelections(List<Spot> spots) {
@@ -281,10 +288,10 @@ class _DuplicateSpotsPairReviewScreenState
     if (!_includedSpotIds.contains(_accessSpotId)) {
       _accessSpotId = fallbackId;
     }
-    if (!_includedSpotIds.contains(_facilitiesSpotId)) {
-      _facilitiesSpotId = fallbackId;
-    }
 
+    _facilitiesSpotIds.removeWhere(
+      (spotId) => !_includedSpotIds.contains(spotId),
+    );
     _featureSpotIds.removeWhere((spotId) => !_includedSpotIds.contains(spotId));
     _goodForSpotIds.removeWhere((spotId) => !_includedSpotIds.contains(spotId));
     _photoSpotIds.removeWhere((spotId) => !_includedSpotIds.contains(spotId));
@@ -307,6 +314,7 @@ class _DuplicateSpotsPairReviewScreenState
         _includedSpotIds.remove(spotId);
         _photoSpotIds.remove(spotId);
         _youtubeSpotIds.remove(spotId);
+        _facilitiesSpotIds.remove(spotId);
         _featureSpotIds.remove(spotId);
         _goodForSpotIds.remove(spotId);
       }
@@ -349,7 +357,7 @@ class _DuplicateSpotsPairReviewScreenState
       descriptionSpotId: _descriptionSpotId!,
       locationSpotId: _locationSpotId!,
       accessSpotId: _accessSpotId!,
-      facilitiesSpotId: _facilitiesSpotId!,
+      facilitiesSpotIds: _facilitiesSpotIds,
       featureSpotIds: _featureSpotIds,
       goodForSpotIds: _goodForSpotIds,
       photoSpotIds: _photoSpotIds,
@@ -373,9 +381,7 @@ class _DuplicateSpotsPairReviewScreenState
       ..addAll(computed.goodFor ?? const <String>[]);
   }
 
-  Map<String, String> _facilitiesForAttributesEditor(
-    Map<String, String>? raw,
-  ) {
+  Map<String, String> _facilitiesForAttributesEditor(Map<String, String>? raw) {
     if (raw == null || raw.isEmpty) return {};
     return Map.fromEntries(
       raw.entries.map((entry) {
@@ -399,7 +405,7 @@ class _DuplicateSpotsPairReviewScreenState
       descriptionSpotId: _descriptionSpotId!,
       locationSpotId: _locationSpotId!,
       accessSpotId: _accessSpotId!,
-      facilitiesSpotId: _facilitiesSpotId!,
+      facilitiesSpotIds: _facilitiesSpotIds,
       featureSpotIds: _featureSpotIds,
       goodForSpotIds: _goodForSpotIds,
       photoSpotIds: _photoSpotIds,
@@ -574,7 +580,7 @@ class _DuplicateSpotsPairReviewScreenState
             ),
             const SizedBox(height: 4),
             Text(
-              'Uncheck spots to leave out of the merge. Pick sources per field; feature and good-for tags each combine across their checked spots.',
+              'Uncheck spots to leave out of the merge. Pick sources per field; facilities, features, and good-for tags each combine across their checked spots.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -627,7 +633,6 @@ class _DuplicateSpotsPairReviewScreenState
                           _descriptionSpotId = spotId;
                           _locationSpotId = spotId;
                           _accessSpotId = spotId;
-                          _facilitiesSpotId = spotId;
                           _afterMergeSelectionChanged(spots);
                         });
                       },
@@ -708,19 +713,21 @@ class _DuplicateSpotsPairReviewScreenState
                       }),
                       cellBuilder: (spot) => _buildAccessSummary(spot),
                     ),
-                    _buildRadioGridRow(
+                    _buildAdditiveAttributeGridRow(
                       label: 'Facilities',
+                      tooltip: 'Combine facilities from every checked spot',
                       labelWidth: labelWidth,
                       spotColumnWidth: spotColumnWidth,
                       colorScheme: colorScheme,
-                      groupValue: _facilitiesSpotId,
                       spots: spots,
-                      isSpotEnabled: _isSpotIncludedInMerge,
-                      onChanged: (spotId) => setState(() {
-                        _facilitiesSpotId = spotId;
-                        _afterMergeSelectionChanged(spots);
-                      }),
-                      cellBuilder: (spot) => _buildFacilitiesSummary(spot),
+                      selectedIds: _facilitiesSpotIds,
+                      countFor: (spot) =>
+                          spot.spotFacilities?.values
+                              .where(isSpotFacilityEnabled)
+                              .length ??
+                          0,
+                      emptyLabel: 'No facilities',
+                      summaryBuilder: _buildFacilitiesSummary,
                     ),
                     _buildAdditiveAttributeGridRow(
                       label: 'Features',
@@ -779,8 +786,7 @@ class _DuplicateSpotsPairReviewScreenState
     );
   }
 
-  bool _isSpotIncludedInMerge(Spot spot) =>
-      _includedSpotIds.contains(spot.id);
+  bool _isSpotIncludedInMerge(Spot spot) => _includedSpotIds.contains(spot.id);
 
   bool _isBasisNativeSpot(List<Spot> spots) {
     final basisId = _baseSpotId;
@@ -826,8 +832,7 @@ class _DuplicateSpotsPairReviewScreenState
           child: CheckboxListTile(
             value: isIncluded,
             onChanged: canToggle
-                ? (checked) =>
-                      _setSpotIncluded(spotId, checked ?? false, spots)
+                ? (checked) => _setSpotIncluded(spotId, checked ?? false, spots)
                 : null,
             contentPadding: EdgeInsets.zero,
             dense: true,
@@ -848,8 +853,7 @@ class _DuplicateSpotsPairReviewScreenState
     final spotId = spot.id!;
     final isBasis = spotId == _baseSpotId;
     final duplicateOf = spot.duplicateOf?.trim();
-    final isAlreadyDuplicate =
-        duplicateOf != null && duplicateOf.isNotEmpty;
+    final isAlreadyDuplicate = duplicateOf != null && duplicateOf.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.all(10),
       child: Column(
@@ -1222,15 +1226,13 @@ class _DuplicateSpotsPairReviewScreenState
   Widget _buildTableLabelCell(String label, {String? tooltip}) {
     final text = Text(
       label,
-      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-        fontWeight: FontWeight.w600,
-      ),
+      style: Theme.of(
+        context,
+      ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
     );
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      child: tooltip == null
-          ? text
-          : Tooltip(message: tooltip, child: text),
+      child: tooltip == null ? text : Tooltip(message: tooltip, child: text),
     );
   }
 
@@ -1289,7 +1291,7 @@ class _DuplicateSpotsPairReviewScreenState
   Widget _buildFacilitiesSummary(Spot spot) {
     final chips = <Widget>[];
     spot.spotFacilities?.forEach((key, value) {
-      if (value == 'true') {
+      if (isSpotFacilityEnabled(value)) {
         chips.add(_smallChip(SpotAttributes.getLabel('facilities', key)));
       }
     });
@@ -1491,9 +1493,7 @@ class _DuplicateSpotsPairReviewScreenState
                           Text(
                             'Fine-tune the merged spot before resolving.',
                             style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
+                                ?.copyWith(color: colorScheme.onSurfaceVariant),
                           ),
                         ],
                       ),
@@ -1515,8 +1515,7 @@ class _DuplicateSpotsPairReviewScreenState
                 CustomTextField(
                   controller: _previewDescriptionController,
                   labelText: 'Description',
-                  hintText:
-                      'Describe the spot, what makes it special, etc.',
+                  hintText: 'Describe the spot, what makes it special, etc.',
                   maxLines: 4,
                 ),
               ],
@@ -1649,18 +1648,14 @@ class _DuplicateSpotsPairReviewScreenState
               const SizedBox(height: 8),
               Text(
                 'Include at least two spots to create a native merge.',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                ),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ],
             if (hasAlreadyDuplicateIncluded) ...[
               const SizedBox(height: 8),
               Text(
                 'Remove spots that are already marked as duplicates of another spot.',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.error,
-                ),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
             ],
             const SizedBox(height: 16),
@@ -1725,10 +1720,7 @@ class _DuplicateSpotsPairReviewScreenState
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                value,
-                style: valueStyle ?? theme.textTheme.bodyMedium,
-              ),
+              Text(value, style: valueStyle ?? theme.textTheme.bodyMedium),
             ],
           ),
         ),
@@ -1754,8 +1746,9 @@ class _DuplicateSpotsPairReviewScreenState
     final spotNameStyle = theme.textTheme.titleSmall?.copyWith(
       fontWeight: FontWeight.w600,
     );
-    final duplicateCount =
-        updateExistingNative ? includedCount - 1 : includedCount;
+    final duplicateCount = updateExistingNative
+        ? includedCount - 1
+        : includedCount;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1790,8 +1783,7 @@ class _DuplicateSpotsPairReviewScreenState
               _buildResolutionConfirmRow(
                 icon: Icons.link,
                 label: 'Marked as duplicates',
-                value:
-                    '$duplicateCount spot${duplicateCount == 1 ? '' : 's'}',
+                value: '$duplicateCount spot${duplicateCount == 1 ? '' : 's'}',
                 valueStyle: valueStyle,
               ),
               if (unchangedCount > 0) ...[
@@ -2089,16 +2081,12 @@ class _DuplicateClusterMapState extends State<_DuplicateClusterMap> {
     if (count <= 1) return center;
 
     final angle = (2 * math.pi * index) / count;
-    final latOffset =
-        _coincidentPinSpreadMeters * math.cos(angle) / 111000.0;
+    final latOffset = _coincidentPinSpreadMeters * math.cos(angle) / 111000.0;
     final cosLat = math.cos(center.latitude * math.pi / 180.0).abs();
     final lngOffset = cosLat < 0.000001
         ? 0.0
         : _coincidentPinSpreadMeters * math.sin(angle) / (111000.0 * cosLat);
-    return LatLng(
-      center.latitude + latOffset,
-      center.longitude + lngOffset,
-    );
+    return LatLng(center.latitude + latOffset, center.longitude + lngOffset);
   }
 
   Set<Marker> _markers() {
@@ -2112,8 +2100,8 @@ class _DuplicateClusterMapState extends State<_DuplicateClusterMap> {
       if (spotId == null) continue;
 
       final selected = spotId == widget.selectedLocationSpotId;
-      final position = displayPositions[spotId] ??
-          LatLng(spot.latitude, spot.longitude);
+      final position =
+          displayPositions[spotId] ?? LatLng(spot.latitude, spot.longitude);
       markers.add(
         Marker(
           markerId: MarkerId(spotId),

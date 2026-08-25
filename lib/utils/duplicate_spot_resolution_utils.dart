@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../models/spot.dart';
+import 'spot_duplicate_merge.dart';
 
 bool isSpotAlreadyMarkedAsDuplicate(Spot spot) {
   final duplicateOf = spot.duplicateOf?.trim();
@@ -153,9 +154,19 @@ int duplicateClusterOptionalDetailScore(Spot spot) {
 int _enabledFacilityCount(Spot spot) {
   var count = 0;
   spot.spotFacilities?.forEach((_, value) {
-    if (value == 'true') count++;
+    if (isSpotFacilityEnabled(value)) count++;
   });
   return count;
+}
+
+List<String> _enabledFacilityKeys(Spot spot) {
+  final keys = <String>[];
+  spot.spotFacilities?.forEach((key, value) {
+    if (isSpotFacilityEnabled(value) && key.trim().isNotEmpty) {
+      keys.add(key);
+    }
+  });
+  return keys;
 }
 
 bool _hasOptionalLocationDetail(Spot spot) {
@@ -190,12 +201,20 @@ List<Spot> sortSpotsByOptionalDetailRichness(List<Spot> spots) {
 bool isParkourSpotNativeSpot(Spot spot) => spot.spotSource == null;
 
 String pickDuplicateClusterBasisSpotId(List<Spot> spots) {
-  final withIds = spots.where((spot) => spot.id != null).toList(growable: false);
+  final withIds = spots
+      .where((spot) => spot.id != null)
+      .toList(growable: false);
   if (withIds.isEmpty) {
-    throw ArgumentError.value(spots, 'spots', 'Must include at least one spot with an id');
+    throw ArgumentError.value(
+      spots,
+      'spots',
+      'Must include at least one spot with an id',
+    );
   }
 
-  final natives = withIds.where(isParkourSpotNativeSpot).toList(growable: false);
+  final natives = withIds
+      .where(isParkourSpotNativeSpot)
+      .toList(growable: false);
   final candidates = natives.isNotEmpty ? natives : withIds;
   return sortSpotsByOptionalDetailRichness(candidates).first.id!;
 }
@@ -207,7 +226,7 @@ class DuplicateClusterMergeDefaults {
     required this.descriptionSpotId,
     required this.locationSpotId,
     required this.accessSpotId,
-    required this.facilitiesSpotId,
+    required this.facilitiesSpotIds,
     required this.featureSpotIds,
     required this.goodForSpotIds,
     required this.photoSpotIds,
@@ -219,7 +238,7 @@ class DuplicateClusterMergeDefaults {
   final String descriptionSpotId;
   final String locationSpotId;
   final String accessSpotId;
-  final String facilitiesSpotId;
+  final Set<String> facilitiesSpotIds;
   final Set<String> featureSpotIds;
   final Set<String> goodForSpotIds;
   final Set<String> photoSpotIds;
@@ -237,37 +256,40 @@ DuplicateClusterMergeDefaults buildDuplicateClusterMergeDefaults(
 
   return DuplicateClusterMergeDefaults(
     basisSpotId: basisSpotId,
-    titleSpotId: _soleDetailProviderSpotId(
+    titleSpotId:
+        _soleDetailProviderSpotId(
           spots,
           basisSpotId,
           (spot) => spot.name.trim().isNotEmpty,
         ) ??
         basisSpotId,
-    descriptionSpotId: _soleDetailProviderSpotId(
+    descriptionSpotId:
+        _soleDetailProviderSpotId(
           spots,
           basisSpotId,
           (spot) => spot.description.trim().isNotEmpty,
         ) ??
         basisSpotId,
-    locationSpotId: _soleDetailProviderSpotId(
+    locationSpotId:
+        _soleDetailProviderSpotId(
           spots,
           basisSpotId,
           _hasOptionalLocationDetail,
         ) ??
         basisSpotId,
-    accessSpotId: _soleDetailProviderSpotId(
+    accessSpotId:
+        _soleDetailProviderSpotId(
           spots,
           basisSpotId,
           (spot) =>
               spot.spotAccess != null && spot.spotAccess!.trim().isNotEmpty,
         ) ??
         basisSpotId,
-    facilitiesSpotId: _soleDetailProviderSpotId(
-          spots,
-          basisSpotId,
-          (spot) => _enabledFacilityCount(spot) > 0,
-        ) ??
-        basisSpotId,
+    facilitiesSpotIds: _defaultTraitSpotIds(
+      spots,
+      basisSpotId,
+      _enabledFacilityKeys,
+    ),
     featureSpotIds: _defaultTraitSpotIds(
       spots,
       basisSpotId,
@@ -333,7 +355,9 @@ Set<String> _defaultTraitSpotIds(
 
   if (selected.isEmpty) {
     final providers = spots
-        .where((spot) => spot.id != null && (readTags(spot)?.isNotEmpty ?? false))
+        .where(
+          (spot) => spot.id != null && (readTags(spot)?.isNotEmpty ?? false),
+        )
         .toList(growable: false);
     if (providers.length == 1) {
       selected.add(providers.first.id!);
@@ -360,7 +384,7 @@ Spot buildDuplicateNativeSpotPreview({
   required String descriptionSpotId,
   required String locationSpotId,
   required String accessSpotId,
-  required String facilitiesSpotId,
+  required Set<String> facilitiesSpotIds,
   required Set<String> featureSpotIds,
   required Set<String> goodForSpotIds,
   required Set<String> photoSpotIds,
@@ -379,7 +403,6 @@ Spot buildDuplicateNativeSpotPreview({
   );
   final locationSpot = _spotByIdOrFallback(spots, locationSpotId, baseSpot);
   final accessSpot = _spotByIdOrFallback(spots, accessSpotId, baseSpot);
-  final facilitiesSpot = _spotByIdOrFallback(spots, facilitiesSpotId, baseSpot);
 
   final imageUrls = _dedupe(
     spots
@@ -400,6 +423,11 @@ Spot buildDuplicateNativeSpotPreview({
     spots,
     goodForSpotIds,
     (spot) => spot.goodFor,
+  );
+  final spotFacilities = mergeSpotFacilityMaps(
+    spots
+        .where((spot) => facilitiesSpotIds.contains(spot.id))
+        .map((spot) => spot.spotFacilities),
   );
 
   return Spot(
@@ -422,9 +450,7 @@ Spot buildDuplicateNativeSpotPreview({
     ranking: baseSpot.ranking,
     spotAccess: accessSpot.spotAccess,
     spotFeatures: spotFeatures,
-    spotFacilities: facilitiesSpot.spotFacilities == null
-        ? null
-        : Map<String, String>.from(facilitiesSpot.spotFacilities!),
+    spotFacilities: spotFacilities,
     goodFor: goodFor,
     duplicateOf: null,
     hidden: false,

@@ -95,7 +95,17 @@ Map<String, dynamic> buildSpotDuplicateMergeUpdates({
     }
     if (duplicate.spotFacilities != null &&
         duplicate.spotFacilities!.isNotEmpty) {
-      updates['spotFacilities'] = duplicate.spotFacilities;
+      final existingFacilities = Map<String, String>.from(
+        original.spotFacilities ?? {},
+      );
+      final mergedFacilities = mergeSpotFacilityMaps([
+        existingFacilities,
+        duplicate.spotFacilities,
+      ]);
+      if (mergedFacilities != null &&
+          !_facilityMapsEqual(existingFacilities, mergedFacilities)) {
+        updates['spotFacilities'] = mergedFacilities;
+      }
     }
     if (duplicate.goodFor != null && duplicate.goodFor!.isNotEmpty) {
       final existingGoodFor = List<String>.from(original.goodFor ?? []);
@@ -112,6 +122,44 @@ Map<String, dynamic> buildSpotDuplicateMergeUpdates({
   }
 
   return updates;
+}
+
+/// Whether a facility value counts as enabled (`true` / `yes`).
+bool isSpotFacilityEnabled(String? value) {
+  final normalized = value?.trim().toLowerCase();
+  return normalized == 'true' || normalized == 'yes';
+}
+
+/// Merges facility maps from [sources] in order.
+///
+/// Missing keys are added. When the same key appears more than once, an enabled
+/// value wins over a disabled one; otherwise the first value is kept.
+Map<String, String>? mergeSpotFacilityMaps(
+  Iterable<Map<String, String>?> sources,
+) {
+  final merged = <String, String>{};
+  for (final source in sources) {
+    if (source == null || source.isEmpty) continue;
+    for (final entry in source.entries) {
+      final key = entry.key.trim();
+      if (key.isEmpty) continue;
+      if (!merged.containsKey(key)) {
+        merged[key] = entry.value;
+      } else if (isSpotFacilityEnabled(entry.value) &&
+          !isSpotFacilityEnabled(merged[key])) {
+        merged[key] = entry.value;
+      }
+    }
+  }
+  return merged.isEmpty ? null : merged;
+}
+
+bool _facilityMapsEqual(Map<String, String> a, Map<String, String> b) {
+  if (a.length != b.length) return false;
+  for (final entry in a.entries) {
+    if (b[entry.key] != entry.value) return false;
+  }
+  return true;
 }
 
 bool _isNativeSpot(Spot spot) {

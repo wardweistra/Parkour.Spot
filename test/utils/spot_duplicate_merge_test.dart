@@ -170,6 +170,36 @@ void main() {
       },
     );
 
+    test('merges facilities without dropping original keys', () {
+      final original = _spot(spotFacilities: {'lighting': 'yes'});
+      final duplicate = _spot(
+        spotFacilities: {'covered': 'yes', 'lighting': 'no'},
+      );
+
+      final updates = buildSpotDuplicateMergeUpdates(
+        original: original,
+        duplicate: duplicate,
+        overwriteSpotAttributes: true,
+      );
+
+      expect(updates['spotFacilities'], {'lighting': 'yes', 'covered': 'yes'});
+    });
+
+    test('does not update facilities when duplicate adds nothing new', () {
+      final original = _spot(
+        spotFacilities: {'lighting': 'yes', 'covered': 'yes'},
+      );
+      final duplicate = _spot(spotFacilities: {'lighting': 'no'});
+
+      final updates = buildSpotDuplicateMergeUpdates(
+        original: original,
+        duplicate: duplicate,
+        overwriteSpotAttributes: true,
+      );
+
+      expect(updates, isEmpty);
+    });
+
     test('does not update goodFor or features when all already present', () {
       final original = _spot(
         spotFeatures: ['walls', 'rails'],
