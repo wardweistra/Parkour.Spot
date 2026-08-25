@@ -217,7 +217,7 @@ abstract class AppLocalizations {
   /// Account tab: subtitle for the Spot lists row
   ///
   /// In en, this message translates to:
-  /// **'Want to visit, been to, and lists you create or save'**
+  /// **'Want to visit, been to, spots you added, and lists you create or save'**
   String get accountSpotListsSubtitle;
 
   /// Spot lists hub: prompt when signed out
@@ -231,6 +231,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not load lists. Check your connection and try again.'**
   String get spotListsHubCouldNotLoad;
+
+  /// Private list of spots the signed-in user added
+  ///
+  /// In en, this message translates to:
+  /// **'Added by you'**
+  String get spotListsHubAddedByYou;
+
+  /// Public profile and list title for another user's added-spots list
+  ///
+  /// In en, this message translates to:
+  /// **'Added by {name}'**
+  String publicProfileAddedByUser(String name);
 
   /// Notifications inbox screen title and Account tab row
   ///
@@ -4784,6 +4796,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No spots in {listName}'**
   String spotTrackingNoSpotsInList(String listName);
+
+  /// Empty state hint for the private added-by-you spot list
+  ///
+  /// In en, this message translates to:
+  /// **'Spots you add to the map show up here'**
+  String get spotTrackingAddedEmptyHint;
+
+  /// Error when toggling added-by-you list public/private
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update list visibility'**
+  String get spotTrackingAddedVisibilityUpdateFailed;
 
   /// Tooltip on list save button when list is not saved
   ///

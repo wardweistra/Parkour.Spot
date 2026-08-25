@@ -726,6 +726,29 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// Show or hide the built-in added-spots list on the public profile.
+  Future<bool> updateAddedSpotsListPublic(bool isPublic) async {
+    if (_auth.currentUser == null || _userProfile == null) {
+      debugPrint(
+        'Cannot update added-spots list visibility: user not authenticated or profile not loaded',
+      );
+      return false;
+    }
+
+    try {
+      final userId = _auth.currentUser!.uid;
+      await _firestore.collection('users').doc(userId).update({
+        'isAddedSpotsListPublic': isPublic,
+      });
+      _userProfile = _userProfile!.copyWith(isAddedSpotsListPublic: isPublic);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error updating added-spots list visibility: $e');
+      return false;
+    }
+  }
+
   /// Update whether the user allows storing last-known location for alerts.
   Future<bool> updateShareLastKnownLocationForAlerts(bool enabled) async {
     if (_auth.currentUser == null || _userProfile == null) {
@@ -768,9 +791,7 @@ class AuthService extends ChangeNotifier {
         'notifyNewSpotsNearby': enabled,
       });
 
-      _userProfile = _userProfile!.copyWith(
-        notifyNewSpotsNearby: enabled,
-      );
+      _userProfile = _userProfile!.copyWith(notifyNewSpotsNearby: enabled);
       notifyListeners();
       return true;
     } catch (e) {
@@ -795,9 +816,7 @@ class AuthService extends ChangeNotifier {
         'notifyTrainingPlansNearby': enabled,
       });
 
-      _userProfile = _userProfile!.copyWith(
-        notifyTrainingPlansNearby: enabled,
-      );
+      _userProfile = _userProfile!.copyWith(notifyTrainingPlansNearby: enabled);
       notifyListeners();
       return true;
     } catch (e) {
@@ -851,9 +870,7 @@ class AuthService extends ChangeNotifier {
         'notifyCheckInsNearby': enabled,
       });
 
-      _userProfile = _userProfile!.copyWith(
-        notifyCheckInsNearby: enabled,
-      );
+      _userProfile = _userProfile!.copyWith(notifyCheckInsNearby: enabled);
       notifyListeners();
       return true;
     } catch (e) {

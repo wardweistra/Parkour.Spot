@@ -364,6 +364,7 @@ class AppRouter {
             final path = state.uri.path;
             if (path == '/profile/want-to-visit' ||
                 path == '/profile/visited' ||
+                path == '/profile/added' ||
                 path == '/profile/check-ins' ||
                 path == '/profile/lists' ||
                 path == '/profile/settings' ||
@@ -383,6 +384,12 @@ class AppRouter {
               path: 'visited',
               builder: (context, state) => const SpotTrackingListScreen(
                 type: SpotTrackingListType.visited,
+              ),
+            ),
+            GoRoute(
+              path: 'added',
+              builder: (context, state) => const SpotTrackingListScreen(
+                type: SpotTrackingListType.added,
               ),
             ),
             GoRoute(
@@ -420,6 +427,19 @@ class AppRouter {
             final userIdOrUsername = state.pathParameters['userIdOrUsername']!;
             return PublicProfileScreen(userIdOrUsername: userIdOrUsername);
           },
+          routes: [
+            GoRoute(
+              path: 'added',
+              builder: (context, state) {
+                final userIdOrUsername =
+                    state.pathParameters['userIdOrUsername']!;
+                return SpotTrackingListScreen(
+                  type: SpotTrackingListType.added,
+                  profileUserIdOrUsername: userIdOrUsername,
+                );
+              },
+            ),
+          ],
         ),
         // Admin routes (screen will self-guard on admin status)
         GoRoute(

@@ -72,7 +72,7 @@
   "@profileViewEditSubtitle": {
     "description": "Account card subtitle linking to full profile"
   },
-  "accountSpotListsSubtitle": "Want to visit, been to, and lists you create or save",
+  "accountSpotListsSubtitle": "Want to visit, been to, spots you added, and lists you create or save",
   "@accountSpotListsSubtitle": {
     "description": "Account tab: subtitle for the Spot lists row"
   },
@@ -83,6 +83,19 @@
   "spotListsHubCouldNotLoad": "Could not load lists. Check your connection and try again.",
   "@spotListsHubCouldNotLoad": {
     "description": "Spot lists hub: error loading owned lists"
+  },
+  "spotListsHubAddedByYou": "Added by you",
+  "@spotListsHubAddedByYou": {
+    "description": "Private list of spots the signed-in user added"
+  },
+  "publicProfileAddedByUser": "Added by {name}",
+  "@publicProfileAddedByUser": {
+    "description": "Public profile and list title for another user's added-spots list",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "notificationsTitle": "Notifications",
   "@notificationsTitle": {
@@ -2536,6 +2549,14 @@
         "type": "String"
       }
     }
+  },
+  "spotTrackingAddedEmptyHint": "Spots you add to the map show up here",
+  "@spotTrackingAddedEmptyHint": {
+    "description": "Empty state hint for the private added-by-you spot list"
+  },
+  "spotTrackingAddedVisibilityUpdateFailed": "Could not update list visibility",
+  "@spotTrackingAddedVisibilityUpdateFailed": {
+    "description": "Error when toggling added-by-you list public/private"
   },
   "spotListSaveTooltipSaveList": "Save list",
   "@spotListSaveTooltipSaveList": {

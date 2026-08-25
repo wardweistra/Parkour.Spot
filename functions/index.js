@@ -555,6 +555,15 @@ exports.userAndListPage = onRequest({region: "europe-west1"}, async (req, res) =
           imageUrl = userDoc.photoURL.trim();
         }
         breadcrumbs.push({name: displayName, url: `/user/${userIdOrUsername}`});
+        if (pathSegments[2] === "added" &&
+            userDoc.isAddedSpotsListPublic === true) {
+          title = `Added by ${displayName} - ${siteName}`;
+          description = `Parkour spots added by ${displayName} on ${siteName} — ${APP_DESCRIPTION}`;
+          breadcrumbs.push({
+            name: `Added by ${displayName}`,
+            url: `/user/${userIdOrUsername}/added`,
+          });
+        }
       }
     }
 

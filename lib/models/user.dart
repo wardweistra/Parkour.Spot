@@ -6,6 +6,9 @@ class User {
   final String? username;
   final String? instagramUrl;
   final bool isPublicProfile;
+
+  /// When true, the built-in "added by you" list is listed on the public profile.
+  final bool isAddedSpotsListPublic;
   final DateTime? createdAt;
   final DateTime? lastLoginAt;
   final DateTime? lastActiveAt;
@@ -32,6 +35,7 @@ class User {
     this.username,
     this.instagramUrl,
     this.isPublicProfile = true,
+    this.isAddedSpotsListPublic = false,
     this.createdAt,
     this.lastLoginAt,
     this.lastActiveAt,
@@ -60,6 +64,7 @@ class User {
       username: map['username'],
       instagramUrl: map['instagramUrl'],
       isPublicProfile: map['isPublicProfile'] ?? true,
+      isAddedSpotsListPublic: map['isAddedSpotsListPublic'] == true,
       createdAt: map['createdAt']?.toDate(),
       lastLoginAt: map['lastLoginAt']?.toDate(),
       lastActiveAt: map['lastActiveAt']?.toDate(),
@@ -80,8 +85,8 @@ class User {
           : null,
       shareLastKnownLocationForAlerts:
           map['shareLastKnownLocationForAlerts'] is bool
-              ? map['shareLastKnownLocationForAlerts'] as bool
-              : true,
+          ? map['shareLastKnownLocationForAlerts'] as bool
+          : true,
       notifyNewSpotsNearby: map['notifyNewSpotsNearby'] is bool
           ? map['notifyNewSpotsNearby'] as bool
           : true,
@@ -93,8 +98,8 @@ class User {
           : true,
       notifyTrainingPlanCheckInReminders:
           map['notifyTrainingPlanCheckInReminders'] is bool
-              ? map['notifyTrainingPlanCheckInReminders'] as bool
-              : true,
+          ? map['notifyTrainingPlanCheckInReminders'] as bool
+          : true,
       preferredLanguageCode: map['preferredLanguageCode'] as String?,
       isLanguageExplicitlySet: map['isLanguageExplicitlySet'] is bool
           ? map['isLanguageExplicitlySet'] as bool
@@ -111,6 +116,7 @@ class User {
       'username': username,
       'instagramUrl': instagramUrl,
       'isPublicProfile': isPublicProfile,
+      'isAddedSpotsListPublic': isAddedSpotsListPublic,
       'createdAt': createdAt,
       'lastLoginAt': lastLoginAt,
       'lastActiveAt': lastActiveAt,
@@ -141,6 +147,7 @@ class User {
     String? username,
     Object? instagramUrl = _omit,
     bool? isPublicProfile,
+    bool? isAddedSpotsListPublic,
     DateTime? createdAt,
     DateTime? lastLoginAt,
     DateTime? lastActiveAt,
@@ -169,6 +176,8 @@ class User {
           ? this.instagramUrl
           : instagramUrl as String?,
       isPublicProfile: isPublicProfile ?? this.isPublicProfile,
+      isAddedSpotsListPublic:
+          isAddedSpotsListPublic ?? this.isAddedSpotsListPublic,
       createdAt: createdAt ?? this.createdAt,
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       lastActiveAt: lastActiveAt ?? this.lastActiveAt,
@@ -182,8 +191,7 @@ class User {
       shareLastKnownLocationForAlerts:
           shareLastKnownLocationForAlerts ??
           this.shareLastKnownLocationForAlerts,
-      notifyNewSpotsNearby:
-          notifyNewSpotsNearby ?? this.notifyNewSpotsNearby,
+      notifyNewSpotsNearby: notifyNewSpotsNearby ?? this.notifyNewSpotsNearby,
       notifyCheckInsNearby: notifyCheckInsNearby ?? this.notifyCheckInsNearby,
       notifyTrainingPlansNearby:
           notifyTrainingPlansNearby ?? this.notifyTrainingPlansNearby,
