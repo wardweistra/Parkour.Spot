@@ -31,3 +31,72 @@ class EventDateWindow {
     return overlaps(event.startAt, eventEnd);
   }
 }
+
+Duration eventDatetimeStartDelta(
+  ParkourEvent event, {
+  required DateTime referenceStartAt,
+}) {
+  return event.startAt.difference(referenceStartAt).abs();
+}
+
+Duration eventDatetimeEndDelta(
+  ParkourEvent event, {
+  required DateTime referenceStartAt,
+  DateTime? referenceEndAt,
+}) {
+  final eventEnd = event.endAt ?? event.startAt;
+  final referenceEnd = referenceEndAt ?? referenceStartAt;
+  return eventEnd.difference(referenceEnd).abs();
+}
+
+/// Orders candidates by how close their datetimes are to the reference event.
+///
+/// Closer [ParkourEvent.startAt] wins first, then closer end (missing end is
+/// treated as start). Equal times prefer native events so a selectable original
+/// surfaces before an external copy.
+int compareEventsByDatetimeProximity(
+  ParkourEvent a,
+  ParkourEvent b, {
+  required DateTime referenceStartAt,
+  DateTime? referenceEndAt,
+}) {
+  final startCmp = eventDatetimeStartDelta(
+    a,
+    referenceStartAt: referenceStartAt,
+  ).compareTo(eventDatetimeStartDelta(b, referenceStartAt: referenceStartAt));
+  if (startCmp != 0) return startCmp;
+
+  final endCmp =
+      eventDatetimeEndDelta(
+        a,
+        referenceStartAt: referenceStartAt,
+        referenceEndAt: referenceEndAt,
+      ).compareTo(
+        eventDatetimeEndDelta(
+          b,
+          referenceStartAt: referenceStartAt,
+          referenceEndAt: referenceEndAt,
+        ),
+      );
+  if (endCmp != 0) return endCmp;
+
+  if (a.isNativeEvent != b.isNativeEvent) {
+    return a.isNativeEvent ? -1 : 1;
+  }
+  return 0;
+}
+
+void sortEventsByDatetimeProximity(
+  List<ParkourEvent> events, {
+  required DateTime referenceStartAt,
+  DateTime? referenceEndAt,
+}) {
+  events.sort(
+    (a, b) => compareEventsByDatetimeProximity(
+      a,
+      b,
+      referenceStartAt: referenceStartAt,
+      referenceEndAt: referenceEndAt,
+    ),
+  );
+}

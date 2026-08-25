@@ -30,9 +30,10 @@ bool canConfirmEventDuplicateSelection({
 
 /// Picks an event as the suggested original for a duplicate link.
 ///
-/// Autocomplete shows all upcoming non-duplicate events (native and external).
-/// User report mode allows confirming any found event; moderator mark mode only
-/// allows native non-duplicate events, with clear feedback for blocked picks.
+/// Suggestions include native and external events in a ±7 day window, ordered
+/// by datetime proximity. User report mode allows confirming any found event;
+/// moderator mark mode only allows native non-duplicate events, with native
+/// events labeled and external events visible but not selectable.
 class EventDuplicatePicker extends StatefulWidget {
   const EventDuplicatePicker({
     super.key,
@@ -99,17 +100,11 @@ class _EventDuplicatePickerState extends State<EventDuplicatePicker> {
     setState(() => _isLoadingSuggestions = true);
     try {
       final adminEvents = context.read<AdminEventsService>();
-      final list = widget.nativeOnlyOriginals
-          ? await adminEvents.fetchNativeOriginalEventCandidates(
-              excludeEventId: widget.currentEventId,
-              aroundStartAt: widget.referenceStartAt,
-              aroundEndAt: widget.referenceEndAt,
-            )
-          : await adminEvents.fetchEventDuplicateReportCandidates(
-              excludeEventId: widget.currentEventId,
-              aroundStartAt: widget.referenceStartAt,
-              aroundEndAt: widget.referenceEndAt,
-            );
+      final list = await adminEvents.fetchEventDuplicateReportCandidates(
+        excludeEventId: widget.currentEventId,
+        aroundStartAt: widget.referenceStartAt,
+        aroundEndAt: widget.referenceEndAt,
+      );
       if (mounted) {
         setState(() {
           _suggestions = list;
@@ -307,6 +302,28 @@ class _EventDuplicatePickerState extends State<EventDuplicatePicker> {
     return null;
   }
 
+  Widget _originChip({required String label, required bool isNative}) {
+    final colors = Theme.of(context).colorScheme;
+    final background = isNative
+        ? colors.primaryContainer.withValues(alpha: 0.35)
+        : colors.surfaceContainerHighest;
+    final foreground = isNative
+        ? colors.onPrimaryContainer
+        : colors.onSurfaceVariant;
+    return Chip(
+      label: Text(label),
+      labelStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: foreground,
+        fontWeight: FontWeight.w600,
+      ),
+      backgroundColor: background,
+      side: BorderSide.none,
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+    );
+  }
+
   Widget _buildEventCandidateTile(
     AppLocalizations l10n,
     ParkourEvent event, {
@@ -314,25 +331,35 @@ class _EventDuplicatePickerState extends State<EventDuplicatePicker> {
     Widget? trailing,
     bool isSelected = false,
     bool showBlockedHint = false,
+    bool showOriginLabels = false,
+    bool showSuggestionNotSelectable = false,
   }) {
     final theme = Theme.of(context);
     final sourceLabel = _eventSourceLabel(event);
     final blockedMessage = showBlockedHint
         ? _confirmBlockedMessage(l10n, event)
         : null;
-    final subtitleParts = <String>[
-      formatEventCandidateSubtitle(event),
-      if (sourceLabel != null) sourceLabel,
-    ];
+    final subtitleParts = <String>[formatEventCandidateSubtitle(event)];
+    final Widget? originChip = !showOriginLabels
+        ? null
+        : event.isNativeEvent
+        ? _originChip(
+            label: l10n.eventDetailDuplicatePickerNativeChip,
+            isNative: true,
+          )
+        : _originChip(
+            label: sourceLabel ?? l10n.spotDetailUnknownSource,
+            isNative: false,
+          );
 
     return ListTile(
       dense: true,
       selected: isSelected,
-      enabled: onTap != null,
       title: Text(event.title, maxLines: 2, overflow: TextOverflow.ellipsis),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (originChip != null) ...[const SizedBox(height: 4), originChip],
           Text(
             subtitleParts.join(' · '),
             maxLines: 3,
@@ -341,6 +368,15 @@ class _EventDuplicatePickerState extends State<EventDuplicatePicker> {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
+          if (showSuggestionNotSelectable) ...[
+            const SizedBox(height: 4),
+            Text(
+              l10n.eventDetailMarkDuplicateSuggestionNotSelectable,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
           if (blockedMessage != null) ...[
             const SizedBox(height: 4),
             Text(
@@ -474,6 +510,7 @@ class _EventDuplicatePickerState extends State<EventDuplicatePicker> {
               foundEvent,
               isSelected: selected?.id == foundEvent.id,
               showBlockedHint: !foundCanConfirm,
+              showOriginLabels: widget.nativeOnlyOriginals,
               trailing: FilledButton(
                 onPressed: foundCanConfirm
                     ? () => _selectEvent(foundEvent)
@@ -491,6 +528,7 @@ class _EventDuplicatePickerState extends State<EventDuplicatePicker> {
               l10n,
               selected,
               isSelected: true,
+              showOriginLabels: widget.nativeOnlyOriginals,
               trailing: Icon(
                 Icons.check_circle,
                 color: theme.colorScheme.primary,
@@ -518,11 +556,13 @@ class _EventDuplicatePickerState extends State<EventDuplicatePicker> {
         else
           ..._suggestions.map((event) {
             final canConfirm = _canConfirm(event);
+            final isModerator = widget.nativeOnlyOriginals;
             return _buildEventCandidateTile(
               l10n,
               event,
               isSelected: selected?.id == event.id,
-              showBlockedHint: widget.nativeOnlyOriginals && !canConfirm,
+              showOriginLabels: isModerator,
+              showSuggestionNotSelectable: isModerator && !canConfirm,
               onTap: event.id == null || !canConfirm
                   ? null
                   : () => _selectEvent(event),

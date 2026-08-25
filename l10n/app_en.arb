@@ -3774,13 +3774,21 @@
   "@eventDetailMarkDuplicateUseButton": {
     "description": "Confirm picked search result in duplicate dialog"
   },
-  "eventDetailMarkDuplicateSuggestionsHeader": "Native events around these dates",
+  "eventDetailMarkDuplicateSuggestionsHeader": "Events around these dates",
   "@eventDetailMarkDuplicateSuggestionsHeader": {
     "description": "Section header in duplicate picker"
   },
-  "eventDetailMarkDuplicateNoSuggestions": "No native events found within a week of this event's dates.",
+  "eventDetailMarkDuplicateNoSuggestions": "No events found within a week of this event's dates.",
   "@eventDetailMarkDuplicateNoSuggestions": {
     "description": "Empty suggestions in duplicate picker"
+  },
+  "eventDetailDuplicatePickerNativeChip": "Native",
+  "@eventDetailDuplicatePickerNativeChip": {
+    "description": "Chip label for a parkour.spot native event in the duplicate picker"
+  },
+  "eventDetailMarkDuplicateSuggestionNotSelectable": "Can't select. Create a native event first.",
+  "@eventDetailMarkDuplicateSuggestionNotSelectable": {
+    "description": "Caption on an external event suggestion in the moderator duplicate picker"
   },
   "eventDetailMarkDuplicateConfirmBody": "Mark this event as a duplicate of “{title}”?",
   "@eventDetailMarkDuplicateConfirmBody": {

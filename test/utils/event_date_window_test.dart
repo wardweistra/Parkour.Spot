@@ -39,4 +39,141 @@ void main() {
       expect(window.overlapsParkourEvent(farAway), isFalse);
     });
   });
+
+  group('compareEventsByDatetimeProximity', () {
+    ParkourEvent event({
+      required String id,
+      required DateTime startAt,
+      DateTime? endAt,
+      String? eventSourceId,
+    }) {
+      return ParkourEvent(
+        id: id,
+        title: id,
+        startAt: startAt,
+        endAt: endAt,
+        eventSourceId: eventSourceId,
+      );
+    }
+
+    final referenceStart = DateTime.utc(2026, 6, 10, 18);
+    final referenceEnd = DateTime.utc(2026, 6, 10, 21);
+
+    test('closer start time ranks first', () {
+      final closer = event(
+        id: 'closer',
+        startAt: DateTime.utc(2026, 6, 10, 19),
+      );
+      final farther = event(
+        id: 'farther',
+        startAt: DateTime.utc(2026, 6, 12, 18),
+      );
+
+      expect(
+        compareEventsByDatetimeProximity(
+          closer,
+          farther,
+          referenceStartAt: referenceStart,
+        ),
+        lessThan(0),
+      );
+    });
+
+    test('end time is used as a tie-break when starts match', () {
+      final closerEnd = event(
+        id: 'closer-end',
+        startAt: referenceStart,
+        endAt: DateTime.utc(2026, 6, 10, 22),
+      );
+      final fartherEnd = event(
+        id: 'farther-end',
+        startAt: referenceStart,
+        endAt: DateTime.utc(2026, 6, 11, 18),
+      );
+
+      expect(
+        compareEventsByDatetimeProximity(
+          closerEnd,
+          fartherEnd,
+          referenceStartAt: referenceStart,
+          referenceEndAt: referenceEnd,
+        ),
+        lessThan(0),
+      );
+    });
+
+    test('missing endAt is treated as startAt', () {
+      final withEnd = event(
+        id: 'with-end',
+        startAt: referenceStart,
+        endAt: DateTime.utc(2026, 6, 11, 18),
+      );
+      final withoutEnd = event(id: 'without-end', startAt: referenceStart);
+
+      expect(
+        compareEventsByDatetimeProximity(
+          withoutEnd,
+          withEnd,
+          referenceStartAt: referenceStart,
+          referenceEndAt: referenceEnd,
+        ),
+        lessThan(0),
+      );
+    });
+
+    test('native ranks before external when datetimes match', () {
+      final native = event(
+        id: 'native',
+        startAt: referenceStart,
+        endAt: referenceEnd,
+      );
+      final external = event(
+        id: 'external',
+        startAt: referenceStart,
+        endAt: referenceEnd,
+        eventSourceId: 'ics-source',
+      );
+
+      expect(
+        compareEventsByDatetimeProximity(
+          native,
+          external,
+          referenceStartAt: referenceStart,
+          referenceEndAt: referenceEnd,
+        ),
+        lessThan(0),
+      );
+    });
+
+    test('sorts a mixed list closest-first', () {
+      final events = [
+        event(id: 'week-later', startAt: DateTime.utc(2026, 6, 16, 18)),
+        event(
+          id: 'external-same-time',
+          startAt: referenceStart,
+          endAt: referenceEnd,
+          eventSourceId: 'ics',
+        ),
+        event(
+          id: 'native-same-time',
+          startAt: referenceStart,
+          endAt: referenceEnd,
+        ),
+        event(id: 'hour-later', startAt: DateTime.utc(2026, 6, 10, 19)),
+      ];
+
+      sortEventsByDatetimeProximity(
+        events,
+        referenceStartAt: referenceStart,
+        referenceEndAt: referenceEnd,
+      );
+
+      expect(events.map((e) => e.id).toList(), [
+        'native-same-time',
+        'external-same-time',
+        'hour-later',
+        'week-later',
+      ]);
+    });
+  });
 }

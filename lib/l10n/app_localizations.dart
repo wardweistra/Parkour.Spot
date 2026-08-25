@@ -6480,14 +6480,26 @@ abstract class AppLocalizations {
   /// Section header in duplicate picker
   ///
   /// In en, this message translates to:
-  /// **'Native events around these dates'**
+  /// **'Events around these dates'**
   String get eventDetailMarkDuplicateSuggestionsHeader;
 
   /// Empty suggestions in duplicate picker
   ///
   /// In en, this message translates to:
-  /// **'No native events found within a week of this event\'s dates.'**
+  /// **'No events found within a week of this event\'s dates.'**
   String get eventDetailMarkDuplicateNoSuggestions;
+
+  /// Chip label for a parkour.spot native event in the duplicate picker
+  ///
+  /// In en, this message translates to:
+  /// **'Native'**
+  String get eventDetailDuplicatePickerNativeChip;
+
+  /// Caption on an external event suggestion in the moderator duplicate picker
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t select. Create a native event first.'**
+  String get eventDetailMarkDuplicateSuggestionNotSelectable;
 
   /// Confirm marking duplicate; title is canonical event name
   ///

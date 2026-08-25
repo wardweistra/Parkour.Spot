@@ -3860,11 +3860,18 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get eventDetailMarkDuplicateSuggestionsHeader =>
-      'Native events rond deze data';
+      'Events rond deze data';
 
   @override
   String get eventDetailMarkDuplicateNoSuggestions =>
-      'Geen native events gevonden binnen een week van de data van dit event.';
+      'Geen events gevonden binnen een week van de data van dit event.';
+
+  @override
+  String get eventDetailDuplicatePickerNativeChip => 'Native';
+
+  @override
+  String get eventDetailMarkDuplicateSuggestionNotSelectable =>
+      'Kan niet worden geselecteerd. Maak eerst een native event.';
 
   @override
   String eventDetailMarkDuplicateConfirmBody(String title) {
