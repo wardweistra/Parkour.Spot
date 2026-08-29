@@ -3,10 +3,7 @@ import '../models/user_notification.dart';
 
 /// Localized title/body for the notifications inbox.
 class UserNotificationCopy {
-  const UserNotificationCopy({
-    required this.title,
-    this.body,
-  });
+  const UserNotificationCopy({required this.title, this.body});
 
   final String title;
   final String? body;
@@ -44,15 +41,19 @@ UserNotificationCopy localizedUserNotificationCopy(
     return t;
   }
 
+  String eventLabel(String? raw) {
+    final t = raw?.trim();
+    if (t == null || t.isEmpty) {
+      return l10n.notificationsEventUntitled;
+    }
+    return t;
+  }
+
   switch (kind) {
     case 'nearby_new_spot':
       return UserNotificationCopy(
-        title: l10n.notificationNearbyNewSpotTitle(
-          spotLabel(args['spotName']),
-        ),
-        body: l10n.notificationNearbyNewSpotBody(
-          actorLabel(args['actorName']),
-        ),
+        title: l10n.notificationNearbyNewSpotTitle(spotLabel(args['spotName'])),
+        body: l10n.notificationNearbyNewSpotBody(actorLabel(args['actorName'])),
       );
     case 'nearby_check_in':
       return UserNotificationCopy(
@@ -76,6 +77,13 @@ UserNotificationCopy localizedUserNotificationCopy(
           spotLabel(args['spotName']),
         ),
         body: l10n.notificationTrainingPlanCheckInReminderBody,
+      );
+    case 'nearby_new_event':
+      return UserNotificationCopy(
+        title: l10n.notificationNearbyNewEventTitle(
+          eventLabel(args['eventName']),
+        ),
+        body: l10n.notificationNearbyNewEventBody,
       );
     default:
       return UserNotificationCopy(

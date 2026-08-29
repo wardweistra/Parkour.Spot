@@ -5,6 +5,7 @@ const {
   isEventPast,
   isExpandableListVisibility,
   isSpotEligibleForPin,
+  resolveEventMainCoordinates,
   MAX_SPOT_PINS_PER_EVENT,
 } = require("../lib/event-map-pins");
 
@@ -175,6 +176,70 @@ describe("event-map-pins helpers", () => {
       expect(pins.filter((p) => p.data.kind === "spot")).toHaveLength(
           MAX_SPOT_PINS_PER_EVENT,
       );
+    });
+  });
+
+  describe("resolveEventMainCoordinates", () => {
+    it("prefers venue coordinates over linked spots", () => {
+      const spotsById = new Map([
+        ["spot-1", {latitude: 52.0, longitude: 4.0, hidden: false}],
+      ]);
+      expect(resolveEventMainCoordinates({
+        latitude: 51.0,
+        longitude: 3.0,
+        spotIds: ["spot-1"],
+      }, spotsById, new Map())).toEqual({
+        latitude: 51.0,
+        longitude: 3.0,
+      });
+    });
+
+    it("uses the first eligible linked spot when there is no venue", () => {
+      const spotsById = new Map([
+        ["spot-bad", {latitude: null, longitude: 4.0}],
+        ["spot-1", {latitude: 52.1, longitude: 4.1, hidden: false}],
+        ["spot-2", {latitude: 53.0, longitude: 5.0, hidden: false}],
+      ]);
+      expect(resolveEventMainCoordinates({
+        spotIds: ["spot-bad", "spot-1", "spot-2"],
+      }, spotsById, new Map())).toEqual({
+        latitude: 52.1,
+        longitude: 4.1,
+      });
+    });
+
+    it("expands public spot lists after direct spotIds", () => {
+      const listsById = new Map([
+        ["list-1", {visibility: "public", spotIds: ["spot-b"]}],
+      ]);
+      const spotsById = new Map([
+        ["spot-b", {latitude: 50.5, longitude: 4.5, hidden: false}],
+      ]);
+      expect(resolveEventMainCoordinates({
+        spotIds: [],
+        spotListIds: ["list-1"],
+      }, spotsById, listsById)).toEqual({
+        latitude: 50.5,
+        longitude: 4.5,
+      });
+    });
+
+    it("skips private lists and ineligible spots", () => {
+      const listsById = new Map([
+        ["list-private", {visibility: "private", spotIds: ["spot-x"]}],
+      ]);
+      const spotsById = new Map([
+        ["spot-x", {latitude: 1, longitude: 2, hidden: false}],
+        ["spot-hidden", {latitude: 3, longitude: 4, hidden: true}],
+      ]);
+      expect(resolveEventMainCoordinates({
+        spotIds: ["spot-hidden"],
+        spotListIds: ["list-private"],
+      }, spotsById, listsById)).toBeNull();
+    });
+
+    it("returns null when event data is missing", () => {
+      expect(resolveEventMainCoordinates(null, new Map(), new Map())).toBeNull();
     });
   });
 });

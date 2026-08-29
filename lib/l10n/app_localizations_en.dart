@@ -159,6 +159,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsSpotUntitled => 'Untitled spot';
 
   @override
+  String get notificationsEventUntitled => 'Untitled event';
+
+  @override
   String notificationNearbyNewSpotTitle(String spotName) {
     return 'New spot nearby: $spotName';
   }
@@ -197,6 +200,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get notificationTrainingPlanCheckInReminderBody =>
       'Your planned session has started. Tap to check in.';
+
+  @override
+  String notificationNearbyNewEventTitle(String eventName) {
+    return 'New event nearby: $eventName';
+  }
+
+  @override
+  String get notificationNearbyNewEventBody =>
+      'An event was added near one of your saved locations.';
 
   @override
   String get profileModeratorSectionTitle => 'Moderator';
@@ -271,7 +283,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileLocationAlertsDescription =>
-      'Control which locations are used for nearby alerts, including check-ins, new spots, training plans, and future events.';
+      'Control which locations are used for nearby alerts, including check-ins, new spots, training plans, and events.';
 
   @override
   String get profileLocationAlertsShareLastKnownTitle => 'Last known location';
@@ -315,6 +327,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
       'Get an in-app notification when someone shares a public training plan at a spot within the alert radius of an active saved place or your last known location.';
+
+  @override
+  String get profileLocationAlertsNotifyEventsTitle =>
+      'Notify me about nearby events';
+
+  @override
+  String get profileLocationAlertsNotifyEventsSubtitle =>
+      'Get an in-app notification when an event is added within the alert radius of an active saved place or your last known location.';
 
   @override
   String get profileTrainingPlanCheckInReminderTitle =>

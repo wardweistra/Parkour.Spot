@@ -161,6 +161,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get notificationsSpotUntitled => 'Spot sem nome';
 
   @override
+  String get notificationsEventUntitled => 'Evento sem nome';
+
+  @override
   String notificationNearbyNewSpotTitle(String spotName) {
     return 'Novo spot por perto: $spotName';
   }
@@ -199,6 +202,15 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get notificationTrainingPlanCheckInReminderBody =>
       'O teu treino planeado já começou. Toca para fazer check-in.';
+
+  @override
+  String notificationNearbyNewEventTitle(String eventName) {
+    return 'Novo evento nas proximidades: $eventName';
+  }
+
+  @override
+  String get notificationNearbyNewEventBody =>
+      'Foi adicionado um evento perto de uma das tuas localizações guardadas.';
 
   @override
   String get profileModeratorSectionTitle => 'Moderador';
@@ -274,7 +286,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get profileLocationAlertsDescription =>
-      'Controle que locais são usados para alertas nas proximidades, incluindo check-ins, novos spots, planos de treino e eventos futuros.';
+      'Controle que locais são usados para alertas nas proximidades, incluindo check-ins, novos spots, planos de treino e eventos.';
 
   @override
   String get profileLocationAlertsShareLastKnownTitle =>
@@ -320,6 +332,14 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
       'Receba uma notificação na app quando alguém partilhar um plano de treino público num spot dentro do raio de alerta de um local guardado ativo ou da sua última localização conhecida.';
+
+  @override
+  String get profileLocationAlertsNotifyEventsTitle =>
+      'Notificar sobre eventos nas proximidades';
+
+  @override
+  String get profileLocationAlertsNotifyEventsSubtitle =>
+      'Receba uma notificação na app quando um evento for adicionado dentro do raio de alerta de um local guardado ativo ou da sua última localização conhecida.';
 
   @override
   String get profileTrainingPlanCheckInReminderTitle =>

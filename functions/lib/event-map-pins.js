@@ -303,17 +303,50 @@ async function deleteEventMapPins(db, eventId) {
 }
 
 /**
- * @param {FirebaseFirestore.Firestore} db
- * @param {string} eventId
+ * Representative (lat, lng) for an event: venue coords if present, otherwise
+ * the first eligible linked spot (direct spotIds, then expandable lists).
  * @param {Object} eventData
- * @param {Object=} options
- * @return {Promise<{pinsWritten: number, truncated: boolean}>}
+ * @param {Map<string, Object>} spotsById
+ * @param {Map<string, Object>} listsById
+ * @return {{latitude: number, longitude: number}|null}
  */
-async function materializeEventMapPins(db, eventId, eventData, options = {}) {
-  await deleteEventMapPins(db, eventId);
+function resolveEventMainCoordinates(eventData, spotsById, listsById) {
+  if (!eventData || typeof eventData !== "object") {
+    return null;
+  }
+  if (hasValidCoordinates(eventData.latitude, eventData.longitude)) {
+    return {
+      latitude: eventData.latitude,
+      longitude: eventData.longitude,
+    };
+  }
+  const linkedSpotIds = collectLinkedSpotIds(
+      eventData,
+      listsById instanceof Map ? listsById : new Map(),
+  );
+  const spots = spotsById instanceof Map ? spotsById : new Map();
+  for (const spotId of linkedSpotIds) {
+    const spotData = spots.get(spotId);
+    if (!isSpotEligibleForPin(spotData)) continue;
+    return {
+      latitude: spotData.latitude,
+      longitude: spotData.longitude,
+    };
+  }
+  return null;
+}
 
-  const spotListIds = Array.isArray(eventData.spotListIds) ?
-    eventData.spotListIds
+/**
+ * Loads linked lists and spots used for pin materialization and main location.
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {Object} eventData
+ * @return {Promise<{listsById: Map<string, Object>,
+ *   spotsById: Map<string, Object>}>}
+ */
+async function loadEventLinkedLocationInputs(db, eventData) {
+  const data = eventData && typeof eventData === "object" ? eventData : {};
+  const spotListIds = Array.isArray(data.spotListIds) ?
+    data.spotListIds
         .filter((id) => typeof id === "string" && id.trim().length > 0)
         .map((id) => id.trim()) :
     [];
@@ -326,7 +359,7 @@ async function materializeEventMapPins(db, eventId, eventData, options = {}) {
     }
   }
 
-  const allSpotIds = collectLinkedSpotIds(eventData, listsById);
+  const allSpotIds = collectLinkedSpotIds(data, listsById);
   const spotsById = new Map();
   const chunkSize = 30;
   for (let i = 0; i < allSpotIds.length; i += chunkSize) {
@@ -341,6 +374,45 @@ async function materializeEventMapPins(db, eventId, eventData, options = {}) {
       }
     }
   }
+  return {listsById, spotsById};
+}
+
+/**
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {Object} eventData
+ * @return {Promise<{latitude: number, longitude: number}|null>}
+ */
+async function loadEventMainCoordinates(db, eventData) {
+  if (!eventData) {
+    return null;
+  }
+  if (hasValidCoordinates(eventData.latitude, eventData.longitude)) {
+    return {
+      latitude: eventData.latitude,
+      longitude: eventData.longitude,
+    };
+  }
+  const {listsById, spotsById} = await loadEventLinkedLocationInputs(
+      db,
+      eventData,
+  );
+  return resolveEventMainCoordinates(eventData, spotsById, listsById);
+}
+
+/**
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {string} eventId
+ * @param {Object} eventData
+ * @param {Object=} options
+ * @return {Promise<{pinsWritten: number, truncated: boolean}>}
+ */
+async function materializeEventMapPins(db, eventId, eventData, options = {}) {
+  await deleteEventMapPins(db, eventId);
+
+  const {listsById, spotsById} = await loadEventLinkedLocationInputs(
+      db,
+      eventData,
+  );
 
   const {pins, truncated} = buildEventMapPinWrites(
       eventId,
@@ -397,6 +469,9 @@ module.exports = {
   effectiveSpotIdsFromList,
   isSpotEligibleForPin,
   collectLinkedSpotIds,
+  resolveEventMainCoordinates,
+  loadEventLinkedLocationInputs,
+  loadEventMainCoordinates,
   pickEventCardFields,
   buildEventMapPinWrites,
   deleteEventMapPins,

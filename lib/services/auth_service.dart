@@ -827,6 +827,31 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// Opt in or out of in-app notifications when an event is added near an
+  /// enabled location of interest.
+  Future<bool> updateNotifyEventsNearby(bool enabled) async {
+    if (_auth.currentUser == null || _userProfile == null) {
+      debugPrint(
+        'Cannot update nearby event notification preference: user not authenticated or profile not loaded',
+      );
+      return false;
+    }
+
+    try {
+      final userId = _auth.currentUser!.uid;
+      await _firestore.collection('users').doc(userId).update({
+        'notifyEventsNearby': enabled,
+      });
+
+      _userProfile = _userProfile!.copyWith(notifyEventsNearby: enabled);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error updating nearby event notification preference: $e');
+      return false;
+    }
+  }
+
   /// Opt in or out of reminders to check in when a planned training session
   /// has started.
   Future<bool> updateNotifyTrainingPlanCheckInReminders(bool enabled) async {

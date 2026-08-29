@@ -1,9 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum UserNotificationDeeplinkKind {
-  spot,
-  profile,
-}
+enum UserNotificationDeeplinkKind { spot, event, profile }
 
 class UserNotification {
   const UserNotification({
@@ -21,9 +18,11 @@ class UserNotification {
   final String id;
   final String title;
   final String? body;
+
   /// Backend stable id for localized inbox copy (e.g. `nearby_new_spot`).
   final String? notificationKind;
-  /// Parameters for [notificationKind] templates (`actorName`, `spotName`).
+
+  /// Parameters for [notificationKind] templates (`actorName`, `spotName`, `eventName`).
   final Map<String, String>? templateArgs;
   final UserNotificationDeeplinkKind deeplinkKind;
   final String deeplinkId;
@@ -48,7 +47,10 @@ class UserNotification {
   }
 
   /// Payload from [listInAppNotificationsForAdmin] callable (plain JSON maps).
-  factory UserNotification.fromAdminCallable(String id, Map<String, dynamic> data) {
+  factory UserNotification.fromAdminCallable(
+    String id,
+    Map<String, dynamic> data,
+  ) {
     return UserNotification(
       id: id,
       title: data['title'] as String? ?? '',
@@ -70,7 +72,7 @@ class UserNotification {
   static Map<String, String>? _templateArgsFromFirestore(dynamic raw) {
     if (raw is! Map) return null;
     final out = <String, String>{};
-    for (final key in const ['actorName', 'spotName']) {
+    for (final key in const ['actorName', 'spotName', 'eventName']) {
       final v = raw[key];
       if (v is String) {
         out[key] = v;
@@ -83,6 +85,8 @@ class UserNotification {
     switch (raw) {
       case 'profile':
         return UserNotificationDeeplinkKind.profile;
+      case 'event':
+        return UserNotificationDeeplinkKind.event;
       case 'spot':
       default:
         return UserNotificationDeeplinkKind.spot;

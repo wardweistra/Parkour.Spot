@@ -309,6 +309,8 @@ class AccountSettingsScreen extends StatelessWidget {
         authService.userProfile?.notifyCheckInsNearby == true;
     final notifyTrainingPlansNearby =
         authService.userProfile?.notifyTrainingPlansNearby == true;
+    final notifyEventsNearby =
+        authService.userProfile?.notifyEventsNearby == true;
     final notifyTrainingPlanCheckInReminders =
         authService.userProfile?.notifyTrainingPlanCheckInReminders == true;
     final pushService = context.watch<WebPushSubscriptionService>();
@@ -451,6 +453,28 @@ class AccountSettingsScreen extends StatelessWidget {
                             ? (enabled) async {
                                 await authService
                                     .updateNotifyTrainingPlansNearby(enabled);
+                              }
+                            : null,
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.event_outlined,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      title: Text(l10n.profileLocationAlertsNotifyEventsTitle),
+                      subtitle: Text(
+                        l10n.profileLocationAlertsNotifyEventsSubtitle,
+                      ),
+                      trailing: Switch(
+                        value: notifyEventsNearby,
+                        onChanged: canOptInNewSpotAlerts
+                            ? (enabled) async {
+                                await authService.updateNotifyEventsNearby(
+                                  enabled,
+                                );
                               }
                             : null,
                       ),

@@ -163,6 +163,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get notificationsSpotUntitled => 'Unbenannter Spot';
 
   @override
+  String get notificationsEventUntitled => 'Unbenanntes Event';
+
+  @override
   String notificationNearbyNewSpotTitle(String spotName) {
     return 'Neuer Spot in der Nähe: $spotName';
   }
@@ -201,6 +204,15 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get notificationTrainingPlanCheckInReminderBody =>
       'Deine geplante Session hat begonnen. Tippe zum Einchecken.';
+
+  @override
+  String notificationNearbyNewEventTitle(String eventName) {
+    return 'Neues Event in der Nähe: $eventName';
+  }
+
+  @override
+  String get notificationNearbyNewEventBody =>
+      'Ein Event wurde in der Nähe eines deiner gespeicherten Orte hinzugefügt.';
 
   @override
   String get profileModeratorSectionTitle => 'Moderation';
@@ -276,7 +288,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileLocationAlertsDescription =>
-      'Lege fest, welche Standorte für Benachrichtigungen in der Nähe verwendet werden – z. B. für Check-ins, neue Spots, Trainingspläne und künftige Events.';
+      'Lege fest, welche Standorte für Benachrichtigungen in der Nähe verwendet werden – z. B. für Check-ins, neue Spots, Trainingspläne und Events.';
 
   @override
   String get profileLocationAlertsShareLastKnownTitle =>
@@ -322,6 +334,14 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
       'Erhalte eine In-App-Benachrichtigung, wenn jemand ein öffentliches Trainingsfenster an einem Spot innerhalb des Umkreises eines aktiven gespeicherten Orts oder deines letzten bekannten Standorts teilt.';
+
+  @override
+  String get profileLocationAlertsNotifyEventsTitle =>
+      'Benachrichtigung über Events in der Nähe';
+
+  @override
+  String get profileLocationAlertsNotifyEventsSubtitle =>
+      'Erhalte eine In-App-Benachrichtigung, wenn ein Event innerhalb des Umkreises eines aktiven gespeicherten Orts oder deines letzten bekannten Standorts hinzugefügt wird.';
 
   @override
   String get profileTrainingPlanCheckInReminderTitle =>

@@ -370,6 +370,12 @@ abstract class AppLocalizations {
   /// **'Untitled spot'**
   String get notificationsSpotUntitled;
 
+  /// Fallback event name in notifications when the event title is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled event'**
+  String get notificationsEventUntitled;
+
   /// In-app notification title when a new spot was added near a saved location
   ///
   /// In en, this message translates to:
@@ -417,6 +423,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your planned session has started. Tap to check in.'**
   String get notificationTrainingPlanCheckInReminderBody;
+
+  /// In-app notification title when an event was added near a saved location
+  ///
+  /// In en, this message translates to:
+  /// **'New event nearby: {eventName}'**
+  String notificationNearbyNewEventTitle(String eventName);
+
+  /// In-app notification body for a nearby new community event
+  ///
+  /// In en, this message translates to:
+  /// **'An event was added near one of your saved locations.'**
+  String get notificationNearbyNewEventBody;
 
   /// Account tab: moderator section heading
   ///
@@ -541,7 +559,7 @@ abstract class AppLocalizations {
   /// Account settings: location alerts section description
   ///
   /// In en, this message translates to:
-  /// **'Control which locations are used for nearby alerts, including check-ins, new spots, training plans, and future events.'**
+  /// **'Control which locations are used for nearby alerts, including check-ins, new spots, training plans, and events.'**
   String get profileLocationAlertsDescription;
 
   /// Account settings: toggle title for using last known location in alerts
@@ -609,6 +627,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Get an in-app notification when someone shares a public training plan at a spot within the alert radius of an active saved place or your last known location.'**
   String get profileLocationAlertsNotifyTrainingPlansSubtitle;
+
+  /// Account settings: toggle for in-app notifications when an event is added near an enabled location of interest
+  ///
+  /// In en, this message translates to:
+  /// **'Notify me about nearby events'**
+  String get profileLocationAlertsNotifyEventsTitle;
+
+  /// Account settings: explains nearby event notification opt-in and range
+  ///
+  /// In en, this message translates to:
+  /// **'Get an in-app notification when an event is added within the alert radius of an active saved place or your last known location.'**
+  String get profileLocationAlertsNotifyEventsSubtitle;
 
   /// Account settings: toggle for reminders when a planned training window starts
   ///

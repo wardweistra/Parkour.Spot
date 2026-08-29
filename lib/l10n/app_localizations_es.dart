@@ -161,6 +161,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get notificationsSpotUntitled => 'Spot sin título';
 
   @override
+  String get notificationsEventUntitled => 'Evento sin título';
+
+  @override
   String notificationNearbyNewSpotTitle(String spotName) {
     return 'Nuevo spot cerca: $spotName';
   }
@@ -199,6 +202,15 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get notificationTrainingPlanCheckInReminderBody =>
       'Tu sesión planificada ya ha empezado. Toca para hacer check-in.';
+
+  @override
+  String notificationNearbyNewEventTitle(String eventName) {
+    return 'Evento nuevo cerca: $eventName';
+  }
+
+  @override
+  String get notificationNearbyNewEventBody =>
+      'Se añadió un evento cerca de uno de tus lugares guardados.';
 
   @override
   String get profileModeratorSectionTitle => 'Moderador';
@@ -274,7 +286,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get profileLocationAlertsDescription =>
-      'Controla qué ubicaciones se usan para alertas cercanas, como check-ins, spots nuevos, planes de entreno y futuros eventos.';
+      'Controla qué ubicaciones se usan para alertas cercanas, como check-ins, spots nuevos, planes de entreno y eventos.';
 
   @override
   String get profileLocationAlertsShareLastKnownTitle =>
@@ -319,6 +331,14 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
       'Recibe una notificación en la app cuando alguien comparta un plan de entreno público en un spot dentro del radio de alerta de un lugar guardado activo o de tu última ubicación conocida.';
+
+  @override
+  String get profileLocationAlertsNotifyEventsTitle =>
+      'Avisarme sobre eventos cercanos';
+
+  @override
+  String get profileLocationAlertsNotifyEventsSubtitle =>
+      'Recibe una notificación en la app cuando se añada un evento dentro del radio de alerta de un lugar guardado activo o de tu última ubicación conocida.';
 
   @override
   String get profileTrainingPlanCheckInReminderTitle =>

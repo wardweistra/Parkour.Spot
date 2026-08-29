@@ -295,8 +295,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   ) async {
     final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
-    final ok =
-        await context.read<UserNotificationService>().markAsUnread(item.id);
+    final ok = await context.read<UserNotificationService>().markAsUnread(
+      item.id,
+    );
     if (!context.mounted) return;
     if (!ok) {
       messenger.showSnackBar(
@@ -313,8 +314,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (item.read) return;
     final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
-    final ok =
-        await context.read<UserNotificationService>().markAsRead(item.id);
+    final ok = await context.read<UserNotificationService>().markAsRead(
+      item.id,
+    );
     if (!context.mounted) return;
     if (!ok) {
       messenger.showSnackBar(
@@ -353,6 +355,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     switch (item.deeplinkKind) {
       case UserNotificationDeeplinkKind.spot:
         context.push('/spot/${item.deeplinkId}');
+      case UserNotificationDeeplinkKind.event:
+        context.push('/event/${item.deeplinkId}');
       case UserNotificationDeeplinkKind.profile:
         context.push('/user/${Uri.encodeComponent(item.deeplinkId)}');
     }
@@ -444,6 +448,7 @@ class _NotificationListTile extends StatelessWidget {
   final UserNotification item;
   final String timeLabel;
   final VoidCallback onOpen;
+
   /// Read row → mark unread; unread row → mark read (no navigation).
   final VoidCallback onLongPress;
 
@@ -492,9 +497,13 @@ class _NotificationListTile extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 1),
                   child: Icon(
-                    item.deeplinkKind == UserNotificationDeeplinkKind.spot
-                        ? Icons.place_outlined
-                        : Icons.person_outline,
+                    switch (item.deeplinkKind) {
+                      UserNotificationDeeplinkKind.event =>
+                        Icons.event_outlined,
+                      UserNotificationDeeplinkKind.spot => Icons.place_outlined,
+                      UserNotificationDeeplinkKind.profile =>
+                        Icons.person_outline,
+                    },
                     color: scheme.primary.withValues(
                       alpha: isUnread ? 1 : 0.65,
                     ),

@@ -160,6 +160,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get notificationsSpotUntitled => 'Spot sans titre';
 
   @override
+  String get notificationsEventUntitled => 'Événement sans titre';
+
+  @override
   String notificationNearbyNewSpotTitle(String spotName) {
     return 'Nouveau spot à proximité : $spotName';
   }
@@ -198,6 +201,15 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get notificationTrainingPlanCheckInReminderBody =>
       'Votre séance prévue a commencé. Touchez pour vous enregistrer.';
+
+  @override
+  String notificationNearbyNewEventTitle(String eventName) {
+    return 'Nouvel événement à proximité : $eventName';
+  }
+
+  @override
+  String get notificationNearbyNewEventBody =>
+      'Un événement a été ajouté près de l’un de vos lieux enregistrés.';
 
   @override
   String get profileModeratorSectionTitle => 'Modération';
@@ -272,7 +284,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get profileLocationAlertsDescription =>
-      'Choisissez les lieux utilisés pour les alertes à proximité, y compris les enregistrements, les nouveaux spots, les séances planifiées et les futurs événements.';
+      'Choisissez les lieux utilisés pour les alertes à proximité, y compris les enregistrements, les nouveaux spots, les séances planifiées et les événements.';
 
   @override
   String get profileLocationAlertsShareLastKnownTitle =>
@@ -317,6 +329,14 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
       'Recevez une notification in-app lorsque quelqu’un partage une fenêtre d’entraînement publique sur un spot dans le rayon d’alerte d’un lieu enregistré actif ou de votre dernière position connue.';
+
+  @override
+  String get profileLocationAlertsNotifyEventsTitle =>
+      'Me prévenir des événements à proximité';
+
+  @override
+  String get profileLocationAlertsNotifyEventsSubtitle =>
+      'Recevez une notification in-app lorsqu’un événement est ajouté dans le rayon d’alerte d’un lieu enregistré actif ou de votre dernière position connue.';
 
   @override
   String get profileTrainingPlanCheckInReminderTitle =>

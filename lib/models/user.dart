@@ -23,6 +23,7 @@ class User {
   final bool notifyNewSpotsNearby;
   final bool notifyCheckInsNearby;
   final bool notifyTrainingPlansNearby;
+  final bool notifyEventsNearby;
   final bool notifyTrainingPlanCheckInReminders;
   final String? preferredLanguageCode;
   final bool isLanguageExplicitlySet;
@@ -50,6 +51,7 @@ class User {
     this.notifyNewSpotsNearby = true,
     this.notifyCheckInsNearby = true,
     this.notifyTrainingPlansNearby = true,
+    this.notifyEventsNearby = true,
     this.notifyTrainingPlanCheckInReminders = true,
     this.preferredLanguageCode,
     this.isLanguageExplicitlySet = false,
@@ -96,6 +98,9 @@ class User {
       notifyTrainingPlansNearby: map['notifyTrainingPlansNearby'] is bool
           ? map['notifyTrainingPlansNearby'] as bool
           : true,
+      notifyEventsNearby: map['notifyEventsNearby'] is bool
+          ? map['notifyEventsNearby'] as bool
+          : true,
       notifyTrainingPlanCheckInReminders:
           map['notifyTrainingPlanCheckInReminders'] is bool
           ? map['notifyTrainingPlanCheckInReminders'] as bool
@@ -131,6 +136,7 @@ class User {
       'notifyNewSpotsNearby': notifyNewSpotsNearby,
       'notifyCheckInsNearby': notifyCheckInsNearby,
       'notifyTrainingPlansNearby': notifyTrainingPlansNearby,
+      'notifyEventsNearby': notifyEventsNearby,
       'notifyTrainingPlanCheckInReminders': notifyTrainingPlanCheckInReminders,
       'preferredLanguageCode': preferredLanguageCode,
       'isLanguageExplicitlySet': isLanguageExplicitlySet,
@@ -162,6 +168,7 @@ class User {
     bool? notifyNewSpotsNearby,
     bool? notifyCheckInsNearby,
     bool? notifyTrainingPlansNearby,
+    bool? notifyEventsNearby,
     bool? notifyTrainingPlanCheckInReminders,
     Object? preferredLanguageCode = _omit,
     bool? isLanguageExplicitlySet,
@@ -195,6 +202,7 @@ class User {
       notifyCheckInsNearby: notifyCheckInsNearby ?? this.notifyCheckInsNearby,
       notifyTrainingPlansNearby:
           notifyTrainingPlansNearby ?? this.notifyTrainingPlansNearby,
+      notifyEventsNearby: notifyEventsNearby ?? this.notifyEventsNearby,
       notifyTrainingPlanCheckInReminders:
           notifyTrainingPlanCheckInReminders ??
           this.notifyTrainingPlanCheckInReminders,

@@ -24,4 +24,27 @@ void main() {
       );
     });
   });
+
+  group('User.notifyEventsNearby', () {
+    test('defaults to true when the field is missing', () {
+      final user = User.fromMap({'id': 'user-1', 'email': 'user@parkour.spot'});
+
+      expect(user.notifyEventsNearby, isTrue);
+      expect(user.toMap()['notifyEventsNearby'], isTrue);
+    });
+
+    test('is off only when the flag is false', () {
+      final user = User.fromMap({
+        'id': 'user-1',
+        'email': 'user@parkour.spot',
+        'notifyEventsNearby': false,
+      });
+
+      expect(user.notifyEventsNearby, isFalse);
+      expect(
+        user.copyWith(notifyEventsNearby: true).notifyEventsNearby,
+        isTrue,
+      );
+    });
+  });
 }

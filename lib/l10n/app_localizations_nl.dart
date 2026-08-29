@@ -161,6 +161,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get notificationsSpotUntitled => 'Spot zonder naam';
 
   @override
+  String get notificationsEventUntitled => 'Evenement zonder naam';
+
+  @override
   String notificationNearbyNewSpotTitle(String spotName) {
     return 'Nieuwe spot in de buurt: $spotName';
   }
@@ -198,6 +201,15 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get notificationTrainingPlanCheckInReminderBody =>
       'Je geplande sessie is begonnen. Tik om in te checken.';
+
+  @override
+  String notificationNearbyNewEventTitle(String eventName) {
+    return 'Nieuw evenement in de buurt: $eventName';
+  }
+
+  @override
+  String get notificationNearbyNewEventBody =>
+      'Er is een evenement toegevoegd nabij een van je opgeslagen locaties.';
 
   @override
   String get profileModeratorSectionTitle => 'Moderator';
@@ -271,7 +283,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get profileLocationAlertsDescription =>
-      'Bepaal welke locaties worden gebruikt voor meldingen in de buurt, waaronder check-ins, nieuwe spots, trainingsplannen en toekomstige evenementen.';
+      'Bepaal welke locaties worden gebruikt voor meldingen in de buurt, waaronder check-ins, nieuwe spots, trainingsplannen en evenementen.';
 
   @override
   String get profileLocationAlertsShareLastKnownTitle =>
@@ -316,6 +328,14 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
       'Ontvang een in-app melding wanneer iemand een openbaar trainingsvenster deelt op een spot binnen de meldingsstraal van een actieve opgeslagen plek of je laatst bekende locatie.';
+
+  @override
+  String get profileLocationAlertsNotifyEventsTitle =>
+      'Melding bij evenementen in de buurt';
+
+  @override
+  String get profileLocationAlertsNotifyEventsSubtitle =>
+      'Ontvang een in-app melding wanneer een evenement wordt toegevoegd binnen de meldingsstraal van een actieve opgeslagen plek of je laatst bekende locatie.';
 
   @override
   String get profileTrainingPlanCheckInReminderTitle =>

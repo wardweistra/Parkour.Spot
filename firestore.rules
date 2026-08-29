@@ -539,7 +539,7 @@ service cloud.firestore {
             (data.notificationKind is string &&
               data.notificationKind.size() > 0 &&
               data.notificationKind.size() <= 64 &&
-              data.notificationKind in ['nearby_new_spot', 'nearby_check_in', 'nearby_training_plan', 'training_plan_check_in_reminder']);
+              data.notificationKind in ['nearby_new_spot', 'nearby_check_in', 'nearby_training_plan', 'nearby_new_event', 'training_plan_check_in_reminder']);
         }
         function notificationTemplateArgsOk(data) {
           return !('templateArgs' in data) || (
@@ -550,12 +550,15 @@ service cloud.firestore {
                 data.templateArgs.actorName.size() <= 200)) &&
             (!('spotName' in data.templateArgs) ||
               (data.templateArgs.spotName is string &&
-                data.templateArgs.spotName.size() <= 200))
+                data.templateArgs.spotName.size() <= 200)) &&
+            (!('eventName' in data.templateArgs) ||
+              (data.templateArgs.eventName is string &&
+                data.templateArgs.eventName.size() <= 200))
           );
         }
         function notificationDeeplinkOk(data) {
           return data.deeplinkKind is string &&
-            data.deeplinkKind in ['spot', 'profile'] &&
+            data.deeplinkKind in ['spot', 'event', 'profile'] &&
             data.deeplinkId is string &&
             data.deeplinkId.size() > 0 &&
             data.deeplinkId.size() <= 200;

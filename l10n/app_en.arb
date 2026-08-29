@@ -186,6 +186,10 @@
   "@notificationsSpotUntitled": {
     "description": "Fallback spot name in notifications when the spot title is empty"
   },
+  "notificationsEventUntitled": "Untitled event",
+  "@notificationsEventUntitled": {
+    "description": "Fallback event name in notifications when the event title is empty"
+  },
   "notificationNearbyNewSpotTitle": "New spot nearby: {spotName}",
   "@notificationNearbyNewSpotTitle": {
     "description": "In-app notification title when a new spot was added near a saved location",
@@ -248,6 +252,19 @@
   "notificationTrainingPlanCheckInReminderBody": "Your planned session has started. Tap to check in.",
   "@notificationTrainingPlanCheckInReminderBody": {
     "description": "In-app notification body for training plan check-in reminder"
+  },
+  "notificationNearbyNewEventTitle": "New event nearby: {eventName}",
+  "@notificationNearbyNewEventTitle": {
+    "description": "In-app notification title when an event was added near a saved location",
+    "placeholders": {
+      "eventName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationNearbyNewEventBody": "An event was added near one of your saved locations.",
+  "@notificationNearbyNewEventBody": {
+    "description": "In-app notification body for a nearby new community event"
   },
   "profileModeratorSectionTitle": "Moderator",
   "@profileModeratorSectionTitle": {
@@ -329,7 +346,7 @@
   "@profilePushNotificationsError": {
     "description": "Account settings: generic error shown under push subscription toggle"
   },
-  "profileLocationAlertsDescription": "Control which locations are used for nearby alerts, including check-ins, new spots, training plans, and future events.",
+  "profileLocationAlertsDescription": "Control which locations are used for nearby alerts, including check-ins, new spots, training plans, and events.",
   "@profileLocationAlertsDescription": {
     "description": "Account settings: location alerts section description"
   },
@@ -381,6 +398,14 @@
   "profileLocationAlertsNotifyTrainingPlansSubtitle": "Get an in-app notification when someone shares a public training plan at a spot within the alert radius of an active saved place or your last known location.",
   "@profileLocationAlertsNotifyTrainingPlansSubtitle": {
     "description": "Account settings: explains nearby training-plan notification opt-in and range"
+  },
+  "profileLocationAlertsNotifyEventsTitle": "Notify me about nearby events",
+  "@profileLocationAlertsNotifyEventsTitle": {
+    "description": "Account settings: toggle for in-app notifications when an event is added near an enabled location of interest"
+  },
+  "profileLocationAlertsNotifyEventsSubtitle": "Get an in-app notification when an event is added within the alert radius of an active saved place or your last known location.",
+  "@profileLocationAlertsNotifyEventsSubtitle": {
+    "description": "Account settings: explains nearby event notification opt-in and range"
   },
   "profileTrainingPlanCheckInReminderTitle": "Remind me to check in for planned sessions",
   "@profileTrainingPlanCheckInReminderTitle": {

@@ -75,6 +75,9 @@ const {
   fanOutNearbyTrainingPlanNotifications,
 } = require("./lib/nearby-training-plan-notifications");
 const {
+  fanOutNearbyNewEventNotifications,
+} = require("./lib/nearby-new-event-notifications");
+const {
   runTrainingPlanCheckInReminders,
 } = require("./lib/training-plan-check-in-reminders");
 // Nearby notification fan-out will use collectionGroup("locationsOfInterest")
@@ -5456,6 +5459,20 @@ exports.onEventWritten = onDocumentWritten(
         }
         const termsWritten = await replaceEventSearchTerms(eventId, eventData);
         await materializeEventMapPins(db, eventId, eventData);
+        try {
+          await fanOutNearbyNewEventNotifications({
+            db,
+            FieldValue,
+            eventId,
+            beforeData,
+            eventData,
+          });
+        } catch (notifyErr) {
+          console.error("onEventWritten nearby notifications error", {
+            eventId,
+            err: notifyErr,
+          });
+        }
         console.log("Indexed event search terms:", {
           eventId,
           title: typeof eventData.title === "string" ? eventData.title.slice(0, 40) : "",

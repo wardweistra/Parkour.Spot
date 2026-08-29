@@ -49,10 +49,7 @@ void main() {
         title: 'English title',
         body: 'English body',
         notificationKind: 'nearby_training_plan',
-        templateArgs: const {
-          'actorName': 'Sam',
-          'spotName': 'Wall',
-        },
+        templateArgs: const {'actorName': 'Sam', 'spotName': 'Wall'},
         deeplinkKind: UserNotificationDeeplinkKind.spot,
         deeplinkId: 's1',
       );
@@ -67,10 +64,7 @@ void main() {
         title: 'English title',
         body: 'English body',
         notificationKind: 'nearby_check_in',
-        templateArgs: const {
-          'actorName': 'Alex',
-          'spotName': 'Session',
-        },
+        templateArgs: const {'actorName': 'Alex', 'spotName': 'Session'},
         deeplinkKind: UserNotificationDeeplinkKind.spot,
         deeplinkId: 's1',
       );
@@ -92,6 +86,34 @@ void main() {
       final copy = localizedUserNotificationCopy(n, en);
       expect(copy.title, 'Time to check in at North Wall');
       expect(copy.body, en.notificationTrainingPlanCheckInReminderBody);
+    });
+
+    test('localizes nearby_new_event with fallbacks', () {
+      final n = UserNotification(
+        id: '1',
+        title: 'English title',
+        body: 'English body',
+        notificationKind: 'nearby_new_event',
+        templateArgs: const {'eventName': ''},
+        deeplinkKind: UserNotificationDeeplinkKind.event,
+        deeplinkId: 'e1',
+      );
+      final copyEn = localizedUserNotificationCopy(n, en);
+      expect(copyEn.title, 'New event nearby: Untitled event');
+      expect(copyEn.body, en.notificationNearbyNewEventBody);
+
+      final copyNl = localizedUserNotificationCopy(
+        UserNotification(
+          id: '1',
+          title: 'English title',
+          notificationKind: 'nearby_new_event',
+          templateArgs: const {'eventName': 'Jam'},
+          deeplinkKind: UserNotificationDeeplinkKind.event,
+          deeplinkId: 'e1',
+        ),
+        nl,
+      );
+      expect(copyNl.title, 'Nieuw evenement in de buurt: Jam');
     });
 
     test('unknown notificationKind falls back to stored strings', () {
