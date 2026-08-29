@@ -194,146 +194,67 @@ class AccountSettingsScreen extends StatelessWidget {
                 final saved = locations
                     .where((loc) => !loc.isLastKnown)
                     .toList();
+                final lastKnown = locations
+                    .where((loc) => loc.isLastKnown)
+                    .firstOrNull;
                 final noActiveSaved =
                     saved.isEmpty || saved.every((loc) => !loc.enabled);
                 final showNoLocationAlertsMessage =
                     !shareLastKnown && noActiveSaved;
                 return Column(
                   children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(
-                        Icons.my_location_outlined,
-                        color: Theme.of(context).colorScheme.primary,
+                    _LastKnownLocationRow(
+                      shareEnabled: shareLastKnown,
+                      lastKnown: lastKnown,
+                      subtitle: _lastKnownSubtitle(
+                        l10n,
+                        shareEnabled: shareLastKnown,
+                        lastKnown: lastKnown,
                       ),
-                      title: Text(
-                        l10n.profileLocationAlertsShareLastKnownTitle,
+                      onShareChanged: (enabled) => _setShareLastKnown(
+                        context: context,
+                        authService: authService,
+                        locationsService: locationsService,
+                        enabled: enabled,
                       ),
-                      subtitle: Text(
-                        l10n.profileLocationAlertsShareLastKnownSubtitle,
-                      ),
-                      trailing: Switch(
-                        value: shareLastKnown,
-                        onChanged: (enabled) async {
-                          final prefSaved = await authService
-                              .updateShareLastKnownLocationForAlerts(enabled);
-                          if (!prefSaved || !context.mounted) return;
-                          await locationsService.setLastKnownEnabled(enabled);
-                          if (!context.mounted) return;
-                          if (enabled) {
-                            final position =
-                                await LocationPermissionUtils.getCurrentPositionWithPermission(
-                                  context: context,
-                                  showErrorMessages: false,
-                                );
-                            if (position != null && context.mounted) {
-                              await locationsService.upsertLastKnownLocation(
-                                latitude: position.latitude,
-                                longitude: position.longitude,
-                              );
-                            }
-                          }
-                        },
-                      ),
+                      onToggleEnabled: () {
+                        final known = lastKnown;
+                        if (known == null) return;
+                        locationsService.setLocationEnabled(
+                          id: known.id,
+                          enabled: !known.enabled,
+                        );
+                      },
+                      onEdit: () {
+                        final known = lastKnown;
+                        if (known == null) return;
+                        _showLocationEditorDialog(context, existing: known);
+                      },
                     ),
                     if (saved.isNotEmpty) const Divider(),
                     ...saved.map(
-                      (location) => ListTile(
+                      (location) => _LocationOfInterestRow(
                         key: ValueKey(location.id),
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(
-                          location.label ??
-                              l10n.profileLocationAlertsDefaultLabel,
+                        location: location,
+                        title:
+                            location.label ??
+                            l10n.profileLocationAlertsDefaultLabel,
+                        subtitle: _locationSubtitle(l10n, location),
+                        leadingIcon: Icons.place_outlined,
+                        onToggleEnabled: () {
+                          locationsService.setLocationEnabled(
+                            id: location.id,
+                            enabled: !location.enabled,
+                          );
+                        },
+                        onEdit: () => _showLocationEditorDialog(
+                          context,
+                          existing: location,
                         ),
-                        subtitle:
-                            location.address != null &&
-                                location.address!.isNotEmpty
-                            ? Text(
-                                location.address!,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurface
-                                          .withValues(alpha: 0.65),
-                                    ),
-                              )
-                            : null,
-                        leading: Icon(
-                          Icons.place_outlined,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        trailing: Wrap(
-                          spacing: 4,
-                          children: [
-                            IconButton(
-                              tooltip: location.enabled
-                                  ? l10n.profileLocationAlertsDisableTooltip
-                                  : l10n.profileLocationAlertsEnableTooltip,
-                              onPressed: () async {
-                                await locationsService.setLocationEnabled(
-                                  id: location.id,
-                                  enabled: !location.enabled,
-                                );
-                              },
-                              icon: Icon(
-                                location.enabled
-                                    ? Icons.notifications_active_outlined
-                                    : Icons.notifications_off_outlined,
-                              ),
-                            ),
-                            IconButton(
-                              tooltip: l10n.profileLocationAlertsEditTooltip,
-                              onPressed: () => _showLocationEditorDialog(
-                                context,
-                                existing: location,
-                              ),
-                              icon: const Icon(Icons.edit_outlined),
-                            ),
-                            IconButton(
-                              tooltip: l10n.profileLocationAlertsDeleteTooltip,
-                              onPressed: () async {
-                                final shouldDelete = await showDialog<bool>(
-                                  context: context,
-                                  builder: (dialogContext) {
-                                    return AlertDialog(
-                                      title: Text(
-                                        l10n.profileLocationAlertsDeleteTitle,
-                                      ),
-                                      content: Text(
-                                        l10n.profileLocationAlertsDeleteMessage(
-                                          location.label ??
-                                              l10n.profileLocationAlertsDefaultLabel,
-                                        ),
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.of(
-                                            dialogContext,
-                                          ).pop(false),
-                                          child: Text(l10n.profileCancel),
-                                        ),
-                                        TextButton(
-                                          onPressed: () => Navigator.of(
-                                            dialogContext,
-                                          ).pop(true),
-                                          child: Text(
-                                            l10n.profileLocationAlertsDeleteConfirmButton,
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                                if (shouldDelete == true) {
-                                  await locationsService.deleteSavedLocation(
-                                    location.id,
-                                  );
-                                }
-                              },
-                              icon: const Icon(Icons.delete_outline),
-                            ),
-                          ],
+                        onDelete: () => _confirmDeleteSavedLocation(
+                          context,
+                          locationsService,
+                          location,
                         ),
                       ),
                     ),
@@ -382,8 +303,6 @@ class AccountSettingsScreen extends StatelessWidget {
       context,
       listen: false,
     );
-    final shareLastKnown =
-        authService.userProfile?.shareLastKnownLocationForAlerts == true;
     final notifyNewSpotsNearby =
         authService.userProfile?.notifyNewSpotsNearby == true;
     final notifyCheckInsNearby =
@@ -412,9 +331,13 @@ class AccountSettingsScreen extends StatelessWidget {
                 final saved = locations
                     .where((loc) => !loc.isLastKnown)
                     .toList(growable: false);
+                final lastKnown = locations
+                    .where((loc) => loc.isLastKnown)
+                    .firstOrNull;
                 final noActiveSaved =
                     saved.isEmpty || saved.every((loc) => !loc.enabled);
-                final hasActiveLocation = shareLastKnown || !noActiveSaved;
+                final lastKnownActive = lastKnown != null && lastKnown.enabled;
+                final hasActiveLocation = lastKnownActive || !noActiveSaved;
                 final canOptInNewSpotAlerts =
                     hasActiveLocation || notifyNewSpotsNearby;
 
@@ -587,6 +510,93 @@ class AccountSettingsScreen extends StatelessWidget {
     }
   }
 
+  String _locationSubtitle(AppLocalizations l10n, LocationOfInterest location) {
+    final radius = l10n.profileLocationAlertsRadiusOption(
+      location.alertRadiusKm,
+    );
+    final address = location.address?.trim();
+    if (address != null && address.isNotEmpty) {
+      return '$address · $radius';
+    }
+    return radius;
+  }
+
+  String _lastKnownSubtitle(
+    AppLocalizations l10n, {
+    required bool shareEnabled,
+    required LocationOfInterest? lastKnown,
+  }) {
+    if (!shareEnabled) {
+      return l10n.profileLocationAlertsShareLastKnownSubtitle;
+    }
+    if (lastKnown == null) {
+      return l10n.profileLocationAlertsShareLastKnownOnSubtitle;
+    }
+    return l10n.profileLocationAlertsLastKnownActiveSubtitle(
+      _locationSubtitle(l10n, lastKnown),
+    );
+  }
+
+  Future<void> _setShareLastKnown({
+    required BuildContext context,
+    required AuthService authService,
+    required UserLocationsOfInterestService locationsService,
+    required bool enabled,
+  }) async {
+    final prefSaved = await authService.updateShareLastKnownLocationForAlerts(
+      enabled,
+    );
+    if (!prefSaved || !context.mounted) return;
+    await locationsService.setLastKnownEnabled(enabled);
+    if (!context.mounted) return;
+    if (!enabled) return;
+    final position =
+        await LocationPermissionUtils.getCurrentPositionWithPermission(
+          context: context,
+          showErrorMessages: false,
+        );
+    if (position != null && context.mounted) {
+      await locationsService.upsertLastKnownLocation(
+        latitude: position.latitude,
+        longitude: position.longitude,
+      );
+    }
+  }
+
+  Future<void> _confirmDeleteSavedLocation(
+    BuildContext context,
+    UserLocationsOfInterestService locationsService,
+    LocationOfInterest location,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(l10n.profileLocationAlertsDeleteTitle),
+          content: Text(
+            l10n.profileLocationAlertsDeleteMessage(
+              location.label ?? l10n.profileLocationAlertsDefaultLabel,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.profileCancel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.profileLocationAlertsDeleteConfirmButton),
+            ),
+          ],
+        );
+      },
+    );
+    if (shouldDelete == true) {
+      await locationsService.deleteSavedLocation(location.id);
+    }
+  }
+
   Future<void> _showLocationEditorDialog(
     BuildContext context, {
     LocationOfInterest? existing,
@@ -601,86 +611,97 @@ class AccountSettingsScreen extends StatelessWidget {
     double? selectedLat = existing?.latitude;
     double? selectedLng = existing?.longitude;
     String? selectedAddress = existing?.address;
-    var enabled = existing?.enabled ?? true;
+    var alertRadiusKm =
+        existing?.alertRadiusKm ?? LocationOfInterest.defaultAlertRadiusKm;
+    final isLastKnown = existing?.isLastKnown == true;
 
     await showDialog<void>(
       context: context,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (dialogContext, setDialogState) {
+            final dialogTitle = existing == null
+                ? l10n.profileLocationAlertsDialogAddTitle
+                : isLastKnown
+                ? l10n.profileLocationAlertsDialogEditLastKnownTitle
+                : l10n.profileLocationAlertsDialogEditTitle;
             return AlertDialog(
-              title: Text(
-                existing == null
-                    ? l10n.profileLocationAlertsDialogAddTitle
-                    : l10n.profileLocationAlertsDialogEditTitle,
-              ),
+              title: Text(dialogTitle),
               content: SizedBox(
                 width: 420,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: labelController,
-                      decoration: InputDecoration(
-                        labelText: l10n.profileLocationAlertsLabelFieldLabel,
-                        hintText:
-                            l10n.profileLocationAlertsLabelFieldPlaceholder,
-                        errorText: validationError,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
-                        onPressed: () async {
-                          final initialLat = selectedLat ?? existing?.latitude;
-                          final initialLng = selectedLng ?? existing?.longitude;
-                          final geo = Provider.of<GeocodingService>(
-                            dialogContext,
-                            listen: false,
-                          );
-                          final result = await ExploreEntityPickerScreen.show(
-                            dialogContext,
-                            config: ExploreEntityPickerConfig(
-                              mode: ExploreEntityPickerMode.locationOnly,
-                              initialLocation:
-                                  initialLat != null && initialLng != null
-                                  ? LatLng(initialLat, initialLng)
-                                  : null,
-                            ),
-                          );
-                          final picked = result?.location;
-                          if (picked != null) {
-                            setDialogState(() {
-                              selectedLat = picked.latitude;
-                              selectedLng = picked.longitude;
-                              validationError = null;
-                              selectedAddress = null;
-                            });
-                            final details = await geo
-                                .geocodeCoordinatesDetailsSilently(
-                                  picked.latitude,
-                                  picked.longitude,
-                                );
-                            if (!dialogContext.mounted) return;
-                            setDialogState(() {
-                              selectedAddress = details['address'];
-                            });
-                          }
-                        },
-                        icon: const Icon(Icons.map),
-                        label: Text(
-                          selectedLat != null && selectedLng != null
-                              ? l10n.spotDetailChangeLocationPicked
-                              : l10n.spotDetailPickLocationOnMap,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (!isLastKnown) ...[
+                        TextField(
+                          controller: labelController,
+                          decoration: InputDecoration(
+                            labelText:
+                                l10n.profileLocationAlertsLabelFieldLabel,
+                            hintText:
+                                l10n.profileLocationAlertsLabelFieldPlaceholder,
+                            errorText: validationError,
+                          ),
                         ),
-                      ),
-                    ),
-                    if (selectedLat != null && selectedLng != null) ...[
-                      const SizedBox(height: 4),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
+                        const SizedBox(height: 10),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () async {
+                              final initialLat =
+                                  selectedLat ?? existing?.latitude;
+                              final initialLng =
+                                  selectedLng ?? existing?.longitude;
+                              final geo = Provider.of<GeocodingService>(
+                                dialogContext,
+                                listen: false,
+                              );
+                              final result =
+                                  await ExploreEntityPickerScreen.show(
+                                    dialogContext,
+                                    config: ExploreEntityPickerConfig(
+                                      mode:
+                                          ExploreEntityPickerMode.locationOnly,
+                                      initialLocation:
+                                          initialLat != null &&
+                                              initialLng != null
+                                          ? LatLng(initialLat, initialLng)
+                                          : null,
+                                    ),
+                                  );
+                              final picked = result?.location;
+                              if (picked != null) {
+                                setDialogState(() {
+                                  selectedLat = picked.latitude;
+                                  selectedLng = picked.longitude;
+                                  validationError = null;
+                                  selectedAddress = null;
+                                });
+                                final details = await geo
+                                    .geocodeCoordinatesDetailsSilently(
+                                      picked.latitude,
+                                      picked.longitude,
+                                    );
+                                if (!dialogContext.mounted) return;
+                                setDialogState(() {
+                                  selectedAddress = details['address'];
+                                });
+                              }
+                            },
+                            icon: const Icon(Icons.map),
+                            label: Text(
+                              selectedLat != null && selectedLng != null
+                                  ? l10n.spotDetailChangeLocationPicked
+                                  : l10n.spotDetailPickLocationOnMap,
+                            ),
+                          ),
+                        ),
+                      ],
+                      if (selectedLat != null && selectedLng != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
                           selectedAddress ??
                               '${selectedLat!.toStringAsFixed(4)}, ${selectedLng!.toStringAsFixed(4)}',
                           style: Theme.of(context).textTheme.bodySmall
@@ -690,17 +711,15 @@ class AccountSettingsScreen extends StatelessWidget {
                                 ).colorScheme.onSurface.withValues(alpha: 0.7),
                               ),
                         ),
+                      ],
+                      const SizedBox(height: 12),
+                      _AlertRadiusSelector(
+                        value: alertRadiusKm,
+                        onChanged: (km) =>
+                            setDialogState(() => alertRadiusKm = km),
                       ),
                     ],
-                    const SizedBox(height: 12),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(l10n.profileLocationAlertsEnabledLabel),
-                      value: enabled,
-                      onChanged: (value) =>
-                          setDialogState(() => enabled = value),
-                    ),
-                  ],
+                  ),
                 ),
               ),
               actions: [
@@ -710,6 +729,15 @@ class AccountSettingsScreen extends StatelessWidget {
                 ),
                 FilledButton(
                   onPressed: () async {
+                    if (isLastKnown) {
+                      final success = await service.setLastKnownAlertRadius(
+                        alertRadiusKm,
+                      );
+                      if (success && dialogContext.mounted) {
+                        Navigator.of(dialogContext).pop();
+                      }
+                      return;
+                    }
                     final label = labelController.text.trim();
                     if (label.isEmpty) {
                       setDialogState(() {
@@ -731,7 +759,7 @@ class AccountSettingsScreen extends StatelessWidget {
                             label: label,
                             latitude: selectedLat!,
                             longitude: selectedLng!,
-                            enabled: enabled,
+                            alertRadiusKm: alertRadiusKm,
                             address: selectedAddress,
                           )
                         : await service.updateSavedLocation(
@@ -739,14 +767,15 @@ class AccountSettingsScreen extends StatelessWidget {
                             label: label,
                             latitude: selectedLat!,
                             longitude: selectedLng!,
-                            enabled: enabled,
+                            enabled: existing.enabled,
+                            alertRadiusKm: alertRadiusKm,
                             address: selectedAddress,
                           );
                     if (success && dialogContext.mounted) {
                       Navigator.of(dialogContext).pop();
                     }
                   },
-                  child: const Text('Save'),
+                  child: Text(l10n.profileLocationAlertsSaveButton),
                 ),
               ],
             );
@@ -756,5 +785,186 @@ class AccountSettingsScreen extends StatelessWidget {
     );
 
     labelController.dispose();
+  }
+}
+
+class _LastKnownLocationRow extends StatelessWidget {
+  const _LastKnownLocationRow({
+    required this.shareEnabled,
+    required this.lastKnown,
+    required this.subtitle,
+    required this.onShareChanged,
+    required this.onToggleEnabled,
+    required this.onEdit,
+  });
+
+  final bool shareEnabled;
+  final LocationOfInterest? lastKnown;
+  final String subtitle;
+  final ValueChanged<bool> onShareChanged;
+  final VoidCallback onToggleEnabled;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    final location = lastKnown;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(Icons.my_location_outlined, color: scheme.primary),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.profileLocationAlertsLastKnownLabel,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurface.withValues(alpha: 0.65),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (shareEnabled && location != null) ...[
+            IconButton(
+              tooltip: location.enabled
+                  ? l10n.profileLocationAlertsDisableTooltip
+                  : l10n.profileLocationAlertsEnableTooltip,
+              onPressed: onToggleEnabled,
+              icon: Icon(
+                location.enabled
+                    ? Icons.notifications_active_outlined
+                    : Icons.notifications_off_outlined,
+              ),
+            ),
+            IconButton(
+              tooltip: l10n.profileLocationAlertsEditTooltip,
+              onPressed: onEdit,
+              icon: const Icon(Icons.edit_outlined),
+            ),
+          ],
+          Semantics(
+            label: l10n.profileLocationAlertsLastKnownLabel,
+            child: Switch(value: shareEnabled, onChanged: onShareChanged),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LocationOfInterestRow extends StatelessWidget {
+  const _LocationOfInterestRow({
+    super.key,
+    required this.location,
+    required this.title,
+    required this.subtitle,
+    required this.leadingIcon,
+    required this.onToggleEnabled,
+    required this.onEdit,
+    this.onDelete,
+  });
+
+  final LocationOfInterest location;
+  final String title;
+  final String subtitle;
+  final IconData leadingIcon;
+  final VoidCallback onToggleEnabled;
+  final VoidCallback onEdit;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(leadingIcon, color: scheme.primary),
+      title: Text(title),
+      subtitle: Text(
+        subtitle,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: scheme.onSurface.withValues(alpha: 0.65),
+        ),
+      ),
+      trailing: Wrap(
+        spacing: 4,
+        children: [
+          IconButton(
+            tooltip: location.enabled
+                ? l10n.profileLocationAlertsDisableTooltip
+                : l10n.profileLocationAlertsEnableTooltip,
+            onPressed: onToggleEnabled,
+            icon: Icon(
+              location.enabled
+                  ? Icons.notifications_active_outlined
+                  : Icons.notifications_off_outlined,
+            ),
+          ),
+          IconButton(
+            tooltip: l10n.profileLocationAlertsEditTooltip,
+            onPressed: onEdit,
+            icon: const Icon(Icons.edit_outlined),
+          ),
+          if (onDelete != null)
+            IconButton(
+              tooltip: l10n.profileLocationAlertsDeleteTooltip,
+              onPressed: onDelete,
+              icon: const Icon(Icons.delete_outline),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AlertRadiusSelector extends StatelessWidget {
+  const _AlertRadiusSelector({required this.value, required this.onChanged});
+
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final selected = LocationOfInterest.normalizeAlertRadiusKm(value);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.profileLocationAlertsRadiusFieldLabel,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: SegmentedButton<int>(
+            showSelectedIcon: false,
+            segments: [
+              for (final km in LocationOfInterest.allowedAlertRadiusKm)
+                ButtonSegment<int>(
+                  value: km,
+                  label: Text(l10n.profileLocationAlertsRadiusOption(km)),
+                ),
+            ],
+            selected: {selected},
+            onSelectionChanged: (next) {
+              if (next.isEmpty) return;
+              onChanged(next.first);
+            },
+          ),
+        ),
+      ],
+    );
   }
 }

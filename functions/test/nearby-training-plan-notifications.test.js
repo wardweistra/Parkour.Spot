@@ -1,7 +1,6 @@
 const {
   shouldFanOutNearbyTrainingPlanNotifications,
   hasValidSpotCoordinates,
-  mergeUserIdsFromSnapshot,
   buildTemplateArgs,
   fanOutNearbyTrainingPlanNotifications,
   NOTIFICATION_KIND_NEARBY_TRAINING_PLAN,
@@ -69,21 +68,6 @@ describe("hasValidSpotCoordinates", () => {
       latitude: 52.37,
       longitude: 4.89,
     })).toBe(true);
-  });
-});
-
-describe("mergeUserIdsFromSnapshot", () => {
-  it("dedupes user ids from snapshot docs", () => {
-    const set = new Set();
-    const snapshot = {
-      docs: [
-        mockDoc("a", 4.89),
-        mockDoc("a", 4.90),
-        mockDoc("b", 10.0),
-      ],
-    };
-    mergeUserIdsFromSnapshot(snapshot, set);
-    expect([...set].sort()).toEqual(["a", "b"]);
   });
 });
 

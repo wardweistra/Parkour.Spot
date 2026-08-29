@@ -274,12 +274,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'Control which locations are used for nearby alerts, including check-ins, new spots, training plans, and future events.';
 
   @override
-  String get profileLocationAlertsShareLastKnownTitle =>
-      'Use last known location';
+  String get profileLocationAlertsShareLastKnownTitle => 'Last known location';
 
   @override
   String get profileLocationAlertsShareLastKnownSubtitle =>
-      'Store your device\'s last known location in the cloud to match nearby alerts.';
+      'When this is on, this location is stored in the cloud for nearby alerts.';
+
+  @override
+  String get profileLocationAlertsShareLastKnownOnSubtitle =>
+      'Turn off to stop storing this location in the cloud.';
+
+  @override
+  String profileLocationAlertsLastKnownActiveSubtitle(String details) {
+    return '$details. Turn off to stop storing this location in the cloud.';
+  }
+
+  @override
+  String get profileLocationAlertsLastKnownLabel => 'Last known location';
 
   @override
   String get profileLocationAlertsNotifyNewSpotsTitle =>
@@ -287,7 +298,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyNewSpotsSubtitle =>
-      'Get an in-app notification when someone adds a spot within about 5 km of an active saved place or your last known location.';
+      'Get an in-app notification when someone adds a spot within the alert radius of an active saved place or your last known location.';
 
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsTitle =>
@@ -295,7 +306,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsSubtitle =>
-      'Get an in-app notification when someone checks in at a spot within about 5 km of an active saved place or your last known location.';
+      'Get an in-app notification when someone checks in at a spot within the alert radius of an active saved place or your last known location.';
 
   @override
   String get profileLocationAlertsNotifyTrainingPlansTitle =>
@@ -303,7 +314,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
-      'Get an in-app notification when someone shares a public training plan at a spot within about 5 km of an active saved place or your last known location.';
+      'Get an in-app notification when someone shares a public training plan at a spot within the alert radius of an active saved place or your last known location.';
 
   @override
   String get profileTrainingPlanCheckInReminderTitle =>
@@ -322,7 +333,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNoLocationsEnabledWarning =>
-      'You won’t receive any location-based notifications until you turn on “Use last known location” or enable at least one saved place.';
+      'You won’t receive any location-based notifications until you turn on last known location or enable at least one saved place.';
 
   @override
   String get profileLocationAlertsEmptyState =>
@@ -361,6 +372,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileLocationAlertsDialogEditTitle => 'Edit location';
 
   @override
+  String get profileLocationAlertsDialogEditLastKnownTitle =>
+      'Edit last known location';
+
+  @override
   String get profileLocationAlertsLabelFieldLabel => 'Label';
 
   @override
@@ -370,11 +385,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileLocationAlertsEnabledLabel => 'Enabled';
 
   @override
+  String get profileLocationAlertsRadiusFieldLabel => 'Alert radius';
+
+  @override
+  String profileLocationAlertsRadiusOption(int km) {
+    return '$km km';
+  }
+
+  @override
   String get profileLocationAlertsLabelRequired => 'Please enter a label';
 
   @override
   String get profileLocationAlertsLocationRequired =>
       'Please pick a location on the map';
+
+  @override
+  String get profileLocationAlertsSaveButton => 'Save';
 
   @override
   String get profileAboutIntro =>

@@ -6,6 +6,7 @@ LocationOfInterest buildLocation({
   LocationOfInterestKind kind = LocationOfInterestKind.saved,
   DateTime? createdAt,
   DateTime? updatedAt,
+  int alertRadiusKm = LocationOfInterest.defaultAlertRadiusKm,
 }) {
   return LocationOfInterest(
     id: id,
@@ -14,6 +15,7 @@ LocationOfInterest buildLocation({
     longitude: 4.3,
     kind: kind,
     enabled: true,
+    alertRadiusKm: alertRadiusKm,
     createdAt: createdAt,
     updatedAt: updatedAt,
   );
@@ -79,6 +81,29 @@ void main() {
 
       expect(before.map((loc) => loc.id), ['work', 'home']);
       expect(afterBellToggle.map((loc) => loc.id), ['work', 'home']);
+    });
+  });
+
+  group('LocationOfInterest.normalizeAlertRadiusKm', () {
+    test('keeps allowed values', () {
+      expect(LocationOfInterest.normalizeAlertRadiusKm(10), 10);
+      expect(LocationOfInterest.normalizeAlertRadiusKm(50), 50);
+      expect(LocationOfInterest.normalizeAlertRadiusKm(100), 100);
+      expect(LocationOfInterest.normalizeAlertRadiusKm(10.0), 10);
+    });
+
+    test('defaults missing and invalid values to 50', () {
+      expect(LocationOfInterest.normalizeAlertRadiusKm(null), 50);
+      expect(LocationOfInterest.normalizeAlertRadiusKm(5), 50);
+      expect(LocationOfInterest.normalizeAlertRadiusKm(25), 50);
+      expect(LocationOfInterest.normalizeAlertRadiusKm('50'), 50);
+    });
+  });
+
+  group('LocationOfInterest.toMap', () {
+    test('includes alertRadiusKm', () {
+      final location = buildLocation(id: 'home', alertRadiusKm: 100);
+      expect(location.toMap()['alertRadiusKm'], 100);
     });
   });
 }

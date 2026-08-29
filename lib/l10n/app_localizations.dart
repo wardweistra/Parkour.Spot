@@ -547,14 +547,32 @@ abstract class AppLocalizations {
   /// Account settings: toggle title for using last known location in alerts
   ///
   /// In en, this message translates to:
-  /// **'Use last known location'**
+  /// **'Last known location'**
   String get profileLocationAlertsShareLastKnownTitle;
 
-  /// Account settings: toggle subtitle for using last known location in alerts
+  /// Account settings: last-known subtitle when storing is off
   ///
   /// In en, this message translates to:
-  /// **'Store your device\'s last known location in the cloud to match nearby alerts.'**
+  /// **'When this is on, this location is stored in the cloud for nearby alerts.'**
   String get profileLocationAlertsShareLastKnownSubtitle;
+
+  /// Account settings: last-known subtitle when storing is on but no stored point exists yet
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off to stop storing this location in the cloud.'**
+  String get profileLocationAlertsShareLastKnownOnSubtitle;
+
+  /// Account settings: last-known subtitle when a stored point exists; details is address and radius
+  ///
+  /// In en, this message translates to:
+  /// **'{details}. Turn off to stop storing this location in the cloud.'**
+  String profileLocationAlertsLastKnownActiveSubtitle(String details);
+
+  /// Account settings: list row title for the last-known location of interest
+  ///
+  /// In en, this message translates to:
+  /// **'Last known location'**
+  String get profileLocationAlertsLastKnownLabel;
 
   /// Account settings: toggle for in-app notifications when a new spot is added near an enabled location of interest
   ///
@@ -565,7 +583,7 @@ abstract class AppLocalizations {
   /// Account settings: explains new spot notification opt-in and range
   ///
   /// In en, this message translates to:
-  /// **'Get an in-app notification when someone adds a spot within about 5 km of an active saved place or your last known location.'**
+  /// **'Get an in-app notification when someone adds a spot within the alert radius of an active saved place or your last known location.'**
   String get profileLocationAlertsNotifyNewSpotsSubtitle;
 
   /// Account settings: toggle for in-app notifications when someone checks in near an enabled location of interest
@@ -577,7 +595,7 @@ abstract class AppLocalizations {
   /// Account settings: explains nearby check-in notification opt-in and range
   ///
   /// In en, this message translates to:
-  /// **'Get an in-app notification when someone checks in at a spot within about 5 km of an active saved place or your last known location.'**
+  /// **'Get an in-app notification when someone checks in at a spot within the alert radius of an active saved place or your last known location.'**
   String get profileLocationAlertsNotifyNearbyCheckInsSubtitle;
 
   /// Account settings: toggle for in-app notifications when someone creates a public training plan near an enabled location of interest
@@ -589,7 +607,7 @@ abstract class AppLocalizations {
   /// Account settings: explains nearby training-plan notification opt-in and range
   ///
   /// In en, this message translates to:
-  /// **'Get an in-app notification when someone shares a public training plan at a spot within about 5 km of an active saved place or your last known location.'**
+  /// **'Get an in-app notification when someone shares a public training plan at a spot within the alert radius of an active saved place or your last known location.'**
   String get profileLocationAlertsNotifyTrainingPlansSubtitle;
 
   /// Account settings: toggle for reminders when a planned training window starts
@@ -619,7 +637,7 @@ abstract class AppLocalizations {
   /// Account settings: shown when last-known is off and no saved locations are enabled for alerts
   ///
   /// In en, this message translates to:
-  /// **'You won’t receive any location-based notifications until you turn on “Use last known location” or enable at least one saved place.'**
+  /// **'You won’t receive any location-based notifications until you turn on last known location or enable at least one saved place.'**
   String get profileLocationAlertsNoLocationsEnabledWarning;
 
   /// Account settings: empty state text when no saved locations exist
@@ -688,6 +706,12 @@ abstract class AppLocalizations {
   /// **'Edit location'**
   String get profileLocationAlertsDialogEditTitle;
 
+  /// Account settings: dialog title for editing last-known location alert radius
+  ///
+  /// In en, this message translates to:
+  /// **'Edit last known location'**
+  String get profileLocationAlertsDialogEditLastKnownTitle;
+
   /// Account settings: label field label in saved location dialog
   ///
   /// In en, this message translates to:
@@ -706,6 +730,18 @@ abstract class AppLocalizations {
   /// **'Enabled'**
   String get profileLocationAlertsEnabledLabel;
 
+  /// Account settings: label for 10/50/100 km nearby-alert radius control
+  ///
+  /// In en, this message translates to:
+  /// **'Alert radius'**
+  String get profileLocationAlertsRadiusFieldLabel;
+
+  /// Account settings: segmented-button and list label for an alert radius in kilometers
+  ///
+  /// In en, this message translates to:
+  /// **'{km} km'**
+  String profileLocationAlertsRadiusOption(int km);
+
   /// Account settings: validation error when label is missing
   ///
   /// In en, this message translates to:
@@ -717,6 +753,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please pick a location on the map'**
   String get profileLocationAlertsLocationRequired;
+
+  /// Account settings: save button on add/edit location dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get profileLocationAlertsSaveButton;
 
   /// About section: short intro paragraph
   ///

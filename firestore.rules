@@ -429,6 +429,13 @@ service cloud.firestore {
 
       // Per-user location anchors used for nearby notification targeting.
       match /locationsOfInterest/{docId} {
+        function alertRadiusOk(data) {
+          return !('alertRadiusKm' in data) ||
+            (data.alertRadiusKm is number &&
+              (data.alertRadiusKm == 10 ||
+                data.alertRadiusKm == 50 ||
+                data.alertRadiusKm == 100));
+        }
         function hasValidLocationFields(data) {
           return data.latitude is number &&
             data.longitude is number &&
@@ -437,6 +444,7 @@ service cloud.firestore {
             data.enabled is bool &&
             data.kind is string &&
             data.kind in ['lastKnown', 'saved'] &&
+            alertRadiusOk(data) &&
             (!('label' in data) || data.label is string) &&
             data.userId is string &&
             data.userId == userId;

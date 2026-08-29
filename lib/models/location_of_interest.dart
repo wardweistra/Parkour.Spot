@@ -3,6 +3,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 enum LocationOfInterestKind { lastKnown, saved }
 
 class LocationOfInterest {
+  static const int defaultAlertRadiusKm = 50;
+  static const List<int> allowedAlertRadiusKm = [10, 50, 100];
+
+  /// 10, 50, or 100. Missing or invalid values become [defaultAlertRadiusKm].
+  static int normalizeAlertRadiusKm(Object? value) {
+    if (value is int && allowedAlertRadiusKm.contains(value)) {
+      return value;
+    }
+    if (value is num) {
+      final asInt = value.round();
+      if (allowedAlertRadiusKm.contains(asInt)) {
+        return asInt;
+      }
+    }
+    return defaultAlertRadiusKm;
+  }
+
   const LocationOfInterest({
     required this.id,
     required this.userId,
@@ -10,6 +27,7 @@ class LocationOfInterest {
     required this.longitude,
     required this.kind,
     required this.enabled,
+    this.alertRadiusKm = defaultAlertRadiusKm,
     this.label,
     this.address,
     this.updatedAt,
@@ -22,6 +40,7 @@ class LocationOfInterest {
   final double longitude;
   final LocationOfInterestKind kind;
   final bool enabled;
+  final int alertRadiusKm;
   final String? label;
 
   /// Reverse-geocoded formatted address for display (optional).
@@ -58,6 +77,7 @@ class LocationOfInterest {
       longitude: (data['longitude'] as num?)?.toDouble() ?? 0.0,
       kind: _kindFromString(data['kind'] as String?),
       enabled: data['enabled'] as bool? ?? true,
+      alertRadiusKm: normalizeAlertRadiusKm(data['alertRadiusKm']),
       label: data['label'] as String?,
       address: data['address'] as String?,
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
@@ -72,6 +92,7 @@ class LocationOfInterest {
       'longitude': longitude,
       'kind': kind.name,
       'enabled': enabled,
+      'alertRadiusKm': alertRadiusKm,
       'label': label,
       'address': address,
       'updatedAt': updatedAt,

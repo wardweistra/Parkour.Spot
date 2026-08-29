@@ -333,19 +333,36 @@
   "@profileLocationAlertsDescription": {
     "description": "Account settings: location alerts section description"
   },
-  "profileLocationAlertsShareLastKnownTitle": "Use last known location",
+  "profileLocationAlertsShareLastKnownTitle": "Last known location",
   "@profileLocationAlertsShareLastKnownTitle": {
     "description": "Account settings: toggle title for using last known location in alerts"
   },
-  "profileLocationAlertsShareLastKnownSubtitle": "Store your device's last known location in the cloud to match nearby alerts.",
+  "profileLocationAlertsShareLastKnownSubtitle": "When this is on, this location is stored in the cloud for nearby alerts.",
   "@profileLocationAlertsShareLastKnownSubtitle": {
-    "description": "Account settings: toggle subtitle for using last known location in alerts"
+    "description": "Account settings: last-known subtitle when storing is off"
+  },
+  "profileLocationAlertsShareLastKnownOnSubtitle": "Turn off to stop storing this location in the cloud.",
+  "@profileLocationAlertsShareLastKnownOnSubtitle": {
+    "description": "Account settings: last-known subtitle when storing is on but no stored point exists yet"
+  },
+  "profileLocationAlertsLastKnownActiveSubtitle": "{details}. Turn off to stop storing this location in the cloud.",
+  "@profileLocationAlertsLastKnownActiveSubtitle": {
+    "description": "Account settings: last-known subtitle when a stored point exists; details is address and radius",
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "profileLocationAlertsLastKnownLabel": "Last known location",
+  "@profileLocationAlertsLastKnownLabel": {
+    "description": "Account settings: list row title for the last-known location of interest"
   },
   "profileLocationAlertsNotifyNewSpotsTitle": "Notify me about new spots nearby",
   "@profileLocationAlertsNotifyNewSpotsTitle": {
     "description": "Account settings: toggle for in-app notifications when a new spot is added near an enabled location of interest"
   },
-  "profileLocationAlertsNotifyNewSpotsSubtitle": "Get an in-app notification when someone adds a spot within about 5 km of an active saved place or your last known location.",
+  "profileLocationAlertsNotifyNewSpotsSubtitle": "Get an in-app notification when someone adds a spot within the alert radius of an active saved place or your last known location.",
   "@profileLocationAlertsNotifyNewSpotsSubtitle": {
     "description": "Account settings: explains new spot notification opt-in and range"
   },
@@ -353,7 +370,7 @@
   "@profileLocationAlertsNotifyNearbyCheckInsTitle": {
     "description": "Account settings: toggle for in-app notifications when someone checks in near an enabled location of interest"
   },
-  "profileLocationAlertsNotifyNearbyCheckInsSubtitle": "Get an in-app notification when someone checks in at a spot within about 5 km of an active saved place or your last known location.",
+  "profileLocationAlertsNotifyNearbyCheckInsSubtitle": "Get an in-app notification when someone checks in at a spot within the alert radius of an active saved place or your last known location.",
   "@profileLocationAlertsNotifyNearbyCheckInsSubtitle": {
     "description": "Account settings: explains nearby check-in notification opt-in and range"
   },
@@ -361,7 +378,7 @@
   "@profileLocationAlertsNotifyTrainingPlansTitle": {
     "description": "Account settings: toggle for in-app notifications when someone creates a public training plan near an enabled location of interest"
   },
-  "profileLocationAlertsNotifyTrainingPlansSubtitle": "Get an in-app notification when someone shares a public training plan at a spot within about 5 km of an active saved place or your last known location.",
+  "profileLocationAlertsNotifyTrainingPlansSubtitle": "Get an in-app notification when someone shares a public training plan at a spot within the alert radius of an active saved place or your last known location.",
   "@profileLocationAlertsNotifyTrainingPlansSubtitle": {
     "description": "Account settings: explains nearby training-plan notification opt-in and range"
   },
@@ -381,7 +398,7 @@
   "@profileLocationAlertsAddLocationButton": {
     "description": "Account settings: button label for adding a saved location"
   },
-  "profileLocationAlertsNoLocationsEnabledWarning": "You won’t receive any location-based notifications until you turn on “Use last known location” or enable at least one saved place.",
+  "profileLocationAlertsNoLocationsEnabledWarning": "You won’t receive any location-based notifications until you turn on last known location or enable at least one saved place.",
   "@profileLocationAlertsNoLocationsEnabledWarning": {
     "description": "Account settings: shown when last-known is off and no saved locations are enabled for alerts"
   },
@@ -434,6 +451,10 @@
   "@profileLocationAlertsDialogEditTitle": {
     "description": "Account settings: dialog title for editing a saved location"
   },
+  "profileLocationAlertsDialogEditLastKnownTitle": "Edit last known location",
+  "@profileLocationAlertsDialogEditLastKnownTitle": {
+    "description": "Account settings: dialog title for editing last-known location alert radius"
+  },
   "profileLocationAlertsLabelFieldLabel": "Label",
   "@profileLocationAlertsLabelFieldLabel": {
     "description": "Account settings: label field label in saved location dialog"
@@ -446,6 +467,19 @@
   "@profileLocationAlertsEnabledLabel": {
     "description": "Account settings: enabled toggle label in saved location dialog"
   },
+  "profileLocationAlertsRadiusFieldLabel": "Alert radius",
+  "@profileLocationAlertsRadiusFieldLabel": {
+    "description": "Account settings: label for 10/50/100 km nearby-alert radius control"
+  },
+  "profileLocationAlertsRadiusOption": "{km} km",
+  "@profileLocationAlertsRadiusOption": {
+    "description": "Account settings: segmented-button and list label for an alert radius in kilometers",
+    "placeholders": {
+      "km": {
+        "type": "int"
+      }
+    }
+  },
   "profileLocationAlertsLabelRequired": "Please enter a label",
   "@profileLocationAlertsLabelRequired": {
     "description": "Account settings: validation error when label is missing"
@@ -453,6 +487,10 @@
   "profileLocationAlertsLocationRequired": "Please pick a location on the map",
   "@profileLocationAlertsLocationRequired": {
     "description": "Account settings: validation error when no location is selected"
+  },
+  "profileLocationAlertsSaveButton": "Save",
+  "@profileLocationAlertsSaveButton": {
+    "description": "Account settings: save button on add/edit location dialog"
   },
   "profileAboutIntro": "Parkour·Spot is a community-driven app for discovering and sharing parkour and freerunning spots worldwide. We're making it simple to find quality locations—wherever you train.",
   "@profileAboutIntro": {

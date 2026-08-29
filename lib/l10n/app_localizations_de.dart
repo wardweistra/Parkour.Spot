@@ -280,11 +280,24 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileLocationAlertsShareLastKnownTitle =>
-      'Letzten bekannten Standort verwenden';
+      'Letzter bekannter Standort';
 
   @override
   String get profileLocationAlertsShareLastKnownSubtitle =>
-      'Speichere den letzten bekannten Standort deines Geräts in der Cloud, um passende Benachrichtigungen in der Nähe zu erhalten.';
+      'Wenn diese Option aktiviert ist, wird dieser Standort in der Cloud gespeichert, um Benachrichtigungen in der Nähe zu erhalten.';
+
+  @override
+  String get profileLocationAlertsShareLastKnownOnSubtitle =>
+      'Deaktiviere diese Option, um diesen Standort nicht mehr zu speichern.';
+
+  @override
+  String profileLocationAlertsLastKnownActiveSubtitle(String details) {
+    return '$details. Deaktiviere diese Option, um diesen Standort nicht mehr zu speichern.';
+  }
+
+  @override
+  String get profileLocationAlertsLastKnownLabel =>
+      'Letzter bekannter Standort';
 
   @override
   String get profileLocationAlertsNotifyNewSpotsTitle =>
@@ -292,7 +305,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyNewSpotsSubtitle =>
-      'Erhalte eine In-App-Benachrichtigung, wenn jemand einen Spot in etwa 5 km von einem aktiven gespeicherten Ort oder deinem letzten bekannten Standort hinzufügt.';
+      'Erhalte eine In-App-Benachrichtigung, wenn jemand einen Spot innerhalb des Umkreises eines aktiven gespeicherten Orts oder deines letzten bekannten Standorts hinzufügt.';
 
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsTitle =>
@@ -300,7 +313,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsSubtitle =>
-      'Erhalte eine In-App-Benachrichtigung, wenn jemand an einem Spot in etwa 5 km von einem aktiven gespeicherten Ort oder deinem letzten bekannten Standort eincheckt.';
+      'Erhalte eine In-App-Benachrichtigung, wenn jemand an einem Spot innerhalb des Umkreises eines aktiven gespeicherten Orts oder deines letzten bekannten Standorts eincheckt.';
 
   @override
   String get profileLocationAlertsNotifyTrainingPlansTitle =>
@@ -308,7 +321,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
-      'Erhalte eine In-App-Benachrichtigung, wenn jemand ein öffentliches Trainingsfenster an einem Spot in etwa 5 km von einem aktiven gespeicherten Ort oder deinem letzten bekannten Standort teilt.';
+      'Erhalte eine In-App-Benachrichtigung, wenn jemand ein öffentliches Trainingsfenster an einem Spot innerhalb des Umkreises eines aktiven gespeicherten Orts oder deines letzten bekannten Standorts teilt.';
 
   @override
   String get profileTrainingPlanCheckInReminderTitle =>
@@ -327,7 +340,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNoLocationsEnabledWarning =>
-      'Du erhältst keine standortbasierten Benachrichtigungen, bis du „Letzten bekannten Standort verwenden“ aktivierst oder mindestens einen gespeicherten Ort einschaltest.';
+      'Du erhältst keine standortbasierten Benachrichtigungen, bis du den letzten bekannten Standort aktivierst oder mindestens einen gespeicherten Ort einschaltest.';
 
   @override
   String get profileLocationAlertsEmptyState =>
@@ -366,6 +379,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileLocationAlertsDialogEditTitle => 'Ort bearbeiten';
 
   @override
+  String get profileLocationAlertsDialogEditLastKnownTitle =>
+      'Letzten bekannten Standort bearbeiten';
+
+  @override
   String get profileLocationAlertsLabelFieldLabel => 'Bezeichnung';
 
   @override
@@ -375,12 +392,23 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileLocationAlertsEnabledLabel => 'Aktiviert';
 
   @override
+  String get profileLocationAlertsRadiusFieldLabel => 'Umkreis';
+
+  @override
+  String profileLocationAlertsRadiusOption(int km) {
+    return '$km km';
+  }
+
+  @override
   String get profileLocationAlertsLabelRequired =>
       'Bitte gib eine Bezeichnung ein';
 
   @override
   String get profileLocationAlertsLocationRequired =>
       'Bitte wähle einen Ort auf der Karte';
+
+  @override
+  String get profileLocationAlertsSaveButton => 'Speichern';
 
   @override
   String get profileAboutIntro =>

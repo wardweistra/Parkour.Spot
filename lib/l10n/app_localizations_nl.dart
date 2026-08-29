@@ -275,11 +275,23 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get profileLocationAlertsShareLastKnownTitle =>
-      'Laatste bekende locatie gebruiken';
+      'Laatst bekende locatie';
 
   @override
   String get profileLocationAlertsShareLastKnownSubtitle =>
-      'Sla de laatst bekende locatie van je apparaat op in de cloud, zodat meldingen in de buurt bij je passen.';
+      'Als dit aan staat, wordt deze locatie in de cloud opgeslagen voor meldingen in de buurt.';
+
+  @override
+  String get profileLocationAlertsShareLastKnownOnSubtitle =>
+      'Zet dit uit om deze locatie niet meer op te slaan.';
+
+  @override
+  String profileLocationAlertsLastKnownActiveSubtitle(String details) {
+    return '$details. Zet dit uit om deze locatie niet meer op te slaan.';
+  }
+
+  @override
+  String get profileLocationAlertsLastKnownLabel => 'Laatst bekende locatie';
 
   @override
   String get profileLocationAlertsNotifyNewSpotsTitle =>
@@ -287,7 +299,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyNewSpotsSubtitle =>
-      'Ontvang een in-app melding wanneer iemand een spot toevoegt binnen ongeveer 5 km van een actieve opgeslagen plek of je laatst bekende locatie.';
+      'Ontvang een in-app melding wanneer iemand een spot toevoegt binnen de meldingsstraal van een actieve opgeslagen plek of je laatst bekende locatie.';
 
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsTitle =>
@@ -295,7 +307,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsSubtitle =>
-      'Ontvang een in-app melding wanneer iemand incheckt op een spot binnen ongeveer 5 km van een actieve opgeslagen plek of je laatst bekende locatie.';
+      'Ontvang een in-app melding wanneer iemand incheckt op een spot binnen de meldingsstraal van een actieve opgeslagen plek of je laatst bekende locatie.';
 
   @override
   String get profileLocationAlertsNotifyTrainingPlansTitle =>
@@ -303,7 +315,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
-      'Ontvang een in-app melding wanneer iemand een openbaar trainingsvenster deelt op een spot binnen ongeveer 5 km van een actieve opgeslagen plek of je laatst bekende locatie.';
+      'Ontvang een in-app melding wanneer iemand een openbaar trainingsvenster deelt op een spot binnen de meldingsstraal van een actieve opgeslagen plek of je laatst bekende locatie.';
 
   @override
   String get profileTrainingPlanCheckInReminderTitle =>
@@ -322,7 +334,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNoLocationsEnabledWarning =>
-      'Je ontvangt geen meldingen op basis van locatie totdat je «Laatste bekende locatie gebruiken» inschakelt of minstens één opgeslagen plek activeert.';
+      'Je ontvangt geen meldingen op basis van locatie totdat je de laatst bekende locatie inschakelt of minstens één opgeslagen plek activeert.';
 
   @override
   String get profileLocationAlertsEmptyState =>
@@ -362,6 +374,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileLocationAlertsDialogEditTitle => 'Locatie bewerken';
 
   @override
+  String get profileLocationAlertsDialogEditLastKnownTitle =>
+      'Laatst bekende locatie bewerken';
+
+  @override
   String get profileLocationAlertsLabelFieldLabel => 'Label';
 
   @override
@@ -371,12 +387,23 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileLocationAlertsEnabledLabel => 'Ingeschakeld';
 
   @override
+  String get profileLocationAlertsRadiusFieldLabel => 'Meldingsstraal';
+
+  @override
+  String profileLocationAlertsRadiusOption(int km) {
+    return '$km km';
+  }
+
+  @override
   String get profileLocationAlertsLabelRequired =>
       'Voer een label in alsjeblieft';
 
   @override
   String get profileLocationAlertsLocationRequired =>
       'Kies een locatie op de kaart';
+
+  @override
+  String get profileLocationAlertsSaveButton => 'Opslaan';
 
   @override
   String get profileAboutIntro =>

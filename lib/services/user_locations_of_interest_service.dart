@@ -45,7 +45,6 @@ class UserLocationsOfInterestService extends ChangeNotifier {
   Future<bool> upsertLastKnownLocation({
     required double latitude,
     required double longitude,
-    bool enabled = true,
     Duration minUpdateInterval = const Duration(minutes: 15),
   }) async {
     final lastAttempt = _lastKnownUpsertAttemptAt;
@@ -60,15 +59,22 @@ class UserLocationsOfInterestService extends ChangeNotifier {
         throw StateError('Not authenticated');
       }
       _validateCoordinates(latitude, longitude);
-      await collection.doc('lastKnown').set({
+      // Omit alertRadiusKm and enabled so GPS refresh keeps a custom radius
+      // and a muted bell. First create writes enabled: true (query requires it).
+      final ref = collection.doc('lastKnown');
+      final existing = await ref.get();
+      final data = <String, dynamic>{
         'userId': uid,
         'latitude': latitude,
         'longitude': longitude,
         'kind': LocationOfInterestKind.lastKnown.name,
-        'enabled': enabled,
         'updatedAt': FieldValue.serverTimestamp(),
-        'createdAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      };
+      if (!existing.exists) {
+        data['enabled'] = true;
+        data['createdAt'] = FieldValue.serverTimestamp();
+      }
+      await ref.set(data, SetOptions(merge: true));
       _lastKnownUpsertAttemptAt = DateTime.now();
     });
   }
@@ -107,6 +113,7 @@ class UserLocationsOfInterestService extends ChangeNotifier {
     required double latitude,
     required double longitude,
     bool enabled = true,
+    int alertRadiusKm = LocationOfInterest.defaultAlertRadiusKm,
     String? address,
   }) async {
     return _runWrite(() async {
@@ -124,6 +131,9 @@ class UserLocationsOfInterestService extends ChangeNotifier {
         'longitude': longitude,
         'kind': LocationOfInterestKind.saved.name,
         'enabled': enabled,
+        'alertRadiusKm': LocationOfInterest.normalizeAlertRadiusKm(
+          alertRadiusKm,
+        ),
         'label': normalizedLabel,
         if (trimmedAddress != null && trimmedAddress.isNotEmpty)
           'address': trimmedAddress,
@@ -139,6 +149,7 @@ class UserLocationsOfInterestService extends ChangeNotifier {
     required double latitude,
     required double longitude,
     required bool enabled,
+    int alertRadiusKm = LocationOfInterest.defaultAlertRadiusKm,
     String? address,
   }) async {
     return _runWrite(() async {
@@ -156,10 +167,28 @@ class UserLocationsOfInterestService extends ChangeNotifier {
         'longitude': longitude,
         'kind': LocationOfInterestKind.saved.name,
         'enabled': enabled,
+        'alertRadiusKm': LocationOfInterest.normalizeAlertRadiusKm(
+          alertRadiusKm,
+        ),
         'label': normalizedLabel,
         'address': trimmed == null || trimmed.isEmpty
             ? FieldValue.delete()
             : trimmed,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
+  Future<bool> setLastKnownAlertRadius(int alertRadiusKm) async {
+    return _runWrite(() async {
+      final collection = _locationsCollection;
+      if (collection == null) {
+        throw StateError('Not authenticated');
+      }
+      await collection.doc('lastKnown').update({
+        'alertRadiusKm': LocationOfInterest.normalizeAlertRadiusKm(
+          alertRadiusKm,
+        ),
         'updatedAt': FieldValue.serverTimestamp(),
       });
     });

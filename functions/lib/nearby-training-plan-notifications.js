@@ -4,11 +4,11 @@
  * enabled locations of interest.
  */
 
-const {calculateBounds} = require("./geo");
+const {
+  findUserIdsNearPoint,
+  filterUserIdsByFlag,
+} = require("./nearby-audience");
 
-const COLLECTION_GROUP = "locationsOfInterest";
-const QUERY_PAGE_SIZE = 300;
-const GET_ALL_CHUNK = 10;
 const BATCH_SIZE = 500;
 
 /** @type {string} Stable id for client-side localization */
@@ -102,7 +102,9 @@ async function fanOutNearbyTrainingPlanNotifications({
 
   const lat = spotData.latitude;
   const lng = spotData.longitude;
-  const {minLat, maxLat, minLng, maxLng} = calculateBounds(lat, lng, 5000);
+  const plannerId = typeof planData.userId === "string" ?
+    planData.userId :
+    "";
   console.log("Training plan created, checking nearby locationsOfInterest:", {
     planId,
     spotId,
@@ -110,45 +112,20 @@ async function fanOutNearbyTrainingPlanNotifications({
     longitude: lng,
   });
 
-  const candidateUserIds = new Set();
-  let matchedLocationCount = 0;
-  let lastDoc = null;
-  for (;;) {
-    let q = db.collectionGroup(COLLECTION_GROUP)
-        .where("enabled", "==", true)
-        .where("latitude", ">=", minLat)
-        .where("latitude", "<=", maxLat)
-        .where("longitude", ">=", minLng)
-        .where("longitude", "<=", maxLng)
-        .limit(QUERY_PAGE_SIZE);
-    if (lastDoc) {
-      q = q.startAfter(lastDoc);
-    }
-    const snap = await q.get();
-    if (snap.empty) {
-      break;
-    }
-    matchedLocationCount += snap.size;
-    mergeUserIdsFromSnapshot(snap, candidateUserIds);
-    if (snap.size < QUERY_PAGE_SIZE) {
-      break;
-    }
-    lastDoc = snap.docs[snap.docs.length - 1];
-  }
-
-  const plannerId = typeof planData.userId === "string" ?
-    planData.userId :
-    "";
-  if (plannerId.length > 0) {
-    candidateUserIds.delete(plannerId);
-  }
-
-  const usersToNotify = await filterUserIdsWithNotifyFlag(db, [...candidateUserIds]);
+  const {userIds, matchedLocationCount} = await findUserIdsNearPoint({
+    db,
+    lat,
+    lng,
+    excludeUserId: plannerId,
+  });
+  const usersToNotify = await filterUserIdsByFlag(
+      db, userIds, "notifyTrainingPlansNearby",
+  );
   console.log("Resolved nearby training-plan audience:", {
     planId,
     spotId,
     locationsOfInterestCount: matchedLocationCount,
-    candidateUserCount: candidateUserIds.size,
+    candidateUserCount: userIds.length,
     usersToNotifyCount: usersToNotify.length,
   });
   if (usersToNotify.length === 0) {
@@ -203,51 +180,10 @@ function shouldFanOutNearbyTrainingPlanNotifications(planData) {
   return true;
 }
 
-/**
- * @param {object} snapshot QuerySnapshot
- * @param {Set<string>} intoSet
- */
-function mergeUserIdsFromSnapshot(snapshot, intoSet) {
-  for (const doc of snapshot.docs) {
-    const parent = doc.ref.parent;
-    const userRef = parent && parent.parent;
-    const uid = userRef && userRef.id;
-    if (typeof uid === "string" && uid.length > 0) {
-      intoSet.add(uid);
-    }
-  }
-}
-
-/**
- * @param {object} db Firestore instance
- * @param {string[]} userIds
- * @return {Promise<string[]>}
- */
-async function filterUserIdsWithNotifyFlag(db, userIds) {
-  const out = [];
-  for (let i = 0; i < userIds.length; i += GET_ALL_CHUNK) {
-    const chunk = userIds.slice(i, i + GET_ALL_CHUNK);
-    const refs = chunk.map((uid) => db.collection("users").doc(uid));
-    const snaps = await db.getAll(...refs);
-    for (let j = 0; j < snaps.length; j++) {
-      const doc = snaps[j];
-      if (!doc.exists) {
-        continue;
-      }
-      const data = doc.data();
-      if (data && data.notifyTrainingPlansNearby !== false) {
-        out.push(chunk[j]);
-      }
-    }
-  }
-  return out;
-}
-
 module.exports = {
   fanOutNearbyTrainingPlanNotifications,
   shouldFanOutNearbyTrainingPlanNotifications,
   hasValidSpotCoordinates,
-  mergeUserIdsFromSnapshot,
   buildTemplateArgs,
   NOTIFICATION_KIND_NEARBY_TRAINING_PLAN,
 };
