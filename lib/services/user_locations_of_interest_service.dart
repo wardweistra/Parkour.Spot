@@ -33,22 +33,12 @@ class UserLocationsOfInterestService extends ChangeNotifier {
     if (collection == null) {
       return Stream<List<LocationOfInterest>>.value(const []);
     }
-    return collection.orderBy('updatedAt', descending: true).snapshots().map((
-      snapshot,
-    ) {
+    return collection.snapshots().map((snapshot) {
       final items = snapshot.docs
           .map(LocationOfInterest.fromFirestore)
-          .toList(growable: false);
-      items.sort((a, b) {
-        if (a.kind != b.kind) {
-          if (a.kind == LocationOfInterestKind.lastKnown) return -1;
-          if (b.kind == LocationOfInterestKind.lastKnown) return 1;
-        }
-        final aAt = a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        final bAt = b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        return bAt.compareTo(aAt);
-      });
-      return items;
+          .toList();
+      items.sort(LocationOfInterest.compareForDisplay);
+      return List<LocationOfInterest>.unmodifiable(items);
     });
   }
 
@@ -184,10 +174,7 @@ class UserLocationsOfInterestService extends ChangeNotifier {
       if (collection == null) {
         throw StateError('Not authenticated');
       }
-      await collection.doc(id).update({
-        'enabled': enabled,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      await collection.doc(id).update({'enabled': enabled});
     });
   }
 

@@ -239,6 +239,7 @@ class AccountSettingsScreen extends StatelessWidget {
                     if (saved.isNotEmpty) const Divider(),
                     ...saved.map(
                       (location) => ListTile(
+                        key: ValueKey(location.id),
                         contentPadding: EdgeInsets.zero,
                         title: Text(
                           location.label ??

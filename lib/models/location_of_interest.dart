@@ -23,12 +23,29 @@ class LocationOfInterest {
   final LocationOfInterestKind kind;
   final bool enabled;
   final String? label;
+
   /// Reverse-geocoded formatted address for display (optional).
   final String? address;
   final DateTime? updatedAt;
   final DateTime? createdAt;
 
   bool get isLastKnown => kind == LocationOfInterestKind.lastKnown;
+
+  /// Stable Settings order: last-known first, then saved locations by
+  /// created time (newest first). Toggling alerts must not reshuffle.
+  static int compareForDisplay(LocationOfInterest a, LocationOfInterest b) {
+    if (a.kind != b.kind) {
+      if (a.kind == LocationOfInterestKind.lastKnown) return -1;
+      if (b.kind == LocationOfInterestKind.lastKnown) return 1;
+    }
+    final aAt =
+        a.createdAt ?? a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final bAt =
+        b.createdAt ?? b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final byCreated = bAt.compareTo(aAt);
+    if (byCreated != 0) return byCreated;
+    return a.id.compareTo(b.id);
+  }
 
   factory LocationOfInterest.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> doc,
