@@ -1549,7 +1549,7 @@ abstract class AppLocalizations {
   /// Add spot: description label
   ///
   /// In en, this message translates to:
-  /// **'Description *'**
+  /// **'Description'**
   String get addSpotDescriptionLabel;
 
   /// Add spot: description validation empty

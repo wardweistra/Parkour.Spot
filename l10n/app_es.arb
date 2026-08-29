@@ -199,7 +199,7 @@
   "addSpotCreateError": "Error al crear el spot: {error}",
   "addSpotNameLabel": "Nombre del spot *",
   "addSpotNameRequired": "Introduce un nombre para el spot",
-  "addSpotDescriptionLabel": "Descripción *",
+  "addSpotDescriptionLabel": "Descripción",
   "addSpotDescriptionRequired": "Introduce una descripción",
   "addSpotDescriptionMinLength": "La descripción debe tener al menos 10 caracteres",
   "addSpotCreating": "Añadiendo spot…",

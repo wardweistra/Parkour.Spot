@@ -1117,7 +1117,7 @@
   "@addSpotNameRequired": {
     "description": "Add spot: name validation"
   },
-  "addSpotDescriptionLabel": "Description *",
+  "addSpotDescriptionLabel": "Description",
   "@addSpotDescriptionLabel": {
     "description": "Add spot: description label"
   },

@@ -903,7 +903,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addSpotNameRequired => 'Saisissez un nom de spot';
 
   @override
-  String get addSpotDescriptionLabel => 'Description *';
+  String get addSpotDescriptionLabel => 'Description';
 
   @override
   String get addSpotDescriptionRequired => 'Saisissez une description';

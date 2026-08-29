@@ -888,7 +888,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addSpotNameRequired => 'Please enter a spot name';
 
   @override
-  String get addSpotDescriptionLabel => 'Description *';
+  String get addSpotDescriptionLabel => 'Description';
 
   @override
   String get addSpotDescriptionRequired => 'Please enter a description';

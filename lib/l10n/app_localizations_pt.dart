@@ -894,7 +894,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addSpotNameRequired => 'Introduz um nome para o spot';
 
   @override
-  String get addSpotDescriptionLabel => 'Descrição *';
+  String get addSpotDescriptionLabel => 'Descrição';
 
   @override
   String get addSpotDescriptionRequired => 'Introduz uma descrição';

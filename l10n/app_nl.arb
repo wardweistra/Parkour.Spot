@@ -240,7 +240,7 @@
   "addSpotCreateError": "Spot aanmaken mislukt: {error}",
   "addSpotNameLabel": "Spotnaam *",
   "addSpotNameRequired": "Voer een spotnaam in",
-  "addSpotDescriptionLabel": "Beschrijving *",
+  "addSpotDescriptionLabel": "Beschrijving",
   "addSpotDescriptionRequired": "Voer een beschrijving in",
   "addSpotDescriptionMinLength": "Beschrijving moet minstens 10 tekens zijn",
   "addSpotCreating": "Spot wordt toegevoegd…",

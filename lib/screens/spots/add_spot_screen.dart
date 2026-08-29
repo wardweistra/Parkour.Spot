@@ -112,7 +112,6 @@ class _AddSpotScreenState extends State<AddSpotScreen>
     });
 
     _nameController.addListener(_onFormFieldChanged);
-    _descriptionController.addListener(_onFormFieldChanged);
   }
 
   void _onFormFieldChanged() {
@@ -345,7 +344,9 @@ class _AddSpotScreenState extends State<AddSpotScreen>
     await yieldToUi();
 
     try {
-      final preparedImages = await preparePickedFiles([pickedFile], maxImages: 1);
+      final preparedImages = await preparePickedFiles([
+        pickedFile,
+      ], maxImages: 1);
       if (preparedImages.isNotEmpty && mounted) {
         setState(() => _selectedImages.add(preparedImages.first));
       }
@@ -541,8 +542,9 @@ class _AddSpotScreenState extends State<AddSpotScreen>
         hidden: false, // New spot, not hidden
       );
 
-      final preparedPhotos =
-          _selectedImages.whereType<PreparedImage>().toList(growable: false);
+      final preparedPhotos = _selectedImages.whereType<PreparedImage>().toList(
+        growable: false,
+      );
       final spotId = await spotService.createSpot(
         spot,
         imageFiles: null,
@@ -607,19 +609,13 @@ class _AddSpotScreenState extends State<AddSpotScreen>
 
   bool get _hasName => _nameController.text.trim().isNotEmpty;
 
-  bool get _hasValidDescription {
-    final text = _descriptionController.text.trim();
-    return text.isNotEmpty && text.length >= 10;
-  }
-
   bool get _canSubmit =>
       !_isLoading &&
       !_isPreparingImages &&
       !_isUploadingImages &&
       (_currentPosition != null || _pickedLocation != null) &&
       _selectedImages.isNotEmpty &&
-      _hasName &&
-      _hasValidDescription;
+      _hasName;
 
   String? _submitBlockReason(AppLocalizations l10n) {
     if (_isLoading) return null;
@@ -633,11 +629,6 @@ class _AddSpotScreenState extends State<AddSpotScreen>
       return l10n.addSpotNeedPhoto;
     }
     if (!_hasName) return l10n.addSpotNameRequired;
-    if (!_hasValidDescription) {
-      final text = _descriptionController.text.trim();
-      if (text.isEmpty) return l10n.addSpotDescriptionRequired;
-      return l10n.addSpotDescriptionMinLength;
-    }
     return null;
   }
 
@@ -653,151 +644,142 @@ class _AddSpotScreenState extends State<AddSpotScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-                  // Location Section
-                  SpotLocationSection(
-                    currentLocation: _pickedLocation != null
+            // Location Section
+            SpotLocationSection(
+              currentLocation: _pickedLocation != null
+                  ? LatLng(
+                      _pickedLocation!.latitude,
+                      _pickedLocation!.longitude,
+                    )
+                  : (_currentPosition != null
                         ? LatLng(
-                            _pickedLocation!.latitude,
-                            _pickedLocation!.longitude,
+                            _currentPosition!.latitude,
+                            _currentPosition!.longitude,
                           )
-                        : (_currentPosition != null
-                              ? LatLng(
-                                  _currentPosition!.latitude,
-                                  _currentPosition!.longitude,
-                                )
-                              : null),
-                    address: _currentAddress,
-                    countryCode: _currentCountryCode,
-                    isGettingLocation: _isGettingLocation,
-                    isGeocoding: _isGeocoding,
-                    isSatelliteView: _isSatelliteView,
-                    isLocationPermissionDenied: _isLocationPermissionDenied,
-                    onRefreshLocation: _getCurrentLocation,
-                    onPickOnMap: _pickLocationOnMap,
-                    onToggleSatellite: (value) {
-                      setState(() {
-                        _isSatelliteView = value;
-                      });
-                      final searchState = Provider.of<SearchStateService>(
-                        context,
-                        listen: false,
-                      );
-                      searchState.setSatellite(value);
-                    },
-                    onMapCreated: onMapCreated,
-                  ),
+                        : null),
+              address: _currentAddress,
+              countryCode: _currentCountryCode,
+              isGettingLocation: _isGettingLocation,
+              isGeocoding: _isGeocoding,
+              isSatelliteView: _isSatelliteView,
+              isLocationPermissionDenied: _isLocationPermissionDenied,
+              onRefreshLocation: _getCurrentLocation,
+              onPickOnMap: _pickLocationOnMap,
+              onToggleSatellite: (value) {
+                setState(() {
+                  _isSatelliteView = value;
+                });
+                final searchState = Provider.of<SearchStateService>(
+                  context,
+                  listen: false,
+                );
+                searchState.setSatellite(value);
+              },
+              onMapCreated: onMapCreated,
+            ),
 
-                  const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-                  // Image Section
-                  SpotImageSection(
-                    selectedImageBytes: _selectedImageBytes,
-                    existingImageUrls: const <String>[],
-                    onPickFromGallery: _pickImagesFromGallery,
-                    onTakePhoto: _takePhoto,
-                    onRemoveSelectedAt: _removeImageAt,
-                    onRemoveExistingAt: (index) {}, // Not used in add mode
-                    onReorderSelected: _reorderSelectedImage,
-                    isProcessingImages: _isPreparingImages || _isUploadingImages,
-                    processingMessage: _imageProcessingMessage,
-                  ),
+            // Image Section
+            SpotImageSection(
+              selectedImageBytes: _selectedImageBytes,
+              existingImageUrls: const <String>[],
+              onPickFromGallery: _pickImagesFromGallery,
+              onTakePhoto: _takePhoto,
+              onRemoveSelectedAt: _removeImageAt,
+              onRemoveExistingAt: (index) {}, // Not used in add mode
+              onReorderSelected: _reorderSelectedImage,
+              isProcessingImages: _isPreparingImages || _isUploadingImages,
+              processingMessage: _imageProcessingMessage,
+            ),
 
-                  const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-                  // Name Field
-                  CustomTextField(
-                    controller: _nameController,
-                    labelText: l10n.addSpotNameLabel,
-                    prefixIcon: Icons.location_on,
-                    textCapitalization: TextCapitalization.words,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return l10n.addSpotNameRequired;
-                      }
-                      return null;
-                    },
-                  ),
+            // Name Field
+            CustomTextField(
+              controller: _nameController,
+              labelText: l10n.addSpotNameLabel,
+              prefixIcon: Icons.location_on,
+              textCapitalization: TextCapitalization.words,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return l10n.addSpotNameRequired;
+                }
+                return null;
+              },
+            ),
 
-                  const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-                  // Description Field
-                  CustomTextField(
-                    controller: _descriptionController,
-                    labelText: l10n.addSpotDescriptionLabel,
-                    prefixIcon: Icons.description,
-                    maxLines: 3,
-                    textCapitalization: TextCapitalization.sentences,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return l10n.addSpotDescriptionRequired;
-                      }
-                      if (value.trim().length < 10) {
-                        return l10n.addSpotDescriptionMinLength;
-                      }
-                      return null;
-                    },
-                  ),
+            // Description Field
+            CustomTextField(
+              controller: _descriptionController,
+              labelText: l10n.addSpotDescriptionLabel,
+              prefixIcon: Icons.description,
+              maxLines: 3,
+              textCapitalization: TextCapitalization.sentences,
+            ),
 
-                  const SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-                  // Attributes Section
-                  SpotAttributesSection(
-                    selectedAccess: _selectedAccess,
-                    selectedFeatures: _selectedFeatures,
-                    selectedFacilities: _selectedFacilities,
-                    selectedGoodFor: _selectedGoodFor,
-                    onAccessChanged: (value) {
-                      setState(() {
-                        _selectedAccess = value;
-                      });
-                    },
-                    onToggleFeature: (key, selected) {
-                      setState(() {
-                        if (selected) {
-                          _selectedFeatures.add(key);
-                        } else {
-                          _selectedFeatures.remove(key);
-                        }
-                      });
-                    },
-                    onFacilityChanged: (key, value) {
-                      setState(() {
-                        _selectedFacilities[key] = value;
-                      });
-                    },
-                    onToggleGoodFor: (key, selected) {
-                      setState(() {
-                        if (selected) {
-                          _selectedGoodFor.add(key);
-                        } else {
-                          _selectedGoodFor.remove(key);
-                        }
-                      });
-                    },
-                  ),
+            // Attributes Section
+            SpotAttributesSection(
+              selectedAccess: _selectedAccess,
+              selectedFeatures: _selectedFeatures,
+              selectedFacilities: _selectedFacilities,
+              selectedGoodFor: _selectedGoodFor,
+              onAccessChanged: (value) {
+                setState(() {
+                  _selectedAccess = value;
+                });
+              },
+              onToggleFeature: (key, selected) {
+                setState(() {
+                  if (selected) {
+                    _selectedFeatures.add(key);
+                  } else {
+                    _selectedFeatures.remove(key);
+                  }
+                });
+              },
+              onFacilityChanged: (key, value) {
+                setState(() {
+                  _selectedFacilities[key] = value;
+                });
+              },
+              onToggleGoodFor: (key, selected) {
+                setState(() {
+                  if (selected) {
+                    _selectedGoodFor.add(key);
+                  } else {
+                    _selectedGoodFor.remove(key);
+                  }
+                });
+              },
+            ),
 
-                  const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-                  if (submitBlockReason != null) ...[
-                    Text(
-                      submitBlockReason,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
+            if (submitBlockReason != null) ...[
+              Text(
+                submitBlockReason,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
 
-                  // Submit Button
-                  CustomButton(
-                    onPressed: _canSubmit ? _submitForm : null,
-                    text: _isLoading
-                        ? l10n.addSpotCreating
-                        : l10n.addSpotCreateButton,
-                    isLoading: _isLoading,
-                    icon: Icons.add_location,
-                  ),
-                ],
+            // Submit Button
+            CustomButton(
+              onPressed: _canSubmit ? _submitForm : null,
+              text: _isLoading
+                  ? l10n.addSpotCreating
+                  : l10n.addSpotCreateButton,
+              isLoading: _isLoading,
+              icon: Icons.add_location,
+            ),
+          ],
         ),
       ),
     );

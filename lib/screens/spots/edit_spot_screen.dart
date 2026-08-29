@@ -827,7 +827,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                         children: [
                           CustomTextField(
                             controller: _nameController,
-                            labelText: 'Spot Name',
+                            labelText: 'Spot name *',
                             hintText: 'Enter the name of the spot',
                             validator: (value) {
                               if (value == null || value.trim().isEmpty) {
@@ -845,22 +845,6 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                             labelText: 'Description',
                             hintText: 'Describe the spot, what makes it special, etc.',
                             maxLines: 4,
-                            validator: (value) {
-                              // Moderators can save spots without descriptions
-                              final isModeratorOrAdmin = authService.isModerator || authService.isAdmin;
-                              
-                              if (!isModeratorOrAdmin) {
-                                // For non-moderators, description is required
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Please enter a description';
-                                }
-                                if (value.trim().length < 10) {
-                                  return 'Description must be at least 10 characters';
-                                }
-                              }
-                              // For moderators, description is optional
-                              return null;
-                            },
                           ),
                         ],
                       ),

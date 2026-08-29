@@ -889,7 +889,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addSpotNameRequired => 'Voer een spotnaam in';
 
   @override
-  String get addSpotDescriptionLabel => 'Beschrijving *';
+  String get addSpotDescriptionLabel => 'Beschrijving';
 
   @override
   String get addSpotDescriptionRequired => 'Voer een beschrijving in';
