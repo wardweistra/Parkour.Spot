@@ -1,5 +1,5 @@
 name: parkour_spot
-description: "A Flutter app for reporting and discovering parkour spots."
+description: "Discover, map, and share the best parkour spots worldwide."
 publish_to: 'none'
 version: 0.1.0
 

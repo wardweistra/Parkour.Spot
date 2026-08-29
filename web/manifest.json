@@ -5,7 +5,7 @@
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A Flutter app for reporting and discovering parkour spots.",
+    "description": "Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
