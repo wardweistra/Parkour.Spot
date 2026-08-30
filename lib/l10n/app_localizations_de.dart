@@ -317,7 +317,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyNewSpotsSubtitle =>
-      'Erhalte eine In-App-Benachrichtigung, wenn jemand einen Spot innerhalb des Umkreises eines aktiven gespeicherten Orts oder deines letzten bekannten Standorts hinzufügt.';
+      'Erhalte eine Benachrichtigung, wenn jemand einen Spot innerhalb des Umkreises eines aktiven gespeicherten Orts oder deines letzten bekannten Standorts hinzufügt.';
 
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsTitle =>
@@ -325,7 +325,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsSubtitle =>
-      'Erhalte eine In-App-Benachrichtigung, wenn jemand an einem Spot innerhalb des Umkreises eines aktiven gespeicherten Orts oder deines letzten bekannten Standorts eincheckt.';
+      'Erhalte eine Benachrichtigung, wenn jemand an einem Spot innerhalb des Umkreises eines aktiven gespeicherten Orts oder deines letzten bekannten Standorts eincheckt.';
 
   @override
   String get profileLocationAlertsNotifyTrainingPlansTitle =>
@@ -333,7 +333,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
-      'Erhalte eine In-App-Benachrichtigung, wenn jemand ein öffentliches Trainingsfenster an einem Spot innerhalb des Umkreises eines aktiven gespeicherten Orts oder deines letzten bekannten Standorts teilt.';
+      'Erhalte eine Benachrichtigung, wenn jemand ein öffentliches Trainingsfenster an einem Spot innerhalb des Umkreises eines aktiven gespeicherten Orts oder deines letzten bekannten Standorts teilt.';
 
   @override
   String get profileLocationAlertsNotifyEventsTitle =>
@@ -341,7 +341,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyEventsSubtitle =>
-      'Erhalte eine In-App-Benachrichtigung, wenn ein Event innerhalb des Umkreises eines aktiven gespeicherten Orts oder deines letzten bekannten Standorts hinzugefügt wird.';
+      'Erhalte eine Benachrichtigung, wenn ein Event innerhalb des Umkreises eines aktiven gespeicherten Orts oder deines letzten bekannten Standorts hinzugefügt wird.';
 
   @override
   String get profileTrainingPlanCheckInReminderTitle =>
@@ -349,7 +349,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileTrainingPlanCheckInReminderSubtitle =>
-      'Erhalte eine In-App-Erinnerung, wenn dein geplantes Zeitfenster begonnen hat und du an diesem Spot noch nicht eingecheckt bist.';
+      'Erhalte eine Erinnerung, wenn dein geplantes Zeitfenster begonnen hat und du an diesem Spot noch nicht eingecheckt bist.';
 
   @override
   String get profileLocationAlertsSavedLocationsTitle =>

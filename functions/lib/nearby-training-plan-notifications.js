@@ -8,8 +8,7 @@ const {
   findUserIdsNearPoint,
   filterUserIdsByFlag,
 } = require("./nearby-audience");
-
-const BATCH_SIZE = 500;
+const {deliverNotifications} = require("./deliver-notification");
 
 /** @type {string} Stable id for client-side localization */
 const NOTIFICATION_KIND_NEARBY_TRAINING_PLAN = "nearby_training_plan";
@@ -133,29 +132,17 @@ async function fanOutNearbyTrainingPlanNotifications({
   }
 
   const templateArgs = buildTemplateArgs(planData, spotData);
-
-  let batch = db.batch();
-  let ops = 0;
-  for (const uid of usersToNotify) {
-    const ref = db.collection("users").doc(uid).collection("notifications").doc();
-    batch.set(ref, {
+  await deliverNotifications({
+    db,
+    FieldValue,
+    userIds: usersToNotify,
+    payload: {
       notificationKind: NOTIFICATION_KIND_NEARBY_TRAINING_PLAN,
       templateArgs,
       deeplinkKind: "spot",
       deeplinkId: spotId,
-      createdAt: FieldValue.serverTimestamp(),
-      read: false,
-    });
-    ops++;
-    if (ops >= BATCH_SIZE) {
-      await batch.commit();
-      batch = db.batch();
-      ops = 0;
-    }
-  }
-  if (ops > 0) {
-    await batch.commit();
-  }
+    },
+  });
 
   return {notified: usersToNotify.length};
 }

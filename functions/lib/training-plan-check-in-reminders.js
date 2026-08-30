@@ -8,6 +8,7 @@ const NOTIFICATION_KIND_TRAINING_PLAN_CHECK_IN_REMINDER =
   "training_plan_check_in_reminder";
 
 const {Timestamp} = require("firebase-admin/firestore");
+const {sendPushForPayload} = require("./deliver-notification");
 
 const QUERY_PAGE_SIZE = 300;
 const GET_USER_CHUNK = 10;
@@ -143,11 +144,13 @@ async function getSpotCached(db, cache, spotId) {
  * @param {FirebaseFirestore.Firestore} options.db
  * @param {FirebaseFirestore.FieldValue} options.FieldValue
  * @param {Date=} options.now
+ * @param {Function=} options.sendPush override for tests; defaults to sendPushForPayload
  * @return {Promise<{notified: number, skipped: number}>}
  */
-async function runTrainingPlanCheckInReminders({db, FieldValue, now}) {
+async function runTrainingPlanCheckInReminders({db, FieldValue, now, sendPush}) {
   const nowDate = now instanceof Date ? now : new Date();
   const nowTs = Timestamp.fromDate(nowDate);
+  const pushFn = typeof sendPush === "function" ? sendPush : sendPushForPayload;
 
   let lastDoc = null;
   let notified = 0;
@@ -216,6 +219,7 @@ async function runTrainingPlanCheckInReminders({db, FieldValue, now}) {
       }
 
       try {
+        let pushPayload = null;
         await db.runTransaction(async (t) => {
           const fresh = await t.get(ref);
           if (!fresh.exists) {
@@ -249,8 +253,29 @@ async function runTrainingPlanCheckInReminders({db, FieldValue, now}) {
           t.update(ref, {
             planReminderSentAt: start,
           });
+          pushPayload = {
+            notificationKind: NOTIFICATION_KIND_TRAINING_PLAN_CHECK_IN_REMINDER,
+            templateArgs,
+            deeplinkKind: "spot",
+            deeplinkId: spotId,
+          };
         });
         notified++;
+        if (pushPayload) {
+          try {
+            await pushFn({
+              db,
+              FieldValue,
+              uid: userId,
+              payload: pushPayload,
+            });
+          } catch (pushErr) {
+            console.error("training plan reminder push failed:", {
+              planId: item.id,
+              error: pushErr,
+            });
+          }
+        }
       } catch (e) {
         console.error("training plan reminder transaction failed:", {
           planId: item.id,

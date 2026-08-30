@@ -312,7 +312,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyNewSpotsSubtitle =>
-      'Recevez une notification in-app lorsqu’un spot est ajouté dans le rayon d’alerte d’un lieu enregistré actif ou de votre dernière position connue.';
+      'Recevez une notification lorsqu’un spot est ajouté dans le rayon d’alerte d’un lieu enregistré actif ou de votre dernière position connue.';
 
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsTitle =>
@@ -320,7 +320,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsSubtitle =>
-      'Recevez une notification in-app lorsque quelqu’un fait un check-in sur un spot dans le rayon d’alerte d’un lieu enregistré actif ou de votre dernière position connue.';
+      'Recevez une notification lorsque quelqu’un fait un check-in sur un spot dans le rayon d’alerte d’un lieu enregistré actif ou de votre dernière position connue.';
 
   @override
   String get profileLocationAlertsNotifyTrainingPlansTitle =>
@@ -328,7 +328,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
-      'Recevez une notification in-app lorsque quelqu’un partage une fenêtre d’entraînement publique sur un spot dans le rayon d’alerte d’un lieu enregistré actif ou de votre dernière position connue.';
+      'Recevez une notification lorsque quelqu’un partage une fenêtre d’entraînement publique sur un spot dans le rayon d’alerte d’un lieu enregistré actif ou de votre dernière position connue.';
 
   @override
   String get profileLocationAlertsNotifyEventsTitle =>
@@ -336,7 +336,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyEventsSubtitle =>
-      'Recevez une notification in-app lorsqu’un événement est ajouté dans le rayon d’alerte d’un lieu enregistré actif ou de votre dernière position connue.';
+      'Recevez une notification lorsqu’un événement est ajouté dans le rayon d’alerte d’un lieu enregistré actif ou de votre dernière position connue.';
 
   @override
   String get profileTrainingPlanCheckInReminderTitle =>
@@ -344,7 +344,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get profileTrainingPlanCheckInReminderSubtitle =>
-      'Recevez un rappel in-app lorsque votre séance prévue a commencé et que vous n’avez pas encore fait de check-in sur ce spot.';
+      'Recevez un rappel lorsque votre séance prévue a commencé et que vous n’avez pas encore fait de check-in sur ce spot.';
 
   @override
   String get profileLocationAlertsSavedLocationsTitle => 'Mes lieux d’intérêt';

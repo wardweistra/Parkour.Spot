@@ -80,6 +80,11 @@ const {
 const {
   runTrainingPlanCheckInReminders,
 } = require("./lib/training-plan-check-in-reminders");
+const {
+  sendWebPushToTargets,
+  DEFAULT_NOTIFICATION_ICON_URL,
+  DEFAULT_NOTIFICATION_BADGE_URL,
+} = require("./lib/send-web-push");
 // Nearby notification fan-out will use collectionGroup("locationsOfInterest")
 // and must dedupe matches by userId because a user can match via multiple
 // anchors (e.g. lastKnown + home/work).
@@ -10670,8 +10675,6 @@ function serializePushSubscriptionForAdmin(docId, data) {
 /** Default notification click-through when admin leaves the link blank. */
 const DEFAULT_NOTIFICATION_CLICK_LINK =
     "https://parkour.spot/profile/notifications";
-const DEFAULT_NOTIFICATION_ICON_URL = "https://parkour.spot/icons/Icon-192.png";
-const DEFAULT_NOTIFICATION_BADGE_URL = "https://parkour.spot/icons/ParkourSpot-badge.png";
 
 const MAX_NOTIFICATION_CLICK_LINK_LENGTH = 2048;
 const MAX_NOTIFICATION_MEDIA_URL_LENGTH = 2048;
@@ -10752,16 +10755,6 @@ function normalizeOptionalNotificationMediaUrl(raw, fieldName) {
       `${fieldName} must use https (or http on localhost only)`,
   );
 }
-
-/**
- * FCM error codes where the stored registration token is invalid or expired and
- * should be disabled in Firestore. Omit transient errors (rate limits, etc.).
- * @see https://firebase.google.com/docs/cloud-messaging/send-message#errors
- */
-const FCM_UNRECOVERABLE_TOKEN_ERROR_CODES = new Set([
-  "messaging/registration-token-not-registered",
-  "messaging/invalid-registration-token",
-]);
 
 /**
  * Admin: list a user's web push subscription docs (Admin SDK).
@@ -10905,82 +10898,33 @@ exports.sendWebPushToUserSubscriptions = onCall(
           };
         }
 
-        const messages = targets.map(({token}) => ({
-          token,
-          notification: {title, body},
-          data: {openUrl: clickLink},
-          // Explicit webpush notification helps Chrome (incl. Android PWA) deliver
-          // system notifications when the app is backgrounded; top-level
-          // [notification] alone is not always enough for the SW payload.
-          webpush: {
-            notification: {
-              title,
-              body,
-              icon: iconUrl,
-              badge: badgeUrl,
-              ...(imageUrl ? {image: imageUrl} : {}),
-            },
-            fcmOptions: {
-              link: clickLink,
-            },
-          },
-        }));
-
-        const batchResponse = await admin.messaging().sendEach(messages);
-        /** @type {{subscriptionId: string, error: string, code?: string}[]} */
-        const failures = [];
-        /** @type {string[]} */
-        const deactivatedSubscriptionIds = [];
-        for (let i = 0; i < batchResponse.responses.length; i++) {
-          const r = batchResponse.responses[i];
-          if (!r.success) {
-            const err = r.error;
-            const code = err && typeof err.code === "string" ? err.code : "";
-            const message = err ? String(err.message || err) : "unknown";
-            failures.push({
-              subscriptionId: targets[i].id,
-              error: message,
-              ...(code ? {code} : {}),
-            });
-            if (code && FCM_UNRECOVERABLE_TOKEN_ERROR_CODES.has(code)) {
-              deactivatedSubscriptionIds.push(targets[i].id);
-            }
-          }
-        }
-
-        const deactivatedUnique = [...new Set(deactivatedSubscriptionIds)];
-        if (deactivatedUnique.length > 0) {
-          try {
-            const batch = db.batch();
-            const subsCol = db.collection("users").doc(targetUid)
-                .collection("pushSubscriptions");
-            const now = FieldValue.serverTimestamp();
-            for (const subId of deactivatedUnique) {
-              batch.set(subsCol.doc(subId), {
-                enabled: false,
-                token: null,
-                updatedAt: now,
-              }, {merge: true});
-            }
-            await batch.commit();
-          } catch (cleanupErr) {
-            console.error(
-                "sendWebPushToUserSubscriptions token cleanup error:",
-                cleanupErr,
-            );
-          }
-        }
+        const sendResult = await sendWebPushToTargets({
+          db,
+          FieldValue,
+          messaging: admin.messaging(),
+          uid: targetUid,
+          targets: targets.map((t) => ({
+            id: t.id,
+            token: t.token,
+            title,
+            body,
+          })),
+          clickLink,
+          iconUrl,
+          badgeUrl,
+          imageUrl,
+        });
 
         return {
-          successCount: batchResponse.successCount,
-          failureCount: batchResponse.failureCount,
+          successCount: sendResult.successCount,
+          failureCount: sendResult.failureCount,
           skipped,
-          failures,
+          failures: sendResult.failures,
           clickLink,
           iconUrl,
           badgeUrl,
           ...(imageUrl ? {imageUrl} : {}),
-          deactivatedSubscriptionIds: deactivatedUnique,
+          deactivatedSubscriptionIds: sendResult.deactivatedSubscriptionIds,
         };
       } catch (error) {
         console.error("sendWebPushToUserSubscriptions error:", error);

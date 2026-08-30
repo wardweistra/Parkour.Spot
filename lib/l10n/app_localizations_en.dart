@@ -310,7 +310,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyNewSpotsSubtitle =>
-      'Get an in-app notification when someone adds a spot within the alert radius of an active saved place or your last known location.';
+      'Get a notification when someone adds a spot within the alert radius of an active saved place or your last known location.';
 
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsTitle =>
@@ -318,7 +318,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsSubtitle =>
-      'Get an in-app notification when someone checks in at a spot within the alert radius of an active saved place or your last known location.';
+      'Get a notification when someone checks in at a spot within the alert radius of an active saved place or your last known location.';
 
   @override
   String get profileLocationAlertsNotifyTrainingPlansTitle =>
@@ -326,7 +326,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
-      'Get an in-app notification when someone shares a public training plan at a spot within the alert radius of an active saved place or your last known location.';
+      'Get a notification when someone shares a public training plan at a spot within the alert radius of an active saved place or your last known location.';
 
   @override
   String get profileLocationAlertsNotifyEventsTitle =>
@@ -334,7 +334,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyEventsSubtitle =>
-      'Get an in-app notification when an event is added within the alert radius of an active saved place or your last known location.';
+      'Get a notification when an event is added within the alert radius of an active saved place or your last known location.';
 
   @override
   String get profileTrainingPlanCheckInReminderTitle =>
@@ -342,7 +342,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileTrainingPlanCheckInReminderSubtitle =>
-      'Get an in-app reminder when your planned session has started and you haven’t checked in at that spot yet.';
+      'Get a reminder when your planned session has started and you haven’t checked in at that spot yet.';
 
   @override
   String get profileLocationAlertsSavedLocationsTitle =>

@@ -315,7 +315,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyNewSpotsSubtitle =>
-      'Receba uma notificação na app quando alguém adicionar um spot dentro do raio de alerta de um local guardado ativo ou da sua última localização conhecida.';
+      'Receba uma notificação quando alguém adicionar um spot dentro do raio de alerta de um local guardado ativo ou da sua última localização conhecida.';
 
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsTitle =>
@@ -323,7 +323,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsSubtitle =>
-      'Receba uma notificação na app quando alguém fizer check-in num spot dentro do raio de alerta de um local guardado ativo ou da sua última localização conhecida.';
+      'Receba uma notificação quando alguém fizer check-in num spot dentro do raio de alerta de um local guardado ativo ou da sua última localização conhecida.';
 
   @override
   String get profileLocationAlertsNotifyTrainingPlansTitle =>
@@ -331,7 +331,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
-      'Receba uma notificação na app quando alguém partilhar um plano de treino público num spot dentro do raio de alerta de um local guardado ativo ou da sua última localização conhecida.';
+      'Receba uma notificação quando alguém partilhar um plano de treino público num spot dentro do raio de alerta de um local guardado ativo ou da sua última localização conhecida.';
 
   @override
   String get profileLocationAlertsNotifyEventsTitle =>
@@ -339,7 +339,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyEventsSubtitle =>
-      'Receba uma notificação na app quando um evento for adicionado dentro do raio de alerta de um local guardado ativo ou da sua última localização conhecida.';
+      'Receba uma notificação quando um evento for adicionado dentro do raio de alerta de um local guardado ativo ou da sua última localização conhecida.';
 
   @override
   String get profileTrainingPlanCheckInReminderTitle =>
@@ -347,7 +347,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get profileTrainingPlanCheckInReminderSubtitle =>
-      'Recebe um lembrete na app quando a tua sessão planeada já começou e ainda não fizeste check-in nesse spot.';
+      'Recebe um lembrete quando a tua sessão planeada já começou e ainda não fizeste check-in nesse spot.';
 
   @override
   String get profileLocationAlertsSavedLocationsTitle =>

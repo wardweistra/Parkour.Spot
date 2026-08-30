@@ -182,9 +182,121 @@ describe("runTrainingPlanCheckInReminders", () => {
     };
 
     const FieldValue = {serverTimestamp: () => "SERVER_TS"};
+    const callOrder = [];
+    const sendPush = jest.fn(async () => {
+      callOrder.push("push");
+    });
+    const originalRun = db.runTransaction;
+    db.runTransaction = async (fn) => {
+      callOrder.push("transaction");
+      return originalRun(fn);
+    };
 
-    const result = await runTrainingPlanCheckInReminders({db, FieldValue, now});
+    const result = await runTrainingPlanCheckInReminders({
+      db, FieldValue, now, sendPush,
+    });
     expect(result.notified).toBe(1);
     expect(transactionCalls).toBe(1);
+    expect(sendPush).toHaveBeenCalledTimes(1);
+    expect(sendPush.mock.calls[0][0].uid).toBe("u1");
+    expect(sendPush.mock.calls[0][0].payload).toEqual({
+      notificationKind: NOTIFICATION_KIND_TRAINING_PLAN_CHECK_IN_REMINDER,
+      templateArgs: {spotName: "Test spot"},
+      deeplinkKind: "spot",
+      deeplinkId: "s1",
+    });
+    expect(callOrder).toEqual(["transaction", "push"]);
+  });
+
+  it("does not send push when the inbox transaction fails", async () => {
+    const now = new Date("2026-04-19T12:00:00.000Z");
+    const nowMs = now.getTime();
+    const start = ts(nowMs - 60000);
+    const end = ts(nowMs + 3600000);
+
+    const planRef = {path: "spotTrainingPlans/p1"};
+    const planSnap = {
+      ref: planRef,
+      id: "p1",
+      data: () => ({
+        userId: "u1",
+        spotId: "s1",
+        spotName: "Test spot",
+        plannedStartAt: start,
+        plannedEndAt: end,
+      }),
+    };
+
+    const db = {
+      collection: (name) => {
+        if (name === "spotTrainingPlans") {
+          return {
+            where: () => ({
+              where: () => ({
+                orderBy: () => ({
+                  limit: () => ({
+                    get: async () => ({
+                      empty: false,
+                      size: 1,
+                      docs: [planSnap],
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
+        if (name === "spotCheckIns") {
+          return {
+            where: () => ({
+              where: () => ({
+                where: () => ({
+                  limit: () => ({
+                    get: async () => ({empty: true, docs: []}),
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
+        if (name === "spots") {
+          return {
+            doc: () => ({
+              get: async () => ({
+                exists: true,
+                data: () => ({name: "Doc name", hidden: false}),
+              }),
+            }),
+          };
+        }
+        if (name === "users") {
+          return {
+            doc: () => ({
+              collection: () => ({
+                doc: () => ({path: "users/u1/notifications/n1"}),
+              }),
+            }),
+          };
+        }
+        throw new Error("unexpected collection " + name);
+      },
+      getAll: async () => [
+        {exists: true, data: () => ({notifyTrainingPlanCheckInReminders: true})},
+      ],
+      runTransaction: async () => {
+        throw new Error("transaction failed");
+      },
+    };
+
+    const sendPush = jest.fn(async () => {});
+    const result = await runTrainingPlanCheckInReminders({
+      db,
+      FieldValue: {serverTimestamp: () => "SERVER_TS"},
+      now,
+      sendPush,
+    });
+    expect(result.notified).toBe(0);
+    expect(result.skipped).toBe(1);
+    expect(sendPush).not.toHaveBeenCalled();
   });
 });

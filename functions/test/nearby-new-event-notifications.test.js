@@ -75,9 +75,16 @@ function mockNearbyDb({
       if (name === "users") {
         return {
           doc: jest.fn((uid) => ({
-            collection: jest.fn(() => ({
-              doc: jest.fn(() => ({path: `users/${uid}/notifications/x`})),
-            })),
+            collection: jest.fn((sub) => {
+              if (sub === "pushSubscriptions") {
+                return {
+                  get: jest.fn(async () => ({empty: true, docs: []})),
+                };
+              }
+              return {
+                doc: jest.fn(() => ({path: `users/${uid}/notifications/x`})),
+              };
+            }),
           })),
         };
       }

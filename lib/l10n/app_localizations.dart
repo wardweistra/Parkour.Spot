@@ -592,7 +592,7 @@ abstract class AppLocalizations {
   /// **'Last known location'**
   String get profileLocationAlertsLastKnownLabel;
 
-  /// Account settings: toggle for in-app notifications when a new spot is added near an enabled location of interest
+  /// Account settings: toggle for notifications when a new spot is added near an enabled location of interest
   ///
   /// In en, this message translates to:
   /// **'Notify me about new spots nearby'**
@@ -601,10 +601,10 @@ abstract class AppLocalizations {
   /// Account settings: explains new spot notification opt-in and range
   ///
   /// In en, this message translates to:
-  /// **'Get an in-app notification when someone adds a spot within the alert radius of an active saved place or your last known location.'**
+  /// **'Get a notification when someone adds a spot within the alert radius of an active saved place or your last known location.'**
   String get profileLocationAlertsNotifyNewSpotsSubtitle;
 
-  /// Account settings: toggle for in-app notifications when someone checks in near an enabled location of interest
+  /// Account settings: toggle for notifications when someone checks in near an enabled location of interest
   ///
   /// In en, this message translates to:
   /// **'Notify me about nearby check-ins'**
@@ -613,10 +613,10 @@ abstract class AppLocalizations {
   /// Account settings: explains nearby check-in notification opt-in and range
   ///
   /// In en, this message translates to:
-  /// **'Get an in-app notification when someone checks in at a spot within the alert radius of an active saved place or your last known location.'**
+  /// **'Get a notification when someone checks in at a spot within the alert radius of an active saved place or your last known location.'**
   String get profileLocationAlertsNotifyNearbyCheckInsSubtitle;
 
-  /// Account settings: toggle for in-app notifications when someone creates a public training plan near an enabled location of interest
+  /// Account settings: toggle for notifications when someone creates a public training plan near an enabled location of interest
   ///
   /// In en, this message translates to:
   /// **'Notify me about nearby training plans'**
@@ -625,10 +625,10 @@ abstract class AppLocalizations {
   /// Account settings: explains nearby training-plan notification opt-in and range
   ///
   /// In en, this message translates to:
-  /// **'Get an in-app notification when someone shares a public training plan at a spot within the alert radius of an active saved place or your last known location.'**
+  /// **'Get a notification when someone shares a public training plan at a spot within the alert radius of an active saved place or your last known location.'**
   String get profileLocationAlertsNotifyTrainingPlansSubtitle;
 
-  /// Account settings: toggle for in-app notifications when an event is added near an enabled location of interest
+  /// Account settings: toggle for notifications when an event is added near an enabled location of interest
   ///
   /// In en, this message translates to:
   /// **'Notify me about nearby events'**
@@ -637,7 +637,7 @@ abstract class AppLocalizations {
   /// Account settings: explains nearby event notification opt-in and range
   ///
   /// In en, this message translates to:
-  /// **'Get an in-app notification when an event is added within the alert radius of an active saved place or your last known location.'**
+  /// **'Get a notification when an event is added within the alert radius of an active saved place or your last known location.'**
   String get profileLocationAlertsNotifyEventsSubtitle;
 
   /// Account settings: toggle for reminders when a planned training window starts
@@ -649,7 +649,7 @@ abstract class AppLocalizations {
   /// Account settings: explains training plan check-in reminder opt-in
   ///
   /// In en, this message translates to:
-  /// **'Get an in-app reminder when your planned session has started and you haven’t checked in at that spot yet.'**
+  /// **'Get a reminder when your planned session has started and you haven’t checked in at that spot yet.'**
   String get profileTrainingPlanCheckInReminderSubtitle;
 
   /// Account settings: saved locations subsection title

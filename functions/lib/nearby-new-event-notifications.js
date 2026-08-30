@@ -12,8 +12,7 @@ const {
   isEventPast,
   loadEventMainCoordinates,
 } = require("./event-map-pins");
-
-const BATCH_SIZE = 500;
+const {deliverNotifications} = require("./deliver-notification");
 const EXTERNAL_EVENT_SYNC_CREATED_BY = "external-event-sync";
 
 /** @type {string} Stable id for client-side localization */
@@ -187,29 +186,17 @@ async function fanOutNearbyNewEventNotifications({
   }
 
   const templateArgs = buildTemplateArgs(eventData);
-
-  let batch = db.batch();
-  let ops = 0;
-  for (const uid of usersToNotify) {
-    const ref = db.collection("users").doc(uid).collection("notifications").doc();
-    batch.set(ref, {
+  await deliverNotifications({
+    db,
+    FieldValue,
+    userIds: usersToNotify,
+    payload: {
       notificationKind: NOTIFICATION_KIND_NEARBY_NEW_EVENT,
       templateArgs,
       deeplinkKind: "event",
       deeplinkId: eventId,
-      createdAt: FieldValue.serverTimestamp(),
-      read: false,
-    });
-    ops++;
-    if (ops >= BATCH_SIZE) {
-      await batch.commit();
-      batch = db.batch();
-      ops = 0;
-    }
-  }
-  if (ops > 0) {
-    await batch.commit();
-  }
+    },
+  });
 
   console.log("Nearby new-event notifications:", {
     eventId,

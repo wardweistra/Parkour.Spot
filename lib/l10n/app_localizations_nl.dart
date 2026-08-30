@@ -311,7 +311,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyNewSpotsSubtitle =>
-      'Ontvang een in-app melding wanneer iemand een spot toevoegt binnen de meldingsstraal van een actieve opgeslagen plek of je laatst bekende locatie.';
+      'Ontvang een melding wanneer iemand een spot toevoegt binnen de meldingsstraal van een actieve opgeslagen plek of je laatst bekende locatie.';
 
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsTitle =>
@@ -319,7 +319,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyNearbyCheckInsSubtitle =>
-      'Ontvang een in-app melding wanneer iemand incheckt op een spot binnen de meldingsstraal van een actieve opgeslagen plek of je laatst bekende locatie.';
+      'Ontvang een melding wanneer iemand incheckt op een spot binnen de meldingsstraal van een actieve opgeslagen plek of je laatst bekende locatie.';
 
   @override
   String get profileLocationAlertsNotifyTrainingPlansTitle =>
@@ -327,7 +327,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
-      'Ontvang een in-app melding wanneer iemand een openbaar trainingsvenster deelt op een spot binnen de meldingsstraal van een actieve opgeslagen plek of je laatst bekende locatie.';
+      'Ontvang een melding wanneer iemand een openbaar trainingsvenster deelt op een spot binnen de meldingsstraal van een actieve opgeslagen plek of je laatst bekende locatie.';
 
   @override
   String get profileLocationAlertsNotifyEventsTitle =>
@@ -335,7 +335,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyEventsSubtitle =>
-      'Ontvang een in-app melding wanneer een evenement wordt toegevoegd binnen de meldingsstraal van een actieve opgeslagen plek of je laatst bekende locatie.';
+      'Ontvang een melding wanneer een evenement wordt toegevoegd binnen de meldingsstraal van een actieve opgeslagen plek of je laatst bekende locatie.';
 
   @override
   String get profileTrainingPlanCheckInReminderTitle =>
@@ -343,7 +343,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get profileTrainingPlanCheckInReminderSubtitle =>
-      'Ontvang een in-app herinnering wanneer je geplande sessie is begonnen en je nog niet bent ingecheckt op die spot.';
+      'Ontvang een herinnering wanneer je geplande sessie is begonnen en je nog niet bent ingecheckt op die spot.';
 
   @override
   String get profileLocationAlertsSavedLocationsTitle =>
