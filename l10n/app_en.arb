@@ -310,7 +310,23 @@
   "@profileNotificationSettingsTitle": {
     "description": "Account settings: notification settings section title"
   },
-  "profilePushNotificationsThisDeviceTitle": "Push notifications on this browser/device",
+  "profileNotificationSettingsThisDeviceGroupTitle": "This device",
+  "@profileNotificationSettingsThisDeviceGroupTitle": {
+    "description": "Account settings: heading for per-browser push notification controls"
+  },
+  "profileNotificationSettingsThisDeviceGroupHelper": "Alerts stay on this browser. Other signed-in devices keep their own setting.",
+  "@profileNotificationSettingsThisDeviceGroupHelper": {
+    "description": "Account settings: explains that push subscription does not sync across devices"
+  },
+  "profileNotificationSettingsEveryDeviceGroupTitle": "On every device",
+  "@profileNotificationSettingsEveryDeviceGroupTitle": {
+    "description": "Account settings: heading for account-wide notification preference toggles"
+  },
+  "profileNotificationSettingsEveryDeviceGroupHelper": "These apply wherever you're signed in.",
+  "@profileNotificationSettingsEveryDeviceGroupHelper": {
+    "description": "Account settings: explains that category notification prefs sync across devices"
+  },
+  "profilePushNotificationsThisDeviceTitle": "Push notifications",
   "@profilePushNotificationsThisDeviceTitle": {
     "description": "Account settings: toggle title for browser-specific push subscription"
   },

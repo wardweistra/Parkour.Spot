@@ -344,11 +344,19 @@ class AccountSettingsScreen extends StatelessWidget {
                     hasActiveLocation || notifyNewSpotsNearby;
 
                 return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    _NotificationSettingsGroupHeader(
+                      title:
+                          l10n.profileNotificationSettingsThisDeviceGroupTitle,
+                      helper:
+                          l10n.profileNotificationSettingsThisDeviceGroupHelper,
+                    ),
+                    const SizedBox(height: 8),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(
-                        Icons.notifications_active_outlined,
+                        Icons.devices_outlined,
                         color: Theme.of(context).colorScheme.primary,
                       ),
                       title: Text(l10n.profilePushNotificationsThisDeviceTitle),
@@ -386,7 +394,14 @@ class AccountSettingsScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                    const Divider(height: 1),
+                    const SizedBox(height: 20),
+                    _NotificationSettingsGroupHeader(
+                      title:
+                          l10n.profileNotificationSettingsEveryDeviceGroupTitle,
+                      helper: l10n
+                          .profileNotificationSettingsEveryDeviceGroupHelper,
+                    ),
+                    const SizedBox(height: 8),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(
@@ -809,6 +824,34 @@ class AccountSettingsScreen extends StatelessWidget {
     );
 
     labelController.dispose();
+  }
+}
+
+class _NotificationSettingsGroupHeader extends StatelessWidget {
+  const _NotificationSettingsGroupHeader({
+    required this.title,
+    required this.helper,
+  });
+
+  final String title;
+  final String helper;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 4),
+        Text(
+          helper,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: scheme.onSurface.withValues(alpha: 0.7),
+          ),
+        ),
+      ],
+    );
   }
 }
 

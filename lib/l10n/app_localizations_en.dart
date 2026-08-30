@@ -246,8 +246,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileNotificationSettingsTitle => 'Notification settings';
 
   @override
-  String get profilePushNotificationsThisDeviceTitle =>
-      'Push notifications on this browser/device';
+  String get profileNotificationSettingsThisDeviceGroupTitle => 'This device';
+
+  @override
+  String get profileNotificationSettingsThisDeviceGroupHelper =>
+      'Alerts stay on this browser. Other signed-in devices keep their own setting.';
+
+  @override
+  String get profileNotificationSettingsEveryDeviceGroupTitle =>
+      'On every device';
+
+  @override
+  String get profileNotificationSettingsEveryDeviceGroupHelper =>
+      'These apply wherever you\'re signed in.';
+
+  @override
+  String get profilePushNotificationsThisDeviceTitle => 'Push notifications';
 
   @override
   String get profilePushNotificationsUnsupported =>

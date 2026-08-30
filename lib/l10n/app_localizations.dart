@@ -502,10 +502,34 @@ abstract class AppLocalizations {
   /// **'Notification settings'**
   String get profileNotificationSettingsTitle;
 
+  /// Account settings: heading for per-browser push notification controls
+  ///
+  /// In en, this message translates to:
+  /// **'This device'**
+  String get profileNotificationSettingsThisDeviceGroupTitle;
+
+  /// Account settings: explains that push subscription does not sync across devices
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts stay on this browser. Other signed-in devices keep their own setting.'**
+  String get profileNotificationSettingsThisDeviceGroupHelper;
+
+  /// Account settings: heading for account-wide notification preference toggles
+  ///
+  /// In en, this message translates to:
+  /// **'On every device'**
+  String get profileNotificationSettingsEveryDeviceGroupTitle;
+
+  /// Account settings: explains that category notification prefs sync across devices
+  ///
+  /// In en, this message translates to:
+  /// **'These apply wherever you\'re signed in.'**
+  String get profileNotificationSettingsEveryDeviceGroupHelper;
+
   /// Account settings: toggle title for browser-specific push subscription
   ///
   /// In en, this message translates to:
-  /// **'Push notifications on this browser/device'**
+  /// **'Push notifications'**
   String get profilePushNotificationsThisDeviceTitle;
 
   /// Account settings: status text when push API/FCM is unavailable

@@ -246,8 +246,22 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileNotificationSettingsTitle => 'Meldingsinstellingen';
 
   @override
-  String get profilePushNotificationsThisDeviceTitle =>
-      'Pushmeldingen op deze browser/dit apparaat';
+  String get profileNotificationSettingsThisDeviceGroupTitle => 'Dit apparaat';
+
+  @override
+  String get profileNotificationSettingsThisDeviceGroupHelper =>
+      'Meldingen blijven in deze browser. Andere ingelogde apparaten behouden hun eigen instelling.';
+
+  @override
+  String get profileNotificationSettingsEveryDeviceGroupTitle =>
+      'Op elk apparaat';
+
+  @override
+  String get profileNotificationSettingsEveryDeviceGroupHelper =>
+      'Deze gelden overal waar je bent ingelogd.';
+
+  @override
+  String get profilePushNotificationsThisDeviceTitle => 'Pushmeldingen';
 
   @override
   String get profilePushNotificationsUnsupported =>

@@ -251,8 +251,23 @@ class AppLocalizationsDe extends AppLocalizations {
       'Benachrichtigungseinstellungen';
 
   @override
+  String get profileNotificationSettingsThisDeviceGroupTitle => 'Dieses Gerät';
+
+  @override
+  String get profileNotificationSettingsThisDeviceGroupHelper =>
+      'Meldungen bleiben in diesem Browser. Andere angemeldete Geräte behalten ihre eigene Einstellung.';
+
+  @override
+  String get profileNotificationSettingsEveryDeviceGroupTitle =>
+      'Auf jedem Gerät';
+
+  @override
+  String get profileNotificationSettingsEveryDeviceGroupHelper =>
+      'Diese gelten überall, wo du angemeldet bist.';
+
+  @override
   String get profilePushNotificationsThisDeviceTitle =>
-      'Push-Benachrichtigungen in diesem Browser/auf diesem Gerät';
+      'Push-Benachrichtigungen';
 
   @override
   String get profilePushNotificationsUnsupported =>
