@@ -89,6 +89,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get notificationsTitle => 'Meldingen';
 
   @override
+  String get notificationPushOpen => 'Openen';
+
+  @override
   String get notificationsSubtitle =>
       'Nieuwe spots in de buurt, trainingsplannen, check-ins en andere updates voor jou';
 
@@ -327,6 +330,16 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get profilePushNotificationsError =>
       'Pushmeldingen konden niet worden bijgewerkt in deze browser. Probeer het opnieuw.';
+
+  @override
+  String get profilePushNotificationsDisableTitle => 'Pushmeldingen uitzetten?';
+
+  @override
+  String get profilePushNotificationsDisableMessage =>
+      'Je krijgt geen banners meer in deze browser. Meldingen in de app blijven verschijnen.';
+
+  @override
+  String get profilePushNotificationsDisableConfirm => 'Uitzetten';
 
   @override
   String get profileLocationAlertsDescription =>

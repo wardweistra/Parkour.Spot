@@ -89,6 +89,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get notificationsTitle => 'Notifications';
 
   @override
+  String get notificationPushOpen => 'Ouvrir';
+
+  @override
   String get notificationsSubtitle =>
       'Nouveaux spots à proximité, séances planifiées, check-ins et autres nouvelles pour vous';
 
@@ -329,6 +332,17 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get profilePushNotificationsError =>
       'Impossible de mettre à jour les notifications push sur ce navigateur. Réessayez.';
+
+  @override
+  String get profilePushNotificationsDisableTitle =>
+      'Désactiver les notifications push ?';
+
+  @override
+  String get profilePushNotificationsDisableMessage =>
+      'Vous ne recevrez plus de bannières sur ce navigateur. Les notifications dans l\'appli continueront d\'apparaître.';
+
+  @override
+  String get profilePushNotificationsDisableConfirm => 'Désactiver';
 
   @override
   String get profileLocationAlertsDescription =>

@@ -22,14 +22,19 @@ const MIN_TOKEN_LENGTH = 10;
 /**
  * @param {string} deeplinkKind
  * @param {string} deeplinkId
+ * @param {string} [notificationId] inbox doc id; appended as `nid` when present
  * @return {string}
  */
-function clickUrlForDeeplink(deeplinkKind, deeplinkId) {
+function clickUrlForDeeplink(deeplinkKind, deeplinkId, notificationId) {
   const id = typeof deeplinkId === "string" ? deeplinkId.trim() : "";
-  if (deeplinkKind === "event") {
-    return `${PUBLIC_ORIGIN}/event/${id}`;
+  const path = deeplinkKind === "event" ?
+    `${PUBLIC_ORIGIN}/event/${id}` :
+    `${PUBLIC_ORIGIN}/spot/${id}`;
+  const nid = typeof notificationId === "string" ? notificationId.trim() : "";
+  if (!nid) {
+    return path;
   }
-  return `${PUBLIC_ORIGIN}/spot/${id}`;
+  return `${path}?nid=${encodeURIComponent(nid)}`;
 }
 
 /**
@@ -54,15 +59,18 @@ function inboxDocFields(payload, FieldValue) {
  * @param {object} FieldValue
  * @param {string[]} userIds
  * @param {object} payload
- * @return {Promise<void>}
+ * @return {Promise<Object<string, string>>} uid -> inbox document id
  */
 async function writeInboxNotifications(db, FieldValue, userIds, payload) {
   const fields = inboxDocFields(payload, FieldValue);
+  /** @type {Object<string, string>} */
+  const idsByUser = {};
   let batch = db.batch();
   let ops = 0;
   for (const uid of userIds) {
     const ref = db.collection("users").doc(uid)
         .collection("notifications").doc();
+    idsByUser[uid] = ref.id;
     batch.set(ref, fields);
     ops++;
     if (ops >= BATCH_SIZE) {
@@ -74,6 +82,7 @@ async function writeInboxNotifications(db, FieldValue, userIds, payload) {
   if (ops > 0) {
     await batch.commit();
   }
+  return idsByUser;
 }
 
 /**
@@ -139,6 +148,7 @@ function resolveMessaging(messaging) {
  * @param {object} options.FieldValue
  * @param {string} options.uid
  * @param {object} options.payload
+ * @param {string} [options.notificationId]
  * @param {object} [options.messaging]
  * @return {Promise<void>}
  */
@@ -147,6 +157,7 @@ async function sendPushForPayload({
   FieldValue,
   uid,
   payload,
+  notificationId,
   messaging,
 }) {
   try {
@@ -162,6 +173,7 @@ async function sendPushForPayload({
     const clickLink = clickUrlForDeeplink(
         payload.deeplinkKind,
         payload.deeplinkId,
+        notificationId,
     );
     const targets = subs.map((sub) => {
       const locale = resolvePushLocale(sub.locale, preferredLanguageCode);
@@ -221,13 +233,14 @@ async function deliverNotifications({
   if (ids.length === 0) {
     return {notified: 0};
   }
-  await writeInboxNotifications(db, FieldValue, ids, payload);
+  const idsByUser = await writeInboxNotifications(db, FieldValue, ids, payload);
   for (const uid of ids) {
     await sendPushForPayload({
       db,
       FieldValue,
       uid,
       payload,
+      notificationId: idsByUser[uid],
       messaging,
     });
   }

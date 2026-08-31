@@ -10,6 +10,7 @@ import '../../services/locale_preferences_service.dart';
 import '../../services/user_locations_of_interest_service.dart';
 import '../../services/web_push_subscription_service.dart';
 import '../../utils/location_permission_utils.dart';
+import '../../widgets/confirm_disable_push_dialog.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
@@ -373,9 +374,14 @@ class AccountSettingsScreen extends StatelessWidget {
                             : (enabled) async {
                                 if (enabled) {
                                   await pushService.enableCurrentDevice();
-                                } else {
-                                  await pushService.disableCurrentDevice();
+                                  return;
                                 }
+                                final confirmed =
+                                    await confirmDisablePushNotifications(
+                                      context,
+                                    );
+                                if (!confirmed || !context.mounted) return;
+                                await pushService.disableCurrentDevice();
                               },
                       ),
                     ),

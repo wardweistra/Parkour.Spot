@@ -220,6 +220,7 @@ async function runTrainingPlanCheckInReminders({db, FieldValue, now, sendPush}) 
 
       try {
         let pushPayload = null;
+        let notificationId = null;
         await db.runTransaction(async (t) => {
           const fresh = await t.get(ref);
           if (!fresh.exists) {
@@ -259,6 +260,7 @@ async function runTrainingPlanCheckInReminders({db, FieldValue, now, sendPush}) 
             deeplinkKind: "spot",
             deeplinkId: spotId,
           };
+          notificationId = notifRef.id;
         });
         notified++;
         if (pushPayload) {
@@ -268,6 +270,7 @@ async function runTrainingPlanCheckInReminders({db, FieldValue, now, sendPush}) 
               FieldValue,
               uid: userId,
               payload: pushPayload,
+              notificationId,
             });
           } catch (pushErr) {
             console.error("training plan reminder push failed:", {

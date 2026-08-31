@@ -45,7 +45,10 @@ function createDb({
           collection: jest.fn((sub) => {
             if (sub === "notifications") {
               return {
-                doc: jest.fn(() => ({path: `users/${uid}/notifications/n1`})),
+                doc: jest.fn(() => ({
+                  id: "n1",
+                  path: `users/${uid}/notifications/n1`,
+                })),
               };
             }
             if (sub === "pushSubscriptions") {
@@ -84,6 +87,21 @@ describe("clickUrlForDeeplink", () => {
   it("builds spot and event URLs", () => {
     expect(clickUrlForDeeplink("spot", "abc")).toBe("https://parkour.spot/spot/abc");
     expect(clickUrlForDeeplink("event", "evt1")).toBe("https://parkour.spot/event/evt1");
+  });
+
+  it("appends nid when an inbox id is provided", () => {
+    expect(clickUrlForDeeplink("spot", "abc", "n1")).toBe(
+        "https://parkour.spot/spot/abc?nid=n1",
+    );
+    expect(clickUrlForDeeplink("event", "evt1", "n1")).toBe(
+        "https://parkour.spot/event/evt1?nid=n1",
+    );
+  });
+
+  it("ignores blank inbox ids", () => {
+    expect(clickUrlForDeeplink("spot", "abc", "  ")).toBe(
+        "https://parkour.spot/spot/abc",
+    );
   });
 });
 
@@ -175,9 +193,11 @@ describe("deliverNotifications", () => {
     expect(messages.length).toBe(1);
     expect(messages[0].token).toBe(TOKEN);
     expect(messages[0].notification.title).toBe("Nieuwe spot in de buurt: Wall");
-    expect(messages[0].data.openUrl).toBe("https://parkour.spot/spot/spotA");
+    expect(messages[0].data.openUrl).toBe(
+        "https://parkour.spot/spot/spotA?nid=n1",
+    );
     expect(messages[0].webpush.fcmOptions.link).toBe(
-        "https://parkour.spot/spot/spotA",
+        "https://parkour.spot/spot/spotA?nid=n1",
     );
     expect(messages[0].webpush.notification.icon).toBe(
         DEFAULT_NOTIFICATION_ICON_URL,
@@ -185,6 +205,7 @@ describe("deliverNotifications", () => {
     expect(messages[0].webpush.notification.badge).toBe(
         DEFAULT_NOTIFICATION_BADGE_URL,
     );
+    expect(messages[0].webpush.notification.actions).toBeUndefined();
   });
 
   it("sends event click URL for event deeplinks", async () => {
@@ -220,7 +241,10 @@ describe("deliverNotifications", () => {
 
     const messages = messaging.sendEach.mock.calls[0][0];
     expect(messages[0].notification.title).toBe("New event nearby: Jam");
-    expect(messages[0].data.openUrl).toBe("https://parkour.spot/event/evt1");
+    expect(messages[0].data.openUrl).toBe(
+        "https://parkour.spot/event/evt1?nid=n1",
+    );
+    expect(messages[0].webpush.notification.actions).toBeUndefined();
   });
 
   it("falls back to preferredLanguageCode when subscription locale is unsupported", async () => {

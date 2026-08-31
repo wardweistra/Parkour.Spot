@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
+
 class SnackbarService {
-  static final GlobalKey<ScaffoldMessengerState> messengerKey = GlobalKey<ScaffoldMessengerState>();
+  static final GlobalKey<ScaffoldMessengerState> messengerKey =
+      GlobalKey<ScaffoldMessengerState>();
 
   static void showSuccess(String message) {
     final state = messengerKey.currentState;
     if (state == null) return;
     state.clearSnackBars();
     state.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
     );
   }
 
@@ -20,18 +20,14 @@ class SnackbarService {
     if (state == null) return;
     state.clearSnackBars();
     state.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
   /// Foreground FCM on web: system notification may not appear; show in-app.
   ///
-  /// When [onOpenLink] is set (e.g. FCM `data.openUrl`), an **Open** control
-  /// follows the push URL. **Open** then **Close** (×) keep the dismiss control
-  /// trailing; both sit in the content row to avoid cramped [SnackBarAction] layout.
+  /// When [onOpenLink] is set (e.g. FCM `data.openUrl`), **Open** follows the
+  /// push URL. Dismiss (×) stays trailing.
   static void showFcmForeground(
     String title,
     String? body, {
@@ -44,19 +40,19 @@ class SnackbarService {
       messenger.clearSnackBars();
 
       final theme = Theme.of(overlayContext);
+      final l10n = AppLocalizations.of(overlayContext);
       final onInverse = theme.colorScheme.onInverseSurface;
       final bodyTrimmed = body?.trim();
       final hasBody = bodyTrimmed != null && bodyTrimmed.isNotEmpty;
 
-      // Title / body hierarchy; actions stay in [content] so we control gaps.
-      // Order: Open → gap → dismiss (×) last so the primary action precedes close.
       final textColumn = Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: theme.textTheme.titleSmall?.copyWith(
+            style:
+                theme.textTheme.titleSmall?.copyWith(
                   color: onInverse,
                   fontWeight: FontWeight.w600,
                   height: 1.25,
@@ -75,7 +71,8 @@ class SnackbarService {
             const SizedBox(height: 6),
             Text(
               bodyTrimmed,
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style:
+                  theme.textTheme.bodyMedium?.copyWith(
                     color: onInverse.withValues(alpha: 0.88),
                     height: 1.35,
                   ) ??
@@ -91,9 +88,16 @@ class SnackbarService {
         ],
       );
 
-      final closeTooltip =
-          MaterialLocalizations.of(overlayContext).closeButtonTooltip;
+      final closeTooltip = MaterialLocalizations.of(
+        overlayContext,
+      ).closeButtonTooltip;
       final accent = theme.colorScheme.inversePrimary;
+      final textActionStyle = TextButton.styleFrom(
+        foregroundColor: accent,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        minimumSize: const Size(48, 40),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      );
 
       final actions = Row(
         mainAxisSize: MainAxisSize.min,
@@ -104,13 +108,8 @@ class SnackbarService {
                 messenger.hideCurrentSnackBar();
                 onOpenLink();
               },
-              style: TextButton.styleFrom(
-                foregroundColor: accent,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                minimumSize: const Size(48, 40),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: const Text('Open'),
+              style: textActionStyle,
+              child: Text(l10n?.notificationPushOpen ?? 'Open'),
             ),
             const SizedBox(width: 12),
           ],
@@ -172,5 +171,3 @@ class SnackbarService {
     });
   }
 }
-
-

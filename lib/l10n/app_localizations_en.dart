@@ -89,6 +89,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsTitle => 'Notifications';
 
   @override
+  String get notificationPushOpen => 'Open';
+
+  @override
   String get notificationsSubtitle =>
       'New spots nearby, training plans, check-ins, and other updates for you';
 
@@ -327,6 +330,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profilePushNotificationsError =>
       'We couldn\'t update push notifications on this browser. Please try again.';
+
+  @override
+  String get profilePushNotificationsDisableTitle =>
+      'Turn off push notifications?';
+
+  @override
+  String get profilePushNotificationsDisableMessage =>
+      'You\'ll stop getting banners on this browser. In-app notifications will still appear.';
+
+  @override
+  String get profilePushNotificationsDisableConfirm => 'Turn off';
 
   @override
   String get profileLocationAlertsDescription =>

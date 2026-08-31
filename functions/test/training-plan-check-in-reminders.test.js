@@ -92,7 +92,7 @@ describe("runTrainingPlanCheckInReminders", () => {
       }),
     };
 
-    const notifRef = {path: "users/u1/notifications/n1"};
+    const notifRef = {id: "n1", path: "users/u1/notifications/n1"};
     let transactionCalls = 0;
 
     const db = {
@@ -199,6 +199,7 @@ describe("runTrainingPlanCheckInReminders", () => {
     expect(transactionCalls).toBe(1);
     expect(sendPush).toHaveBeenCalledTimes(1);
     expect(sendPush.mock.calls[0][0].uid).toBe("u1");
+    expect(sendPush.mock.calls[0][0].notificationId).toBe("n1");
     expect(sendPush.mock.calls[0][0].payload).toEqual({
       notificationKind: NOTIFICATION_KIND_TRAINING_PLAN_CHECK_IN_REMINDER,
       templateArgs: {spotName: "Test spot"},

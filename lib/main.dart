@@ -39,6 +39,7 @@ import 'package:parkour_spot/services/user_locations_of_interest_service.dart';
 import 'package:parkour_spot/services/user_notification_service.dart';
 import 'package:parkour_spot/services/locale_preferences_service.dart';
 import 'package:parkour_spot/services/web_push_subscription_service.dart';
+import 'package:parkour_spot/widgets/inbox_notification_open_handler.dart';
 import 'package:parkour_spot/router/app_router.dart';
 import 'package:parkour_spot/firebase_options.dart';
 import 'package:parkour_spot/config/app_config.dart';
@@ -329,36 +330,38 @@ class ParkourSpotApp extends StatelessWidget {
         ),
       ],
       child: _EagerWebPushInit(
-        child: Consumer<LocalePreferencesService>(
-          builder: (context, localePrefs, _) {
-            return MaterialApp.router(
-              onGenerateTitle: (_) => WebMetaUtils.defaultTitle,
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              locale: localePrefs.locale,
-              routerConfig: AppRouter.router,
-              scaffoldMessengerKey: SnackbarService.messengerKey,
-              theme: ThemeData(
-                useMaterial3: true,
-                colorScheme: ColorScheme.fromSeed(
-                  seedColor: const Color(0xFF007FA8),
-                  brightness: Brightness.light,
+        child: InboxNotificationOpenHandler(
+          child: Consumer<LocalePreferencesService>(
+            builder: (context, localePrefs, _) {
+              return MaterialApp.router(
+                onGenerateTitle: (_) => WebMetaUtils.defaultTitle,
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                locale: localePrefs.locale,
+                routerConfig: AppRouter.router,
+                scaffoldMessengerKey: SnackbarService.messengerKey,
+                theme: ThemeData(
+                  useMaterial3: true,
+                  colorScheme: ColorScheme.fromSeed(
+                    seedColor: const Color(0xFF007FA8),
+                    brightness: Brightness.light,
+                  ),
+                  textTheme: GoogleFonts.fredokaTextTheme(),
                 ),
-                textTheme: GoogleFonts.fredokaTextTheme(),
-              ),
-              darkTheme: ThemeData(
-                useMaterial3: true,
-                colorScheme: ColorScheme.fromSeed(
-                  seedColor: const Color(0xFF007FA8),
-                  brightness: Brightness.dark,
+                darkTheme: ThemeData(
+                  useMaterial3: true,
+                  colorScheme: ColorScheme.fromSeed(
+                    seedColor: const Color(0xFF007FA8),
+                    brightness: Brightness.dark,
+                  ),
+                  textTheme: GoogleFonts.fredokaTextTheme(
+                    ThemeData.dark().textTheme,
+                  ),
                 ),
-                textTheme: GoogleFonts.fredokaTextTheme(
-                  ThemeData.dark().textTheme,
-                ),
-              ),
-              debugShowCheckedModeBanner: false,
-            );
-          },
+                debugShowCheckedModeBanner: false,
+              );
+            },
+          ),
         ),
       ),
     );

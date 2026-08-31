@@ -250,6 +250,12 @@ abstract class AppLocalizations {
   /// **'Notifications'**
   String get notificationsTitle;
 
+  /// Foreground push snackbar: open the spot or event from the alert
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get notificationPushOpen;
+
   /// Account tab: hint that notifications reflect nearby map/community activity
   ///
   /// In en, this message translates to:
@@ -633,6 +639,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'We couldn\'t update push notifications on this browser. Please try again.'**
   String get profilePushNotificationsError;
+
+  /// Confirm dialog title when turning off this-browser push
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off push notifications?'**
+  String get profilePushNotificationsDisableTitle;
+
+  /// Confirm dialog body when turning off this-browser push
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll stop getting banners on this browser. In-app notifications will still appear.'**
+  String get profilePushNotificationsDisableMessage;
+
+  /// Confirm dialog button to disable this-browser push
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off'**
+  String get profilePushNotificationsDisableConfirm;
 
   /// Account settings: location alerts section description
   ///

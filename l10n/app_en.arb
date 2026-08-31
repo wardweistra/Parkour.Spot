@@ -101,6 +101,10 @@
   "@notificationsTitle": {
     "description": "Notifications inbox screen title and Account tab row"
   },
+  "notificationPushOpen": "Open",
+  "@notificationPushOpen": {
+    "description": "Foreground push snackbar: open the spot or event from the alert"
+  },
   "notificationsSubtitle": "New spots nearby, training plans, check-ins, and other updates for you",
   "@notificationsSubtitle": {
     "description": "Account tab: hint that notifications reflect nearby map/community activity"
@@ -397,6 +401,18 @@
   "profilePushNotificationsError": "We couldn't update push notifications on this browser. Please try again.",
   "@profilePushNotificationsError": {
     "description": "Account settings: generic error shown under push subscription toggle"
+  },
+  "profilePushNotificationsDisableTitle": "Turn off push notifications?",
+  "@profilePushNotificationsDisableTitle": {
+    "description": "Confirm dialog title when turning off this-browser push"
+  },
+  "profilePushNotificationsDisableMessage": "You'll stop getting banners on this browser. In-app notifications will still appear.",
+  "@profilePushNotificationsDisableMessage": {
+    "description": "Confirm dialog body when turning off this-browser push"
+  },
+  "profilePushNotificationsDisableConfirm": "Turn off",
+  "@profilePushNotificationsDisableConfirm": {
+    "description": "Confirm dialog button to disable this-browser push"
   },
   "profileLocationAlertsDescription": "Control which locations are used for nearby alerts, including check-ins, new spots, training plans, and events.",
   "@profileLocationAlertsDescription": {

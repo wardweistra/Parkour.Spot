@@ -91,6 +91,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get notificationsTitle => 'Benachrichtigungen';
 
   @override
+  String get notificationPushOpen => 'Öffnen';
+
+  @override
   String get notificationsSubtitle =>
       'Neue Spots in der Nähe, Trainingspläne, Check-ins und andere Updates für dich';
 
@@ -334,6 +337,17 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get profilePushNotificationsError =>
       'Push-Benachrichtigungen konnten in diesem Browser nicht aktualisiert werden. Bitte erneut versuchen.';
+
+  @override
+  String get profilePushNotificationsDisableTitle =>
+      'Push-Benachrichtigungen ausschalten?';
+
+  @override
+  String get profilePushNotificationsDisableMessage =>
+      'Auf diesem Browser erhältst du keine Banner mehr. Benachrichtigungen in der App erscheinen weiterhin.';
+
+  @override
+  String get profilePushNotificationsDisableConfirm => 'Ausschalten';
 
   @override
   String get profileLocationAlertsDescription =>
