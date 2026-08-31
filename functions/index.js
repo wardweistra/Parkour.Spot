@@ -161,6 +161,9 @@ const {
   buildUserContributionStats,
   getUserContributionStats,
 } = require("./lib/user-contribution-stats");
+const {
+  handleEventInterestWritten,
+} = require("./lib/event-interest-stats");
 
 // Import shared HTML template
 const {generateHtmlPage} = require("./html-template");
@@ -1312,6 +1315,18 @@ exports.onRatingDeleted = onDocumentDeleted(
         }
       } catch (e) {
         console.error("onRatingDeleted error", e);
+      }
+    },
+);
+
+// Keep public Going / Interested totals in sync with per-user RSVPs.
+exports.onEventInterestWritten = onDocumentWritten(
+    {document: "users/{userId}/eventInterests/{eventId}", region: "europe-west1"},
+    async (event) => {
+      try {
+        await handleEventInterestWritten(db, event);
+      } catch (e) {
+        console.error("onEventInterestWritten error", e);
       }
     },
 );

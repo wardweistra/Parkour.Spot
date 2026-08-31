@@ -48,6 +48,7 @@ import '../../widgets/detail_image_carousel.dart';
 import '../../widgets/event_location_map_preview.dart';
 import '../../widgets/event_detail_provenance_line.dart';
 import '../../widgets/event_detail_when_block.dart';
+import '../../widgets/event_interest_panel.dart';
 import '../../widgets/event_duplicate_report_dialog.dart';
 import '../../widgets/event_selection_dialog.dart';
 import '../../widgets/event_duplicate_transfer_dialog.dart';
@@ -1217,6 +1218,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         endsLabel: l10n.eventDetailEndsLabel,
         todayLabel: l10n.spotDetailDateToday,
       ),
+      const SizedBox(height: SpotDetailUi.detailSectionGap),
+      EventInterestSection(event: event),
     ];
 
     if (hasDescription) {

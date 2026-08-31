@@ -232,6 +232,12 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // Public Going / Interested totals (written by Cloud Functions only).
+    match /eventInterestStats/{eventId} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
     // Spot check-ins (one document per check-in event; query by userId and/or spotId)
     match /spotCheckIns/{checkInId} {
       function spotCheckInCommentOk(data) {
@@ -425,6 +431,35 @@ service cloud.firestore {
       match /savedSpotLists/{listId} {
         allow read, create, update, delete: if request.auth != null
           && request.auth.uid == userId;
+      }
+
+      // Event RSVPs (Going / Interested). Only the owner can read their own.
+      // Public totals live in eventInterestStats (Cloud Functions).
+      match /eventInterests/{eventId} {
+        function eventInterestStatusOk(data) {
+          return data.status is string &&
+            data.status in ['going', 'interested'];
+        }
+        function eventInterestShape(data) {
+          return eventInterestStatusOk(data) &&
+            data.userId == userId &&
+            data.eventId == eventId &&
+            (!('eventStartAt' in data) || data.eventStartAt is timestamp);
+        }
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null &&
+          request.auth.uid == userId &&
+          eventInterestShape(request.resource.data) &&
+          request.resource.data.createdAt == request.time &&
+          request.resource.data.updatedAt == request.time;
+        allow update: if request.auth != null &&
+          request.auth.uid == userId &&
+          resource.data.userId == userId &&
+          resource.data.eventId == eventId &&
+          resource.data.createdAt == request.resource.data.createdAt &&
+          eventInterestShape(request.resource.data) &&
+          request.resource.data.updatedAt == request.time;
+        allow delete: if request.auth != null && request.auth.uid == userId;
       }
 
       // Per-user location anchors used for nearby notification targeting.

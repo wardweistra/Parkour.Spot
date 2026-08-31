@@ -72,6 +72,57 @@ class AppLocalizationsDe extends AppLocalizations {
       'Möchte ich besuchen, schon besucht, Spots, die du hinzugefügt hast, und Listen, die du erstellst oder speicherst';
 
   @override
+  String get myEventsTitle => 'Meine Events';
+
+  @override
+  String get accountMyEventsSubtitle =>
+      'Events, bei denen du dabei oder interessiert bist';
+
+  @override
+  String get eventInterestGoing => 'Dabei';
+
+  @override
+  String get eventInterestInterested => 'Interessiert';
+
+  @override
+  String eventInterestGoingLabel(int count) {
+    return 'Dabei ($count)';
+  }
+
+  @override
+  String eventInterestInterestedLabel(int count) {
+    return 'Interessiert ($count)';
+  }
+
+  @override
+  String get eventInterestDisclaimer =>
+      'Das ist keine Anmeldung. Es zeigt anderen nur, dass du dabei sein könntest.';
+
+  @override
+  String get eventInterestUpdateFailed =>
+      'Dein Interesse konnte nicht gespeichert werden.';
+
+  @override
+  String get myEventsSignInPrompt =>
+      'Melde dich an, um Events zu sehen, bei denen du dabei oder interessiert bist';
+
+  @override
+  String get myEventsEmptyTitle => 'Noch keine Events';
+
+  @override
+  String get myEventsEmptyDescription =>
+      'Öffne ein Event und tippe auf Dabei oder Interessiert. Das ist keine Anmeldung — es erscheint nur auf dem Event und in dieser Liste.';
+
+  @override
+  String get myEventsUpcomingTitle => 'Bevorstehend';
+
+  @override
+  String get myEventsPastTitle => 'Vergangen';
+
+  @override
+  String get myEventsLoadFailed => 'Deine Events konnten nicht geladen werden.';
+
+  @override
   String get spotListsHubSignInPrompt =>
       'Melde dich an, um deine Listen anzusehen und zu verwalten';
 

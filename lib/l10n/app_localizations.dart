@@ -220,6 +220,90 @@ abstract class AppLocalizations {
   /// **'Want to visit, been to, spots you added, and lists you create or save'**
   String get accountSpotListsSubtitle;
 
+  /// Account tab row and My events screen title
+  ///
+  /// In en, this message translates to:
+  /// **'My events'**
+  String get myEventsTitle;
+
+  /// Account tab: subtitle for the My events row
+  ///
+  /// In en, this message translates to:
+  /// **'Events you\'re going to or interested in'**
+  String get accountMyEventsSubtitle;
+
+  /// RSVP status: user plans to attend the event
+  ///
+  /// In en, this message translates to:
+  /// **'Going'**
+  String get eventInterestGoing;
+
+  /// RSVP status: user is considering the event
+  ///
+  /// In en, this message translates to:
+  /// **'Interested'**
+  String get eventInterestInterested;
+
+  /// Event detail Going button with public total
+  ///
+  /// In en, this message translates to:
+  /// **'Going ({count})'**
+  String eventInterestGoingLabel(int count);
+
+  /// Event detail Interested button with public total
+  ///
+  /// In en, this message translates to:
+  /// **'Interested ({count})'**
+  String eventInterestInterestedLabel(int count);
+
+  /// Event detail: RSVP is interest only, not a sign-up
+  ///
+  /// In en, this message translates to:
+  /// **'This is not a registration. It only lets others know you might be there.'**
+  String get eventInterestDisclaimer;
+
+  /// Error when saving Going or Interested fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update your interest.'**
+  String get eventInterestUpdateFailed;
+
+  /// Prompt on My events when signed out
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to see events you\'re going to or interested in'**
+  String get myEventsSignInPrompt;
+
+  /// Empty state title on My events
+  ///
+  /// In en, this message translates to:
+  /// **'No events yet'**
+  String get myEventsEmptyTitle;
+
+  /// Empty state body on My events
+  ///
+  /// In en, this message translates to:
+  /// **'Open an event and tap Going or Interested. This is not a registration — it only shows on the event and in this list.'**
+  String get myEventsEmptyDescription;
+
+  /// My events section heading for future events
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming'**
+  String get myEventsUpcomingTitle;
+
+  /// My events section heading for past events
+  ///
+  /// In en, this message translates to:
+  /// **'Past'**
+  String get myEventsPastTitle;
+
+  /// Error state on My events
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your events.'**
+  String get myEventsLoadFailed;
+
   /// Spot lists hub: prompt when signed out
   ///
   /// In en, this message translates to:

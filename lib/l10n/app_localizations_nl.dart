@@ -70,6 +70,57 @@ class AppLocalizationsNl extends AppLocalizations {
       'Wil ik bezoeken, al geweest, spots die je hebt toegevoegd en lijsten die je maakt of opslaat';
 
   @override
+  String get myEventsTitle => 'Mijn events';
+
+  @override
+  String get accountMyEventsSubtitle =>
+      'Events waar je naartoe gaat of in geïnteresseerd bent';
+
+  @override
+  String get eventInterestGoing => 'Ik ga';
+
+  @override
+  String get eventInterestInterested => 'Geïnteresseerd';
+
+  @override
+  String eventInterestGoingLabel(int count) {
+    return 'Ik ga ($count)';
+  }
+
+  @override
+  String eventInterestInterestedLabel(int count) {
+    return 'Geïnteresseerd ($count)';
+  }
+
+  @override
+  String get eventInterestDisclaimer =>
+      'Dit is geen inschrijving. Het laat anderen alleen weten dat je er misschien bij bent.';
+
+  @override
+  String get eventInterestUpdateFailed =>
+      'Je interesse kon niet worden bijgewerkt.';
+
+  @override
+  String get myEventsSignInPrompt =>
+      'Log in om events te zien waar je naartoe gaat of in geïnteresseerd bent';
+
+  @override
+  String get myEventsEmptyTitle => 'Nog geen events';
+
+  @override
+  String get myEventsEmptyDescription =>
+      'Open een event en tik op Ik ga of Geïnteresseerd. Dit is geen inschrijving — het verschijnt alleen op het event en in deze lijst.';
+
+  @override
+  String get myEventsUpcomingTitle => 'Aankomend';
+
+  @override
+  String get myEventsPastTitle => 'Afgelopen';
+
+  @override
+  String get myEventsLoadFailed => 'Je events konden niet worden geladen.';
+
+  @override
   String get spotListsHubSignInPrompt =>
       'Log in om je lijsten te bekijken en te beheren';
 
