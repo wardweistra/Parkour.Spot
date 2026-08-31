@@ -48,6 +48,7 @@
   "notificationsPushPromptNotNow": "Niet nu",
   "notificationsPushPromptBlockedTitle": "Pushmeldingen zijn geblokkeerd in deze browser",
   "notificationsPushPromptBlockedBody": "Sta meldingen voor Parkour·Spot toe in je browserinstellingen om alerts te krijgen wanneer je niet in de app bent.",
+  "notificationsPushPromptEnabledSnackbar": "Meldingen staan aan in deze browser.",
   "notificationsTimeUnknown": "Recent",
   "notificationsOpenSemantic": "Melding openen: {title}",
   "notificationsActorSomeone": "Iemand",

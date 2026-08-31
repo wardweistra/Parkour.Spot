@@ -137,7 +137,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final ok = await push.enableCurrentDevice();
     if (!context.mounted) return;
-    if (!ok && push.permissionState != WebPushPermissionState.denied) {
+    if (ok) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.notificationsPushPromptEnabledSnackbar)),
+      );
+      return;
+    }
+    if (push.permissionState != WebPushPermissionState.denied) {
       messenger.showSnackBar(
         SnackBar(content: Text(l10n.profilePushNotificationsError)),
       );
@@ -201,104 +207,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final displayItems = _showUnreadOnly
         ? items.where((n) => !n.read).toList(growable: false)
         : items;
+    final showPushPrompt = _shouldShowPushPrompt(pushService);
+    final pushBlocked =
+        pushService.permissionState == WebPushPermissionState.denied;
 
-    if (displayItems.isEmpty) {
-      if (items.isEmpty) {
-        final showPushPrompt = _shouldShowPushPrompt(pushService);
-        final pushBlocked =
-            pushService.permissionState == WebPushPermissionState.denied;
-        return Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.notifications_none_outlined,
-                    size: 56,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.45),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    l10n.notificationsEmptyTitle,
-                    style: Theme.of(context).textTheme.titleMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.notificationsEmptyBody,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  if (showPushPrompt) ...[
-                    const SizedBox(height: 20),
-                    if (pushBlocked) ...[
-                      Text(
-                        l10n.notificationsPushPromptBlockedTitle,
-                        style: Theme.of(context).textTheme.titleSmall,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        l10n.notificationsPushPromptBlockedBody,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.7),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ] else
-                      Text(
-                        l10n.notificationsPushPromptEmptyHelper,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.7),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    const SizedBox(height: 20),
-                    FilledButton(
-                      onPressed: pushService.isBusy
-                          ? null
-                          : () {
-                              if (pushBlocked) {
-                                context.push('/profile/settings');
-                              } else {
-                                unawaited(_enablePushFromInbox(context));
-                              }
-                            },
-                      child: Text(
-                        pushBlocked
-                            ? l10n.profileNotificationSettingsTitle
-                            : l10n.notificationsPushPromptTurnOnEmpty,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        setState(() => _pushPromptDismissed = true);
-                      },
-                      child: Text(l10n.notificationsPushPromptNotNow),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        );
-      }
-
+    if (items.isEmpty) {
       return Center(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 420),
@@ -306,7 +221,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.mark_email_read_outlined,
+                  Icons.notifications_none_outlined,
                   size: 56,
                   color: Theme.of(
                     context,
@@ -314,13 +229,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  l10n.notificationsEmptyFilteredTitle,
+                  l10n.notificationsEmptyTitle,
                   style: Theme.of(context).textTheme.titleMedium,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  l10n.notificationsEmptyFilteredBody,
+                  l10n.notificationsEmptyBody,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(
                       context,
@@ -328,16 +243,64 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ),
                   textAlign: TextAlign.center,
                 ),
+                if (showPushPrompt) ...[
+                  const SizedBox(height: 20),
+                  if (pushBlocked) ...[
+                    Text(
+                      l10n.notificationsPushPromptBlockedTitle,
+                      style: Theme.of(context).textTheme.titleSmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.notificationsPushPromptBlockedBody,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ] else
+                    Text(
+                      l10n.notificationsPushPromptEmptyHelper,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  const SizedBox(height: 20),
+                  FilledButton(
+                    onPressed: pushService.isBusy
+                        ? null
+                        : () {
+                            if (pushBlocked) {
+                              context.push('/profile/settings');
+                            } else {
+                              unawaited(_enablePushFromInbox(context));
+                            }
+                          },
+                    child: Text(
+                      pushBlocked
+                          ? l10n.profileNotificationSettingsTitle
+                          : l10n.notificationsPushPromptTurnOnEmpty,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() => _pushPromptDismissed = true);
+                    },
+                    child: Text(l10n.notificationsPushPromptNotNow),
+                  ),
+                ],
               ],
             ),
           ),
         ),
       );
     }
-
-    final showPushPrompt = _shouldShowPushPrompt(pushService);
-    final pushBlocked =
-        pushService.permissionState == WebPushPermissionState.denied;
 
     return Align(
       alignment: Alignment.topCenter,
@@ -359,26 +322,70 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
               ),
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-                itemCount: displayItems.length,
-                separatorBuilder: (_, _) =>
-                    const SizedBox(height: _kNotificationRowSpacing),
-                itemBuilder: (context, index) {
-                  final item = displayItems[index];
-                  return _NotificationListTile(
-                    item: item,
-                    timeLabel: _formatTimestamp(context, item.createdAt, l10n),
-                    onOpen: () => _openNotification(context, item),
-                    onLongPress: item.read
-                        ? () =>
-                              unawaited(_markNotificationUnread(context, item))
-                        : () => unawaited(
-                            _markNotificationReadOnly(context, item),
+              child: displayItems.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 420),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.mark_email_read_outlined,
+                                size: 56,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.45),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                l10n.notificationsEmptyFilteredTitle,
+                                style: Theme.of(context).textTheme.titleMedium,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                l10n.notificationsEmptyFilteredBody,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.7),
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
-                  );
-                },
-              ),
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+                      itemCount: displayItems.length,
+                      separatorBuilder: (_, _) =>
+                          const SizedBox(height: _kNotificationRowSpacing),
+                      itemBuilder: (context, index) {
+                        final item = displayItems[index];
+                        return _NotificationListTile(
+                          item: item,
+                          timeLabel: _formatTimestamp(
+                            context,
+                            item.createdAt,
+                            l10n,
+                          ),
+                          onOpen: () => _openNotification(context, item),
+                          onLongPress: item.read
+                              ? () => unawaited(
+                                  _markNotificationUnread(context, item),
+                                )
+                              : () => unawaited(
+                                  _markNotificationReadOnly(context, item),
+                                ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),

@@ -394,6 +394,12 @@ abstract class AppLocalizations {
   /// **'Allow notifications for Parkour·Spot in your browser settings to get alerts when you\'re not in the app.'**
   String get notificationsPushPromptBlockedBody;
 
+  /// Snack bar after push is successfully enabled from the notifications inbox
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts are on for this browser.'**
+  String get notificationsPushPromptEnabledSnackbar;
+
   /// Fallback timestamp when createdAt is missing
   ///
   /// In en, this message translates to:

@@ -174,6 +174,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Allow notifications for Parkour·Spot in your browser settings to get alerts when you\'re not in the app.';
 
   @override
+  String get notificationsPushPromptEnabledSnackbar =>
+      'Alerts are on for this browser.';
+
+  @override
   String get notificationsTimeUnknown => 'Recently';
 
   @override

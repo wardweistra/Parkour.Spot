@@ -48,6 +48,7 @@
   "notificationsPushPromptNotNow": "Agora não",
   "notificationsPushPromptBlockedTitle": "As notificações push estão bloqueadas neste navegador",
   "notificationsPushPromptBlockedBody": "Permite notificações para o Parkour·Spot nas definições do navegador para receberes alertas quando não estás na app.",
+  "notificationsPushPromptEnabledSnackbar": "Os alertas estão ativos neste navegador.",
   "notificationsTimeUnknown": "Recentemente",
   "notificationsOpenSemantic": "Abrir notificação: {title}",
   "notificationsActorSomeone": "Alguém",

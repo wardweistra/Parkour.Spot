@@ -48,6 +48,7 @@
   "notificationsPushPromptNotNow": "Nicht jetzt",
   "notificationsPushPromptBlockedTitle": "Push-Benachrichtigungen sind in diesem Browser blockiert",
   "notificationsPushPromptBlockedBody": "Erlaube Benachrichtigungen für Parkour·Spot in den Browser-Einstellungen, um Alerts zu erhalten, wenn du nicht in der App bist.",
+  "notificationsPushPromptEnabledSnackbar": "Alerts sind in diesem Browser aktiv.",
   "notificationsTimeUnknown": "Kürzlich",
   "notificationsOpenSemantic": "Benachrichtigung öffnen: {title}",
   "notificationsActorSomeone": "Jemand",

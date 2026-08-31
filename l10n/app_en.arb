@@ -197,6 +197,10 @@
   "@notificationsPushPromptBlockedBody": {
     "description": "Inbox prompt body when the browser has denied notification permission"
   },
+  "notificationsPushPromptEnabledSnackbar": "Alerts are on for this browser.",
+  "@notificationsPushPromptEnabledSnackbar": {
+    "description": "Snack bar after push is successfully enabled from the notifications inbox"
+  },
   "notificationsTimeUnknown": "Recently",
   "@notificationsTimeUnknown": {
     "description": "Fallback timestamp when createdAt is missing"
