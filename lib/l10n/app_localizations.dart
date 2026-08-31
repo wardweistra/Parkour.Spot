@@ -346,6 +346,54 @@ abstract class AppLocalizations {
   /// **'No unread notifications right now.'**
   String get notificationsEmptyFilteredBody;
 
+  /// Empty inbox: helper under empty body when this browser can subscribe to push
+  ///
+  /// In en, this message translates to:
+  /// **'Hear about nearby spots and check-ins even when you\'re not in the app.'**
+  String get notificationsPushPromptEmptyHelper;
+
+  /// Inbox list callout title when this browser is not subscribed to push
+  ///
+  /// In en, this message translates to:
+  /// **'Get alerts on this browser'**
+  String get notificationsPushPromptListTitle;
+
+  /// Inbox list callout body when this browser is not subscribed to push
+  ///
+  /// In en, this message translates to:
+  /// **'Hear about nearby activity even when you\'re not in the app.'**
+  String get notificationsPushPromptListBody;
+
+  /// Empty inbox primary CTA to subscribe this browser to push
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on alerts for this browser'**
+  String get notificationsPushPromptTurnOnEmpty;
+
+  /// Inbox list callout primary CTA to subscribe this browser to push
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on'**
+  String get notificationsPushPromptTurnOn;
+
+  /// Dismiss the inbox push prompt for the rest of this session
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get notificationsPushPromptNotNow;
+
+  /// Inbox prompt title when the browser has denied notification permission
+  ///
+  /// In en, this message translates to:
+  /// **'Push notifications are blocked in this browser'**
+  String get notificationsPushPromptBlockedTitle;
+
+  /// Inbox prompt body when the browser has denied notification permission
+  ///
+  /// In en, this message translates to:
+  /// **'Allow notifications for Parkour·Spot in your browser settings to get alerts when you\'re not in the app.'**
+  String get notificationsPushPromptBlockedBody;
+
   /// Fallback timestamp when createdAt is missing
   ///
   /// In en, this message translates to:

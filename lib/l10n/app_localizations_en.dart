@@ -145,6 +145,35 @@ class AppLocalizationsEn extends AppLocalizations {
       'No unread notifications right now.';
 
   @override
+  String get notificationsPushPromptEmptyHelper =>
+      'Hear about nearby spots and check-ins even when you\'re not in the app.';
+
+  @override
+  String get notificationsPushPromptListTitle => 'Get alerts on this browser';
+
+  @override
+  String get notificationsPushPromptListBody =>
+      'Hear about nearby activity even when you\'re not in the app.';
+
+  @override
+  String get notificationsPushPromptTurnOnEmpty =>
+      'Turn on alerts for this browser';
+
+  @override
+  String get notificationsPushPromptTurnOn => 'Turn on';
+
+  @override
+  String get notificationsPushPromptNotNow => 'Not now';
+
+  @override
+  String get notificationsPushPromptBlockedTitle =>
+      'Push notifications are blocked in this browser';
+
+  @override
+  String get notificationsPushPromptBlockedBody =>
+      'Allow notifications for Parkour·Spot in your browser settings to get alerts when you\'re not in the app.';
+
+  @override
   String get notificationsTimeUnknown => 'Recently';
 
   @override

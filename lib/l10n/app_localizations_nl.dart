@@ -147,6 +147,35 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geen ongelezen meldingen op dit moment.';
 
   @override
+  String get notificationsPushPromptEmptyHelper =>
+      'Hoor over spots en check-ins in de buurt, ook als je niet in de app bent.';
+
+  @override
+  String get notificationsPushPromptListTitle => 'Meldingen in deze browser';
+
+  @override
+  String get notificationsPushPromptListBody =>
+      'Hoor over activiteit in de buurt, ook als je niet in de app bent.';
+
+  @override
+  String get notificationsPushPromptTurnOnEmpty =>
+      'Meldingen in deze browser inschakelen';
+
+  @override
+  String get notificationsPushPromptTurnOn => 'Inschakelen';
+
+  @override
+  String get notificationsPushPromptNotNow => 'Niet nu';
+
+  @override
+  String get notificationsPushPromptBlockedTitle =>
+      'Pushmeldingen zijn geblokkeerd in deze browser';
+
+  @override
+  String get notificationsPushPromptBlockedBody =>
+      'Sta meldingen voor Parkour·Spot toe in je browserinstellingen om alerts te krijgen wanneer je niet in de app bent.';
+
+  @override
   String get notificationsTimeUnknown => 'Recent';
 
   @override

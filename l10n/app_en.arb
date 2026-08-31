@@ -165,6 +165,38 @@
   "@notificationsEmptyFilteredBody": {
     "description": "Supporting text for filtered empty inbox"
   },
+  "notificationsPushPromptEmptyHelper": "Hear about nearby spots and check-ins even when you're not in the app.",
+  "@notificationsPushPromptEmptyHelper": {
+    "description": "Empty inbox: helper under empty body when this browser can subscribe to push"
+  },
+  "notificationsPushPromptListTitle": "Get alerts on this browser",
+  "@notificationsPushPromptListTitle": {
+    "description": "Inbox list callout title when this browser is not subscribed to push"
+  },
+  "notificationsPushPromptListBody": "Hear about nearby activity even when you're not in the app.",
+  "@notificationsPushPromptListBody": {
+    "description": "Inbox list callout body when this browser is not subscribed to push"
+  },
+  "notificationsPushPromptTurnOnEmpty": "Turn on alerts for this browser",
+  "@notificationsPushPromptTurnOnEmpty": {
+    "description": "Empty inbox primary CTA to subscribe this browser to push"
+  },
+  "notificationsPushPromptTurnOn": "Turn on",
+  "@notificationsPushPromptTurnOn": {
+    "description": "Inbox list callout primary CTA to subscribe this browser to push"
+  },
+  "notificationsPushPromptNotNow": "Not now",
+  "@notificationsPushPromptNotNow": {
+    "description": "Dismiss the inbox push prompt for the rest of this session"
+  },
+  "notificationsPushPromptBlockedTitle": "Push notifications are blocked in this browser",
+  "@notificationsPushPromptBlockedTitle": {
+    "description": "Inbox prompt title when the browser has denied notification permission"
+  },
+  "notificationsPushPromptBlockedBody": "Allow notifications for Parkour·Spot in your browser settings to get alerts when you're not in the app.",
+  "@notificationsPushPromptBlockedBody": {
+    "description": "Inbox prompt body when the browser has denied notification permission"
+  },
   "notificationsTimeUnknown": "Recently",
   "@notificationsTimeUnknown": {
     "description": "Fallback timestamp when createdAt is missing"

@@ -147,6 +147,36 @@ class AppLocalizationsEs extends AppLocalizations {
       'No hay notificaciones sin leer ahora mismo.';
 
   @override
+  String get notificationsPushPromptEmptyHelper =>
+      'Entérate de spots y check-ins cercanos aunque no estés en la app.';
+
+  @override
+  String get notificationsPushPromptListTitle =>
+      'Recibe alertas en este navegador';
+
+  @override
+  String get notificationsPushPromptListBody =>
+      'Entérate de la actividad cercana aunque no estés en la app.';
+
+  @override
+  String get notificationsPushPromptTurnOnEmpty =>
+      'Activar alertas en este navegador';
+
+  @override
+  String get notificationsPushPromptTurnOn => 'Activar';
+
+  @override
+  String get notificationsPushPromptNotNow => 'Ahora no';
+
+  @override
+  String get notificationsPushPromptBlockedTitle =>
+      'Las notificaciones push están bloqueadas en este navegador';
+
+  @override
+  String get notificationsPushPromptBlockedBody =>
+      'Permite las notificaciones de Parkour·Spot en la configuración del navegador para recibir alertas cuando no estés en la app.';
+
+  @override
   String get notificationsTimeUnknown => 'Recientemente';
 
   @override

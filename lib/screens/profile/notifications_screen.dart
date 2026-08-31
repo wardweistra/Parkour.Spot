@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/user_notification.dart';
 import '../../services/user_notification_service.dart';
+import '../../services/web_push_subscription_service.dart';
 import '../../utils/user_notification_localization.dart';
 import '../../widgets/page_scaffold.dart';
 
@@ -30,11 +31,13 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   int _streamRetryGeneration = 0;
   bool _showUnreadOnly = false;
+  bool _pushPromptDismissed = false;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final notificationService = context.read<UserNotificationService>();
+    final pushService = context.watch<WebPushSubscriptionService>();
 
     return StreamBuilder<List<UserNotification>>(
       key: ValueKey(_streamRetryGeneration),
@@ -53,10 +56,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             }
           },
           actions: _appBarActions(context, l10n, snapshot),
-          body: _buildBody(context, l10n, snapshot),
+          body: _buildBody(context, l10n, snapshot, pushService),
         );
       },
     );
+  }
+
+  bool _shouldShowPushPrompt(WebPushSubscriptionService push) {
+    if (_pushPromptDismissed) return false;
+    if (!push.isSupported || push.isSubscribed) return false;
+    if (push.isBusy && push.permissionState == WebPushPermissionState.unknown) {
+      return false;
+    }
+    return true;
   }
 
   List<Widget>? _appBarActions(
@@ -119,10 +131,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return actions;
   }
 
+  Future<void> _enablePushFromInbox(BuildContext context) async {
+    final push = context.read<WebPushSubscriptionService>();
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await push.enableCurrentDevice();
+    if (!context.mounted) return;
+    if (!ok && push.permissionState != WebPushPermissionState.denied) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.profilePushNotificationsError)),
+      );
+    }
+  }
+
   Widget _buildBody(
     BuildContext context,
     AppLocalizations l10n,
     AsyncSnapshot<List<UserNotification>> snapshot,
+    WebPushSubscriptionService pushService,
   ) {
     if (snapshot.hasError) {
       final err = snapshot.error;
@@ -178,8 +204,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     if (displayItems.isEmpty) {
       if (items.isEmpty) {
+        final showPushPrompt = _shouldShowPushPrompt(pushService);
+        final pushBlocked =
+            pushService.permissionState == WebPushPermissionState.denied;
         return Center(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
@@ -209,6 +238,58 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
+                  if (showPushPrompt) ...[
+                    const SizedBox(height: 20),
+                    if (pushBlocked) ...[
+                      Text(
+                        l10n.notificationsPushPromptBlockedTitle,
+                        style: Theme.of(context).textTheme.titleSmall,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        l10n.notificationsPushPromptBlockedBody,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ] else
+                      Text(
+                        l10n.notificationsPushPromptEmptyHelper,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    const SizedBox(height: 20),
+                    FilledButton(
+                      onPressed: pushService.isBusy
+                          ? null
+                          : () {
+                              if (pushBlocked) {
+                                context.push('/profile/settings');
+                              } else {
+                                unawaited(_enablePushFromInbox(context));
+                              }
+                            },
+                      child: Text(
+                        pushBlocked
+                            ? l10n.profileNotificationSettingsTitle
+                            : l10n.notificationsPushPromptTurnOnEmpty,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() => _pushPromptDismissed = true);
+                      },
+                      child: Text(l10n.notificationsPushPromptNotNow),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -254,26 +335,52 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       );
     }
 
+    final showPushPrompt = _shouldShowPushPrompt(pushService);
+    final pushBlocked =
+        pushService.permissionState == WebPushPermissionState.denied;
+
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1200),
-        child: ListView.separated(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-          itemCount: displayItems.length,
-          separatorBuilder: (_, _) =>
-              const SizedBox(height: _kNotificationRowSpacing),
-          itemBuilder: (context, index) {
-            final item = displayItems[index];
-            return _NotificationListTile(
-              item: item,
-              timeLabel: _formatTimestamp(context, item.createdAt, l10n),
-              onOpen: () => _openNotification(context, item),
-              onLongPress: item.read
-                  ? () => unawaited(_markNotificationUnread(context, item))
-                  : () => unawaited(_markNotificationReadOnly(context, item)),
-            );
-          },
+        child: Column(
+          children: [
+            if (showPushPrompt)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                child: _InboxPushListCallout(
+                  blocked: pushBlocked,
+                  busy: pushService.isBusy,
+                  onTurnOn: () => unawaited(_enablePushFromInbox(context)),
+                  onOpenSettings: () => context.push('/profile/settings'),
+                  onDismiss: () {
+                    setState(() => _pushPromptDismissed = true);
+                  },
+                ),
+              ),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+                itemCount: displayItems.length,
+                separatorBuilder: (_, _) =>
+                    const SizedBox(height: _kNotificationRowSpacing),
+                itemBuilder: (context, index) {
+                  final item = displayItems[index];
+                  return _NotificationListTile(
+                    item: item,
+                    timeLabel: _formatTimestamp(context, item.createdAt, l10n),
+                    onOpen: () => _openNotification(context, item),
+                    onLongPress: item.read
+                        ? () =>
+                              unawaited(_markNotificationUnread(context, item))
+                        : () => unawaited(
+                            _markNotificationReadOnly(context, item),
+                          ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -360,6 +467,85 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case UserNotificationDeeplinkKind.profile:
         context.push('/user/${Uri.encodeComponent(item.deeplinkId)}');
     }
+  }
+}
+
+class _InboxPushListCallout extends StatelessWidget {
+  const _InboxPushListCallout({
+    required this.blocked,
+    required this.busy,
+    required this.onTurnOn,
+    required this.onOpenSettings,
+    required this.onDismiss,
+  });
+
+  final bool blocked;
+  final bool busy;
+  final VoidCallback onTurnOn;
+  final VoidCallback onOpenSettings;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final title = blocked
+        ? l10n.notificationsPushPromptBlockedTitle
+        : l10n.notificationsPushPromptListTitle;
+    final body = blocked
+        ? l10n.notificationsPushPromptBlockedBody
+        : l10n.notificationsPushPromptListBody;
+    final actionLabel = blocked
+        ? l10n.profileNotificationSettingsTitle
+        : l10n.notificationsPushPromptTurnOn;
+
+    return Material(
+      color: scheme.primaryContainer.withValues(alpha: 0.28),
+      shape: const RoundedRectangleBorder(
+        borderRadius: _kNotificationRowRadius,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(Icons.devices_outlined, color: scheme.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: textTheme.titleSmall),
+                  const SizedBox(height: 4),
+                  Text(
+                    body,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  FilledButton(
+                    onPressed: busy
+                        ? null
+                        : (blocked ? onOpenSettings : onTurnOn),
+                    child: Text(actionLabel),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              tooltip: l10n.notificationsPushPromptNotNow,
+              onPressed: onDismiss,
+              icon: const Icon(Icons.close),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
