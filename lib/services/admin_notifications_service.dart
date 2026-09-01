@@ -84,7 +84,7 @@ class AdminNotificationsService extends ChangeNotifier {
       _applyCallablePage(data, replaceExisting: true);
     } catch (e, stackTrace) {
       _error = 'Failed to load notifications';
-      _lastDiagnostics = await _collectAdminFirestoreDiagnostics();
+      _lastDiagnostics = await _collectAdminFirestoreDiagnostics(e);
       debugPrint('AdminNotificationsService.fetchInitial error: $e');
       debugPrint(_lastDiagnostics ?? '(no diagnostics)');
       debugPrint('$stackTrace');
@@ -113,7 +113,7 @@ class AdminNotificationsService extends ChangeNotifier {
       _applyCallablePage(data, replaceExisting: false);
     } catch (e, stackTrace) {
       _error = 'Failed to load more notifications';
-      _lastDiagnostics = await _collectAdminFirestoreDiagnostics();
+      _lastDiagnostics = await _collectAdminFirestoreDiagnostics(e);
       debugPrint('AdminNotificationsService.loadMore error: $e');
       debugPrint(_lastDiagnostics ?? '(no diagnostics)');
       debugPrint('$stackTrace');
@@ -202,35 +202,73 @@ class AdminNotificationsService extends ChangeNotifier {
     }
   }
 
-  Future<String> _collectAdminFirestoreDiagnostics() async {
-    final b = StringBuffer();
+  Future<String> _collectAdminFirestoreDiagnostics(Object error) async {
+    String uid = '(signed out)';
+    Object? adminClaim;
+    Object? firestoreIsAdmin;
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      b.writeln('FirebaseAuth.currentUser: null (signed out)');
-      return b.toString();
+      return formatAdminNotificationsLoadDiagnostics(
+        error: error,
+        uid: uid,
+        adminClaim: adminClaim,
+        firestoreIsAdmin: firestoreIsAdmin,
+      );
     }
-    b.writeln('FirebaseAuth.currentUser.uid: ${user.uid}');
+    uid = user.uid;
     try {
       final tr = await user.getIdTokenResult(true);
-      b.writeln('claim admin: ${tr.claims?['admin']}');
+      adminClaim = tr.claims?['admin'];
     } catch (e) {
-      b.writeln('getIdTokenResult(true): $e');
+      adminClaim = 'getIdTokenResult(true): $e';
     }
     try {
       final doc = await _firestore
           .collection('users')
           .doc(user.uid)
           .get(const GetOptions(source: Source.server));
-      b.writeln('Firestore users/{uid}.isAdmin: ${doc.data()?['isAdmin']}');
+      firestoreIsAdmin = doc.data()?['isAdmin'];
     } catch (e) {
-      b.writeln('Firestore users/{uid} get: $e');
+      firestoreIsAdmin = 'Firestore users/{uid} get: $e';
     }
-    b.writeln(
-      'Listing uses HTTPS callable listInAppNotificationsForAdmin (Admin SDK). '
-      'If this fails, check Functions logs / deployment. '
-      'Client collectionGroup("notifications") often fails when any extra '
-      'notifications subcollection exists outside users/{{uid}}.',
+    return formatAdminNotificationsLoadDiagnostics(
+      error: error,
+      uid: uid,
+      adminClaim: adminClaim,
+      firestoreIsAdmin: firestoreIsAdmin,
     );
-    return b.toString();
   }
+}
+
+/// On-screen dump when listing all in-app notifications fails.
+@visibleForTesting
+String formatAdminNotificationsLoadDiagnostics({
+  required Object error,
+  required String uid,
+  required Object? adminClaim,
+  required Object? firestoreIsAdmin,
+}) {
+  final b = StringBuffer();
+  b.writeln('callable error: $error');
+  if (error is FirebaseFunctionsException) {
+    b.writeln('FirebaseFunctionsException.code: ${error.code}');
+    b.writeln('FirebaseFunctionsException.message: ${error.message}');
+    if (error.details != null) {
+      b.writeln('FirebaseFunctionsException.details: ${error.details}');
+    }
+  }
+  b.writeln('FirebaseAuth.currentUser.uid: $uid');
+  b.writeln('claim admin: $adminClaim');
+  b.writeln('Firestore users/{uid}.isAdmin: $firestoreIsAdmin');
+  b.writeln(
+    'Listing uses HTTPS callable listInAppNotificationsForAdmin (Admin SDK). '
+    'If this fails, check Functions logs / deployment and the collection '
+    'group index on notifications.createdAt '
+    '(firestore.indexes.json fieldOverrides). '
+    'A null admin claim is OK when Firestore isAdmin is true; the callable '
+    'accepts either token.admin or users/{uid}.isAdmin. '
+    'Client collectionGroup("notifications") often fails when any extra '
+    'notifications subcollection exists outside users/{{uid}}.',
+  );
+  return b.toString();
 }
