@@ -4411,4 +4411,35 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get editSpotYoutubeSectionTitle => 'Enlaces de YouTube';
+
+  @override
+  String get editSpotYoutubeAddTooltip => 'Añadir enlace de YouTube';
+
+  @override
+  String get editSpotYoutubeHint =>
+      'Introduce IDs o URLs de YouTube (p. ej., dQw4w9WgXcQ o https://www.youtube.com/watch?v=dQw4w9WgXcQ). Arrastra para reordenar.';
+
+  @override
+  String get editSpotYoutubeEmpty =>
+      'No hay enlaces de YouTube. Pulsa + para añadir uno.';
+
+  @override
+  String editSpotYoutubeLinkLabel(int index) {
+    return 'Enlace de YouTube $index';
+  }
+
+  @override
+  String get editSpotYoutubeLinkHint => 'Introduce el ID o la URL de YouTube';
+
+  @override
+  String get editSpotYoutubeRemoveTooltip => 'Quitar enlace de YouTube';
+
+  @override
+  String get editSpotYoutubeReorderTooltip => 'Reordenar enlace de YouTube';
+
+  @override
+  String get editSpotYoutubeThumbnailSemanticLabel => 'Miniatura de YouTube';
 }

@@ -1211,5 +1211,14 @@
   "eventSuggestionApprovalSuccess": "Genehmigt und auf Event {eventId} angewendet.",
   "eventSuggestionChangedFieldsTitle": "Vorgeschlagene Änderungen",
   "eventSuggestionLocationRemoved": "Standort entfernen",
-  "eventSuggestionLinkedSpotsCount": "{count, plural, =0{Keine verknüpften Spots} =1{1 verknüpfter Spot} other{{count} verknüpfte Spots}}"
+  "eventSuggestionLinkedSpotsCount": "{count, plural, =0{Keine verknüpften Spots} =1{1 verknüpfter Spot} other{{count} verknüpfte Spots}}",
+  "editSpotYoutubeSectionTitle": "YouTube-Links",
+  "editSpotYoutubeAddTooltip": "YouTube-Link hinzufügen",
+  "editSpotYoutubeHint": "YouTube-Video-IDs oder URLs eingeben (z. B. dQw4w9WgXcQ oder https://www.youtube.com/watch?v=dQw4w9WgXcQ). Zum Sortieren ziehen.",
+  "editSpotYoutubeEmpty": "Keine YouTube-Links hinzugefügt. Klicke auf +, um einen hinzuzufügen.",
+  "editSpotYoutubeLinkLabel": "YouTube-Link {index}",
+  "editSpotYoutubeLinkHint": "YouTube-Video-ID oder URL eingeben",
+  "editSpotYoutubeRemoveTooltip": "YouTube-Link entfernen",
+  "editSpotYoutubeReorderTooltip": "YouTube-Link neu anordnen",
+  "editSpotYoutubeThumbnailSemanticLabel": "YouTube-Vorschaubild"
 }
