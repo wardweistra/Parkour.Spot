@@ -192,7 +192,6 @@ class WebPushSubscriptionService extends ChangeNotifier {
       case AuthorizationStatus.provisional:
         return WebPushPermissionState.authorized;
       case AuthorizationStatus.denied:
-      case AuthorizationStatus.deniedPermanently:
         return WebPushPermissionState.denied;
       case AuthorizationStatus.notDetermined:
         return WebPushPermissionState.notDetermined;
