@@ -72,6 +72,12 @@ class AppLocalizationsDe extends AppLocalizations {
       'Möchte ich besuchen, schon besucht, Spots, die du hinzugefügt hast, und Listen, die du erstellst oder speicherst';
 
   @override
+  String get mySpotsTitle => 'Meine Spots';
+
+  @override
+  String get mySessionsTitle => 'Meine Sessions';
+
+  @override
   String get myEventsTitle => 'Meine Events';
 
   @override
@@ -146,14 +152,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get notificationsSubtitle =>
-      'Neue Spots in der Nähe, Trainingspläne, Check-ins und andere Updates für dich';
+      'Neue Spots in der Nähe, geplante Sessions, Check-ins und andere Updates für dich';
 
   @override
   String get notificationsEmptyTitle => 'Hier ist noch nichts los';
 
   @override
   String get notificationsEmptyBody =>
-      'Wenn in der Nähe ein neuer Spot dazukommt, jemand Training plant oder dort eincheckt, wo du trainierst, siehst du es hier.';
+      'Wenn in der Nähe ein neuer Spot dazukommt, jemand eine Session plant oder dort eincheckt, wo du trainierst, siehst du es hier.';
 
   @override
   String get notificationsLoadError =>
@@ -277,12 +283,12 @@ class AppLocalizationsDe extends AppLocalizations {
     String actorName,
     String spotName,
   ) {
-    return '$actorName hat Training bei $spotName geplant';
+    return '$actorName hat eine Session bei $spotName geplant';
   }
 
   @override
   String get notificationNearbyTrainingPlanBody =>
-      'Öffentliches Trainingsfenster in der Nähe eines deiner gespeicherten Orte.';
+      'Öffentliche geplante Session in der Nähe eines deiner gespeicherten Orte.';
 
   @override
   String notificationTrainingPlanCheckInReminderTitle(String spotName) {
@@ -402,7 +408,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileLocationAlertsDescription =>
-      'Lege fest, welche Standorte für Benachrichtigungen in der Nähe verwendet werden – z. B. für Check-ins, neue Spots, Trainingspläne und Events.';
+      'Lege fest, welche Standorte für Benachrichtigungen in der Nähe verwendet werden – z. B. für Check-ins, neue Spots, geplante Sessions und Events.';
 
   @override
   String get profileLocationAlertsShareLastKnownTitle =>
@@ -443,11 +449,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileLocationAlertsNotifyTrainingPlansTitle =>
-      'Benachrichtigung bei Trainingsplänen in der Nähe';
+      'Benachrichtigung bei geplanten Sessions in der Nähe';
 
   @override
   String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
-      'Erhalte eine Benachrichtigung, wenn jemand ein öffentliches Trainingsfenster an einem Spot innerhalb des Umkreises eines aktiven gespeicherten Orts oder deines letzten bekannten Standorts teilt.';
+      'Erhalte eine Benachrichtigung, wenn jemand eine öffentliche geplante Session an einem Spot innerhalb des Umkreises eines aktiven gespeicherten Orts oder deines letzten bekannten Standorts teilt.';
 
   @override
   String get profileLocationAlertsNotifyEventsTitle =>
@@ -1402,22 +1408,22 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String spotTrainingPlanTooltipPublic(String name, String timeRange) {
-    return '$name plant, hier zu trainieren $timeRange';
+    return '$name plant hier eine Session $timeRange';
   }
 
   @override
   String spotTrainingPlanTooltipPrivate(String timeRange) {
-    return 'Du planst, hier zu trainieren $timeRange — nur du siehst diesen Plan';
+    return 'Du planst hier eine Session $timeRange — nur du siehst diesen Plan';
   }
 
   @override
   String spotTrainingPlanTooltipPublicUntil(String name, String untilTime) {
-    return '$name plant, hier bis $untilTime zu trainieren';
+    return '$name plant hier eine Session bis $untilTime';
   }
 
   @override
   String spotTrainingPlanTooltipPrivateUntil(String untilTime) {
-    return 'Du planst, hier bis $untilTime zu trainieren — nur du siehst diesen Plan';
+    return 'Du planst hier eine Session bis $untilTime — nur du siehst diesen Plan';
   }
 
   @override
@@ -1558,7 +1564,7 @@ class AppLocalizationsDe extends AppLocalizations {
     String relativeDay,
     String startTime,
   ) {
-    return 'Ich plane zu trainieren bei $spotName $relativeDay ab $startTime';
+    return 'Ich plane eine Session bei $spotName $relativeDay ab $startTime';
   }
 
   @override
@@ -1942,7 +1948,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get spotDetailCommunitySectionSubtitle =>
-      'Sieh, wer hier trainiert oder ein Training plant, und teile deine Session.';
+      'Sieh, wer hier trainiert oder eine Session plant, und teile deine Session.';
 
   @override
   String get spotDetailCommunityNobodyHere =>
@@ -1976,7 +1982,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Anmelden zum Einchecken';
 
   @override
-  String get spotDetailCommunityPlanningVisitButton => 'Training planen';
+  String get spotDetailCommunityPlanningVisitButton => 'Session planen';
 
   @override
   String get spotDetailCommunityPlanningVisitTooltip =>
@@ -1995,7 +2001,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Zum Einchecken anmelden.';
 
   @override
-  String get spotDetailCommunityPlanningToTrain => 'Plant zu trainieren';
+  String get spotDetailCommunityPlanningToTrain => 'Geplante Sessions';
 
   @override
   String get spotDetailCommunityNobodyPlanningShort => 'Noch keine Pläne.';
@@ -2097,10 +2103,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get spotDetailSessionNoteHint => 'z. B. Skills oder Drills';
 
   @override
-  String get spotTrainingPlanDialogTitle => 'Training hier planen';
+  String get spotTrainingPlanDialogTitle => 'Session hier planen';
 
   @override
-  String get spotTrainingPlanDialogTitleEdit => 'Trainingsplan bearbeiten';
+  String get spotTrainingPlanDialogTitleEdit => 'Plan bearbeiten';
 
   @override
   String get spotTrainingPlanDialogCheckInCtaBody =>
@@ -2168,24 +2174,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get spotTrainingPlanValidationInvalid => 'Ungültiger Zeitraum.';
 
   @override
-  String get spotDetailTrainingPlanSaved => 'Trainingsplan gespeichert';
+  String get spotDetailTrainingPlanSaved => 'Geplante Session gespeichert';
 
   @override
-  String get spotDetailTrainingPlanUpdated => 'Trainingsplan aktualisiert';
+  String get spotDetailTrainingPlanUpdated => 'Geplante Session aktualisiert';
 
   @override
   String get spotDetailTrainingPlanFailed =>
-      'Trainingsplan konnte nicht gespeichert werden';
+      'Geplante Session konnte nicht gespeichert werden';
 
   @override
-  String get spotDetailTrainingPlanRemoved => 'Trainingsplan entfernt';
+  String get spotDetailTrainingPlanRemoved => 'Geplante Session entfernt';
 
   @override
   String get spotDetailTrainingPlanDeleteFailed =>
-      'Trainingsplan konnte nicht entfernt werden';
+      'Geplante Session konnte nicht entfernt werden';
 
   @override
-  String get spotTrainingPlanListDialogTitle => 'Plant zu trainieren';
+  String get spotTrainingPlanListDialogTitle => 'Geplante Sessions';
 
   @override
   String get spotTrainingPlanListDialogSubtitle =>
@@ -2199,7 +2205,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get spotTrainingPlanListLoadError =>
-      'Trainingspläne konnten nicht geladen werden';
+      'Geplante Sessions konnten nicht geladen werden';
 
   @override
   String get spotTrainingPlanEditMine => 'Plan bearbeiten';
@@ -3435,15 +3441,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get publicProfileBeenTo => 'Schon besucht';
 
   @override
-  String get publicProfileMyCheckIns => 'Trainingsaktivität';
-
-  @override
   String get publicProfileMyCheckInsSubtitle =>
-      'Anstehende Trainingspläne und deine Check-in-Historie';
+      'Anstehende geplante Sessions und deine Check-in-Historie';
 
   @override
   String get myCheckInsSignInPrompt =>
-      'Melde dich an, um deine Check-ins und Trainingspläne zu sehen';
+      'Melde dich an, um deine Check-ins und geplanten Sessions zu sehen';
 
   @override
   String get myCheckInsLoadMore => 'Mehr laden';
@@ -3453,14 +3456,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get myCheckInsEmptyDescription =>
-      'Öffne einen Spot, um einzuchecken oder Training zu planen. Bis zur von dir gesetzten Endzeit sehen andere dich dort als „gerade hier“, sofern du es nicht privat hältst.';
+      'Öffne einen Spot, um einzuchecken oder eine Session zu planen. Bis zur von dir gesetzten Endzeit sehen andere dich dort als „gerade hier“, sofern du es nicht privat hältst.';
 
   @override
   String get myCheckInsIntro =>
-      'Trainingspläne zeigen anstehende Sessions, die du an Spots geplant hast. Ein Check-in speichert einen Besuch – wann du angekommen bist und bis wann du voraussichtlich bleibst. Öffentliche Einträge können dich auf einem Spot bis zu deiner Endzeit zeigen; private sind nur für dich sichtbar.';
+      'Geplante Sessions zeigen anstehende Zeiten, die du an Spots geplant hast. Ein Check-in speichert einen Besuch – wann du angekommen bist und bis wann du voraussichtlich bleibst. Öffentliche Einträge können dich auf einem Spot bis zu deiner Endzeit zeigen; private sind nur für dich sichtbar.';
 
   @override
-  String get myCheckInsUpcomingPlansTitle => 'Geplantes Training';
+  String get myCheckInsUpcomingPlansTitle => 'Bevorstehende Sessions';
 
   @override
   String get myCheckInsPastCheckInsTitle => 'Check-ins';
@@ -3492,9 +3495,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String myCheckInsDurationMinutesShort(int count) {
     return '${count}Min';
   }
-
-  @override
-  String get publicProfileSpotLists => 'Spot-Listen';
 
   @override
   String get publicProfileYours => 'Deine';

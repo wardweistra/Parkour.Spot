@@ -524,7 +524,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
       builder: (context, auth, _) {
         if (!auth.isAuthenticated) {
           return PageScaffold(
-            title: _l10n.publicProfileMyCheckIns,
+            title: _l10n.mySessionsTitle,
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -551,14 +551,14 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
 
         if (_loading) {
           return PageScaffold(
-            title: _l10n.publicProfileMyCheckIns,
+            title: _l10n.mySessionsTitle,
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
         if (_checkInsError != null && _items.isEmpty && _plans.isEmpty) {
           return PageScaffold(
-            title: _l10n.publicProfileMyCheckIns,
+            title: _l10n.mySessionsTitle,
             body: Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -585,7 +585,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
         }
 
         return PageScaffold(
-          title: _l10n.publicProfileMyCheckIns,
+          title: _l10n.mySessionsTitle,
           scrollable: false,
           body: RefreshIndicator(
             onRefresh: _loadInitial,

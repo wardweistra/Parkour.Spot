@@ -74,7 +74,15 @@
   },
   "accountSpotListsSubtitle": "Want to visit, been to, spots you added, and lists you create or save",
   "@accountSpotListsSubtitle": {
-    "description": "Account tab: subtitle for the Spot lists row"
+    "description": "Account tab: subtitle for the My spots row"
+  },
+  "mySpotsTitle": "My spots",
+  "@mySpotsTitle": {
+    "description": "Account tab row and My spots screen title"
+  },
+  "mySessionsTitle": "My sessions",
+  "@mySessionsTitle": {
+    "description": "Account tab row and My sessions screen title"
   },
   "myEventsTitle": "My events",
   "@myEventsTitle": {
@@ -144,11 +152,11 @@
   },
   "spotListsHubSignInPrompt": "Sign in to view and manage your lists",
   "@spotListsHubSignInPrompt": {
-    "description": "Spot lists hub: prompt when signed out"
+    "description": "My spots: prompt when signed out"
   },
   "spotListsHubCouldNotLoad": "Could not load lists. Check your connection and try again.",
   "@spotListsHubCouldNotLoad": {
-    "description": "Spot lists hub: error loading owned lists"
+    "description": "My spots: error loading owned lists"
   },
   "spotListsHubAddedByYou": "Added by you",
   "@spotListsHubAddedByYou": {
@@ -171,7 +179,7 @@
   "@notificationPushOpen": {
     "description": "Foreground push snackbar: open the spot or event from the alert"
   },
-  "notificationsSubtitle": "New spots nearby, training plans, check-ins, and other updates for you",
+  "notificationsSubtitle": "New spots nearby, planned sessions, check-ins, and other updates for you",
   "@notificationsSubtitle": {
     "description": "Account tab: hint that notifications reflect nearby map/community activity"
   },
@@ -179,7 +187,7 @@
   "@notificationsEmptyTitle": {
     "description": "Notifications inbox empty state heading"
   },
-  "notificationsEmptyBody": "When someone adds a spot nearby, plans training where you train, or checks in nearby, it’ll show up here.",
+  "notificationsEmptyBody": "When someone adds a spot nearby, plans a session where you train, or checks in nearby, it’ll show up here.",
   "@notificationsEmptyBody": {
     "description": "Notifications inbox empty state supporting text"
   },
@@ -330,9 +338,9 @@
   "@notificationNearbyCheckInBody": {
     "description": "In-app notification body for nearby public check-in (actor is in the title)"
   },
-  "notificationNearbyTrainingPlanTitle": "{actorName} planned training at {spotName}",
+  "notificationNearbyTrainingPlanTitle": "{actorName} planned a session at {spotName}",
   "@notificationNearbyTrainingPlanTitle": {
-    "description": "In-app notification title when someone created a public training plan at a spot nearby",
+    "description": "In-app notification title when someone created a public planned session at a spot nearby",
     "placeholders": {
       "actorName": {
         "type": "String"
@@ -342,13 +350,13 @@
       }
     }
   },
-  "notificationNearbyTrainingPlanBody": "They shared a public training window near one of your saved locations.",
+  "notificationNearbyTrainingPlanBody": "They shared a public planned session near one of your saved locations.",
   "@notificationNearbyTrainingPlanBody": {
-    "description": "In-app notification body for nearby public training plan (names are in the title)"
+    "description": "In-app notification body for nearby public planned session (names are in the title)"
   },
   "notificationTrainingPlanCheckInReminderTitle": "Time to check in at {spotName}",
   "@notificationTrainingPlanCheckInReminderTitle": {
-    "description": "In-app notification when the user's planned training window has started but they have not checked in",
+    "description": "In-app notification when the user's planned session has started but they have not checked in",
     "placeholders": {
       "spotName": {
         "type": "String"
@@ -357,7 +365,7 @@
   },
   "notificationTrainingPlanCheckInReminderBody": "Your planned session has started. Tap to check in.",
   "@notificationTrainingPlanCheckInReminderBody": {
-    "description": "In-app notification body for training plan check-in reminder"
+    "description": "In-app notification body for planned-session check-in reminder"
   },
   "notificationNearbyNewEventTitle": "New event nearby: {eventName}",
   "@notificationNearbyNewEventTitle": {
@@ -480,7 +488,7 @@
   "@profilePushNotificationsDisableConfirm": {
     "description": "Confirm dialog button to disable this-browser push"
   },
-  "profileLocationAlertsDescription": "Control which locations are used for nearby alerts, including check-ins, new spots, training plans, and events.",
+  "profileLocationAlertsDescription": "Control which locations are used for nearby alerts, including check-ins, new spots, planned sessions, and events.",
   "@profileLocationAlertsDescription": {
     "description": "Account settings: location alerts section description"
   },
@@ -525,13 +533,13 @@
   "@profileLocationAlertsNotifyNearbyCheckInsSubtitle": {
     "description": "Account settings: explains nearby check-in notification opt-in and range"
   },
-  "profileLocationAlertsNotifyTrainingPlansTitle": "Notify me about nearby training plans",
+  "profileLocationAlertsNotifyTrainingPlansTitle": "Notify me about nearby planned sessions",
   "@profileLocationAlertsNotifyTrainingPlansTitle": {
-    "description": "Account settings: toggle for notifications when someone creates a public training plan near an enabled location of interest"
+    "description": "Account settings: toggle for notifications when someone creates a public planned session near an enabled location of interest"
   },
-  "profileLocationAlertsNotifyTrainingPlansSubtitle": "Get a notification when someone shares a public training plan at a spot within the alert radius of an active saved place or your last known location.",
+  "profileLocationAlertsNotifyTrainingPlansSubtitle": "Get a notification when someone shares a public planned session at a spot within the alert radius of an active saved place or your last known location.",
   "@profileLocationAlertsNotifyTrainingPlansSubtitle": {
-    "description": "Account settings: explains nearby training-plan notification opt-in and range"
+    "description": "Account settings: explains nearby planned-session notification opt-in and range"
   },
   "profileLocationAlertsNotifyEventsTitle": "Notify me about nearby events",
   "@profileLocationAlertsNotifyEventsTitle": {
@@ -543,11 +551,11 @@
   },
   "profileTrainingPlanCheckInReminderTitle": "Remind me to check in for planned sessions",
   "@profileTrainingPlanCheckInReminderTitle": {
-    "description": "Account settings: toggle for reminders when a planned training window starts"
+    "description": "Account settings: toggle for reminders when a planned session starts"
   },
   "profileTrainingPlanCheckInReminderSubtitle": "Get a reminder when your planned session has started and you haven’t checked in at that spot yet.",
   "@profileTrainingPlanCheckInReminderSubtitle": {
-    "description": "Account settings: explains training plan check-in reminder opt-in"
+    "description": "Account settings: explains planned-session check-in reminder opt-in"
   },
   "profileLocationAlertsSavedLocationsTitle": "Locations of interest",
   "@profileLocationAlertsSavedLocationsTitle": {
@@ -1766,9 +1774,9 @@
       }
     }
   },
-  "spotTrainingPlanTooltipPublic": "{name} plans to train here {timeRange}",
+  "spotTrainingPlanTooltipPublic": "{name} plans a session here {timeRange}",
   "@spotTrainingPlanTooltipPublic": {
-    "description": "Avatar tooltip: public training plan",
+    "description": "Avatar tooltip: public planned session",
     "placeholders": {
       "name": {
         "type": "String"
@@ -1779,18 +1787,18 @@
       }
     }
   },
-  "spotTrainingPlanTooltipPrivate": "You plan to train here {timeRange} — only you can see this plan",
+  "spotTrainingPlanTooltipPrivate": "You plan a session here {timeRange} — only you can see this plan",
   "@spotTrainingPlanTooltipPrivate": {
-    "description": "Avatar tooltip: private training plan",
+    "description": "Avatar tooltip: private planned session",
     "placeholders": {
       "timeRange": {
         "type": "String"
       }
     }
   },
-  "spotTrainingPlanTooltipPublicUntil": "{name} plans to train here until {untilTime}",
+  "spotTrainingPlanTooltipPublicUntil": "{name} plans a session here until {untilTime}",
   "@spotTrainingPlanTooltipPublicUntil": {
-    "description": "Avatar tooltip: public training plan during its scheduled window (start time has passed)",
+    "description": "Avatar tooltip: public planned session during its scheduled window (start time has passed)",
     "placeholders": {
       "name": {
         "type": "String"
@@ -1801,9 +1809,9 @@
       }
     }
   },
-  "spotTrainingPlanTooltipPrivateUntil": "You plan to train here until {untilTime} — only you can see this plan",
+  "spotTrainingPlanTooltipPrivateUntil": "You plan a session here until {untilTime} — only you can see this plan",
   "@spotTrainingPlanTooltipPrivateUntil": {
-    "description": "Avatar tooltip: private training plan during its scheduled window",
+    "description": "Avatar tooltip: private planned session during its scheduled window",
     "placeholders": {
       "untilTime": {
         "type": "String"
@@ -1917,7 +1925,7 @@
       }
     }
   },
-  "communityShareTrainingPlanNarrative": "I'm planning to train at {spotName} {relativeDay} from {startTime}",
+  "communityShareTrainingPlanNarrative": "I'm planning a session at {spotName} {relativeDay} from {startTime}",
   "@communityShareTrainingPlanNarrative": {
     "placeholders": {
       "spotName": {
@@ -2145,7 +2153,7 @@
   "spotDetailCommunityCheckInButton": "Check in",
   "spotDetailCommunityEditCheckInButton": "Edit check-in",
   "spotDetailCommunitySignInToCheckInButton": "Sign in to check in",
-  "spotDetailCommunityPlanningVisitButton": "Plan to train",
+  "spotDetailCommunityPlanningVisitButton": "Plan a session",
   "spotDetailCommunityPlanningVisitTooltip": "Set when you’ll train here.",
   "spotDetailCommunityCheckInButtonTooltip": "Show others you’re here now.",
   "@spotDetailCommunityCheckInButtonTooltip": {
@@ -2159,7 +2167,7 @@
   "@spotDetailCommunitySignInToCheckInButtonTooltip": {
     "description": "Hover text for Community sign-in-to-check-in button"
   },
-  "spotDetailCommunityPlanningToTrain": "Planning to train",
+  "spotDetailCommunityPlanningToTrain": "Planned sessions",
   "spotDetailCommunityNobodyPlanningShort": "No upcoming plans yet.",
   "spotDetailCommunitySignInToPlanButton": "Sign in to plan a visit",
   "spotDetailCommunityEditTrainingPlanButton": "Edit plan",
@@ -2225,15 +2233,15 @@
   "@spotDetailSessionNoteHint": {
     "description": "Placeholder hint for optional session note"
   },
-  "spotTrainingPlanDialogTitle": "Plan to train here",
-  "spotTrainingPlanDialogTitleEdit": "Edit training plan",
+  "spotTrainingPlanDialogTitle": "Plan a session here",
+  "spotTrainingPlanDialogTitleEdit": "Edit plan",
   "spotTrainingPlanDialogCheckInCtaBody": "Here now? Check in so others know you’ve arrived.",
   "@spotTrainingPlanDialogCheckInCtaBody": {
-    "description": "Prompt in edit training plan dialog to switch to a live check-in"
+    "description": "Prompt in edit planned-session dialog to switch to a live check-in"
   },
   "spotTrainingPlanDialogCheckInCtaBodyEarly": "Here already? Check in so others know you’ve arrived.",
   "@spotTrainingPlanDialogCheckInCtaBodyEarly": {
-    "description": "Edit training plan: prompt to check in before the planned window starts (linked check-in still allowed)"
+    "description": "Edit planned session: prompt to check in before the planned window starts (linked check-in still allowed)"
   },
   "spotTrainingPlanDialogCheckInCtaButton": "Check in",
   "@spotTrainingPlanDialogCheckInCtaButton": {
@@ -2255,16 +2263,16 @@
   "spotTrainingPlanValidationStartTooFar": "Start time cannot be more than 30 days away.",
   "spotTrainingPlanValidationEndNotFuture": "End time must be in the future.",
   "spotTrainingPlanValidationInvalid": "Invalid time range.",
-  "spotDetailTrainingPlanSaved": "Training plan saved",
-  "spotDetailTrainingPlanUpdated": "Training plan updated",
-  "spotDetailTrainingPlanFailed": "Could not save training plan",
-  "spotDetailTrainingPlanRemoved": "Training plan removed",
-  "spotDetailTrainingPlanDeleteFailed": "Could not remove training plan",
-  "spotTrainingPlanListDialogTitle": "Planning to train",
+  "spotDetailTrainingPlanSaved": "Planned session saved",
+  "spotDetailTrainingPlanUpdated": "Planned session updated",
+  "spotDetailTrainingPlanFailed": "Could not save planned session",
+  "spotDetailTrainingPlanRemoved": "Planned session removed",
+  "spotDetailTrainingPlanDeleteFailed": "Could not remove planned session",
+  "spotTrainingPlanListDialogTitle": "Planned sessions",
   "spotTrainingPlanListDialogSubtitle": "People who shared a public plan for this spot.",
   "spotTrainingPlanListDialogClose": "Close",
   "spotTrainingPlanListEmpty": "No public plans yet.",
-  "spotTrainingPlanListLoadError": "Could not load training plans",
+  "spotTrainingPlanListLoadError": "Could not load planned sessions",
   "spotTrainingPlanEditMine": "Edit plan",
   "spotTrainingPlanJoin": "Join",
   "spotTrainingPlanOnlyYou": "Only you",
@@ -3226,17 +3234,13 @@
   "@publicProfileBeenTo": {
     "description": "Tracking list title"
   },
-  "publicProfileMyCheckIns": "Training activity",
-  "@publicProfileMyCheckIns": {
-    "description": "Row title to open check-in history"
-  },
-  "publicProfileMyCheckInsSubtitle": "Upcoming training plans and your check-in history",
+  "publicProfileMyCheckInsSubtitle": "Upcoming planned sessions and your check-in history",
   "@publicProfileMyCheckInsSubtitle": {
-    "description": "Subtitle for check-in history row"
+    "description": "Account tab: subtitle for the My sessions row"
   },
-  "myCheckInsSignInPrompt": "Sign in to view your check-ins and training plans",
+  "myCheckInsSignInPrompt": "Sign in to view your check-ins and planned sessions",
   "@myCheckInsSignInPrompt": {
-    "description": "Prompt shown on my check-ins page when signed out"
+    "description": "Prompt shown on My sessions when signed out"
   },
   "myCheckInsLoadMore": "Load more",
   "@myCheckInsLoadMore": {
@@ -3244,19 +3248,19 @@
   },
   "myCheckInsEmptyTitle": "No visits or plans yet",
   "@myCheckInsEmptyTitle": {
-    "description": "Empty state title on my check-ins page"
+    "description": "Empty state title on My sessions"
   },
-  "myCheckInsEmptyDescription": "Open a spot to check in or plan training. Until the end time you set, others can see you as “here now” on that spot unless you keep it private.",
+  "myCheckInsEmptyDescription": "Open a spot to check in or plan a session. Until the end time you set, others can see you as “here now” on that spot unless you keep it private.",
   "@myCheckInsEmptyDescription": {
-    "description": "Empty state helper text on my check-ins page"
+    "description": "Empty state helper text on My sessions"
   },
-  "myCheckInsIntro": "Training plans list upcoming sessions you scheduled at spots. A check-in records a visit—when you arrived and until when you expect to leave. Public entries can show you on a spot until the end time you set; private ones stay visible only to you.",
+  "myCheckInsIntro": "Planned sessions list upcoming times you scheduled at spots. A check-in records a visit—when you arrived and until when you expect to leave. Public entries can show you on a spot until the end time you set; private ones stay visible only to you.",
   "@myCheckInsIntro": {
-    "description": "Introductory text at the top of my check-ins page"
+    "description": "Introductory text at the top of My sessions"
   },
-  "myCheckInsUpcomingPlansTitle": "Upcoming training",
+  "myCheckInsUpcomingPlansTitle": "Upcoming sessions",
   "@myCheckInsUpcomingPlansTitle": {
-    "description": "Section heading for planned training on my check-ins page"
+    "description": "Section heading for planned sessions on My sessions"
   },
   "myCheckInsPastCheckInsTitle": "Check-ins",
   "@myCheckInsPastCheckInsTitle": {
@@ -3264,7 +3268,7 @@
   },
   "myCheckInsNoCheckInsYet": "No check-ins recorded yet.",
   "@myCheckInsNoCheckInsYet": {
-    "description": "Shown when the user has training plans but no check-in history"
+    "description": "Shown when the user has planned sessions but no check-in history"
   },
   "myCheckInsCheckInsLoadFailed": "Could not load check-ins.",
   "@myCheckInsCheckInsLoadFailed": {
@@ -3305,10 +3309,6 @@
       }
     }
   },
-  "publicProfileSpotLists": "Spot lists",
-  "@publicProfileSpotLists": {
-    "description": "Card title for user's own lists section"
-  },
   "publicProfileYours": "Yours",
   "@publicProfileYours": {
     "description": "Subheading for user's own lists in unified card"
@@ -3327,7 +3327,7 @@
   },
   "publicProfileManageLists": "Manage lists",
   "@publicProfileManageLists": {
-    "description": "Link from own public profile to the Account spot lists hub"
+    "description": "Link from own public profile to the My spots hub"
   },
   "publicProfileNoSavedListsYet": "No saved lists yet",
   "@publicProfileNoSavedListsYet": {

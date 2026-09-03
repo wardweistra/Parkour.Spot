@@ -1,7 +1,7 @@
 import '../models/spot.dart';
 import '../models/spot_list.dart';
 
-/// Built-in lists on the Spot lists hub. Added-by-you can be made public.
+/// Built-in lists on the My spots hub. Added-by-you can be made public.
 enum SpotTrackingListType { wantToVisit, visited, added }
 
 /// Whether [spot] belongs on the signed-in user's added-spots list.

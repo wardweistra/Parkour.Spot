@@ -83,7 +83,7 @@ class _SpotListsHubScreenState extends State<SpotListsHubScreen> {
       builder: (context, authService, _) {
         if (!authService.isAuthenticated) {
           return PageScaffold(
-            title: _l10n.publicProfileSpotLists,
+            title: _l10n.mySpotsTitle,
             body: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -115,7 +115,7 @@ class _SpotListsHubScreenState extends State<SpotListsHubScreen> {
         final muted = scheme.onSurface.withValues(alpha: 0.6);
 
         return PageScaffold(
-          title: _l10n.publicProfileSpotLists,
+          title: _l10n.mySpotsTitle,
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

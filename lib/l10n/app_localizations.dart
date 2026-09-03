@@ -214,11 +214,23 @@ abstract class AppLocalizations {
   /// **'View and edit your profile'**
   String get profileViewEditSubtitle;
 
-  /// Account tab: subtitle for the Spot lists row
+  /// Account tab: subtitle for the My spots row
   ///
   /// In en, this message translates to:
   /// **'Want to visit, been to, spots you added, and lists you create or save'**
   String get accountSpotListsSubtitle;
+
+  /// Account tab row and My spots screen title
+  ///
+  /// In en, this message translates to:
+  /// **'My spots'**
+  String get mySpotsTitle;
+
+  /// Account tab row and My sessions screen title
+  ///
+  /// In en, this message translates to:
+  /// **'My sessions'**
+  String get mySessionsTitle;
 
   /// Account tab row and My events screen title
   ///
@@ -304,13 +316,13 @@ abstract class AppLocalizations {
   /// **'Could not load your events.'**
   String get myEventsLoadFailed;
 
-  /// Spot lists hub: prompt when signed out
+  /// My spots: prompt when signed out
   ///
   /// In en, this message translates to:
   /// **'Sign in to view and manage your lists'**
   String get spotListsHubSignInPrompt;
 
-  /// Spot lists hub: error loading owned lists
+  /// My spots: error loading owned lists
   ///
   /// In en, this message translates to:
   /// **'Could not load lists. Check your connection and try again.'**
@@ -343,7 +355,7 @@ abstract class AppLocalizations {
   /// Account tab: hint that notifications reflect nearby map/community activity
   ///
   /// In en, this message translates to:
-  /// **'New spots nearby, training plans, check-ins, and other updates for you'**
+  /// **'New spots nearby, planned sessions, check-ins, and other updates for you'**
   String get notificationsSubtitle;
 
   /// Notifications inbox empty state heading
@@ -355,7 +367,7 @@ abstract class AppLocalizations {
   /// Notifications inbox empty state supporting text
   ///
   /// In en, this message translates to:
-  /// **'When someone adds a spot nearby, plans training where you train, or checks in nearby, it’ll show up here.'**
+  /// **'When someone adds a spot nearby, plans a session where you train, or checks in nearby, it’ll show up here.'**
   String get notificationsEmptyBody;
 
   /// Notifications inbox error message
@@ -544,25 +556,25 @@ abstract class AppLocalizations {
   /// **'They’ve just checked in to this spot.'**
   String get notificationNearbyCheckInBody;
 
-  /// In-app notification title when someone created a public training plan at a spot nearby
+  /// In-app notification title when someone created a public planned session at a spot nearby
   ///
   /// In en, this message translates to:
-  /// **'{actorName} planned training at {spotName}'**
+  /// **'{actorName} planned a session at {spotName}'**
   String notificationNearbyTrainingPlanTitle(String actorName, String spotName);
 
-  /// In-app notification body for nearby public training plan (names are in the title)
+  /// In-app notification body for nearby public planned session (names are in the title)
   ///
   /// In en, this message translates to:
-  /// **'They shared a public training window near one of your saved locations.'**
+  /// **'They shared a public planned session near one of your saved locations.'**
   String get notificationNearbyTrainingPlanBody;
 
-  /// In-app notification when the user's planned training window has started but they have not checked in
+  /// In-app notification when the user's planned session has started but they have not checked in
   ///
   /// In en, this message translates to:
   /// **'Time to check in at {spotName}'**
   String notificationTrainingPlanCheckInReminderTitle(String spotName);
 
-  /// In-app notification body for training plan check-in reminder
+  /// In-app notification body for planned-session check-in reminder
   ///
   /// In en, this message translates to:
   /// **'Your planned session has started. Tap to check in.'**
@@ -745,7 +757,7 @@ abstract class AppLocalizations {
   /// Account settings: location alerts section description
   ///
   /// In en, this message translates to:
-  /// **'Control which locations are used for nearby alerts, including check-ins, new spots, training plans, and events.'**
+  /// **'Control which locations are used for nearby alerts, including check-ins, new spots, planned sessions, and events.'**
   String get profileLocationAlertsDescription;
 
   /// Account settings: toggle title for using last known location in alerts
@@ -802,16 +814,16 @@ abstract class AppLocalizations {
   /// **'Get a notification when someone checks in at a spot within the alert radius of an active saved place or your last known location.'**
   String get profileLocationAlertsNotifyNearbyCheckInsSubtitle;
 
-  /// Account settings: toggle for notifications when someone creates a public training plan near an enabled location of interest
+  /// Account settings: toggle for notifications when someone creates a public planned session near an enabled location of interest
   ///
   /// In en, this message translates to:
-  /// **'Notify me about nearby training plans'**
+  /// **'Notify me about nearby planned sessions'**
   String get profileLocationAlertsNotifyTrainingPlansTitle;
 
-  /// Account settings: explains nearby training-plan notification opt-in and range
+  /// Account settings: explains nearby planned-session notification opt-in and range
   ///
   /// In en, this message translates to:
-  /// **'Get a notification when someone shares a public training plan at a spot within the alert radius of an active saved place or your last known location.'**
+  /// **'Get a notification when someone shares a public planned session at a spot within the alert radius of an active saved place or your last known location.'**
   String get profileLocationAlertsNotifyTrainingPlansSubtitle;
 
   /// Account settings: toggle for notifications when an event is added near an enabled location of interest
@@ -826,13 +838,13 @@ abstract class AppLocalizations {
   /// **'Get a notification when an event is added within the alert radius of an active saved place or your last known location.'**
   String get profileLocationAlertsNotifyEventsSubtitle;
 
-  /// Account settings: toggle for reminders when a planned training window starts
+  /// Account settings: toggle for reminders when a planned session starts
   ///
   /// In en, this message translates to:
   /// **'Remind me to check in for planned sessions'**
   String get profileTrainingPlanCheckInReminderTitle;
 
-  /// Account settings: explains training plan check-in reminder opt-in
+  /// Account settings: explains planned-session check-in reminder opt-in
   ///
   /// In en, this message translates to:
   /// **'Get a reminder when your planned session has started and you haven’t checked in at that spot yet.'**
@@ -2404,28 +2416,28 @@ abstract class AppLocalizations {
   /// **'You\'re here now until {time} — only you can see this check-in'**
   String spotCheckInTooltipPrivate(String time);
 
-  /// Avatar tooltip: public training plan
+  /// Avatar tooltip: public planned session
   ///
   /// In en, this message translates to:
-  /// **'{name} plans to train here {timeRange}'**
+  /// **'{name} plans a session here {timeRange}'**
   String spotTrainingPlanTooltipPublic(String name, String timeRange);
 
-  /// Avatar tooltip: private training plan
+  /// Avatar tooltip: private planned session
   ///
   /// In en, this message translates to:
-  /// **'You plan to train here {timeRange} — only you can see this plan'**
+  /// **'You plan a session here {timeRange} — only you can see this plan'**
   String spotTrainingPlanTooltipPrivate(String timeRange);
 
-  /// Avatar tooltip: public training plan during its scheduled window (start time has passed)
+  /// Avatar tooltip: public planned session during its scheduled window (start time has passed)
   ///
   /// In en, this message translates to:
-  /// **'{name} plans to train here until {untilTime}'**
+  /// **'{name} plans a session here until {untilTime}'**
   String spotTrainingPlanTooltipPublicUntil(String name, String untilTime);
 
-  /// Avatar tooltip: private training plan during its scheduled window
+  /// Avatar tooltip: private planned session during its scheduled window
   ///
   /// In en, this message translates to:
-  /// **'You plan to train here until {untilTime} — only you can see this plan'**
+  /// **'You plan a session here until {untilTime} — only you can see this plan'**
   String spotTrainingPlanTooltipPrivateUntil(String untilTime);
 
   /// No description provided for @spotDetailRouteErrorLoading.
@@ -2650,7 +2662,7 @@ abstract class AppLocalizations {
   /// No description provided for @communityShareTrainingPlanNarrative.
   ///
   /// In en, this message translates to:
-  /// **'I\'m planning to train at {spotName} {relativeDay} from {startTime}'**
+  /// **'I\'m planning a session at {spotName} {relativeDay} from {startTime}'**
   String communityShareTrainingPlanNarrative(
     String spotName,
     String relativeDay,
@@ -3300,7 +3312,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotDetailCommunityPlanningVisitButton.
   ///
   /// In en, this message translates to:
-  /// **'Plan to train'**
+  /// **'Plan a session'**
   String get spotDetailCommunityPlanningVisitButton;
 
   /// No description provided for @spotDetailCommunityPlanningVisitTooltip.
@@ -3330,7 +3342,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotDetailCommunityPlanningToTrain.
   ///
   /// In en, this message translates to:
-  /// **'Planning to train'**
+  /// **'Planned sessions'**
   String get spotDetailCommunityPlanningToTrain;
 
   /// No description provided for @spotDetailCommunityNobodyPlanningShort.
@@ -3510,22 +3522,22 @@ abstract class AppLocalizations {
   /// No description provided for @spotTrainingPlanDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Plan to train here'**
+  /// **'Plan a session here'**
   String get spotTrainingPlanDialogTitle;
 
   /// No description provided for @spotTrainingPlanDialogTitleEdit.
   ///
   /// In en, this message translates to:
-  /// **'Edit training plan'**
+  /// **'Edit plan'**
   String get spotTrainingPlanDialogTitleEdit;
 
-  /// Prompt in edit training plan dialog to switch to a live check-in
+  /// Prompt in edit planned-session dialog to switch to a live check-in
   ///
   /// In en, this message translates to:
   /// **'Here now? Check in so others know you’ve arrived.'**
   String get spotTrainingPlanDialogCheckInCtaBody;
 
-  /// Edit training plan: prompt to check in before the planned window starts (linked check-in still allowed)
+  /// Edit planned session: prompt to check in before the planned window starts (linked check-in still allowed)
   ///
   /// In en, this message translates to:
   /// **'Here already? Check in so others know you’ve arrived.'**
@@ -3636,37 +3648,37 @@ abstract class AppLocalizations {
   /// No description provided for @spotDetailTrainingPlanSaved.
   ///
   /// In en, this message translates to:
-  /// **'Training plan saved'**
+  /// **'Planned session saved'**
   String get spotDetailTrainingPlanSaved;
 
   /// No description provided for @spotDetailTrainingPlanUpdated.
   ///
   /// In en, this message translates to:
-  /// **'Training plan updated'**
+  /// **'Planned session updated'**
   String get spotDetailTrainingPlanUpdated;
 
   /// No description provided for @spotDetailTrainingPlanFailed.
   ///
   /// In en, this message translates to:
-  /// **'Could not save training plan'**
+  /// **'Could not save planned session'**
   String get spotDetailTrainingPlanFailed;
 
   /// No description provided for @spotDetailTrainingPlanRemoved.
   ///
   /// In en, this message translates to:
-  /// **'Training plan removed'**
+  /// **'Planned session removed'**
   String get spotDetailTrainingPlanRemoved;
 
   /// No description provided for @spotDetailTrainingPlanDeleteFailed.
   ///
   /// In en, this message translates to:
-  /// **'Could not remove training plan'**
+  /// **'Could not remove planned session'**
   String get spotDetailTrainingPlanDeleteFailed;
 
   /// No description provided for @spotTrainingPlanListDialogTitle.
   ///
   /// In en, this message translates to:
-  /// **'Planning to train'**
+  /// **'Planned sessions'**
   String get spotTrainingPlanListDialogTitle;
 
   /// No description provided for @spotTrainingPlanListDialogSubtitle.
@@ -3690,7 +3702,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotTrainingPlanListLoadError.
   ///
   /// In en, this message translates to:
-  /// **'Could not load training plans'**
+  /// **'Could not load planned sessions'**
   String get spotTrainingPlanListLoadError;
 
   /// No description provided for @spotTrainingPlanEditMine.
@@ -5667,22 +5679,16 @@ abstract class AppLocalizations {
   /// **'Been to'**
   String get publicProfileBeenTo;
 
-  /// Row title to open check-in history
+  /// Account tab: subtitle for the My sessions row
   ///
   /// In en, this message translates to:
-  /// **'Training activity'**
-  String get publicProfileMyCheckIns;
-
-  /// Subtitle for check-in history row
-  ///
-  /// In en, this message translates to:
-  /// **'Upcoming training plans and your check-in history'**
+  /// **'Upcoming planned sessions and your check-in history'**
   String get publicProfileMyCheckInsSubtitle;
 
-  /// Prompt shown on my check-ins page when signed out
+  /// Prompt shown on My sessions when signed out
   ///
   /// In en, this message translates to:
-  /// **'Sign in to view your check-ins and training plans'**
+  /// **'Sign in to view your check-ins and planned sessions'**
   String get myCheckInsSignInPrompt;
 
   /// Button label to load more check-ins
@@ -5691,28 +5697,28 @@ abstract class AppLocalizations {
   /// **'Load more'**
   String get myCheckInsLoadMore;
 
-  /// Empty state title on my check-ins page
+  /// Empty state title on My sessions
   ///
   /// In en, this message translates to:
   /// **'No visits or plans yet'**
   String get myCheckInsEmptyTitle;
 
-  /// Empty state helper text on my check-ins page
+  /// Empty state helper text on My sessions
   ///
   /// In en, this message translates to:
-  /// **'Open a spot to check in or plan training. Until the end time you set, others can see you as “here now” on that spot unless you keep it private.'**
+  /// **'Open a spot to check in or plan a session. Until the end time you set, others can see you as “here now” on that spot unless you keep it private.'**
   String get myCheckInsEmptyDescription;
 
-  /// Introductory text at the top of my check-ins page
+  /// Introductory text at the top of My sessions
   ///
   /// In en, this message translates to:
-  /// **'Training plans list upcoming sessions you scheduled at spots. A check-in records a visit—when you arrived and until when you expect to leave. Public entries can show you on a spot until the end time you set; private ones stay visible only to you.'**
+  /// **'Planned sessions list upcoming times you scheduled at spots. A check-in records a visit—when you arrived and until when you expect to leave. Public entries can show you on a spot until the end time you set; private ones stay visible only to you.'**
   String get myCheckInsIntro;
 
-  /// Section heading for planned training on my check-ins page
+  /// Section heading for planned sessions on My sessions
   ///
   /// In en, this message translates to:
-  /// **'Upcoming training'**
+  /// **'Upcoming sessions'**
   String get myCheckInsUpcomingPlansTitle;
 
   /// Section heading for past check-ins when plans are also shown
@@ -5721,7 +5727,7 @@ abstract class AppLocalizations {
   /// **'Check-ins'**
   String get myCheckInsPastCheckInsTitle;
 
-  /// Shown when the user has training plans but no check-in history
+  /// Shown when the user has planned sessions but no check-in history
   ///
   /// In en, this message translates to:
   /// **'No check-ins recorded yet.'**
@@ -5763,12 +5769,6 @@ abstract class AppLocalizations {
   /// **'{count}m'**
   String myCheckInsDurationMinutesShort(int count);
 
-  /// Card title for user's own lists section
-  ///
-  /// In en, this message translates to:
-  /// **'Spot lists'**
-  String get publicProfileSpotLists;
-
   /// Subheading for user's own lists in unified card
   ///
   /// In en, this message translates to:
@@ -5793,7 +5793,7 @@ abstract class AppLocalizations {
   /// **'Public spot lists'**
   String get publicProfilePublicSpotLists;
 
-  /// Link from own public profile to the Account spot lists hub
+  /// Link from own public profile to the My spots hub
   ///
   /// In en, this message translates to:
   /// **'Manage lists'**

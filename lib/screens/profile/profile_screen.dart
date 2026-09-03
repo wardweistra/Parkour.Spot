@@ -386,7 +386,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             _buildActionTile(
                               context,
                               Icons.list_alt_outlined,
-                              l10n.publicProfileSpotLists,
+                              l10n.mySpotsTitle,
                               l10n.accountSpotListsSubtitle,
                               () => context.push('/profile/lists'),
                             ),
@@ -400,7 +400,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             _buildActionTile(
                               context,
                               Icons.how_to_reg_outlined,
-                              l10n.publicProfileMyCheckIns,
+                              l10n.mySessionsTitle,
                               l10n.publicProfileMyCheckInsSubtitle,
                               () => context.push('/profile/check-ins'),
                             ),
