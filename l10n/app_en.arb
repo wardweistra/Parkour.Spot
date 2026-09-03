@@ -76,6 +76,72 @@
   "@accountSpotListsSubtitle": {
     "description": "Account tab: subtitle for the Spot lists row"
   },
+  "myEventsTitle": "My events",
+  "@myEventsTitle": {
+    "description": "Account tab row and My events screen title"
+  },
+  "accountMyEventsSubtitle": "Events you're going to or interested in",
+  "@accountMyEventsSubtitle": {
+    "description": "Account tab: subtitle for the My events row"
+  },
+  "eventInterestGoing": "Going",
+  "@eventInterestGoing": {
+    "description": "RSVP status: user plans to attend the event"
+  },
+  "eventInterestInterested": "Interested",
+  "@eventInterestInterested": {
+    "description": "RSVP status: user is considering the event"
+  },
+  "eventInterestGoingLabel": "Going ({count})",
+  "@eventInterestGoingLabel": {
+    "description": "Event detail Going button with public total",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventInterestInterestedLabel": "Interested ({count})",
+  "@eventInterestInterestedLabel": {
+    "description": "Event detail Interested button with public total",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventInterestDisclaimer": "This is not a registration. It only lets others know you might be there.",
+  "@eventInterestDisclaimer": {
+    "description": "Event detail: RSVP is interest only, not a sign-up"
+  },
+  "eventInterestUpdateFailed": "Could not update your interest.",
+  "@eventInterestUpdateFailed": {
+    "description": "Error when saving Going or Interested fails"
+  },
+  "myEventsSignInPrompt": "Sign in to see events you're going to or interested in",
+  "@myEventsSignInPrompt": {
+    "description": "Prompt on My events when signed out"
+  },
+  "myEventsEmptyTitle": "No events yet",
+  "@myEventsEmptyTitle": {
+    "description": "Empty state title on My events"
+  },
+  "myEventsEmptyDescription": "Open an event and tap Going or Interested. This is not a registration — it only shows on the event and in this list.",
+  "@myEventsEmptyDescription": {
+    "description": "Empty state body on My events"
+  },
+  "myEventsUpcomingTitle": "Upcoming",
+  "@myEventsUpcomingTitle": {
+    "description": "My events section heading for future events"
+  },
+  "myEventsPastTitle": "Past",
+  "@myEventsPastTitle": {
+    "description": "My events section heading for past events"
+  },
+  "myEventsLoadFailed": "Could not load your events.",
+  "@myEventsLoadFailed": {
+    "description": "Error state on My events"
+  },
   "spotListsHubSignInPrompt": "Sign in to view and manage your lists",
   "@spotListsHubSignInPrompt": {
     "description": "Spot lists hub: prompt when signed out"

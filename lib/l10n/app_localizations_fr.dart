@@ -70,6 +70,57 @@ class AppLocalizationsFr extends AppLocalizations {
       'À visiter, déjà visité, spots que vous avez ajoutés, et listes que vous créez ou enregistrez';
 
   @override
+  String get myEventsTitle => 'Mes événements';
+
+  @override
+  String get accountMyEventsSubtitle =>
+      'Événements auxquels vous allez ou qui vous intéressent';
+
+  @override
+  String get eventInterestGoing => 'J\'y vais';
+
+  @override
+  String get eventInterestInterested => 'Intéressé';
+
+  @override
+  String eventInterestGoingLabel(int count) {
+    return 'J\'y vais ($count)';
+  }
+
+  @override
+  String eventInterestInterestedLabel(int count) {
+    return 'Intéressé ($count)';
+  }
+
+  @override
+  String get eventInterestDisclaimer =>
+      'Ce n\'est pas une inscription. Cela indique seulement aux autres que vous pourriez venir.';
+
+  @override
+  String get eventInterestUpdateFailed =>
+      'Impossible de mettre à jour votre intérêt.';
+
+  @override
+  String get myEventsSignInPrompt =>
+      'Connectez-vous pour voir les événements auxquels vous allez ou qui vous intéressent';
+
+  @override
+  String get myEventsEmptyTitle => 'Aucun événement pour le moment';
+
+  @override
+  String get myEventsEmptyDescription =>
+      'Ouvrez un événement et touchez J\'y vais ou Intéressé. Ce n\'est pas une inscription — cela s\'affiche seulement sur l\'événement et dans cette liste.';
+
+  @override
+  String get myEventsUpcomingTitle => 'À venir';
+
+  @override
+  String get myEventsPastTitle => 'Passés';
+
+  @override
+  String get myEventsLoadFailed => 'Impossible de charger vos événements.';
+
+  @override
   String get spotListsHubSignInPrompt =>
       'Connectez-vous pour voir et gérer vos listes';
 

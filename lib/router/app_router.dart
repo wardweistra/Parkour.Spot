@@ -45,6 +45,7 @@ import '../screens/spots/spot_list_detail_screen.dart';
 import '../screens/spots/spot_tracking_list_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/profile/my_check_ins_screen.dart';
+import '../screens/profile/my_events_screen.dart';
 import '../screens/profile/account_settings_screen.dart';
 import '../screens/profile/notifications_screen.dart';
 import '../screens/profile/spot_lists_hub_screen.dart';
@@ -366,6 +367,7 @@ class AppRouter {
                 path == '/profile/visited' ||
                 path == '/profile/added' ||
                 path == '/profile/check-ins' ||
+                path == '/profile/events' ||
                 path == '/profile/lists' ||
                 path == '/profile/settings' ||
                 path == '/profile/notifications') {
@@ -395,6 +397,10 @@ class AppRouter {
             GoRoute(
               path: 'check-ins',
               builder: (context, state) => const MyCheckInsScreen(),
+            ),
+            GoRoute(
+              path: 'events',
+              builder: (context, state) => const MyEventsScreen(),
             ),
             GoRoute(
               path: 'lists',

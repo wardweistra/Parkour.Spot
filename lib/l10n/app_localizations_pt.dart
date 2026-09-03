@@ -70,6 +70,57 @@ class AppLocalizationsPt extends AppLocalizations {
       'Quero visitar, já visitei, spots que adicionaste e listas que crias ou guardas';
 
   @override
+  String get myEventsTitle => 'Os meus eventos';
+
+  @override
+  String get accountMyEventsSubtitle =>
+      'Eventos a que vais ou em que tens interesse';
+
+  @override
+  String get eventInterestGoing => 'Vou';
+
+  @override
+  String get eventInterestInterested => 'Interessado';
+
+  @override
+  String eventInterestGoingLabel(int count) {
+    return 'Vou ($count)';
+  }
+
+  @override
+  String eventInterestInterestedLabel(int count) {
+    return 'Interessado ($count)';
+  }
+
+  @override
+  String get eventInterestDisclaimer =>
+      'Isto não é uma inscrição. Só indica aos outros que podes aparecer.';
+
+  @override
+  String get eventInterestUpdateFailed =>
+      'Não foi possível atualizar o teu interesse.';
+
+  @override
+  String get myEventsSignInPrompt =>
+      'Inicia sessão para ver os eventos a que vais ou em que tens interesse';
+
+  @override
+  String get myEventsEmptyTitle => 'Ainda sem eventos';
+
+  @override
+  String get myEventsEmptyDescription =>
+      'Abre um evento e toca em Vou ou Interessado. Isto não é uma inscrição — aparece só no evento e nesta lista.';
+
+  @override
+  String get myEventsUpcomingTitle => 'Próximos';
+
+  @override
+  String get myEventsPastTitle => 'Passados';
+
+  @override
+  String get myEventsLoadFailed => 'Não foi possível carregar os teus eventos.';
+
+  @override
   String get spotListsHubSignInPrompt =>
       'Inicia sessão para ver e gerir as tuas listas';
 

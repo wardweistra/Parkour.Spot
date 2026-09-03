@@ -32,6 +32,7 @@ import 'package:parkour_spot/services/spot_list_service.dart';
 import 'package:parkour_spot/services/saved_spot_list_service.dart';
 import 'package:parkour_spot/services/spot_tracking_service.dart';
 import 'package:parkour_spot/services/spot_check_in_service.dart';
+import 'package:parkour_spot/services/event_interest_service.dart';
 import 'package:parkour_spot/services/spot_training_plan_service.dart';
 import 'package:parkour_spot/services/pwa_install_service.dart';
 import 'package:parkour_spot/services/user_profile_service.dart';
@@ -267,6 +268,18 @@ class ParkourSpotApp extends StatelessWidget {
           },
           update: (context, authService, previous) {
             return previous ?? SpotTrainingPlanService(authService);
+          },
+        ),
+        ChangeNotifierProxyProvider<AuthService, EventInterestService>(
+          create: (context) {
+            final authService = Provider.of<AuthService>(
+              context,
+              listen: false,
+            );
+            return EventInterestService(authService);
+          },
+          update: (context, authService, previous) {
+            return previous ?? EventInterestService(authService);
           },
         ),
         ChangeNotifierProvider(
