@@ -89,6 +89,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eventInterestInterested => 'Intéressé';
 
   @override
+  String get eventInterestWent => 'J\'y étais';
+
+  @override
+  String get eventInterestWasInterested => 'Étais intéressé';
+
+  @override
   String eventInterestGoingLabel(int count) {
     return 'J\'y vais ($count)';
   }
@@ -99,8 +105,22 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String eventInterestWentLabel(int count) {
+    return 'J\'y étais ($count)';
+  }
+
+  @override
+  String eventInterestWasInterestedLabel(int count) {
+    return 'Étais intéressé ($count)';
+  }
+
+  @override
   String get eventInterestDisclaimer =>
       'Ce n\'est pas une inscription. Cela indique seulement aux autres que vous pourriez venir.';
+
+  @override
+  String get eventInterestDisclaimerPast =>
+      'Ce n\'est pas une inscription. Cela indique seulement qui a marqué y être allé ou intéressé.';
 
   @override
   String get eventInterestUpdateFailed =>

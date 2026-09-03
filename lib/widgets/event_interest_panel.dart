@@ -21,6 +21,7 @@ class EventInterestPanel extends StatelessWidget {
     required this.isBusy,
     required this.onGoingPressed,
     required this.onInterestedPressed,
+    this.isPast = false,
   });
 
   final EventInterestStatus? selected;
@@ -29,12 +30,22 @@ class EventInterestPanel extends StatelessWidget {
   final bool isBusy;
   final VoidCallback onGoingPressed;
   final VoidCallback onInterestedPressed;
+  final bool isPast;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final goingLabel = isPast
+        ? l10n.eventInterestWentLabel(goingCount)
+        : l10n.eventInterestGoingLabel(goingCount);
+    final interestedLabel = isPast
+        ? l10n.eventInterestWasInterestedLabel(interestedCount)
+        : l10n.eventInterestInterestedLabel(interestedCount);
+    final disclaimer = isPast
+        ? l10n.eventInterestDisclaimerPast
+        : l10n.eventInterestDisclaimer;
 
     return Semantics(
       container: true,
@@ -55,7 +66,7 @@ class EventInterestPanel extends StatelessWidget {
                   child: _InterestChoiceButton(
                     icon: Icons.check_circle_outline,
                     selectedIcon: Icons.check_circle,
-                    label: l10n.eventInterestGoingLabel(goingCount),
+                    label: goingLabel,
                     selected: selected == EventInterestStatus.going,
                     enabled: !isBusy,
                     onPressed: onGoingPressed,
@@ -66,7 +77,7 @@ class EventInterestPanel extends StatelessWidget {
                   child: _InterestChoiceButton(
                     icon: Icons.star_outline,
                     selectedIcon: Icons.star,
-                    label: l10n.eventInterestInterestedLabel(interestedCount),
+                    label: interestedLabel,
                     selected: selected == EventInterestStatus.interested,
                     enabled: !isBusy,
                     onPressed: onInterestedPressed,
@@ -76,7 +87,7 @@ class EventInterestPanel extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              l10n.eventInterestDisclaimer,
+              disclaimer,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colors.onSurfaceVariant,
                 height: 1.35,
@@ -270,6 +281,7 @@ class _EventInterestSectionState extends State<EventInterestSection> {
                   goingCount: stats.goingCount,
                   interestedCount: stats.interestedCount,
                   isBusy: _isBusy,
+                  isPast: isParkourEventPast(widget.event),
                   onGoingPressed: () =>
                       _onSelect(EventInterestStatus.going, status, stats),
                   onInterestedPressed: () =>

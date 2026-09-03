@@ -100,6 +100,14 @@
   "@eventInterestInterested": {
     "description": "RSVP status: user is considering the event"
   },
+  "eventInterestWent": "Went",
+  "@eventInterestWent": {
+    "description": "RSVP status for a past event: user marked Going"
+  },
+  "eventInterestWasInterested": "Was interested",
+  "@eventInterestWasInterested": {
+    "description": "RSVP status for a past event: user marked Interested"
+  },
   "eventInterestGoingLabel": "Going ({count})",
   "@eventInterestGoingLabel": {
     "description": "Event detail Going button with public total",
@@ -118,9 +126,31 @@
       }
     }
   },
+  "eventInterestWentLabel": "Went ({count})",
+  "@eventInterestWentLabel": {
+    "description": "Past event Going button with public total",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventInterestWasInterestedLabel": "Was interested ({count})",
+  "@eventInterestWasInterestedLabel": {
+    "description": "Past event Interested button with public total",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "eventInterestDisclaimer": "This is not a registration. It only lets others know you might be there.",
   "@eventInterestDisclaimer": {
     "description": "Event detail: RSVP is interest only, not a sign-up"
+  },
+  "eventInterestDisclaimerPast": "This is not a registration. It only shows who marked they went or were interested.",
+  "@eventInterestDisclaimerPast": {
+    "description": "Past event detail: RSVP is interest only, not a sign-up"
   },
   "eventInterestUpdateFailed": "Could not update your interest.",
   "@eventInterestUpdateFailed": {

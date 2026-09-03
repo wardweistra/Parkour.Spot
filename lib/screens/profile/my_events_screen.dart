@@ -212,6 +212,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
       child: _MyEventTile(
         event: entry.event,
         status: entry.interest.status,
+        isPast: isParkourEventPast(entry.event),
         onTap: () {
           final id = entry.event.id;
           if (id == null || id.isEmpty) return;
@@ -226,11 +227,13 @@ class _MyEventTile extends StatelessWidget {
   const _MyEventTile({
     required this.event,
     required this.status,
+    required this.isPast,
     required this.onTap,
   });
 
   final ParkourEvent event;
   final EventInterestStatus status;
+  final bool isPast;
   final VoidCallback onTap;
 
   @override
@@ -246,8 +249,10 @@ class _MyEventTile extends StatelessWidget {
       timeZone: event.timeZone,
     );
     final statusLabel = status == EventInterestStatus.going
-        ? l10n.eventInterestGoing
-        : l10n.eventInterestInterested;
+        ? (isPast ? l10n.eventInterestWent : l10n.eventInterestGoing)
+        : (isPast
+              ? l10n.eventInterestWasInterested
+              : l10n.eventInterestInterested);
 
     return Material(
       color: scheme.surfaceContainerLow,

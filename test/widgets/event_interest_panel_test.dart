@@ -10,6 +10,7 @@ Future<void> pumpPanel(
   int goingCount = 0,
   int interestedCount = 0,
   bool isBusy = false,
+  bool isPast = false,
   VoidCallback? onGoing,
   VoidCallback? onInterested,
 }) async {
@@ -23,6 +24,7 @@ Future<void> pumpPanel(
           goingCount: goingCount,
           interestedCount: interestedCount,
           isBusy: isBusy,
+          isPast: isPast,
           onGoingPressed: onGoing ?? () {},
           onInterestedPressed: onInterested ?? () {},
         ),
@@ -47,6 +49,27 @@ void main() {
     expect(
       find.text(
         'This is not a registration. It only lets others know you might be there.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows past-tense labels and disclaimer when event has ended', (
+    tester,
+  ) async {
+    await pumpPanel(
+      tester,
+      selected: EventInterestStatus.going,
+      goingCount: 3,
+      interestedCount: 12,
+      isPast: true,
+    );
+
+    expect(find.text('Went (3)'), findsOneWidget);
+    expect(find.text('Was interested (12)'), findsOneWidget);
+    expect(
+      find.text(
+        'This is not a registration. It only shows who marked they went or were interested.',
       ),
       findsOneWidget,
     );
