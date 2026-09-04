@@ -54,7 +54,7 @@ void main() {
         deeplinkId: 's1',
       );
       final copy = localizedUserNotificationCopy(n, en);
-      expect(copy.title, 'Sam planned training at Wall');
+      expect(copy.title, 'Sam planned a session at Wall');
       expect(copy.body, en.notificationNearbyTrainingPlanBody);
     });
 
