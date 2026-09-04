@@ -4,6 +4,68 @@
  */
 
 /**
+ * True if hostname is exactly domain or a subdomain of it.
+ * @param {string} hostname
+ * @param {string} domain
+ * @return {boolean}
+ */
+function hostnameMatches(hostname, domain) {
+  if (!hostname || !domain) return false;
+  const host = String(hostname).toLowerCase();
+  const d = String(domain).toLowerCase();
+  return host === d || host.endsWith(`.${d}`);
+}
+
+/**
+ * True if hostname matches any of the given domains.
+ * @param {string} hostname
+ * @param {...string} domains
+ * @return {boolean}
+ */
+function hostnameMatchesAny(hostname, ...domains) {
+  return domains.some((d) => hostnameMatches(hostname, d));
+}
+
+/**
+ * Parse hostname from a URL string; null if unparseable.
+ * @param {string} url
+ * @return {string|null}
+ */
+function hostnameFromUrl(url) {
+  if (typeof url !== "string" || !url) return null;
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * True if URL host is Firebase / GCS object storage used for spot images.
+ * @param {string} url
+ * @return {boolean}
+ */
+function isFirebaseStorageUrl(url) {
+  const host = hostnameFromUrl(url);
+  if (!host) return false;
+  return hostnameMatchesAny(
+      host,
+      "firebasestorage.googleapis.com",
+      "storage.googleapis.com",
+  );
+}
+
+/**
+ * True if URL host is the Firebase download-API host (encoded /o/ paths).
+ * @param {string} url
+ * @return {boolean}
+ */
+function isFirebaseStorageDownloadApiUrl(url) {
+  const host = hostnameFromUrl(url);
+  return host ? hostnameMatches(host, "firebasestorage.googleapis.com") : false;
+}
+
+/**
  * Extracts spot ID from URL pathname
  * @param {string} pathname - The URL pathname
  * @return {string|null} The extracted spot ID or null
@@ -29,10 +91,7 @@ function extractFilename(url) {
     const pathname = urlObj.pathname;
 
     // Handle Firebase Storage URLs with encoded paths
-    if (
-      url.includes("firebasestorage.googleapis.com") &&
-      pathname.includes("/o/")
-    ) {
+    if (isFirebaseStorageDownloadApiUrl(url) && pathname.includes("/o/")) {
       // Format: /v0/b/bucket-name/o/spots%2Ffilename.jpg
       const encodedPath = pathname.split("/o/")[1];
       const decodedPath = decodeURIComponent(encodedPath);
@@ -60,14 +119,14 @@ const RESIZABLE_STORAGE_PREFIXES = ["spots", "events"];
 function getResizedImageUrlForApi(originalUrl) {
   if (typeof originalUrl !== "string") return originalUrl;
   try {
-    if (!originalUrl.includes("storage.googleapis.com") &&
-        !originalUrl.includes("firebasestorage.googleapis.com")) {
+    if (!isFirebaseStorageUrl(originalUrl)) {
       return originalUrl;
     }
+    const isDownloadApi = isFirebaseStorageDownloadApiUrl(originalUrl);
     for (const prefix of RESIZABLE_STORAGE_PREFIXES) {
       const encodedPrefix = `${prefix}%2F`;
       const encodedResizedPrefix = `${prefix}%2Fresized%2F`;
-      if (originalUrl.includes("firebasestorage.googleapis.com") &&
+      if (isDownloadApi &&
           originalUrl.includes(encodedPrefix) &&
           !originalUrl.includes(encodedResizedPrefix)) {
         const pattern = new RegExp(
@@ -106,12 +165,11 @@ function getResizedImageUrlForApi(originalUrl) {
 function getResizedPathInfo(url) {
   if (typeof url !== "string") return null;
   try {
-    if (!url.includes("storage.googleapis.com") &&
-        !url.includes("firebasestorage.googleapis.com")) {
+    if (!isFirebaseStorageUrl(url)) {
       return null;
     }
     let originalPath = null;
-    if (url.includes("firebasestorage.googleapis.com") && url.includes("/o/")) {
+    if (isFirebaseStorageDownloadApiUrl(url) && url.includes("/o/")) {
       const encodedPath = url.split("/o/")[1]?.split("?")[0] || "";
       originalPath = decodeURIComponent(encodedPath);
     } else {
@@ -189,7 +247,23 @@ function isEphemeralImageHost(imageUrl) {
   }
 }
 
+/**
+ * True if URL is a Google profile / user-content image host.
+ * @param {string} url
+ * @return {boolean}
+ */
+function isGoogleUserContentUrl(url) {
+  const host = hostnameFromUrl(url);
+  return host ? hostnameMatches(host, "googleusercontent.com") : false;
+}
+
 module.exports = {
+  hostnameMatches,
+  hostnameMatchesAny,
+  hostnameFromUrl,
+  isFirebaseStorageUrl,
+  isFirebaseStorageDownloadApiUrl,
+  isGoogleUserContentUrl,
   extractSpotIdFromPath,
   extractFilename,
   getResizedImageUrlForApi,

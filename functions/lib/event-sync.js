@@ -1,4 +1,8 @@
 const ical = require("node-ical");
+const {
+  decodeBasicHtmlEntities,
+  htmlToPlainText,
+} = require("./html-plain-text");
 
 /** @type {"feed"} */
 const EVENT_TIME_ZONE_SOURCE_FEED = "feed";
@@ -427,22 +431,6 @@ function nullableDateEqual(storedValue, incomingDate) {
 }
 
 /**
- * Decodes a small set of HTML entities (for extracted URLs and text snippets).
- * @param {string} s
- * @return {string}
- */
-function decodeBasicHtmlEntities(s) {
-  if (!s) return "";
-  return s
-      .replace(/&amp;/gi, "&")
-      .replace(/&lt;/gi, "<")
-      .replace(/&gt;/gi, ">")
-      .replace(/&quot;/gi, "\"")
-      .replace(/&#39;/g, "'")
-      .replace(/&apos;/gi, "'");
-}
-
-/**
  * Trims trailing punctuation often glued to URLs in prose or ICS text.
  * @param {string} url
  * @return {string}
@@ -494,18 +482,7 @@ function extractLastHttpUrlFromDescription(html) {
  */
 function normalizeImportedEventDescription(raw) {
   if (!raw || typeof raw !== "string") return null;
-  const text = raw
-      .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<[^>]*>/g, "")
-      .replace(/&nbsp;/g, " ")
-      .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&quot;/g, "\"")
-      .replace(/&apos;/g, "'")
-      .replace(/&#39;/g, "'")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim();
+  const text = htmlToPlainText(raw);
   return text.length > 0 ? text : null;
 }
 

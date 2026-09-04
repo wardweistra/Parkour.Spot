@@ -5,11 +5,14 @@
 const crypto = require("crypto");
 
 /**
- * Hash API key with SHA-256 for storage/lookup
+ * Hash API key with SHA-256 for storage/lookup.
+ * High-entropy random API keys (not user passwords);
+ * SHA-256 fingerprint is intentional.
  * @param {string} apiKey - Plain API key
  * @return {string} Hex-encoded SHA-256 hash
  */
 function hashApiKey(apiKey) {
+  // codeql[js/insufficient-password-hash]: API key digest, not password hash
   return crypto.createHash("sha256").update(apiKey).digest("hex");
 }
 

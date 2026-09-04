@@ -49,6 +49,7 @@ const {
   getResizedPathInfo,
   getImageContentTypeForPath,
   isEphemeralImageHost,
+  isGoogleUserContentUrl,
 } = require("./lib/url-helpers");
 const {
   hashApiKey,
@@ -609,12 +610,7 @@ exports.userAndListPage = onRequest({region: "europe-west1"}, async (req, res) =
               const spotData = firstSpotSnap.data();
               const urls = spotData?.imageUrls;
               if (Array.isArray(urls) && urls.length > 0) {
-                imageUrl = urls[0];
-                if (imageUrl.includes("firebasestorage.googleapis.com") &&
-                    imageUrl.includes("spots%2F")) {
-                  imageUrl = imageUrl.replace("spots%2F", "spots%2Fresized%2F");
-                  imageUrl = imageUrl.replace(/\.(jpg|jpeg|png|webp)(\?|$)/, "_1200x1200.webp$2");
-                }
+                imageUrl = getResizedImageUrlForApi(urls[0]);
               }
             }
           }
@@ -6000,8 +5996,7 @@ exports.syncUserCreatedAtFromAuth = onCall(
  * @return {boolean} True if URL is a Google profile picture
  */
 function isGoogleProfilePictureUrl(url) {
-  if (!url || typeof url !== "string") return false;
-  return url.includes("googleusercontent.com");
+  return isGoogleUserContentUrl(url);
 }
 
 /**
@@ -7453,26 +7448,8 @@ exports.cleanupUnusedImages = onCall(
           const spotData = doc.data();
           if (spotData.imageUrls && Array.isArray(spotData.imageUrls)) {
             spotData.imageUrls.forEach((url) => {
-            // Extract filename from URL, handling both Firebase Storage URL formats
-              let filename;
               try {
-                const urlObj = new URL(url);
-                const pathname = urlObj.pathname;
-
-                // Handle Firebase Storage URLs with encoded paths
-                if (
-                  url.includes("firebasestorage.googleapis.com") &&
-                pathname.includes("/o/")
-                ) {
-                // Format: /v0/b/bucket-name/o/spots%2Ffilename.jpg
-                  const encodedPath = pathname.split("/o/")[1];
-                  const decodedPath = decodeURIComponent(encodedPath);
-                  filename = decodedPath.split("/").pop();
-                } else {
-                // Format: /bucket-name/spots/filename.jpg
-                  filename = pathname.split("/").pop();
-                }
-
+                const filename = extractFilename(url);
                 if (filename) {
                   usedImageUrls.add(filename);
                   // Extract base name for resized image matching
@@ -7482,15 +7459,6 @@ exports.cleanupUnusedImages = onCall(
                 }
               } catch (urlError) {
                 console.warn(`Failed to parse URL: ${url}`, urlError);
-                // Fallback to simple extraction
-                const urlParts = url.split("/");
-                const lastPart = urlParts[urlParts.length - 1];
-                const filename = lastPart.split("?")[0]; // Remove query parameters
-                if (filename) {
-                  usedImageUrls.add(filename);
-                  const baseName = filename.replace(/\.[^/.]+$/, "");
-                  usedImageBaseNames.add(baseName);
-                }
               }
             });
           }

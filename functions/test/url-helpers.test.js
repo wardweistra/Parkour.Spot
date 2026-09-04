@@ -5,6 +5,9 @@ const {
   getResizedPathInfo,
   getImageContentTypeForPath,
   isEphemeralImageHost,
+  hostnameMatches,
+  isFirebaseStorageUrl,
+  isGoogleUserContentUrl,
 } = require("../lib/url-helpers");
 
 describe("extractSpotIdFromPath", () => {
@@ -157,5 +160,37 @@ describe("isEphemeralImageHost", () => {
   });
   it("returns false for invalid URL", () => {
     expect(isEphemeralImageHost("not-a-url")).toBe(false);
+  });
+});
+
+describe("hostnameMatches", () => {
+  it("matches exact host and subdomains only", () => {
+    expect(hostnameMatches("youtube.com", "youtube.com")).toBe(true);
+    expect(hostnameMatches("www.youtube.com", "youtube.com")).toBe(true);
+    expect(hostnameMatches("youtube.com.evil.com", "youtube.com")).toBe(false);
+    expect(hostnameMatches("notyoutube.com", "youtube.com")).toBe(false);
+  });
+});
+
+describe("isFirebaseStorageUrl", () => {
+  it("accepts real storage hosts and rejects spoofed substrings", () => {
+    expect(isFirebaseStorageUrl(
+        "https://firebasestorage.googleapis.com/v0/b/b/o/spots%2Fa.jpg",
+    )).toBe(true);
+    expect(isFirebaseStorageUrl(
+        "https://storage.googleapis.com/bucket/spots/a.jpg",
+    )).toBe(true);
+    expect(isFirebaseStorageUrl(
+        "https://evil.com/?q=firebasestorage.googleapis.com",
+    )).toBe(false);
+  });
+});
+
+describe("isGoogleUserContentUrl", () => {
+  it("matches googleusercontent hosts only", () => {
+    expect(isGoogleUserContentUrl("https://lh3.googleusercontent.com/a")).toBe(true);
+    expect(isGoogleUserContentUrl(
+        "https://evil.com/?q=googleusercontent.com",
+    )).toBe(false);
   });
 });

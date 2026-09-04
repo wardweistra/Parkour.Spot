@@ -80,6 +80,11 @@ describe("extractYoutubeVideoIdsFromDescription", () => {
   it("returns empty for no matches", () => {
     expect(extractYoutubeVideoIdsFromDescription("no URLs here")).toEqual([]);
   });
+  it("rejects spoofed youtube hostnames", () => {
+    expect(extractYoutubeVideoIdsFromDescription(
+        "https://youtube.com.evil.com/watch?v=abc123",
+    )).toEqual([]);
+  });
 });
 
 describe("extractImageUrls", () => {
@@ -97,5 +102,11 @@ describe("extractImageUrls", () => {
     };
     const urls = extractImageUrls(placemark);
     expect(urls).toEqual([]);
+  });
+  it("filters spoofed google hostnames", () => {
+    const placemark = {
+      description: "<img src=\"https://google.com.evil.com/image.jpg\">",
+    };
+    expect(extractImageUrls(placemark)).toEqual([]);
   });
 });

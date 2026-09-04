@@ -5,6 +5,8 @@
 
 const {buildSpotSearchWords} = require("./spot-attributes");
 const {clipForMeta} = require("../utils");
+const {htmlToPlainText} = require("./html-plain-text");
+const {hostnameMatches, hostnameMatchesAny} = require("./url-helpers");
 
 /**
  * Builds description for social sharing from spot data
@@ -84,20 +86,7 @@ function eventSearchTermDocId(eventId, term) {
 function cleanDescription(description) {
   if (!description) return "";
 
-  // Remove HTML tags but preserve line breaks
-  let cleaned = description
-      .replace(/<br\s*\/?>/gi, "\n") // Convert <br> tags to newlines
-      .replace(/<img[^>]*>/gi, "") // Remove <img> tags
-      .replace(/<[^>]*>/g, "") // Remove all other HTML tags
-      .replace(/&nbsp;/g, " ") // Convert &nbsp; to spaces
-      .replace(/&amp;/g, "&") // Convert &amp; to &
-      .replace(/&lt;/g, "<") // Convert &lt; to <
-      .replace(/&gt;/g, ">") // Convert &gt; to >
-      .replace(/&quot;/g, "\"") // Convert &quot; to "
-      .replace(/&apos;/g, "'") // Convert &apos; to '
-      .replace(/\n\s*\n\s*\n/g, "\n\n") // Replace 3+ newlines with 2
-      .replace(/\n\s*\n/g, "\n\n") // Replace 2+ newlines with 2
-      .trim(); // Remove leading/trailing whitespace
+  let cleaned = htmlToPlainText(description);
 
   // Remove YouTube URLs since we extract video IDs separately
   cleaned = cleaned
@@ -132,13 +121,13 @@ function extractYoutubeVideoIdsFromDescription(description) {
       const host = uri.hostname.toLowerCase();
       const segments = uri.pathname.split("/").filter(Boolean);
 
-      if (host.includes("youtu.be")) {
+      if (hostnameMatches(host, "youtu.be")) {
         const last = segments[segments.length - 1];
         if (last) ids.add(last);
         continue;
       }
 
-      if (host.includes("youtube.com") || host.includes("www.youtube.com")) {
+      if (hostnameMatches(host, "youtube.com")) {
         const v = uri.searchParams.get("v");
         if (v) {
           ids.add(v);
@@ -220,12 +209,13 @@ function extractImageUrls(placemark) {
     }
     try {
       const host = new URL(url).hostname.toLowerCase();
-      const isValid =
-        host.includes("google.com") ||
-        host.includes("googleusercontent.com") ||
-        host.includes("img.youtube.com") ||
-        host.includes("ytimg.com");
-      return isValid;
+      return hostnameMatchesAny(
+          host,
+          "google.com",
+          "googleusercontent.com",
+          "img.youtube.com",
+          "ytimg.com",
+      );
     } catch (_) {
       return false;
     }
