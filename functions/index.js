@@ -10651,6 +10651,11 @@ exports.listInAppNotificationsForAdmin = onCall(
         const docPath =
           cursor && typeof cursor.docPath === "string" ? cursor.docPath : null;
 
+        // Collection-group orderBy(createdAt) needs a fieldOverride on
+        // notifications.createdAt with queryScope COLLECTION_GROUP. That
+        // override must also keep COLLECTION indexes; otherwise it replaces
+        // automatic single-field indexes and breaks users/{uid}/notifications
+        // inbox queries.
         let query = db.collectionGroup("notifications")
             .orderBy("createdAt", "desc")
             .limit(pageSize + 1);
@@ -10685,9 +10690,9 @@ exports.listInAppNotificationsForAdmin = onCall(
         console.error("listInAppNotificationsForAdmin error:", error);
         const hint =
           error && String(error.message || "").includes("FAILED_PRECONDITION") ?
-            " If this is the first deploy, create a Firestore index for " +
-            "collection group `notifications` on `createdAt` DESC " +
-            "(see firestore.indexes.json fieldOverrides)." :
+            " Deploy firestore.indexes.json fieldOverrides for collection " +
+            "group `notifications` on `createdAt` (COLLECTION_GROUP DESC, " +
+            "and keep COLLECTION indexes so per-user inboxes still work)." :
             "";
         throw new Error(`Failed to list notifications: ${error.message}${hint}`);
       }
