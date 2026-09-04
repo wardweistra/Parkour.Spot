@@ -4593,6 +4593,24 @@ abstract class AppLocalizations {
   /// **'Failed to submit rating. Please try again.'**
   String get spotDetailRatingSubmitFailed;
 
+  /// No description provided for @spotDetailRatingCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating removed'**
+  String get spotDetailRatingCleared;
+
+  /// No description provided for @spotDetailRatingClearFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to remove rating. Please try again.'**
+  String get spotDetailRatingClearFailed;
+
+  /// No description provided for @spotDetailClearRating.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear rating'**
+  String get spotDetailClearRating;
+
   /// No description provided for @spotDetailRatingSubmitError.
   ///
   /// In en, this message translates to:

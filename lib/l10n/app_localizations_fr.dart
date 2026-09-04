@@ -2732,6 +2732,16 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible d’envoyer la note. Réessayez.';
 
   @override
+  String get spotDetailRatingCleared => 'Note supprimée';
+
+  @override
+  String get spotDetailRatingClearFailed =>
+      'Impossible de supprimer la note. Réessayez.';
+
+  @override
+  String get spotDetailClearRating => 'Supprimer la note';
+
+  @override
   String spotDetailRatingSubmitError(String error) {
     return 'Erreur lors de l’envoi de la note : $error';
   }

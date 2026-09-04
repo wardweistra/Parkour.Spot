@@ -2714,6 +2714,16 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo enviar la valoración. Inténtalo de nuevo.';
 
   @override
+  String get spotDetailRatingCleared => 'Valoración eliminada';
+
+  @override
+  String get spotDetailRatingClearFailed =>
+      'No se pudo eliminar la valoración. Inténtalo de nuevo.';
+
+  @override
+  String get spotDetailClearRating => 'Eliminar valoración';
+
+  @override
   String spotDetailRatingSubmitError(String error) {
     return 'Error al enviar la valoración: $error';
   }

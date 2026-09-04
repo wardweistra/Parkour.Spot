@@ -1283,6 +1283,52 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  // Remove the current user's rating for a spot
+  Future<bool> clearUserRating(String spotId, String userId) async {
+    try {
+      if (userId.isEmpty) {
+        debugPrint('User ID is required for clearing rating');
+        return false;
+      }
+
+      final existingRatingDoc = await _firestore
+          .collection('ratings')
+          .where('spotId', isEqualTo: spotId)
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      if (existingRatingDoc.docs.isEmpty) {
+        return true;
+      }
+
+      await existingRatingDoc.docs.first.reference.delete();
+      return true;
+    } catch (e) {
+      debugPrint('Error clearing user rating: $e');
+      return false;
+    }
+  }
+
+  /// Live rating aggregates from the spot document (updated by Cloud Functions).
+  Stream<Map<String, dynamic>> watchSpotRatingStats(String spotId) {
+    return _firestore.collection('spots').doc(spotId).snapshots().map((doc) {
+      if (!doc.exists) {
+        return {
+          'averageRating': 0.0,
+          'ratingCount': 0,
+          'ratingDistribution': <int, int>{},
+        };
+      }
+
+      final data = doc.data() as Map<String, dynamic>;
+      return {
+        'averageRating': (data['averageRating'] ?? 0).toDouble(),
+        'ratingCount': (data['ratingCount'] ?? 0) as int,
+        'ratingDistribution': <int, int>{},
+      };
+    });
+  }
+
   // Get calculated rating statistics for a spot using cached aggregates
   Future<Map<String, dynamic>> getSpotRatingStats(String spotId) async {
     try {
