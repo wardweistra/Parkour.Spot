@@ -68,7 +68,13 @@ class SpotYoutubeSection extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 buildDefaultDragHandles: false,
                 itemCount: controllers.length,
-                proxyDecorator: (child, index, animation) => child,
+                proxyDecorator: (child, index, animation) {
+                  // Drag overlay is outside the Card's Material; TextField needs one.
+                  return Material(
+                    type: MaterialType.transparency,
+                    child: child,
+                  );
+                },
                 onReorder: (oldIndex, newIndex) {
                   if (newIndex > oldIndex) {
                     newIndex -= 1;

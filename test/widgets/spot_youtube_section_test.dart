@@ -84,6 +84,31 @@ void main() {
     expect(reordered, isFalse);
   });
 
+  testWidgets('dragging a row does not throw Material ancestor error', (
+    tester,
+  ) async {
+    final controllers = [
+      TextEditingController(text: 'aaa111bbb22'),
+      TextEditingController(text: 'ccc333ddd44'),
+    ];
+    addTearDown(() {
+      for (final controller in controllers) {
+        controller.dispose();
+      }
+    });
+
+    await pumpYoutubeSection(tester, controllers: controllers);
+
+    await tester.drag(
+      find.byIcon(Icons.drag_handle).first,
+      const Offset(0, 80),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(TextField), findsNWidgets(2));
+  });
+
   testWidgets('remove button reports the row index', (tester) async {
     final controllers = [
       TextEditingController(text: 'aaa111bbb22'),
