@@ -7442,6 +7442,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{No linked spots} =1{1 linked spot} other{{count} linked spots}}'**
   String eventSuggestionLinkedSpotsCount(int count);
+
+  /// Moderator edit spot: YouTube links card title
+  ///
+  /// In en, this message translates to:
+  /// **'YouTube links'**
+  String get editSpotYoutubeSectionTitle;
+
+  /// Moderator edit spot: add a YouTube video row
+  ///
+  /// In en, this message translates to:
+  /// **'Add YouTube link'**
+  String get editSpotYoutubeAddTooltip;
+
+  /// Moderator edit spot: hint under YouTube links title
+  ///
+  /// In en, this message translates to:
+  /// **'Enter YouTube video IDs or URLs (e.g., dQw4w9WgXcQ or https://www.youtube.com/watch?v=dQw4w9WgXcQ). Drag to reorder.'**
+  String get editSpotYoutubeHint;
+
+  /// Moderator edit spot: empty YouTube links list
+  ///
+  /// In en, this message translates to:
+  /// **'No YouTube links added. Click the + button to add one.'**
+  String get editSpotYoutubeEmpty;
+
+  /// Moderator edit spot: labeled YouTube URL field
+  ///
+  /// In en, this message translates to:
+  /// **'YouTube link {index}'**
+  String editSpotYoutubeLinkLabel(int index);
+
+  /// Moderator edit spot: YouTube field placeholder
+  ///
+  /// In en, this message translates to:
+  /// **'Enter YouTube video ID or URL'**
+  String get editSpotYoutubeLinkHint;
+
+  /// Moderator edit spot: remove a YouTube video row
+  ///
+  /// In en, this message translates to:
+  /// **'Remove YouTube link'**
+  String get editSpotYoutubeRemoveTooltip;
+
+  /// Moderator edit spot: drag handle for YouTube video order
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder YouTube link'**
+  String get editSpotYoutubeReorderTooltip;
+
+  /// Moderator edit spot: semantic label for video thumbnail preview
+  ///
+  /// In en, this message translates to:
+  /// **'YouTube thumbnail'**
+  String get editSpotYoutubeThumbnailSemanticLabel;
 }
 
 class _AppLocalizationsDelegate

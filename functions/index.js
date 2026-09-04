@@ -109,6 +109,10 @@ const {
   extractImageUrls,
 } = require("./lib/text-processing");
 const {
+  youtubeThumbnailUrl,
+  isPlausibleYoutubeVideoId,
+} = require("./lib/youtube-thumbnails");
+const {
   pickSpotIdsForTitleSearch,
   buildSpotIdMatchCounts,
   spotHasSearchTerm,
@@ -2168,6 +2172,26 @@ async function downloadAndUploadImage(
       imageBuffer = null;
     }
   }
+}
+
+/**
+ * Downloads a YouTube thumbnail and uploads it to Storage.
+ * Tries maxresdefault, then sddefault, then hqdefault.
+ * @param {string} videoId
+ * @param {string} spotName
+ * @param {number} imageIndex
+ * @return {Promise<{url: string, hash: string}|null>}
+ */
+async function downloadAndUploadYoutubeThumbnail(videoId, spotName, imageIndex) {
+  const qualities = ["maxresdefault", "sddefault", "hqdefault"];
+  for (const quality of qualities) {
+    const thumbUrl = youtubeThumbnailUrl(videoId, quality);
+    const result = await downloadAndUploadImage(thumbUrl, spotName, imageIndex);
+    if (result) {
+      return result;
+    }
+  }
+  return null;
 }
 
 /**
@@ -7806,6 +7830,57 @@ exports.uploadReplacementImage = onCall(
         return {
           success: false,
           error: error.message,
+        };
+      }
+    },
+);
+
+/**
+ * Downloads YouTube thumbnails for newly added video IDs and stores them as
+ * spot photos (same Storage path as import). Moderator or admin only.
+ */
+exports.fetchYoutubeThumbnails = onCall(
+    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 120},
+    async (request) => {
+      try {
+        await ensureModerator(request);
+        const {videoIds, spotName} = request.data || {};
+        if (!Array.isArray(videoIds) || videoIds.length === 0) {
+          return {success: true, thumbnails: []};
+        }
+
+        const name = typeof spotName === "string" && spotName.trim() ?
+          spotName.trim() :
+          "spot";
+        const uniqueIds = [];
+        const seen = new Set();
+        for (const raw of videoIds) {
+          const id = typeof raw === "string" ? raw.trim() : "";
+          if (!isPlausibleYoutubeVideoId(id) || seen.has(id)) continue;
+          seen.add(id);
+          uniqueIds.push(id);
+          if (uniqueIds.length >= 20) break;
+        }
+
+        const thumbnails = [];
+        for (let i = 0; i < uniqueIds.length; i++) {
+          const videoId = uniqueIds[i];
+          const result = await downloadAndUploadYoutubeThumbnail(
+              videoId,
+              name,
+              i,
+          );
+          if (result && result.url) {
+            thumbnails.push({videoId, url: result.url});
+          }
+        }
+        return {success: true, thumbnails};
+      } catch (error) {
+        console.error("Error fetching YouTube thumbnails:", error);
+        return {
+          success: false,
+          error: error.message,
+          thumbnails: [],
         };
       }
     },

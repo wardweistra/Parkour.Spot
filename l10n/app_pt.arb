@@ -1229,5 +1229,14 @@
   "eventSuggestionApprovalSuccess": "Aprovada e aplicada ao evento {eventId}.",
   "eventSuggestionChangedFieldsTitle": "Alterações sugeridas",
   "eventSuggestionLocationRemoved": "Remover localização",
-  "eventSuggestionLinkedSpotsCount": "{count, plural, =0{Sem spots associados} =1{1 spot associado} other{{count} spots associados}}"
+  "eventSuggestionLinkedSpotsCount": "{count, plural, =0{Sem spots associados} =1{1 spot associado} other{{count} spots associados}}",
+  "editSpotYoutubeSectionTitle": "Ligações YouTube",
+  "editSpotYoutubeAddTooltip": "Adicionar ligação YouTube",
+  "editSpotYoutubeHint": "Introduz IDs ou URLs de YouTube (p. ex. dQw4w9WgXcQ ou https://www.youtube.com/watch?v=dQw4w9WgXcQ). Arrasta para reordenar.",
+  "editSpotYoutubeEmpty": "Sem ligações YouTube. Clica em + para adicionar uma.",
+  "editSpotYoutubeLinkLabel": "Ligação YouTube {index}",
+  "editSpotYoutubeLinkHint": "Introduz o ID ou URL do YouTube",
+  "editSpotYoutubeRemoveTooltip": "Remover ligação YouTube",
+  "editSpotYoutubeReorderTooltip": "Reordenar ligação YouTube",
+  "editSpotYoutubeThumbnailSemanticLabel": "Miniatura do YouTube"
 }

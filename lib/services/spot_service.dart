@@ -15,6 +15,7 @@ import '../utils/spot_duplicate_merge.dart';
 import '../utils/spot_duplicate_review.dart';
 import '../utils/spots_added_by_user.dart';
 import '../utils/ui_yield.dart';
+import '../utils/youtube_utils.dart';
 import 'audit_log_service.dart';
 
 class SpotService extends ChangeNotifier {
@@ -270,13 +271,12 @@ class SpotService extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      // Get the old spot data for audit logging
       Spot? oldSpot;
-      if (userId != null && userName != null) {
+      if (spot.id != null) {
         oldSpot = await getSpotById(spot.id!);
       }
 
-      List<String>? imageUrls = List.from(spot.imageUrls ?? []);
+      List<String> imageUrls = List.from(spot.imageUrls ?? []);
 
       // Remove images from spot (but don't delete from storage - cleanup will handle that)
       if (imagesToDelete != null && imagesToDelete.isNotEmpty) {
@@ -294,6 +294,25 @@ class SpotService extends ChangeNotifier {
       if (newImageBytesList != null && newImageBytesList.isNotEmpty) {
         final uploadedUrls = await _uploadImagesBytes(newImageBytesList);
         imageUrls.addAll(uploadedUrls);
+      }
+
+      final newYoutubeIds = oldSpot == null
+          ? const <String>[]
+          : youtubeIdsNeedingThumbnails(
+              previousIds: oldSpot.youtubeVideoIds ?? const [],
+              nextIds: spot.youtubeVideoIds ?? const [],
+              existingImageUrls: imageUrls,
+            );
+      if (newYoutubeIds.isNotEmpty) {
+        final resolvedThumbnails = await _fetchYoutubeThumbnailUrls(
+          videoIds: newYoutubeIds,
+          spotName: spot.name,
+        );
+        imageUrls = appendYoutubeThumbnails(
+          imageUrls: imageUrls,
+          videoIds: newYoutubeIds,
+          resolvedUrls: resolvedThumbnails,
+        );
       }
 
       final updatedSpot = spot.copyWith(
@@ -732,6 +751,50 @@ class SpotService extends ChangeNotifier {
       imageUrls.add(imageUrl);
     }
     return imageUrls;
+  }
+
+  /// Downloads YouTube thumbnails via Cloud Function (same Storage path as import).
+  /// Returns videoId -> public URL for successful downloads; caller falls back
+  /// to YouTube CDN URLs for any IDs missing from the map.
+  Future<Map<String, String>> _fetchYoutubeThumbnailUrls({
+    required List<String> videoIds,
+    required String spotName,
+  }) async {
+    if (videoIds.isEmpty) return const {};
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable(
+        'fetchYoutubeThumbnails',
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 2)),
+      );
+      final result = await callable.call({
+        'videoIds': videoIds,
+        'spotName': spotName,
+      });
+      final rawData = result.data;
+      if (rawData is! Map) return const {};
+      final data = Map<String, dynamic>.from(rawData);
+      final rawThumbnails = data['thumbnails'];
+      if (rawThumbnails is! List) return const {};
+
+      final resolved = <String, String>{};
+      for (final item in rawThumbnails) {
+        if (item is! Map) continue;
+        final map = Map<String, dynamic>.from(item);
+        final id = map['videoId']?.toString();
+        final url = map['url']?.toString();
+        if (id != null &&
+            id.isNotEmpty &&
+            url != null &&
+            url.isNotEmpty) {
+          resolved[id] = url;
+        }
+      }
+      return resolved;
+    } catch (e) {
+      debugPrint('Error fetching YouTube thumbnails: $e');
+      return const {};
+    }
   }
 
   // Upload photos to /suggestions/ path (temporary storage, does NOT trigger resize extension)

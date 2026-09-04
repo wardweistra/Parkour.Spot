@@ -16,6 +16,7 @@ import '../../widgets/moderator_action_fields.dart';
 import '../../widgets/spot_form/location_section.dart';
 import '../../widgets/spot_form/image_section.dart';
 import '../../widgets/spot_form/attributes_section.dart';
+import '../../widgets/spot_form/youtube_section.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
 import '../../utils/map_recentering_mixin.dart';
@@ -23,6 +24,7 @@ import '../../utils/location_permission_utils.dart';
 import '../../utils/image_preparation.dart';
 import '../../utils/image_picker_utils.dart';
 import '../../utils/ui_yield.dart';
+import '../../utils/youtube_utils.dart';
 
 class EditSpotScreen extends StatefulWidget {
   final Spot spot;
@@ -477,38 +479,6 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
     });
   }
 
-  // Extract YouTube ID from URL or return as-is if already an ID
-  String? _extractYoutubeId(String input) {
-    final trimmed = input.trim();
-    if (trimmed.isEmpty) return null;
-    // If it's already a likely ID, return as-is (11 chars typical)
-    if (RegExp(r'^[a-zA-Z0-9_-]{6,}$').hasMatch(trimmed) && !trimmed.contains('/')) {
-      return trimmed;
-    }
-    try {
-      final uri = Uri.parse(trimmed);
-      // youtu.be/<id>
-      if (uri.host.contains('youtu.be')) {
-        final seg = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : null;
-        if (seg != null && seg.isNotEmpty) return seg;
-      }
-      // youtube.com/watch?v=<id>
-      final vParam = uri.queryParameters['v'];
-      if (vParam != null && vParam.isNotEmpty) return vParam;
-      // youtube.com/embed/<id>
-      final embedIndex = uri.pathSegments.indexOf('embed');
-      if (embedIndex != -1 && embedIndex + 1 < uri.pathSegments.length) {
-        return uri.pathSegments[embedIndex + 1];
-      }
-      // youtube.com/shorts/<id>
-      final shortsIndex = uri.pathSegments.indexOf('shorts');
-      if (shortsIndex != -1 && shortsIndex + 1 < uri.pathSegments.length) {
-        return uri.pathSegments[shortsIndex + 1];
-      }
-    } catch (_) {}
-    return trimmed; // Fallback to raw value
-  }
-
   void _addYoutubeLink() {
     setState(() {
       _youtubeControllers.add(TextEditingController());
@@ -519,6 +489,13 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
     setState(() {
       _youtubeControllers[index].dispose();
       _youtubeControllers.removeAt(index);
+    });
+  }
+
+  void _reorderYoutubeLink(int oldIndex, int newIndex) {
+    setState(() {
+      final controller = _youtubeControllers.removeAt(oldIndex);
+      _youtubeControllers.insert(newIndex, controller);
     });
   }
 
@@ -553,7 +530,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
 
       // Extract YouTube IDs from controllers
       final youtubeIds = _youtubeControllers
-          .map((controller) => _extractYoutubeId(controller.text))
+          .map((controller) => extractYoutubeVideoId(controller.text))
           .whereType<String>()
           .where((id) => id.isNotEmpty)
           .toList();
@@ -865,68 +842,13 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                   ),
                   const SizedBox(height: 16),
 
-                  // YouTube Links Section
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'YouTube Links',
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.add),
-                                onPressed: _addYoutubeLink,
-                                tooltip: 'Add YouTube link',
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Enter YouTube video IDs or URLs (e.g., dQw4w9WgXcQ or https://www.youtube.com/watch?v=dQw4w9WgXcQ)',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
-                          const SizedBox(height: 16),
-                          if (_youtubeControllers.isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 16.0),
-                              child: Text(
-                                'No YouTube links added. Click the + button to add one.',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            )
-                          else
-                            ...List.generate(
-                              _youtubeControllers.length,
-                              (index) => Padding(
-                                padding: const EdgeInsets.only(bottom: 8.0),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: CustomTextField(
-                                        controller: _youtubeControllers[index],
-                                        labelText: 'YouTube Link ${index + 1}',
-                                        hintText: 'Enter YouTube video ID or URL',
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.remove_circle),
-                                      color: Colors.red,
-                                      onPressed: () => _removeYoutubeLink(index),
-                                      tooltip: 'Remove YouTube link',
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
+                  // YouTube links section
+                  SpotYoutubeSection(
+                    controllers: _youtubeControllers,
+                    onAdd: _addYoutubeLink,
+                    onRemove: _removeYoutubeLink,
+                    onReorder: _reorderYoutubeLink,
+                    onChanged: () => setState(() {}),
                   ),
                   const SizedBox(height: 16),
 

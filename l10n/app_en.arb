@@ -4547,5 +4547,46 @@
         "type": "int"
       }
     }
+  },
+  "editSpotYoutubeSectionTitle": "YouTube links",
+  "@editSpotYoutubeSectionTitle": {
+    "description": "Moderator edit spot: YouTube links card title"
+  },
+  "editSpotYoutubeAddTooltip": "Add YouTube link",
+  "@editSpotYoutubeAddTooltip": {
+    "description": "Moderator edit spot: add a YouTube video row"
+  },
+  "editSpotYoutubeHint": "Enter YouTube video IDs or URLs (e.g., dQw4w9WgXcQ or https://www.youtube.com/watch?v=dQw4w9WgXcQ). Drag to reorder.",
+  "@editSpotYoutubeHint": {
+    "description": "Moderator edit spot: hint under YouTube links title"
+  },
+  "editSpotYoutubeEmpty": "No YouTube links added. Click the + button to add one.",
+  "@editSpotYoutubeEmpty": {
+    "description": "Moderator edit spot: empty YouTube links list"
+  },
+  "editSpotYoutubeLinkLabel": "YouTube link {index}",
+  "@editSpotYoutubeLinkLabel": {
+    "description": "Moderator edit spot: labeled YouTube URL field",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "editSpotYoutubeLinkHint": "Enter YouTube video ID or URL",
+  "@editSpotYoutubeLinkHint": {
+    "description": "Moderator edit spot: YouTube field placeholder"
+  },
+  "editSpotYoutubeRemoveTooltip": "Remove YouTube link",
+  "@editSpotYoutubeRemoveTooltip": {
+    "description": "Moderator edit spot: remove a YouTube video row"
+  },
+  "editSpotYoutubeReorderTooltip": "Reorder YouTube link",
+  "@editSpotYoutubeReorderTooltip": {
+    "description": "Moderator edit spot: drag handle for YouTube video order"
+  },
+  "editSpotYoutubeThumbnailSemanticLabel": "YouTube thumbnail",
+  "@editSpotYoutubeThumbnailSemanticLabel": {
+    "description": "Moderator edit spot: semantic label for video thumbnail preview"
   }
 }
