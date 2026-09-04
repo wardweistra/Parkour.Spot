@@ -3547,187 +3547,6 @@ class SearchScreenState extends State<SearchScreen>
                       ),
                     ),
 
-                  // Top Search Bar
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top + 16,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1200),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: PointerInterceptor(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.surface,
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.1,
-                                        ),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: CallbackShortcuts(
-                                    bindings: {
-                                      const SingleActivator(
-                                        LogicalKeyboardKey.arrowDown,
-                                      ): _autocompleteSession.highlightNext,
-                                      const SingleActivator(
-                                        LogicalKeyboardKey.arrowUp,
-                                      ): _autocompleteSession.highlightPrevious,
-                                      const SingleActivator(
-                                        LogicalKeyboardKey.escape,
-                                      ): _searchFocusNode.unfocus,
-                                    },
-                                    child: TextField(
-                                      controller: _searchController,
-                                      focusNode: _searchFocusNode,
-                                      decoration: InputDecoration(
-                                        hintText: AppLocalizations.of(
-                                          context,
-                                        )!.exploreSearchHint,
-                                        prefixIcon: const Padding(
-                                          padding: EdgeInsets.only(left: 6),
-                                          child: Icon(Icons.search),
-                                        ),
-                                        suffixIcon: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            if (_isSearchingLocation)
-                                              Padding(
-                                                padding: const EdgeInsets.all(
-                                                  12,
-                                                ),
-                                                child: SizedBox(
-                                                  width: 20,
-                                                  height: 20,
-                                                  child: CircularProgressIndicator(
-                                                    strokeWidth: 2,
-                                                    valueColor:
-                                                        AlwaysStoppedAnimation<
-                                                          Color
-                                                        >(
-                                                          Theme.of(
-                                                            context,
-                                                          ).colorScheme.primary,
-                                                        ),
-                                                  ),
-                                                ),
-                                              ),
-                                            if (!_isSearchingLocation &&
-                                                _searchController
-                                                    .text
-                                                    .isNotEmpty)
-                                              IconButton(
-                                                icon: const Icon(Icons.clear),
-                                                tooltip: AppLocalizations.of(
-                                                  context,
-                                                )!.exploreClearSearchTooltip,
-                                                onPressed: () {
-                                                  _searchController.clear();
-                                                  _autocompleteSession.clear();
-                                                  setState(
-                                                    () => _searchQuery = '',
-                                                  );
-                                                },
-                                              ),
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                right: 6,
-                                              ),
-                                              child: Stack(
-                                                children: [
-                                                  IconButton(
-                                                    icon: ReliableIcon(
-                                                      icon: Icons.filter_list,
-                                                      color: _showFiltersDialog
-                                                          ? Theme.of(context)
-                                                                .colorScheme
-                                                                .primary
-                                                          : null,
-                                                    ),
-                                                    tooltip: AppLocalizations.of(
-                                                      context,
-                                                    )!.exploreFiltersTooltip,
-                                                    onPressed: () =>
-                                                        _toggleFiltersDialog(),
-                                                  ),
-                                                  if (_hasActiveFilters())
-                                                    Positioned(
-                                                      right: 8,
-                                                      top: 8,
-                                                      child: Container(
-                                                        width: 8,
-                                                        height: 8,
-                                                        decoration: BoxDecoration(
-                                                          color: Theme.of(
-                                                            context,
-                                                          ).colorScheme.primary,
-                                                          shape:
-                                                              BoxShape.circle,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                          borderSide: BorderSide.none,
-                                        ),
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 12,
-                                            ),
-                                      ),
-                                      onSubmitted: (_) {
-                                        final selected = _autocompleteSession
-                                            .highlightedOption;
-                                        if (selected != null) {
-                                          _selectAutocompleteOption(selected);
-                                        } else {
-                                          _searchAndNavigateToLocation();
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                ),
-                                if (!_showFiltersDialog &&
-                                    _searchFocusNode.hasFocus &&
-                                    _autocompleteSession.showOverlay)
-                                  _AutocompleteOverlayContent(
-                                    optionsList: _autocompleteSession.options,
-                                    currentSelection:
-                                        _autocompleteSession.options.isEmpty
-                                        ? null
-                                        : _autocompleteSession.highlightIndex,
-                                    isLoading: _autocompleteSession.isLoading,
-                                    onSelected: _selectAutocompleteOption,
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
                   // Location Loading Indicator
                   if (_isGettingLocation)
                     Positioned(
@@ -4529,6 +4348,188 @@ class SearchScreenState extends State<SearchScreen>
                         );
                       },
                     ),
+
+                  // Top Search Bar
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 16,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1200),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: PointerInterceptor(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surface,
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: CallbackShortcuts(
+                                    bindings: {
+                                      const SingleActivator(
+                                        LogicalKeyboardKey.arrowDown,
+                                      ): _autocompleteSession.highlightNext,
+                                      const SingleActivator(
+                                        LogicalKeyboardKey.arrowUp,
+                                      ): _autocompleteSession.highlightPrevious,
+                                      const SingleActivator(
+                                        LogicalKeyboardKey.escape,
+                                      ): _searchFocusNode.unfocus,
+                                    },
+                                    child: TextField(
+                                      controller: _searchController,
+                                      focusNode: _searchFocusNode,
+                                      decoration: InputDecoration(
+                                        hintText: AppLocalizations.of(
+                                          context,
+                                        )!.exploreSearchHint,
+                                        prefixIcon: const Padding(
+                                          padding: EdgeInsets.only(left: 6),
+                                          child: Icon(Icons.search),
+                                        ),
+                                        suffixIcon: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            if (_isSearchingLocation)
+                                              Padding(
+                                                padding: const EdgeInsets.all(
+                                                  12,
+                                                ),
+                                                child: SizedBox(
+                                                  width: 20,
+                                                  height: 20,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    valueColor:
+                                                        AlwaysStoppedAnimation<
+                                                          Color
+                                                        >(
+                                                          Theme.of(
+                                                            context,
+                                                          ).colorScheme.primary,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ),
+                                            if (!_isSearchingLocation &&
+                                                _searchController
+                                                    .text
+                                                    .isNotEmpty)
+                                              IconButton(
+                                                icon: const Icon(Icons.clear),
+                                                tooltip: AppLocalizations.of(
+                                                  context,
+                                                )!.exploreClearSearchTooltip,
+                                                onPressed: () {
+                                                  _searchController.clear();
+                                                  _autocompleteSession.clear();
+                                                  setState(
+                                                    () => _searchQuery = '',
+                                                  );
+                                                },
+                                              ),
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                right: 6,
+                                              ),
+                                              child: Stack(
+                                                children: [
+                                                  IconButton(
+                                                    icon: ReliableIcon(
+                                                      icon: Icons.filter_list,
+                                                      color: _showFiltersDialog
+                                                          ? Theme.of(context)
+                                                                .colorScheme
+                                                                .primary
+                                                          : null,
+                                                    ),
+                                                    tooltip: AppLocalizations.of(
+                                                      context,
+                                                    )!.exploreFiltersTooltip,
+                                                    onPressed: () =>
+                                                        _toggleFiltersDialog(),
+                                                  ),
+                                                  if (_hasActiveFilters())
+                                                    Positioned(
+                                                      right: 8,
+                                                      top: 8,
+                                                      child: Container(
+                                                        width: 8,
+                                                        height: 8,
+                                                        decoration: BoxDecoration(
+                                                          color: Theme.of(
+                                                            context,
+                                                          ).colorScheme.primary,
+                                                          shape:
+                                                              BoxShape.circle,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          borderSide: BorderSide.none,
+                                        ),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 12,
+                                            ),
+                                      ),
+                                      onSubmitted: (_) {
+                                        final selected = _autocompleteSession
+                                            .highlightedOption;
+                                        if (selected != null) {
+                                          _selectAutocompleteOption(selected);
+                                        } else {
+                                          _searchAndNavigateToLocation();
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ),
+                                if (!_showFiltersDialog &&
+                                    _searchFocusNode.hasFocus &&
+                                    _autocompleteSession.showOverlay)
+                                  _AutocompleteOverlayContent(
+                                    optionsList: _autocompleteSession.options,
+                                    currentSelection:
+                                        _autocompleteSession.options.isEmpty
+                                        ? null
+                                        : _autocompleteSession.highlightIndex,
+                                    isLoading: _autocompleteSession.isLoading,
+                                    onSelected: _selectAutocompleteOption,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
                 ],
               );
             },
