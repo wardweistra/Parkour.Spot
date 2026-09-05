@@ -478,7 +478,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
             widget.initialImageIndex! < widget.spot.imageUrls!.length
         ? widget.initialImageIndex!
         : 0;
-    _loadRatingStatsSubscription();
+    _seedRatingStatsFromSpot();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadRatingStatsSubscription();
+    });
     // Note: User rating will be loaded when auth state is restored via FutureBuilder
 
     // Update document title for web (after first frame: Localizations is not
@@ -544,8 +547,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       _isLoadingRatingStats = false;
       _ratingStatsSubscription?.cancel();
       _ratingStatsSubscription = null;
+      _seedRatingStatsFromSpot();
       if (widget.spot.id != null) {
-        _loadRatingStatsSubscription();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _loadRatingStatsSubscription();
+        });
         _jumpflixVideosFuture = Provider.of<JumpflixService>(
           context,
           listen: false,
@@ -1016,9 +1022,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       return _l10n.spotDetailLoading;
     }
     final stats = _cachedRatingStats;
-    final count = stats != null ? stats['ratingCount'] as int : 0;
+    final count = _ratingCountFromStats(stats);
     if (count > 0 && stats != null) {
-      final avg = (stats['averageRating'] as num).toDouble();
+      final avg = _averageRatingFromStats(stats);
       return '${avg.toStringAsFixed(1)} ★ ($count)';
     }
     return _l10n.spotDetailHeaderNoRatingsYet;
@@ -1192,9 +1198,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       );
     }
     final stats = _cachedRatingStats;
-    final count = stats != null ? stats['ratingCount'] as int : 0;
+    final count = _ratingCountFromStats(stats);
     if (count > 0 && stats != null) {
-      final avg = (stats['averageRating'] as num).toDouble();
+      final avg = _averageRatingFromStats(stats);
       final theme = Theme.of(context);
       final baseLabel = theme.textTheme.labelLarge;
       final cs = theme.colorScheme;
@@ -4168,6 +4174,22 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       debugPrint('Error loading user rating: $e');
       return null;
     }
+  }
+
+  void _seedRatingStatsFromSpot() {
+    _cachedRatingStats = {
+      'averageRating': widget.spot.averageRating ?? 0.0,
+      'ratingCount': widget.spot.ratingCount ?? 0,
+      'ratingDistribution': <int, int>{},
+    };
+  }
+
+  int _ratingCountFromStats(Map<String, dynamic>? stats) {
+    return (stats?['ratingCount'] as num?)?.toInt() ?? 0;
+  }
+
+  double _averageRatingFromStats(Map<String, dynamic>? stats) {
+    return (stats?['averageRating'] as num?)?.toDouble() ?? 0.0;
   }
 
   void _loadRatingStatsSubscription() {
