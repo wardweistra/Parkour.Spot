@@ -2731,6 +2731,16 @@ class AppLocalizationsDe extends AppLocalizations {
       'Bewertung konnte nicht gesendet werden. Bitte erneut versuchen.';
 
   @override
+  String get spotDetailRatingCleared => 'Bewertung entfernt';
+
+  @override
+  String get spotDetailRatingClearFailed =>
+      'Bewertung konnte nicht entfernt werden. Bitte erneut versuchen.';
+
+  @override
+  String get spotDetailClearRating => 'Bewertung entfernen';
+
+  @override
   String spotDetailRatingSubmitError(String error) {
     return 'Fehler bei der Bewertung: $error';
   }

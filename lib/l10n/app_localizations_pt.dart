@@ -2720,6 +2720,16 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível enviar a avaliação. Tenta novamente.';
 
   @override
+  String get spotDetailRatingCleared => 'Avaliação removida';
+
+  @override
+  String get spotDetailRatingClearFailed =>
+      'Não foi possível remover a avaliação. Tenta novamente.';
+
+  @override
+  String get spotDetailClearRating => 'Remover avaliação';
+
+  @override
   String spotDetailRatingSubmitError(String error) {
     return 'Erro ao enviar avaliação: $error';
   }

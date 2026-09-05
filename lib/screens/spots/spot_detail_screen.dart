@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
@@ -191,9 +192,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   SearchStateService? _searchStateServiceRef;
   BitmapDescriptor? _spotMapPinIcon;
 
-  // Add rating cache variables
+  // Rating aggregates from a live Firestore listener on the spot document.
   Map<String, dynamic>? _cachedRatingStats;
   bool _isLoadingRatingStats = false;
+  StreamSubscription<Map<String, dynamic>>? _ratingStatsSubscription;
 
   // Track expanded sections for chip overflow
   final Map<String, bool> _expandedSections = {};
@@ -476,7 +478,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
             widget.initialImageIndex! < widget.spot.imageUrls!.length
         ? widget.initialImageIndex!
         : 0;
-    _loadRatingStats(); // Load rating stats once on init
+    _seedRatingStatsFromSpot();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadRatingStatsSubscription();
+    });
     // Note: User rating will be loaded when auth state is restored via FutureBuilder
 
     // Update document title for web (after first frame: Localizations is not
@@ -538,8 +543,15 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       _userRating = 0;
       _previousRating = 0;
       _hasRated = false;
+      _cachedRatingStats = null;
+      _isLoadingRatingStats = false;
+      _ratingStatsSubscription?.cancel();
+      _ratingStatsSubscription = null;
+      _seedRatingStatsFromSpot();
       if (widget.spot.id != null) {
-        _loadRatingStats();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _loadRatingStatsSubscription();
+        });
         _jumpflixVideosFuture = Provider.of<JumpflixService>(
           context,
           listen: false,
@@ -606,7 +618,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     _videoPageController.dispose();
     _isSatelliteViewNotifier.dispose();
     _searchStateServiceRef?.removeListener(_onSearchStateChanged);
-    // No controllers to dispose
+    _ratingStatsSubscription?.cancel();
     super.dispose();
   }
 
@@ -1010,9 +1022,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       return _l10n.spotDetailLoading;
     }
     final stats = _cachedRatingStats;
-    final count = stats != null ? stats['ratingCount'] as int : 0;
+    final count = _ratingCountFromStats(stats);
     if (count > 0 && stats != null) {
-      final avg = (stats['averageRating'] as num).toDouble();
+      final avg = _averageRatingFromStats(stats);
       return '${avg.toStringAsFixed(1)} ★ ($count)';
     }
     return _l10n.spotDetailHeaderNoRatingsYet;
@@ -1148,6 +1160,20 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                 );
                               }),
                             ),
+                            if (_hasRated) ...[
+                              const SizedBox(height: 8),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton(
+                                  onPressed: () {
+                                    _clearRatingDirectly(
+                                      refreshModal: () => setModalState(() {}),
+                                    );
+                                  },
+                                  child: Text(_l10n.spotDetailClearRating),
+                                ),
+                              ),
+                            ],
                           ],
                         );
                       },
@@ -1172,9 +1198,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       );
     }
     final stats = _cachedRatingStats;
-    final count = stats != null ? stats['ratingCount'] as int : 0;
+    final count = _ratingCountFromStats(stats);
     if (count > 0 && stats != null) {
-      final avg = (stats['averageRating'] as num).toDouble();
+      final avg = _averageRatingFromStats(stats);
       final theme = Theme.of(context);
       final baseLabel = theme.textTheme.labelLarge;
       final cs = theme.colorScheme;
@@ -4150,12 +4176,63 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-  /// Submits a rating directly when a star is clicked (only if different from previous rating)
+  void _seedRatingStatsFromSpot() {
+    _cachedRatingStats = {
+      'averageRating': widget.spot.averageRating ?? 0.0,
+      'ratingCount': widget.spot.ratingCount ?? 0,
+      'ratingDistribution': <int, int>{},
+    };
+  }
+
+  int _ratingCountFromStats(Map<String, dynamic>? stats) {
+    return (stats?['ratingCount'] as num?)?.toInt() ?? 0;
+  }
+
+  double _averageRatingFromStats(Map<String, dynamic>? stats) {
+    return (stats?['averageRating'] as num?)?.toDouble() ?? 0.0;
+  }
+
+  void _loadRatingStatsSubscription() {
+    final spotId = widget.spot.id;
+    if (spotId == null) return;
+
+    _ratingStatsSubscription?.cancel();
+    if (_cachedRatingStats == null) {
+      setState(() {
+        _isLoadingRatingStats = true;
+      });
+    }
+
+    final spotService = Provider.of<SpotService>(context, listen: false);
+    _ratingStatsSubscription = spotService
+        .watchSpotRatingStats(spotId)
+        .listen(
+          (ratingStats) {
+            if (!mounted) return;
+            setState(() {
+              _cachedRatingStats = ratingStats;
+              _isLoadingRatingStats = false;
+            });
+          },
+          onError: (Object error) {
+            debugPrint('Error listening to rating stats: $error');
+            if (!mounted) return;
+            setState(() {
+              _isLoadingRatingStats = false;
+            });
+          },
+        );
+  }
+
+  /// Submits a rating directly when a star is clicked.
+  /// Tapping the same star again clears the rating.
   Future<void> _submitRatingDirectly(
     double rating, {
     VoidCallback? refreshModal,
   }) async {
     void bumpModal() => refreshModal?.call();
+    var savedRating = _previousRating;
+    var savedHasRated = _hasRated;
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       if (authService.userProfile == null) {
@@ -4168,25 +4245,17 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         return;
       }
 
-      // Check if this is the same rating as before - if so, don't submit
       if (rating == _previousRating && _hasRated) {
-        // Just update the UI to show the selected star without submitting
-        setState(() {
-          _userRating = rating;
-        });
-        bumpModal();
+        await _clearRatingDirectly(refreshModal: bumpModal);
         return;
       }
 
-      // Store the current rating stats before submitting
-      final currentRatingCount = _cachedRatingStats?['ratingCount'] ?? 0;
-      final currentAverageRating = _cachedRatingStats?['averageRating'] ?? 0.0;
+      savedRating = _previousRating;
+      savedHasRated = _hasRated;
 
-      // Update UI immediately for better UX
       setState(() {
         _userRating = rating;
         _hasRated = true;
-        _previousRating = rating;
       });
       bumpModal();
 
@@ -4198,6 +4267,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       );
 
       if (success && mounted) {
+        setState(() {
+          _previousRating = rating;
+        });
+        bumpModal();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_l10n.spotDetailRatingSubmitted(rating.toInt())),
@@ -4205,18 +4278,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
             duration: const Duration(seconds: 2),
           ),
         );
-
-        // Refresh the spot data to show updated rating
-        // Retry a few times to allow Cloud Functions to update the spot aggregates
-        await _refreshSpotDataWithRetry(
-          currentRatingCount,
-          currentAverageRating,
-        );
-        bumpModal();
       } else if (mounted) {
-        // Revert UI changes if submission failed
         setState(() {
-          _userRating = _previousRating;
+          _userRating = savedRating;
+          _hasRated = savedHasRated;
         });
         bumpModal();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -4228,9 +4293,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       }
     } catch (e) {
       if (mounted) {
-        // Revert UI changes if submission failed
         setState(() {
-          _userRating = _previousRating;
+          _userRating = savedRating;
+          _hasRated = savedHasRated;
         });
         bumpModal();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -4243,85 +4308,74 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     }
   }
 
-  Future<void> _loadRatingStats() async {
+  Future<void> _clearRatingDirectly({VoidCallback? refreshModal}) async {
+    void bumpModal() => refreshModal?.call();
+    if (!_hasRated) return;
+
+    final savedRating = _previousRating;
     try {
-      setState(() {
-        _isLoadingRatingStats = true;
-      });
-      final spotService = Provider.of<SpotService>(context, listen: false);
-      final ratingStats = await spotService.getSpotRatingStats(widget.spot.id!);
-      if (mounted) {
-        setState(() {
-          _cachedRatingStats = ratingStats;
-          _isLoadingRatingStats = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error loading rating stats: $e');
-      if (mounted) {
-        setState(() {
-          _isLoadingRatingStats = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _refreshSpotData() async {
-    try {
-      // Refresh the rating stats when a user submits a rating
-      if (mounted) {
-        setState(() {
-          _isLoadingRatingStats = true;
-        });
-        await _loadRatingStats();
-      }
-    } catch (e) {
-      debugPrint('Error refreshing spot data: $e');
-    }
-  }
-
-  Future<void> _refreshSpotDataWithRetry(
-    int currentRatingCount,
-    double currentAverageRating,
-  ) async {
-    const maxRetries = 5;
-    const retryDelay = Duration(milliseconds: 1000);
-
-    for (int attempt = 0; attempt < maxRetries; attempt++) {
-      await _refreshSpotData();
-
-      // Check if the rating aggregates have changed (indicating the Cloud Function has updated the spot)
-      final newRatingCount = _cachedRatingStats?['ratingCount'] ?? 0;
-      final newAverageRating = _cachedRatingStats?['averageRating'] ?? 0.0;
-
-      // Consider it updated if either count or average has changed
-      final countChanged = newRatingCount != currentRatingCount;
-      final averageChanged =
-          (newAverageRating - currentAverageRating).abs() >
-          0.01; // Allow for small floating point differences
-
-      if (countChanged || averageChanged) {
-        debugPrint(
-          'Rating aggregates updated successfully. Count: $currentRatingCount -> $newRatingCount, Average: ${currentAverageRating.toStringAsFixed(2)} -> ${newAverageRating.toStringAsFixed(2)}',
+      final authService = Provider.of<AuthService>(context, listen: false);
+      if (authService.userProfile == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_l10n.spotDetailMustBeLoggedInToRate),
+            backgroundColor: Colors.red,
+          ),
         );
-        break; // Success - rating aggregates have been updated
+        return;
       }
 
-      debugPrint(
-        'Attempt ${attempt + 1}: Rating aggregates unchanged (Count: $newRatingCount, Average: ${newAverageRating.toStringAsFixed(2)})',
+      setState(() {
+        _userRating = 0;
+        _hasRated = false;
+        _previousRating = 0;
+      });
+      bumpModal();
+
+      final spotService = Provider.of<SpotService>(context, listen: false);
+      final success = await spotService.clearUserRating(
+        widget.spot.id!,
+        authService.userProfile!.id,
       );
 
-      // If not the last attempt, wait before retrying
-      if (attempt < maxRetries - 1) {
-        await Future.delayed(retryDelay);
+      if (success && mounted) {
+        bumpModal();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_l10n.spotDetailRatingCleared),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      } else if (mounted) {
+        setState(() {
+          _userRating = savedRating;
+          _hasRated = true;
+          _previousRating = savedRating;
+        });
+        bumpModal();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_l10n.spotDetailRatingClearFailed),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
-    }
-
-    // Always do a final refresh to ensure UI has the latest stats and rebuilds properly
-    // This is important even if we didn't detect a change, as it ensures
-    // the UI rebuilds with the current state (especially when going from 0 to 1 rating)
-    if (mounted) {
-      await _refreshSpotData();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _userRating = savedRating;
+          _hasRated = true;
+          _previousRating = savedRating;
+        });
+        bumpModal();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_l10n.spotDetailRatingSubmitError('$e')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

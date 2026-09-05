@@ -2701,6 +2701,16 @@ class AppLocalizationsNl extends AppLocalizations {
       'Beoordeling versturen mislukt. Probeer het opnieuw.';
 
   @override
+  String get spotDetailRatingCleared => 'Beoordeling verwijderd';
+
+  @override
+  String get spotDetailRatingClearFailed =>
+      'Beoordeling verwijderen mislukt. Probeer het opnieuw.';
+
+  @override
+  String get spotDetailClearRating => 'Beoordeling wissen';
+
+  @override
   String spotDetailRatingSubmitError(String error) {
     return 'Fout bij beoordeling: $error';
   }

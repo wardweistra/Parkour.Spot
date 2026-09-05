@@ -2529,6 +2529,9 @@
     }
   },
   "spotDetailRatingSubmitFailed": "Failed to submit rating. Please try again.",
+  "spotDetailRatingCleared": "Rating removed",
+  "spotDetailRatingClearFailed": "Failed to remove rating. Please try again.",
+  "spotDetailClearRating": "Clear rating",
   "spotDetailRatingSubmitError": "Error submitting rating: {error}",
   "@spotDetailRatingSubmitError": {
     "placeholders": {

@@ -1283,21 +1283,66 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  // Remove the current user's rating for a spot
+  Future<bool> clearUserRating(String spotId, String userId) async {
+    try {
+      if (userId.isEmpty) {
+        debugPrint('User ID is required for clearing rating');
+        return false;
+      }
+
+      final existingRatingDoc = await _firestore
+          .collection('ratings')
+          .where('spotId', isEqualTo: spotId)
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      if (existingRatingDoc.docs.isEmpty) {
+        return true;
+      }
+
+      await existingRatingDoc.docs.first.reference.delete();
+      return true;
+    } catch (e) {
+      debugPrint('Error clearing user rating: $e');
+      return false;
+    }
+  }
+
+  static Map<String, dynamic> ratingStatsFromSpotData(
+    Map<String, dynamic>? data,
+  ) {
+    if (data == null) {
+      return {
+        'averageRating': 0.0,
+        'ratingCount': 0,
+        'ratingDistribution': <int, int>{},
+      };
+    }
+
+    return {
+      'averageRating': (data['averageRating'] as num?)?.toDouble() ?? 0.0,
+      'ratingCount': data['ratingCount'] is int
+          ? data['ratingCount'] as int
+          : (data['ratingCount'] as num?)?.toInt() ?? 0,
+      'ratingDistribution': <int, int>{},
+    };
+  }
+
+  /// Live rating aggregates from the spot document (updated by Cloud Functions).
+  Stream<Map<String, dynamic>> watchSpotRatingStats(String spotId) {
+    return _firestore.collection('spots').doc(spotId).snapshots().map((doc) {
+      return ratingStatsFromSpotData(doc.data());
+    });
+  }
+
   // Get calculated rating statistics for a spot using cached aggregates
   Future<Map<String, dynamic>> getSpotRatingStats(String spotId) async {
     try {
       // All spots now have cached rating aggregates, so we can rely on them directly
       final doc = await _firestore.collection('spots').doc(spotId).get();
       if (doc.exists) {
-        final data = doc.data() as Map<String, dynamic>;
-        final avg = (data['averageRating'] ?? 0).toDouble();
-        final count = (data['ratingCount'] ?? 0) as int;
-
-        return {
-          'averageRating': avg,
-          'ratingCount': count,
-          'ratingDistribution': <int, int>{}, // optional, not stored
-        };
+        return ratingStatsFromSpotData(doc.data());
       }
 
       // Fallback to zeros if spot doesn't exist (shouldn't happen)

@@ -2688,6 +2688,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Failed to submit rating. Please try again.';
 
   @override
+  String get spotDetailRatingCleared => 'Rating removed';
+
+  @override
+  String get spotDetailRatingClearFailed =>
+      'Failed to remove rating. Please try again.';
+
+  @override
+  String get spotDetailClearRating => 'Clear rating';
+
+  @override
   String spotDetailRatingSubmitError(String error) {
     return 'Error submitting rating: $error';
   }
