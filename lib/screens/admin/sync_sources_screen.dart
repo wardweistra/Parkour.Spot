@@ -257,7 +257,23 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                   final s = sources[index];
                   return Card(
                     child: ListTile(
-                      title: Text(s.name),
+                      title: Row(
+                        children: [
+                          Expanded(child: Text(s.name)),
+                          const SizedBox(width: 8),
+                          Chip(
+                            label: Text(
+                              s.isOpenStreetMap ? 'OpenStreetMap' : 'File',
+                              style: _kSyncChipLabelText,
+                            ),
+                            labelStyle: _kSyncChipLabelText,
+                            visualDensity: VisualDensity.compact,
+                            backgroundColor: s.isOpenStreetMap
+                                ? Colors.teal.shade100
+                                : Colors.grey.shade200,
+                          ),
+                        ],
+                      ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -695,7 +711,8 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (s.isActive && s.kmzUrl.isNotEmpty)
+                          if (s.isActive &&
+                              (s.isOpenStreetMap || s.kmzUrl.isNotEmpty))
                             Consumer<SyncSourceService>(
                               builder: (context, service, child) {
                                 final isThisSourceSyncing = service
@@ -1684,6 +1701,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
   late bool isActive;
   late bool recordFolderName;
   late bool autoSyncEnabled;
+  late String sourceType;
 
   /// 'include' or 'exclude' — mutually exclusive folder filter mode
   late String folderFilterMode;
@@ -1728,6 +1746,8 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
     isActive = widget.source?.isActive ?? true;
     recordFolderName = widget.source?.recordFolderName ?? false;
     autoSyncEnabled = widget.source?.autoSyncEnabled ?? false;
+    sourceType =
+        widget.source?.sourceType ?? SyncSource.sourceTypeFile;
     _sourceDefaultAttributes = _EditableSpotAttributes.fromMap(
       widget.source?.defaultSpotAttributes,
     );
@@ -1822,16 +1842,64 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
-              TextFormField(
-                controller: urlCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Source URL (KMZ/KML/GeoJSON)',
-                  helperText:
-                      'Paste Google My Maps KMZ/KML or OpenStreetMap uMap GeoJSON URL',
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Source type',
+                  style: Theme.of(context).textTheme.titleSmall,
                 ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
+              const SizedBox(height: 8),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(
+                    value: SyncSource.sourceTypeFile,
+                    label: Text('File URL'),
+                  ),
+                  ButtonSegment(
+                    value: SyncSource.sourceTypeOpenStreetMap,
+                    label: Text('OpenStreetMap'),
+                  ),
+                ],
+                selected: {sourceType},
+                onSelectionChanged: (Set<String> selected) {
+                  setState(() {
+                    sourceType = selected.first;
+                    if (sourceType == SyncSource.sourceTypeOpenStreetMap &&
+                        publicUrlCtrl.text.trim().isEmpty) {
+                      publicUrlCtrl.text =
+                          'https://www.openstreetmap.org/copyright';
+                    }
+                    if (sourceType == SyncSource.sourceTypeOpenStreetMap &&
+                        nameCtrl.text.trim().isEmpty) {
+                      nameCtrl.text = 'OpenStreetMap';
+                    }
+                  });
+                },
+              ),
+              if (sourceType == SyncSource.sourceTypeFile)
+                TextFormField(
+                  controller: urlCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Source URL (KMZ/KML/GeoJSON)',
+                    helperText:
+                        'Paste Google My Maps KMZ/KML or OpenStreetMap uMap GeoJSON URL',
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Required' : null,
+                )
+              else
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Imports worldwide OSM features tagged sport=parkour via Overpass.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ),
+                ),
               TextFormField(
                 controller: descCtrl,
                 decoration: const InputDecoration(
@@ -2207,7 +2275,10 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
             if (widget.source == null) {
               ok = await service.createSource(
                 name: nameCtrl.text.trim(),
-                kmzUrl: urlCtrl.text.trim(),
+                kmzUrl: sourceType == SyncSource.sourceTypeOpenStreetMap
+                    ? ''
+                    : urlCtrl.text.trim(),
+                sourceType: sourceType,
                 description: descCtrl.text.trim().isEmpty
                     ? null
                     : descCtrl.text.trim(),
@@ -2235,7 +2306,10 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
               ok = await service.updateSource(
                 sourceId: widget.source!.id,
                 name: nameCtrl.text.trim(),
-                kmzUrl: urlCtrl.text.trim(),
+                kmzUrl: sourceType == SyncSource.sourceTypeOpenStreetMap
+                    ? ''
+                    : urlCtrl.text.trim(),
+                sourceType: sourceType,
                 description: descCtrl.text.trim(),
                 publicUrl: publicUrlCtrl.text.trim(),
                 instagramHandle: instagramHandleCtrl.text.trim(),

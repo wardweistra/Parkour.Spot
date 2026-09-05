@@ -22,11 +22,30 @@ describe("spot-sync helpers", () => {
       expect(hasImportedSpotContentChanges(existing, incoming)).toBe(false);
     });
 
-    it("ignores preserved fields such as coords, address, and ratings", () => {
+    it("returns true when latitude is present and differs", () => {
+      const existing = {...incoming, latitude: 1};
+      expect(hasImportedSpotContentChanges(existing, incoming)).toBe(true);
+    });
+
+    it("returns true when longitude is present and differs", () => {
+      const existing = {...incoming, longitude: 1};
+      expect(hasImportedSpotContentChanges(existing, incoming)).toBe(true);
+    });
+
+    it("returns true when spotSourceExternalId is present and differs", () => {
+      const existing = {...incoming, spotSourceExternalId: "node/1"};
+      const withExternalId = {...incoming, spotSourceExternalId: "node/2"};
+      expect(hasImportedSpotContentChanges(existing, withExternalId)).toBe(true);
+    });
+
+    it("ignores spotSourceExternalId when it is not on the incoming payload", () => {
+      const existing = {...incoming, spotSourceExternalId: "node/1"};
+      expect(hasImportedSpotContentChanges(existing, incoming)).toBe(false);
+    });
+
+    it("ignores preserved fields such as address and ratings", () => {
       const existing = {
         ...incoming,
-        latitude: 1,
-        longitude: 2,
         address: "Old address",
         city: "Old city",
         countryCode: "XX",

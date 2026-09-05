@@ -66,9 +66,13 @@ class SyncSourceSummary {
 }
 
 class SyncSource {
+  static const String sourceTypeFile = 'file';
+  static const String sourceTypeOpenStreetMap = 'openstreetmap';
+
   final String id;
   final String name;
   final String kmzUrl;
+  final String sourceType;
   final String? description;
   final String? publicUrl;
   final String? instagramHandle; // Instagram handle for the source owner
@@ -96,6 +100,7 @@ class SyncSource {
     required this.id,
     required this.name,
     required this.kmzUrl,
+    this.sourceType = sourceTypeFile,
     this.description,
     this.publicUrl,
     this.instagramHandle,
@@ -120,11 +125,18 @@ class SyncSource {
     this.syncProgress,
   });
 
+  bool get isOpenStreetMap => sourceType == sourceTypeOpenStreetMap;
+
   factory SyncSource.fromMap(Map<String, dynamic> data) {
+    final rawSourceType = data['sourceType']?.toString();
+    final sourceType = rawSourceType == sourceTypeOpenStreetMap
+        ? sourceTypeOpenStreetMap
+        : sourceTypeFile;
     return SyncSource(
       id: data['id'] ?? '',
       name: data['name'] ?? '',
       kmzUrl: data['kmzUrl'] ?? '',
+      sourceType: sourceType,
       description: data['description'],
       publicUrl: data['publicUrl'],
       instagramHandle: data['instagramHandle'],
@@ -320,7 +332,8 @@ class SyncSourceService extends ChangeNotifier {
 
   Future<bool> createSource({
     required String name,
-    required String kmzUrl,
+    String kmzUrl = '',
+    String sourceType = SyncSource.sourceTypeFile,
     String? description,
     String? publicUrl,
     String? instagramHandle,
@@ -339,6 +352,7 @@ class SyncSourceService extends ChangeNotifier {
       final result = await callable.call({
         'name': name,
         'kmzUrl': kmzUrl,
+        'sourceType': sourceType,
         'description': description,
         'publicUrl': publicUrl,
         'instagramHandle': instagramHandle,
@@ -369,6 +383,7 @@ class SyncSourceService extends ChangeNotifier {
     required String sourceId,
     String? name,
     String? kmzUrl,
+    String? sourceType,
     String? description,
     String? publicUrl,
     String? instagramHandle,
@@ -388,6 +403,7 @@ class SyncSourceService extends ChangeNotifier {
       final payload = <String, dynamic>{'sourceId': sourceId};
       if (name != null) payload['name'] = name;
       if (kmzUrl != null) payload['kmzUrl'] = kmzUrl;
+      if (sourceType != null) payload['sourceType'] = sourceType;
       if (description != null) payload['description'] = description;
       if (publicUrl != null) payload['publicUrl'] = publicUrl;
       if (instagramHandle != null) payload['instagramHandle'] = instagramHandle;

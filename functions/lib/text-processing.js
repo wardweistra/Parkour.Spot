@@ -159,8 +159,20 @@ function extractYoutubeVideoIdsFromDescription(description) {
  */
 function extractImageUrls(placemark) {
   const imageUrls = [];
+  const explicitImageUrls = [];
   const desc = placemark?.description;
   const description = Array.isArray(desc) ? (desc[0] || "") : (desc || "");
+
+  // Explicit URLs from OSM (or other importers) — any http(s) URL allowed.
+  if (Array.isArray(placemark?.imageUrls)) {
+    for (const raw of placemark.imageUrls) {
+      if (typeof raw !== "string") continue;
+      const url = raw.trim();
+      if (url.startsWith("http://") || url.startsWith("https://")) {
+        explicitImageUrls.push(url);
+      }
+    }
+  }
 
   // Extract from description CDATA
   const imgRegex = /<img[^>]+src="([^"]+)"/g;
@@ -203,7 +215,7 @@ function extractImageUrls(placemark) {
   }
 
   // Remove duplicates and filter out invalid URLs
-  const filteredUrls = [...new Set(imageUrls)].filter((url) => {
+  const filteredDescriptionUrls = [...new Set(imageUrls)].filter((url) => {
     if (!url || !url.startsWith("http")) {
       return false;
     }
@@ -220,7 +232,7 @@ function extractImageUrls(placemark) {
       return false;
     }
   });
-  return filteredUrls;
+  return [...new Set([...explicitImageUrls, ...filteredDescriptionUrls])];
 }
 
 module.exports = {

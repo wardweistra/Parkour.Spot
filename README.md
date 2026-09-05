@@ -195,6 +195,15 @@ The project includes seed data for Firebase emulators to help new developers get
 [Authentication (Firebase Auth)]
 ```
 
+### Spot sync sources
+
+External spot lists are imported through Firestore `syncSources` and Cloud Functions (`checkAndRunAutoSyncs`, `syncSingleSource`). Supported types:
+
+- **File** (`sourceType: file`, default) — Google My Maps KMZ/KML or uMap GeoJSON via `kmzUrl`
+- **OpenStreetMap** (`sourceType: openstreetmap`) — Overpass query for `sport=parkour` worldwide
+
+After deploying functions and indexes, create the OSM source in **Admin → Sync sources** (type OpenStreetMap, weekly auto-sync schedules). See `AGENTS.md` for the recommended cron expressions and first-sync steps.
+
 ## 📁 Project Structure
 
 ```

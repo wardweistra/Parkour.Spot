@@ -47,3 +47,19 @@ Alternatively, use the shell scripts: `./scripts/start_emulators.sh` and `./scri
 - The `run_local_with_emulators.sh` script has a `read -p` prompt. For non-interactive use, run the `flutter run` command directly with the dart-defines shown above.
 - Cloud Functions lint and tests: `cd functions && npm run lint` and `cd functions && npm test`.
 - Flutter tests: `flutter test` from the workspace root.
+
+### OpenStreetMap parkour sync source
+
+Spot sync sources can use `sourceType: "openstreetmap"` to import worldwide OSM features tagged `sport=parkour` via Overpass (nodes, ways, and relations reduced to a pin with `out center`). Matching uses `spotSourceExternalId` (`node/123`, etc.).
+
+**Production setup (after deploying functions + Firestore indexes):**
+
+1. Sign in as an admin and open **Admin → Sync sources**.
+2. Add source → choose **OpenStreetMap**.
+3. Name: `OpenStreetMap`. Public URL defaults to the OSM copyright page (ODbL attribution).
+4. Enable auto-sync and set weekly cron schedules, e.g.:
+   - Light: `0 3 * * 0` (Sunday 03:00 UTC)
+   - Full: `0 4 * * 0` (Sunday 04:00 UTC)
+5. Save, then run a manual sync once. The hourly `checkAndRunAutoSyncs` job will pick up the schedules afterward.
+
+Deploy the composite index `spotSource` + `spotSourceExternalId` (`firestore.indexes.json`) before the first OSM sync.

@@ -449,6 +449,96 @@ function applySpotAttributeDefaultsToSpotData(spotData, defaults) {
 }
 
 /**
+ * Fills only unset attribute fields on spotData from defaults.
+ * Used for OSM (and similar) updates so staff/community edits win.
+ * @param {Object} spotData
+ * @param {Object|null} defaults
+ * @return {boolean}
+ */
+function fillUnsetSpotAttributes(spotData, defaults) {
+  if (!spotData || !defaults) return false;
+  let changed = false;
+
+  const existingAccess =
+    typeof spotData.spotAccess === "string" ?
+      spotData.spotAccess.trim() :
+      "";
+  if (
+    !existingAccess &&
+    typeof defaults.spotAccess === "string" &&
+    VALID_SPOT_ACCESS_VALUES.has(defaults.spotAccess)
+  ) {
+    spotData.spotAccess = defaults.spotAccess;
+    changed = true;
+  }
+
+  if (Array.isArray(defaults.spotFeatures) && defaults.spotFeatures.length > 0) {
+    const existingSpotFeatures = normalizeExistingStringArray(spotData.spotFeatures);
+    if (existingSpotFeatures.length === 0) {
+      const normalized = normalizeStringArray(
+          defaults.spotFeatures,
+          VALID_SPOT_FEATURE_VALUES,
+      );
+      if (normalized.length > 0) {
+        spotData.spotFeatures = normalized;
+        changed = true;
+      }
+    }
+  }
+
+  if (Array.isArray(defaults.goodFor) && defaults.goodFor.length > 0) {
+    const existingGoodFor = normalizeExistingStringArray(spotData.goodFor);
+    if (existingGoodFor.length === 0) {
+      const normalized = normalizeStringArray(
+          defaults.goodFor,
+          VALID_GOOD_FOR_VALUES,
+      );
+      if (normalized.length > 0) {
+        spotData.goodFor = normalized;
+        changed = true;
+      }
+    }
+  }
+
+  if (
+    defaults.spotFacilities &&
+    typeof defaults.spotFacilities === "object" &&
+    !Array.isArray(defaults.spotFacilities)
+  ) {
+    const existingFacilities = (
+      spotData.spotFacilities &&
+      typeof spotData.spotFacilities === "object" &&
+      !Array.isArray(spotData.spotFacilities)
+    ) ? {...spotData.spotFacilities} : {};
+    const mergedFacilities = {...existingFacilities};
+    let facilitiesChanged = false;
+    for (const [key, value] of Object.entries(defaults.spotFacilities)) {
+      const facilityKey = String(key).trim().toLowerCase();
+      const facilityValue = typeof value === "string" ?
+        value.trim().toLowerCase() :
+        "";
+      if (!VALID_SPOT_FACILITY_KEYS.has(facilityKey)) continue;
+      if (!VALID_SPOT_FACILITY_VALUES.has(facilityValue)) continue;
+      const existingValue = mergedFacilities[facilityKey];
+      if (
+        typeof existingValue === "string" &&
+        existingValue.trim().length > 0
+      ) {
+        continue;
+      }
+      mergedFacilities[facilityKey] = facilityValue;
+      facilitiesChanged = true;
+    }
+    if (facilitiesChanged) {
+      spotData.spotFacilities = mergedFacilities;
+      changed = true;
+    }
+  }
+
+  return changed;
+}
+
+/**
  * Builds a Firestore update payload for spot attributes.
  * @param {Object} spotData
  * @param {*} updatedAt - Firestore serverTimestamp or similar (caller provides)
@@ -477,5 +567,6 @@ module.exports = {
   mergeUniqueStringArrays,
   areStringArraysEqual,
   applySpotAttributeDefaultsToSpotData,
+  fillUnsetSpotAttributes,
   buildSpotAttributeUpdateData,
 };

@@ -62,10 +62,27 @@ function hasOwn(data, key) {
 }
 
 /**
+ * @param {*} left
+ * @param {*} right
+ * @return {boolean}
+ */
+function numbersEqual(left, right) {
+  if (typeof left !== "number" || typeof right !== "number") {
+    return left == null && right == null;
+  }
+  if (!Number.isFinite(left) || !Number.isFinite(right)) {
+    return false;
+  }
+  return left === right;
+}
+
+/**
  * Checks whether a source-sync should update imported spot content fields.
  * Only compares source-owned fields present on the incoming payload (the
- * write that would be applied). Preserved fields such as coordinates,
- * address, ratings, ranking, duplicate, hidden, and attributes are ignored.
+ * write that would be applied). Preserved fields such as address, ratings,
+ * ranking, duplicate, hidden, and attributes are ignored. Latitude/longitude
+ * and spotSourceExternalId are compared when present on the incoming payload
+ * (needed for OSM geometry/id-stable updates).
  * @param {Object} existingData
  * @param {Object} incomingData
  * @return {boolean}
@@ -88,6 +105,23 @@ function hasImportedSpotContentChanges(existingData, incomingData) {
 
   if (hasOwn(incoming, "folderName") &&
       !nullableStringEqual(existing.folderName, incoming.folderName)) {
+    return true;
+  }
+
+  if (hasOwn(incoming, "spotSourceExternalId") &&
+      !nullableStringEqual(
+          existing.spotSourceExternalId,
+          incoming.spotSourceExternalId,
+      )) {
+    return true;
+  }
+
+  if (hasOwn(incoming, "latitude") &&
+      !numbersEqual(existing.latitude, incoming.latitude)) {
+    return true;
+  }
+  if (hasOwn(incoming, "longitude") &&
+      !numbersEqual(existing.longitude, incoming.longitude)) {
     return true;
   }
 

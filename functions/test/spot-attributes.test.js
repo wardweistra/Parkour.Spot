@@ -7,6 +7,7 @@ const {
   mergeUniqueStringArrays,
   areStringArraysEqual,
   applySpotAttributeDefaultsToSpotData,
+  fillUnsetSpotAttributes,
   buildSpotAttributeUpdateData,
 } = require("../lib/spot-attributes");
 
@@ -113,6 +114,35 @@ describe("applySpotAttributeDefaultsToSpotData", () => {
   it("returns false when nothing changes", () => {
     const spot = {spotAccess: "public"};
     expect(applySpotAttributeDefaultsToSpotData(spot, {spotAccess: "public"})).toBe(false);
+  });
+});
+
+describe("fillUnsetSpotAttributes", () => {
+  it("fills only unset access and facility keys", () => {
+    const spot = {
+      spotAccess: "restricted",
+      spotFacilities: {lighting: "no"},
+    };
+    expect(fillUnsetSpotAttributes(spot, {
+      spotAccess: "public",
+      spotFacilities: {lighting: "yes", covered: "yes"},
+    })).toBe(true);
+    expect(spot.spotAccess).toBe("restricted");
+    expect(spot.spotFacilities).toEqual({
+      lighting: "no",
+      covered: "yes",
+    });
+  });
+
+  it("returns false when everything is already set", () => {
+    const spot = {
+      spotAccess: "public",
+      spotFacilities: {lighting: "yes"},
+    };
+    expect(fillUnsetSpotAttributes(spot, {
+      spotAccess: "paid",
+      spotFacilities: {lighting: "no"},
+    })).toBe(false);
   });
 });
 

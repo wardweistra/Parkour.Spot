@@ -109,4 +109,13 @@ describe("extractImageUrls", () => {
     };
     expect(extractImageUrls(placemark)).toEqual([]);
   });
+  it("allows explicit placemark.imageUrls from any https host", () => {
+    const placemark = {
+      imageUrls: ["https://cdn.example.com/spot.jpg", "not-a-url"],
+      description: "<img src=\"https://evil.com/ignored.jpg\">",
+    };
+    expect(extractImageUrls(placemark)).toEqual([
+      "https://cdn.example.com/spot.jpg",
+    ]);
+  });
 });

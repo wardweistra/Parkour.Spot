@@ -98,6 +98,7 @@ const {
   mergeSpotAttributeDefaults,
   getEffectiveSpotAttributeDefaults,
   applySpotAttributeDefaultsToSpotData,
+  fillUnsetSpotAttributes,
   buildSpotAttributeUpdateData,
 } = require("./lib/spot-attributes");
 const {
@@ -129,6 +130,10 @@ const {
   generateImageHash,
 } = require("./lib/import-helpers");
 const {hasImportedSpotContentChanges} = require("./lib/spot-sync");
+const {
+  fetchOsmParkourPlacemarks,
+  placemarkOsmAttributeDefaults,
+} = require("./lib/osm-overpass");
 const {shouldRunSync} = require("./lib/sync-helpers");
 const {
   normalizeFolderList,
@@ -2677,60 +2682,67 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
   const MIN_TIME_REMAINING = 5 * 60 * 1000; // 5 minutes in milliseconds
   const timeoutMs = 55 * 60 * 1000; // 55 minutes (leave buffer before 1 hour timeout)
   const startTime = Date.now();
-
-  // Download and process based on detected format (KMZ/KML/GeoJSON)
-  let fileBuffer = await downloadFile(source.kmzUrl);
-  const format = detectImportFormat(fileBuffer, source.kmzUrl);
-  console.log(`Detected import format: ${format}`);
+  const isOpenStreetMapSource = source.sourceType === "openstreetmap";
 
   let placemarks = [];
-  if (format === "kmz") {
-    const kmlContent = await extractKmlFromKmz(fileBuffer);
-    placemarks = await parseKmlPlacemarks(kmlContent);
-  } else if (format === "kml") {
-    const kmlContent = fileBuffer.toString("utf8");
-    placemarks = await parseKmlPlacemarks(kmlContent);
+  if (isOpenStreetMapSource) {
+    console.log("Fetching OpenStreetMap parkour features via Overpass");
+    placemarks = await fetchOsmParkourPlacemarks();
+    console.log(`Overpass returned ${placemarks.length} parkour placemarks`);
   } else {
-    // GeoJSON (uMap) support
-    const geojsonText = fileBuffer.toString("utf8");
-    const json = JSON.parse(geojsonText);
+    // Download and process based on detected format (KMZ/KML/GeoJSON)
+    let fileBuffer = await downloadFile(source.kmzUrl);
+    const format = detectImportFormat(fileBuffer, source.kmzUrl);
+    console.log(`Detected import format: ${format}`);
 
-    console.log("Parsed GeoJSON structure:", {
-      type: json.type,
-      hasProperties: !!json.properties,
-      hasDatalayers: !!(json.properties && json.properties.datalayers),
-      datalayersCount: json.properties && json.properties.datalayers ? json.properties.datalayers.length : 0,
-      propertiesName: json.properties ? json.properties.name : null,
-    });
-
-    if (isUMapMetadata(json)) {
-      console.log("Detected uMap metadata with datalayers, " +
-        "processing each datalayer separately");
-
-      // Extract datalayer URLs
-      const datalayerUrls = extractDatalayerUrls(json, source.kmzUrl);
-
-      if (datalayerUrls.length === 0) {
-        console.warn("No datalayer URLs found in uMap metadata");
-        placemarks = [];
-      } else {
-        // Process each datalayer
-        const allPlacemarks = [];
-        for (let i = 0; i < datalayerUrls.length; i++) {
-          const datalayerUrl = datalayerUrls[i];
-          const datalayerName = json.properties.datalayers[i].name || `Datalayer ${i + 1}`;
-
-          const datalayerPlacemarks = await processDatalayer(
-              datalayerUrl, datalayerName);
-          allPlacemarks.push(...datalayerPlacemarks);
-        }
-        placemarks = allPlacemarks;
-        console.log(`Processed ${datalayerUrls.length} datalayers, ` +
-          `found ${placemarks.length} total placemarks`);
-      }
+    if (format === "kmz") {
+      const kmlContent = await extractKmlFromKmz(fileBuffer);
+      placemarks = await parseKmlPlacemarks(kmlContent);
+    } else if (format === "kml") {
+      const kmlContent = fileBuffer.toString("utf8");
+      placemarks = await parseKmlPlacemarks(kmlContent);
     } else {
-      // Regular GeoJSON processing
-      placemarks = parseGeoJsonFeatures(geojsonText);
+      // GeoJSON (uMap) support
+      const geojsonText = fileBuffer.toString("utf8");
+      const json = JSON.parse(geojsonText);
+
+      console.log("Parsed GeoJSON structure:", {
+        type: json.type,
+        hasProperties: !!json.properties,
+        hasDatalayers: !!(json.properties && json.properties.datalayers),
+        datalayersCount: json.properties && json.properties.datalayers ? json.properties.datalayers.length : 0,
+        propertiesName: json.properties ? json.properties.name : null,
+      });
+
+      if (isUMapMetadata(json)) {
+        console.log("Detected uMap metadata with datalayers, " +
+          "processing each datalayer separately");
+
+        // Extract datalayer URLs
+        const datalayerUrls = extractDatalayerUrls(json, source.kmzUrl);
+
+        if (datalayerUrls.length === 0) {
+          console.warn("No datalayer URLs found in uMap metadata");
+          placemarks = [];
+        } else {
+          // Process each datalayer
+          const allPlacemarks = [];
+          for (let i = 0; i < datalayerUrls.length; i++) {
+            const datalayerUrl = datalayerUrls[i];
+            const datalayerName = json.properties.datalayers[i].name || `Datalayer ${i + 1}`;
+
+            const datalayerPlacemarks = await processDatalayer(
+                datalayerUrl, datalayerName);
+            allPlacemarks.push(...datalayerPlacemarks);
+          }
+          placemarks = allPlacemarks;
+          console.log(`Processed ${datalayerUrls.length} datalayers, ` +
+            `found ${placemarks.length} total placemarks`);
+        }
+      } else {
+        // Regular GeoJSON processing
+        placemarks = parseGeoJsonFeatures(geojsonText);
+      }
     }
   }
 
@@ -2920,6 +2932,10 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
     let city = null;
     let countryCode = null;
     let existingSpotData = null;
+    const placemarkExternalId =
+      typeof placemark.externalId === "string" ?
+        placemark.externalId.trim() :
+        "";
 
     // If placemark has no coordinates but has an address, geocode the address
     if (!coordinates && placemarkAddress) {
@@ -2948,13 +2964,37 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
       }
     }
 
-    // Check if spot already exists with same coordinates and source
-    const existingSpots = await db
-        .collection("spots")
-        .where("spotSource", "==", sourceId)
-        .where("latitude", "==", finalCoordinates.latitude)
-        .where("longitude", "==", finalCoordinates.longitude)
-        .get();
+    if (!finalCoordinates ||
+        typeof finalCoordinates.latitude !== "number" ||
+        typeof finalCoordinates.longitude !== "number") {
+      skipped++;
+      console.warn(`Skipping placemark without coordinates: ${name}`);
+      continue;
+    }
+
+    // Prefer stable external id match (OSM); fall back to exact lat/lng.
+    let existingSpots;
+    if (placemarkExternalId) {
+      existingSpots = await db
+          .collection("spots")
+          .where("spotSource", "==", sourceId)
+          .where("spotSourceExternalId", "==", placemarkExternalId)
+          .limit(1)
+          .get();
+    } else {
+      existingSpots = await db
+          .collection("spots")
+          .where("spotSource", "==", sourceId)
+          .where("latitude", "==", finalCoordinates.latitude)
+          .where("longitude", "==", finalCoordinates.longitude)
+          .get();
+    }
+
+    const coordsChangedForExisting = !existingSpots.empty && (() => {
+      const existingData = existingSpots.docs[0].data() || {};
+      return existingData.latitude !== finalCoordinates.latitude ||
+        existingData.longitude !== finalCoordinates.longitude;
+    })();
 
     if (existingSpots.empty) {
       // Only geocode for NEW spots (if we don't already have address from reverse geocoding)
@@ -3007,13 +3047,42 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
         }
       }
     } else {
-      // For existing spots, keep their current address data
+      // For existing spots, keep their current address data unless coords moved.
       const existingSpot = existingSpots.docs[0];
       existingSpotData = existingSpot.data();
-      address = existingSpotData.address;
-      city = existingSpotData.city;
-      countryCode = existingSpotData.countryCode;
-      console.log(`Keeping existing address data for spot: ${name}`);
+      if (coordsChangedForExisting) {
+        console.log(
+            `Coordinates changed for spot: ${name}; re-geocoding address`,
+        );
+        if (i > 0) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+        const geocodeResult = await geocodeCoordinates(
+            finalCoordinates.latitude,
+            finalCoordinates.longitude,
+            apiKey,
+        );
+        if (geocodeResult.success) {
+          address = geocodeResult.address;
+          city = geocodeResult.city;
+          countryCode = geocodeResult.countryCode;
+          geocoded++;
+          console.log(`✓ Re-geocoded moved spot: ${name} - ${address}`);
+        } else {
+          address = existingSpotData.address;
+          city = existingSpotData.city;
+          countryCode = existingSpotData.countryCode;
+          geocodingFailed++;
+          console.warn(
+              `✗ Re-geocoding failed for moved spot: ${name} - ${geocodeResult.error}`,
+          );
+        }
+      } else {
+        address = existingSpotData.address;
+        city = existingSpotData.city;
+        countryCode = existingSpotData.countryCode;
+        console.log(`Keeping existing address data for spot: ${name}`);
+      }
     }
 
     // Process images for this placemark (with existing data for hash optimization)
@@ -3085,6 +3154,10 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
       externalSyncLastChangedAt: FieldValue.serverTimestamp(),
     };
 
+    if (placemarkExternalId) {
+      spotData.spotSourceExternalId = placemarkExternalId;
+    }
+
     // Optionally record folder name on spot if configured and available
     if (source.recordFolderName === true) {
       if (placemark.folderName) {
@@ -3094,11 +3167,44 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
       }
     }
 
-    if (existingSpots.empty && effectiveSpotAttributeDefaults) {
-      applySpotAttributeDefaultsToSpotData(
-          spotData,
-          effectiveSpotAttributeDefaults,
-      );
+    const osmAttributeDefaults = isOpenStreetMapSource ?
+      placemarkOsmAttributeDefaults(placemark) :
+      null;
+    const mergedAttributeDefaults = mergeSpotAttributeDefaults(
+        effectiveSpotAttributeDefaults,
+        osmAttributeDefaults,
+    );
+
+    let attributesFilledOnUpdate = false;
+    if (existingSpots.empty) {
+      if (mergedAttributeDefaults) {
+        applySpotAttributeDefaultsToSpotData(
+            spotData,
+            mergedAttributeDefaults,
+        );
+      }
+    } else if (isOpenStreetMapSource) {
+      // Preserve existing attributes on the write payload, then fill unset only.
+      if (existingSpotData) {
+        if (existingSpotData.spotAccess !== undefined) {
+          spotData.spotAccess = existingSpotData.spotAccess;
+        }
+        if (existingSpotData.spotFeatures !== undefined) {
+          spotData.spotFeatures = existingSpotData.spotFeatures;
+        }
+        if (existingSpotData.goodFor !== undefined) {
+          spotData.goodFor = existingSpotData.goodFor;
+        }
+        if (existingSpotData.spotFacilities !== undefined) {
+          spotData.spotFacilities = existingSpotData.spotFacilities;
+        }
+      }
+      if (mergedAttributeDefaults) {
+        attributesFilledOnUpdate = fillUnsetSpotAttributes(
+            spotData,
+            mergedAttributeDefaults,
+        );
+      }
     }
 
     // Add YouTube video IDs
@@ -3226,7 +3332,10 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
       spotData.spotSourceRemovedAt = FieldValue.delete();
 
       processedSpotIds.add(existingSpot.id);
-      if (hasImportedSpotContentChanges(existingData, spotData)) {
+      if (
+        hasImportedSpotContentChanges(existingData, spotData) ||
+        attributesFilledOnUpdate
+      ) {
         await existingSpot.ref.update(cleanUndefinedValues(spotData));
         updatedSpotSummaries.push({
           id: existingSpot.id,
@@ -3850,9 +3959,16 @@ exports.createSyncSource = onCall(
           lightSyncSchedule,
           fullSyncSchedule,
           autoSyncEnabled = false,
+          sourceType,
         } = request.data;
 
-        if (!name || !kmzUrl) {
+        const normalizedSourceType =
+          sourceType === "openstreetmap" ? "openstreetmap" : "file";
+
+        if (!name) {
+          throw new Error("name is required");
+        }
+        if (normalizedSourceType === "file" && !kmzUrl) {
           throw new Error("name and kmzUrl are required");
         }
 
@@ -3867,9 +3983,16 @@ exports.createSyncSource = onCall(
 
         const sourceData = {
           name: name,
-          kmzUrl: kmzUrl,
+          kmzUrl: normalizedSourceType === "openstreetmap" ?
+            (kmzUrl || "") :
+            kmzUrl,
+          sourceType: normalizedSourceType,
           description: description || "",
-          publicUrl: publicUrl || "",
+          publicUrl: publicUrl || (
+            normalizedSourceType === "openstreetmap" ?
+              "https://www.openstreetmap.org/copyright" :
+              ""
+          ),
           instagramHandle: instagramHandle || "",
           isActive: isActive,
           createdAt: FieldValue.serverTimestamp(),
@@ -3945,6 +4068,7 @@ exports.updateSyncSource = onCall(
           lightSyncSchedule,
           fullSyncSchedule,
           autoSyncEnabled,
+          sourceType,
         } = request.data;
 
         if (!sourceId) {
@@ -3957,6 +4081,19 @@ exports.updateSyncSource = onCall(
 
         if (name !== undefined) updateData.name = name;
         if (kmzUrl !== undefined) updateData.kmzUrl = kmzUrl;
+        if (sourceType !== undefined) {
+          updateData.sourceType =
+            sourceType === "openstreetmap" ? "openstreetmap" : "file";
+          if (updateData.sourceType === "file" &&
+              (kmzUrl === undefined || !kmzUrl)) {
+            const existingDoc = await db.collection("syncSources").doc(sourceId).get();
+            const existingKmz = existingDoc.exists ? existingDoc.data().kmzUrl : null;
+            const nextKmz = kmzUrl !== undefined ? kmzUrl : existingKmz;
+            if (!nextKmz) {
+              throw new Error("kmzUrl is required for file sync sources");
+            }
+          }
+        }
         if (description !== undefined) updateData.description = description;
         if (publicUrl !== undefined) updateData.publicUrl = publicUrl;
         if (instagramHandle !== undefined) {
