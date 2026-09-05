@@ -46,6 +46,7 @@ Alternatively, use the shell scripts: `./scripts/start_emulators.sh` and `./scri
 - `flutter analyze` will show ~119 `info`-level diagnostics (deprecated API usage, `use_build_context_synchronously`). These are not errors and do not block builds or tests.
 - The `run_local_with_emulators.sh` script has a `read -p` prompt. For non-interactive use, run the `flutter run` command directly with the dart-defines shown above.
 - Cloud Functions lint and tests: `cd functions && npm run lint` and `cd functions && npm test`.
+- Before committing Functions changes, lint must pass (`cd functions && npm run lint`). A shared git pre-commit hook enforces this when `functions/` files are staged — enable once with `./scripts/setup_git_hooks.sh`.
 - Flutter tests: `flutter test` from the workspace root.
 
 ### OpenStreetMap parkour sync source

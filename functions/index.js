@@ -1631,7 +1631,7 @@ async function removeEventSearchTerms(eventId) {
  * (required by Wikimedia and similar hosts).
  * @param {string} url
  * @param {number=} redirectCount
- * @return {Promise<{buffer: Buffer, contentType: string|null, finalUrl: string}>}
+ * @return {Promise<{buffer: Buffer, contentType: ?string, finalUrl: string}>}
  */
 function downloadBinaryWithRedirects(url, redirectCount = 0) {
   if (redirectCount > 8) {
@@ -2797,7 +2797,7 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
     console.log(`Overpass returned ${placemarks.length} parkour placemarks`);
   } else {
     // Download and process based on detected format (KMZ/KML/GeoJSON)
-    let fileBuffer = await downloadFile(source.kmzUrl);
+    const fileBuffer = await downloadFile(source.kmzUrl);
     const format = detectImportFormat(fileBuffer, source.kmzUrl);
     console.log(`Detected import format: ${format}`);
 
@@ -2906,9 +2906,6 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
     );
   }
 
-  // Clear file buffer to free memory
-  fileBuffer = null;
-
   // Mark sync as in progress (if not already marked)
   const sourceDocRef = db.collection("syncSources").doc(sourceId);
   if (!isResuming) {
@@ -2934,7 +2931,7 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
   let geocoded = 0;
   let geocodingFailed = 0;
   let removed = 0;
-  const skipped = 0;
+  let skipped = 0;
   const processedSpotIds = new Set();
   const addedSpotSummaries = [];
   const updatedSpotSummaries = [];

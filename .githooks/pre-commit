@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Runs Cloud Functions eslint when staged changes touch functions/.
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+staged_functions="$(git diff --cached --name-only --diff-filter=ACMR -- functions/ || true)"
+
+if [[ -z "${staged_functions}" ]]; then
+  exit 0
+fi
+
+echo "Running Cloud Functions lint (npm run lint)..."
+(
+  cd "${repo_root}/functions"
+  if [[ ! -d node_modules ]]; then
+    echo "functions/node_modules missing; run: (cd functions && npm ci)" >&2
+    exit 1
+  fi
+  npm run lint
+)

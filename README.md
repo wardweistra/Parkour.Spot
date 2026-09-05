@@ -330,6 +330,7 @@ flutter upgrade
 - Use meaningful variable and function names
 - Add comments for complex logic
 - Keep functions small and focused
+- Cloud Functions: run `cd functions && npm run lint` before committing (same check as CI). Enable the shared pre-commit hook once with `./scripts/setup_git_hooks.sh`.
 
 ### **Testing**
 - Write unit tests for services
