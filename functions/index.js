@@ -1627,6 +1627,90 @@ async function removeEventSearchTerms(eventId) {
 
 
 /**
+ * Downloads a binary URL following redirects, with a descriptive User-Agent
+ * (required by Wikimedia and similar hosts).
+ * @param {string} url
+ * @param {number=} redirectCount
+ * @return {Promise<{buffer: Buffer, contentType: string|null, finalUrl: string}>}
+ */
+function downloadBinaryWithRedirects(url, redirectCount = 0) {
+  if (redirectCount > 8) {
+    return Promise.reject(new Error("Too many redirects while downloading image"));
+  }
+
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+  } catch (error) {
+    return Promise.reject(new Error(`Invalid image URL: ${url}`));
+  }
+  if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
+    return Promise.reject(new Error("Image URL must use http or https"));
+  }
+  const client = parsedUrl.protocol === "http:" ? http : https;
+
+  return new Promise((resolve, reject) => {
+    const request = client.get(parsedUrl, {
+      headers: {
+        "User-Agent": "ParkourSpotImageSync/1.0 (+https://parkour.spot)",
+        "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+      },
+    }, (response) => {
+      if (
+        response.statusCode &&
+        response.statusCode >= 300 &&
+        response.statusCode < 400 &&
+        response.headers.location
+      ) {
+        response.resume();
+        const redirectedUrl = new URL(
+            response.headers.location,
+            parsedUrl,
+        ).toString();
+        resolve(downloadBinaryWithRedirects(redirectedUrl, redirectCount + 1));
+        return;
+      }
+
+      if (!response.statusCode || response.statusCode >= 400) {
+        const statusCode = response.statusCode || 0;
+        response.resume();
+        reject(new Error(
+            `Failed downloading image (HTTP ${statusCode}): ${url}`,
+        ));
+        return;
+      }
+
+      const contentType = response.headers["content-type"] ?
+        String(response.headers["content-type"]).toLowerCase() :
+        null;
+      if (contentType && contentType.includes("text/html")) {
+        response.resume();
+        reject(new Error(
+            `Refusing to treat HTML as image: ${url}`,
+        ));
+        return;
+      }
+
+      const chunks = [];
+      response.on("data", (chunk) => chunks.push(chunk));
+      response.on("end", () => {
+        resolve({
+          buffer: Buffer.concat(chunks),
+          contentType,
+          finalUrl: parsedUrl.toString(),
+        });
+      });
+      response.on("error", reject);
+    });
+
+    request.on("error", reject);
+    request.setTimeout(60000, () => {
+      request.destroy(new Error(`Image download timed out: ${url}`));
+    });
+  });
+}
+
+/**
  * Downloads a file from the given URL
  * @param {string} url - The URL to download from
  * @return {Promise<Buffer>} A promise that resolves to the file buffer
@@ -1998,8 +2082,11 @@ async function cacheImageMetadata(imageUrl, imageHash, publicUrl) {
 async function optimizeImage(imageBuffer) {
   let sharpInstance = null;
   try {
-    // Get image metadata
+    // Get image metadata — throws if buffer is not a decodable image
     const metadata = await sharp(imageBuffer).metadata();
+    if (!metadata || !metadata.format) {
+      throw new Error("Unrecognized image format");
+    }
 
     // Set maximum dimensions to reduce file size while maintaining quality
     const maxWidth = 1920;
@@ -2034,8 +2121,8 @@ async function optimizeImage(imageBuffer) {
     console.error("Error optimizing image:", error);
     // Clean up sharp instance on error
     sharpInstance = null;
-    // Return original buffer if optimization fails
-    return imageBuffer;
+    // Do not upload undecodable buffers (e.g. HTML wiki pages) as images.
+    return null;
   }
 }
 
@@ -2099,8 +2186,9 @@ async function downloadAndUploadImage(
       }
     }
 
-    // Download image
-    imageBuffer = await downloadFile(imageUrl);
+    // Download image (follow redirects; send User-Agent for Wikimedia)
+    const downloaded = await downloadBinaryWithRedirects(imageUrl);
+    imageBuffer = downloaded.buffer;
 
     // Generate content-based hash
     const imageHash = generateImageHash(imageBuffer);
@@ -2129,7 +2217,18 @@ async function downloadAndUploadImage(
     }
 
     // Generate filename with hash instead of timestamp
-    const extension = path.extname(new URL(imageUrl).pathname) || ".jpg";
+    let extension = ".jpg";
+    try {
+      const pathExt = path.extname(new URL(downloaded.finalUrl || imageUrl).pathname);
+      if (pathExt && pathExt.length <= 5) {
+        extension = pathExt;
+      }
+    } catch (_) {
+      extension = ".jpg";
+    }
+    if (extension.toLowerCase() === ".html" || extension.toLowerCase() === ".htm") {
+      extension = ".jpg";
+    }
     const safeFolder = storageFolder === "events" ? "events" : "spots";
     const filename =
       `${safeFolder}/${spotName.replace(/[^a-zA-Z0-9]/g, "_")}_` +
@@ -2140,6 +2239,13 @@ async function downloadAndUploadImage(
 
     // Clear original buffer to free memory
     imageBuffer = null;
+
+    if (!optimizedImageBuffer) {
+      console.warn(
+          `Skipping non-decodable image for spot: ${spotName} (${imageUrl})`,
+      );
+      return null;
+    }
 
     // Upload optimized image to Firebase Storage
     const file = bucket.file(filename);

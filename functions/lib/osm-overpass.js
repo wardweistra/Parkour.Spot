@@ -150,26 +150,87 @@ function mapOsmSpotFacilities(tags) {
 }
 
 /**
+ * Builds a Wikimedia Commons Special:FilePath URL for a File: title.
+ * @param {string} filename
+ * @return {string}
+ */
+function commonsSpecialFilePath(filename) {
+  const normalized = String(filename).trim().replace(/ /g, "_");
+  return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(normalized)}`;
+}
+
+/**
+ * Resolves one OSM image / wikimedia_commons value to a downloadable image URL.
+ * Wiki File: pages are converted to Commons Special:FilePath; Category: is skipped.
+ * @param {string} value
+ * @return {string|null}
+ */
+function resolveOsmImageReference(value) {
+  const raw = toNonEmptyString(value);
+  if (!raw) return null;
+
+  if (/^Category:/i.test(raw)) {
+    return null;
+  }
+
+  const fileTag = /^File:(.+)$/i.exec(raw);
+  if (fileTag) {
+    return commonsSpecialFilePath(fileTag[1]);
+  }
+
+  if (!/^https?:\/\//i.test(raw)) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(raw);
+    const host = parsed.hostname.toLowerCase();
+    const pathname = parsed.pathname || "";
+
+    // OSM wiki / Commons File: description pages are HTML, not images.
+    const filePathMatch = /\/wiki\/File:(.+)$/i.exec(pathname);
+    if (
+      filePathMatch &&
+      (host === "wiki.openstreetmap.org" ||
+        host === "commons.wikimedia.org" ||
+        host.endsWith(".wikipedia.org") ||
+        host.endsWith(".wikimedia.org"))
+    ) {
+      return commonsSpecialFilePath(decodeURIComponent(filePathMatch[1]));
+    }
+
+    // Already a Commons media redirect/path or upload CDN.
+    if (
+      host === "upload.wikimedia.org" ||
+      /\/Special:(FilePath|Redirect\/file)\//i.test(pathname)
+    ) {
+      return raw;
+    }
+
+    // Direct image URLs from other hosts.
+    if (/\.(jpe?g|png|gif|webp|avif)(\?|#|$)/i.test(pathname)) {
+      return raw;
+    }
+
+    // Reject non-image wiki/HTML pages.
+    return null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
  * Resolves OSM image-related tags to downloadable HTTP(S) URLs.
  * @param {Object} tags
  * @return {string[]}
  */
 function extractOsmImageUrls(tags) {
   const urls = [];
-  const image = toNonEmptyString(tags.image);
-  if (image && /^https?:\/\//i.test(image)) {
-    urls.push(image);
-  }
+  const fromImage = resolveOsmImageReference(tags.image);
+  if (fromImage) urls.push(fromImage);
 
-  const commons = toNonEmptyString(tags.wikimedia_commons);
-  if (commons) {
-    const fileMatch = /^File:(.+)$/i.exec(commons);
-    if (fileMatch) {
-      const filename = encodeURIComponent(fileMatch[1].trim().replace(/ /g, "_"));
-      urls.push(`https://commons.wikimedia.org/wiki/Special:FilePath/${filename}`);
-    }
-    // Skip Category: and other non-file values.
-  }
+  const fromCommons = resolveOsmImageReference(tags.wikimedia_commons);
+  if (fromCommons) urls.push(fromCommons);
 
   return [...new Set(urls)];
 }
@@ -422,6 +483,8 @@ module.exports = {
   mapOsmSpotAccess,
   mapOsmSpotFacilities,
   extractOsmImageUrls,
+  resolveOsmImageReference,
+  commonsSpecialFilePath,
   extractOsmCoordinates,
   mapOverpassElementToPlacemark,
   mapOverpassResponseToPlacemarks,

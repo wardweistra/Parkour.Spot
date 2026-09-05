@@ -78,6 +78,25 @@ describe("osm-overpass helpers", () => {
       })).toEqual(["https://example.com/spot.jpg"]);
     });
 
+    it("resolves OSM wiki File: page URLs to Commons Special:FilePath", () => {
+      expect(extractOsmImageUrls({
+        image: "https://wiki.openstreetmap.org/wiki/File:Parkour_01-5.jpg",
+      })).toEqual([
+        "https://commons.wikimedia.org/wiki/Special:FilePath/Parkour_01-5.jpg",
+      ]);
+      expect(extractOsmImageUrls({
+        image: "https://wiki.openstreetmap.org/wiki/File:Parkour%5F01-5.jpg",
+      })).toEqual([
+        "https://commons.wikimedia.org/wiki/Special:FilePath/Parkour_01-5.jpg",
+      ]);
+    });
+
+    it("rejects non-image wiki pages", () => {
+      expect(extractOsmImageUrls({
+        image: "https://wiki.openstreetmap.org/wiki/Tag:sport%3Dparkour",
+      })).toEqual([]);
+    });
+
     it("resolves wikimedia File: and skips Category:", () => {
       expect(extractOsmImageUrls({
         wikimedia_commons: "File:Parkour_01.jpg",
