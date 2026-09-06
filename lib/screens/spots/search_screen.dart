@@ -16,6 +16,7 @@ import '../../services/admin_events_service.dart';
 import '../../services/spot_service.dart';
 import '../../models/event_map_pin.dart';
 import '../../utils/explore_events_utils.dart';
+import '../../utils/explore_spots_utils.dart';
 import '../../widgets/event_card.dart';
 import '../../widgets/explore_bottom_sheet_header.dart';
 import '../../services/sync_source_service.dart';
@@ -1394,15 +1395,7 @@ class SearchScreenState extends State<SearchScreen>
     final extraSpots = fetched.whereType<Spot>().toList();
     if (extraSpots.isEmpty) return loadedSpots;
 
-    final seen = loadedIds;
-    final merged = List<Spot>.from(loadedSpots);
-    for (final spot in extraSpots) {
-      final id = spot.id;
-      if (id != null && seen.add(id)) {
-        merged.add(spot);
-      }
-    }
-    return merged;
+    return mergeSpotsById(loadedSpots, extraSpots);
   }
 
   bool get _isLoadingMapData =>
