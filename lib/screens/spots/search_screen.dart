@@ -437,6 +437,9 @@ class SearchScreenState extends State<SearchScreen>
           _highlightedSpotIds.clear();
           _markers = _rebuildMarkers();
         });
+        if (_mapController != null) {
+          _loadMapDataForCurrentView();
+        }
       }
     }
 
@@ -1342,7 +1345,9 @@ class SearchScreenState extends State<SearchScreen>
       final ranked = results[0] as Map<String, dynamic>;
       final eventsResult = results[1] as EventsInBoundsResult;
 
-      _loadedSpots = (ranked['spots'] as List<Spot>?) ?? <Spot>[];
+      _loadedSpots = await _mergeActiveSpotListSpots(
+        (ranked['spots'] as List<Spot>?) ?? <Spot>[],
+      );
       _totalSpotsInView = ranked['totalCount'] as int?;
       _bestShownCount = ranked['shownCount'] as int?;
 
@@ -1371,6 +1376,33 @@ class SearchScreenState extends State<SearchScreen>
       _visibleSpots = _loadedSpots;
       _markers = _rebuildMarkers();
     });
+  }
+
+  /// Ensures every spot from the active list is included alongside ranked map spots.
+  Future<List<Spot>> _mergeActiveSpotListSpots(List<Spot> loadedSpots) async {
+    if (_highlightedSpotIds.isEmpty || !mounted) return loadedSpots;
+
+    final loadedIds = loadedSpots.map((s) => s.id).whereType<String>().toSet();
+    final missingIds =
+        _highlightedSpotIds.where((id) => !loadedIds.contains(id)).toList();
+    if (missingIds.isEmpty) return loadedSpots;
+
+    final spotService = Provider.of<SpotService>(context, listen: false);
+    final fetched = await Future.wait(
+      missingIds.map(spotService.getSpotById),
+    );
+    final extraSpots = fetched.whereType<Spot>().toList();
+    if (extraSpots.isEmpty) return loadedSpots;
+
+    final seen = loadedIds;
+    final merged = List<Spot>.from(loadedSpots);
+    for (final spot in extraSpots) {
+      final id = spot.id;
+      if (id != null && seen.add(id)) {
+        merged.add(spot);
+      }
+    }
+    return merged;
   }
 
   bool get _isLoadingMapData =>
@@ -2315,6 +2347,18 @@ class SearchScreenState extends State<SearchScreen>
         // Rebuild markers to reflect highlighting
         _markers = _rebuildMarkers();
       });
+
+      if (_loadedSpots.isNotEmpty) {
+        final merged = await _mergeActiveSpotListSpots(_loadedSpots);
+        if (!mounted) return;
+        setState(() {
+          _loadedSpots = merged;
+          _visibleSpots = merged;
+          _markers = _rebuildMarkers();
+        });
+      } else if (_mapController != null) {
+        await _loadMapDataForCurrentView();
+      }
     } catch (e) {
       debugPrint('Error loading spot list: $e');
     }
@@ -2391,6 +2435,10 @@ class SearchScreenState extends State<SearchScreen>
     final searchState = _searchStateServiceRef;
     if (searchState != null) {
       searchState.setSelectedListId(null);
+    }
+
+    if (_mapController != null) {
+      _loadMapDataForCurrentView();
     }
 
     // Update URL query parameter, preserving existing params
