@@ -11161,7 +11161,7 @@ exports.sendWebPushToUserSubscriptions = onCall(
             "notification image URL",
         );
 
-        /** @type {{id: string, token: string}[]} */
+        /** @type {{id: string, token: string, platform?: *}[]} */
         const targets = [];
         /** @type {{id: string, reason: string}[]} */
         const skipped = [];
@@ -11189,7 +11189,7 @@ exports.sendWebPushToUserSubscriptions = onCall(
             skipped.push({id: sid, reason: "no_token"});
             continue;
           }
-          targets.push({id: sid, token});
+          targets.push({id: sid, token, platform: data.platform});
         }
 
         if (targets.length === 0) {
@@ -11211,6 +11211,7 @@ exports.sendWebPushToUserSubscriptions = onCall(
             token: t.token,
             title,
             body,
+            platform: t.platform,
           })),
           clickLink,
           iconUrl,

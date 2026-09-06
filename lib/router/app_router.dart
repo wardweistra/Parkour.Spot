@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import 'package:provider/provider.dart';
-import 'package:web/web.dart' as web;
 import 'package:sealed_countries/sealed_countries.dart';
+import '../utils/browser_location.dart';
 import '../screens/splash_screen.dart';
 import '../screens/explore_screen.dart';
 import '../screens/admin/admin_home_screen.dart';
@@ -102,13 +102,17 @@ class GaObserver extends NavigatorObserver {
           WebAnalytics.trackPageView(path: path);
         } else {
           // Fallback to browser URL if router is not set yet
-          final path = web.window.location.pathname;
-          WebAnalytics.trackPageView(path: path);
+          final path = browserPathname();
+          if (path != null) {
+            WebAnalytics.trackPageView(path: path);
+          }
         }
       } catch (e) {
         // Fallback to browser URL if router state is not available
-        final path = web.window.location.pathname;
-        WebAnalytics.trackPageView(path: path);
+        final path = browserPathname();
+        if (path != null) {
+          WebAnalytics.trackPageView(path: path);
+        }
       }
 
       // Track page view for PWA install service
@@ -189,7 +193,7 @@ class TitleObserver extends NavigatorObserver {
 
   void _setTitle(String title) {
     if (kIsWeb) {
-      web.document.title = title;
+      setDocumentTitle(title);
     }
   }
 }

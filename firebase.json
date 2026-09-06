@@ -14,8 +14,11 @@
     "public": "build/web",
     "ignore": [
       "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "**/.DS_Store",
+      "**/.git/**",
+      "**/.svn/**",
+      "**/.hg/**"
     ],
     "headers": [
       {
@@ -24,6 +27,15 @@
           {
             "key": "Cross-Origin-Opener-Policy",
             "value": "same-origin-allow-popups"
+          }
+        ]
+      },
+      {
+        "source": "/.well-known/assetlinks.json",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
           }
         ]
       }
@@ -80,15 +92,19 @@
   },
   "emulators": {
     "auth": {
+      "host": "0.0.0.0",
       "port": 9099
     },
     "firestore": {
+      "host": "0.0.0.0",
       "port": 8082
     },
     "storage": {
+      "host": "0.0.0.0",
       "port": 9199
     },
     "functions": {
+      "host": "0.0.0.0",
       "port": 5001
     },
     "hosting": {
@@ -96,6 +112,7 @@
     },
     "ui": {
       "enabled": true,
+      "host": "0.0.0.0",
       "port": 4000
     },
     "singleProjectMode": true

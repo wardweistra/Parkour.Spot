@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:web/web.dart' as web;
 
+import 'browser_location.dart';
 import 'meta_clip.dart';
 
 /// Shared utilities for updating document title and Open Graph/Twitter meta tags on web.
@@ -20,47 +20,7 @@ class WebMetaUtils {
   /// No-op when not running on web.
   static void updatePageMeta(String title, String description) {
     if (!kIsWeb) return;
-
-    web.document.title = title;
-
-    // meta description
-    final metaDescription =
-        web.document.querySelector('meta[name="description"]');
-    if (metaDescription != null) {
-      metaDescription.setAttribute('content', description);
-    } else {
-      final meta = web.document.createElement('meta') as web.HTMLMetaElement;
-      meta.name = 'description';
-      meta.content = description;
-      web.document.head?.appendChild(meta);
-    }
-
-    // og:description
-    final ogDescription =
-        web.document.querySelector('meta[property="og:description"]');
-    if (ogDescription != null) {
-      ogDescription.setAttribute('content', description);
-    }
-
-    // twitter:description
-    final twitterDescription =
-        web.document.querySelector('meta[name="twitter:description"]');
-    if (twitterDescription != null) {
-      twitterDescription.setAttribute('content', description);
-    }
-
-    // og:title
-    final ogTitle = web.document.querySelector('meta[property="og:title"]');
-    if (ogTitle != null) {
-      ogTitle.setAttribute('content', title);
-    }
-
-    // twitter:title
-    final twitterTitle =
-        web.document.querySelector('meta[name="twitter:title"]');
-    if (twitterTitle != null) {
-      twitterTitle.setAttribute('content', title);
-    }
+    updateBrowserPageMeta(title, description);
   }
 
   /// Resets document title and meta tags to defaults.

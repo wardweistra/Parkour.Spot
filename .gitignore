@@ -1,11 +1,11 @@
 # Miscellaneous
 *.class
-*.lock
 *.log
 *.pyc
 *.swp
 .buildlog/
 .history
+.swiftpm/
 
 /urbn
 
@@ -31,8 +31,15 @@ analysis_benchmark.json
 # packages file containing multi-root paths
 .packages.generated
 
+# IntelliJ / Android Studio
+*.iml
+*.ipr
+*.iws
+.idea/
+
 # Flutter/Dart/Pub related
 **/doc/api/
+**/ios/Flutter/.last_build_id
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
@@ -49,12 +56,17 @@ unlinked_spec.ds
 # Coverage
 coverage/
 
-# Symbols
+# Symbols / obfuscation
 app.*.symbols
+app.*.map.json
+
+# Android Studio APK output
+/android/app/debug
+/android/app/profile
+/android/app/release
 
 # Exceptions to above rules.
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
-!/dev/ci/**/Gemfile.lock
 
 
 # Firebase build and deployment files
@@ -77,8 +89,6 @@ hosting/.cache
 /.firebase/emulator-data/
 
 # Firebase Configuration Files (CRITICAL - Contains API Keys)
-**/google-services.json
-**/GoogleService-Info.plist
 **/google-services.json
 **/GoogleService-Info.plist
 

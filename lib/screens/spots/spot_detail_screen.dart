@@ -62,7 +62,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/audit_log_service.dart';
-import 'package:web/web.dart' as web;
+import 'package:parkour_spot/utils/browser_location.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -596,7 +596,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   void _updateDocumentTitle() {
     if (kIsWeb) {
-      web.document.title = _formatSpotDocumentTitle(_spot, _l10n);
+      setDocumentTitle(_formatSpotDocumentTitle(_spot, _l10n));
     }
   }
 
@@ -612,7 +612,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   void dispose() {
     // Reset document title to default when leaving spot page
     if (kIsWeb) {
-      web.document.title = _exploreDocumentTitle;
+      setDocumentTitle(_exploreDocumentTitle);
     }
     _scrollController.dispose();
     _videoPageController.dispose();

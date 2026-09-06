@@ -1,6 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:parkour_spot/l10n/app_localizations.dart';
 import 'package:parkour_spot/utils/web_meta_utils.dart';
@@ -11,7 +13,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:parkour_spot/services/auth_service.dart';
 import 'package:parkour_spot/services/event_map_service.dart';
 import 'package:parkour_spot/services/spot_service.dart';
@@ -46,55 +47,107 @@ import 'package:parkour_spot/firebase_options.dart';
 import 'package:parkour_spot/config/app_config.dart';
 import 'package:parkour_spot/analytics/web_analytics.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:web/web.dart' as web;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:parkour_spot/utils/browser_location.dart';
+import 'package:parkour_spot/utils/path_url_strategy.dart';
 
 String? _fcmPayloadString(Object? value) {
   if (value is String && value.trim().isNotEmpty) return value.trim();
   return null;
 }
 
-/// Opens the push click URL: in-app route when same host as the web app, else
-/// external browser (or new tab on web).
-Future<void> _openFcmForegroundLink(String url) async {
+bool _isParkourSpotHost(String? host) {
+  if (host == null || host.isEmpty) return false;
+  final h = host.toLowerCase();
+  return h == 'parkour.spot' || h == 'www.parkour.spot';
+}
+
+/// Opens the push / deep-link URL: in-app route when same host, else external.
+Future<void> _openAppLink(String url) async {
   try {
     final uri = Uri.tryParse(url);
     if (uri == null) return;
 
     if (!uri.hasScheme) {
-      if (kIsWeb && url.startsWith('/')) {
+      if (url.startsWith('/')) {
         AppRouter.router.go(url);
       }
       return;
     }
 
-    if (kIsWeb) {
-      final host = web.window.location.hostname;
-      if (uri.host == host) {
-        final path = uri.path.isEmpty ? '/' : uri.path;
-        final q = uri.hasQuery ? '?${uri.query}' : '';
-        AppRouter.router.go('$path$q');
-        return;
-      }
+    if (_isParkourSpotHost(uri.host) ||
+        (kIsWeb && browserHostname() != null && uri.host == browserHostname())) {
+      final path = uri.path.isEmpty ? '/' : uri.path;
+      final q = uri.hasQuery ? '?${uri.query}' : '';
+      AppRouter.router.go('$path$q');
+      return;
     }
 
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   } catch (e, st) {
-    debugPrint('open FCM foreground link: $e\n$st');
+    debugPrint('open app link: $e\n$st');
   }
+}
+
+Future<void> _openFcmForegroundLink(String url) => _openAppLink(url);
+
+void _handleFcmOpenedMessage(RemoteMessage message) {
+  final openUrl = _fcmPayloadString(message.data['openUrl']);
+  if (openUrl != null) {
+    unawaited(_openAppLink(openUrl));
+  }
+}
+
+void _setupFcmListeners() {
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    final n = message.notification;
+    final title = n?.title ?? 'Notification';
+    final body = n?.body;
+    final openUrl = _fcmPayloadString(message.data['openUrl']);
+    SnackbarService.showFcmForeground(
+      title,
+      body,
+      onOpenLink: openUrl != null
+          ? () {
+              unawaited(_openFcmForegroundLink(openUrl));
+            }
+          : null,
+    );
+  });
+
+  FirebaseMessaging.onMessageOpenedApp.listen(_handleFcmOpenedMessage);
+
+  unawaited(
+    FirebaseMessaging.instance.getInitialMessage().then((message) {
+      if (message != null) {
+        _handleFcmOpenedMessage(message);
+      }
+    }),
+  );
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Use path-based URLs instead of hash-based routing
-  usePathUrlStrategy();
+  // Use path-based URLs instead of hash-based routing (web only)
+  configurePathUrlStrategy();
 
   // Validate configuration before initializing Firebase
   AppConfig.validateConfiguration();
 
-  // Initialize Firebase
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // Web: options come from dart-defines.
+  // Android/iOS: [DEFAULT] is created from google-services.json /
+  // GoogleService-Info.plist. Passing dart-define options that differ from the
+  // native keys (e.g. emulator dummy FIREBASE_API_KEY) throws
+  // [core/duplicate-app] — Firebase.apps is still empty on the Dart side until
+  // initializeApp runs, so an isEmpty guard does not help.
+  if (kIsWeb) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } else {
+    await Firebase.initializeApp();
+  }
 
   // Connect to emulators if USE_EMULATOR is set
   const useEmulator = bool.fromEnvironment('USE_EMULATOR', defaultValue: false);
@@ -102,35 +155,23 @@ void main() async {
     await _connectToEmulators();
   }
 
-  if (kIsWeb) {
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      final n = message.notification;
-      final title = n?.title ?? 'Notification';
-      final body = n?.body;
-      final openUrl = _fcmPayloadString(message.data['openUrl']);
-      SnackbarService.showFcmForeground(
-        title,
-        body,
-        onOpenLink: openUrl != null
-            ? () {
-                unawaited(_openFcmForegroundLink(openUrl));
-              }
-            : null,
-      );
-    });
-  }
+  _setupFcmListeners();
 
   runApp(const ParkourSpotApp());
 
-  // Initialize Google Analytics
+  // Initialize Google Analytics / Firebase Analytics
   WebAnalytics.init();
-  WebAnalytics.trackEvent('app_start', {'platform': 'web'});
+  WebAnalytics.trackEvent('app_start', {
+    'platform': kIsWeb ? 'web' : defaultTargetPlatform.name,
+  });
 }
 
 /// Connect Firebase services to local emulators
 Future<void> _connectToEmulators() async {
-  // Note: For web, we use 127.0.0.1 to match emulator URLs. For other platforms, use 10.0.2.2 for Android emulator
-  const host = '127.0.0.1';
+  // Web / desktop / iOS simulator: localhost. Android emulator: host loopback.
+  final host = (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
+      ? '10.0.2.2'
+      : '127.0.0.1';
 
   // Emulator port configuration
   const firestorePort = 8082;
@@ -164,16 +205,66 @@ Future<void> _connectToEmulators() async {
   }
 }
 
-class ParkourSpotApp extends StatelessWidget {
+class ParkourSpotApp extends StatefulWidget {
   const ParkourSpotApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Web-specific: Check for deep link on app start
+  State<ParkourSpotApp> createState() => _ParkourSpotAppState();
+}
+
+class _ParkourSpotAppState extends State<ParkourSpotApp> {
+  StreamSubscription<Uri>? _appLinkSub;
+
+  @override
+  void initState() {
+    super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkInitialDeepLink();
+      _initAppLinks();
     });
+  }
 
+  @override
+  void dispose() {
+    _appLinkSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _initAppLinks() async {
+    if (kIsWeb) return;
+    try {
+      final appLinks = AppLinks();
+      final initial = await appLinks.getInitialLink();
+      if (initial != null) {
+        _navigateFromUri(initial);
+      }
+      _appLinkSub = appLinks.uriLinkStream.listen(_navigateFromUri);
+    } catch (e) {
+      debugPrint('App Links init failed: $e');
+    }
+  }
+
+  void _navigateFromUri(Uri uri) {
+    if (!_isParkourSpotHost(uri.host) && uri.scheme != 'https') {
+      // Relative or unexpected — still try path if present
+      if (uri.path.isEmpty) return;
+    }
+    if (uri.hasScheme &&
+        uri.scheme == 'https' &&
+        !_isParkourSpotHost(uri.host)) {
+      return;
+    }
+    final path = uri.path.isEmpty ? '/' : uri.path;
+    final q = uri.hasQuery ? '?${uri.query}' : '';
+    Future.delayed(const Duration(milliseconds: 100), () {
+      try {
+        AppRouter.router.go('$path$q');
+      } catch (_) {}
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
@@ -381,8 +472,10 @@ class ParkourSpotApp extends StatelessWidget {
   }
 
   void _checkInitialDeepLink() {
+    if (!kIsWeb) return;
     try {
-      final browserUrl = web.window.location.href;
+      final browserUrl = browserHref();
+      if (browserUrl == null) return;
       final browserPath = Uri.parse(browserUrl).path;
 
       if (_isSpotUrl(browserPath)) {
@@ -420,11 +513,8 @@ class ParkourSpotApp extends StatelessWidget {
   }
 }
 
-/// Ensures [WebPushSubscriptionService] is built on web after the first frame.
-///
-/// `Provider` is lazy: nothing ran push sync until something read this service
-/// (e.g. Settings). Touching it once here makes startup logs and `refresh()`
-/// run on cold load.
+/// Ensures [WebPushSubscriptionService] is built after the first frame on
+/// platforms that support push (web + Android).
 class _EagerWebPushInit extends StatefulWidget {
   const _EagerWebPushInit({required this.child});
 
@@ -438,7 +528,9 @@ class _EagerWebPushInitState extends State<_EagerWebPushInit> {
   @override
   void initState() {
     super.initState();
-    if (kIsWeb) {
+    final supported =
+        kIsWeb || defaultTargetPlatform == TargetPlatform.android;
+    if (supported) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         Provider.of<WebPushSubscriptionService>(context, listen: false);

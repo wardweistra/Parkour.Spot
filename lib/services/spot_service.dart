@@ -81,16 +81,28 @@ class SpotService extends ChangeNotifier {
 
   // Get a single spot by ID
   Future<Spot?> getSpotById(String spotId) async {
-    try {
-      final doc = await _firestore.collection('spots').doc(spotId).get();
-      if (doc.exists) {
-        return Spot.fromFirestore(doc);
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        final doc = await _firestore.collection('spots').doc(spotId).get();
+        if (doc.exists) {
+          return Spot.fromFirestore(doc);
+        }
+        return null;
+      } catch (e) {
+        final message = e.toString();
+        final transient = message.contains('unavailable') ||
+            message.contains('UNAVAILABLE') ||
+            message.contains('Transaction lock timeout');
+        if (transient && attempt == 0) {
+          debugPrint('Retrying getSpotById after transient error: $e');
+          await Future<void>.delayed(const Duration(milliseconds: 400));
+          continue;
+        }
+        debugPrint('Error fetching spot by ID: $e');
+        return null;
       }
-      return null;
-    } catch (e) {
-      debugPrint('Error fetching spot by ID: $e');
-      return null;
     }
+    return null;
   }
 
   /// Search spots by title across all spots in the database.
@@ -116,8 +128,8 @@ class SpotService extends ChangeNotifier {
 
       final items = (data['spots'] as List<dynamic>? ?? <dynamic>[]);
       return items
-          .whereType<Map<String, dynamic>>()
-          .map((item) => Spot.fromMap(item))
+          .whereType<Map>()
+          .map((item) => Spot.fromMap(Map<String, dynamic>.from(item)))
           .where((spot) => spot.id != null)
           .toList();
     } catch (e) {
@@ -1496,8 +1508,8 @@ class SpotService extends ChangeNotifier {
       final List<dynamic> items =
           (responseData['spots'] as List<dynamic>? ?? <dynamic>[]);
       final spots = items
-          .whereType<Map<String, dynamic>>()
-          .map((m) => Spot.fromMap(m))
+          .whereType<Map>()
+          .map((m) => Spot.fromMap(Map<String, dynamic>.from(m)))
           .toList();
 
       return {

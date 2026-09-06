@@ -1,6 +1,8 @@
 /**
- * Shared FCM web-push send + invalid-token cleanup.
+ * Shared FCM send + invalid-token cleanup.
  * Used by the admin test-send callable and product inbox delivery.
+ * Builds webpush or native (android/ios) message shapes from
+ * subscription platform.
  */
 
 const FCM_UNRECOVERABLE_TOKEN_ERROR_CODES = new Set([
@@ -15,6 +17,18 @@ const DEFAULT_NOTIFICATION_BADGE_URL =
 const SEND_CHUNK_SIZE = 500;
 
 /**
+ * Normalize subscription platform to a known send path.
+ * @param {unknown} platform
+ * @return {"web"|"android"|"ios"}
+ */
+function normalizePushPlatform(platform) {
+  if (platform === "android" || platform === "ios") {
+    return platform;
+  }
+  return "web";
+}
+
+/**
  * @param {object} options
  * @param {string} options.token
  * @param {string} options.title
@@ -23,6 +37,7 @@ const SEND_CHUNK_SIZE = 500;
  * @param {string} options.iconUrl
  * @param {string} options.badgeUrl
  * @param {string} [options.imageUrl]
+ * @param {string} [options.platform]
  * @return {object} FCM message
  */
 function buildWebPushMessage({
@@ -33,14 +48,50 @@ function buildWebPushMessage({
   iconUrl,
   badgeUrl,
   imageUrl,
+  platform,
 }) {
-  return {
+  const resolvedPlatform = normalizePushPlatform(platform);
+  const base = {
     token,
     notification: {title, body},
-    data: {openUrl: clickLink},
-    // Explicit webpush notification helps Chrome (incl. Android PWA) deliver
-    // system notifications when the app is backgrounded; top-level
-    // [notification] alone is not always enough for the SW payload.
+    data: {openUrl: String(clickLink || "")},
+  };
+
+  if (resolvedPlatform === "android") {
+    return {
+      ...base,
+      android: {
+        priority: "high",
+        notification: {
+          title,
+          body,
+          clickAction: "FLUTTER_NOTIFICATION_CLICK",
+          ...(imageUrl ? {imageUrl} : {}),
+        },
+      },
+    };
+  }
+
+  if (resolvedPlatform === "ios") {
+    return {
+      ...base,
+      apns: {
+        payload: {
+          aps: {
+            alert: {title, body},
+            sound: "default",
+          },
+        },
+        fcmOptions: {
+          ...(imageUrl ? {image: imageUrl} : {}),
+        },
+      },
+    };
+  }
+
+  // Web (PWA) — explicit webpush block for Chrome / Android PWA background.
+  return {
+    ...base,
     webpush: {
       notification: {
         title,
@@ -57,7 +108,7 @@ function buildWebPushMessage({
 }
 
 /**
- * Send FCM web push to prepared targets and disable unrecoverable tokens.
+ * Send FCM to prepared targets and disable unrecoverable tokens.
  * Title/body may differ per target (localized product alerts).
  *
  * @param {object} options
@@ -65,7 +116,7 @@ function buildWebPushMessage({
  * @param {object} options.FieldValue
  * @param {object} options.messaging admin.messaging()
  * @param {string} options.uid
- * @param {object[]} options.targets each {id, token, title, body}
+ * @param {object[]} options.targets each {id, token, title, body, platform?}
  * @param {string} options.clickLink
  * @param {string} [options.iconUrl]
  * @param {string} [options.badgeUrl]
@@ -111,6 +162,7 @@ async function sendWebPushToTargets({
       iconUrl: resolvedIcon,
       badgeUrl: resolvedBadge,
       imageUrl,
+      platform: t.platform,
     }));
     const batchResponse = await messaging.sendEach(messages);
     successCount += batchResponse.successCount || 0;
@@ -166,6 +218,7 @@ async function sendWebPushToTargets({
 module.exports = {
   sendWebPushToTargets,
   buildWebPushMessage,
+  normalizePushPlatform,
   FCM_UNRECOVERABLE_TOKEN_ERROR_CODES,
   DEFAULT_NOTIFICATION_ICON_URL,
   DEFAULT_NOTIFICATION_BADGE_URL,

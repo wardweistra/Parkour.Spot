@@ -1,8 +1,9 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:web/web.dart' as web;
 import 'package:lottie/lottie.dart';
+import 'package:parkour_spot/utils/browser_location.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -92,10 +93,12 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     // Method 3: Check the browser URL directly (web-specific)
     if (currentPath == null || currentPath == '/') {
       try {
-        // This is a web-specific approach to get the current URL
-        final uri = Uri.parse(web.window.location.href);
-        if (_isSpotUrl(uri.path)) {
-          currentPath = uri.path;
+        final href = browserHref();
+        if (href != null) {
+          final uri = Uri.parse(href);
+          if (_isSpotUrl(uri.path)) {
+            currentPath = uri.path;
+          }
         }
       } catch (e) {
         // Could not get browser URL

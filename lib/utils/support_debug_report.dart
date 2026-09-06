@@ -1,10 +1,8 @@
-import 'dart:js_interop';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:parkour_spot/services/mobile_detection_service.dart';
-import 'package:web/web.dart' as web;
+import 'package:parkour_spot/utils/browser_location.dart';
 
 /// One section of the support debug report (display + clipboard).
 class SupportReportSection {
@@ -79,13 +77,13 @@ List<SupportReportSection> buildSupportDebugReportSections(BuildContext context)
       SupportReportSection(
         title: 'Web browser',
         rows: [
-          MapEntry('navigator.language', web.window.navigator.language),
+          MapEntry('navigator.language', browserLanguage() ?? ''),
           MapEntry(
             'navigator.languages',
-            web.window.navigator.languages.toDart.map((s) => s.toDart).join(', '),
+            browserLanguages().join(', '),
           ),
-          MapEntry('navigator.userAgent', web.window.navigator.userAgent),
-          MapEntry('location.href', web.window.location.href),
+          MapEntry('navigator.userAgent', browserUserAgent() ?? ''),
+          MapEntry('location.href', browserHref() ?? ''),
         ],
       ),
     );
