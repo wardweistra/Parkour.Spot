@@ -12,13 +12,14 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  # Firebase
-  firebase_core: ^4.3.0
-  firebase_auth: ^6.1.3
-  cloud_firestore: ^6.1.1
-  firebase_storage: ^13.0.5
-  cloud_functions: ^6.0.5
-  firebase_messaging: ^16.0.4
+  # Firebase — pin minors so pub does not pull firebase_core_web
+  # versions that break dart2js (`isA` on Object).
+  firebase_core: 4.3.0
+  firebase_auth: 6.1.3
+  cloud_firestore: 6.1.1
+  firebase_storage: 13.0.5
+  cloud_functions: 6.0.5
+  firebase_messaging: 16.0.4
   
   # State Management
   provider: ^6.1.2
@@ -64,6 +65,10 @@ dependencies:
   validators: ^3.0.0
   visibility_detector: ^0.4.0+2
   timezone: ^0.10.1
+
+dependency_overrides:
+  # Direct pins still allow firebase_core_web ^3.3.1 to resolve to 3.11.x.
+  firebase_core_web: 3.6.0
 
 dev_dependencies:
   flutter_test:
