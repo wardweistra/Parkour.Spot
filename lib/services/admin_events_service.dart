@@ -522,16 +522,17 @@ class AdminEventsService extends ChangeNotifier {
       }
       final items = data['events'] as List<dynamic>? ?? <dynamic>[];
       return items
-          .whereType<Map<String, dynamic>>()
-          .map(
-            (item) => <String, dynamic>{
+          .whereType<Map>()
+          .map((raw) {
+            final item = Map<String, dynamic>.from(raw);
+            return <String, dynamic>{
               'id': item['id'] as String?,
               'title': item['title'] as String? ?? '',
               'city': item['city'] as String?,
               'countryCode': item['countryCode'] as String?,
               'startAt': item['startAt'] as String?,
-            },
-          )
+            };
+          })
           .where(
             (event) =>
                 (event['id'] as String?)?.isNotEmpty == true &&

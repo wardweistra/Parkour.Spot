@@ -4,8 +4,8 @@ import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:web/web.dart' as web;
 import 'package:lottie/lottie.dart';
+import 'package:parkour_spot/utils/browser_location.dart';
 import '../../services/auth_service.dart';
 import '../../services/admin_events_service.dart';
 import '../../services/event_report_service.dart';
@@ -86,7 +86,9 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildProfileLoadError(BuildContext context, AuthService authService) {
     final l10n = AppLocalizations.of(context)!;
-    final error = authService.profileLoadError ?? l10n.profileLoadErrorDefault;
+    final error =
+        authService.profileLoadErrorForDisplay(l10n.profileLoadErrorDefault) ??
+        l10n.profileLoadErrorDefault;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -108,7 +110,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             FilledButton.icon(
               onPressed: () async {
                 if (kIsWeb) {
-                  web.window.location.reload();
+                  browserReload();
                 } else {
                   await authService.retryProfileLoad();
                 }
@@ -959,9 +961,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  /// Check if install banner should be shown
-  /// Always shown on mobile when not running as PWA (regardless of engagement)
+  /// Check if install banner should be shown.
+  /// Web mobile only — never on native Android/iOS.
   bool _shouldShowInstallBanner() {
+    if (!kIsWeb) return false;
     if (!MobileDetectionService.isMobileDevice) return false;
     if (MobileDetectionService.isRunningAsPWA) return false;
 

@@ -2,9 +2,29 @@
 /// full-size images to resized versions for better performance.
 library;
 
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
+
 /// Storage path prefixes processed by the storage-resize-images extension.
 const resizableStoragePrefixes = ['spots', 'events'];
 
+/// Rewrites emulator Storage URLs that were saved as `127.0.0.1` / `localhost`
+/// so they reach the host from an Android emulator (`10.0.2.2`).
+String rewriteEmulatorLocalhostUrl(String url) {
+  if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+    return url;
+  }
+  try {
+    final uri = Uri.parse(url);
+    final host = uri.host;
+    if (host != '127.0.0.1' && host != 'localhost') {
+      return url;
+    }
+    return uri.replace(host: '10.0.2.2').toString();
+  } catch (_) {
+    return url;
+  }
+}
 /// Result of parsing a Firebase Storage image URL for resized path checking.
 class ResizedPathInfo {
   const ResizedPathInfo({
@@ -155,15 +175,16 @@ String? _toResizedUrl(String originalUrl, String sizeSuffix) {
 /// Returns URL candidates for loading a spot or event image, in priority order:
 /// [1200x1200, 1200x630, original]. Use for fallback when 1200x1200 may not exist yet.
 List<String> getResizedImageUrlCandidates(String originalUrl) {
-  final url1200x1200 = _toResizedUrl(originalUrl, '1200x1200');
-  final url1200x630 = _toResizedUrl(originalUrl, '1200x630');
+  final rewritten = rewriteEmulatorLocalhostUrl(originalUrl);
+  final url1200x1200 = _toResizedUrl(rewritten, '1200x1200');
+  final url1200x630 = _toResizedUrl(rewritten, '1200x630');
   if (url1200x1200 != null) {
     final result = [url1200x1200];
     if (url1200x630 != null) result.add(url1200x630);
-    result.add(originalUrl);
+    result.add(rewritten);
     return result;
   }
-  return [originalUrl];
+  return [rewritten];
 }
 
 /// Converts a full-size Firebase Storage image URL to its resized version (1200x1200).

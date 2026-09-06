@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:js_interop';
 import 'dart:ui' as ui;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,9 +6,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
-import 'package:web/web.dart' as web;
 
 import '../config/app_config.dart';
+import '../utils/browser_location.dart';
 import 'auth_service.dart';
 import 'mobile_detection_service.dart';
 
@@ -17,11 +16,18 @@ enum WebPushPermissionState { unknown, notDetermined, denied, authorized }
 
 class WebPushSubscriptionService extends ChangeNotifier {
   WebPushSubscriptionService() {
-    _isSupported = kIsWeb;
+    _isSupported =
+        kIsWeb || defaultTargetPlatform == TargetPlatform.android;
+    _platform = kIsWeb
+        ? 'web'
+        : (defaultTargetPlatform == TargetPlatform.android
+            ? 'android'
+            : (defaultTargetPlatform == TargetPlatform.iOS
+                ? 'ios'
+                : defaultTargetPlatform.name));
   }
 
   static const _installationIdPrefsKey = 'web_push_installation_id';
-  static const _platform = 'web';
   static const _maxUserAgentLength = 600;
   static const _maxLocaleLength = 16;
 
@@ -29,6 +35,7 @@ class WebPushSubscriptionService extends ChangeNotifier {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final Uuid _uuid = const Uuid();
 
+  late final String _platform;
   String? _uid;
   String? _installationId;
   bool _isBusy = false;
@@ -36,6 +43,7 @@ class WebPushSubscriptionService extends ChangeNotifier {
   bool _isSubscribed = false;
   String? _lastError;
   WebPushPermissionState _permissionState = WebPushPermissionState.unknown;
+  StreamSubscription<String>? _tokenRefreshSub;
 
   bool get isBusy => _isBusy;
   bool get isSupported => _isSupported;
@@ -52,10 +60,35 @@ class WebPushSubscriptionService extends ChangeNotifier {
     if (_uid == null) {
       _isSubscribed = false;
       _permissionState = WebPushPermissionState.unknown;
+      await _tokenRefreshSub?.cancel();
+      _tokenRefreshSub = null;
       notifyListeners();
       return;
     }
     await refresh();
+    _listenTokenRefresh();
+  }
+
+  void _listenTokenRefresh() {
+    if (!_isSupported || _uid == null) return;
+    _tokenRefreshSub?.cancel();
+    _tokenRefreshSub = _messaging.onTokenRefresh.listen((token) async {
+      if (_uid == null || token.isEmpty) return;
+      try {
+        await _upsertSubscription(token: token, enabled: true);
+        await _disableDuplicateTokenDocs(token: token);
+        _isSubscribed = true;
+        notifyListeners();
+      } catch (e) {
+        debugPrint('FCM token refresh upsert failed: $e');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tokenRefreshSub?.cancel();
+    super.dispose();
   }
 
   Future<void> refresh() async {
@@ -95,12 +128,15 @@ class WebPushSubscriptionService extends ChangeNotifier {
       final token = await _getCurrentToken();
       if (token == null || token.isEmpty) {
         _isSubscribed = false;
-        _lastError = 'No push token available for this browser.';
+        _lastError = kIsWeb
+            ? 'No push token available for this browser.'
+            : 'No push token available for this device.';
         return;
       }
       await _upsertSubscription(token: token, enabled: true);
       await _disableDuplicateTokenDocs(token: token);
       _isSubscribed = true;
+      _listenTokenRefresh();
       success = true;
     });
     return success;
@@ -139,16 +175,20 @@ class WebPushSubscriptionService extends ChangeNotifier {
   }
 
   Future<String?> _getCurrentToken() async {
-    final vapidKey = AppConfig.firebaseWebPushVapidKey.trim();
-    if (vapidKey.isEmpty) {
-      _lastError = 'Missing FIREBASE_WEB_PUSH_VAPID_KEY configuration.';
-      return null;
-    }
     try {
       await _awaitFirebaseMessagingServiceWorkerReady();
-      return await _messaging
-          .getToken(vapidKey: vapidKey)
-          .timeout(const Duration(seconds: 12));
+      if (kIsWeb) {
+        final vapidKey = AppConfig.firebaseWebPushVapidKey.trim();
+        if (vapidKey.isEmpty) {
+          _lastError = 'Missing FIREBASE_WEB_PUSH_VAPID_KEY configuration.';
+          return null;
+        }
+        return await _messaging
+            .getToken(vapidKey: vapidKey)
+            .timeout(const Duration(seconds: 12));
+      }
+      // Native FCM: no VAPID key.
+      return await _messaging.getToken().timeout(const Duration(seconds: 12));
     } on TimeoutException {
       _lastError =
           'Timed out while checking push registration. Please try again.';
@@ -166,15 +206,7 @@ class WebPushSubscriptionService extends ChangeNotifier {
   /// on Android PWAs after eager startup sync.
   Future<void> _awaitFirebaseMessagingServiceWorkerReady() async {
     if (!kIsWeb) return;
-    try {
-      await web.window.navigator.serviceWorker.ready.toDart.timeout(
-        const Duration(seconds: 6),
-      );
-    } on TimeoutException {
-      // Do not block forever if the SW is still settling.
-    } catch (_) {
-      // Non-fatal; registration may complete during getToken.
-    }
+    await awaitBrowserServiceWorkerReady();
   }
 
   Future<WebPushPermissionState> _readPermissionState() async {
@@ -235,7 +267,7 @@ class WebPushSubscriptionService extends ChangeNotifier {
         .trim()
         .toLowerCase();
     final normalizedLocale = locale.isEmpty ? null : locale;
-    final userAgent = web.window.navigator.userAgent;
+    final userAgent = browserUserAgent() ?? '';
     await collection.doc(installationId).set({
       'installationId': installationId,
       'platform': _platform,

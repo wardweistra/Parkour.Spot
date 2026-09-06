@@ -3,7 +3,7 @@
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.4.0/firebase-messaging-compat.js");
 
-firebase.initializeApp({"apiKey":"AIzaSyA5hKiABMDRiDy9f954pVbFf_Sj5bNjNus","appId":"1:999200005209:web:ff17ea851ea892a8926548","messagingSenderId":"999200005209","projectId":"parkourspot-93c90","authDomain":"parkour.spot","storageBucket":"parkourspot-93c90.firebasestorage.app","measurementId":"G-861J61HFR8"});
+firebase.initializeApp({"apiKey":"dummy-api-key-for-emulator","appId":"1:123456789:web:abcdef","messagingSenderId":"123456789","projectId":"parkourspot-93c90","authDomain":"localhost","storageBucket":"parkourspot-93c90.firebasestorage.app","measurementId":"G-XXXXXXXXXX"});
 
 const messaging = firebase.messaging();
 

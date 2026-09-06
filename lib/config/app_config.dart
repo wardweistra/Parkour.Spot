@@ -1,10 +1,15 @@
-// Web-specific environment variable getters (const for compile-time evaluation)
-class WebEnvVars {
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+/// Compile-time environment variables (from `--dart-define` / `.env` scripts).
+class FirebaseEnvVars {
   static const String firebaseApiKey = String.fromEnvironment(
     'FIREBASE_API_KEY',
   );
   static const String firebaseAppIdWeb = String.fromEnvironment(
     'FIREBASE_APP_ID_WEB',
+  );
+  static const String firebaseAppIdAndroid = String.fromEnvironment(
+    'FIREBASE_APP_ID_ANDROID',
   );
   static const String firebaseMessagingSenderId = String.fromEnvironment(
     'FIREBASE_MESSAGING_SENDER_ID',
@@ -32,36 +37,42 @@ class AppConfig {
   static const double defaultMapCenterLng = 2.441781999999999;
 
   // Firebase Configuration
-  static String get firebaseApiKey => WebEnvVars.firebaseApiKey;
+  static String get firebaseApiKey => FirebaseEnvVars.firebaseApiKey;
 
   // Platform-specific App IDs
-  static String get firebaseAppIdWeb => WebEnvVars.firebaseAppIdWeb;
+  static String get firebaseAppIdWeb => FirebaseEnvVars.firebaseAppIdWeb;
+
+  static String get firebaseAppIdAndroid =>
+      FirebaseEnvVars.firebaseAppIdAndroid;
 
   static String get firebaseMessagingSenderId =>
-      WebEnvVars.firebaseMessagingSenderId;
+      FirebaseEnvVars.firebaseMessagingSenderId;
 
-  static String get firebaseProjectId => WebEnvVars.firebaseProjectId;
+  static String get firebaseProjectId => FirebaseEnvVars.firebaseProjectId;
 
   static String get firebaseAuthDomain =>
-      WebEnvVars.firebaseAuthDomain.isNotEmpty
-      ? WebEnvVars.firebaseAuthDomain
+      FirebaseEnvVars.firebaseAuthDomain.isNotEmpty
+      ? FirebaseEnvVars.firebaseAuthDomain
       : 'parkour.spot';
 
   static String get firebaseStorageBucket =>
-      WebEnvVars.firebaseStorageBucket.isNotEmpty
-      ? WebEnvVars.firebaseStorageBucket
+      FirebaseEnvVars.firebaseStorageBucket.isNotEmpty
+      ? FirebaseEnvVars.firebaseStorageBucket
       : '$firebaseProjectId.firebasestorage.app';
 
-  static String get firebaseMeasurementId => WebEnvVars.firebaseMeasurementId;
+  static String get firebaseMeasurementId =>
+      FirebaseEnvVars.firebaseMeasurementId;
 
   static String get firebaseWebPushVapidKey =>
-      WebEnvVars.firebaseWebPushVapidKey;
+      FirebaseEnvVars.firebaseWebPushVapidKey;
 
   // Validation
   static bool get isConfigured {
-    return firebaseApiKey.isNotEmpty &&
-        firebaseAppIdWeb.isNotEmpty &&
-        firebaseProjectId.isNotEmpty;
+    final hasCore =
+        firebaseApiKey.isNotEmpty && firebaseProjectId.isNotEmpty;
+    if (!hasCore) return false;
+    if (kIsWeb) return firebaseAppIdWeb.isNotEmpty;
+    return firebaseAppIdAndroid.isNotEmpty;
   }
 
   static void validateConfiguration() {
@@ -71,7 +82,8 @@ class AppConfig {
         
         Please create a .env file with the following variables:
         - FIREBASE_API_KEY
-        - FIREBASE_APP_ID_WEB
+        - FIREBASE_APP_ID_WEB (web builds)
+        - FIREBASE_APP_ID_ANDROID (Android builds)
         - FIREBASE_PROJECT_ID
         - FIREBASE_MESSAGING_SENDER_ID
         - FIREBASE_AUTH_DOMAIN

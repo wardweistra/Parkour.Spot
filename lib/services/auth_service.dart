@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user.dart' as app_user;
 import 'profile_picture_service.dart';
 import 'snackbar_service.dart';
@@ -44,6 +45,17 @@ class AuthService extends ChangeNotifier {
   /// Cleared on sign out or successful load.
   String? get profileLoadError => _profileLoadError;
   String? _profileLoadError;
+
+  /// Localized-friendly profile error: maps the generic token to [fallback].
+  String? profileLoadErrorForDisplay(String fallback) {
+    if (_profileLoadError == null) return null;
+    if (_profileLoadError == genericProfileLoadFailure) return fallback;
+    return _profileLoadError;
+  }
+
+  /// Marker for a transient Firestore failure. UI maps this to the localized
+  /// [profileLoadErrorDefault] string.
+  static const String genericProfileLoadFailure = '__profile_load_failed__';
 
   /// Retry loading the profile after a guard failure. Clears the error and
   /// triggers a fresh load. Use when user taps "Retry" or "Refresh".
@@ -128,19 +140,16 @@ class AuthService extends ChangeNotifier {
     // Set flags immediately (synchronously) to prevent race conditions
     _isLoadingProfile = true;
     _loadingProfileUid = uid;
+    _profileLoadError = null;
     try {
       // Ensure auth token is ready before Firestore read (fixes "permission denied" on page refresh)
       final user = _auth.currentUser;
       if (user != null) {
         await user.getIdToken(true);
       }
-      // Use Source.server to avoid cache fallback race: when server is unreachable,
-      // Firestore falls back to cache; empty cache yields doc.exists=false and we'd
-      // incorrectly overwrite existing users with new createdAt/isAdmin=false.
-      final doc = await _firestore
-          .collection('users')
-          .doc(uid)
-          .get(const GetOptions(source: Source.server));
+      // Prefer Source.server so an unreachable emulator/cache miss cannot look
+      // like "no profile" and overwrite an existing user. Retry, then cache.
+      final doc = await _getUserProfileDoc(uid);
       if (doc.exists) {
         _profileLoadError = null;
         final data = doc.data() as Map<String, dynamic>;
@@ -213,6 +222,7 @@ class AuthService extends ChangeNotifier {
       completer.complete();
     } catch (e) {
       debugPrint('Error loading user profile: $e');
+      _profileLoadError = genericProfileLoadFailure;
       completer.completeError(e);
     } finally {
       _isLoadingProfile = false;
@@ -220,6 +230,51 @@ class AuthService extends ChangeNotifier {
       _isLoading = false; // Auth state restored
       _profileLoadCompleters.remove(uid);
       notifyListeners();
+    }
+  }
+
+  /// Reads `users/{uid}` with retries. Prefers the server, then cache, so an
+  /// emulator blip does not hang the Add tab forever or overwrite a real user.
+  Future<DocumentSnapshot<Map<String, dynamic>>> _getUserProfileDoc(
+    String uid,
+  ) async {
+    Object? lastError;
+    final ref = _firestore.collection('users').doc(uid);
+
+    Future<DocumentSnapshot<Map<String, dynamic>>> get(Source source) {
+      return ref.get(GetOptions(source: source));
+    }
+
+    for (var attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) {
+        await Future<void>.delayed(
+          Duration(milliseconds: 400 * (1 << (attempt - 1))),
+        );
+      }
+      try {
+        return await get(Source.server);
+      } catch (e) {
+        lastError = e;
+        debugPrint('Profile server get attempt ${attempt + 1} failed: $e');
+      }
+    }
+
+    try {
+      final cached = await get(Source.cache);
+      if (cached.exists) {
+        debugPrint('Using cached user profile after server failures');
+        return cached;
+      }
+    } catch (e) {
+      debugPrint('Profile cache get failed: $e');
+      lastError ??= e;
+    }
+
+    try {
+      return await ref.get();
+    } catch (e) {
+      lastError ??= e;
+      throw lastError;
     }
   }
 
@@ -396,21 +451,20 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<bool> signInWithGoogle() async {
-    if (!kIsWeb) {
-      debugPrint('Google Sign-In is only supported on web');
-      return false;
-    }
+  static bool _googleSignInInitialized = false;
 
+  Future<bool> signInWithGoogle() async {
     try {
       _isLoading = true;
       notifyListeners();
 
-      // Create a new provider
-      final GoogleAuthProvider googleProvider = GoogleAuthProvider();
-
-      // Once signed in, return the UserCredential
-      final userCredential = await _auth.signInWithPopup(googleProvider);
+      final UserCredential userCredential;
+      if (kIsWeb) {
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        userCredential = await _auth.signInWithPopup(googleProvider);
+      } else {
+        userCredential = await _signInWithGoogleNative();
+      }
 
       if (userCredential.user != null) {
         await _updateLastLogin();
@@ -422,6 +476,13 @@ class AuthService extends ChangeNotifier {
     } on FirebaseAuthException catch (e) {
       debugPrint('Google Sign-In error: ${e.message}');
       return false;
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        debugPrint('Google Sign-In canceled by user');
+      } else {
+        debugPrint('Google Sign-In error: $e');
+      }
+      return false;
     } catch (e) {
       debugPrint('Google Sign-In error: $e');
       return false;
@@ -429,6 +490,26 @@ class AuthService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Native Google Sign-In → Firebase credential (Android / iOS).
+  Future<UserCredential> _signInWithGoogleNative() async {
+    final googleSignIn = GoogleSignIn.instance;
+    if (!_googleSignInInitialized) {
+      await googleSignIn.initialize();
+      _googleSignInInitialized = true;
+    }
+    final GoogleSignInAccount googleUser = await googleSignIn.authenticate();
+    final idToken = googleUser.authentication.idToken;
+    if (idToken == null || idToken.isEmpty) {
+      throw StateError(
+        'Google Sign-In did not return an ID token. '
+        'Ensure a web OAuth client exists in google-services.json and '
+        'SHA-1/256 fingerprints are registered in Firebase.',
+      );
+    }
+    final credential = GoogleAuthProvider.credential(idToken: idToken);
+    return _auth.signInWithCredential(credential);
   }
 
   Future<bool> createUserWithEmailAndPassword(

@@ -16,6 +16,7 @@ if [ ! -f ".env.emulator" ]; then
 # These are dummy values - emulators don't require real Firebase credentials
 FIREBASE_API_KEY=dummy-api-key-for-emulator
 FIREBASE_APP_ID_WEB=1:123456789:web:abcdef
+FIREBASE_APP_ID_ANDROID=1:123456789:android:abcdef
 FIREBASE_MESSAGING_SENDER_ID=123456789
 FIREBASE_PROJECT_ID=parkourspot-93c90
 FIREBASE_AUTH_DOMAIN=localhost

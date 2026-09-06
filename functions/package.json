@@ -17,7 +17,7 @@
   "dependencies": {
     "cron-parser": "^4.9.0",
     "firebase-admin": "^12.6.0",
-    "firebase-functions": "^7.1.1",
+    "firebase-functions": "^7.3.2",
     "googleapis": "^144.0.0",
     "i18n-iso-countries": "^7.9.0",
     "node-ical": "^0.26.1",

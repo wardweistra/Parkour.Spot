@@ -88,7 +88,8 @@ async function writeInboxNotifications(db, FieldValue, userIds, payload) {
 /**
  * @param {FirebaseFirestore.Firestore} db
  * @param {string} uid
- * @return {Promise<Array<{id: string, token: string, locale: * }>>}
+ * @return {Promise<Array<{id: string, token: string, locale: *,
+ *   platform: * }>>}
  */
 async function loadEnabledPushSubscriptions(db, uid) {
   const snap = await db.collection("users").doc(uid)
@@ -107,7 +108,12 @@ async function loadEnabledPushSubscriptions(db, uid) {
     if (typeof token !== "string" || token.length < MIN_TOKEN_LENGTH) {
       continue;
     }
-    out.push({id: doc.id, token, locale: data.locale});
+    out.push({
+      id: doc.id,
+      token,
+      locale: data.locale,
+      platform: data.platform,
+    });
   }
   return out;
 }
@@ -187,6 +193,7 @@ async function sendPushForPayload({
         token: sub.token,
         title: copy.title,
         body: copy.body,
+        platform: sub.platform,
       };
     });
     await sendWebPushToTargets({

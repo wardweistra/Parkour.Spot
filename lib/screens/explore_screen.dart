@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:web/web.dart' as web;
+import 'package:parkour_spot/utils/browser_location.dart';
+import 'package:parkour_spot/utils/web_meta_utils.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/auth_service.dart';
@@ -150,9 +151,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       final description =
           _cachedMetaDefaultDescription ??
           'Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.';
-      web.document.title = title;
-      _updateMetaDescription(description);
-      _updateMetaTitle(title);
+      WebMetaUtils.updatePageMeta(title, description);
     }
     _pageController.dispose();
     super.dispose();
@@ -203,9 +202,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       description = l10n.exploreMetaDescriptionCountry(country);
     }
 
-    web.document.title = title;
-    _updateMetaDescription(description);
-    _updateMetaTitle(title);
+    WebMetaUtils.updatePageMeta(title, description);
   }
 
   /// Extract country code from the current URL path
@@ -214,7 +211,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
     if (!kIsWeb) return null;
 
     try {
-      final uri = Uri.parse(web.window.location.href);
+      final href = browserHref();
+      if (href == null) return null;
+      final uri = Uri.parse(href);
       final pathSegments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
 
       // For country-only pages: /gb -> pathSegments = ['gb']
@@ -234,56 +233,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
     }
 
     return null;
-  }
-
-  void _updateMetaDescription(String description) {
-    if (!kIsWeb) return;
-
-    // Find or create the meta description tag
-    final metaDescription = web.document.querySelector(
-      'meta[name="description"]',
-    );
-    if (metaDescription != null) {
-      metaDescription.setAttribute('content', description);
-    } else {
-      // Create new meta tag if it doesn't exist
-      final meta = web.document.createElement('meta') as web.HTMLMetaElement;
-      meta.name = 'description';
-      meta.content = description;
-      web.document.head?.appendChild(meta);
-    }
-
-    // Also update Open Graph and Twitter meta tags
-    final ogDescription = web.document.querySelector(
-      'meta[property="og:description"]',
-    );
-    if (ogDescription != null) {
-      ogDescription.setAttribute('content', description);
-    }
-
-    final twitterDescription = web.document.querySelector(
-      'meta[name="twitter:description"]',
-    );
-    if (twitterDescription != null) {
-      twitterDescription.setAttribute('content', description);
-    }
-  }
-
-  void _updateMetaTitle(String title) {
-    if (!kIsWeb) return;
-
-    // Update Open Graph and Twitter title tags
-    final ogTitle = web.document.querySelector('meta[property="og:title"]');
-    if (ogTitle != null) {
-      ogTitle.setAttribute('content', title);
-    }
-
-    final twitterTitle = web.document.querySelector(
-      'meta[name="twitter:title"]',
-    );
-    if (twitterTitle != null) {
-      twitterTitle.setAttribute('content', title);
-    }
   }
 
   void _onTabTapped(int index) {
@@ -390,7 +339,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   Widget _buildProfileLoadingScreen(AuthService authService) {
     final l10n = AppLocalizations.of(context)!;
-    final error = authService.profileLoadError;
+    final error = authService.profileLoadErrorForDisplay(
+      l10n.profileLoadErrorDefault,
+    );
     return Scaffold(
       appBar: AppBar(
         title: const SizedBox.shrink(),
@@ -425,7 +376,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               FilledButton.icon(
                 onPressed: () async {
                   if (kIsWeb) {
-                    web.window.location.reload();
+                    browserReload();
                   } else {
                     await authService.retryProfileLoad();
                   }
