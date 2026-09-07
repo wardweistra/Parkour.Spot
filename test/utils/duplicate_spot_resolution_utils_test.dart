@@ -457,6 +457,7 @@ void main() {
 
         expect(defaults.basisSpotId, 'native');
         expect(defaults.titleSpotId, 'native');
+        expect(defaults.descriptionSpotId, 'external');
         expect(defaults.locationSpotId, 'external');
         expect(defaults.photoSpotIds, {'external'});
         expect(defaults.youtubeSpotIds, {'external'});
@@ -537,6 +538,81 @@ void main() {
         );
 
         expect(preview.description, isEmpty);
+      },
+    );
+
+    test('buildDuplicateNativeSpotPreview honors empty selected access', () {
+      final publicSpot = Spot(
+        id: 'public',
+        name: 'Public',
+        description: '',
+        latitude: 52,
+        longitude: 4,
+        spotAccess: 'public',
+      );
+      final emptyAccess = Spot(
+        id: 'empty',
+        name: 'Empty access',
+        description: '',
+        latitude: 52.0001,
+        longitude: 4.0001,
+        spotAccess: '  ',
+      );
+
+      final preview = buildDuplicateNativeSpotPreview(
+        spots: [publicSpot, emptyAccess],
+        baseSpotId: 'public',
+        titleSpotId: 'public',
+        descriptionSpotId: 'public',
+        locationSpotId: 'public',
+        accessSpotId: 'empty',
+        facilitiesSpotIds: const {},
+        featureSpotIds: const {},
+        goodForSpotIds: const {},
+        photoSpotIds: const {},
+        youtubeSpotIds: const {},
+      );
+
+      expect(preview.spotAccess, isNull);
+    });
+
+    test(
+      'buildDuplicateClusterMergeDefaults prefers filled description when basis is empty',
+      () {
+        final basis = Spot(
+          id: 'basis',
+          name: 'Native basis',
+          description: '',
+          latitude: 52,
+          longitude: 4,
+          imageUrls: const ['photo-a'],
+        );
+        final describedA = Spot(
+          id: 'described-a',
+          name: 'Described A',
+          description: 'First filled description',
+          latitude: 52.0001,
+          longitude: 4.0001,
+          imageUrls: const ['photo-b', 'photo-c'],
+          spotSource: 'osm',
+        );
+        final describedB = Spot(
+          id: 'described-b',
+          name: 'Described B',
+          description: 'Second filled description',
+          latitude: 52.0002,
+          longitude: 4.0002,
+          spotSource: 'osm',
+        );
+
+        final defaults = buildDuplicateClusterMergeDefaults([
+          describedB,
+          describedA,
+          basis,
+        ]);
+
+        expect(defaults.basisSpotId, 'basis');
+        expect(defaults.descriptionSpotId, 'described-a');
       },
     );
 

@@ -1310,8 +1310,8 @@ class _DuplicateSpotsPairReviewScreenState
   }
 
   Widget _buildAccessSummary(Spot spot) {
-    final access = spot.spotAccess?.trim();
-    if (access == null || access.isEmpty) {
+    final access = normalizedSpotAccess(spot.spotAccess);
+    if (access == null) {
       return _detailLine(Icons.lock_outline, 'No access');
     }
     return _smallChip(SpotAttributes.getLabel('access', access));
@@ -1631,11 +1631,29 @@ class _DuplicateSpotsPairReviewScreenState
       );
     }
 
-    final access = spot.spotAccess?.trim();
-    if (access != null && access.isNotEmpty) {
+    final access = normalizedSpotAccess(spot.spotAccess);
+    if (access != null) {
       addGroup('Access', [
         _smallChip(SpotAttributes.getLabel('access', access)),
       ]);
+    } else {
+      groups.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Access',
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              _detailLine(Icons.lock_outline, 'No access'),
+            ],
+          ),
+        ),
+      );
     }
 
     addGroup(

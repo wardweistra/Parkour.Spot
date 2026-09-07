@@ -346,6 +346,13 @@ DuplicateClusterMergeDefaults buildDuplicateClusterMergeDefaults(
   );
 }
 
+/// Trims access and treats blank values as unset.
+String? normalizedSpotAccess(String? value) {
+  final trimmed = value?.trim();
+  if (trimmed == null || trimmed.isEmpty) return null;
+  return trimmed;
+}
+
 /// Picks the spot that should supply an exclusive field.
 ///
 /// Prefers the basis spot when it has the detail. Otherwise picks the richest
@@ -490,7 +497,7 @@ Spot buildDuplicateNativeSpotPreview({
     ratingCount: 0,
     wilsonLowerBound: 0,
     ranking: baseSpot.ranking,
-    spotAccess: accessSpot.spotAccess,
+    spotAccess: normalizedSpotAccess(accessSpot.spotAccess),
     spotFeatures: spotFeatures,
     spotFacilities: spotFacilities,
     goodFor: goodFor,
