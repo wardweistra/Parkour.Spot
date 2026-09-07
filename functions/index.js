@@ -111,8 +111,9 @@ const {
   extractImageUrls,
 } = require("./lib/text-processing");
 const {
-  youtubeThumbnailUrl,
   isPlausibleYoutubeVideoId,
+  extractYoutubeVideoIdFromThumbnailUrl,
+  resolveYoutubeThumbnailUrl,
 } = require("./lib/youtube-thumbnails");
 const {
   pickSpotIdsForTitleSearch,
@@ -2290,15 +2291,11 @@ async function downloadAndUploadImage(
  * @return {Promise<{url: string, hash: string}|null>}
  */
 async function downloadAndUploadYoutubeThumbnail(videoId, spotName, imageIndex) {
-  const qualities = ["maxresdefault", "sddefault", "hqdefault"];
-  for (const quality of qualities) {
-    const thumbUrl = youtubeThumbnailUrl(videoId, quality);
-    const result = await downloadAndUploadImage(thumbUrl, spotName, imageIndex);
-    if (result) {
-      return result;
-    }
+  const thumbUrl = await resolveYoutubeThumbnailUrl(videoId);
+  if (!thumbUrl) {
+    return null;
   }
-  return null;
+  return downloadAndUploadImage(thumbUrl, spotName, imageIndex);
 }
 
 /**
@@ -2351,8 +2348,21 @@ async function processPlacemarkImages(placemark, existingSpotData = null, update
   // Process images sequentially to avoid memory issues
   // Processing in parallel was causing heap out of memory errors
   for (let i = 0; i < imageUrls.length; i++) {
-    const url = imageUrls[i];
+    let url = imageUrls[i];
     console.log(`Processing image ${i + 1}/${imageUrls.length} for spot: ${placemark.name}`);
+
+    const youtubeVideoId = extractYoutubeVideoIdFromThumbnailUrl(url);
+    if (youtubeVideoId) {
+      const resolvedUrl = await resolveYoutubeThumbnailUrl(youtubeVideoId);
+      if (!resolvedUrl) {
+        console.warn(
+            `Skipping unavailable YouTube thumbnail for video ${youtubeVideoId} ` +
+            `(spot: ${placemark.name})`,
+        );
+        continue;
+      }
+      url = resolvedUrl;
+    }
 
     // Check if we have a stored hash for this specific image URL
     let storedHash = null;
@@ -3218,12 +3228,21 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
       // Process YouTube thumbnails for new spots or when doing full sync
       const validationResults = await Promise.all(
           youtubeVideoIds.map(async (vid) => {
-            const thumbUrl = `https://img.youtube.com/vi/${vid}/maxresdefault.jpg`;
+            const thumbUrl = await resolveYoutubeThumbnailUrl(vid);
+            if (!thumbUrl) {
+              const folderName = placemark.folderName || "unknown";
+              console.warn(
+                  `Dropping YouTube ID ${vid} due to missing thumbnail ` +
+                  `(folder: ${folderName}, spot: ${name})`,
+              );
+              return null;
+            }
             const cachedPublicUrl = await checkImageUrlCache(thumbUrl);
             if (!cachedPublicUrl) {
               const folderName = placemark.folderName || "unknown";
               console.warn(
-                  `Dropping YouTube ID ${vid} due to missing/cached thumbnail (likely 404): ${thumbUrl} (folder: ${folderName}, spot: ${name})`,
+                  `Dropping YouTube ID ${vid} due to missing/cached thumbnail: ` +
+                  `${thumbUrl} (folder: ${folderName}, spot: ${name})`,
               );
               return null;
             }

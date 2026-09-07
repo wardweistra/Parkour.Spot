@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../utils/image_url_utils.dart';
+import '../utils/youtube_utils.dart';
+import 'resized_spot_image_provider.dart';
 
 /// Displays a spot image with fallback: tries 1200x1200, then 1200x630, then original.
 /// Use for Firebase Storage spot images where the 1200x1200 resized version may not exist yet.
@@ -60,6 +62,34 @@ class _ResizedSpotImageState extends State<ResizedSpotImage> {
   Widget build(BuildContext context) {
     final url = _candidates[_currentIndex];
     final hasMore = _currentIndex < _candidates.length - 1;
+
+    if (isYoutubeCdnThumbnailUrl(widget.imageUrl)) {
+      return Image(
+        image: ResizedSpotImageProvider(_candidates),
+        fit: widget.fit,
+        width: widget.width,
+        height: widget.height,
+        errorBuilder: (context, error, stackTrace) {
+          return widget.errorWidget?.call(context, url, error) ??
+              Container(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                child: Icon(
+                  Icons.image_not_supported,
+                  size: 48,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              );
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return widget.placeholder?.call(context, url) ??
+              Container(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                child: const Center(child: CircularProgressIndicator()),
+              );
+        },
+      );
+    }
 
     return CachedNetworkImage(
       imageUrl: url,

@@ -316,10 +316,19 @@ class SpotService extends ChangeNotifier {
               existingImageUrls: imageUrls,
             );
       if (newYoutubeIds.isNotEmpty) {
-        final resolvedThumbnails = await _fetchYoutubeThumbnailUrls(
-          videoIds: newYoutubeIds,
-          spotName: spot.name,
+        final resolvedThumbnails = Map<String, String>.from(
+          await _fetchYoutubeThumbnailUrls(
+            videoIds: newYoutubeIds,
+            spotName: spot.name,
+          ),
         );
+        for (final id in newYoutubeIds) {
+          if (resolvedThumbnails.containsKey(id)) continue;
+          final fallbackUrl = await resolveYoutubeThumbnailUrl(id);
+          if (fallbackUrl != null) {
+            resolvedThumbnails[id] = fallbackUrl;
+          }
+        }
         imageUrls = appendYoutubeThumbnails(
           imageUrls: imageUrls,
           videoIds: newYoutubeIds,

@@ -1,4 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:parkour_spot/utils/image_url_utils.dart';
 import 'package:parkour_spot/utils/youtube_utils.dart';
 
 void main() {
@@ -71,6 +74,78 @@ void main() {
           nextIds: const ['bbb', 'ccc', 'bbb'],
         ),
         ['bbb', 'ccc'],
+      );
+    });
+  });
+
+  group('getYoutubeThumbnailUrlCandidates', () {
+    test('returns qualities highest-first for YouTube CDN URLs', () {
+      expect(
+        getYoutubeThumbnailUrlCandidates(
+          'https://img.youtube.com/vi/pjJ2XwoSmx8/maxresdefault.jpg',
+        ),
+        [
+          'https://img.youtube.com/vi/pjJ2XwoSmx8/maxresdefault.jpg',
+          'https://img.youtube.com/vi/pjJ2XwoSmx8/sddefault.jpg',
+          'https://img.youtube.com/vi/pjJ2XwoSmx8/hqdefault.jpg',
+        ],
+      );
+    });
+
+    test('returns an empty list for non-YouTube URLs', () {
+      expect(
+        getYoutubeThumbnailUrlCandidates('https://example.com/a.jpg'),
+        isEmpty,
+      );
+    });
+  });
+
+  group('resolveYoutubeThumbnailUrl', () {
+    test('skips unavailable qualities and returns the first HTTP 200', () async {
+      final client = MockClient((request) async {
+        if (request.url.path.endsWith('/maxresdefault.jpg')) {
+          return http.Response('', 404);
+        }
+        if (request.url.path.endsWith('/sddefault.jpg')) {
+          return http.Response('', 200);
+        }
+        return http.Response('', 404);
+      });
+
+      final resolved = await resolveYoutubeThumbnailUrl(
+        'pjJ2XwoSmx8',
+        client: client,
+      );
+
+      expect(
+        resolved,
+        'https://img.youtube.com/vi/pjJ2XwoSmx8/sddefault.jpg',
+      );
+    });
+
+    test('returns null when no qualities are available', () async {
+      final client = MockClient((request) async => http.Response('', 404));
+
+      final resolved = await resolveYoutubeThumbnailUrl(
+        'pjJ2XwoSmx8',
+        client: client,
+      );
+
+      expect(resolved, isNull);
+    });
+  });
+
+  group('getResizedImageUrlCandidates', () {
+    test('uses YouTube fallback candidates for CDN thumbnail URLs', () {
+      expect(
+        getResizedImageUrlCandidates(
+          'https://i3.ytimg.com/vi/pjJ2XwoSmx8/maxresdefault.jpg',
+        ),
+        [
+          'https://img.youtube.com/vi/pjJ2XwoSmx8/maxresdefault.jpg',
+          'https://img.youtube.com/vi/pjJ2XwoSmx8/sddefault.jpg',
+          'https://img.youtube.com/vi/pjJ2XwoSmx8/hqdefault.jpg',
+        ],
       );
     });
   });
