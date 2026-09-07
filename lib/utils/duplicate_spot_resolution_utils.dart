@@ -8,6 +8,50 @@ bool isSpotAlreadyMarkedAsDuplicate(Spot spot) {
   return duplicateOf != null && duplicateOf.isNotEmpty;
 }
 
+class DuplicateClusterSpotCounts {
+  const DuplicateClusterSpotCounts({
+    required this.total,
+    required this.alreadyDuplicate,
+    required this.included,
+    required this.leftUnchanged,
+    required this.willMarkAsDuplicate,
+  });
+
+  final int total;
+  final int alreadyDuplicate;
+  final int included;
+  final int leftUnchanged;
+  final int willMarkAsDuplicate;
+}
+
+DuplicateClusterSpotCounts countDuplicateClusterSpots({
+  required List<Spot> spots,
+  required Set<String> includedSpotIds,
+  required bool updateExistingNative,
+}) {
+  final alreadyDuplicate = spots.where(isSpotAlreadyMarkedAsDuplicate).length;
+  final included = spots
+      .where((spot) => includedSpotIds.contains(spot.id))
+      .length;
+  final leftUnchanged = spots.where((spot) {
+    final id = spot.id;
+    if (id == null) return false;
+    return !includedSpotIds.contains(id) &&
+        !isSpotAlreadyMarkedAsDuplicate(spot);
+  }).length;
+  final willMarkAsDuplicate = updateExistingNative
+      ? math.max(0, included - 1)
+      : included;
+
+  return DuplicateClusterSpotCounts(
+    total: spots.length,
+    alreadyDuplicate: alreadyDuplicate,
+    included: included,
+    leftUnchanged: leftUnchanged,
+    willMarkAsDuplicate: willMarkAsDuplicate,
+  );
+}
+
 /// Safely reads a Firestore map on web where values may be JS interop objects.
 Map<String, dynamic> firestoreMap(dynamic value) {
   if (value == null) return {};
@@ -256,35 +300,26 @@ DuplicateClusterMergeDefaults buildDuplicateClusterMergeDefaults(
 
   return DuplicateClusterMergeDefaults(
     basisSpotId: basisSpotId,
-    titleSpotId:
-        _soleDetailProviderSpotId(
-          spots,
-          basisSpotId,
-          (spot) => spot.name.trim().isNotEmpty,
-        ) ??
-        basisSpotId,
-    descriptionSpotId:
-        _soleDetailProviderSpotId(
-          spots,
-          basisSpotId,
-          (spot) => spot.description.trim().isNotEmpty,
-        ) ??
-        basisSpotId,
-    locationSpotId:
-        _soleDetailProviderSpotId(
-          spots,
-          basisSpotId,
-          _hasOptionalLocationDetail,
-        ) ??
-        basisSpotId,
-    accessSpotId:
-        _soleDetailProviderSpotId(
-          spots,
-          basisSpotId,
-          (spot) =>
-              spot.spotAccess != null && spot.spotAccess!.trim().isNotEmpty,
-        ) ??
-        basisSpotId,
+    titleSpotId: _preferredDetailProviderSpotId(
+      spots,
+      basisSpotId,
+      (spot) => spot.name.trim().isNotEmpty,
+    ),
+    descriptionSpotId: _preferredDetailProviderSpotId(
+      spots,
+      basisSpotId,
+      (spot) => spot.description.trim().isNotEmpty,
+    ),
+    locationSpotId: _preferredDetailProviderSpotId(
+      spots,
+      basisSpotId,
+      _hasOptionalLocationDetail,
+    ),
+    accessSpotId: _preferredDetailProviderSpotId(
+      spots,
+      basisSpotId,
+      (spot) => spot.spotAccess != null && spot.spotAccess!.trim().isNotEmpty,
+    ),
     facilitiesSpotIds: _defaultTraitSpotIds(
       spots,
       basisSpotId,
@@ -311,18 +346,27 @@ DuplicateClusterMergeDefaults buildDuplicateClusterMergeDefaults(
   );
 }
 
-String? _soleDetailProviderSpotId(
+/// Picks the spot that should supply an exclusive field.
+///
+/// Prefers the basis spot when it has the detail. Otherwise picks the richest
+/// spot that has it, even when several duplicates share the same filled value.
+String _preferredDetailProviderSpotId(
   List<Spot> spots,
   String basisSpotId,
   bool Function(Spot spot) hasDetail,
 ) {
+  final basis = spots.where((spot) => spot.id == basisSpotId).firstOrNull;
+  if (basis != null && hasDetail(basis)) {
+    return basisSpotId;
+  }
+
   final providers = spots
       .where((spot) => spot.id != null && hasDetail(spot))
       .toList(growable: false);
-  if (providers.length == 1) {
-    return providers.first.id;
+  if (providers.isEmpty) {
+    return basisSpotId;
   }
-  return null;
+  return sortSpotsByOptionalDetailRichness(providers).first.id!;
 }
 
 Set<String> _defaultTraitSpotIds(
@@ -432,9 +476,7 @@ Spot buildDuplicateNativeSpotPreview({
 
   return Spot(
     name: titleSpot.name.isNotEmpty ? titleSpot.name : baseSpot.name,
-    description: descriptionSpot.description.isNotEmpty
-        ? descriptionSpot.description
-        : baseSpot.description,
+    description: descriptionSpot.description.trim(),
     latitude: locationSpot.latitude,
     longitude: locationSpot.longitude,
     address: locationSpot.address,
