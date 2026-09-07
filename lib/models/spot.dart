@@ -285,7 +285,10 @@ class Spot {
       if (ratingCount != null) 'ratingCount': ratingCount,
       if (wilsonLowerBound != null) 'wilsonLowerBound': wilsonLowerBound,
       if (ranking != null) 'ranking': ranking,
-      if (spotAccess != null) 'spotAccess': spotAccess,
+      if (spotAccess != null)
+        'spotAccess': spotAccess
+      else if (isUpdate)
+        'spotAccess': FieldValue.delete(),
       if (spotFeatures != null) 'spotFeatures': spotFeatures,
       if (spotFacilities != null) 'spotFacilities': spotFacilities,
       if (goodFor != null) 'goodFor': goodFor,
@@ -322,7 +325,7 @@ class Spot {
     int? ratingCount,
     double? wilsonLowerBound,
     double? ranking,
-    String? spotAccess,
+    Object? spotAccess = _unset,
     List<String>? spotFeatures,
     Map<String, String>? spotFacilities,
     List<String>? goodFor,
@@ -367,7 +370,9 @@ class Spot {
       ratingCount: ratingCount ?? this.ratingCount,
       wilsonLowerBound: wilsonLowerBound ?? this.wilsonLowerBound,
       ranking: ranking ?? this.ranking,
-      spotAccess: spotAccess ?? this.spotAccess,
+      spotAccess: identical(spotAccess, _unset)
+          ? this.spotAccess
+          : spotAccess as String?,
       spotFeatures: spotFeatures ?? this.spotFeatures,
       spotFacilities: spotFacilities ?? this.spotFacilities,
       goodFor: goodFor ?? this.goodFor,

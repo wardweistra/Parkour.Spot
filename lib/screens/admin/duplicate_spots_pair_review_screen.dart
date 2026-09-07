@@ -217,11 +217,16 @@ class _DuplicateSpotsPairReviewScreenState
           final includedSpots = _includedSpots(data.spots);
           final preview = _buildPreview(includedSpots);
           final mergePairCount = _resolvedPairIndicesForMerge(data).length;
+          final spotCounts = countDuplicateClusterSpots(
+            spots: data.spots,
+            includedSpotIds: _includedSpotIds,
+            updateExistingNative: _isBasisNativeSpot(data.spots),
+          );
 
           return ListView(
             padding: EdgeInsets.zero,
             children: [
-              _buildIntro(data),
+              _buildIntro(data, spotCounts: spotCounts),
               const SizedBox(height: 12),
               _buildClusterMap(data.spots),
               const SizedBox(height: 12),
@@ -229,7 +234,11 @@ class _DuplicateSpotsPairReviewScreenState
               const SizedBox(height: 12),
               _buildPreviewPanel(preview, data.spots),
               const SizedBox(height: 12),
-              _buildConfirmPanel(data, mergePairCount: mergePairCount),
+              _buildConfirmPanel(
+                data,
+                mergePairCount: mergePairCount,
+                spotCounts: spotCounts,
+              ),
             ],
           );
         },
@@ -477,7 +486,10 @@ class _DuplicateSpotsPairReviewScreenState
     });
   }
 
-  Widget _buildIntro(_DuplicateClusterReviewData data) {
+  Widget _buildIntro(
+    _DuplicateClusterReviewData data, {
+    required DuplicateClusterSpotCounts spotCounts,
+  }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final valueStyle = theme.textTheme.bodyMedium?.copyWith(
@@ -485,7 +497,7 @@ class _DuplicateSpotsPairReviewScreenState
     );
     final resolution = data.existingResolution;
     final nativeSpotId = resolution?['nativeSpotId'] as String?;
-    final spotCount = data.spots.length;
+    final alreadyDuplicateCount = spotCounts.alreadyDuplicate;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -523,11 +535,27 @@ class _DuplicateSpotsPairReviewScreenState
                 color: colorScheme.outlineVariant.withValues(alpha: 0.35),
               ),
             ),
-            child: _buildResolutionConfirmRow(
-              icon: Icons.place_outlined,
-              label: 'Spots found',
-              value: '$spotCount spot${spotCount == 1 ? '' : 's'}',
-              valueStyle: valueStyle,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildResolutionConfirmRow(
+                  icon: Icons.place_outlined,
+                  label: 'Spots found',
+                  value:
+                      '${spotCounts.total} spot${spotCounts.total == 1 ? '' : 's'}',
+                  valueStyle: valueStyle,
+                ),
+                if (alreadyDuplicateCount > 0) ...[
+                  const SizedBox(height: 10),
+                  _buildResolutionConfirmRow(
+                    icon: Icons.copy_all_outlined,
+                    label: 'Already marked as duplicates',
+                    value:
+                        '$alreadyDuplicateCount spot${alreadyDuplicateCount == 1 ? '' : 's'}',
+                    valueStyle: valueStyle,
+                  ),
+                ],
+              ],
             ),
           ),
           if (nativeSpotId != null) ...[
@@ -1282,10 +1310,11 @@ class _DuplicateSpotsPairReviewScreenState
   }
 
   Widget _buildAccessSummary(Spot spot) {
-    if (spot.spotAccess == null) {
+    final access = normalizedSpotAccess(spot.spotAccess);
+    if (access == null) {
       return _detailLine(Icons.lock_outline, 'No access');
     }
-    return _smallChip(SpotAttributes.getLabel('access', spot.spotAccess!));
+    return _smallChip(SpotAttributes.getLabel('access', access));
   }
 
   Widget _buildFacilitiesSummary(Spot spot) {
@@ -1298,7 +1327,7 @@ class _DuplicateSpotsPairReviewScreenState
     if (chips.isEmpty) {
       return _detailLine(Icons.home_work_outlined, 'No facilities');
     }
-    return Wrap(spacing: 6, runSpacing: 6, children: chips.take(8).toList());
+    return Wrap(spacing: 6, runSpacing: 6, children: chips);
   }
 
   Widget _buildFeaturesSummary(Spot spot) {
@@ -1308,7 +1337,7 @@ class _DuplicateSpotsPairReviewScreenState
     if (chips.isEmpty) {
       return _detailLine(Icons.tune, 'No features');
     }
-    return Wrap(spacing: 6, runSpacing: 6, children: chips.take(8).toList());
+    return Wrap(spacing: 6, runSpacing: 6, children: chips);
   }
 
   Widget _buildGoodForSummary(Spot spot) {
@@ -1318,7 +1347,7 @@ class _DuplicateSpotsPairReviewScreenState
     if (chips.isEmpty) {
       return _detailLine(Icons.tune, 'No good-for tags');
     }
-    return Wrap(spacing: 6, runSpacing: 6, children: chips.take(8).toList());
+    return Wrap(spacing: 6, runSpacing: 6, children: chips);
   }
 
   Widget _buildAdditiveAttributeGridRow({
@@ -1578,40 +1607,92 @@ class _DuplicateSpotsPairReviewScreenState
   }
 
   Widget _buildAttributeSummary(Spot spot) {
-    final chips = <Widget>[];
-    if (spot.spotAccess != null) {
-      chips.add(
-        _smallChip(SpotAttributes.getLabel('access', spot.spotAccess!)),
+    final groups = <Widget>[];
+
+    void addGroup(String label, List<Widget> chips) {
+      if (chips.isEmpty) return;
+      groups.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 6),
+              Wrap(spacing: 6, runSpacing: 6, children: chips),
+            ],
+          ),
+        ),
       );
     }
-    chips.addAll(
-      (spot.spotFeatures ?? <String>[]).map(
-        (key) => _smallChip(SpotAttributes.getLabel('features', key)),
-      ),
+
+    final access = normalizedSpotAccess(spot.spotAccess);
+    if (access != null) {
+      addGroup('Access', [
+        _smallChip(SpotAttributes.getLabel('access', access)),
+      ]);
+    } else {
+      groups.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Access',
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              _detailLine(Icons.lock_outline, 'No access'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    addGroup(
+      'Features',
+      (spot.spotFeatures ?? <String>[])
+          .map((key) => _smallChip(SpotAttributes.getLabel('features', key)))
+          .toList(),
     );
-    chips.addAll(
-      (spot.goodFor ?? <String>[]).map(
-        (key) => _smallChip(SpotAttributes.getLabel('goodFor', key)),
-      ),
-    );
+
+    final facilityChips = <Widget>[];
     spot.spotFacilities?.forEach((key, value) {
-      if (value == 'true' || value == 'yes') {
-        chips.add(_smallChip(SpotAttributes.getLabel('facilities', key)));
+      if (isSpotFacilityEnabled(value)) {
+        facilityChips.add(
+          _smallChip(SpotAttributes.getLabel('facilities', key)),
+        );
       }
     });
+    addGroup('Facilities', facilityChips);
 
-    if (chips.isEmpty) {
+    addGroup(
+      'Good for',
+      (spot.goodFor ?? <String>[])
+          .map((key) => _smallChip(SpotAttributes.getLabel('goodFor', key)))
+          .toList(),
+    );
+
+    if (groups.isEmpty) {
       return _detailLine(Icons.tune, 'No attributes');
     }
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Wrap(spacing: 6, runSpacing: 6, children: chips.take(8).toList()),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: groups,
     );
   }
 
   Widget _buildConfirmPanel(
     _DuplicateClusterReviewData data, {
     required int mergePairCount,
+    required DuplicateClusterSpotCounts spotCounts,
   }) {
     final authService = context.watch<AuthService>();
     final hasAlreadyDuplicateIncluded = data.spots.any(
@@ -1672,6 +1753,7 @@ class _DuplicateSpotsPairReviewScreenState
                         data,
                         authService,
                         mergePairCount: mergePairCount,
+                        spotCounts: spotCounts,
                       )
                     : null,
                 icon: _isResolving
@@ -1730,8 +1812,7 @@ class _DuplicateSpotsPairReviewScreenState
 
   Widget _buildResolutionConfirmContent({
     required Spot preview,
-    required int includedCount,
-    required int unchangedCount,
+    required DuplicateClusterSpotCounts spotCounts,
     required int mergePairCount,
     required bool updateExistingNative,
   }) {
@@ -1746,9 +1827,9 @@ class _DuplicateSpotsPairReviewScreenState
     final spotNameStyle = theme.textTheme.titleSmall?.copyWith(
       fontWeight: FontWeight.w600,
     );
-    final duplicateCount = updateExistingNative
-        ? includedCount - 1
-        : includedCount;
+    final duplicateCount = spotCounts.willMarkAsDuplicate;
+    final alreadyDuplicateCount = spotCounts.alreadyDuplicate;
+    final unchangedCount = spotCounts.leftUnchanged;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1786,6 +1867,16 @@ class _DuplicateSpotsPairReviewScreenState
                 value: '$duplicateCount spot${duplicateCount == 1 ? '' : 's'}',
                 valueStyle: valueStyle,
               ),
+              if (alreadyDuplicateCount > 0) ...[
+                const SizedBox(height: 10),
+                _buildResolutionConfirmRow(
+                  icon: Icons.copy_all_outlined,
+                  label: 'Already marked as duplicates',
+                  value:
+                      '$alreadyDuplicateCount spot${alreadyDuplicateCount == 1 ? '' : 's'}',
+                  valueStyle: valueStyle,
+                ),
+              ],
               if (unchangedCount > 0) ...[
                 const SizedBox(height: 10),
                 _buildResolutionConfirmRow(
@@ -1814,11 +1905,10 @@ class _DuplicateSpotsPairReviewScreenState
     _DuplicateClusterReviewData data,
     AuthService authService, {
     required int mergePairCount,
+    required DuplicateClusterSpotCounts spotCounts,
   }) async {
     final includedSpots = _includedSpots(data.spots);
     final preview = _buildPreview(includedSpots);
-    final includedCount = includedSpots.length;
-    final unchangedCount = data.spots.length - includedCount;
     final updateExistingNative = _isBasisNativeSpot(data.spots);
     final currentUser = authService.currentUser;
     if (currentUser == null) {
@@ -1838,8 +1928,7 @@ class _DuplicateSpotsPairReviewScreenState
         title: const Text('Resolve duplicate cluster?'),
         content: _buildResolutionConfirmContent(
           preview: preview,
-          includedCount: includedCount,
-          unchangedCount: unchangedCount,
+          spotCounts: spotCounts,
           mergePairCount: mergePairCount,
           updateExistingNative: updateExistingNative,
         ),

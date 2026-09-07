@@ -192,4 +192,31 @@ void main() {
       },
     );
   });
+
+  group('Spot access updates', () {
+    test('copyWith can clear an existing access value', () {
+      final spot = Spot(
+        name: 'Plaza',
+        description: 'Desc',
+        latitude: 1,
+        longitude: 2,
+        spotAccess: 'public',
+      );
+
+      expect(spot.copyWith(spotAccess: null).spotAccess, isNull);
+      expect(spot.copyWith().spotAccess, 'public');
+    });
+
+    test('toFirestore deletes access on update when it is empty', () {
+      final spot = Spot(
+        name: 'Plaza',
+        description: 'Desc',
+        latitude: 1,
+        longitude: 2,
+      );
+
+      expect(spot.toFirestore().containsKey('spotAccess'), isFalse);
+      expect(spot.toFirestore(isUpdate: true)['spotAccess'], isA<FieldValue>());
+    });
+  });
 }
