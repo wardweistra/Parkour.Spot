@@ -8,10 +8,16 @@ Parkour Spot is a Flutter web PWA with a Firebase backend (Cloud Functions in `f
 
 ### Prerequisites
 
-- **Flutter 3.35.0** installed at `/opt/flutter` (added to PATH via `~/.bashrc`)
+- **Flutter ≥ 3.38.1** (Dart ≥ 3.10.0) at `/opt/flutter` (added to PATH via `~/.bashrc`). Current `pubspec.lock` cannot resolve on older SDKs (`share_plus` 13.3.0 needs Dart 3.10+). Use current Flutter **stable** (CI and Cloud Agents track that channel).
 - **Node.js 22** (pre-installed via nvm)
 - **Java 21** (pre-installed; required for Firebase emulators)
 - **Firebase CLI** (`npm install -g firebase-tools`)
+
+### Cloud Agent environment
+
+Repo-managed install lives in `.cursor/environment.json`. Each environment Build runs `./scripts/setup_cloud_agent.sh`, which upgrades `/opt/flutter` to current **stable**, then `flutter pub get` and `functions` `npm ci`.
+
+After changing that config, start a Cloud Agent from the branch so Cursor prepares a new Build. A failed Build does not replace the last good environment.
 
 ### Running services for local development
 

@@ -1,0 +1,4 @@
+{
+  "name": "parkour-spot",
+  "install": "./scripts/setup_cloud_agent.sh"
+}

@@ -17,8 +17,8 @@ A cross-platform Flutter application for discovering, reporting, and rating park
 ## 🚀 Development
 
 ### **Prerequisites**
-- **Flutter SDK**: 3.9.0 or higher
-- **Dart SDK**: 3.9.0 or higher
+- **Flutter SDK**: 3.38.1 or higher (current stable recommended)
+- **Dart SDK**: 3.10.0 or higher
 - **Firebase CLI**: Latest version
 - **Node.js**: 18.0.0 or higher
 
