@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../utils/image_url_utils.dart';
 import '../utils/youtube_utils.dart';
-import 'resized_spot_image_provider.dart';
+import '../utils/resized_spot_image_provider.dart';
 
 /// Displays a spot image with fallback: tries 1200x1200, then 1200x630, then original.
 /// Use for Firebase Storage spot images where the 1200x1200 resized version may not exist yet.
