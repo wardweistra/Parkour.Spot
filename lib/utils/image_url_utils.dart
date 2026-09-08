@@ -5,6 +5,8 @@ library;
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
 
+import 'youtube_utils.dart';
+
 /// Storage path prefixes processed by the storage-resize-images extension.
 const resizableStoragePrefixes = ['spots', 'events'];
 
@@ -175,6 +177,11 @@ String? _toResizedUrl(String originalUrl, String sizeSuffix) {
 /// Returns URL candidates for loading a spot or event image, in priority order:
 /// [1200x1200, 1200x630, original]. Use for fallback when 1200x1200 may not exist yet.
 List<String> getResizedImageUrlCandidates(String originalUrl) {
+  final youtubeCandidates = getYoutubeThumbnailUrlCandidates(originalUrl);
+  if (youtubeCandidates.isNotEmpty) {
+    return youtubeCandidates;
+  }
+
   final rewritten = rewriteEmulatorLocalhostUrl(originalUrl);
   final url1200x1200 = _toResizedUrl(rewritten, '1200x1200');
   final url1200x630 = _toResizedUrl(rewritten, '1200x630');
