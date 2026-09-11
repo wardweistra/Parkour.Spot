@@ -1,5 +1,6 @@
 const {
   DEFAULT_SPOT_NAME,
+  USER_AGENT,
   extractNaverShareId,
   naverSharePageUrl,
   naverBookmarksApiUrl,
@@ -17,6 +18,10 @@ const SAMPLE_API_URL =
   `${SAMPLE_SHARE_ID}/bookmarks?start=0&limit=5000&sort=lastUseTime`;
 
 describe("naver-bookmarks helpers", () => {
+  it("uses a browser User-Agent because Naver returns HTTP 500 otherwise", () => {
+    expect(USER_AGENT.startsWith("Mozilla/5.0 ")).toBe(true);
+  });
+
   describe("extractNaverShareId", () => {
     it("accepts a raw 32-character share id", () => {
       expect(extractNaverShareId(SAMPLE_SHARE_ID)).toBe(SAMPLE_SHARE_ID);
