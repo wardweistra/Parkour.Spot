@@ -1,4 +1,8 @@
-const {hasImportedSpotContentChanges} = require("../lib/spot-sync");
+const {
+  hasImportedSpotContentChanges,
+  normalizeSpotSyncSourceType,
+  spotSyncSourceRequiresUrl,
+} = require("../lib/spot-sync");
 
 describe("spot-sync helpers", () => {
   describe("hasImportedSpotContentChanges", () => {
@@ -154,6 +158,22 @@ describe("spot-sync helpers", () => {
       const existing = {...incoming};
       const incomingFalse = {...incoming, hasImages: false};
       expect(hasImportedSpotContentChanges(existing, incomingFalse)).toBe(false);
+    });
+  });
+
+  describe("normalizeSpotSyncSourceType", () => {
+    it("keeps known types and defaults to file", () => {
+      expect(normalizeSpotSyncSourceType("openstreetmap"))
+          .toBe("openstreetmap");
+      expect(normalizeSpotSyncSourceType("navermap")).toBe("navermap");
+      expect(normalizeSpotSyncSourceType("file")).toBe("file");
+      expect(normalizeSpotSyncSourceType("other")).toBe("file");
+    });
+
+    it("requires a URL for file and Naver Map sources", () => {
+      expect(spotSyncSourceRequiresUrl("file")).toBe(true);
+      expect(spotSyncSourceRequiresUrl("navermap")).toBe(true);
+      expect(spotSyncSourceRequiresUrl("openstreetmap")).toBe(false);
     });
   });
 });

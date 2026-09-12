@@ -130,11 +130,23 @@ const {
   detectImportFormat,
   generateImageHash,
 } = require("./lib/import-helpers");
-const {hasImportedSpotContentChanges} = require("./lib/spot-sync");
+const {
+  SOURCE_TYPE_FILE,
+  SOURCE_TYPE_OPENSTREETMAP,
+  SOURCE_TYPE_NAVERMAP,
+  hasImportedSpotContentChanges,
+  normalizeSpotSyncSourceType,
+  spotSyncSourceRequiresUrl,
+} = require("./lib/spot-sync");
 const {
   fetchOsmParkourPlacemarks,
   placemarkOsmAttributeDefaults,
 } = require("./lib/osm-overpass");
+const {
+  extractNaverShareId,
+  naverSharePageUrl,
+  fetchNaverBookmarkPlacemarks,
+} = require("./lib/naver-bookmarks");
 const {shouldRunSync} = require("./lib/sync-helpers");
 const {
   normalizeFolderList,
@@ -2798,13 +2810,22 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
   const MIN_TIME_REMAINING = 5 * 60 * 1000; // 5 minutes in milliseconds
   const timeoutMs = 55 * 60 * 1000; // 55 minutes (leave buffer before 1 hour timeout)
   const startTime = Date.now();
-  const isOpenStreetMapSource = source.sourceType === "openstreetmap";
+  const isOpenStreetMapSource = source.sourceType === SOURCE_TYPE_OPENSTREETMAP;
+  const isNaverMapSource = source.sourceType === SOURCE_TYPE_NAVERMAP;
+  const appliesPlacemarkAttributes =
+    isOpenStreetMapSource || isNaverMapSource;
 
   let placemarks = [];
   if (isOpenStreetMapSource) {
     console.log("Fetching OpenStreetMap parkour features via Overpass");
     placemarks = await fetchOsmParkourPlacemarks();
     console.log(`Overpass returned ${placemarks.length} parkour placemarks`);
+  } else if (isNaverMapSource) {
+    console.log("Fetching Naver Map shared bookmarks");
+    placemarks = await fetchNaverBookmarkPlacemarks(source.kmzUrl);
+    console.log(
+        `Naver Map returned ${placemarks.length} bookmark placemarks`,
+    );
   } else {
     // Download and process based on detected format (KMZ/KML/GeoJSON)
     const fileBuffer = await downloadFile(source.kmzUrl);
@@ -3289,12 +3310,12 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
       }
     }
 
-    const osmAttributeDefaults = isOpenStreetMapSource ?
+    const placemarkAttributeDefaults = appliesPlacemarkAttributes ?
       placemarkOsmAttributeDefaults(placemark) :
       null;
     const mergedAttributeDefaults = mergeSpotAttributeDefaults(
         effectiveSpotAttributeDefaults,
-        osmAttributeDefaults,
+        placemarkAttributeDefaults,
     );
 
     let attributesFilledOnUpdate = false;
@@ -3305,7 +3326,7 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
             mergedAttributeDefaults,
         );
       }
-    } else if (isOpenStreetMapSource) {
+    } else if (appliesPlacemarkAttributes) {
       // Preserve existing attributes on the write payload, then fill unset only.
       if (existingSpotData) {
         if (existingSpotData.spotAccess !== undefined) {
@@ -4084,14 +4105,21 @@ exports.createSyncSource = onCall(
           sourceType,
         } = request.data;
 
-        const normalizedSourceType =
-          sourceType === "openstreetmap" ? "openstreetmap" : "file";
+        const normalizedSourceType = normalizeSpotSyncSourceType(sourceType);
+        const naverShareId = normalizedSourceType === SOURCE_TYPE_NAVERMAP ?
+          extractNaverShareId(kmzUrl) :
+          null;
 
         if (!name) {
           throw new Error("name is required");
         }
-        if (normalizedSourceType === "file" && !kmzUrl) {
+        if (spotSyncSourceRequiresUrl(normalizedSourceType) && !kmzUrl) {
           throw new Error("name and kmzUrl are required");
+        }
+        if (normalizedSourceType === SOURCE_TYPE_NAVERMAP && !naverShareId) {
+          throw new Error(
+              "kmzUrl must be a Naver Map shared bookmark list URL",
+          );
         }
 
         const normalizedInclude = normalizeFolderList(includeFolders);
@@ -4103,18 +4131,21 @@ exports.createSyncSource = onCall(
           );
         }
 
+        let defaultPublicUrl = "";
+        if (normalizedSourceType === SOURCE_TYPE_OPENSTREETMAP) {
+          defaultPublicUrl = "https://www.openstreetmap.org/copyright";
+        } else if (normalizedSourceType === SOURCE_TYPE_NAVERMAP) {
+          defaultPublicUrl = naverSharePageUrl(naverShareId);
+        }
+
         const sourceData = {
           name: name,
-          kmzUrl: normalizedSourceType === "openstreetmap" ?
+          kmzUrl: normalizedSourceType === SOURCE_TYPE_OPENSTREETMAP ?
             (kmzUrl || "") :
             kmzUrl,
           sourceType: normalizedSourceType,
           description: description || "",
-          publicUrl: publicUrl || (
-            normalizedSourceType === "openstreetmap" ?
-              "https://www.openstreetmap.org/copyright" :
-              ""
-          ),
+          publicUrl: publicUrl || defaultPublicUrl,
           instagramHandle: instagramHandle || "",
           isActive: isActive,
           createdAt: FieldValue.serverTimestamp(),
@@ -4204,16 +4235,38 @@ exports.updateSyncSource = onCall(
         if (name !== undefined) updateData.name = name;
         if (kmzUrl !== undefined) updateData.kmzUrl = kmzUrl;
         if (sourceType !== undefined) {
-          updateData.sourceType =
-            sourceType === "openstreetmap" ? "openstreetmap" : "file";
-          if (updateData.sourceType === "file" &&
+          updateData.sourceType = normalizeSpotSyncSourceType(sourceType);
+          if (spotSyncSourceRequiresUrl(updateData.sourceType) &&
               (kmzUrl === undefined || !kmzUrl)) {
             const existingDoc = await db.collection("syncSources").doc(sourceId).get();
             const existingKmz = existingDoc.exists ? existingDoc.data().kmzUrl : null;
             const nextKmz = kmzUrl !== undefined ? kmzUrl : existingKmz;
             if (!nextKmz) {
-              throw new Error("kmzUrl is required for file sync sources");
+              throw new Error("kmzUrl is required for this sync source type");
             }
+            if (updateData.sourceType === SOURCE_TYPE_NAVERMAP &&
+                !extractNaverShareId(nextKmz)) {
+              throw new Error(
+                  "kmzUrl must be a Naver Map shared bookmark list URL",
+              );
+            }
+          } else if (updateData.sourceType === SOURCE_TYPE_NAVERMAP &&
+              !extractNaverShareId(kmzUrl)) {
+            throw new Error(
+                "kmzUrl must be a Naver Map shared bookmark list URL",
+            );
+          }
+        } else if (kmzUrl !== undefined && kmzUrl) {
+          const existingDoc = await db.collection("syncSources").doc(sourceId).get();
+          const existingType = existingDoc.exists ?
+            existingDoc.data().sourceType :
+            SOURCE_TYPE_FILE;
+          if (normalizeSpotSyncSourceType(existingType) ===
+              SOURCE_TYPE_NAVERMAP &&
+              !extractNaverShareId(kmzUrl)) {
+            throw new Error(
+                "kmzUrl must be a Naver Map shared bookmark list URL",
+            );
           }
         }
         if (description !== undefined) updateData.description = description;

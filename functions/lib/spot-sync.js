@@ -153,6 +153,40 @@ function hasImportedSpotContentChanges(existingData, incomingData) {
   return false;
 }
 
+const SOURCE_TYPE_FILE = "file";
+const SOURCE_TYPE_OPENSTREETMAP = "openstreetmap";
+const SOURCE_TYPE_NAVERMAP = "navermap";
+
+/**
+ * @param {*} sourceType
+ * @return {"file"|"openstreetmap"|"navermap"}
+ */
+function normalizeSpotSyncSourceType(sourceType) {
+  if (sourceType === SOURCE_TYPE_OPENSTREETMAP) {
+    return SOURCE_TYPE_OPENSTREETMAP;
+  }
+  if (sourceType === SOURCE_TYPE_NAVERMAP) {
+    return SOURCE_TYPE_NAVERMAP;
+  }
+  return SOURCE_TYPE_FILE;
+}
+
+/**
+ * File and Naver Map sources need a URL; OpenStreetMap queries Overpass.
+ * @param {*} sourceType
+ * @return {boolean}
+ */
+function spotSyncSourceRequiresUrl(sourceType) {
+  const normalized = normalizeSpotSyncSourceType(sourceType);
+  return normalized === SOURCE_TYPE_FILE ||
+    normalized === SOURCE_TYPE_NAVERMAP;
+}
+
 module.exports = {
+  SOURCE_TYPE_FILE,
+  SOURCE_TYPE_OPENSTREETMAP,
+  SOURCE_TYPE_NAVERMAP,
   hasImportedSpotContentChanges,
+  normalizeSpotSyncSourceType,
+  spotSyncSourceRequiresUrl,
 };
