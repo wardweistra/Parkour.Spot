@@ -69,4 +69,15 @@ Spot sync sources can use `sourceType: "openstreetmap"` to import worldwide OSM 
    - Full: `0 4 * * 0` (Sunday 04:00 UTC)
 5. Save, then run a manual sync once. The hourly `checkAndRunAutoSyncs` job will pick up the schedules afterward.
 
-Deploy the composite index `spotSource` + `spotSourceExternalId` (`firestore.indexes.json`) before the first OSM sync.
+Deploy the composite index `spotSource` + `spotSourceExternalId` (`firestore.indexes.json`) before the first OSM or Naver map sync.
+
+### Naver map bookmark sync source
+
+Spot sync sources can use `sourceType: "navermap"` to import a public Naver Map shared bookmark list. Matching uses `spotSourceExternalId` (`bookmark/{bookmarkId}`). Coordinates come from Naver `px` (longitude) / `py` (latitude). Unavailable bookmarks are skipped.
+
+**Setup:**
+
+1. Sign in as an admin and open **Admin → Sync sources**.
+2. Add source → choose **Naver map**.
+3. Paste the shared list URL, share id, or maps-bookmark API URL into **Naver map share URL**. Public URL defaults to the Naver share page.
+4. Save, then run a manual sync. Enable auto-sync if the list should refresh on a schedule.

@@ -9,18 +9,15 @@
 const GOOGLE_EARTH_IMAGE_SIZE_CANDIDATES = ["0", "2048", "1024", "512", "256"];
 
 /**
- * Decodes common XML entity encodings in KML attribute values.
+ * Decodes XML ampersand entities in KML URL attribute values.
+ * Only &amp; is normalized; other entities are left untouched to avoid
+ * double-unescaping.
  * @param {string} value
  * @return {string}
  */
-function decodeKmlXmlEntities(value) {
+function decodeKmlUrlAmpersands(value) {
   if (typeof value !== "string") return "";
-  return value
-      .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&quot;/g, "\"")
-      .replace(/&#39;/g, "'");
+  return value.replace(/&amp;/g, "&");
 }
 
 /**
@@ -32,7 +29,7 @@ function decodeKmlXmlEntities(value) {
  */
 function resolveGoogleEarthImageUrl(templateUrl, preferredSize = "0") {
   if (typeof templateUrl !== "string") return null;
-  const trimmed = decodeKmlXmlEntities(templateUrl.trim());
+  const trimmed = decodeKmlUrlAmpersands(templateUrl.trim());
   if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
     return null;
   }
@@ -49,7 +46,7 @@ function resolveGoogleEarthImageUrl(templateUrl, preferredSize = "0") {
  */
 function buildGoogleEarthImageUrlCandidates(templateUrl) {
   if (typeof templateUrl !== "string") return [];
-  const decoded = decodeKmlXmlEntities(templateUrl.trim());
+  const decoded = decodeKmlUrlAmpersands(templateUrl.trim());
   if (!decoded.startsWith("http://") && !decoded.startsWith("https://")) {
     return [];
   }
@@ -75,7 +72,7 @@ function buildGoogleEarthImageUrlCandidates(templateUrl) {
 
 module.exports = {
   GOOGLE_EARTH_IMAGE_SIZE_CANDIDATES,
-  decodeKmlXmlEntities,
+  decodeKmlUrlAmpersands,
   resolveGoogleEarthImageUrl,
   buildGoogleEarthImageUrlCandidates,
 };

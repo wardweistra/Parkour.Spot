@@ -201,6 +201,7 @@ External spot lists are imported through Firestore `syncSources` and Cloud Funct
 
 - **File** (`sourceType: file`, default) — Google My Maps KMZ/KML or uMap GeoJSON via `kmzUrl`
 - **OpenStreetMap** (`sourceType: openstreetmap`) — Overpass query for `sport=parkour` worldwide
+- **Naver map** (`sourceType: navermap`) — Shared Naver Map bookmark list via `kmzUrl` (share page, share id, or maps-bookmark API URL). Matching uses `spotSourceExternalId` (`bookmark/123`).
 
 After deploying functions and indexes, create the OSM source in **Admin → Sync sources** (type OpenStreetMap, weekly auto-sync schedules). See `AGENTS.md` for the recommended cron expressions and first-sync steps.
 

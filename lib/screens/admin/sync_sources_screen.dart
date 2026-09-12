@@ -17,15 +17,10 @@ const TextStyle _kSyncChipLabelText = TextStyle(
 
 const TextStyle _kSyncChipPlainLabel = TextStyle(fontWeight: FontWeight.normal);
 
-String _syncSourceTypeLabel(SyncSource source) {
-  if (source.isOpenStreetMap) return 'OpenStreetMap';
-  if (source.isGoogleEarth) return 'Google Earth';
-  return 'File';
-}
-
 Color _syncSourceTypeChipColor(SyncSource source) {
   if (source.isOpenStreetMap) return Colors.teal.shade100;
   if (source.isGoogleEarth) return Colors.orange.shade100;
+  if (source.isNaverMap) return Colors.green.shade100;
   return Colors.grey.shade200;
 }
 
@@ -282,7 +277,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                           const SizedBox(width: 8),
                           Chip(
                             label: Text(
-                              _syncSourceTypeLabel(s),
+                              s.sourceTypeLabel,
                               style: _kSyncChipLabelText,
                             ),
                             labelStyle: _kSyncChipLabelText,
@@ -1862,33 +1857,31 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                     (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
               const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Source type',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ),
-              const SizedBox(height: 8),
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(
+              DropdownButtonFormField<String>(
+                initialValue: sourceType,
+                decoration: const InputDecoration(labelText: 'Source type'),
+                items: const [
+                  DropdownMenuItem(
                     value: SyncSource.sourceTypeFile,
-                    label: Text('File URL'),
+                    child: Text('File URL'),
                   ),
-                  ButtonSegment(
+                  DropdownMenuItem(
                     value: SyncSource.sourceTypeGoogleEarth,
-                    label: Text('Google Earth'),
+                    child: Text('Google Earth'),
                   ),
-                  ButtonSegment(
+                  DropdownMenuItem(
                     value: SyncSource.sourceTypeOpenStreetMap,
-                    label: Text('OpenStreetMap'),
+                    child: Text('OpenStreetMap'),
+                  ),
+                  DropdownMenuItem(
+                    value: SyncSource.sourceTypeNaverMap,
+                    child: Text('Naver map'),
                   ),
                 ],
-                selected: {sourceType},
-                onSelectionChanged: (Set<String> selected) {
+                onChanged: (String? value) {
+                  if (value == null) return;
                   setState(() {
-                    sourceType = selected.first;
+                    sourceType = value;
                     pendingKmlFile = null;
                     pendingKmlSummary = null;
                     if (sourceType == SyncSource.sourceTypeOpenStreetMap &&
@@ -1899,6 +1892,11 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                     if (sourceType == SyncSource.sourceTypeOpenStreetMap &&
                         nameCtrl.text.trim().isEmpty) {
                       nameCtrl.text = 'OpenStreetMap';
+                    }
+                    if (sourceType == SyncSource.sourceTypeNaverMap &&
+                        publicUrlCtrl.text.trim() ==
+                            'https://www.openstreetmap.org/copyright') {
+                      publicUrlCtrl.text = '';
                     }
                   });
                 },
@@ -1971,7 +1969,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                     ),
                   ],
                 )
-              else
+              else if (sourceType == SyncSource.sourceTypeOpenStreetMap)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
                   child: Align(
@@ -1981,6 +1979,20 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                       style: TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                   ),
+                )
+              else
+                TextFormField(
+                  controller: urlCtrl,
+                  decoration: InputDecoration(
+                    labelText: sourceType == SyncSource.sourceTypeNaverMap
+                        ? 'Naver map share URL'
+                        : 'Source URL (KMZ/KML/GeoJSON)',
+                    helperText: sourceType == SyncSource.sourceTypeNaverMap
+                        ? 'Paste a shared bookmark list URL or maps-bookmark API URL'
+                        : 'Paste Google My Maps KMZ/KML or OpenStreetMap uMap GeoJSON URL',
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Required' : null,
                 ),
               TextFormField(
                 controller: descCtrl,

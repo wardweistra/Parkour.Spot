@@ -71,6 +71,7 @@ class SyncSource {
   static const String sourceTypeFile = 'file';
   static const String sourceTypeOpenStreetMap = 'openstreetmap';
   static const String sourceTypeGoogleEarth = 'google_earth';
+  static const String sourceTypeNaverMap = 'navermap';
 
   final String id;
   final String name;
@@ -139,13 +140,30 @@ class SyncSource {
   bool get hasGoogleEarthUpload =>
       kmlStoragePath != null && kmlStoragePath!.trim().isNotEmpty;
 
+  bool get isNaverMap => sourceType == sourceTypeNaverMap;
+
+  String get sourceTypeLabel {
+    if (isOpenStreetMap) return 'OpenStreetMap';
+    if (isNaverMap) return 'Naver map';
+    if (isGoogleEarth) return 'Google Earth';
+    return 'File';
+  }
+
+  static String normalizeSourceType(String? rawSourceType) {
+    if (rawSourceType == sourceTypeOpenStreetMap) {
+      return sourceTypeOpenStreetMap;
+    }
+    if (rawSourceType == sourceTypeNaverMap) {
+      return sourceTypeNaverMap;
+    }
+    if (rawSourceType == sourceTypeGoogleEarth) {
+      return sourceTypeGoogleEarth;
+    }
+    return sourceTypeFile;
+  }
+
   factory SyncSource.fromMap(Map<String, dynamic> data) {
-    final rawSourceType = data['sourceType']?.toString();
-    final sourceType = rawSourceType == sourceTypeOpenStreetMap
-        ? sourceTypeOpenStreetMap
-        : rawSourceType == sourceTypeGoogleEarth
-        ? sourceTypeGoogleEarth
-        : sourceTypeFile;
+    final sourceType = normalizeSourceType(data['sourceType']?.toString());
     return SyncSource(
       id: data['id'] ?? '',
       name: data['name'] ?? '',

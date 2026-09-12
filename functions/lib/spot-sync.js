@@ -153,6 +153,46 @@ function hasImportedSpotContentChanges(existingData, incomingData) {
   return false;
 }
 
+const SOURCE_TYPE_FILE = "file";
+const SOURCE_TYPE_OPENSTREETMAP = "openstreetmap";
+const SOURCE_TYPE_NAVERMAP = "navermap";
+const SOURCE_TYPE_GOOGLE_EARTH = "google_earth";
+
+/**
+ * @param {*} sourceType
+ * @return {"file"|"openstreetmap"|"navermap"|"google_earth"}
+ */
+function normalizeSpotSyncSourceType(sourceType) {
+  if (sourceType === SOURCE_TYPE_OPENSTREETMAP) {
+    return SOURCE_TYPE_OPENSTREETMAP;
+  }
+  if (sourceType === SOURCE_TYPE_NAVERMAP) {
+    return SOURCE_TYPE_NAVERMAP;
+  }
+  if (sourceType === SOURCE_TYPE_GOOGLE_EARTH) {
+    return SOURCE_TYPE_GOOGLE_EARTH;
+  }
+  return SOURCE_TYPE_FILE;
+}
+
+/**
+ * File and Naver Map sources need a URL; OpenStreetMap queries Overpass;
+ * Google Earth uses an uploaded KML/KMZ file in Storage.
+ * @param {*} sourceType
+ * @return {boolean}
+ */
+function spotSyncSourceRequiresUrl(sourceType) {
+  const normalized = normalizeSpotSyncSourceType(sourceType);
+  return normalized === SOURCE_TYPE_FILE ||
+    normalized === SOURCE_TYPE_NAVERMAP;
+}
+
 module.exports = {
+  SOURCE_TYPE_FILE,
+  SOURCE_TYPE_OPENSTREETMAP,
+  SOURCE_TYPE_NAVERMAP,
+  SOURCE_TYPE_GOOGLE_EARTH,
   hasImportedSpotContentChanges,
+  normalizeSpotSyncSourceType,
+  spotSyncSourceRequiresUrl,
 };
