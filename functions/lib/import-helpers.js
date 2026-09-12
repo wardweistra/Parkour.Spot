@@ -44,7 +44,41 @@ function generateImageHash(imageBuffer) {
   return crypto.createHash("sha256").update(imageBuffer).digest("hex");
 }
 
+const SPOT_SYNC_SOURCE_TYPE_FILE = "file";
+const SPOT_SYNC_SOURCE_TYPE_OPENSTREETMAP = "openstreetmap";
+const SPOT_SYNC_SOURCE_TYPE_GOOGLE_EARTH = "google_earth";
+
+/**
+ * Normalizes spot sync source type values from clients.
+ * @param {*} sourceType
+ * @return {"file"|"openstreetmap"|"google_earth"}
+ */
+function normalizeSpotSyncSourceType(sourceType) {
+  if (sourceType === SPOT_SYNC_SOURCE_TYPE_OPENSTREETMAP) {
+    return SPOT_SYNC_SOURCE_TYPE_OPENSTREETMAP;
+  }
+  if (sourceType === SPOT_SYNC_SOURCE_TYPE_GOOGLE_EARTH) {
+    return SPOT_SYNC_SOURCE_TYPE_GOOGLE_EARTH;
+  }
+  return SPOT_SYNC_SOURCE_TYPE_FILE;
+}
+
+/**
+ * Detects import format from buffer content and optional filename hint.
+ * @param {Buffer} buffer
+ * @param {string=} filenameHint
+ * @return {"kmz"|"kml"|"geojson"}
+ */
+function detectImportFormatFromBuffer(buffer, filenameHint = "") {
+  return detectImportFormat(buffer, filenameHint || "");
+}
+
 module.exports = {
   detectImportFormat,
+  detectImportFormatFromBuffer,
   generateImageHash,
+  normalizeSpotSyncSourceType,
+  SPOT_SYNC_SOURCE_TYPE_FILE,
+  SPOT_SYNC_SOURCE_TYPE_OPENSTREETMAP,
+  SPOT_SYNC_SOURCE_TYPE_GOOGLE_EARTH,
 };

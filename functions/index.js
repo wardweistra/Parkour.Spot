@@ -24,7 +24,6 @@ const {
 const admin = require("firebase-admin");
 const sharp = require("sharp");
 const yauzl = require("yauzl");
-const xml2js = require("xml2js");
 const http = require("http");
 const https = require("https");
 const path = require("path");
@@ -128,8 +127,18 @@ const {
 } = require("./lib/spot-search");
 const {
   detectImportFormat,
+  detectImportFormatFromBuffer,
   generateImageHash,
+  normalizeSpotSyncSourceType,
+  SPOT_SYNC_SOURCE_TYPE_GOOGLE_EARTH,
 } = require("./lib/import-helpers");
+const {
+  parseKmlPlacemarks,
+  parseKmlTopLevelFolders,
+} = require("./lib/kml-parser");
+const {
+  GOOGLE_EARTH_IMAGE_SIZE_CANDIDATES,
+} = require("./lib/google-earth-images");
 const {hasImportedSpotContentChanges} = require("./lib/spot-sync");
 const {
   fetchOsmParkourPlacemarks,
@@ -1739,6 +1748,61 @@ function downloadFile(url) {
 }
 
 /**
+ * Loads the uploaded Google Earth KML/KMZ file for a sync source.
+ * @param {Object} source Sync source document data
+ * @param {string} sourceId Sync source document id
+ * @return {Promise<Buffer>}
+ */
+async function loadGoogleEarthImportBuffer(source, sourceId) {
+  const storagePath = typeof source.kmlStoragePath === "string" ?
+    source.kmlStoragePath.trim() :
+    "";
+  if (!storagePath) {
+    throw new Error(
+        `Google Earth sync source "${source.name || sourceId}" has no uploaded KML file`,
+    );
+  }
+  const file = bucket.file(storagePath);
+  const [exists] = await file.exists();
+  if (!exists) {
+    throw new Error(
+        `Uploaded KML file not found at ${storagePath} for source ${sourceId}`,
+    );
+  }
+  const [contents] = await file.download();
+  return contents;
+}
+
+/**
+ * Builds the Storage path for a Google Earth sync source import file.
+ * @param {string} sourceId
+ * @param {string} originalFileName
+ * @return {string}
+ */
+function buildGoogleEarthStoragePath(sourceId, originalFileName) {
+  const lowerName = (originalFileName || "project.kml").toLowerCase();
+  const extension = lowerName.endsWith(".kmz") ? ".kmz" : ".kml";
+  return `syncSources/${sourceId}/import${extension}`;
+}
+
+/**
+ * Deletes uploaded Google Earth import files for a sync source.
+ * @param {Object} sourceData
+ * @return {Promise<void>}
+ */
+async function deleteGoogleEarthImportFiles(sourceData) {
+  const storagePath = typeof sourceData?.kmlStoragePath === "string" ?
+    sourceData.kmlStoragePath.trim() :
+    "";
+  if (!storagePath) return;
+  try {
+    await bucket.file(storagePath).delete({ignoreNotFound: true});
+  } catch (error) {
+    console.warn(`Failed to delete Google Earth import file ${storagePath}:`, error);
+  }
+}
+
+/**
  * Checks if an image with the given hash already exists in Firebase Storage
  * @param {string} imageHash - The content hash of the image
  * @param {string=} storageFolder - Storage folder prefix (`spots` or `events`)
@@ -2377,10 +2441,29 @@ async function processPlacemarkImages(placemark, existingSpotData = null, update
         storedHash,
     );
 
+    let finalResult = result;
+    if (
+      !finalResult &&
+      typeof url === "string" &&
+      url.includes("earth.usercontent.google.com")
+    ) {
+      for (const size of GOOGLE_EARTH_IMAGE_SIZE_CANDIDATES) {
+        const retryUrl = url.replace(/fife=s\d+/i, `fife=s${size}`);
+        if (retryUrl === url) continue;
+        finalResult = await downloadAndUploadImage(
+            retryUrl,
+            placemark.name,
+            i,
+            storedHash,
+        );
+        if (finalResult) break;
+      }
+    }
+
     // Add successful result to our arrays
-    if (result) {
-      uploadedImageUrls.push(result.url);
-      imageHashes.push(result.hash);
+    if (finalResult) {
+      uploadedImageUrls.push(finalResult.url);
+      imageHashes.push(finalResult.hash);
     }
 
     // Force garbage collection hint after each image to free memory
@@ -2399,216 +2482,6 @@ async function processPlacemarkImages(placemark, existingSpotData = null, update
       `for spot: ${placemark.name}`,
   );
   return {imageUrls: uploadedImageUrls, imageHashes};
-}
-
-
-/**
- * Extracts address information from a KML placemark
- * @param {Object} placemark - The KML placemark object
- * @return {string|null} The address string or null if no address found
- */
-function extractAddressFromPlacemark(placemark) {
-  // Check for direct address element first
-  if (placemark.address && placemark.address[0]) {
-    return placemark.address[0].trim();
-  }
-
-  // Check ExtendedData for address information
-  if (placemark.ExtendedData && placemark.ExtendedData[0]) {
-    const extendedData = placemark.ExtendedData[0];
-
-    // Check for Data elements with address-related names
-    if (extendedData.Data) {
-      for (const data of extendedData.Data) {
-        if (data.$ && data.$.name) {
-          const name = data.$.name.toLowerCase();
-          if (name.includes("adresse") || name.includes("address") || name.includes("location") ||
-              name.includes("place") || name.includes("street")) {
-            if (data.value && data.value[0]) {
-              return data.value[0].trim();
-            }
-          }
-        }
-      }
-    }
-  }
-
-  // Check description for address information
-  if (placemark.description && placemark.description[0]) {
-    const description = placemark.description[0];
-    // Look for common address patterns in description
-    const addressPatterns = [
-      /adresse complète[:\s]+([^\n\r<]+)/i,
-      /address[:\s]+([^\n\r<]+)/i,
-      /location[:\s]+([^\n\r<]+)/i,
-      /place[:\s]+([^\n\r<]+)/i,
-      /street[:\s]+([^\n\r<]+)/i,
-    ];
-
-    for (const pattern of addressPatterns) {
-      const match = description.match(pattern);
-      if (match && match[1]) {
-        return match[1].trim();
-      }
-    }
-  }
-
-  // Check name for address information (sometimes the name itself is an address)
-  if (placemark.name && placemark.name[0]) {
-    const name = placemark.name[0];
-    // If name looks like an address (contains street numbers, common address words)
-    if (name.match(/\d+.*(street|st|avenue|ave|road|rd|boulevard|blvd|way|drive|dr|lane|ln|place|pl)/i)) {
-      return name.trim();
-    }
-  }
-
-  return null;
-}
-
-/**
- * Parses KML and extracts Placemarks, including folder hierarchy when present
- * @param {string} kmlContent - The KML content
- * @return {Promise<Object[]>} A promise that resolves to the Placemarks
- */
-function parseKmlPlacemarks(kmlContent) {
-  return new Promise((resolve, reject) => {
-    const parser = new xml2js.Parser();
-    parser.parseString(kmlContent, (err, result) => {
-      if (err) return reject(err);
-
-      const placemarks = [];
-
-      /**
-       * Recursively extracts placemarks from a folder structure
-       * @param {Object} folder - The folder containing placemarks
-       * @param {Array} folderPath - The path to the current folder
-       */
-      function extractPlacemarksFromFolder(folder, folderPath = []) {
-        // Current folder name if available
-        let currentFolderName = null;
-        if (folder.name && Array.isArray(folder.name) && folder.name[0]) {
-          currentFolderName = String(folder.name[0]).trim();
-        }
-        const nextFolderPath = currentFolderName ?
-          [...folderPath, currentFolderName] :
-          [...folderPath];
-
-        if (folder.Placemark) {
-          folder.Placemark.forEach((placemark) => {
-            const name =
-              (placemark.name && placemark.name[0]) || "Unnamed Spot";
-            const description =
-              (placemark.description && placemark.description[0]) || "";
-            const coordinates =
-              placemark.Point &&
-              placemark.Point[0] &&
-              placemark.Point[0].coordinates &&
-              placemark.Point[0].coordinates[0];
-
-            if (coordinates) {
-              // Placemark has coordinates - process normally
-              const [longitude, latitude, altitude] = coordinates
-                  .split(",")
-                  .map(Number);
-              placemarks.push({
-                name: name,
-                description: description,
-                coordinates: {latitude, longitude, altitude: altitude || 0},
-                extendedData:
-                  (placemark.ExtendedData && placemark.ExtendedData[0]) || {},
-                folderPath: nextFolderPath,
-                folderName:
-                  nextFolderPath.length > 0 ?
-                    nextFolderPath[nextFolderPath.length - 1].trim() :
-                    null,
-              });
-            } else {
-              // Placemark has no coordinates - check for address information
-              const address = extractAddressFromPlacemark(placemark);
-              if (address) {
-                placemarks.push({
-                  name: name,
-                  description: description,
-                  coordinates: null, // Will be geocoded later
-                  address: address,
-                  extendedData:
-                    (placemark.ExtendedData && placemark.ExtendedData[0]) || {},
-                  folderPath: nextFolderPath,
-                  folderName:
-                    nextFolderPath.length > 0 ?
-                      nextFolderPath[nextFolderPath.length - 1].trim() :
-                      null,
-                });
-              }
-            }
-          });
-        }
-
-        if (folder.Folder) {
-          folder.Folder.forEach((sub) =>
-            extractPlacemarksFromFolder(sub, nextFolderPath),
-          );
-        }
-      }
-
-      if (result.kml && result.kml.Document && result.kml.Document[0]) {
-        const document = result.kml.Document[0];
-
-        // Check for placemarks directly in Document
-        if (document.Placemark) {
-          document.Placemark.forEach((placemark) => {
-            const name =
-              (placemark.name && placemark.name[0]) || "Unnamed Spot";
-            const description =
-              (placemark.description && placemark.description[0]) || "";
-            const coordinates =
-              placemark.Point &&
-              placemark.Point[0] &&
-              placemark.Point[0].coordinates &&
-              placemark.Point[0].coordinates[0];
-
-            if (coordinates) {
-              // Placemark has coordinates - process normally
-              const [longitude, latitude, altitude] = coordinates
-                  .split(",")
-                  .map(Number);
-              placemarks.push({
-                name: name,
-                description: description,
-                coordinates: {latitude, longitude, altitude: altitude || 0},
-                extendedData:
-                  (placemark.ExtendedData && placemark.ExtendedData[0]) || {},
-                folderPath: [],
-                folderName: null,
-              });
-            } else {
-              // Placemark has no coordinates - check for address information
-              const address = extractAddressFromPlacemark(placemark);
-              if (address) {
-                placemarks.push({
-                  name: name,
-                  description: description,
-                  coordinates: null, // Will be geocoded later
-                  address: address,
-                  extendedData:
-                    (placemark.ExtendedData && placemark.ExtendedData[0]) || {},
-                  folderPath: [],
-                  folderName: null,
-                });
-              }
-            }
-          });
-        }
-
-        // Check for placemarks in Folders
-        if (document.Folder) {
-          document.Folder.forEach((f) => extractPlacemarksFromFolder(f, []));
-        }
-      }
-
-      resolve(placemarks);
-    });
-  });
 }
 
 /**
@@ -2805,6 +2678,23 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
     console.log("Fetching OpenStreetMap parkour features via Overpass");
     placemarks = await fetchOsmParkourPlacemarks();
     console.log(`Overpass returned ${placemarks.length} parkour placemarks`);
+  } else if (source.sourceType === SPOT_SYNC_SOURCE_TYPE_GOOGLE_EARTH) {
+    const fileBuffer = await loadGoogleEarthImportBuffer(source, sourceId);
+    const format = detectImportFormatFromBuffer(
+        fileBuffer,
+        source.kmlFileName || source.kmlStoragePath || "",
+    );
+    console.log(`Detected Google Earth import format: ${format}`);
+    if (format === "kmz") {
+      const kmlContent = await extractKmlFromKmz(fileBuffer);
+      placemarks = await parseKmlPlacemarks(kmlContent);
+    } else if (format === "kml") {
+      placemarks = await parseKmlPlacemarks(fileBuffer.toString("utf8"));
+    } else {
+      throw new Error(
+          "Google Earth sync sources require an uploaded KML or KMZ file",
+      );
+    }
   } else {
     // Download and process based on detected format (KMZ/KML/GeoJSON)
     const fileBuffer = await downloadFile(source.kmzUrl);
@@ -3258,6 +3148,7 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
         sourceDefaultSpotAttributes,
         folderSpotAttributeDefaultsLookup,
         placemark.folderName,
+        placemark.folderPath,
     );
 
     const spotData = {
@@ -4084,8 +3975,7 @@ exports.createSyncSource = onCall(
           sourceType,
         } = request.data;
 
-        const normalizedSourceType =
-          sourceType === "openstreetmap" ? "openstreetmap" : "file";
+        const normalizedSourceType = normalizeSpotSyncSourceType(sourceType);
 
         if (!name) {
           throw new Error("name is required");
@@ -4107,7 +3997,7 @@ exports.createSyncSource = onCall(
           name: name,
           kmzUrl: normalizedSourceType === "openstreetmap" ?
             (kmzUrl || "") :
-            kmzUrl,
+            (kmzUrl || ""),
           sourceType: normalizedSourceType,
           description: description || "",
           publicUrl: publicUrl || (
@@ -4204,8 +4094,7 @@ exports.updateSyncSource = onCall(
         if (name !== undefined) updateData.name = name;
         if (kmzUrl !== undefined) updateData.kmzUrl = kmzUrl;
         if (sourceType !== undefined) {
-          updateData.sourceType =
-            sourceType === "openstreetmap" ? "openstreetmap" : "file";
+          updateData.sourceType = normalizeSpotSyncSourceType(sourceType);
           if (updateData.sourceType === "file" &&
               (kmzUrl === undefined || !kmzUrl)) {
             const existingDoc = await db.collection("syncSources").doc(sourceId).get();
@@ -4327,6 +4216,104 @@ exports.updateSyncSource = onCall(
     },
 );
 
+// Upload or replace the KML/KMZ file for a Google Earth sync source (admin only)
+exports.uploadSyncSourceKml = onCall(
+    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 120},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {
+          sourceId,
+          fileData,
+          fileName,
+          contentType,
+        } = request.data || {};
+
+        if (!sourceId || !fileData || !fileName) {
+          throw new Error("sourceId, fileData, and fileName are required");
+        }
+
+        const sourceRef = db.collection("syncSources").doc(sourceId);
+        const sourceDoc = await sourceRef.get();
+        if (!sourceDoc.exists) {
+          throw new Error("Sync source not found");
+        }
+
+        const sourceData = sourceDoc.data() || {};
+        if (sourceData.sourceType !== SPOT_SYNC_SOURCE_TYPE_GOOGLE_EARTH) {
+          throw new Error("KML upload is only supported for Google Earth sync sources");
+        }
+
+        const fileBuffer = Buffer.from(fileData, "base64");
+        if (!fileBuffer.length) {
+          throw new Error("Uploaded file is empty");
+        }
+        if (fileBuffer.length > 20 * 1024 * 1024) {
+          throw new Error("Uploaded file exceeds 20 MB limit");
+        }
+
+        const format = detectImportFormatFromBuffer(fileBuffer, fileName);
+        if (format !== "kml" && format !== "kmz") {
+          throw new Error("Uploaded file must be a KML or KMZ export");
+        }
+
+        const storagePath = buildGoogleEarthStoragePath(sourceId, fileName);
+        const resolvedContentType = typeof contentType === "string" && contentType ?
+          contentType :
+          (format === "kmz" ?
+            "application/vnd.google-earth.kmz" :
+            "application/vnd.google-earth.kml+xml");
+
+        await bucket.file(storagePath).save(fileBuffer, {
+          metadata: {
+            contentType: resolvedContentType,
+            cacheControl: "private, max-age=0",
+          },
+        });
+
+        const kmlContent = format === "kmz" ?
+          await extractKmlFromKmz(fileBuffer) :
+          fileBuffer.toString("utf8");
+        const topLevelFolders = await parseKmlTopLevelFolders(kmlContent);
+        const placemarkCount = (await parseKmlPlacemarks(kmlContent)).length;
+
+        const previousPath = typeof sourceData.kmlStoragePath === "string" ?
+          sourceData.kmlStoragePath.trim() :
+          "";
+        if (previousPath && previousPath !== storagePath) {
+          try {
+            await bucket.file(previousPath).delete({ignoreNotFound: true});
+          } catch (cleanupError) {
+            console.warn(
+                `Failed to delete previous Google Earth import at ${previousPath}:`,
+                cleanupError,
+            );
+          }
+        }
+
+        await sourceRef.update({
+          kmlStoragePath: storagePath,
+          kmlFileName: String(fileName).trim(),
+          kmlUploadedAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+
+        return {
+          success: true,
+          sourceId,
+          kmlStoragePath: storagePath,
+          kmlFileName: String(fileName).trim(),
+          topLevelFolders,
+          placemarkCount,
+          message: `Uploaded ${fileName} (${placemarkCount} placemarks)`,
+        };
+      } catch (error) {
+        console.error("Error uploading sync source KML:", error);
+        throw new Error(`Failed to upload sync source KML: ${error.message}`);
+      }
+    },
+);
+
 // Function to delete a sync source (admin only)
 exports.deleteSyncSource = onCall(
     {region: "europe-west1"},
@@ -4339,6 +4326,11 @@ exports.deleteSyncSource = onCall(
           throw new Error("sourceId is required");
         }
 
+        const sourceDoc = await db.collection("syncSources").doc(sourceId).get();
+        if (!sourceDoc.exists) {
+          throw new Error("Sync source not found");
+        }
+        await deleteGoogleEarthImportFiles(sourceDoc.data());
         await db.collection("syncSources").doc(sourceId).delete();
 
         return {

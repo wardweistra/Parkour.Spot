@@ -152,6 +152,10 @@ function extractYoutubeVideoIdsFromDescription(description) {
   return Array.from(ids);
 }
 
+const {
+  buildGoogleEarthImageUrlCandidates,
+} = require("./google-earth-images");
+
 /**
  * Extracts image URLs from placemark data
  * @param {Object} placemark - The placemark data (description may be string or array)
@@ -163,14 +167,22 @@ function extractImageUrls(placemark) {
   const desc = placemark?.description;
   const description = Array.isArray(desc) ? (desc[0] || "") : (desc || "");
 
-  // Explicit URLs from OSM (or other importers) — any http(s) URL allowed.
+  // Explicit URLs from OSM/Google Earth (or other importers) — any http(s) URL allowed.
   if (Array.isArray(placemark?.imageUrls)) {
     for (const raw of placemark.imageUrls) {
       if (typeof raw !== "string") continue;
-      const url = raw.trim();
-      if (url.startsWith("http://") || url.startsWith("https://")) {
-        explicitImageUrls.push(url);
+      const trimmed = raw.trim();
+      if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+        continue;
       }
+      if (trimmed.includes("{size}")) {
+        const resolved = buildGoogleEarthImageUrlCandidates(trimmed);
+        if (resolved.length > 0) {
+          explicitImageUrls.push(resolved[0]);
+        }
+        continue;
+      }
+      explicitImageUrls.push(trimmed);
     }
   }
 

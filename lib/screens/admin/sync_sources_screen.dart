@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../constants/spot_attributes.dart';
 import '../../services/auth_service.dart';
 import '../../services/sync_source_service.dart';
+import '../../utils/kml_file_picker.dart';
 import '../../widgets/spot_form/attributes_section.dart';
 
 /// Material [Chip] / [ActionChip] labels use theme label styles that read as semi-bold.
@@ -15,6 +16,24 @@ const TextStyle _kSyncChipLabelText = TextStyle(
 );
 
 const TextStyle _kSyncChipPlainLabel = TextStyle(fontWeight: FontWeight.normal);
+
+String _syncSourceTypeLabel(SyncSource source) {
+  if (source.isOpenStreetMap) return 'OpenStreetMap';
+  if (source.isGoogleEarth) return 'Google Earth';
+  return 'File';
+}
+
+Color _syncSourceTypeChipColor(SyncSource source) {
+  if (source.isOpenStreetMap) return Colors.teal.shade100;
+  if (source.isGoogleEarth) return Colors.orange.shade100;
+  return Colors.grey.shade200;
+}
+
+bool _canSyncSource(SyncSource source) {
+  if (source.isOpenStreetMap) return true;
+  if (source.isGoogleEarth) return source.hasGoogleEarthUpload;
+  return source.kmzUrl.isNotEmpty;
+}
 
 /// JSON/callable counts often decode as [double] on web — avoid showing `13893.0`.
 String _formatStatInt(dynamic v) {
@@ -263,14 +282,12 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                           const SizedBox(width: 8),
                           Chip(
                             label: Text(
-                              s.isOpenStreetMap ? 'OpenStreetMap' : 'File',
+                              _syncSourceTypeLabel(s),
                               style: _kSyncChipLabelText,
                             ),
                             labelStyle: _kSyncChipLabelText,
                             visualDensity: VisualDensity.compact,
-                            backgroundColor: s.isOpenStreetMap
-                                ? Colors.teal.shade100
-                                : Colors.grey.shade200,
+                            backgroundColor: _syncSourceTypeChipColor(s),
                           ),
                         ],
                       ),
@@ -711,8 +728,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (s.isActive &&
-                              (s.isOpenStreetMap || s.kmzUrl.isNotEmpty))
+                          if (s.isActive && _canSyncSource(s))
                             Consumer<SyncSourceService>(
                               builder: (context, service, child) {
                                 final isThisSourceSyncing = service
@@ -1702,6 +1718,9 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
   late bool recordFolderName;
   late bool autoSyncEnabled;
   late String sourceType;
+  PickedKmlFile? pendingKmlFile;
+  String? pendingKmlSummary;
+  bool isUploadingKml = false;
 
   /// 'include' or 'exclude' — mutually exclusive folder filter mode
   late String folderFilterMode;
@@ -1858,6 +1877,10 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                     label: Text('File URL'),
                   ),
                   ButtonSegment(
+                    value: SyncSource.sourceTypeGoogleEarth,
+                    label: Text('Google Earth'),
+                  ),
+                  ButtonSegment(
                     value: SyncSource.sourceTypeOpenStreetMap,
                     label: Text('OpenStreetMap'),
                   ),
@@ -1866,6 +1889,8 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 onSelectionChanged: (Set<String> selected) {
                   setState(() {
                     sourceType = selected.first;
+                    pendingKmlFile = null;
+                    pendingKmlSummary = null;
                     if (sourceType == SyncSource.sourceTypeOpenStreetMap &&
                         publicUrlCtrl.text.trim().isEmpty) {
                       publicUrlCtrl.text =
@@ -1888,6 +1913,63 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                   ),
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Required' : null,
+                )
+              else if (sourceType == SyncSource.sourceTypeGoogleEarth)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        'Upload a KML or KMZ export from Google Earth. '
+                        'Folder include/exclude rules use top-level folder names.',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ),
+                    if (widget.source?.hasGoogleEarthUpload == true)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          'Current file: ${widget.source!.kmlFileName ?? widget.source!.kmlStoragePath}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    if (pendingKmlFile != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          'Selected: ${pendingKmlFile!.name} '
+                          '(${(pendingKmlFile!.bytes.length / 1024).toStringAsFixed(1)} KB)',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    if (pendingKmlSummary != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          pendingKmlSummary!,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    OutlinedButton.icon(
+                      onPressed: isUploadingKml
+                          ? null
+                          : () async {
+                              final picked = await pickKmlFile();
+                              if (!mounted || picked == null) return;
+                              setState(() {
+                                pendingKmlFile = picked;
+                                pendingKmlSummary = null;
+                              });
+                            },
+                      icon: const Icon(Icons.upload_file),
+                      label: Text(
+                        widget.source?.hasGoogleEarthUpload == true
+                            ? 'Replace KML/KMZ file'
+                            : 'Choose KML/KMZ file',
+                      ),
+                    ),
+                  ],
                 )
               else
                 const Padding(
@@ -1950,7 +2032,8 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                   decoration: const InputDecoration(
                     labelText: 'Include Folders (optional)',
                     helperText:
-                        'One folder name per line. Only these folders are imported; leave empty to import all.',
+                        'One top-level folder name per line (e.g. Spots, Gyms, Ballard). '
+                        'Subfolders are included automatically. Leave empty to import all.',
                   ),
                   maxLines: 5,
                   minLines: 3,
@@ -1961,7 +2044,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                   decoration: const InputDecoration(
                     labelText: 'Exclude Folders (optional)',
                     helperText:
-                        'One folder name per line. These folders are skipped; all others are imported.',
+                        'One top-level folder name per line. These folders and their subfolders are skipped.',
                   ),
                   maxLines: 5,
                   minLines: 3,
@@ -2265,19 +2348,35 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 .toMapOrNull();
             final folderDefaultAttributesPayload =
                 _serializeFolderDefaultAttributes();
-            bool ok;
             final includeList = folderFilterMode == 'include'
                 ? _parseFolderLines(includeFoldersCtrl.text)
                 : <String>[];
             final excludeList = folderFilterMode == 'exclude'
                 ? _parseFolderLines(excludeFoldersCtrl.text)
                 : <String>[];
+            final isGoogleEarth =
+                sourceType == SyncSource.sourceTypeGoogleEarth;
+            final isOpenStreetMap =
+                sourceType == SyncSource.sourceTypeOpenStreetMap;
+
+            if (isGoogleEarth &&
+                pendingKmlFile == null &&
+                widget.source?.hasGoogleEarthUpload != true) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Choose a KML or KMZ file to upload'),
+                ),
+              );
+              return;
+            }
+
+            bool ok = false;
+            String? sourceId = widget.source?.id;
+
             if (widget.source == null) {
-              ok = await service.createSource(
+              sourceId = await service.createSource(
                 name: nameCtrl.text.trim(),
-                kmzUrl: sourceType == SyncSource.sourceTypeOpenStreetMap
-                    ? ''
-                    : urlCtrl.text.trim(),
+                kmzUrl: isOpenStreetMap ? '' : '',
                 sourceType: sourceType,
                 description: descCtrl.text.trim().isEmpty
                     ? null
@@ -2302,19 +2401,17 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                     : fullSyncScheduleCtrl.text.trim(),
                 autoSyncEnabled: autoSyncEnabled,
               );
+              ok = sourceId != null;
             } else {
               ok = await service.updateSource(
                 sourceId: widget.source!.id,
                 name: nameCtrl.text.trim(),
-                kmzUrl: sourceType == SyncSource.sourceTypeOpenStreetMap
-                    ? ''
-                    : urlCtrl.text.trim(),
+                kmzUrl: isOpenStreetMap ? '' : urlCtrl.text.trim(),
                 sourceType: sourceType,
                 description: descCtrl.text.trim(),
                 publicUrl: publicUrlCtrl.text.trim(),
                 instagramHandle: instagramHandleCtrl.text.trim(),
                 isActive: isActive,
-                // Always send both so the unused mode is cleared server-side
                 includeFolders: includeList,
                 excludeFolders: excludeList,
                 recordFolderName: recordFolderName,
@@ -2325,7 +2422,35 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 fullSyncSchedule: fullSyncScheduleCtrl.text.trim(),
                 autoSyncEnabled: autoSyncEnabled,
               );
+              sourceId = widget.source!.id;
             }
+
+            if (ok &&
+                isGoogleEarth &&
+                pendingKmlFile != null &&
+                sourceId != null) {
+              setState(() => isUploadingKml = true);
+              final uploadResult = await service.uploadGoogleEarthKml(
+                sourceId: sourceId,
+                fileBytes: pendingKmlFile!.bytes,
+                fileName: pendingKmlFile!.name,
+              );
+              setState(() => isUploadingKml = false);
+              if (uploadResult == null) {
+                ok = false;
+              } else {
+                final folders =
+                    (uploadResult['topLevelFolders'] as List?)?.cast<String>() ??
+                    const <String>[];
+                final placemarkCount = uploadResult['placemarkCount'];
+                pendingKmlSummary =
+                    'Uploaded ${pendingKmlFile!.name}: '
+                    '$placemarkCount placemarks'
+                    '${folders.isEmpty ? '' : ' in folders ${folders.join(', ')}'}';
+                pendingKmlFile = null;
+              }
+            }
+
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(ok ? 'Saved' : 'Failed to save')),
@@ -2335,7 +2460,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
               Navigator.pop(context, ok);
             }
           },
-          child: const Text('Save'),
+          child: Text(isUploadingKml ? 'Uploading…' : 'Save'),
         ),
       ],
     );
