@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -68,12 +70,16 @@ class SyncSourceSummary {
 class SyncSource {
   static const String sourceTypeFile = 'file';
   static const String sourceTypeOpenStreetMap = 'openstreetmap';
+  static const String sourceTypeGoogleEarth = 'google_earth';
   static const String sourceTypeNaverMap = 'navermap';
 
   final String id;
   final String name;
   final String kmzUrl;
   final String sourceType;
+  final String? kmlStoragePath;
+  final String? kmlFileName;
+  final DateTime? kmlUploadedAt;
   final String? description;
   final String? publicUrl;
   final String? instagramHandle; // Instagram handle for the source owner
@@ -102,6 +108,9 @@ class SyncSource {
     required this.name,
     required this.kmzUrl,
     this.sourceType = sourceTypeFile,
+    this.kmlStoragePath,
+    this.kmlFileName,
+    this.kmlUploadedAt,
     this.description,
     this.publicUrl,
     this.instagramHandle,
@@ -127,12 +136,16 @@ class SyncSource {
   });
 
   bool get isOpenStreetMap => sourceType == sourceTypeOpenStreetMap;
+  bool get isGoogleEarth => sourceType == sourceTypeGoogleEarth;
+  bool get hasGoogleEarthUpload =>
+      kmlStoragePath != null && kmlStoragePath!.trim().isNotEmpty;
 
   bool get isNaverMap => sourceType == sourceTypeNaverMap;
 
   String get sourceTypeLabel {
     if (isOpenStreetMap) return 'OpenStreetMap';
     if (isNaverMap) return 'Naver map';
+    if (isGoogleEarth) return 'Google Earth';
     return 'File';
   }
 
@@ -142,6 +155,9 @@ class SyncSource {
     }
     if (rawSourceType == sourceTypeNaverMap) {
       return sourceTypeNaverMap;
+    }
+    if (rawSourceType == sourceTypeGoogleEarth) {
+      return sourceTypeGoogleEarth;
     }
     return sourceTypeFile;
   }
@@ -153,6 +169,9 @@ class SyncSource {
       name: data['name'] ?? '',
       kmzUrl: data['kmzUrl'] ?? '',
       sourceType: sourceType,
+      kmlStoragePath: data['kmlStoragePath'] as String?,
+      kmlFileName: data['kmlFileName'] as String?,
+      kmlUploadedAt: _parseTimestamp(data['kmlUploadedAt']),
       description: data['description'],
       publicUrl: data['publicUrl'],
       instagramHandle: data['instagramHandle'],
@@ -346,7 +365,7 @@ class SyncSourceService extends ChangeNotifier {
     return null;
   }
 
-  Future<bool> createSource({
+  Future<String?> createSource({
     required String name,
     String kmzUrl = '',
     String sourceType = SyncSource.sourceTypeFile,
@@ -385,13 +404,46 @@ class SyncSourceService extends ChangeNotifier {
       final success = result.data['success'] == true;
       if (success) {
         await fetchSyncSources(includeInactive: true);
+        return result.data['sourceId'] as String?;
       }
-      return success;
+      return null;
     } catch (e) {
       _error = 'Failed to create source: $e';
       debugPrint(_error);
       notifyListeners();
-      return false;
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> uploadGoogleEarthKml({
+    required String sourceId,
+    required List<int> fileBytes,
+    required String fileName,
+    String? contentType,
+  }) async {
+    try {
+      final callable = _functions.httpsCallable('uploadSyncSourceKml');
+      final result = await callable.call({
+        'sourceId': sourceId,
+        'fileData': base64Encode(fileBytes),
+        'fileName': fileName,
+        if (contentType != null && contentType.isNotEmpty)
+          'contentType': contentType,
+      });
+      final data = result.data;
+      if (data is Map && data['success'] == true) {
+        await fetchSyncSources(includeInactive: true);
+        _sourceDetailsCache.remove(sourceId);
+        return Map<String, dynamic>.from(data);
+      }
+      _error = data is Map ? data['error']?.toString() : 'Upload failed';
+      notifyListeners();
+      return null;
+    } catch (e) {
+      _error = 'Failed to upload KML file: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return null;
     }
   }
 

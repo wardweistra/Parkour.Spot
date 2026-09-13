@@ -44,7 +44,18 @@ function generateImageHash(imageBuffer) {
   return crypto.createHash("sha256").update(imageBuffer).digest("hex");
 }
 
+/**
+ * Detects import format from buffer content and optional filename hint.
+ * @param {Buffer} buffer
+ * @param {string=} filenameHint
+ * @return {"kmz"|"kml"|"geojson"}
+ */
+function detectImportFormatFromBuffer(buffer, filenameHint = "") {
+  return detectImportFormat(buffer, filenameHint || "");
+}
+
 module.exports = {
   detectImportFormat,
+  detectImportFormatFromBuffer,
   generateImageHash,
 };

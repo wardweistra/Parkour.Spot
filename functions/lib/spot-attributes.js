@@ -329,21 +329,37 @@ function mergeSpotAttributeDefaults(baseDefaults, overrideDefaults) {
 
 /**
  * Returns effective defaults for a spot based on source + folder scope.
+ * Folder rules match the leaf folder name and/or the top-level folder in
+ * folderPath (for nested Google Earth folders).
  * @param {Object|null} sourceDefaults
  * @param {Object<string, Object>} folderDefaultsLookup
  * @param {string|null|undefined} folderName
+ * @param {Array<string>=} folderPath Full folder path from KML import
  * @return {Object|null}
  */
 function getEffectiveSpotAttributeDefaults(
     sourceDefaults,
     folderDefaultsLookup,
     folderName,
+    folderPath = [],
 ) {
-  const folderKey = typeof folderName === "string" ?
+  const leafKey = typeof folderName === "string" ?
     folderName.trim().toLowerCase() :
     "";
-  const folderDefaults = folderKey ? folderDefaultsLookup[folderKey] || null : null;
-  return mergeSpotAttributeDefaults(sourceDefaults, folderDefaults);
+  const topLevelKey = Array.isArray(folderPath) && folderPath.length > 0 ?
+    String(folderPath[0]).trim().toLowerCase() :
+    "";
+
+  const topLevelDefaults = topLevelKey ?
+    folderDefaultsLookup[topLevelKey] || null :
+    null;
+  const leafDefaults = leafKey && leafKey !== topLevelKey ?
+    folderDefaultsLookup[leafKey] || null :
+    null;
+
+  let effective = mergeSpotAttributeDefaults(sourceDefaults, topLevelDefaults);
+  effective = mergeSpotAttributeDefaults(effective, leafDefaults);
+  return effective;
 }
 
 /**

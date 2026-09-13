@@ -166,6 +166,7 @@ describe("spot-sync helpers", () => {
       expect(normalizeSpotSyncSourceType("openstreetmap"))
           .toBe("openstreetmap");
       expect(normalizeSpotSyncSourceType("navermap")).toBe("navermap");
+      expect(normalizeSpotSyncSourceType("google_earth")).toBe("google_earth");
       expect(normalizeSpotSyncSourceType("file")).toBe("file");
       expect(normalizeSpotSyncSourceType("other")).toBe("file");
     });
@@ -174,6 +175,7 @@ describe("spot-sync helpers", () => {
       expect(spotSyncSourceRequiresUrl("file")).toBe(true);
       expect(spotSyncSourceRequiresUrl("navermap")).toBe(true);
       expect(spotSyncSourceRequiresUrl("openstreetmap")).toBe(false);
+      expect(spotSyncSourceRequiresUrl("google_earth")).toBe(false);
     });
   });
 });
