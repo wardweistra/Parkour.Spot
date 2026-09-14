@@ -249,10 +249,8 @@ class _MyEventTile extends StatelessWidget {
       timeZone: event.timeZone,
     );
     final statusLabel = status == EventInterestStatus.going
-        ? (isPast ? l10n.eventInterestWent : l10n.eventInterestGoing)
-        : (isPast
-              ? l10n.eventInterestWasInterested
-              : l10n.eventInterestInterested);
+        ? (isPast ? l10n.eventInterestAttended : l10n.eventInterestGoing)
+        : l10n.eventInterestInterested;
 
     return Material(
       color: scheme.surfaceContainerLow,

@@ -300,4 +300,91 @@ class EventBackfillActions {
       );
     }
   }
+
+  static Future<void> recomputeEventInterestStats(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Recompute going / interested totals'),
+        content: const Text(
+          'Recalculate Going / Interested totals for events that have RSVPs, '
+          'including RSVPs on duplicate listings rolled up to the native event. '
+          'Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Run'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !context.mounted) return;
+
+    final eventsService = context.read<AdminEventsService>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    late NavigatorState progressNavigator;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        progressNavigator = Navigator.of(dialogContext);
+        return const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Expanded(
+                child: Text('Recomputing going / interested totals...'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    try {
+      final result = await eventsService.recomputeAllEventInterestStats();
+      progressNavigator.pop();
+      if (!context.mounted) return;
+
+      if (result != null && result['success'] == true) {
+        final processed = result['processed'] ?? 0;
+        final updated = result['updated'] ?? 0;
+        final failed = result['failed'] ?? 0;
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.green,
+            content: Text(
+              'Done. Processed $processed, updated $updated, failed $failed',
+            ),
+          ),
+        );
+      } else {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red,
+            content: Text(
+              eventsService.error ??
+                  'Failed to recompute going / interested totals',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      progressNavigator.pop();
+      if (!context.mounted) return;
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text('Failed to recompute going / interested totals: $e'),
+        ),
+      );
+    }
+  }
 }

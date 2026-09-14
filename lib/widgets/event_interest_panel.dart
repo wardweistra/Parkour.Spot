@@ -12,6 +12,7 @@ import '../services/snackbar_service.dart';
 import '../utils/event_interest_utils.dart';
 
 /// Going / Interested buttons and public totals for an event.
+/// Past events use Attended / Interested labels.
 class EventInterestPanel extends StatelessWidget {
   const EventInterestPanel({
     super.key,
@@ -38,11 +39,9 @@ class EventInterestPanel extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final goingLabel = isPast
-        ? l10n.eventInterestWentLabel(goingCount)
+        ? l10n.eventInterestAttendedLabel(goingCount)
         : l10n.eventInterestGoingLabel(goingCount);
-    final interestedLabel = isPast
-        ? l10n.eventInterestWasInterestedLabel(interestedCount)
-        : l10n.eventInterestInterestedLabel(interestedCount);
+    final interestedLabel = l10n.eventInterestInterestedLabel(interestedCount);
     final disclaimer = isPast
         ? l10n.eventInterestDisclaimerPast
         : l10n.eventInterestDisclaimer;
@@ -189,11 +188,14 @@ class _EventInterestSectionState extends State<EventInterestSection> {
   EventInterestStats? _statsBeforeWrite;
   bool _isBusy = false;
 
-  String? get _eventId {
+  String? get _listingEventId {
     final id = widget.event.id?.trim();
     if (id == null || id.isEmpty) return null;
     return id;
   }
+
+  /// Duplicate listings write and display Going / Interested on the native event.
+  String? get _eventId => canonicalEventInterestEventId(widget.event);
 
   bool _statsStillAtBaseline(EventInterestStats liveStats) {
     final baseline = _statsBeforeWrite;
@@ -212,7 +214,10 @@ class _EventInterestSectionState extends State<EventInterestSection> {
 
     final auth = context.read<AuthService>();
     if (!auth.isAuthenticated) {
-      context.go('/login?redirectTo=${Uri.encodeComponent('/event/$eventId')}');
+      final redirectId = _listingEventId ?? eventId;
+      context.go(
+        '/login?redirectTo=${Uri.encodeComponent('/event/$redirectId')}',
+      );
       return;
     }
 

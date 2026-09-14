@@ -28,6 +28,17 @@ EventInterestStats eventInterestStatsAfterChange({
   );
 }
 
+/// Event ID whose Going / Interested totals include this listing.
+///
+/// Duplicate listings roll up to the native original, matching spot ratings.
+String? canonicalEventInterestEventId(ParkourEvent event) {
+  final duplicateOf = event.duplicateOf?.trim();
+  if (duplicateOf != null && duplicateOf.isNotEmpty) return duplicateOf;
+  final id = event.id?.trim();
+  if (id == null || id.isEmpty) return null;
+  return id;
+}
+
 /// Whether the event has already ended (missing [ParkourEvent.endAt] uses start).
 bool isParkourEventPast(ParkourEvent event, {DateTime? now}) {
   final reference = (now ?? DateTime.now()).toUtc();

@@ -108,6 +108,28 @@ void main() {
     });
   });
 
+  group('canonicalEventInterestEventId', () {
+    test('uses duplicateOf when set', () {
+      expect(
+        canonicalEventInterestEventId(
+          event(id: 'dup', startAt: DateTime.utc(2026, 9, 1)),
+        ),
+        'dup',
+      );
+      expect(
+        canonicalEventInterestEventId(
+          ParkourEvent(
+            id: 'dup',
+            title: 'Jam',
+            startAt: DateTime.utc(2026, 9, 1),
+            duplicateOf: ' native ',
+          ),
+        ),
+        'native',
+      );
+    });
+  });
+
   group('partitionMyEvents', () {
     test('skips interests whose events are missing', () {
       final partition = partitionMyEvents(
