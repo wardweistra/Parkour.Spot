@@ -58,6 +58,16 @@ class EventDataScreen extends StatelessWidget {
                       context,
                     ),
               ),
+              AdminToolTile(
+                icon: Icons.event_available_outlined,
+                title: 'Recompute going / interested totals',
+                subtitle:
+                    'Include RSVPs from duplicate events in the native event totals',
+                showChevron: false,
+                onTap: () => EventBackfillActions.recomputeEventInterestStats(
+                  context,
+                ),
+              ),
             ],
           ),
         ],

@@ -194,6 +194,8 @@ const {
 } = require("./lib/user-contribution-stats");
 const {
   handleEventInterestWritten,
+  handleEventDuplicateOfChanged,
+  recomputeAllEventInterestAggregates,
 } = require("./lib/event-interest-stats");
 
 // Import shared HTML template
@@ -1206,6 +1208,21 @@ exports.recomputeAllRatedSpots = onCall(
         };
       } catch (error) {
         console.error("recomputeAllRatedSpots error", error);
+        return {success: false, error: error.message};
+      }
+    },
+);
+
+// ========== Admin Callable: Recompute Going / Interested totals ==========
+exports.recomputeAllEventInterestStats = onCall(
+    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 540},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const result = await recomputeAllEventInterestAggregates(db);
+        return {success: true, ...result};
+      } catch (error) {
+        console.error("recomputeAllEventInterestStats error", error);
         return {success: false, error: error.message};
       }
     },
@@ -5785,6 +5802,17 @@ exports.onEventWritten = onDocumentWritten(
       const eventId = event.params.eventId;
       try {
         if (!event.data || !event.data.after.exists) {
+          const beforeData = event.data.before && event.data.before.exists ?
+            (event.data.before.data() || {}) :
+            null;
+          try {
+            await handleEventDuplicateOfChanged(db, eventId, beforeData, null);
+          } catch (interestErr) {
+            console.error("onEventWritten interest stats delete error", {
+              eventId,
+              err: interestErr,
+            });
+          }
           const removedCount = await removeEventSearchTerms(eventId);
           await deleteEventMapPins(db, eventId);
           console.log("Removed event search terms:", {eventId, count: removedCount});
@@ -5794,6 +5822,14 @@ exports.onEventWritten = onDocumentWritten(
         const beforeData = event.data.before.exists ?
           (event.data.before.data() || {}) :
           null;
+        try {
+          await handleEventDuplicateOfChanged(db, eventId, beforeData, eventData);
+        } catch (interestErr) {
+          console.error("onEventWritten interest stats error", {
+            eventId,
+            err: interestErr,
+          });
+        }
         const reviewUpdate = buildDuplicateReviewUpdate(
             beforeData,
             eventData,

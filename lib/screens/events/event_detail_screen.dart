@@ -22,6 +22,7 @@ import '../../services/spot_service.dart';
 import '../../services/search_state_service.dart';
 import '../../services/event_report_service.dart';
 import '../../utils/browser_timezone_utils.dart';
+import '../../utils/event_interest_utils.dart';
 import '../../utils/event_linked_spot_loader.dart';
 import '../../utils/event_location_utils.dart';
 import '../../utils/event_schedule_utils.dart';
@@ -240,6 +241,17 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       if (!mounted) return;
       setState(() => _loadingDuplicates = false);
     }
+  }
+
+  Set<String> _interestClusterIds(ParkourEvent event) {
+    return eventInterestClusterIds(
+      event: event,
+      extraIds: [
+        if (_originalEvent?.id != null) _originalEvent!.id!,
+        for (final duplicate in _duplicateEvents)
+          if (duplicate.id != null) duplicate.id!,
+      ],
+    );
   }
 
   String? _duplicateEventSourceLabel(ParkourEvent event) {
@@ -1219,7 +1231,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         todayLabel: l10n.spotDetailDateToday,
       ),
       const SizedBox(height: SpotDetailUi.detailSectionGap),
-      EventInterestSection(event: event),
+      EventInterestSection(
+        event: event,
+        clusterEventIds: _interestClusterIds(event),
+      ),
     ];
 
     if (hasDescription) {

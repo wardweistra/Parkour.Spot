@@ -89,10 +89,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventInterestInterested => 'Me interesa';
 
   @override
-  String get eventInterestWent => 'Fui';
-
-  @override
-  String get eventInterestWasInterested => 'Me interesaba';
+  String get eventInterestAttended => 'Asistí';
 
   @override
   String eventInterestGoingLabel(int count) {
@@ -105,13 +102,8 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String eventInterestWentLabel(int count) {
-    return 'Fui ($count)';
-  }
-
-  @override
-  String eventInterestWasInterestedLabel(int count) {
-    return 'Me interesaba ($count)';
+  String eventInterestAttendedLabel(int count) {
+    return 'Asistí ($count)';
   }
 
   @override
@@ -120,7 +112,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get eventInterestDisclaimerPast =>
-      'Esto no es un registro. Solo muestra quién marcó que fue o que le interesaba.';
+      'Esto no es un registro. Solo muestra quién marcó que asistió o que le interesaba.';
 
   @override
   String get eventInterestUpdateFailed => 'No se pudo actualizar tu interés.';

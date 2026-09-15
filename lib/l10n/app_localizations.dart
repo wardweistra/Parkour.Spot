@@ -259,14 +259,8 @@ abstract class AppLocalizations {
   /// RSVP status for a past event: user marked Going
   ///
   /// In en, this message translates to:
-  /// **'Went'**
-  String get eventInterestWent;
-
-  /// RSVP status for a past event: user marked Interested
-  ///
-  /// In en, this message translates to:
-  /// **'Was interested'**
-  String get eventInterestWasInterested;
+  /// **'Attended'**
+  String get eventInterestAttended;
 
   /// Event detail Going button with public total
   ///
@@ -283,14 +277,8 @@ abstract class AppLocalizations {
   /// Past event Going button with public total
   ///
   /// In en, this message translates to:
-  /// **'Went ({count})'**
-  String eventInterestWentLabel(int count);
-
-  /// Past event Interested button with public total
-  ///
-  /// In en, this message translates to:
-  /// **'Was interested ({count})'**
-  String eventInterestWasInterestedLabel(int count);
+  /// **'Attended ({count})'**
+  String eventInterestAttendedLabel(int count);
 
   /// Event detail: RSVP is interest only, not a sign-up
   ///
@@ -301,7 +289,7 @@ abstract class AppLocalizations {
   /// Past event detail: RSVP is interest only, not a sign-up
   ///
   /// In en, this message translates to:
-  /// **'This is not a registration. It only shows who marked they went or were interested.'**
+  /// **'This is not a registration. It only shows who marked they attended or were interested.'**
   String get eventInterestDisclaimerPast;
 
   /// Error when saving Going or Interested fails

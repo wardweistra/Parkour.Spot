@@ -65,11 +65,11 @@ void main() {
       isPast: true,
     );
 
-    expect(find.text('Went (3)'), findsOneWidget);
-    expect(find.text('Was interested (12)'), findsOneWidget);
+    expect(find.text('Attended (3)'), findsOneWidget);
+    expect(find.text('Interested (12)'), findsOneWidget);
     expect(
       find.text(
-        'This is not a registration. It only shows who marked they went or were interested.',
+        'This is not a registration. It only shows who marked they attended or were interested.',
       ),
       findsOneWidget,
     );

@@ -54,9 +54,14 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
     try {
       final service = context.read<EventInterestService>();
       final interests = await service.getMyInterests();
-      final events = await service.getEventsByIds(
+      var events = await service.getEventsByIds(
         interests.map((interest) => interest.eventId),
       );
+      final nativeIds = missingNativeEventIds(events);
+      if (nativeIds.isNotEmpty) {
+        final natives = await service.getEventsByIds(nativeIds);
+        events = {...events, ...natives};
+      }
       if (!mounted) return;
       setState(() {
         _partition = partitionMyEvents(interests, events);
@@ -249,10 +254,8 @@ class _MyEventTile extends StatelessWidget {
       timeZone: event.timeZone,
     );
     final statusLabel = status == EventInterestStatus.going
-        ? (isPast ? l10n.eventInterestWent : l10n.eventInterestGoing)
-        : (isPast
-              ? l10n.eventInterestWasInterested
-              : l10n.eventInterestInterested);
+        ? (isPast ? l10n.eventInterestAttended : l10n.eventInterestGoing)
+        : l10n.eventInterestInterested;
 
     return Material(
       color: scheme.surfaceContainerLow,

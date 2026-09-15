@@ -12,6 +12,7 @@ import '../services/snackbar_service.dart';
 import '../utils/event_interest_utils.dart';
 
 /// Going / Interested buttons and public totals for an event.
+/// Past events use Attended / Interested labels.
 class EventInterestPanel extends StatelessWidget {
   const EventInterestPanel({
     super.key,
@@ -38,11 +39,9 @@ class EventInterestPanel extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final goingLabel = isPast
-        ? l10n.eventInterestWentLabel(goingCount)
+        ? l10n.eventInterestAttendedLabel(goingCount)
         : l10n.eventInterestGoingLabel(goingCount);
-    final interestedLabel = isPast
-        ? l10n.eventInterestWasInterestedLabel(interestedCount)
-        : l10n.eventInterestInterestedLabel(interestedCount);
+    final interestedLabel = l10n.eventInterestInterestedLabel(interestedCount);
     final disclaimer = isPast
         ? l10n.eventInterestDisclaimerPast
         : l10n.eventInterestDisclaimer;
@@ -174,10 +173,19 @@ class _InterestChoiceButton extends StatelessWidget {
 }
 
 /// Loads the signed-in user's RSVP and public totals for [event].
+///
+/// RSVPs are stored on the listing being viewed. Public totals use the native
+/// event when this listing is a duplicate. Selected status is Going-wins
+/// across the duplicate cluster.
 class EventInterestSection extends StatefulWidget {
-  const EventInterestSection({super.key, required this.event});
+  const EventInterestSection({
+    super.key,
+    required this.event,
+    this.clusterEventIds,
+  });
 
   final ParkourEvent event;
+  final Set<String>? clusterEventIds;
 
   @override
   State<EventInterestSection> createState() => _EventInterestSectionState();
@@ -188,11 +196,55 @@ class _EventInterestSectionState extends State<EventInterestSection> {
   EventInterestStats? _optimisticStats;
   EventInterestStats? _statsBeforeWrite;
   bool _isBusy = false;
+  late Set<String> _clusterIds;
+  bool _clusterLoadStarted = false;
 
-  String? get _eventId {
-    final id = widget.event.id?.trim();
-    if (id == null || id.isEmpty) return null;
-    return id;
+  String? get _listingEventId => eventInterestWriteEventId(widget.event);
+
+  /// Duplicate listings display Going / Interested totals for the native event.
+  String? get _statsEventId => canonicalEventInterestEventId(widget.event);
+
+  Set<String> _clusterIdsFromWidget() {
+    return eventInterestClusterIds(
+      event: widget.event,
+      extraIds: widget.clusterEventIds ?? const <String>{},
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _clusterIds = _clusterIdsFromWidget();
+  }
+
+  @override
+  void didUpdateWidget(EventInterestSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.event.id != widget.event.id) {
+      _clusterIds = _clusterIdsFromWidget();
+      _expandCluster();
+      return;
+    }
+    final next = _clusterIdsFromWidget();
+    if (next.difference(_clusterIds).isNotEmpty) {
+      _clusterIds = {..._clusterIds, ...next};
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_clusterLoadStarted) return;
+    _clusterLoadStarted = true;
+    _expandCluster();
+  }
+
+  Future<void> _expandCluster() async {
+    final service = context.read<EventInterestService>();
+    final ids = await service.getInterestClusterIds(widget.event);
+    if (!mounted) return;
+    if (ids.difference(_clusterIds).isEmpty) return;
+    setState(() => _clusterIds = {..._clusterIds, ...ids});
   }
 
   bool _statsStillAtBaseline(EventInterestStats liveStats) {
@@ -207,12 +259,14 @@ class _EventInterestSectionState extends State<EventInterestSection> {
     EventInterestStatus? current,
     EventInterestStats stats,
   ) async {
-    final eventId = _eventId;
-    if (eventId == null) return;
+    final listingEventId = _listingEventId;
+    if (listingEventId == null) return;
 
     final auth = context.read<AuthService>();
     if (!auth.isAuthenticated) {
-      context.go('/login?redirectTo=${Uri.encodeComponent('/event/$eventId')}');
+      context.go(
+        '/login?redirectTo=${Uri.encodeComponent('/event/$listingEventId')}',
+      );
       return;
     }
 
@@ -232,9 +286,10 @@ class _EventInterestSectionState extends State<EventInterestSection> {
     });
 
     final ok = await service.setInterest(
-      eventId: eventId,
+      eventId: listingEventId,
       status: next,
       eventStartAt: widget.event.startAt,
+      clusterEventIds: _clusterIds,
     );
     if (!mounted) return;
     setState(() {
@@ -253,23 +308,26 @@ class _EventInterestSectionState extends State<EventInterestSection> {
 
   @override
   Widget build(BuildContext context) {
-    final eventId = _eventId;
-    if (eventId == null) return const SizedBox.shrink();
+    final listingEventId = _listingEventId;
+    final statsEventId = _statsEventId ?? listingEventId;
+    if (listingEventId == null || statsEventId == null) {
+      return const SizedBox.shrink();
+    }
 
     final service = context.read<EventInterestService>();
     return Consumer<AuthService>(
       builder: (context, auth, _) {
         final interestStream = auth.isAuthenticated
-            ? service.watchUserInterest(eventId)
-            : Stream<EventInterest?>.value(null);
+            ? service.watchClusterInterest(_clusterIds)
+            : Stream<EventInterestStatus?>.value(null);
         return StreamBuilder<EventInterestStats>(
-          stream: service.watchStats(eventId),
+          stream: service.watchStats(statsEventId),
           builder: (context, statsSnap) {
             final liveStats = statsSnap.data ?? EventInterestStats.empty;
-            return StreamBuilder<EventInterest?>(
+            return StreamBuilder<EventInterestStatus?>(
               stream: interestStream,
               builder: (context, interestSnap) {
-                final liveStatus = interestSnap.data?.status;
+                final liveStatus = interestSnap.data;
                 final useOptimistic =
                     _isBusy || _statsStillAtBaseline(liveStats);
                 final status = useOptimistic ? _optimisticStatus : liveStatus;

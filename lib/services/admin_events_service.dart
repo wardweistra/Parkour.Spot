@@ -1213,6 +1213,30 @@ class AdminEventsService extends ChangeNotifier {
     }
   }
 
+  /// Recalculates Going / Interested totals, including RSVPs on duplicate events.
+  Future<Map<String, dynamic>?> recomputeAllEventInterestStats() async {
+    _error = null;
+    try {
+      final callable = _functions.httpsCallable(
+        'recomputeAllEventInterestStats',
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
+      );
+      final result = await callable.call();
+      final data = result.data;
+      if (data is Map) {
+        return Map<String, dynamic>.from(data);
+      }
+      return null;
+    } catch (e, st) {
+      _error = 'Failed to recompute going / interested totals: $e';
+      debugPrint(
+        'AdminEventsService.recomputeAllEventInterestStats error: $e\n$st',
+      );
+      notifyListeners();
+      return null;
+    }
+  }
+
   /// Materializes [eventMapPins] for all events or a single event (admin callable).
   Future<Map<String, dynamic>?> backfillEventMapPins({String? eventId}) async {
     _error = null;
