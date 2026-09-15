@@ -4,6 +4,9 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
-    <!-- Firebase emulators speak HTTP; Android blocks cleartext by default. -->
+    <!-- Debug-only: Firebase emulators speak HTTP; Android blocks cleartext by
+         default. Release/main does not allow cleartext and still validates TLS.
+         Scanners that flag this as "improper SSL certificate validation" can
+         accept it as a local-emulator exception, not a production bypass. -->
     <application android:usesCleartextTraffic="true"/>
 </manifest>

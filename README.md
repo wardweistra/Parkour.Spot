@@ -119,6 +119,21 @@ This key should have at least the following APIs enabled:
 
 The Flutter client calls callable functions `placesAutocomplete`, `placeDetails`, `geocodeCoordinates`, and `reverseGeocodeAddress`, which proxy Google APIs securely using the backend key.
 
+### **Firebase Web API key (public client identifier)**
+
+The Firebase **Web** API key in `FIREBASE_API_KEY` is a public client identifier. Background FCM requires it inside generated `web/firebase-messaging-sw.js` (gitignored; rebuilt by `scripts/generate-firebase-messaging-sw.js`). Security scanners that report this as a leaked GCP key are false positives: the key cannot be removed from the service worker, and data access is enforced by Auth, App Check, and Firestore/Storage rules.
+
+That browser key is restricted in [Google Cloud credentials](https://console.cloud.google.com/apis/credentials?project=parkourspot-93c90):
+
+- **Application restrictions:** HTTP referrers for `https://parkour.spot/*`, `https://www.parkour.spot/*`, Firebase Hosting defaults, and local web (`http://localhost:*/*`, `http://127.0.0.1:*/*`).
+- **API restrictions:** Firebase/Auth/FCM APIs only. Do **not** enable Maps, Places, or Geocoding on this key.
+
+Keep Maps on the separate browser key in `web/index.html` / `functions/html-template.js`, the Android Maps key (`GOOGLE_MAPS_ANDROID_API_KEY`), and the Functions secret `GOOGLE_MAPS_API_KEY`. Native Android Firebase uses the key in `google-services.json`, not the web key.
+
+### **Android cleartext (debug/profile only)**
+
+`android/app/src/debug/AndroidManifest.xml` and `profile/` set `usesCleartextTraffic="true"` so debug/profile builds can talk to local Firebase emulators over HTTP (`10.0.2.2`). The release manifest does not allow cleartext and does not disable TLS certificate validation. Scanner findings that call this "improper SSL certificate validation" should be accepted as a local-emulator exception.
+
 ### **Common Workflows**
 
 #### **Production Build**

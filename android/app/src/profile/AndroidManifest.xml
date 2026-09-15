@@ -1,5 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Flutter profile builds also need emulator HTTP in local workflows. -->
+    <!-- Profile-only: Firebase emulators speak HTTP. Release/main does not
+         allow cleartext and still validates TLS. Accept scanner findings that
+         treat this as improper certificate validation. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application android:usesCleartextTraffic="true"/>
 </manifest>

@@ -3,6 +3,11 @@
  * Writes web/firebase-messaging-sw.js from FIREBASE_* env vars.
  * Required for background FCM: initializeApp + onBackgroundMessage + notificationclick.
  *
+ * The Firebase Web API key embedded here is a public client identifier, not a
+ * GCP service credential. FCM service workers must call initializeApp in this
+ * file. Do not treat scanner "uncovered API key" findings as a leak; restrict
+ * the key in Google Cloud (HTTP referrers + Firebase APIs only) instead.
+ *
  * Run from repo root after sourcing .env (see run_production.sh / build_*.sh).
  */
 const fs = require("fs");
