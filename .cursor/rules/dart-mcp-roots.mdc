@@ -1,0 +1,16 @@
+---
+description: Register this workspace with Dart MCP before using its other tools
+alwaysApply: true
+---
+
+# Dart MCP project roots
+
+Cursor does not send MCP Roots, so the Dart MCP server starts with no registered projects (`--force-roots-fallback` in the Dart MCP config).
+
+Before calling any Dart MCP tool that takes a `roots` argument (`pub`, `analyze_files`, `run_tests`, `dart_format`, `dart_fix`, and similar), call `add_roots` once in the session:
+
+- namespace: `user-dart`
+- `uri`: `file://` plus this workspace’s absolute path
+- optional `name`: `ParkourSpot`
+
+If a tool returns that the path must be under a registered project root, call `add_roots` and retry. Roots are session-scoped; do not treat them as persistent config.
