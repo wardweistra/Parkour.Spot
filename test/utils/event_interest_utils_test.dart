@@ -130,6 +130,105 @@ void main() {
     });
   });
 
+  group('eventInterestWriteEventId', () {
+    test('uses the listing id even when duplicateOf is set', () {
+      expect(
+        eventInterestWriteEventId(
+          ParkourEvent(
+            id: 'dup',
+            title: 'Jam',
+            startAt: DateTime.utc(2026, 9, 1),
+            duplicateOf: 'native',
+          ),
+        ),
+        'dup',
+      );
+    });
+  });
+
+  group('eventInterestClusterIds', () {
+    test('includes listing, duplicateOf, and extra ids', () {
+      expect(
+        eventInterestClusterIds(
+          event: ParkourEvent(
+            id: 'dup',
+            title: 'Jam',
+            startAt: DateTime.utc(2026, 9, 1),
+            duplicateOf: ' native ',
+          ),
+          extraIds: const ['sibling', ' native ', ''],
+        ),
+        {'dup', 'native', 'sibling'},
+      );
+    });
+  });
+
+  group('clusterEventInterestStatus', () {
+    test('prefers Going when the user marked both', () {
+      expect(
+        clusterEventInterestStatus([
+          interest(eventId: 'dup', status: EventInterestStatus.interested),
+          interest(eventId: 'native'),
+        ]),
+        EventInterestStatus.going,
+      );
+    });
+
+    test('returns Interested when that is the only status', () {
+      expect(
+        clusterEventInterestStatus([
+          interest(eventId: 'dup', status: EventInterestStatus.interested),
+        ]),
+        EventInterestStatus.interested,
+      );
+    });
+
+    test('returns null when empty', () {
+      expect(clusterEventInterestStatus(const []), isNull);
+    });
+  });
+
+  group('eventInterestIdsToDelete', () {
+    test('clears every cluster doc including the listing', () {
+      expect(
+        eventInterestIdsToDelete(
+          listingEventId: 'dup',
+          clusterEventIds: const ['native', 'sibling', 'dup'],
+          nextStatus: null,
+        ),
+        {'dup', 'native', 'sibling'},
+      );
+    });
+
+    test('keeps the listing and deletes siblings when setting a status', () {
+      expect(
+        eventInterestIdsToDelete(
+          listingEventId: 'dup',
+          clusterEventIds: const ['native', 'sibling', 'dup'],
+          nextStatus: EventInterestStatus.going,
+        ),
+        {'native', 'sibling'},
+      );
+    });
+  });
+
+  group('missingNativeEventIds', () {
+    test('returns duplicateOf ids that are not already loaded', () {
+      expect(
+        missingNativeEventIds({
+          'dup': ParkourEvent(
+            id: 'dup',
+            title: 'Imported',
+            startAt: DateTime.utc(2026, 9, 1),
+            duplicateOf: 'native',
+          ),
+          'other': event(id: 'other', startAt: DateTime.utc(2026, 9, 2)),
+        }),
+        {'native'},
+      );
+    });
+  });
+
   group('partitionMyEvents', () {
     test('skips interests whose events are missing', () {
       final partition = partitionMyEvents(
@@ -185,6 +284,78 @@ void main() {
       ]);
       expect(
         partition.upcoming.first.interest.status,
+        EventInterestStatus.going,
+      );
+    });
+
+    test('remaps a duplicate listing to the native event', () {
+      final native = event(
+        id: 'native',
+        title: 'Native jam',
+        startAt: DateTime.utc(2026, 10, 1),
+      );
+      final dup = ParkourEvent(
+        id: 'dup',
+        title: 'Imported jam',
+        startAt: DateTime.utc(2026, 10, 1),
+        duplicateOf: 'native',
+      );
+
+      final partition = partitionMyEvents(
+        [interest(eventId: 'dup')],
+        {'dup': dup, 'native': native},
+        now: DateTime.utc(2026, 8, 31),
+      );
+
+      expect(partition.upcoming, hasLength(1));
+      expect(partition.upcoming.single.event.id, 'native');
+      expect(partition.upcoming.single.event.title, 'Native jam');
+    });
+
+    test('keeps the duplicate when the native event is missing', () {
+      final dup = ParkourEvent(
+        id: 'dup',
+        title: 'Imported jam',
+        startAt: DateTime.utc(2026, 10, 1),
+        duplicateOf: 'native',
+      );
+
+      final partition = partitionMyEvents(
+        [interest(eventId: 'dup')],
+        {'dup': dup},
+        now: DateTime.utc(2026, 8, 31),
+      );
+
+      expect(partition.upcoming, hasLength(1));
+      expect(partition.upcoming.single.event.id, 'dup');
+    });
+
+    test('dedupes native and duplicate RSVPs with Going winning', () {
+      final native = event(
+        id: 'native',
+        title: 'Native jam',
+        startAt: DateTime.utc(2026, 10, 1),
+      );
+      final dup = ParkourEvent(
+        id: 'dup',
+        title: 'Imported jam',
+        startAt: DateTime.utc(2026, 10, 1),
+        duplicateOf: 'native',
+      );
+
+      final partition = partitionMyEvents(
+        [
+          interest(eventId: 'native', status: EventInterestStatus.interested),
+          interest(eventId: 'dup'),
+        ],
+        {'dup': dup, 'native': native},
+        now: DateTime.utc(2026, 8, 31),
+      );
+
+      expect(partition.upcoming, hasLength(1));
+      expect(partition.upcoming.single.event.id, 'native');
+      expect(
+        partition.upcoming.single.interest.status,
         EventInterestStatus.going,
       );
     });

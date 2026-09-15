@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/event_interest.dart';
 import '../models/parkour_event.dart';
+import '../utils/event_interest_utils.dart';
 import 'auth_service.dart';
 
 /// Reads and writes event RSVPs (`users/{uid}/eventInterests/{eventId}`).
@@ -56,6 +57,47 @@ class EventInterestService extends ChangeNotifier {
     });
   }
 
+  /// Going-wins status across [clusterEventIds] for the signed-in user.
+  Stream<EventInterestStatus?> watchClusterInterest(
+    Iterable<String> clusterEventIds,
+  ) {
+    final userId = _userId;
+    final col = userId == null ? null : _interestsColFor(userId);
+    final ids = clusterEventIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    if (userId == null || col == null || ids.isEmpty) {
+      return Stream<EventInterestStatus?>.value(null);
+    }
+    return col.snapshots().map((snap) {
+      final interests = snap.docs
+          .where((doc) => ids.contains(doc.id))
+          .map((doc) => EventInterest.fromFirestore(doc, userId: userId));
+      return clusterEventInterestStatus(interests);
+    });
+  }
+
+  /// Native event id plus every listing marked as a duplicate of it.
+  Future<Set<String>> getInterestClusterIds(ParkourEvent event) async {
+    final ids = eventInterestClusterIds(event: event);
+    final nativeId = canonicalEventInterestEventId(event);
+    if (nativeId == null) return ids;
+    try {
+      final snap = await _firestore
+          .collection('events')
+          .where('duplicateOf', isEqualTo: nativeId)
+          .get();
+      for (final doc in snap.docs) {
+        final id = doc.id.trim();
+        if (id.isNotEmpty) ids.add(id);
+      }
+    } catch (e, st) {
+      debugPrint('EventInterestService.getInterestClusterIds: $e\n$st');
+    }
+    return ids;
+  }
+
   Future<List<EventInterest>> getMyInterests() async {
     final userId = _userId;
     final col = userId == null ? null : _interestsColFor(userId);
@@ -92,10 +134,14 @@ class EventInterestService extends ChangeNotifier {
   }
 
   /// Sets or clears the signed-in user's interest. [status] null removes it.
+  ///
+  /// Writes to [eventId] (the listing being viewed). Sibling docs in
+  /// [clusterEventIds] are deleted so the user is counted once in the cluster.
   Future<bool> setInterest({
     required String eventId,
     required EventInterestStatus? status,
     DateTime? eventStartAt,
+    Iterable<String>? clusterEventIds,
   }) async {
     final userId = _userId;
     final trimmed = eventId.trim();
@@ -116,20 +162,28 @@ class EventInterestService extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      final ref = col.doc(trimmed);
+      final toDelete = eventInterestIdsToDelete(
+        listingEventId: trimmed,
+        clusterEventIds: clusterEventIds ?? const <String>[],
+        nextStatus: status,
+      );
+      final batch = _firestore.batch();
       if (status == null) {
-        await ref.delete();
+        for (final id in toDelete) {
+          batch.delete(col.doc(id));
+        }
       } else {
+        final ref = col.doc(trimmed);
         final existing = await ref.get();
         if (existing.exists) {
-          await ref.update({
+          batch.update(ref, {
             'status': status.wireValue,
             'updatedAt': FieldValue.serverTimestamp(),
             if (eventStartAt != null)
               'eventStartAt': Timestamp.fromDate(eventStartAt.toUtc()),
           });
         } else {
-          await ref.set({
+          batch.set(ref, {
             'userId': userId,
             'eventId': trimmed,
             'status': status.wireValue,
@@ -139,7 +193,11 @@ class EventInterestService extends ChangeNotifier {
               'eventStartAt': Timestamp.fromDate(eventStartAt.toUtc()),
           });
         }
+        for (final id in toDelete) {
+          batch.delete(col.doc(id));
+        }
       }
+      await batch.commit();
 
       _isSaving = false;
       notifyListeners();

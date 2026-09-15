@@ -54,9 +54,14 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
     try {
       final service = context.read<EventInterestService>();
       final interests = await service.getMyInterests();
-      final events = await service.getEventsByIds(
+      var events = await service.getEventsByIds(
         interests.map((interest) => interest.eventId),
       );
+      final nativeIds = missingNativeEventIds(events);
+      if (nativeIds.isNotEmpty) {
+        final natives = await service.getEventsByIds(nativeIds);
+        events = {...events, ...natives};
+      }
       if (!mounted) return;
       setState(() {
         _partition = partitionMyEvents(interests, events);
