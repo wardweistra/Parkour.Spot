@@ -105,6 +105,10 @@ yarn-error.log*
 .env.production
 .DS_Store
 
+# Generated from FIREBASE_* env (scripts/generate-firebase-messaging-sw.js).
+# Production vs emulator configs must not bounce this file in git.
+web/firebase-messaging-sw.js
+
 #  Agents and skills
 skills-lock.json
 .agents/
