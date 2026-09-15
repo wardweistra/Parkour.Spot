@@ -15,6 +15,7 @@ import '../../widgets/add_to_spot_list_dialog.dart';
 import '../../widgets/spot_training_plan_dialog.dart';
 import '../../widgets/spot_duplicate_changes_dialog.dart';
 import '../../utils/spot_duplicate_review.dart';
+import '../../utils/spot_rating_utils.dart';
 import '../../utils/spot_check_in_flow.dart';
 import '../../services/spot_service.dart';
 import '../../services/spot_report_service.dart';
@@ -674,6 +675,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         });
       }
     }
+  }
+
+  List<String> _ratingClusterExtraIds() {
+    return [
+      if (_originalSpot?.id != null) _originalSpot!.id!,
+      for (final duplicate in _duplicateSpots)
+        if (duplicate.id != null) duplicate.id!,
+    ];
   }
 
   void _showExternalSpotInfo() {
@@ -4159,6 +4168,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         final userRating = await spotService.getUserRating(
           widget.spot.id!,
           authService.userProfile!.id,
+          clusterSpotIds: _ratingClusterExtraIds(),
         );
         if (mounted && userRating != null) {
           setState(() {
@@ -4193,8 +4203,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   }
 
   void _loadRatingStatsSubscription() {
-    final spotId = widget.spot.id;
-    if (spotId == null) return;
+    final statsSpotId =
+        canonicalSpotRatingSpotId(widget.spot) ?? widget.spot.id;
+    if (statsSpotId == null) return;
 
     _ratingStatsSubscription?.cancel();
     if (_cachedRatingStats == null) {
@@ -4205,7 +4216,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
     final spotService = Provider.of<SpotService>(context, listen: false);
     _ratingStatsSubscription = spotService
-        .watchSpotRatingStats(spotId)
+        .watchSpotRatingStats(statsSpotId)
         .listen(
           (ratingStats) {
             if (!mounted) return;
@@ -4264,6 +4275,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         widget.spot.id!,
         rating,
         authService.userProfile!.id,
+        clusterSpotIds: _ratingClusterExtraIds(),
       );
 
       if (success && mounted) {
@@ -4336,6 +4348,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       final success = await spotService.clearUserRating(
         widget.spot.id!,
         authService.userProfile!.id,
+        clusterSpotIds: _ratingClusterExtraIds(),
       );
 
       if (success && mounted) {

@@ -197,6 +197,9 @@ const {
   handleEventDuplicateOfChanged,
   recomputeAllEventInterestAggregates,
 } = require("./lib/event-interest-stats");
+const {
+  computeSpotRatingAggregates,
+} = require("./lib/spot-rating-stats");
 
 // Import shared HTML template
 const {generateHtmlPage} = require("./html-template");
@@ -1048,9 +1051,10 @@ async function getWilsonLowerBoundAvg() {
 /**
  * Recomputes rating aggregates for a spot and updates the spot document.
  * Includes ratings from the spot itself and from any spots marked as duplicates
- * of it (duplicateOf == spotId).
+ * of it (duplicateOf == spotId). The same user is counted once; latest
+ * updatedAt wins.
  * averageRating: mean of ratings (0..5)
- * ratingCount: number of ratings
+ * ratingCount: number of unique users who rated
  * wilsonLowerBound: Wilson score lower bound over normalized stars (0..5)
  * ranking: computed ranking value based on wilsonLowerBound and wilsonLowerBoundAvg
  * @param {string} spotId
@@ -1082,9 +1086,12 @@ async function recomputeSpotRatingAggregates(spotId) {
       ratingsSnap.forEach((doc) => allRatings.push(doc.data()));
     }
 
-    const count = allRatings.length;
+    const aggregates = computeSpotRatingAggregates(
+        allRatings,
+        wilsonLowerBoundAvg,
+    );
 
-    if (count === 0) {
+    if (aggregates.empty) {
       // No ratings: set ranking to random value
       await db.collection("spots").doc(spotId).set(
           {
@@ -1099,51 +1106,15 @@ async function recomputeSpotRatingAggregates(spotId) {
       return;
     }
 
-    let sum = 0;
-    allRatings.forEach((data) => {
-      const r = typeof data.rating === "number" ? data.rating : 0;
-      // Clamp ratings to [0,5]
-      const clamped = Math.max(0, Math.min(5, r));
-      sum += clamped;
-    });
-
-    const average = sum / count;
-
-    // Compute Wilson lower bound on normalized ratings
-    // (treat each star as Bernoulli success)
-    // successes = total stars awarded = sum (rating),
-    // trials = max stars per rating (5) * count
-    const z = 1.96; // 95% confidence
-    const trials = 5 * count;
-    const successes = sum; // since ratings already clamped 0..5
-    const p = successes / trials;
-    const denom = 1 + (z * z) / trials;
-    const center = p + (z * z) / (2 * trials);
-    const margin = z * Math.sqrt(
-        (p * (1 - p) + (z * z) / (4 * trials)) / trials);
-    const lowerBoundProportion = (center - margin) / denom;
-    const wilsonLowerBound = Math.max(0, Math.min(1, lowerBoundProportion)) * 5;
-
-    // Compute ranking based on wilsonLowerBound vs wilsonLowerBoundAvg
-    let ranking;
-    if (wilsonLowerBound > wilsonLowerBoundAvg) {
-      ranking = wilsonLowerBound + 10;
-    } else if (wilsonLowerBound < wilsonLowerBoundAvg) {
-      ranking = wilsonLowerBound - 10;
-    } else {
-      // Equal: treat as above average
-      ranking = wilsonLowerBound + 10;
-    }
-
     await db
         .collection("spots")
         .doc(spotId)
         .set(
             {
-              averageRating: Number(average.toFixed(4)),
-              ratingCount: count,
-              wilsonLowerBound: Number(wilsonLowerBound.toFixed(4)),
-              ranking: Number(ranking.toFixed(4)),
+              averageRating: aggregates.averageRating,
+              ratingCount: aggregates.ratingCount,
+              wilsonLowerBound: aggregates.wilsonLowerBound,
+              ranking: aggregates.ranking,
               updatedAt: FieldValue.serverTimestamp(),
             },
             {merge: true},
