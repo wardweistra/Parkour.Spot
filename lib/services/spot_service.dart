@@ -13,6 +13,7 @@ import '../utils/image_url_utils.dart';
 import '../utils/replay_latest_stream.dart';
 import '../utils/spot_duplicate_merge.dart';
 import '../utils/spot_duplicate_review.dart';
+import '../utils/spot_rating_utils.dart';
 import '../utils/spots_added_by_user.dart';
 import '../utils/ui_yield.dart';
 import '../utils/youtube_utils.dart';
@@ -90,7 +91,8 @@ class SpotService extends ChangeNotifier {
         return null;
       } catch (e) {
         final message = e.toString();
-        final transient = message.contains('unavailable') ||
+        final transient =
+            message.contains('unavailable') ||
             message.contains('UNAVAILABLE') ||
             message.contains('Transaction lock timeout');
         if (transient && attempt == 0) {
@@ -804,10 +806,7 @@ class SpotService extends ChangeNotifier {
         final map = Map<String, dynamic>.from(item);
         final id = map['videoId']?.toString();
         final url = map['url']?.toString();
-        if (id != null &&
-            id.isNotEmpty &&
-            url != null &&
-            url.isNotEmpty) {
+        if (id != null && id.isNotEmpty && url != null && url.isNotEmpty) {
           resolved[id] = url;
         }
       }
@@ -1228,38 +1227,66 @@ class SpotService extends ChangeNotifier {
   }
 
   // Rate a spot
-  Future<bool> rateSpot(String spotId, double rating, String userId) async {
+  Future<bool> rateSpot(
+    String spotId,
+    double rating,
+    String userId, {
+    Iterable<String>? clusterSpotIds,
+  }) async {
     try {
-      // Check if user has already rated this spot
       if (userId.isEmpty) {
         debugPrint('User ID is required for rating');
         return false;
       }
 
-      // Check if user already rated this spot
-      final existingRatingDoc = await _firestore
-          .collection('ratings')
-          .where('spotId', isEqualTo: spotId)
-          .where('userId', isEqualTo: userId)
-          .get();
+      final listingId = spotId.trim();
+      if (listingId.isEmpty) return false;
 
-      if (existingRatingDoc.docs.isNotEmpty) {
-        // Update existing rating
-        final ratingDoc = existingRatingDoc.docs.first;
-        await ratingDoc.reference.update({
+      final cluster = await getRatingClusterIds(
+        listingId,
+        extraIds: clusterSpotIds ?? const <String>[],
+      );
+      final siblingIds = spotRatingSpotIdsToDelete(
+        listingSpotId: listingId,
+        clusterSpotIds: cluster,
+        clearing: false,
+      );
+      final existingDocs = await _userRatingDocsOnSpots(userId, cluster);
+      final listingDocs = existingDocs
+          .where(
+            (doc) => (doc.data()['spotId'] as String?)?.trim() == listingId,
+          )
+          .toList();
+      final siblingDocs = existingDocs
+          .where(
+            (doc) => siblingIds.contains(
+              (doc.data()['spotId'] as String?)?.trim() ?? '',
+            ),
+          )
+          .toList();
+
+      final batch = _firestore.batch();
+      if (listingDocs.isNotEmpty) {
+        batch.update(listingDocs.first.reference, {
           'rating': rating,
           'updatedAt': FieldValue.serverTimestamp(),
         });
+        for (final extra in listingDocs.skip(1)) {
+          batch.delete(extra.reference);
+        }
       } else {
-        // Create new rating
-        await _firestore.collection('ratings').add({
-          'spotId': spotId,
+        batch.set(_firestore.collection('ratings').doc(), {
+          'spotId': listingId,
           'userId': userId,
           'rating': rating,
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
         });
       }
+      for (final sibling in siblingDocs) {
+        batch.delete(sibling.reference);
+      }
+      await batch.commit();
 
       return true;
     } catch (e) {
@@ -1268,19 +1295,24 @@ class SpotService extends ChangeNotifier {
     }
   }
 
-  // Get user's rating for a specific spot
-  Future<double?> getUserRating(String spotId, String userId) async {
+  // Get user's rating for a specific spot (latest in the duplicate cluster).
+  Future<double?> getUserRating(
+    String spotId,
+    String userId, {
+    Iterable<String>? clusterSpotIds,
+  }) async {
     try {
-      final ratingDoc = await _firestore
-          .collection('ratings')
-          .where('spotId', isEqualTo: spotId)
-          .where('userId', isEqualTo: userId)
-          .get();
+      if (userId.isEmpty) return null;
+      final listingId = spotId.trim();
+      if (listingId.isEmpty) return null;
 
-      if (ratingDoc.docs.isNotEmpty) {
-        return ratingDoc.docs.first.data()['rating'] as double?;
-      }
-      return null;
+      final cluster = await getRatingClusterIds(
+        listingId,
+        extraIds: clusterSpotIds ?? const <String>[],
+      );
+      final docs = await _userRatingDocsOnSpots(userId, cluster);
+      final unique = uniqueUserRating(docs.map(Rating.fromFirestore));
+      return unique?.rating;
     } catch (e) {
       debugPrint('Error getting user rating: $e');
       return null;
@@ -1304,30 +1336,94 @@ class SpotService extends ChangeNotifier {
     }
   }
 
-  // Remove the current user's rating for a spot
-  Future<bool> clearUserRating(String spotId, String userId) async {
+  // Remove the current user's rating for a spot and sibling cluster listings.
+  Future<bool> clearUserRating(
+    String spotId,
+    String userId, {
+    Iterable<String>? clusterSpotIds,
+  }) async {
     try {
       if (userId.isEmpty) {
         debugPrint('User ID is required for clearing rating');
         return false;
       }
 
-      final existingRatingDoc = await _firestore
-          .collection('ratings')
-          .where('spotId', isEqualTo: spotId)
-          .where('userId', isEqualTo: userId)
-          .get();
+      final listingId = spotId.trim();
+      if (listingId.isEmpty) return false;
 
-      if (existingRatingDoc.docs.isEmpty) {
-        return true;
+      final cluster = await getRatingClusterIds(
+        listingId,
+        extraIds: clusterSpotIds ?? const <String>[],
+      );
+      final toClear = spotRatingSpotIdsToDelete(
+        listingSpotId: listingId,
+        clusterSpotIds: cluster,
+        clearing: true,
+      );
+      final docs = await _userRatingDocsOnSpots(userId, toClear);
+      if (docs.isEmpty) return true;
+
+      final batch = _firestore.batch();
+      for (final doc in docs) {
+        batch.delete(doc.reference);
       }
-
-      await existingRatingDoc.docs.first.reference.delete();
+      await batch.commit();
       return true;
     } catch (e) {
       debugPrint('Error clearing user rating: $e');
       return false;
     }
+  }
+
+  /// Native id plus every listing marked as a duplicate of it.
+  Future<Set<String>> getRatingClusterIds(
+    String listingSpotId, {
+    Iterable<String> extraIds = const [],
+  }) async {
+    final listingId = listingSpotId.trim();
+    final ids = <String>{
+      if (listingId.isNotEmpty) listingId,
+      ...extraIds.map((id) => id.trim()).where((id) => id.isNotEmpty),
+    };
+    if (listingId.isEmpty) return ids;
+    try {
+      final snap = await _firestore.collection('spots').doc(listingId).get();
+      final duplicateOf = (snap.data()?['duplicateOf'] as String?)?.trim();
+      final nativeId = (duplicateOf != null && duplicateOf.isNotEmpty)
+          ? duplicateOf
+          : listingId;
+      ids.add(nativeId);
+      final duplicatesSnap = await _firestore
+          .collection('spots')
+          .where('duplicateOf', isEqualTo: nativeId)
+          .get();
+      for (final doc in duplicatesSnap.docs) {
+        final id = doc.id.trim();
+        if (id.isNotEmpty) ids.add(id);
+      }
+    } catch (e) {
+      debugPrint('Error resolving rating cluster: $e');
+    }
+    return ids;
+  }
+
+  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
+  _userRatingDocsOnSpots(String userId, Iterable<String> spotIds) async {
+    final ids = spotIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    if (ids.isEmpty) return const [];
+    final docs = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+    for (final spotId in ids) {
+      final snap = await _firestore
+          .collection('ratings')
+          .where('spotId', isEqualTo: spotId)
+          .where('userId', isEqualTo: userId)
+          .get();
+      docs.addAll(snap.docs);
+    }
+    return docs;
   }
 
   static Map<String, dynamic> ratingStatsFromSpotData(
