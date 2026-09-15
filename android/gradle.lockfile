@@ -1,0 +1,7 @@
+# This is a Gradle generated file for dependency locking.
+# Manual edits can break the build and are not advised.
+# This file is expected to be part of source control.
+# The Android root project has no direct dependencies; the app graph is in
+# android/app/gradle.lockfile. Regenerated via:
+#   ./gradlew :app:assembleDebug :app:assembleRelease --write-locks
+empty=

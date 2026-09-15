@@ -74,3 +74,13 @@ flutter {
     source = "../.."
 }
 
+// Pin resolved Android/Gradle artifacts. After Flutter/plugin Android
+// dependency changes, regenerate from android/ with Java 17 or 21:
+//   ./gradlew :app:assembleDebug :app:assembleRelease --write-locks
+dependencyLocking {
+    lockAllConfigurations()
+    // AGP/Kotlin resolve slightly different graphs per task; lenient keeps
+    // versions pinned without failing the build on extra/missing modules.
+    lockMode.set(LockMode.LENIENT)
+}
+

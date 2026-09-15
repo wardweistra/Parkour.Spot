@@ -134,6 +134,17 @@ Keep Maps on the separate browser key in `web/index.html` / `functions/html-temp
 
 `android/app/src/debug/AndroidManifest.xml` and `profile/` set `usesCleartextTraffic="true"` so debug/profile builds can talk to local Firebase emulators over HTTP (`10.0.2.2`). The release manifest does not allow cleartext and does not disable TLS certificate validation. Scanner findings that call this "improper SSL certificate validation" should be accepted as a local-emulator exception.
 
+### **Gradle lockfiles**
+
+`android/gradle.lockfile` and `android/app/gradle.lockfile` pin the Android Gradle dependency graph (including transitives) for reproducible builds and SCA. Do not edit them by hand. Locking is **lenient** so AGP/Kotlin can resolve slightly different graphs per task without failing the build. After changing Android Gradle plugins or Flutter plugins that ship native Android libraries, regenerate:
+
+```bash
+flutter build apk --config-only
+cd android && ./gradlew :app:assembleDebug :app:assembleRelease --write-locks
+```
+
+Use Java 17 or 21 (`flutter config --jdk-dir` / `JAVA_HOME`). Gradle 8.14 cannot compile Kotlin DSL on newer JDKs.
+
 ### **Common Workflows**
 
 #### **Production Build**

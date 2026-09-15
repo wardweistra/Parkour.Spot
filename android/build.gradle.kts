@@ -5,6 +5,14 @@ allprojects {
     }
 }
 
+// Reproducible Android builds + SCA (Aikido). After Flutter/plugin Android
+// dependency changes, regenerate from android/ with Java 17 or 21:
+//   ./gradlew :app:assembleDebug :app:assembleRelease --write-locks
+dependencyLocking {
+    lockAllConfigurations()
+    lockMode.set(LockMode.LENIENT)
+}
+
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")
