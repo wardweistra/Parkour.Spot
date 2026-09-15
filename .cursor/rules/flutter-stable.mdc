@@ -1,0 +1,17 @@
+---
+description: Suggest upgrading Flutter when this machine is not on current stable
+alwaysApply: true
+---
+
+# Stay on Flutter stable
+
+CI, Cursor Cloud, and this repo track current Flutter **stable**. Local SDK drift hides package/SDK breaks (for example `font_awesome_flutter` 10.x vs `IconData` becoming `final` in 3.44+).
+
+When doing Flutter work, check whether the local SDK is current stable (`flutter --version` vs `flutter upgrade --dry-run`, or an equivalent stable-channel check).
+
+If it is behind:
+
+- Tell the user they are not on latest stable, with both versions if known.
+- Suggest `flutter upgrade` (this install is `/Users/ward/workspace/flutter` on the stable channel).
+- Do not run the upgrade unless they ask.
+- Do not lower CI/Cloud to match an old local SDK, and do not raise `pubspec.yaml`’s `flutter: ">=3.38.1"` floor just because stable moved.
