@@ -175,6 +175,157 @@ void main() {
     });
 
     test(
+      'resolveDuplicateClusterLocation keeps the selected pin and ignores geocoded coordinates',
+      () {
+        const selectedLatitude = 52.36761234567891;
+        const selectedLongitude = 4.89012345678912;
+        final locationSpot = Spot(
+          id: 'osm',
+          name: 'OSM pin',
+          description: '',
+          latitude: selectedLatitude,
+          longitude: selectedLongitude,
+          address: 'Naver street address',
+          city: 'Amsterdam',
+          countryCode: 'NL',
+        );
+
+        final location = resolveDuplicateClusterLocation(
+          locationSpot: locationSpot,
+          geocodedFromCoordinates: const {
+            'latitude': '50.000000',
+            'longitude': '5.000000',
+            'address': 'Reverse-geocoded for the pin',
+            'city': 'Amsterdam',
+            'countryCode': 'NL',
+          },
+        );
+
+        expect(location.latitude, selectedLatitude);
+        expect(location.longitude, selectedLongitude);
+        expect(location.address, 'Reverse-geocoded for the pin');
+        expect(location.city, 'Amsterdam');
+        expect(location.countryCode, 'NL');
+      },
+    );
+
+    test(
+      'resolveDuplicateClusterLocation falls back to the selected spot address',
+      () {
+        final locationSpot = Spot(
+          id: 'naver',
+          name: 'Naver pin',
+          description: '',
+          latitude: 37.566535,
+          longitude: 126.9779692,
+          address: 'Seoul City Hall',
+          city: 'Seoul',
+          countryCode: 'KR',
+        );
+
+        final location = resolveDuplicateClusterLocation(
+          locationSpot: locationSpot,
+          geocodedFromCoordinates: const {
+            'address': '  ',
+            'city': '',
+            'countryCode': null,
+          },
+        );
+
+        expect(location.latitude, 37.566535);
+        expect(location.longitude, 126.9779692);
+        expect(location.address, 'Seoul City Hall');
+        expect(location.city, 'Seoul');
+        expect(location.countryCode, 'KR');
+      },
+    );
+
+    test(
+      'applyDuplicateClusterLocation writes the selected pin onto the preview',
+      () {
+        const selectedLatitude = 51.2194475;
+        const selectedLongitude = 4.4024643;
+        final preview = Spot(
+          name: 'Merged',
+          description: '',
+          latitude: 51.22,
+          longitude: 4.41,
+          address: 'Old address',
+        );
+        final locationSpot = Spot(
+          id: 'chosen',
+          name: 'Chosen',
+          description: '',
+          latitude: selectedLatitude,
+          longitude: selectedLongitude,
+          address: 'Chosen address',
+          city: 'Antwerp',
+          countryCode: 'BE',
+        );
+
+        final resolved = applyDuplicateClusterLocation(
+          spot: preview,
+          location: resolveDuplicateClusterLocation(
+            locationSpot: locationSpot,
+            geocodedFromCoordinates: const {
+              'address': 'Pin address',
+              'city': 'Antwerpen',
+              'countryCode': 'BE',
+            },
+          ),
+        );
+
+        expect(resolved.latitude, selectedLatitude);
+        expect(resolved.longitude, selectedLongitude);
+        expect(resolved.address, 'Pin address');
+        expect(resolved.city, 'Antwerpen');
+        expect(resolved.countryCode, 'BE');
+      },
+    );
+
+    test(
+      'buildDuplicateNativeSpotPreview keeps high-precision selected coordinates',
+      () {
+        const selectedLatitude = 48.856614001;
+        const selectedLongitude = 2.352221901;
+        final spotA = Spot(
+          id: 'a',
+          name: 'A',
+          description: '',
+          latitude: 48.86,
+          longitude: 2.35,
+          address: 'Address A',
+        );
+        final spotB = Spot(
+          id: 'b',
+          name: 'B',
+          description: '',
+          latitude: selectedLatitude,
+          longitude: selectedLongitude,
+          address: 'Address B',
+        );
+
+        final preview = buildDuplicateNativeSpotPreview(
+          spots: [spotA, spotB],
+          baseSpotId: 'a',
+          titleSpotId: 'a',
+          descriptionSpotId: 'a',
+          locationSpotId: 'b',
+          accessSpotId: 'a',
+          facilitiesSpotIds: const {},
+          featureSpotIds: const {},
+          goodForSpotIds: const {},
+          photoSpotIds: const {},
+          youtubeSpotIds: const {},
+        );
+
+        expect(preview.latitude, selectedLatitude);
+        expect(preview.longitude, selectedLongitude);
+        expect(preview.address, 'Address B');
+      },
+    );
+
+    test(
       'buildDuplicateNativeSpotPreview unions feature and good-for tags separately',
       () {
         final spotA = Spot(
