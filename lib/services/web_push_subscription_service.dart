@@ -165,7 +165,7 @@ class WebPushSubscriptionService extends ChangeNotifier {
     notifyListeners();
     try {
       await action();
-    } catch (e, _) {
+    } catch (e) {
       _lastError = e.toString();
       _isSubscribed = false;
     } finally {

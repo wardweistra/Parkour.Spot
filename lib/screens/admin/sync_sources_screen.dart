@@ -2482,12 +2482,10 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
 class _EditableSpotAttributes {
   _EditableSpotAttributes({
     required this.selectedAccess,
-    required Set<String> selectedFeatures,
+    required this.selectedFeatures,
     required Map<String, String> selectedFacilities,
-    required Set<String> selectedGoodFor,
-  }) : selectedFeatures = selectedFeatures,
-       selectedFacilities = selectedFacilities,
-       selectedGoodFor = selectedGoodFor;
+    required this.selectedGoodFor,
+  }) : selectedFacilities = selectedFacilities;
 
   factory _EditableSpotAttributes.empty() {
     return _EditableSpotAttributes(
