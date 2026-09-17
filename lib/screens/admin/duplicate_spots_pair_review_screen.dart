@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../constants/spot_attributes.dart';
 import '../../models/spot.dart';
 import '../../services/auth_service.dart';
+import '../../services/geocoding_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/spot_service.dart';
 import '../../services/url_service.dart';
@@ -1948,6 +1949,28 @@ class _DuplicateSpotsPairReviewScreenState
 
     setState(() => _isResolving = true);
     final spotService = context.read<SpotService>();
+    final locationSpot = includedSpots.firstWhere(
+      (spot) => spot.id == _locationSpotId,
+      orElse: () => includedSpots.first,
+    );
+    Map<String, String?> geocodedFromCoordinates = const {};
+    try {
+      geocodedFromCoordinates = await context
+          .read<GeocodingService>()
+          .geocodeCoordinatesDetailsSilently(
+            locationSpot.latitude,
+            locationSpot.longitude,
+          );
+    } catch (_) {
+      geocodedFromCoordinates = const {};
+    }
+    final previewSpot = applyDuplicateClusterLocation(
+      spot: preview,
+      location: resolveDuplicateClusterLocation(
+        locationSpot: locationSpot,
+        geocodedFromCoordinates: geocodedFromCoordinates,
+      ),
+    );
     final userName =
         authService.userProfile?.displayName ??
         currentUser.displayName ??
@@ -1955,7 +1978,7 @@ class _DuplicateSpotsPairReviewScreenState
         currentUser.uid;
     final nativeSpotId = await spotService.resolveDuplicateClusterToNative(
       clusterSpots: includedSpots,
-      previewSpot: preview,
+      previewSpot: previewSpot,
       basisSpotId: _baseSpotId!,
       userId: currentUser.uid,
       userName: userName,
@@ -2147,16 +2170,26 @@ class _DuplicateClusterMapState extends State<_DuplicateClusterMap> {
       }
 
       group.sort((a, b) => (a.id ?? '').compareTo(b.id ?? ''));
-      final center = LatLng(group.first.latitude, group.first.longitude);
-      for (var i = 0; i < group.length; i++) {
-        final spot = group[i];
+      final selected = group
+          .where((spot) => spot.id == widget.selectedLocationSpotId)
+          .firstOrNull;
+      final center = selected != null
+          ? LatLng(selected.latitude, selected.longitude)
+          : LatLng(group.first.latitude, group.first.longitude);
+      var spreadIndex = selected != null ? 1 : 0;
+      for (final spot in group) {
         final spotId = spot.id;
         if (spotId == null) continue;
+        if (spotId == widget.selectedLocationSpotId) {
+          positions[spotId] = LatLng(spot.latitude, spot.longitude);
+          continue;
+        }
         positions[spotId] = _offsetCoincidentPin(
           center: center,
-          index: i,
+          index: spreadIndex,
           count: group.length,
         );
+        spreadIndex++;
       }
     }
     return positions;
