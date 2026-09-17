@@ -428,75 +428,6 @@ Set<String> _defaultMediaSpotIds(
       .toSet();
 }
 
-/// Location copied onto a merged native spot.
-///
-/// [latitude]/[longitude] always come from the selected location spot's stored
-/// pin. They are never derived by forward-geocoding the address. Optional
-/// [geocodedFromCoordinates] should be a reverse-geocode of those same
-/// coordinates (`address`, `city`, `countryCode` only). Coordinate keys in
-/// that map are ignored.
-class DuplicateClusterResolvedLocation {
-  const DuplicateClusterResolvedLocation({
-    required this.latitude,
-    required this.longitude,
-    this.address,
-    this.city,
-    this.countryCode,
-  });
-
-  final double latitude;
-  final double longitude;
-  final String? address;
-  final String? city;
-  final String? countryCode;
-}
-
-String? _filledLocationText(String? value) {
-  final trimmed = value?.trim();
-  if (trimmed == null || trimmed.isEmpty) return null;
-  return trimmed;
-}
-
-/// Picks the native spot pin from [locationSpot], then fills address fields.
-///
-/// Reverse-geocoded text from [geocodedFromCoordinates] wins when present so
-/// the address matches the pin. Otherwise the selected spot's address, city,
-/// and country are kept.
-DuplicateClusterResolvedLocation resolveDuplicateClusterLocation({
-  required Spot locationSpot,
-  Map<String, String?>? geocodedFromCoordinates,
-}) {
-  return DuplicateClusterResolvedLocation(
-    latitude: locationSpot.latitude.toDouble(),
-    longitude: locationSpot.longitude.toDouble(),
-    address:
-        _filledLocationText(geocodedFromCoordinates?['address']) ??
-        _filledLocationText(locationSpot.address) ??
-        locationSpot.address,
-    city:
-        _filledLocationText(geocodedFromCoordinates?['city']) ??
-        _filledLocationText(locationSpot.city) ??
-        locationSpot.city,
-    countryCode:
-        _filledLocationText(geocodedFromCoordinates?['countryCode']) ??
-        _filledLocationText(locationSpot.countryCode) ??
-        locationSpot.countryCode,
-  );
-}
-
-Spot applyDuplicateClusterLocation({
-  required Spot spot,
-  required DuplicateClusterResolvedLocation location,
-}) {
-  return spot.copyWith(
-    latitude: location.latitude,
-    longitude: location.longitude,
-    address: location.address,
-    city: location.city,
-    countryCode: location.countryCode,
-  );
-}
-
 Spot buildDuplicateNativeSpotPreview({
   required List<Spot> spots,
   required String baseSpotId,
@@ -523,7 +454,6 @@ Spot buildDuplicateNativeSpotPreview({
   );
   final locationSpot = _spotByIdOrFallback(spots, locationSpotId, baseSpot);
   final accessSpot = _spotByIdOrFallback(spots, accessSpotId, baseSpot);
-  final location = resolveDuplicateClusterLocation(locationSpot: locationSpot);
 
   final imageUrls = _dedupe(
     spots
@@ -554,11 +484,11 @@ Spot buildDuplicateNativeSpotPreview({
   return Spot(
     name: titleSpot.name.isNotEmpty ? titleSpot.name : baseSpot.name,
     description: descriptionSpot.description.trim(),
-    latitude: location.latitude,
-    longitude: location.longitude,
-    address: location.address,
-    city: location.city,
-    countryCode: location.countryCode,
+    latitude: locationSpot.latitude,
+    longitude: locationSpot.longitude,
+    address: locationSpot.address,
+    city: locationSpot.city,
+    countryCode: locationSpot.countryCode,
     imageUrls: imageUrls.isEmpty ? null : imageUrls,
     youtubeVideoIds: youtubeIds.isEmpty ? null : youtubeIds,
     createdAt: DateTime.now(),
