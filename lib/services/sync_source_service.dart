@@ -61,7 +61,9 @@ class SyncSourceSummary {
     return SyncSourceSummary(
       id: data['id'] ?? '',
       name: data['name'] ?? '',
-      recordFolderName: data['recordFolderName'] is bool ? data['recordFolderName'] as bool : null,
+      recordFolderName: data['recordFolderName'] is bool
+          ? data['recordFolderName'] as bool
+          : null,
       allFolders: _stringListFromDynamic(data['allFolders']),
     );
   }
@@ -84,12 +86,17 @@ class SyncSource {
   final String? publicUrl;
   final String? instagramHandle; // Instagram handle for the source owner
   final bool isActive;
-  final List<String>? includeFolders; // Optional whitelist of folders to include
-  final List<String>? excludeFolders; // Optional blacklist of folders to exclude (mutually exclusive with includeFolders)
+  final List<String>?
+  includeFolders; // Optional whitelist of folders to include
+  final List<String>?
+  excludeFolders; // Optional blacklist of folders to exclude (mutually exclusive with includeFolders)
   final bool? recordFolderName; // Whether to store folder name on spots
-  final List<String>? allFolders; // List of all folders found during sync (when recordFolderName is true)
-  final Map<String, dynamic>? defaultSpotAttributes; // Defaults for all new spots in this source
-  final Map<String, Map<String, dynamic>>? folderSpotAttributes; // Folder-specific defaults for new spots
+  final List<String>?
+  allFolders; // List of all folders found during sync (when recordFolderName is true)
+  final Map<String, dynamic>?
+  defaultSpotAttributes; // Defaults for all new spots in this source
+  final Map<String, Map<String, dynamic>>?
+  folderSpotAttributes; // Folder-specific defaults for new spots
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? lastSyncAt;
@@ -101,7 +108,8 @@ class SyncSource {
   final DateTime? lastFullSyncAt;
   final bool? syncInProgress; // Whether a sync is currently in progress
   final String? syncType; // "light" or "full" - type of sync in progress
-  final Map<String, dynamic>? syncProgress; // Progress tracking: {processedCount, totalCount, lastProcessedIndex}
+  final Map<String, dynamic>?
+  syncProgress; // Progress tracking: {processedCount, totalCount, lastProcessedIndex}
 
   SyncSource({
     required this.id,
@@ -142,6 +150,13 @@ class SyncSource {
 
   bool get isNaverMap => sourceType == sourceTypeNaverMap;
 
+  /// File URL and Naver Map sources need a URL; OpenStreetMap queries Overpass;
+  /// Google Earth uses an uploaded KML/KMZ file in Storage.
+  static bool sourceTypeRequiresUrl(String sourceType) {
+    final normalized = normalizeSourceType(sourceType);
+    return normalized == sourceTypeFile || normalized == sourceTypeNaverMap;
+  }
+
   String get sourceTypeLabel {
     if (isOpenStreetMap) return 'OpenStreetMap';
     if (isNaverMap) return 'Naver map';
@@ -178,10 +193,16 @@ class SyncSource {
       isActive: data['isActive'] ?? true,
       includeFolders: _stringListFromDynamic(data['includeFolders']),
       excludeFolders: _stringListFromDynamic(data['excludeFolders']),
-      recordFolderName: data['recordFolderName'] is bool ? data['recordFolderName'] as bool : null,
+      recordFolderName: data['recordFolderName'] is bool
+          ? data['recordFolderName'] as bool
+          : null,
       allFolders: _stringListFromDynamic(data['allFolders']),
-      defaultSpotAttributes: _parseDefaultSpotAttributes(data['defaultSpotAttributes']),
-      folderSpotAttributes: _parseFolderSpotAttributes(data['folderSpotAttributes']),
+      defaultSpotAttributes: _parseDefaultSpotAttributes(
+        data['defaultSpotAttributes'],
+      ),
+      folderSpotAttributes: _parseFolderSpotAttributes(
+        data['folderSpotAttributes'],
+      ),
       createdAt: _parseTimestamp(data['createdAt']),
       updatedAt: _parseTimestamp(data['updatedAt']),
       lastSyncAt: _parseTimestamp(data['lastSyncAt']),
@@ -199,12 +220,12 @@ class SyncSource {
 
   static DateTime? _parseTimestamp(dynamic timestamp) {
     if (timestamp == null) return null;
-    
+
     // Handle cloud_firestore.Timestamp objects
     if (timestamp is Timestamp) {
       return timestamp.toDate();
     }
-    
+
     // Handle Map format from Firebase Functions (any Map; wasm may not satisfy Map<String, dynamic>)
     if (timestamp is Map) {
       final m = Map<String, dynamic>.from(timestamp);
@@ -213,20 +234,20 @@ class SyncSource {
       final seconds = secondsRaw is int
           ? secondsRaw
           : secondsRaw is num
-              ? secondsRaw.toInt()
-              : null;
+          ? secondsRaw.toInt()
+          : null;
       final nanoseconds = nanosecondsRaw is int
           ? nanosecondsRaw
           : nanosecondsRaw is num
-              ? nanosecondsRaw.toInt()
-              : 0;
+          ? nanosecondsRaw.toInt()
+          : 0;
       if (seconds != null) {
         return DateTime.fromMillisecondsSinceEpoch(
           seconds * 1000 + (nanoseconds / 1000000).round(),
         );
       }
     }
-    
+
     return null;
   }
 
@@ -236,7 +257,9 @@ class SyncSource {
     return parsed.isEmpty ? null : parsed;
   }
 
-  static Map<String, Map<String, dynamic>>? _parseFolderSpotAttributes(dynamic raw) {
+  static Map<String, Map<String, dynamic>>? _parseFolderSpotAttributes(
+    dynamic raw,
+  ) {
     if (raw is! Map) return null;
     final parsed = <String, Map<String, dynamic>>{};
     for (final entry in raw.entries) {
@@ -252,8 +275,10 @@ class SyncSource {
 }
 
 class SyncSourceService extends ChangeNotifier {
-  final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
-  
+  final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(
+    region: 'europe-west1',
+  );
+
   List<SyncSource> _sources = [];
   List<SyncSourceSummary> _sourceSummaries = [];
   bool _isLoading = false;
@@ -282,16 +307,14 @@ class SyncSourceService extends ChangeNotifier {
       notifyListeners();
 
       final callable = _functions.httpsCallable('getSyncSources');
-      final result = await callable.call({
-        'includeInactive': includeInactive,
-      });
+      final result = await callable.call({'includeInactive': includeInactive});
 
       final data = result.data;
       if (data['success'] == true) {
         _sources = _listFromCallableValue(data['sources'])
             .map((source) => SyncSource.fromMap(_mapFromCallableObject(source)))
             .toList();
-        
+
         // Update cache
         _sourceNameCache.clear();
         for (final source in _sources) {
@@ -354,7 +377,9 @@ class SyncSourceService extends ChangeNotifier {
       final result = await callable.call({'sourceId': sourceId});
       final data = result.data;
       if (data['success'] == true && data['source'] != null) {
-        final source = SyncSource.fromMap(_mapFromCallableObject(data['source']));
+        final source = SyncSource.fromMap(
+          _mapFromCallableObject(data['source']),
+        );
         _sourceDetailsCache[sourceId] = source;
         _sourceNameCache[sourceId] = source.name;
         return source;
@@ -395,10 +420,14 @@ class SyncSourceService extends ChangeNotifier {
         if (includeFolders != null) 'includeFolders': includeFolders,
         if (excludeFolders != null) 'excludeFolders': excludeFolders,
         if (recordFolderName != null) 'recordFolderName': recordFolderName,
-        if (defaultSpotAttributes != null) 'defaultSpotAttributes': defaultSpotAttributes,
-        if (folderSpotAttributes != null) 'folderSpotAttributes': folderSpotAttributes,
-        if (lightSyncSchedule != null && lightSyncSchedule.isNotEmpty) 'lightSyncSchedule': lightSyncSchedule,
-        if (fullSyncSchedule != null && fullSyncSchedule.isNotEmpty) 'fullSyncSchedule': fullSyncSchedule,
+        if (defaultSpotAttributes != null)
+          'defaultSpotAttributes': defaultSpotAttributes,
+        if (folderSpotAttributes != null)
+          'folderSpotAttributes': folderSpotAttributes,
+        if (lightSyncSchedule != null && lightSyncSchedule.isNotEmpty)
+          'lightSyncSchedule': lightSyncSchedule,
+        if (fullSyncSchedule != null && fullSyncSchedule.isNotEmpty)
+          'fullSyncSchedule': fullSyncSchedule,
         'autoSyncEnabled': autoSyncEnabled,
       });
       final success = result.data['success'] == true;
@@ -478,16 +507,21 @@ class SyncSourceService extends ChangeNotifier {
       if (isActive != null) payload['isActive'] = isActive;
       if (includeFolders != null) payload['includeFolders'] = includeFolders;
       if (excludeFolders != null) payload['excludeFolders'] = excludeFolders;
-      if (recordFolderName != null) payload['recordFolderName'] = recordFolderName;
+      if (recordFolderName != null)
+        payload['recordFolderName'] = recordFolderName;
       if (updateSpotAttributeDefaults) {
         payload['defaultSpotAttributes'] = defaultSpotAttributes;
         payload['folderSpotAttributes'] = folderSpotAttributes;
       }
       if (lightSyncSchedule != null) {
-        payload['lightSyncSchedule'] = lightSyncSchedule.isEmpty ? null : lightSyncSchedule;
+        payload['lightSyncSchedule'] = lightSyncSchedule.isEmpty
+            ? null
+            : lightSyncSchedule;
       }
       if (fullSyncSchedule != null) {
-        payload['fullSyncSchedule'] = fullSyncSchedule.isEmpty ? null : fullSyncSchedule;
+        payload['fullSyncSchedule'] = fullSyncSchedule.isEmpty
+            ? null
+            : fullSyncSchedule;
       }
       if (autoSyncEnabled != null) payload['autoSyncEnabled'] = autoSyncEnabled;
       final result = await callable.call(payload);
@@ -525,7 +559,9 @@ class SyncSourceService extends ChangeNotifier {
     }
   }
 
-  Future<Map<String, dynamic>?> syncAllSources({bool updateImagesForExistingSpots = false}) async {
+  Future<Map<String, dynamic>?> syncAllSources({
+    bool updateImagesForExistingSpots = false,
+  }) async {
     try {
       _isSyncingAll = true;
       _error = null;
@@ -535,10 +571,10 @@ class SyncSourceService extends ChangeNotifier {
       final result = await callable.call({
         'updateImagesForExistingSpots': updateImagesForExistingSpots,
       });
-      
+
       _isSyncingAll = false;
       notifyListeners();
-      
+
       if (result.data['success'] == true) {
         // Refresh the sources list to update last sync time
         await fetchSyncSources(includeInactive: true);
@@ -557,7 +593,10 @@ class SyncSourceService extends ChangeNotifier {
     }
   }
 
-  Future<Map<String, dynamic>?> syncSingleSource(String sourceId, {bool updateImagesForExistingSpots = false}) async {
+  Future<Map<String, dynamic>?> syncSingleSource(
+    String sourceId, {
+    bool updateImagesForExistingSpots = false,
+  }) async {
     try {
       _syncingSources.add(sourceId);
       _error = null;
@@ -568,10 +607,10 @@ class SyncSourceService extends ChangeNotifier {
         'sourceId': sourceId,
         'updateImagesForExistingSpots': updateImagesForExistingSpots,
       });
-      
+
       _syncingSources.remove(sourceId);
       notifyListeners();
-      
+
       if (result.data['success'] == true) {
         // Refresh the sources list to update last sync time
         await fetchSyncSources(includeInactive: true);
@@ -597,19 +636,18 @@ class SyncSourceService extends ChangeNotifier {
       notifyListeners();
 
       final callable = _functions.httpsCallable('resumeSync');
-      final result = await callable.call({
-        'sourceId': sourceId,
-      });
-      
+      final result = await callable.call({'sourceId': sourceId});
+
       _syncingSources.remove(sourceId);
       notifyListeners();
-      
+
       if (result.data['success'] == true) {
         // Refresh the sources list to update sync progress
         await fetchSyncSources(includeInactive: true);
         return _callableResponseAsMap(result.data);
       } else {
-        _error = 'Resume sync failed: ${result.data['error'] ?? 'Unknown error'}';
+        _error =
+            'Resume sync failed: ${result.data['error'] ?? 'Unknown error'}';
         notifyListeners();
         return null;
       }
@@ -708,7 +746,6 @@ class SyncSourceService extends ChangeNotifier {
     }
   }
 
-
   // Get source name by ID (from cache or fetch if needed)
   Future<String?> getSourceName(String sourceId) async {
     // Check cache first
@@ -730,7 +767,9 @@ class SyncSourceService extends ChangeNotifier {
     return _sourceNameCache[sourceId];
   }
 
-  Future<Map<String, dynamic>?> updateSpotSourceNames({String? sourceId}) async {
+  Future<Map<String, dynamic>?> updateSpotSourceNames({
+    String? sourceId,
+  }) async {
     try {
       final callable = _functions.httpsCallable('updateSpotSourceNames');
       final result = await callable.call({
@@ -750,9 +789,7 @@ class SyncSourceService extends ChangeNotifier {
     try {
       final callable = _functions.httpsCallable(
         'backfillSpotHasImages',
-        options: HttpsCallableOptions(
-          timeout: const Duration(minutes: 9),
-        ),
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
       );
       final result = await callable.call();
       final data = result.data;
@@ -768,13 +805,13 @@ class SyncSourceService extends ChangeNotifier {
 
   /// One-time backfill: populates spotSearchTerms for all spots (Explore autocomplete).
   /// Run once after deploying searchSpotsByTitle changes.
-  Future<Map<String, dynamic>?> backfillSpotNameLower({bool purge = false}) async {
+  Future<Map<String, dynamic>?> backfillSpotNameLower({
+    bool purge = false,
+  }) async {
     try {
       final callable = _functions.httpsCallable(
         'backfillSpotNameLower',
-        options: HttpsCallableOptions(
-          timeout: const Duration(minutes: 9),
-        ),
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
       );
       final result = await callable.call({'purge': purge});
       final d = result.data;
@@ -788,13 +825,13 @@ class SyncSourceService extends ChangeNotifier {
     }
   }
 
-  Future<Map<String, dynamic>?> backfillSourceSpotAttributes({String? sourceId}) async {
+  Future<Map<String, dynamic>?> backfillSourceSpotAttributes({
+    String? sourceId,
+  }) async {
     try {
       final callable = _functions.httpsCallable(
         'backfillSourceSpotAttributes',
-        options: HttpsCallableOptions(
-          timeout: const Duration(minutes: 9),
-        ),
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
       );
       final result = await callable.call({
         if (sourceId != null) 'sourceId': sourceId,
@@ -815,16 +852,14 @@ class SyncSourceService extends ChangeNotifier {
       _error = null;
 
       final callable = _functions.httpsCallable('getSyncSources');
-      final result = await callable.call({
-        'includeInactive': includeInactive,
-      });
+      final result = await callable.call({'includeInactive': includeInactive});
 
       final data = result.data;
       if (data['success'] == true) {
         _sources = _listFromCallableValue(data['sources'])
             .map((source) => SyncSource.fromMap(_mapFromCallableObject(source)))
             .toList();
-        
+
         // Update cache
         _sourceNameCache.clear();
         for (final source in _sources) {

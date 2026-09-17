@@ -1760,8 +1760,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
     isActive = widget.source?.isActive ?? true;
     recordFolderName = widget.source?.recordFolderName ?? false;
     autoSyncEnabled = widget.source?.autoSyncEnabled ?? false;
-    sourceType =
-        widget.source?.sourceType ?? SyncSource.sourceTypeFile;
+    sourceType = widget.source?.sourceType ?? SyncSource.sourceTypeFile;
     _sourceDefaultAttributes = _EditableSpotAttributes.fromMap(
       widget.source?.defaultSpotAttributes,
     );
@@ -2368,8 +2367,9 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 : <String>[];
             final isGoogleEarth =
                 sourceType == SyncSource.sourceTypeGoogleEarth;
-            final isOpenStreetMap =
-                sourceType == SyncSource.sourceTypeOpenStreetMap;
+            final kmzUrl = SyncSource.sourceTypeRequiresUrl(sourceType)
+                ? urlCtrl.text.trim()
+                : '';
 
             if (isGoogleEarth &&
                 pendingKmlFile == null &&
@@ -2388,7 +2388,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
             if (widget.source == null) {
               sourceId = await service.createSource(
                 name: nameCtrl.text.trim(),
-                kmzUrl: isOpenStreetMap ? '' : '',
+                kmzUrl: kmzUrl,
                 sourceType: sourceType,
                 description: descCtrl.text.trim().isEmpty
                     ? null
@@ -2418,7 +2418,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
               ok = await service.updateSource(
                 sourceId: widget.source!.id,
                 name: nameCtrl.text.trim(),
-                kmzUrl: isOpenStreetMap ? '' : urlCtrl.text.trim(),
+                kmzUrl: kmzUrl,
                 sourceType: sourceType,
                 description: descCtrl.text.trim(),
                 publicUrl: publicUrlCtrl.text.trim(),
@@ -2452,7 +2452,8 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 ok = false;
               } else {
                 final folders =
-                    (uploadResult['topLevelFolders'] as List?)?.cast<String>() ??
+                    (uploadResult['topLevelFolders'] as List?)
+                        ?.cast<String>() ??
                     const <String>[];
                 final placemarkCount = uploadResult['placemarkCount'];
                 pendingKmlSummary =

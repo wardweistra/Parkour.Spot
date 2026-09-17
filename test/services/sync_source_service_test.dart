@@ -50,5 +50,24 @@ void main() {
       expect(source.isOpenStreetMap, isFalse);
       expect(source.isNaverMap, isFalse);
     });
+
+    test('file and Naver map source types require a URL', () {
+      expect(
+        SyncSource.sourceTypeRequiresUrl(SyncSource.sourceTypeFile),
+        isTrue,
+      );
+      expect(
+        SyncSource.sourceTypeRequiresUrl(SyncSource.sourceTypeNaverMap),
+        isTrue,
+      );
+      expect(
+        SyncSource.sourceTypeRequiresUrl(SyncSource.sourceTypeOpenStreetMap),
+        isFalse,
+      );
+      expect(
+        SyncSource.sourceTypeRequiresUrl(SyncSource.sourceTypeGoogleEarth),
+        isFalse,
+      );
+    });
   });
 }
