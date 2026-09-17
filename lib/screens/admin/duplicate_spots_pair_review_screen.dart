@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -2083,7 +2081,6 @@ class _DuplicateClusterMap extends StatefulWidget {
 
 class _DuplicateClusterMapState extends State<_DuplicateClusterMap> {
   static const int _selectedMarkerZBase = 1000;
-  static const double _coincidentPinSpreadMeters = 7;
   static const double _minZoom = 3;
   static const double _maxZoom = 21;
 
@@ -2151,68 +2148,7 @@ class _DuplicateClusterMapState extends State<_DuplicateClusterMap> {
     return 18;
   }
 
-  Map<String, LatLng> _spreadMarkerPositions(List<Spot> spots) {
-    final groups = <String, List<Spot>>{};
-    for (final spot in spots) {
-      final key =
-          '${spot.latitude.toStringAsFixed(7)}|${spot.longitude.toStringAsFixed(7)}';
-      groups.putIfAbsent(key, () => []).add(spot);
-    }
-
-    final positions = <String, LatLng>{};
-    for (final group in groups.values) {
-      if (group.length == 1) {
-        final spot = group.first;
-        if (spot.id != null) {
-          positions[spot.id!] = LatLng(spot.latitude, spot.longitude);
-        }
-        continue;
-      }
-
-      group.sort((a, b) => (a.id ?? '').compareTo(b.id ?? ''));
-      final selected = group
-          .where((spot) => spot.id == widget.selectedLocationSpotId)
-          .firstOrNull;
-      final center = selected != null
-          ? LatLng(selected.latitude, selected.longitude)
-          : LatLng(group.first.latitude, group.first.longitude);
-      var spreadIndex = selected != null ? 1 : 0;
-      for (final spot in group) {
-        final spotId = spot.id;
-        if (spotId == null) continue;
-        if (spotId == widget.selectedLocationSpotId) {
-          positions[spotId] = LatLng(spot.latitude, spot.longitude);
-          continue;
-        }
-        positions[spotId] = _offsetCoincidentPin(
-          center: center,
-          index: spreadIndex,
-          count: group.length,
-        );
-        spreadIndex++;
-      }
-    }
-    return positions;
-  }
-
-  LatLng _offsetCoincidentPin({
-    required LatLng center,
-    required int index,
-    required int count,
-  }) {
-    if (count <= 1) return center;
-
-    final angle = (2 * math.pi * index) / count;
-    final latOffset = _coincidentPinSpreadMeters * math.cos(angle) / 111000.0;
-    final cosLat = math.cos(center.latitude * math.pi / 180.0).abs();
-    final lngOffset = cosLat < 0.000001
-        ? 0.0
-        : _coincidentPinSpreadMeters * math.sin(angle) / (111000.0 * cosLat);
-    return LatLng(center.latitude + latOffset, center.longitude + lngOffset);
-  }
-
   Set<Marker> _markers() {
-    final displayPositions = _spreadMarkerPositions(widget.spots);
     final drawOrder = MarkerIconUtils.sortSpotsForMapDrawOrder(widget.spots);
     final markers = <Marker>{};
 
@@ -2222,8 +2158,7 @@ class _DuplicateClusterMapState extends State<_DuplicateClusterMap> {
       if (spotId == null) continue;
 
       final selected = spotId == widget.selectedLocationSpotId;
-      final position =
-          displayPositions[spotId] ?? LatLng(spot.latitude, spot.longitude);
+      final position = LatLng(spot.latitude, spot.longitude);
       markers.add(
         Marker(
           markerId: MarkerId(spotId),
