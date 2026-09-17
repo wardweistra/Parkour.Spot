@@ -507,8 +507,9 @@ class SyncSourceService extends ChangeNotifier {
       if (isActive != null) payload['isActive'] = isActive;
       if (includeFolders != null) payload['includeFolders'] = includeFolders;
       if (excludeFolders != null) payload['excludeFolders'] = excludeFolders;
-      if (recordFolderName != null)
+      if (recordFolderName != null) {
         payload['recordFolderName'] = recordFolderName;
+      }
       if (updateSpotAttributeDefaults) {
         payload['defaultSpotAttributes'] = defaultSpotAttributes;
         payload['folderSpotAttributes'] = folderSpotAttributes;
