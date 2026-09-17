@@ -2483,9 +2483,9 @@ class _EditableSpotAttributes {
   _EditableSpotAttributes({
     required this.selectedAccess,
     required this.selectedFeatures,
-    required Map<String, String> selectedFacilities,
+    required this.selectedFacilities,
     required this.selectedGoodFor,
-  }) : selectedFacilities = selectedFacilities;
+  });
 
   factory _EditableSpotAttributes.empty() {
     return _EditableSpotAttributes(
