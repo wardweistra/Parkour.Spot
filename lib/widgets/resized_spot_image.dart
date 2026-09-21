@@ -13,7 +13,7 @@ class ResizedSpotImage extends StatefulWidget {
   final double? height;
   final Widget Function(BuildContext context, String url)? placeholder;
   final Widget Function(BuildContext context, String url, Object error)?
-      errorWidget;
+  errorWidget;
 
   const ResizedSpotImage({
     super.key,
@@ -83,10 +83,7 @@ class _ResizedSpotImageState extends State<ResizedSpotImage> {
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
           return widget.placeholder?.call(context, url) ??
-              Container(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                child: const Center(child: CircularProgressIndicator()),
-              );
+              _fillPlaceholder(context);
         },
       );
     }
@@ -96,15 +93,13 @@ class _ResizedSpotImageState extends State<ResizedSpotImage> {
       fit: widget.fit,
       width: widget.width,
       height: widget.height,
-      placeholder: widget.placeholder,
+      placeholder:
+          widget.placeholder ?? (context, url) => _fillPlaceholder(context),
       errorWidget: (context, url, error) {
         if (hasMore) {
           _tryNextCandidate();
           return widget.placeholder?.call(context, url) ??
-              Container(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                child: const Center(child: CircularProgressIndicator()),
-              );
+              _fillPlaceholder(context);
         }
         return widget.errorWidget?.call(context, url, error) ??
             Container(
@@ -116,6 +111,12 @@ class _ResizedSpotImageState extends State<ResizedSpotImage> {
               ),
             );
       },
+    );
+  }
+
+  Widget _fillPlaceholder(BuildContext context) {
+    return ColoredBox(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
     );
   }
 }

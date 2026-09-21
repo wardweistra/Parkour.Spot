@@ -48,7 +48,6 @@ dependencies:
   intl: ^0.20.2
   characters: ^1.4.0
   sealed_countries: ^2.0.0
-  country_flags: ^4.1.1
   image: ^4.3.0
   heic_to_png_jpg: ^0.0.6
   

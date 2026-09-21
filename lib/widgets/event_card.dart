@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
-import 'package:country_flags/country_flags.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/event_map_pin.dart';
@@ -13,6 +12,7 @@ import '../services/web_share_service.dart';
 import '../utils/share_link_text.dart';
 import '../utils/event_schedule_utils.dart';
 import 'no_images_placeholder.dart';
+import 'country_flag_badge.dart';
 import 'resized_spot_image.dart';
 
 enum EventCardVariant { list, overlay }
@@ -311,13 +311,10 @@ class _EventCardState extends State<EventCard> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (countryCode != null && countryCode.isNotEmpty)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(2),
-            child: SizedBox(
-              height: flagHeight,
-              width: flagWidth,
-              child: CountryFlag.fromCountryCode(countryCode),
-            ),
+          CountryFlagBadge(
+            countryCode: countryCode,
+            height: flagHeight,
+            width: flagWidth,
           ),
         if (countryCode != null &&
             countryCode.isNotEmpty &&
@@ -458,9 +455,8 @@ class _EventCardState extends State<EventCard> {
             return ResizedSpotImage(
               imageUrl: images[index],
               fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
+              placeholder: (context, url) => ColoredBox(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                child: const Center(child: CircularProgressIndicator()),
               ),
               errorWidget: (context, url, error) => Container(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,

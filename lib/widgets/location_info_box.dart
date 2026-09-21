@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:country_flags/country_flags.dart';
 import '../l10n/app_localizations.dart';
+import 'country_flag_badge.dart';
 
 class LocationInfoBox extends StatelessWidget {
   final double latitude;
@@ -28,7 +28,9 @@ class LocationInfoBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+        color: Theme.of(
+          context,
+        ).colorScheme.primaryContainer.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
@@ -45,21 +47,14 @@ class LocationInfoBox extends StatelessWidget {
               children: [
                 // Always show flag
                 countryCode != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(2),
-                        child: SizedBox(
-                          height: 20,
-                          width: 30,
-                          child: CountryFlag.fromCountryCode(
-                            countryCode!,
-                          ),
-                        ),
-                      )
+                    ? CountryFlagBadge(countryCode: countryCode!)
                     : Container(
                         height: 20,
                         width: 30,
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -70,9 +65,9 @@ class LocationInfoBox extends StatelessWidget {
                     child: SelectableText(
                       address!,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            height: 1.4,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurface,
+                        height: 1.4,
+                      ),
                     ),
                   ),
                 ),
@@ -101,21 +96,14 @@ class LocationInfoBox extends StatelessWidget {
               children: [
                 // Always show flag
                 countryCode != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(2),
-                        child: SizedBox(
-                          height: 20,
-                          width: 30,
-                          child: CountryFlag.fromCountryCode(
-                            countryCode!,
-                          ),
-                        ),
-                      )
+                    ? CountryFlagBadge(countryCode: countryCode!)
                     : Container(
                         height: 20,
                         width: 30,
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -146,14 +134,18 @@ class LocationInfoBox extends StatelessWidget {
               Icon(
                 Icons.gps_fixed,
                 size: 16,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
               const SizedBox(width: 4),
               SelectableText(
                 '${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
               ),
             ],
           ),
@@ -174,8 +166,8 @@ class LocationInfoBox extends StatelessWidget {
                 Text(
                   l10n.addSpotGettingAddress,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
               ],
             ),
@@ -185,4 +177,3 @@ class LocationInfoBox extends StatelessWidget {
     );
   }
 }
-

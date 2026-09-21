@@ -1384,14 +1384,13 @@ class SearchScreenState extends State<SearchScreen>
     if (_highlightedSpotIds.isEmpty || !mounted) return loadedSpots;
 
     final loadedIds = loadedSpots.map((s) => s.id).whereType<String>().toSet();
-    final missingIds =
-        _highlightedSpotIds.where((id) => !loadedIds.contains(id)).toList();
+    final missingIds = _highlightedSpotIds
+        .where((id) => !loadedIds.contains(id))
+        .toList();
     if (missingIds.isEmpty) return loadedSpots;
 
     final spotService = Provider.of<SpotService>(context, listen: false);
-    final fetched = await Future.wait(
-      missingIds.map(spotService.getSpotById),
-    );
+    final fetched = await Future.wait(missingIds.map(spotService.getSpotById));
     final extraSpots = fetched.whereType<Spot>().toList();
     if (extraSpots.isEmpty) return loadedSpots;
 
@@ -2801,6 +2800,7 @@ class SearchScreenState extends State<SearchScreen>
           final bool isHighlighted =
               spot.id != null && _highlightedSpotIds.contains(spot.id);
           return SpotCard(
+            key: ValueKey(spot.id ?? 'spot-$index'),
             spot: spot,
             showCheckInPresence: true,
             upcomingEventPin: _upcomingEventPinForSpot(spot),
@@ -2841,6 +2841,7 @@ class SearchScreenState extends State<SearchScreen>
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: SpotCard(
+              key: ValueKey(spot.id ?? 'spot-$index'),
               spot: spot,
               showCheckInPresence: true,
               upcomingEventPin: _upcomingEventPinForSpot(spot),
@@ -3994,90 +3995,98 @@ class SearchScreenState extends State<SearchScreen>
                       bottom: 0,
                       child: AnimatedBuilder(
                         animation: _bottomSheetAnimation,
+                        // Keep sheet contents out of the per-tick rebuild. Rebuilding
+                        // SVG flags/images every animation frame races Skwasm path
+                        // disposal (RuntimeError: null function / path_dispose).
                         builder: (context, child) {
-                          return PointerInterceptor(
-                            child: GestureDetector(
-                              onTap: _isBottomSheetOpen
-                                  ? null
-                                  : _toggleBottomSheet, // Only clickable when collapsed
-                              onPanStart:
-                                  _handleDragStart, // Always enable drag gestures
-                              onPanUpdate: _handleDragUpdate,
-                              onPanEnd: _handleDragEnd,
-                              child: Center(
-                                child: ConstrainedBox(
-                                  constraints: const BoxConstraints(
-                                    maxWidth: 1200,
-                                  ),
-                                  child: Container(
-                                    height: _bottomSheetHeight(
-                                      MediaQuery.sizeOf(context).height,
-                                      _bottomSheetAnimation.value,
+                          return SizedBox(
+                            height: _bottomSheetHeight(
+                              MediaQuery.sizeOf(context).height,
+                              _bottomSheetAnimation.value,
+                            ),
+                            child: child,
+                          );
+                        },
+                        child: PointerInterceptor(
+                          child: GestureDetector(
+                            onTap: _isBottomSheetOpen
+                                ? null
+                                : _toggleBottomSheet, // Only clickable when collapsed
+                            onPanStart:
+                                _handleDragStart, // Always enable drag gestures
+                            onPanUpdate: _handleDragUpdate,
+                            onPanEnd: _handleDragEnd,
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 1200,
+                                ),
+                                child: Container(
+                                  clipBehavior: Clip.hardEdge,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surface,
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(20),
                                     ),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.surface,
-                                      borderRadius: const BorderRadius.vertical(
-                                        top: Radius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, -2),
                                       ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(
-                                            alpha: 0.1,
-                                          ),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, -2),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                          16,
+                                          16,
+                                          16,
+                                          8,
                                         ),
-                                      ],
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.fromLTRB(
-                                            16,
-                                            16,
-                                            16,
-                                            8,
-                                          ),
-                                          child: Builder(
-                                            builder: (context) {
-                                              final l10n = AppLocalizations.of(
-                                                context,
-                                              )!;
-                                              return ExploreBottomSheetHeader(
-                                                mode: _exploreListMode,
-                                                spotsLabel: l10n
-                                                    .exploreSpotCountShort(
-                                                      _exploreSpotCountForHeader(),
-                                                    ),
-                                                eventsLabel: l10n
-                                                    .exploreEventCountShort(
-                                                      _exploreEventCountForHeader(),
-                                                    ),
-                                                spotsDetailSuffix:
-                                                    _exploreListMode ==
-                                                        ExploreBottomSheetHeader
-                                                            .modeSpots
-                                                    ? _exploreSpotsSegmentSuffix(
-                                                        l10n,
-                                                      )
-                                                    : null,
-                                                isSheetOpen: _isBottomSheetOpen,
-                                                onModeChanged: (mode) {
-                                                  setState(() {
-                                                    _exploreListMode = mode;
-                                                  });
-                                                },
-                                                onToggleSheet:
-                                                    _toggleBottomSheet,
-                                              );
-                                            },
-                                          ),
+                                        child: Builder(
+                                          builder: (context) {
+                                            final l10n = AppLocalizations.of(
+                                              context,
+                                            )!;
+                                            return ExploreBottomSheetHeader(
+                                              mode: _exploreListMode,
+                                              spotsLabel: l10n
+                                                  .exploreSpotCountShort(
+                                                    _exploreSpotCountForHeader(),
+                                                  ),
+                                              eventsLabel: l10n
+                                                  .exploreEventCountShort(
+                                                    _exploreEventCountForHeader(),
+                                                  ),
+                                              spotsDetailSuffix:
+                                                  _exploreListMode ==
+                                                      ExploreBottomSheetHeader
+                                                          .modeSpots
+                                                  ? _exploreSpotsSegmentSuffix(
+                                                      l10n,
+                                                    )
+                                                  : null,
+                                              isSheetOpen: _isBottomSheetOpen,
+                                              onModeChanged: (mode) {
+                                                setState(() {
+                                                  _exploreListMode = mode;
+                                                });
+                                              },
+                                              onToggleSheet: _toggleBottomSheet,
+                                            );
+                                          },
                                         ),
+                                      ),
 
-                                        if (_isBottomSheetOpen)
-                                          Expanded(
+                                      if (_isBottomSheetOpen)
+                                        Expanded(
+                                          child: RepaintBoundary(
                                             child: _exploreListMode == 'events'
                                                 ? (_visibleEvents.isEmpty
                                                       ? _buildExploreEventsEmptyState(
@@ -4159,14 +4168,14 @@ class SearchScreenState extends State<SearchScreen>
                                                         )
                                                       : _buildSpotsList()),
                                           ),
-                                      ],
-                                    ),
+                                        ),
+                                    ],
                                   ),
                                 ),
                               ),
                             ),
-                          );
-                        },
+                          ),
+                        ),
                       ),
                     ),
 
@@ -4570,7 +4579,6 @@ class SearchScreenState extends State<SearchScreen>
                       ),
                     ),
                   ),
-
                 ],
               );
             },

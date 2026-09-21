@@ -12,8 +12,10 @@ class ExploreBottomSheetHeader extends StatelessWidget {
   final String mode;
   final String spotsLabel;
   final String eventsLabel;
+
   /// Shown inside the spots segment (e.g. ranked "best shown" hint).
   final String? spotsDetailSuffix;
+
   /// Shown inside the events segment when not all pins are listed.
   final String? eventsDetailSuffix;
   final bool isSheetOpen;
@@ -61,11 +63,13 @@ class ExploreBottomSheetHeader extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.all(4),
-            child: SvgPicture.asset(
-              logoAsset,
-              width: 28,
-              height: 28,
-              fit: BoxFit.contain,
+            child: RepaintBoundary(
+              child: SvgPicture.asset(
+                logoAsset,
+                width: 28,
+                height: 28,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
         ),
@@ -133,13 +137,18 @@ class _ModePillToggleState extends State<_ModePillToggle> {
   @override
   void didUpdateWidget(covariant _ModePillToggle oldWidget) {
     super.didUpdateWidget(oldWidget);
-    WidgetsBinding.instance.addPostFrameCallback(_updateIndicator);
+    if (oldWidget.mode != widget.mode ||
+        oldWidget.spotsLabel != widget.spotsLabel ||
+        oldWidget.eventsLabel != widget.eventsLabel ||
+        oldWidget.spotsDetailSuffix != widget.spotsDetailSuffix ||
+        oldWidget.eventsDetailSuffix != widget.eventsDetailSuffix) {
+      WidgetsBinding.instance.addPostFrameCallback(_updateIndicator);
+    }
   }
 
   void _updateIndicator(_) {
     if (!mounted) return;
-    final stackBox =
-        _stackKey.currentContext?.findRenderObject() as RenderBox?;
+    final stackBox = _stackKey.currentContext?.findRenderObject() as RenderBox?;
     final segmentKey = widget.mode == ExploreBottomSheetHeader.modeSpots
         ? _spotsKey
         : _eventsKey;
@@ -213,9 +222,8 @@ class _ModePillToggleState extends State<_ModePillToggle> {
                   selectedIcon: Icons.place,
                   label: widget.spotsLabel,
                   detailSuffix: widget.spotsDetailSuffix,
-                  onTap: () => widget.onSegmentTap(
-                    ExploreBottomSheetHeader.modeSpots,
-                  ),
+                  onTap: () =>
+                      widget.onSegmentTap(ExploreBottomSheetHeader.modeSpots),
                 ),
                 _ModeSegment(
                   key: _eventsKey,
@@ -224,9 +232,8 @@ class _ModePillToggleState extends State<_ModePillToggle> {
                   selectedIcon: Icons.event,
                   label: widget.eventsLabel,
                   detailSuffix: widget.eventsDetailSuffix,
-                  onTap: () => widget.onSegmentTap(
-                    ExploreBottomSheetHeader.modeEvents,
-                  ),
+                  onTap: () =>
+                      widget.onSegmentTap(ExploreBottomSheetHeader.modeEvents),
                 ),
               ],
             ),

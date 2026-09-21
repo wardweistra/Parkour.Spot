@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
-import 'package:country_flags/country_flags.dart';
 import 'package:go_router/go_router.dart';
+import 'country_flag_badge.dart';
 import '../models/event_map_pin.dart';
 import '../models/spot.dart';
 import '../services/mobile_detection_service.dart';
@@ -140,406 +140,382 @@ class _SpotCardState extends State<SpotCard> {
 
   Widget _buildListCard(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: widget.onTapWithImageIndex != null
-            ? () => widget.onTapWithImageIndex!(_currentPage)
-            : widget.onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Stack(
-          children: [
-            // Main content column
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Image Section
-                if (widget.spot.imageUrls != null &&
-                    widget.spot.imageUrls!.isNotEmpty)
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                    child: AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: Stack(
-                        children: [
-                          // Image Gallery
-                          PageView.builder(
-                            controller: _pageController,
-                            itemCount: widget.spot.imageUrls!.length,
-                            onPageChanged: (index) {
-                              setState(() {
-                                _currentPage = index;
-                              });
-                            },
-                            itemBuilder: (context, index) {
-                              return ResizedSpotImage(
-                                imageUrl: widget.spot.imageUrls![index],
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => Container(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.surfaceContainerHighest,
-                                  child: const Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                ),
-                                errorWidget: (context, url, error) => Container(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.surfaceContainerHighest,
-                                  child: Icon(
-                                    Icons.image_not_supported,
-                                    size: 48,
+    return RepaintBoundary(
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: InkWell(
+          onTap: widget.onTapWithImageIndex != null
+              ? () => widget.onTapWithImageIndex!(_currentPage)
+              : widget.onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            children: [
+              // Main content column
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Image Section
+                  if (widget.spot.imageUrls != null &&
+                      widget.spot.imageUrls!.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                      child: AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: Stack(
+                          children: [
+                            // Image Gallery
+                            PageView.builder(
+                              controller: _pageController,
+                              itemCount: widget.spot.imageUrls!.length,
+                              onPageChanged: (index) {
+                                setState(() {
+                                  _currentPage = index;
+                                });
+                              },
+                              itemBuilder: (context, index) {
+                                return ResizedSpotImage(
+                                  imageUrl: widget.spot.imageUrls![index],
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => ColoredBox(
                                     color: Theme.of(
                                       context,
-                                    ).colorScheme.onSurfaceVariant,
+                                    ).colorScheme.surfaceContainerHighest,
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-
-                          // Page Indicator Dots (only show if multiple images)
-                          if (widget.spot.imageUrls!.length > 1)
-                            Positioned(
-                              bottom: 8,
-                              left: 0,
-                              right: 0,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: List.generate(
-                                  widget.spot.imageUrls!.length,
-                                  (index) => Container(
-                                    width: 6,
-                                    height: 6,
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: index == _currentPage
-                                          ? Colors.white
-                                          : Colors.white.withValues(alpha: 0.5),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                          // Navigation arrows (left and right)
-                          if (widget.spot.imageUrls!.length > 1 &&
-                              !MobileDetectionService.isMobileDevice) ...[
-                            // Left arrow
-                            Positioned(
-                              left: 8,
-                              top: 0,
-                              bottom: 0,
-                              child: Center(
-                                child: Material(
-                                  color: Colors.black.withValues(alpha: 0.6),
-                                  shape: const CircleBorder(),
-                                  child: InkWell(
-                                    onTap: () => _previousImage(),
-                                    customBorder: const CircleBorder(),
-                                    child: Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.3,
-                                          ),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: const Icon(
-                                        Icons.chevron_left,
-                                        color: Colors.white,
-                                        size: 24,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            // Right arrow
-                            Positioned(
-                              right: 8,
-                              top: 0,
-                              bottom: 0,
-                              child: Center(
-                                child: Material(
-                                  color: Colors.black.withValues(alpha: 0.6),
-                                  shape: const CircleBorder(),
-                                  child: InkWell(
-                                    onTap: () => _nextImage(),
-                                    customBorder: const CircleBorder(),
-                                    child: Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Colors.white.withValues(
-                                            alpha: 0.3,
-                                          ),
-                                          width: 1,
-                                        ),
-                                      ),
-                                      child: const Icon(
-                                        Icons.chevron_right,
-                                        color: Colors.white,
-                                        size: 24,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  )
-                else
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
-                    ),
-                    child: AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: Container(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest,
-                        child: Center(
-                          child: NoImagesPlaceholder(label: l10n.noImagesYet),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // Content Section - Wrapped in SingleChildScrollView to prevent overflow
-                SingleChildScrollView(
-                  physics:
-                      const NeverScrollableScrollPhysics(), // Disable scrolling within card
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize:
-                          MainAxisSize.min, // Prevent unnecessary expansion
-                      children: [
-                        _buildSpotTitleRow(
-                          context,
-                          showRating: widget.showRating,
-                        ),
-
-                        if (widget.upcomingEventPin != null) ...[
-                          const SizedBox(height: 8),
-                          _UpcomingEventBadge(pin: widget.upcomingEventPin!),
-                        ],
-
-                        const SizedBox(height: 8),
-
-                        // Description - Removed fixed height constraints
-                        Text(
-                          widget.spot.description.trim().isEmpty
-                              ? l10n.spotCardNoDescription
-                              : widget.spot.description,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.7),
-                                height:
-                                    1.4, // Better line height for readability
-                                fontStyle:
-                                    widget.spot.description.trim().isEmpty
-                                    ? FontStyle.italic
-                                    : FontStyle.normal,
-                              ),
-                          maxLines: 3, // Keep at 3 lines
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.left,
-                          softWrap: true, // Ensure text wraps properly
-                        ),
-
-                        // Custom note (e.g. from list section entry)
-                        if (widget.customNote != null &&
-                            widget.customNote!.trim().isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          SpotListNoteBlock(
-                            child: Text(
-                              widget.customNote!,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    fontStyle: FontStyle.italic,
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withValues(alpha: 0.8),
-                                  ),
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-
-                        // "Part of" indicator for highlighted spots (chip/badge style)
-                        if (widget.spotListId != null &&
-                            widget.spotListName != null) ...[
-                          const SizedBox(height: 8),
-                          GestureDetector(
-                            onTap:
-                                widget.onSpotListTap ??
-                                () {
-                                  // Fallback to navigation if no callback provided
-                                  context.push('/list/${widget.spotListId}');
-                                },
-                            child: Chip(
-                              avatar: Icon(
-                                Icons.list,
-                                size: 16,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onPrimaryContainer,
-                              ),
-                              label: Text.rich(
-                                TextSpan(
-                                  text: l10n.spotCardPartOfPrefix,
-                                  style: Theme.of(context).textTheme.labelSmall
-                                      ?.copyWith(
+                                  errorWidget: (context, url, error) =>
+                                      Container(
                                         color: Theme.of(
                                           context,
-                                        ).colorScheme.onPrimaryContainer,
+                                        ).colorScheme.surfaceContainerHighest,
+                                        child: Icon(
+                                          Icons.image_not_supported,
+                                          size: 48,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                        ),
                                       ),
-                                  children: [
-                                    TextSpan(
-                                      text: widget.spotListName,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelSmall
-                                          ?.copyWith(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onPrimaryContainer,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                );
+                              },
+                            ),
+
+                            // Page Indicator Dots (only show if multiple images)
+                            if (widget.spot.imageUrls!.length > 1)
+                              Positioned(
+                                bottom: 8,
+                                left: 0,
+                                right: 0,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: List.generate(
+                                    widget.spot.imageUrls!.length,
+                                    (index) => Container(
+                                      width: 6,
+                                      height: 6,
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: index == _currentPage
+                                            ? Colors.white
+                                            : Colors.white.withValues(
+                                                alpha: 0.5,
+                                              ),
+                                      ),
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ),
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.primaryContainer,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                              visualDensity: VisualDensity.compact,
-                            ),
-                          ),
-                        ],
 
-                        // Add bottom padding to make room for the bottom row
-                        const SizedBox(height: 50),
-                      ],
+                            // Navigation arrows (left and right)
+                            if (widget.spot.imageUrls!.length > 1 &&
+                                !MobileDetectionService.isMobileDevice) ...[
+                              // Left arrow
+                              Positioned(
+                                left: 8,
+                                top: 0,
+                                bottom: 0,
+                                child: Center(
+                                  child: Material(
+                                    color: Colors.black.withValues(alpha: 0.6),
+                                    shape: const CircleBorder(),
+                                    child: InkWell(
+                                      onTap: () => _previousImage(),
+                                      customBorder: const CircleBorder(),
+                                      child: Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.chevron_left,
+                                          color: Colors.white,
+                                          size: 24,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              // Right arrow
+                              Positioned(
+                                right: 8,
+                                top: 0,
+                                bottom: 0,
+                                child: Center(
+                                  child: Material(
+                                    color: Colors.black.withValues(alpha: 0.6),
+                                    shape: const CircleBorder(),
+                                    child: InkWell(
+                                      onTap: () => _nextImage(),
+                                      customBorder: const CircleBorder(),
+                                      child: Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.chevron_right,
+                                          color: Colors.white,
+                                          size: 24,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                      child: AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: Container(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                          child: Center(
+                            child: NoImagesPlaceholder(label: l10n.noImagesYet),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            ),
 
-            // Bottom row: Flag + City (left) | Share + Locate buttons (right) - floated to bottom
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: 12,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Left: Flag + City
-                  if (widget.spot.city != null ||
-                      widget.spot.countryCode != null)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (widget.spot.countryCode != null)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(2),
-                            child: SizedBox(
-                              height: 20,
-                              width: 30,
-                              child: CountryFlag.fromCountryCode(
-                                widget.spot.countryCode!,
-                              ),
-                            ),
+                  // Content Section - Wrapped in SingleChildScrollView to prevent overflow
+                  SingleChildScrollView(
+                    physics:
+                        const NeverScrollableScrollPhysics(), // Disable scrolling within card
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize:
+                            MainAxisSize.min, // Prevent unnecessary expansion
+                        children: [
+                          _buildSpotTitleRow(
+                            context,
+                            showRating: widget.showRating,
                           ),
-                        if (widget.spot.countryCode != null &&
-                            widget.spot.city != null)
-                          const SizedBox(width: 8),
-                        if (widget.spot.city != null)
+
+                          if (widget.upcomingEventPin != null) ...[
+                            const SizedBox(height: 8),
+                            _UpcomingEventBadge(pin: widget.upcomingEventPin!),
+                          ],
+
+                          const SizedBox(height: 8),
+
+                          // Description - Removed fixed height constraints
                           Text(
-                            widget.spot.city!,
-                            style: Theme.of(context).textTheme.bodySmall
+                            widget.spot.description.trim().isEmpty
+                                ? l10n.spotCardNoDescription
+                                : widget.spot.description,
+                            style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
                                   color: Theme.of(context).colorScheme.onSurface
                                       .withValues(alpha: 0.7),
-                                  fontWeight: FontWeight.w500,
+                                  height:
+                                      1.4, // Better line height for readability
+                                  fontStyle:
+                                      widget.spot.description.trim().isEmpty
+                                      ? FontStyle.italic
+                                      : FontStyle.normal,
                                 ),
+                            maxLines: 3, // Keep at 3 lines
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.left,
+                            softWrap: true, // Ensure text wraps properly
                           ),
-                      ],
-                    )
-                  else
-                    const SizedBox.shrink(),
 
-                  // Right: Share + Locate buttons
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Share button (always shown)
-                      Material(
-                        color: Theme.of(context).colorScheme.secondary,
-                        shape: const CircleBorder(),
-                        elevation: 2,
-                        child: InkWell(
-                          onTap: () => _shareSpot(context),
-                          customBorder: const CircleBorder(),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: Icon(
-                              Icons.share,
-                              size: 18,
-                              color: Theme.of(context).colorScheme.onSecondary,
+                          // Custom note (e.g. from list section entry)
+                          if (widget.customNote != null &&
+                              widget.customNote!.trim().isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            SpotListNoteBlock(
+                              child: Text(
+                                widget.customNote!,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      fontStyle: FontStyle.italic,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.8),
+                                    ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                        ),
+                          ],
+
+                          // "Part of" indicator for highlighted spots (chip/badge style)
+                          if (widget.spotListId != null &&
+                              widget.spotListName != null) ...[
+                            const SizedBox(height: 8),
+                            GestureDetector(
+                              onTap:
+                                  widget.onSpotListTap ??
+                                  () {
+                                    // Fallback to navigation if no callback provided
+                                    context.push('/list/${widget.spotListId}');
+                                  },
+                              child: Chip(
+                                avatar: Icon(
+                                  Icons.list,
+                                  size: 16,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer,
+                                ),
+                                label: Text.rich(
+                                  TextSpan(
+                                    text: l10n.spotCardPartOfPrefix,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimaryContainer,
+                                        ),
+                                    children: [
+                                      TextSpan(
+                                        text: widget.spotListName,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelSmall
+                                            ?.copyWith(
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onPrimaryContainer,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                backgroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.primaryContainer,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                          ],
+
+                          // Add bottom padding to make room for the bottom row
+                          const SizedBox(height: 50),
+                        ],
                       ),
-                      // Spacing between Share and Locate buttons
-                      if (widget.onLocate != null) const SizedBox(width: 8),
-                      // Locate button
-                      if (widget.onLocate != null)
+                    ),
+                  ),
+                ],
+              ),
+
+              // Bottom row: Flag + City (left) | Share + Locate buttons (right) - floated to bottom
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 12,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Left: Flag + City
+                    if (widget.spot.city != null ||
+                        widget.spot.countryCode != null)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (widget.spot.countryCode != null)
+                            CountryFlagBadge(
+                              countryCode: widget.spot.countryCode!,
+                            ),
+                          if (widget.spot.countryCode != null &&
+                              widget.spot.city != null)
+                            const SizedBox(width: 8),
+                          if (widget.spot.city != null)
+                            Text(
+                              widget.spot.city!,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.7),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                            ),
+                        ],
+                      )
+                    else
+                      const SizedBox.shrink(),
+
+                    // Right: Share + Locate buttons
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Share button (always shown)
                         Material(
                           color: Theme.of(context).colorScheme.secondary,
                           shape: const CircleBorder(),
                           elevation: 2,
                           child: InkWell(
-                            onTap: widget.onLocate,
+                            onTap: () => _shareSpot(context),
                             customBorder: const CircleBorder(),
                             child: Padding(
                               padding: const EdgeInsets.all(8),
                               child: Icon(
-                                Icons.my_location,
+                                Icons.share,
                                 size: 18,
                                 color: Theme.of(
                                   context,
@@ -548,89 +524,116 @@ class _SpotCardState extends State<SpotCard> {
                             ),
                           ),
                         ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // External source (top left)
-            if (widget.spot.spotSource != null)
-              Positioned(
-                top: 8,
-                left: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      width: 1,
+                        // Spacing between Share and Locate buttons
+                        if (widget.onLocate != null) const SizedBox(width: 8),
+                        // Locate button
+                        if (widget.onLocate != null)
+                          Material(
+                            color: Theme.of(context).colorScheme.secondary,
+                            shape: const CircleBorder(),
+                            elevation: 2,
+                            child: InkWell(
+                              onTap: widget.onLocate,
+                              customBorder: const CircleBorder(),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Icon(
+                                  Icons.my_location,
+                                  size: 18,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSecondary,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                  ),
-                  child: Text(
-                    widget.spot.spotSourceName ?? widget.spot.spotSource!,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-
-            // Check-in presence + reorder/remove (top right; check-ins left of actions)
-            if ((widget.showCheckInPresence && widget.spot.id != null) ||
-                widget.onRemove != null ||
-                widget.reorderHandle != null)
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (widget.showCheckInPresence && widget.spot.id != null)
-                      SpotCheckInPresenceLazy(spotId: widget.spot.id!),
-                    if (widget.showCheckInPresence &&
-                        widget.spot.id != null &&
-                        (widget.reorderHandle != null ||
-                            widget.onRemove != null))
-                      const SizedBox(width: 8),
-                    if (widget.reorderHandle != null) widget.reorderHandle!,
-                    if (widget.reorderHandle != null && widget.onRemove != null)
-                      const SizedBox(width: 8),
-                    if (widget.onRemove != null)
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        tooltip: l10n.spotCardRemoveFromListTooltip,
-                        onPressed: widget.onRemove,
-                        style: IconButton.styleFrom(
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.surface,
-                        ),
-                      ),
                   ],
                 ),
               ),
 
-            // Removed badge - position on left if action buttons exist, otherwise right
-            if (widget.spot.spotSourceRemoved)
-              Positioned(
-                top: 8,
-                left: (widget.onRemove != null || widget.reorderHandle != null)
-                    ? 8
-                    : null,
-                right: (widget.onRemove != null || widget.reorderHandle != null)
-                    ? null
-                    : 8,
-                child: _buildRemovedBadge(context),
-              ),
-          ],
+              // External source (top left)
+              if (widget.spot.spotSource != null)
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      widget.spot.spotSourceName ?? widget.spot.spotSource!,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Check-in presence + reorder/remove (top right; check-ins left of actions)
+              if ((widget.showCheckInPresence && widget.spot.id != null) ||
+                  widget.onRemove != null ||
+                  widget.reorderHandle != null)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (widget.showCheckInPresence && widget.spot.id != null)
+                        SpotCheckInPresenceLazy(spotId: widget.spot.id!),
+                      if (widget.showCheckInPresence &&
+                          widget.spot.id != null &&
+                          (widget.reorderHandle != null ||
+                              widget.onRemove != null))
+                        const SizedBox(width: 8),
+                      if (widget.reorderHandle != null) widget.reorderHandle!,
+                      if (widget.reorderHandle != null &&
+                          widget.onRemove != null)
+                        const SizedBox(width: 8),
+                      if (widget.onRemove != null)
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          tooltip: l10n.spotCardRemoveFromListTooltip,
+                          onPressed: widget.onRemove,
+                          style: IconButton.styleFrom(
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.surface,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+
+              // Removed badge - position on left if action buttons exist, otherwise right
+              if (widget.spot.spotSourceRemoved)
+                Positioned(
+                  top: 8,
+                  left:
+                      (widget.onRemove != null || widget.reorderHandle != null)
+                      ? 8
+                      : null,
+                  right:
+                      (widget.onRemove != null || widget.reorderHandle != null)
+                      ? null
+                      : 8,
+                  child: _buildRemovedBadge(context),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -688,13 +691,10 @@ class _SpotCardState extends State<SpotCard> {
                                 return ResizedSpotImage(
                                   imageUrl: widget.spot.imageUrls![index],
                                   fit: BoxFit.cover,
-                                  placeholder: (context, url) => Container(
+                                  placeholder: (context, url) => ColoredBox(
                                     color: Theme.of(
                                       context,
                                     ).colorScheme.surfaceContainerHighest,
-                                    child: const Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
                                   ),
                                   errorWidget: (context, url, error) =>
                                       Container(
@@ -977,15 +977,10 @@ class _SpotCardState extends State<SpotCard> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               if (widget.spot.countryCode != null)
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(2),
-                                  child: SizedBox(
-                                    height: 16,
-                                    width: 24,
-                                    child: CountryFlag.fromCountryCode(
-                                      widget.spot.countryCode!,
-                                    ),
-                                  ),
+                                CountryFlagBadge(
+                                  countryCode: widget.spot.countryCode!,
+                                  height: 16,
+                                  width: 24,
                                 ),
                               if (widget.spot.countryCode != null &&
                                   widget.spot.city != null)
