@@ -579,6 +579,178 @@ describe("event-sync helpers", () => {
       expect(events[0].startAt.toISOString()).toBe("2026-05-12T18:00:00.000Z");
     });
 
+    it("promotes Google-style UTC midnight spans to all-day using calendar TZ", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "X-WR-TIMEZONE:Europe/Amsterdam",
+        "BEGIN:VEVENT",
+        "UID:dpl@example.com",
+        "DTSTART:20261205T230000Z",
+        "DTEND:20261206T230000Z",
+        "SUMMARY:DPL Freestyle 1",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "pkfr",
+        sourceName: "PKFR Jams NL",
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].isDateOnly).toBe(true);
+      expect(events[0].timeZone).toBe("Europe/Amsterdam");
+      expect(events[0].timeZoneSource).toBe(EVENT_TIME_ZONE_SOURCE_FEED);
+      expect(events[0].startAt).toEqual(
+          dateStartToUtc(2026, 12, 6, "Europe/Amsterdam"),
+      );
+      expect(events[0].endAt).toEqual(
+          dateEndToUtc(2026, 12, 6, "Europe/Amsterdam"),
+      );
+    });
+
+    it("promotes multi-day local midnight spans to all-day", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "X-WR-TIMEZONE:Europe/Amsterdam",
+        "BEGIN:VEVENT",
+        "UID:nk@example.com",
+        "DTSTART:20270514T220000Z",
+        "DTEND:20270516T220000Z",
+        "SUMMARY:NK Freestyle",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "pkfr",
+        sourceName: "PKFR Jams NL",
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].isDateOnly).toBe(true);
+      expect(events[0].timeZone).toBe("Europe/Amsterdam");
+      expect(events[0].startAt).toEqual(
+          dateStartToUtc(2027, 5, 15, "Europe/Amsterdam"),
+      );
+      expect(events[0].endAt).toEqual(
+          dateEndToUtc(2027, 5, 16, "Europe/Amsterdam"),
+      );
+    });
+
+    it("promotes midnight spans using source default when calendar TZ is missing", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "BEGIN:VEVENT",
+        "UID:midnight@example.com",
+        "DTSTART:20261205T230000Z",
+        "DTEND:20261206T230000Z",
+        "SUMMARY:Midnight span",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "s",
+        sourceName: "S",
+        sourceDefaultTimeZone: "Europe/Amsterdam",
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].isDateOnly).toBe(true);
+      expect(events[0].timeZone).toBe("Europe/Amsterdam");
+      expect(events[0].timeZoneSource).toBe(
+          EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT,
+      );
+      expect(events[0].startAt).toEqual(
+          dateStartToUtc(2026, 12, 6, "Europe/Amsterdam"),
+      );
+    });
+
+    it("does not promote non-midnight timed UTC events", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "X-WR-TIMEZONE:Europe/Amsterdam",
+        "BEGIN:VEVENT",
+        "UID:afternoon@example.com",
+        "DTSTART:20260512T180000Z",
+        "DTEND:20260512T200000Z",
+        "SUMMARY:Afternoon",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "s",
+        sourceName: "S",
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].isDateOnly).toBe(false);
+      expect(events[0].timeZone).toBeUndefined();
+      expect(events[0].startAt.toISOString()).toBe("2026-05-12T18:00:00.000Z");
+    });
+
+    it("promotes floating local midnight spans to all-day", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "X-WR-TIMEZONE:Europe/Berlin",
+        "BEGIN:VEVENT",
+        "UID:float-midnight@example.com",
+        "DTSTART:20260702T000000",
+        "DTEND:20260703T000000",
+        "SUMMARY:Floating midnight",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "s",
+        sourceName: "S",
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].isDateOnly).toBe(true);
+      expect(events[0].timeZone).toBe("Europe/Berlin");
+      expect(events[0].timeZoneSource).toBe(EVENT_TIME_ZONE_SOURCE_FEED);
+      expect(events[0].startAt).toEqual(
+          dateStartToUtc(2026, 7, 2, "Europe/Berlin"),
+      );
+      expect(events[0].endAt).toEqual(
+          dateEndToUtc(2026, 7, 2, "Europe/Berlin"),
+      );
+    });
+
+    it("does not promote midnight spans when no timezone is available", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "BEGIN:VEVENT",
+        "UID:no-tz@example.com",
+        "DTSTART:20261205T230000Z",
+        "DTEND:20261206T230000Z",
+        "SUMMARY:No TZ midnight",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "s",
+        sourceName: "S",
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].isDateOnly).toBe(false);
+      expect(events[0].timeZone).toBeUndefined();
+      expect(events[0].startAt.toISOString()).toBe("2026-12-05T23:00:00.000Z");
+      expect(events[0].endAt.toISOString()).toBe("2026-12-06T23:00:00.000Z");
+    });
+
     it("imports all-day and timed events from feeds without X-WR-TIMEZONE", () => {
       const icsText = [
         "BEGIN:VCALENDAR",

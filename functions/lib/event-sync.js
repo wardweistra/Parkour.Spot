@@ -559,6 +559,131 @@ function resolveFloatingTimedSchedule(
 }
 
 /**
+ * @param {Object} wall
+ * @return {boolean}
+ */
+function isWallClockMidnight(wall) {
+  if (!wall) return false;
+  const hour = wall.hour === 24 ? 0 : wall.hour;
+  return hour === 0 && wall.minute === 0 && wall.second === 0;
+}
+
+/**
+ * Normalize Intl midnight walls (hour 0 or 24) to the calendar date that
+ * begins at that midnight.
+ * @param {Object} wall
+ * @return {{year: number, month: number, day: number}|null}
+ */
+function localDateAtMidnightWall(wall) {
+  if (!isWallClockMidnight(wall)) return null;
+  if (wall.hour === 24) {
+    const next = new Date(Date.UTC(wall.year, wall.month - 1, wall.day));
+    next.setUTCDate(next.getUTCDate() + 1);
+    return {
+      year: next.getUTCFullYear(),
+      month: next.getUTCMonth() + 1,
+      day: next.getUTCDate(),
+    };
+  }
+  return {year: wall.year, month: wall.month, day: wall.day};
+}
+
+/**
+ * Timezone used to decide whether a timed span is a local midnight all-day
+ * encoding: event TZID, then calendar X-WR-TIMEZONE, then source default.
+ * @param {string|null} eventTimeZone
+ * @param {string|null} eventTimeZoneSource
+ * @param {string|null} calendarTimeZone
+ * @param {string|null} sourceDefaultTimeZone
+ * @return {{timeZone: (string|null), timeZoneSource: (string|null)}}
+ */
+function resolveTimezoneForMidnightPromotion(
+    eventTimeZone,
+    eventTimeZoneSource,
+    calendarTimeZone,
+    sourceDefaultTimeZone,
+) {
+  if (eventTimeZone) {
+    return {
+      timeZone: eventTimeZone,
+      timeZoneSource:
+        eventTimeZoneSource || EVENT_TIME_ZONE_SOURCE_FEED,
+    };
+  }
+  if (calendarTimeZone) {
+    return {
+      timeZone: calendarTimeZone,
+      timeZoneSource: EVENT_TIME_ZONE_SOURCE_FEED,
+    };
+  }
+  if (sourceDefaultTimeZone) {
+    return {
+      timeZone: sourceDefaultTimeZone,
+      timeZoneSource: EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT,
+    };
+  }
+  return {timeZone: null, timeZoneSource: null};
+}
+
+/**
+ * True when start/end are both local midnights and end is after start.
+ * @param {Date} startAt
+ * @param {Date} endAt
+ * @param {string} timeZone
+ * @return {boolean}
+ */
+function isLocalMidnightToMidnight(startAt, endAt, timeZone) {
+  if (!(startAt instanceof Date) || !(endAt instanceof Date)) return false;
+  if (!(endAt.getTime() > startAt.getTime())) return false;
+  if (!timeZone) return false;
+  const startWall = getZonedWallClock(startAt.getTime(), timeZone);
+  const endWall = getZonedWallClock(endAt.getTime(), timeZone);
+  return isWallClockMidnight(startWall) && isWallClockMidnight(endWall);
+}
+
+/**
+ * Promote a local midnight→midnight timed span to stored all-day bounds.
+ * @param {Date} startAt
+ * @param {Date} endAt
+ * @param {string} timeZone
+ * @param {string|null} timeZoneSource
+ * @return {Object|null}
+ */
+function promoteTimedSpanToAllDaySchedule(
+    startAt,
+    endAt,
+    timeZone,
+    timeZoneSource,
+) {
+  if (!isLocalMidnightToMidnight(startAt, endAt, timeZone)) return null;
+  const startDate = localDateAtMidnightWall(
+      getZonedWallClock(startAt.getTime(), timeZone),
+  );
+  const endExclusive = localDateAtMidnightWall(
+      getZonedWallClock(endAt.getTime(), timeZone),
+  );
+  if (!startDate || !endExclusive) return null;
+  const endInclusive = subtractOneCalendarDay(endExclusive);
+  return {
+    startAt: dateStartToUtc(
+        startDate.year,
+        startDate.month,
+        startDate.day,
+        timeZone,
+    ),
+    endAt: dateEndToUtc(
+        endInclusive.year,
+        endInclusive.month,
+        endInclusive.day,
+        timeZone,
+    ),
+    isDateOnly: true,
+    timeZone,
+    timeZoneSource,
+  };
+}
+
+/**
  * @param {*} data
  * @return {boolean}
  */
@@ -916,6 +1041,30 @@ function parseExternalEventsFromIcs(
             endAt = resolved.schedule.endAt;
             timeZone = resolved.schedule.timeZone;
             timeZoneSource = resolved.timeZoneSource;
+          }
+        }
+      }
+
+      if (startAt && endAt) {
+        const tzForPromotion = resolveTimezoneForMidnightPromotion(
+            timeZone,
+            timeZoneSource,
+            calendarTimeZone,
+            normalizedSourceDefaultTimeZone,
+        );
+        if (tzForPromotion.timeZone) {
+          const promoted = promoteTimedSpanToAllDaySchedule(
+              startAt,
+              endAt,
+              tzForPromotion.timeZone,
+              tzForPromotion.timeZoneSource,
+          );
+          if (promoted) {
+            startAt = promoted.startAt;
+            endAt = promoted.endAt;
+            isDateOnly = promoted.isDateOnly;
+            timeZone = promoted.timeZone;
+            timeZoneSource = promoted.timeZoneSource;
           }
         }
       }
@@ -1361,5 +1510,8 @@ module.exports = {
   removeExtractedWebsiteUrlFromDescription,
   resolveAllDaySchedule,
   resolveFloatingTimedSchedule,
+  resolveTimezoneForMidnightPromotion,
+  isLocalMidnightToMidnight,
+  promoteTimedSpanToAllDaySchedule,
   shouldGeocodeExternalEventAddress,
 };
