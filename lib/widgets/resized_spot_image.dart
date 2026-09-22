@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cached_network_image_platform_interface/cached_network_image_platform_interface.dart';
+import 'package:flutter/material.dart';
 import '../utils/image_url_utils.dart';
-import '../utils/youtube_utils.dart';
 import '../utils/resized_spot_image_provider.dart';
+import '../utils/youtube_utils.dart';
 
 /// Displays a spot image with fallback: tries 1200x1200, then 1200x630, then original.
 /// Use for Firebase Storage spot images where the 1200x1200 resized version may not exist yet.
@@ -93,6 +94,9 @@ class _ResizedSpotImageState extends State<ResizedSpotImage> {
       fit: widget.fit,
       width: widget.width,
       height: widget.height,
+      // Avoid CanvasKit black textures on Flutter 3.47+ when HtmlImage-backed
+      // sources are cleared after ImageCache eviction (#191800 / #192347).
+      imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
       placeholder:
           widget.placeholder ?? (context, url) => _fillPlaceholder(context),
       errorWidget: (context, url, error) {
