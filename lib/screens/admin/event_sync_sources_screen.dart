@@ -469,14 +469,14 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
       : 'Google Calendar public .ics URL';
 
   String get _defaultTimeZoneHelperText => _isWixSourceType
-      ? 'Fallback when the published calendar has no time_zone. '
+      ? 'Fallback when the published calendar and event have no time_zone. '
             'Re-sync after changing this.'
-      : 'Used when the ICS feed has no calendar timezone. '
-            'Re-sync after changing this.';
+      : 'Used for all-day and floating timed events when the ICS feed has '
+            'no event or calendar timezone. Re-sync after changing this.';
 
   String _defaultTimeZoneLabel(String value) {
     if (value == _noDefaultTimeZoneValue) {
-      return 'None (UTC for all-day events)';
+      return 'None (UTC for all-day without timezone)';
     }
     return EventScheduleUtils.formatTimeZoneLabel(value);
   }
@@ -574,7 +574,7 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                   initialValue: _selectedDefaultTimeZone,
                   isExpanded: true,
                   decoration: InputDecoration(
-                    labelText: 'Default timezone for all-day events',
+                    labelText: 'Default timezone',
                     helperText: _defaultTimeZoneHelperText,
                   ),
                   items: _defaultTimeZoneOptions

@@ -410,6 +410,155 @@ function extractEventTimeZoneFromNodeIcal(value) {
 }
 
 /**
+ * True when node-ical parsed a floating local date-time (no TZID / Z).
+ * UTC instants set `start.tz` to Etc/UTC; TZID events set an IANA id.
+ * @param {*} value
+ * @return {boolean}
+ */
+function isFloatingTimedNodeIcalEvent(value) {
+  if (!value || value.datetype === "date") return false;
+  const start = value.start;
+  if (!start || typeof start !== "object") return false;
+  return typeof start.tz !== "string";
+}
+
+/**
+ * @param {string} raw - YYYYMMDDTHHMMSS
+ * @return {{
+ *   year: number,
+ *   month: number,
+ *   day: number,
+ *   hour: number,
+ *   minute: number,
+ *   second: number,
+ * }|null}
+ */
+function parseIcsLocalDateTime(raw) {
+  if (!/^\d{8}T\d{6}$/.test(raw)) return null;
+  const year = Number(raw.slice(0, 4));
+  const month = Number(raw.slice(4, 6));
+  const day = Number(raw.slice(6, 8));
+  const hour = Number(raw.slice(9, 11));
+  const minute = Number(raw.slice(11, 13));
+  const second = Number(raw.slice(13, 15));
+  if (
+    month < 1 || month > 12 ||
+    day < 1 || day > 31 ||
+    hour > 23 || minute > 59 || second > 60
+  ) {
+    return null;
+  }
+  return {year, month, day, hour, minute, second};
+}
+
+/**
+ * Floating local DTSTART/DTEND (no TZID, no Z) from a raw VEVENT block.
+ * @param {string} icsBlock
+ * @return {{
+ *   start: Object,
+ *   end: (Object|null),
+ * }|null}
+ */
+function extractFloatingLocalDateTimesFromIcsBlock(icsBlock) {
+  const startMatch =
+    /^DTSTART([^:\r\n]*):(\d{8}T\d{6})(Z)?$/m.exec(icsBlock);
+  if (!startMatch || startMatch[3] === "Z") return null;
+  const startParams = startMatch[1] || "";
+  if (/TZID=/i.test(startParams)) return null;
+  if (
+    /VALUE=DATE/i.test(startParams) &&
+    !/VALUE=DATE-TIME/i.test(startParams)
+  ) {
+    return null;
+  }
+  const start = parseIcsLocalDateTime(startMatch[2]);
+  if (!start) return null;
+
+  let end = null;
+  const endMatch =
+    /^DTEND([^:\r\n]*):(\d{8}T\d{6})(Z)?$/m.exec(icsBlock);
+  if (endMatch && endMatch[3] !== "Z") {
+    const endParams = endMatch[1] || "";
+    if (
+      !/TZID=/i.test(endParams) &&
+      !(
+        /VALUE=DATE/i.test(endParams) &&
+        !/VALUE=DATE-TIME/i.test(endParams)
+      )
+    ) {
+      end = parseIcsLocalDateTime(endMatch[2]);
+    }
+  }
+  return {start, end};
+}
+
+/**
+ * @param {Object} parts
+ * @param {string} timeZone
+ * @return {Date}
+ */
+function icsLocalPartsToUtc(parts, timeZone) {
+  return localDateTimeToUtc(
+      parts.year,
+      parts.month,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      parts.second,
+      0,
+      timeZone,
+  );
+}
+
+/**
+ * @param {string} icsBlock
+ * @param {string} timeZone
+ * @return {Object|null}
+ */
+function normalizeFloatingTimedSchedule(icsBlock, timeZone) {
+  const bounds = extractFloatingLocalDateTimesFromIcsBlock(icsBlock);
+  if (!bounds) return null;
+  return {
+    startAt: icsLocalPartsToUtc(bounds.start, timeZone),
+    endAt: bounds.end ? icsLocalPartsToUtc(bounds.end, timeZone) : null,
+    isDateOnly: false,
+    timeZone,
+  };
+}
+
+/**
+ * Resolves floating timed schedule when the event has no TZID / Z.
+ * Prefers calendar X-WR-TIMEZONE, then sync-source defaultTimeZone.
+ * @param {string} icsBlock
+ * @param {string|null} calendarTimeZone
+ * @param {string|null} sourceDefaultTimeZone
+ * @return {{schedule: (Object|null), timeZoneSource: (string|null)}}
+ */
+function resolveFloatingTimedSchedule(
+    icsBlock,
+    calendarTimeZone,
+    sourceDefaultTimeZone,
+) {
+  if (calendarTimeZone) {
+    const schedule = normalizeFloatingTimedSchedule(
+        icsBlock,
+        calendarTimeZone,
+    );
+    if (!schedule) return {schedule: null, timeZoneSource: null};
+    return {schedule, timeZoneSource: EVENT_TIME_ZONE_SOURCE_FEED};
+  }
+  if (sourceDefaultTimeZone) {
+    const schedule = normalizeFloatingTimedSchedule(
+        icsBlock,
+        sourceDefaultTimeZone,
+    );
+    if (!schedule) return {schedule: null, timeZoneSource: null};
+    return {schedule, timeZoneSource: EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT};
+  }
+  return {schedule: null, timeZoneSource: null};
+}
+
+/**
  * @param {*} data
  * @return {boolean}
  */
@@ -752,7 +901,24 @@ function parseExternalEventsFromIcs(
       endAt = normalizeDate(value.end);
       isDateOnly = false;
       timeZone = extractEventTimeZoneFromNodeIcal(value);
-      if (timeZone) timeZoneSource = EVENT_TIME_ZONE_SOURCE_FEED;
+      if (timeZone) {
+        timeZoneSource = EVENT_TIME_ZONE_SOURCE_FEED;
+      } else if (isFloatingTimedNodeIcalEvent(value)) {
+        const icsBlock = uidToIcsBlock.get(uid);
+        if (icsBlock) {
+          const resolved = resolveFloatingTimedSchedule(
+              icsBlock,
+              calendarTimeZone,
+              normalizedSourceDefaultTimeZone,
+          );
+          if (resolved.schedule) {
+            startAt = resolved.schedule.startAt;
+            endAt = resolved.schedule.endAt;
+            timeZone = resolved.schedule.timeZone;
+            timeZoneSource = resolved.timeZoneSource;
+          }
+        }
+      }
     }
 
     if (!startAt) continue;
@@ -1194,5 +1360,6 @@ module.exports = {
   normalizeRecurrenceId,
   removeExtractedWebsiteUrlFromDescription,
   resolveAllDaySchedule,
+  resolveFloatingTimedSchedule,
   shouldGeocodeExternalEventAddress,
 };

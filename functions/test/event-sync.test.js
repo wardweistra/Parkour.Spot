@@ -498,6 +498,87 @@ describe("event-sync helpers", () => {
       expect(events[0].isDateOnly).toBe(false);
     });
 
+    it("uses source default timezone for floating timed events", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "BEGIN:VEVENT",
+        "UID:float@example.com",
+        "DTSTART:20260702T180000",
+        "DTEND:20260702T200000",
+        "SUMMARY:Floating timed",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "apk",
+        sourceName: "American Parkour",
+        sourceDefaultTimeZone: "America/New_York",
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].isDateOnly).toBe(false);
+      expect(events[0].timeZone).toBe("America/New_York");
+      expect(events[0].timeZoneSource).toBe(
+          EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT,
+      );
+      expect(events[0].startAt.toISOString()).toBe("2026-07-02T22:00:00.000Z");
+      expect(events[0].endAt.toISOString()).toBe("2026-07-03T00:00:00.000Z");
+    });
+
+    it("prefers calendar timezone over source default for floating timed", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "X-WR-TIMEZONE:Europe/Berlin",
+        "BEGIN:VEVENT",
+        "UID:float@example.com",
+        "DTSTART:20260702T000000",
+        "DTEND:20260703T010000",
+        "SUMMARY:Floating with calendar TZ",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "s",
+        sourceName: "S",
+        sourceDefaultTimeZone: "America/New_York",
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].timeZone).toBe("Europe/Berlin");
+      expect(events[0].timeZoneSource).toBe(EVENT_TIME_ZONE_SOURCE_FEED);
+      expect(events[0].startAt.toISOString()).toBe("2026-07-01T22:00:00.000Z");
+      expect(events[0].endAt.toISOString()).toBe("2026-07-02T23:00:00.000Z");
+    });
+
+    it("does not apply source default to timed UTC events", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "BEGIN:VEVENT",
+        "UID:utc@example.com",
+        "DTSTART:20260512T180000Z",
+        "DTEND:20260512T200000Z",
+        "SUMMARY:Timed UTC",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "s",
+        sourceName: "S",
+        sourceDefaultTimeZone: "America/New_York",
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].timeZone).toBeUndefined();
+      expect(events[0].timeZoneSource).toBeUndefined();
+      expect(events[0].startAt.toISOString()).toBe("2026-05-12T18:00:00.000Z");
+    });
+
     it("imports all-day and timed events from feeds without X-WR-TIMEZONE", () => {
       const icsText = [
         "BEGIN:VCALENDAR",
@@ -731,6 +812,36 @@ describe("event-sync helpers", () => {
       expect(events[0].startAt).toEqual(
           dateStartToUtc(2022, 6, 17, "Europe/Amsterdam"),
       );
+    });
+
+    it("applies sourceDefaultTimeZone to floating timed Wix events", () => {
+      const payload = {
+        time_zone: "",
+        events: [
+          {
+            id: 99,
+            title: "Timed jam",
+            start: "2022-07-02T00:00",
+            end: "2022-07-03T01:00",
+            all_day: 0,
+            time_zone: "",
+          },
+        ],
+      };
+      const events = parseExternalEventsFromWixPublishedCalendar(payload, {
+        sourceId: "wix-1",
+        sourceName: "Jam Calendar",
+        sourceDefaultTimeZone: "Europe/Berlin",
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].isDateOnly).toBe(false);
+      expect(events[0].timeZone).toBe("Europe/Berlin");
+      expect(events[0].timeZoneSource).toBe(
+          EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT,
+      );
+      expect(events[0].startAt.toISOString()).toBe("2022-07-01T22:00:00.000Z");
+      expect(events[0].endAt.toISOString()).toBe("2022-07-02T23:00:00.000Z");
     });
 
     it("prefers event-level time_zone when set", () => {
