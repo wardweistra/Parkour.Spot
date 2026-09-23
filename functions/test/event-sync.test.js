@@ -1144,6 +1144,74 @@ describe("event-sync helpers", () => {
       );
     });
 
+    it("decodes HTML entities in title and address fields", () => {
+      const events = parseExternalEventsFromSquarespace(
+          [{
+            id: "womens-meetup",
+            title: "Women &amp; Non-Binary Community Meetup - Fall",
+            fullUrl: "/local-events/womens-meetup/2026/fall",
+            startDate: timedStartMs,
+            endDate: timedEndMs,
+            excerpt: "<p>Meet-ups for practitioners</p>",
+            location: {
+              mapLat: 42.38161,
+              mapLng: -71.1046513,
+              addressTitle: "The Dojo &#64; Somernova",
+              addressLine1: "15 Properzi Way",
+              addressLine2: "Somerville, MA, 02143",
+            },
+          }],
+          {
+            sourceId: "sq-1",
+            sourceName: "PkGen Boston",
+            websiteTimeZone: "America/New_York",
+            siteOrigin: "https://pkgenboston.com",
+          },
+      );
+
+      expect(events).toHaveLength(1);
+      expect(events[0].title).toBe(
+          "Women & Non-Binary Community Meetup - Fall",
+      );
+      expect(events[0].address).toBe(
+          "The Dojo @ Somernova, 15 Properzi Way, Somerville, MA, 02143",
+      );
+    });
+
+    it("uses text blocks and ignores button/style chrome in body", () => {
+      const body = [
+        "<div class=\"sqs-layout\">",
+        "<div class=\"sqs-html-content\" data-sqsp-text-block-content>",
+        "<p>Come join us at this free Street Festival!</p>",
+        "</div>",
+        "<a href=\"https://example.com/fest\">Learn more</a>",
+        "<style>#block-8087b93b1750ddaeaf8f { --sqs-block-content-flex: 0; }</style>",
+        "</div>",
+      ].join("");
+      const events = parseExternalEventsFromSquarespace(
+          [{
+            id: "somerstreets",
+            title: "SomerStreets Monster Mash",
+            fullUrl: "/local-events/2026/oct/somerstreets",
+            startDate: timedStartMs,
+            endDate: timedEndMs,
+            excerpt: "",
+            body,
+          }],
+          {
+            sourceId: "sq-1",
+            sourceName: "PkGen Boston",
+            websiteTimeZone: "America/New_York",
+            siteOrigin: "https://pkgenboston.com",
+          },
+      );
+
+      expect(events).toHaveLength(1);
+      expect(events[0].description).toBe(
+          "Come join us at this free Street Festival!",
+      );
+    });
+
     it("skips placeholder coords when address fields are empty", () => {
       const events = parseExternalEventsFromSquarespace(baseItems, {
         sourceId: "sq-1",

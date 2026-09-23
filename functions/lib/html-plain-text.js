@@ -65,6 +65,9 @@ function htmlToPlainText(html) {
   if (!html) return "";
   const brToNl = (value) => value.replace(/<br\s*\/?>/gi, "\n");
   let text = brToNl(String(html));
+  // Drop non-visible blocks before decode/strip so CSS/JS is not kept as text.
+  text = text.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "");
+  text = text.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
   text = decodeBasicHtmlEntities(text);
   text = brToNl(text);
   text = text.replace(/<img\b[^>]*>/gi, "");

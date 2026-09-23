@@ -23,4 +23,9 @@ describe("htmlToPlainText", () => {
   it("strips tags that only appear after entity decode", () => {
     expect(htmlToPlainText("&lt;script&gt;x&lt;/script&gt;")).toBe("x");
   });
+  it("drops style and script block contents", () => {
+    expect(htmlToPlainText(
+        "<p>Hello</p><style>#block-x{color:red}</style><script>alert(1)</script>",
+    )).toBe("Hello");
+  });
 });

@@ -1508,15 +1508,27 @@ function epochMsToDate(value) {
 }
 
 /**
+ * Decode HTML entities in a non-empty plain-text field from an external feed.
+ * @param {*} value
+ * @return {string|null}
+ */
+function decodeImportedPlainField(value) {
+  const raw = toNonEmptyString(value);
+  if (!raw) return null;
+  const decoded = decodeBasicHtmlEntities(raw).trim();
+  return decoded.length > 0 ? decoded : null;
+}
+
+/**
  * @param {*} location
  * @return {string|null}
  */
 function buildSquarespaceAddress(location) {
   if (!location || typeof location !== "object") return null;
   const parts = [];
-  const title = toNonEmptyString(location.addressTitle);
-  const line1 = toNonEmptyString(location.addressLine1);
-  const line2 = toNonEmptyString(location.addressLine2);
+  const title = decodeImportedPlainField(location.addressTitle);
+  const line1 = decodeImportedPlainField(location.addressLine1);
+  const line2 = decodeImportedPlainField(location.addressLine2);
   if (title) parts.push(title);
   if (line1 && line1 !== title) parts.push(line1);
   if (line2) parts.push(line2);
@@ -1554,6 +1566,38 @@ function extractSquarespaceCoordinates(location) {
     return null;
   }
   return {latitude, longitude};
+}
+
+/**
+ * Prefer Squarespace text-block HTML over full layout body (buttons/styles).
+ * @param {*} item
+ * @return {string}
+ */
+function extractSquarespaceDescriptionHtml(item) {
+  if (!item || typeof item !== "object") return "";
+  const excerpt = typeof item.excerpt === "string" ? item.excerpt.trim() : "";
+  if (excerpt) return excerpt;
+
+  const body = typeof item.body === "string" ? item.body : "";
+  if (!body) return "";
+
+  const textBlocks = [];
+  const blockRe = new RegExp(
+      "<(?:div|p)\\b[^>]*" +
+      "(?:data-sqsp-text-block-content|" +
+      "class=\"[^\"]*sqs-html-content[^\"]*\")" +
+      "[^>]*>([\\s\\S]*?)<\\/(?:div|p)>",
+      "gi",
+  );
+  let match;
+  while ((match = blockRe.exec(body)) !== null) {
+    const inner = typeof match[1] === "string" ? match[1].trim() : "";
+    if (inner) textBlocks.push(inner);
+  }
+  if (textBlocks.length > 0) {
+    return textBlocks.join("\n");
+  }
+  return body;
 }
 
 /**
@@ -1655,12 +1699,7 @@ function parseExternalEventsFromSquarespace(
       }
     }
 
-    const rawDescription =
-        (typeof item.excerpt === "string" && item.excerpt.trim() ?
-          item.excerpt :
-          null) ||
-        (typeof item.body === "string" ? item.body : "") ||
-        "";
+    const rawDescription = extractSquarespaceDescriptionHtml(item);
     const description = normalizeImportedEventDescription(rawDescription);
     const websiteUrl = buildSquarespaceWebsiteUrl(siteOrigin, item.fullUrl);
     const location = item.location && typeof item.location === "object" ?
@@ -1670,7 +1709,7 @@ function parseExternalEventsFromSquarespace(
     const coords = extractSquarespaceCoordinates(location);
 
     const eventPayload = {
-      title: toNonEmptyString(item.title) || "Untitled event",
+      title: decodeImportedPlainField(item.title) || "Untitled event",
       description,
       websiteUrl,
       address,
