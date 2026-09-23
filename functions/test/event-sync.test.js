@@ -8,12 +8,15 @@ const {
   hasExternalEventAddressChanged,
   hasExternalEventContentChanges,
   hasExternalEventPlaceFields,
+  normalizeEventSyncSourceType,
   normalizeImportedEventDescription,
   normalizeImportedTimeZone,
   parseExternalEventsFromIcs,
+  parseExternalEventsFromSquarespace,
   parseExternalEventsFromWixPublishedCalendar,
   removeExtractedWebsiteUrlFromDescription,
   shouldGeocodeExternalEventAddress,
+  EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR,
 } = require("../lib/event-sync");
 
 describe("event-sync helpers", () => {
@@ -1060,6 +1063,155 @@ describe("event-sync helpers", () => {
       expect(events[0].externalEventUid).toBe("3");
       expect(events[0].timeZone).toBeUndefined();
       expect(events[0].startAt.toISOString()).toBe("2022-06-17T00:00:00.000Z");
+    });
+  });
+
+  describe("normalizeEventSyncSourceType", () => {
+    it("recognizes squarespaceCalendar", () => {
+      expect(normalizeEventSyncSourceType("squarespaceCalendar"))
+          .toBe(EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR);
+    });
+  });
+
+  describe("parseExternalEventsFromSquarespace", () => {
+    const timedStartMs = Date.UTC(2026, 9, 1, 16, 0, 0); // 12:00 America/New_York
+    const timedEndMs = Date.UTC(2026, 9, 1, 18, 0, 0);
+
+    const baseItems = [
+      {
+        id: "evt-1",
+        title: "Somernova Field Day",
+        fullUrl: "/local-events/2026/10/1/somernova-field-day",
+        startDate: timedStartMs,
+        endDate: timedEndMs,
+        excerpt:
+          "<p>Join us for this fun event!</p>",
+        assetUrl:
+          "https://images.squarespace-cdn.com/content/v1/abc/photo.png",
+        location: {
+          mapLat: 42.38161,
+          mapLng: -71.1046513,
+          addressTitle: "Parkour Generations Boston",
+          addressLine1: "12A Tyler Street",
+          addressLine2: "Somerville, MA, 02143",
+          addressCountry: "United States",
+        },
+      },
+      {
+        id: "evt-empty-loc",
+        title: "Opening without address",
+        fullUrl: "/events/opening",
+        startDate: Date.UTC(2026, 5, 6, 14, 0, 0),
+        endDate: Date.UTC(2026, 5, 8, 16, 0, 0),
+        excerpt: "<p>Opening Strandeiland</p>",
+        location: {
+          mapLat: 40.7207559,
+          mapLng: -74.0007613,
+          addressTitle: "",
+          addressLine1: "",
+          addressLine2: "",
+        },
+      },
+    ];
+
+    it("maps ids, website, address, coords, and images", () => {
+      const events = parseExternalEventsFromSquarespace(baseItems, {
+        sourceId: "sq-1",
+        sourceName: "PkGen Boston",
+        websiteTimeZone: "America/New_York",
+        siteOrigin: "https://pkgenboston.com",
+      });
+
+      expect(events).toHaveLength(2);
+      const fieldDay = events.find((e) => e.externalEventUid === "evt-1");
+      expect(fieldDay.externalEventKey).toBe("evt-1");
+      expect(fieldDay.title).toBe("Somernova Field Day");
+      expect(fieldDay.websiteUrl).toBe(
+          "https://pkgenboston.com/local-events/2026/10/1/somernova-field-day",
+      );
+      expect(fieldDay.description).toBe("Join us for this fun event!");
+      expect(fieldDay.address).toContain("Parkour Generations Boston");
+      expect(fieldDay.address).toContain("12A Tyler Street");
+      expect(fieldDay.latitude).toBeCloseTo(42.38161);
+      expect(fieldDay.longitude).toBeCloseTo(-71.1046513);
+      expect(fieldDay.externalImageUrl).toBe(
+          "https://images.squarespace-cdn.com/content/v1/abc/photo.png",
+      );
+      expect(fieldDay.timeZone).toBe("America/New_York");
+      expect(fieldDay.timeZoneSource).toBe(EVENT_TIME_ZONE_SOURCE_FEED);
+      expect(fieldDay.startAt.toISOString()).toBe(
+          new Date(timedStartMs).toISOString(),
+      );
+    });
+
+    it("skips placeholder coords when address fields are empty", () => {
+      const events = parseExternalEventsFromSquarespace(baseItems, {
+        sourceId: "sq-1",
+        sourceName: "Weave",
+        websiteTimeZone: "Europe/Amsterdam",
+        siteOrigin: "https://www.weave-pk.nl",
+      });
+      const opening = events.find((e) => e.externalEventUid === "evt-empty-loc");
+      expect(opening.address).toBeNull();
+      expect(opening.latitude).toBeUndefined();
+      expect(opening.longitude).toBeUndefined();
+      expect(opening.websiteUrl).toBe(
+          "https://www.weave-pk.nl/events/opening",
+      );
+    });
+
+    it("falls back to source default timezone when site has none", () => {
+      const events = parseExternalEventsFromSquarespace(
+          [baseItems[0]],
+          {
+            sourceId: "sq-1",
+            sourceName: "PkGen Boston",
+            siteOrigin: "https://pkgenboston.com",
+            sourceDefaultTimeZone: "America/New_York",
+          },
+      );
+      expect(events[0].timeZone).toBe("America/New_York");
+      expect(events[0].timeZoneSource)
+          .toBe(EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT);
+    });
+
+    it("promotes local midnight-to-midnight spans to all-day", () => {
+      const startAt = Date.UTC(2026, 5, 6, 4, 0, 0); // midnight EDT
+      const endAt = Date.UTC(2026, 5, 8, 4, 0, 0); // midnight EDT two days later
+      const events = parseExternalEventsFromSquarespace(
+          [{
+            id: "all-day",
+            title: "Weekend opening",
+            fullUrl: "/events/weekend",
+            startDate: startAt,
+            endDate: endAt,
+            excerpt: "",
+          }],
+          {
+            sourceId: "sq-1",
+            sourceName: "Weave",
+            websiteTimeZone: "America/New_York",
+            siteOrigin: "https://www.weave-pk.nl",
+          },
+      );
+      expect(events).toHaveLength(1);
+      expect(events[0].isDateOnly).toBe(true);
+      expect(events[0].timeZone).toBe("America/New_York");
+    });
+
+    it("skips items without id or startDate", () => {
+      const events = parseExternalEventsFromSquarespace(
+          [
+            {title: "No id", startDate: timedStartMs},
+            {id: "no-start", title: "Missing start"},
+          ],
+          {
+            sourceId: "sq-1",
+            sourceName: "Test",
+            siteOrigin: "https://example.com",
+          },
+      );
+      expect(events).toHaveLength(0);
     });
   });
 });

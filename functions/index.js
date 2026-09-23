@@ -162,18 +162,25 @@ const {
   sortFoldersByIncludeOrder,
 } = require("./lib/folder-filter");
 const {
+  EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR,
   EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR,
   hasExternalEventAddressChanged,
   hasExternalEventContentChanges,
   hasExternalEventPlaceFields,
   hasStoredEventCoordinates,
   parseExternalEventsFromIcs,
+  parseExternalEventsFromSquarespace,
   parseExternalEventsFromWixPublishedCalendar,
   buildExternalEventKey,
   shouldGeocodeExternalEventAddress,
   normalizeEventSyncSourceDefaultTimeZone,
   normalizeEventSyncSourceType,
 } = require("./lib/event-sync");
+const {
+  fetchSquarespaceCalendarEvents,
+  normalizeSquarespaceEventsPageUrl,
+  squarespaceEventsPublicUrl,
+} = require("./lib/squarespace-events");
 const {
   deleteEventMapPins,
   materializeEventMapPins,
@@ -4497,11 +4504,14 @@ function normalizeIcsUrl(value) {
 /**
  * Normalizes and validates a feed URL for an event sync source type.
  * @param {*} value
- * @param {"ics"|"wixPublishedCalendar"} sourceType
+ * @param {"ics"|"wixPublishedCalendar"|"squarespaceCalendar"} sourceType
  * @return {string}
  */
 function normalizeEventSyncFeedUrl(value, sourceType) {
   const normalizedType = normalizeEventSyncSourceType(sourceType);
+  if (normalizedType === EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR) {
+    return normalizeSquarespaceEventsPageUrl(value);
+  }
   if (normalizedType !== EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR) {
     return normalizeIcsUrl(value);
   }
@@ -5065,36 +5075,52 @@ async function syncExternalEventSource(sourceDoc) {
     ),
   });
   const feedUrl = normalizeEventSyncFeedUrl(sourceData.icsUrl, sourceType);
-  const feedText = await downloadTextFromUrl(feedUrl);
   const sourceDefaultTimeZone =
     normalizeEventSyncSourceDefaultTimeZone(sourceData.defaultTimeZone);
   let parsedEvents;
-  if (sourceType === EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR) {
-    let payload;
-    try {
-      payload = JSON.parse(feedText);
-    } catch (error) {
-      throw new Error(
-          `Failed parsing published_calendar JSON: ${error.message}`,
-      );
-    }
-    parsedEvents = parseExternalEventsFromWixPublishedCalendar(payload, {
+  let feedBytes = 0;
+  if (sourceType === EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR) {
+    const fetched = await fetchSquarespaceCalendarEvents(feedUrl, {
+      downloadText: downloadTextFromUrl,
+    });
+    feedBytes = fetched.items.length;
+    parsedEvents = parseExternalEventsFromSquarespace(fetched.items, {
       sourceId,
       sourceName,
+      websiteTimeZone: fetched.websiteTimeZone,
+      siteOrigin: fetched.siteOrigin,
       sourceDefaultTimeZone,
     });
   } else {
-    parsedEvents = parseExternalEventsFromIcs(feedText, {
-      sourceId,
-      sourceName,
-      sourceDefaultTimeZone,
-    });
+    const feedText = await downloadTextFromUrl(feedUrl);
+    feedBytes = feedText.length;
+    if (sourceType === EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR) {
+      let payload;
+      try {
+        payload = JSON.parse(feedText);
+      } catch (error) {
+        throw new Error(
+            `Failed parsing published_calendar JSON: ${error.message}`,
+        );
+      }
+      parsedEvents = parseExternalEventsFromWixPublishedCalendar(payload, {
+        sourceId,
+        sourceName,
+        sourceDefaultTimeZone,
+      });
+    } else {
+      parsedEvents = parseExternalEventsFromIcs(feedText, {
+        sourceId,
+        sourceName,
+        sourceDefaultTimeZone,
+      });
+    }
   }
   logger.info("externalEventSync.parsed", {
     sourceId,
     sourceType,
     totalParsed: parsedEvents.length,
-    feedBytes: feedText.length,
+    feedBytes,
   });
 
   const uniqueEventsByKey = new Map();
@@ -5302,10 +5328,14 @@ exports.createEventSyncSource = onCall(
         }
 
         const normalizedSourceType = normalizeEventSyncSourceType(sourceType);
+        const normalizedFeedUrl = normalizeEventSyncFeedUrl(
+            icsUrl,
+            normalizedSourceType,
+        );
         const sourceData = {
           name: name.trim(),
           sourceType: normalizedSourceType,
-          icsUrl: normalizeEventSyncFeedUrl(icsUrl, normalizedSourceType),
+          icsUrl: normalizedFeedUrl,
           isActive: Boolean(isActive),
           autoSyncEnabled: Boolean(autoSyncEnabled),
           createdAt: FieldValue.serverTimestamp(),
@@ -5317,6 +5347,10 @@ exports.createEventSyncSource = onCall(
         }
         if (typeof publicUrl === "string" && publicUrl.trim().length > 0) {
           sourceData.publicUrl = publicUrl.trim();
+        } else if (
+          normalizedSourceType === EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR
+        ) {
+          sourceData.publicUrl = squarespaceEventsPublicUrl(normalizedFeedUrl);
         }
         if (typeof syncSchedule === "string" && syncSchedule.trim().length > 0) {
           sourceData.syncSchedule = syncSchedule.trim();
@@ -5562,7 +5596,7 @@ exports.syncEventSource = onCall(
     {
       region: "europe-west1",
       timeoutSeconds: 3600,
-      memory: "1GiB",
+      memory: "2GiB",
       secrets: ["GOOGLE_MAPS_API_KEY"],
     },
     async (request) => {
@@ -5603,7 +5637,7 @@ exports.syncAllEventSources = onCall(
     {
       region: "europe-west1",
       timeoutSeconds: 3600,
-      memory: "1GiB",
+      memory: "2GiB",
       secrets: ["GOOGLE_MAPS_API_KEY"],
     },
     async (request) => {

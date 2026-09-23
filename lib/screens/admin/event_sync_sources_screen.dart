@@ -240,6 +240,8 @@ class _EventSyncSourcesScreenState extends State<EventSyncSourcesScreen> {
                               label: Text(
                                 source.isWixPublishedCalendar
                                     ? 'Wix calendar'
+                                    : source.isSquarespaceCalendar
+                                    ? 'Squarespace'
                                     : 'ICS',
                               ),
                             ),
@@ -461,18 +463,45 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
   bool get _isWixSourceType =>
       _sourceType == EventSyncSource.sourceTypeWixPublishedCalendar;
 
-  String get _feedUrlLabel =>
-      _isWixSourceType ? 'Published calendar URL' : 'ICS URL';
+  bool get _isSquarespaceSourceType =>
+      _sourceType == EventSyncSource.sourceTypeSquarespaceCalendar;
 
-  String get _feedUrlHelperText => _isWixSourceType
-      ? 'Full BoomTech/Wix published_calendar URL including the instance token'
-      : 'Google Calendar public .ics URL';
+  String get _feedUrlLabel {
+    if (_isWixSourceType) return 'Published calendar URL';
+    if (_isSquarespaceSourceType) return 'Events page URL';
+    return 'ICS URL';
+  }
 
-  String get _defaultTimeZoneHelperText => _isWixSourceType
-      ? 'Fallback when the published calendar and event have no time_zone. '
-            'Re-sync after changing this.'
-      : 'Used for all-day and floating timed events when the ICS feed has '
-            'no event or calendar timezone. Re-sync after changing this.';
+  String get _feedUrlHelperText {
+    if (_isWixSourceType) {
+      return 'Full BoomTech/Wix published_calendar URL including the instance token';
+    }
+    if (_isSquarespaceSourceType) {
+      return 'Public Squarespace events page, e.g. https://example.com/events';
+    }
+    return 'Google Calendar public .ics URL';
+  }
+
+  String get _defaultTimeZoneHelperText {
+    if (_isWixSourceType) {
+      return 'Fallback when the published calendar and event have no time_zone. '
+          'Re-sync after changing this.';
+    }
+    if (_isSquarespaceSourceType) {
+      return 'Fallback when the Squarespace site JSON has no website.timeZone. '
+          'Re-sync after changing this.';
+    }
+    return 'Used for all-day and floating timed events when the ICS feed has '
+        'no event or calendar timezone. Re-sync after changing this.';
+  }
+
+  String _squarespacePublicUrlFromFeed(String feedUrl) {
+    final uri = Uri.tryParse(feedUrl.trim());
+    if (uri == null || uri.host.isEmpty) return feedUrl.trim();
+    final params = Map<String, String>.from(uri.queryParameters)
+      ..remove('format');
+    return uri.replace(queryParameters: params).toString();
+  }
 
   String _defaultTimeZoneLabel(String value) {
     if (value == _noDefaultTimeZoneValue) {
@@ -529,10 +558,22 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                       value: EventSyncSource.sourceTypeWixPublishedCalendar,
                       child: Text('Wix published calendar'),
                     ),
+                    DropdownMenuItem(
+                      value: EventSyncSource.sourceTypeSquarespaceCalendar,
+                      child: Text('Squarespace calendar'),
+                    ),
                   ],
                   onChanged: (value) {
                     if (value == null) return;
                     setState(() => _sourceType = value);
+                    if (value ==
+                            EventSyncSource.sourceTypeSquarespaceCalendar &&
+                        _publicUrlCtrl.text.trim().isEmpty &&
+                        _icsUrlCtrl.text.trim().isNotEmpty) {
+                      _publicUrlCtrl.text = _squarespacePublicUrlFromFeed(
+                        _icsUrlCtrl.text.trim(),
+                      );
+                    }
                   },
                 ),
                 TextFormField(
@@ -541,6 +582,14 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                     labelText: _feedUrlLabel,
                     helperText: _feedUrlHelperText,
                   ),
+                  onChanged: (value) {
+                    if (!_isSquarespaceSourceType) return;
+                    if (_publicUrlCtrl.text.trim().isNotEmpty) return;
+                    final trimmed = value.trim();
+                    if (trimmed.isEmpty) return;
+                    _publicUrlCtrl.text =
+                        _squarespacePublicUrlFromFeed(trimmed);
+                  },
                   validator: (value) {
                     final trimmed = value?.trim() ?? '';
                     if (trimmed.isEmpty) return 'Required';

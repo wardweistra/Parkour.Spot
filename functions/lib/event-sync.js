@@ -1117,14 +1117,19 @@ function parseExternalEventsFromIcs(
 const EVENT_SYNC_SOURCE_TYPE_ICS = "ics";
 /** @type {"wixPublishedCalendar"} */
 const EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR = "wixPublishedCalendar";
+/** @type {"squarespaceCalendar"} */
+const EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR = "squarespaceCalendar";
 
 /**
  * @param {*} value
- * @return {"ics"|"wixPublishedCalendar"}
+ * @return {"ics"|"wixPublishedCalendar"|"squarespaceCalendar"}
  */
 function normalizeEventSyncSourceType(value) {
   if (value === EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR) {
     return EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR;
+  }
+  if (value === EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR) {
+    return EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR;
   }
   return EVENT_SYNC_SOURCE_TYPE_ICS;
 }
@@ -1483,9 +1488,221 @@ function parseExternalEventsFromWixPublishedCalendar(
   return parsedEvents;
 }
 
+/**
+ * @param {*} value
+ * @return {Date|null}
+ */
+function epochMsToDate(value) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      const date = new Date(parsed);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+  }
+  return null;
+}
+
+/**
+ * @param {*} location
+ * @return {string|null}
+ */
+function buildSquarespaceAddress(location) {
+  if (!location || typeof location !== "object") return null;
+  const parts = [];
+  const title = toNonEmptyString(location.addressTitle);
+  const line1 = toNonEmptyString(location.addressLine1);
+  const line2 = toNonEmptyString(location.addressLine2);
+  if (title) parts.push(title);
+  if (line1 && line1 !== title) parts.push(line1);
+  if (line2) parts.push(line2);
+  return parts.length > 0 ? parts.join(", ") : null;
+}
+
+/**
+ * @param {*} location
+ * @return {{latitude: number, longitude: number}|null}
+ */
+function extractSquarespaceCoordinates(location) {
+  if (!location || typeof location !== "object") return null;
+  const hasAddress = Boolean(
+      toNonEmptyString(location.addressTitle) ||
+      toNonEmptyString(location.addressLine1) ||
+      toNonEmptyString(location.addressLine2),
+  );
+  if (!hasAddress) return null;
+
+  const latitude = typeof location.mapLat === "number" ?
+    location.mapLat :
+    (typeof location.markerLat === "number" ? location.markerLat : null);
+  const longitude = typeof location.mapLng === "number" ?
+    location.mapLng :
+    (typeof location.markerLng === "number" ? location.markerLng : null);
+  if (
+    latitude == null ||
+    longitude == null ||
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude)
+  ) {
+    return null;
+  }
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return null;
+  }
+  return {latitude, longitude};
+}
+
+/**
+ * @param {string|null} siteOrigin
+ * @param {*} fullUrl
+ * @return {string|null}
+ */
+function buildSquarespaceWebsiteUrl(siteOrigin, fullUrl) {
+  const pathOrUrl = toNonEmptyString(fullUrl);
+  if (!pathOrUrl) return null;
+  if (
+    pathOrUrl.startsWith("http://") ||
+    pathOrUrl.startsWith("https://")
+  ) {
+    return pathOrUrl;
+  }
+  if (!siteOrigin) return null;
+  try {
+    return new URL(pathOrUrl, siteOrigin).toString();
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * Parses Squarespace calendar event items into external event payloads.
+ * @param {Array<*>} items
+ * @param {Object} sourceMeta
+ * @param {string} sourceMeta.sourceId
+ * @param {string} sourceMeta.sourceName
+ * @param {string=} sourceMeta.websiteTimeZone
+ * @param {string=} sourceMeta.siteOrigin
+ * @param {string=} sourceMeta.sourceDefaultTimeZone
+ * @return {Array<Object>}
+ */
+function parseExternalEventsFromSquarespace(
+    items,
+    {
+      sourceId,
+      sourceName,
+      websiteTimeZone = null,
+      siteOrigin = null,
+      sourceDefaultTimeZone = null,
+    },
+) {
+  if (!Array.isArray(items)) {
+    throw new Error("Squarespace calendar items must be an array");
+  }
+
+  const feedTimeZone = normalizeImportedTimeZone(websiteTimeZone);
+  const normalizedSourceDefaultTimeZone =
+    normalizeEventSyncSourceDefaultTimeZone(sourceDefaultTimeZone);
+
+  let defaultTimeZone = null;
+  let defaultTimeZoneSource = null;
+  if (feedTimeZone) {
+    defaultTimeZone = feedTimeZone;
+    defaultTimeZoneSource = EVENT_TIME_ZONE_SOURCE_FEED;
+  } else if (normalizedSourceDefaultTimeZone) {
+    defaultTimeZone = normalizedSourceDefaultTimeZone;
+    defaultTimeZoneSource = EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT;
+  }
+
+  const parsedEvents = [];
+  for (const item of items) {
+    if (!item || typeof item !== "object") continue;
+
+    const uid = item.id != null ? toNonEmptyString(String(item.id)) : null;
+    if (!uid) continue;
+
+    const structured = item.structuredContent &&
+        typeof item.structuredContent === "object" ?
+      item.structuredContent :
+      null;
+    let startAt = epochMsToDate(item.startDate) ||
+      (structured ? epochMsToDate(structured.startDate) : null);
+    if (!startAt) continue;
+
+    let endAt = epochMsToDate(item.endDate) ||
+      (structured ? epochMsToDate(structured.endDate) : null);
+
+    let isDateOnly = false;
+    let timeZone = defaultTimeZone;
+    let timeZoneSource = defaultTimeZoneSource;
+
+    if (endAt && timeZone) {
+      const promoted = promoteTimedSpanToAllDaySchedule(
+          startAt,
+          endAt,
+          timeZone,
+          timeZoneSource,
+      );
+      if (promoted) {
+        startAt = promoted.startAt;
+        endAt = promoted.endAt;
+        isDateOnly = promoted.isDateOnly;
+        timeZone = promoted.timeZone;
+        timeZoneSource = promoted.timeZoneSource;
+      }
+    }
+
+    const rawDescription =
+        (typeof item.excerpt === "string" && item.excerpt.trim() ?
+          item.excerpt :
+          null) ||
+        (typeof item.body === "string" ? item.body : "") ||
+        "";
+    const description = normalizeImportedEventDescription(rawDescription);
+    const websiteUrl = buildSquarespaceWebsiteUrl(siteOrigin, item.fullUrl);
+    const location = item.location && typeof item.location === "object" ?
+      item.location :
+      null;
+    const address = buildSquarespaceAddress(location);
+    const coords = extractSquarespaceCoordinates(location);
+
+    const eventPayload = {
+      title: toNonEmptyString(item.title) || "Untitled event",
+      description,
+      websiteUrl,
+      address,
+      startAt,
+      endAt,
+      isDateOnly,
+      eventSourceId: sourceId,
+      eventSourceName: sourceName,
+      externalEventUid: uid,
+      externalEventRecurrenceId: null,
+      externalEventKey: buildExternalEventKey(uid, null),
+    };
+    if (timeZone) eventPayload.timeZone = timeZone;
+    if (timeZoneSource) eventPayload.timeZoneSource = timeZoneSource;
+    if (coords) {
+      eventPayload.latitude = coords.latitude;
+      eventPayload.longitude = coords.longitude;
+    }
+    const externalImageUrl = normalizeExternalImageUrl(item.assetUrl);
+    if (externalImageUrl) {
+      eventPayload.externalImageUrl = externalImageUrl;
+    }
+    parsedEvents.push(eventPayload);
+  }
+
+  return parsedEvents;
+}
+
 module.exports = {
   EVENT_SYNC_SOURCE_TYPE_ICS,
   EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR,
+  EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR,
   EVENT_TIME_ZONE_SOURCE_FEED,
   EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT,
   buildExternalEventKey,
@@ -1506,6 +1723,7 @@ module.exports = {
   normalizeImportedTimeZone,
   parseExternalEventsFromIcs,
   parseExternalEventsFromWixPublishedCalendar,
+  parseExternalEventsFromSquarespace,
   normalizeRecurrenceId,
   removeExtractedWebsiteUrlFromDescription,
   resolveAllDaySchedule,

@@ -42,6 +42,7 @@ DateTime? _parseTimestamp(dynamic timestamp) {
 class EventSyncSource {
   static const String sourceTypeIcs = 'ics';
   static const String sourceTypeWixPublishedCalendar = 'wixPublishedCalendar';
+  static const String sourceTypeSquarespaceCalendar = 'squarespaceCalendar';
 
   final String id;
   final String name;
@@ -77,10 +78,14 @@ class EventSyncSource {
 
   factory EventSyncSource.fromMap(Map<String, dynamic> data) {
     final rawSourceType = data['sourceType']?.toString();
-    final sourceType =
-        rawSourceType == EventSyncSource.sourceTypeWixPublishedCalendar
-        ? EventSyncSource.sourceTypeWixPublishedCalendar
-        : EventSyncSource.sourceTypeIcs;
+    final String sourceType;
+    if (rawSourceType == EventSyncSource.sourceTypeWixPublishedCalendar) {
+      sourceType = EventSyncSource.sourceTypeWixPublishedCalendar;
+    } else if (rawSourceType == EventSyncSource.sourceTypeSquarespaceCalendar) {
+      sourceType = EventSyncSource.sourceTypeSquarespaceCalendar;
+    } else {
+      sourceType = EventSyncSource.sourceTypeIcs;
+    }
     return EventSyncSource(
       id: data['id']?.toString() ?? '',
       name: data['name']?.toString() ?? '',
@@ -105,6 +110,9 @@ class EventSyncSource {
 
   bool get isWixPublishedCalendar =>
       sourceType == sourceTypeWixPublishedCalendar;
+
+  bool get isSquarespaceCalendar =>
+      sourceType == sourceTypeSquarespaceCalendar;
 }
 
 class EventSyncSourceService extends ChangeNotifier {
