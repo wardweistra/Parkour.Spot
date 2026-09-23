@@ -232,10 +232,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
     final collapsed = collapseEventWhere(
       pin: pin,
       spots: spots,
-      spotListIds: lists
-          .map((list) => list.id)
-          .whereType<String>()
-          .toList(growable: false),
+      spotListIds: linkedSpotListIds(lists),
     );
     final keepPin = collapsed.kind == EventWhereKind.pin;
     final keepLists = collapsed.kind == EventWhereKind.list;
@@ -677,19 +674,8 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  String? get _linkedListsDisplayName {
-    if (_linkedLists.isEmpty) return null;
-    final names = _linkedLists
-        .map((list) {
-          final name = list.name.trim();
-          if (name.isNotEmpty) return name;
-          return list.id?.trim() ?? '';
-        })
-        .where((name) => name.isNotEmpty)
-        .toList();
-    if (names.isEmpty) return null;
-    return names.join(', ');
-  }
+  String? get _linkedListsDisplayName =>
+      linkedSpotListsDisplayName(_linkedLists);
 
   void _clearPinFields() {
     _pickedLocation = null;
@@ -901,26 +887,19 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
 
   Future<void> _addLinkedList() async {
     final l10n = AppLocalizations.of(context)!;
-    final selectedListId = await showDialog<String>(
-      context: context,
-      builder: (_) => const SpotListSelectionDialog(),
+    final selected = await SpotListSelectionDialog.show(
+      context,
+      excludeListIds: linkedSpotListIds(_linkedLists).toSet(),
     );
-    if (selectedListId == null || !mounted) return;
-    if (_linkedLists.any((list) => list.id == selectedListId)) return;
-
-    final list = await context.read<SpotListService>().getSpotListById(
-      selectedListId,
-    );
-    if (!mounted) return;
-    if (list == null || list.id == null) {
-      setState(() => _formError = l10n.adminSpotListSelectionLoadFailed);
+    if (selected == null || !mounted) return;
+    final selectedListId = selected.id;
+    if (selectedListId == null ||
+        _linkedLists.any((list) => list.id == selectedListId)) {
       return;
     }
     final replaced = _pickedLocation != null || _linkedSpots.isNotEmpty;
     setState(() {
-      if (!_linkedLists.any((existing) => existing.id == selectedListId)) {
-        _linkedLists.add(list);
-      }
+      _linkedLists.add(selected);
       _linkedSpots.clear();
       _clearPinFields();
       _formError = null;
@@ -1209,10 +1188,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
     final collapsed = collapseEventWhere(
       pin: _pickedLocation,
       spots: _linkedSpots,
-      spotListIds: _linkedLists
-          .map((list) => list.id)
-          .whereType<String>()
-          .toList(growable: false),
+      spotListIds: linkedSpotListIds(_linkedLists),
     );
     final isPin = collapsed.kind == EventWhereKind.pin;
     final isSpots = collapsed.kind == EventWhereKind.spots;

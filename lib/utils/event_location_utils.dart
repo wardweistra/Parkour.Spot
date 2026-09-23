@@ -1,6 +1,7 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../models/spot.dart';
+import '../models/spot_list.dart';
 
 enum EventWhereKind { none, pin, spots, list }
 
@@ -49,6 +50,47 @@ CollapsedEventWhere<T> collapseEventWhere<T>({
     return CollapsedEventWhere<T>(kind: EventWhereKind.pin, pin: pin);
   }
   return CollapsedEventWhere<T>(kind: EventWhereKind.none);
+}
+
+/// Display label for one or more linked spot lists (names, else ids).
+String? linkedSpotListsDisplayName(Iterable<SpotList> lists) {
+  final names = <String>[];
+  for (final list in lists) {
+    final name = list.name.trim();
+    if (name.isNotEmpty) {
+      names.add(name);
+      continue;
+    }
+    final id = list.id?.trim() ?? '';
+    if (id.isNotEmpty) names.add(id);
+  }
+  if (names.isEmpty) return null;
+  return names.join(', ');
+}
+
+/// Non-empty list ids in the current linked-list order.
+List<String> linkedSpotListIds(Iterable<SpotList> lists) {
+  return lists
+      .map((list) => list.id?.trim() ?? '')
+      .where((id) => id.isNotEmpty)
+      .toList(growable: false);
+}
+
+/// Temporary [SpotList] used before the real document is loaded.
+SpotList placeholderSpotListForEvent({required String id, String? name}) {
+  final trimmedId = id.trim();
+  final trimmedName = name?.trim();
+  final now = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+  return SpotList(
+    id: trimmedId,
+    name: (trimmedName != null && trimmedName.isNotEmpty)
+        ? trimmedName
+        : trimmedId,
+    spotIds: const [],
+    createdBy: '',
+    createdAt: now,
+    updatedAt: now,
+  );
 }
 
 bool spotHasCoordinates(Spot spot) => spot.latitude != 0 || spot.longitude != 0;

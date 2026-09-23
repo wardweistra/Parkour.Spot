@@ -41,6 +41,7 @@ import '../../widgets/location_info_box.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
 import '../../widgets/spot_form/location_section.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
+import '../../widgets/spot_list_selection_dialog.dart';
 import '../../services/web_share_service.dart';
 import '../../utils/share_link_text.dart';
 import '../../widgets/admin/admin_image_urls_overview_dialog.dart';
@@ -2225,9 +2226,8 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
   late DateTime _suggestedStartAt;
   DateTime? _suggestedEndAt;
   late List<Spot> _suggestedLinkedSpots;
-  late List<String> _suggestedSpotListIds;
+  late List<SpotList> _suggestedSpotLists;
   List<Spot> _suggestedSpotListSpots = [];
-  String? _suggestedSpotListName;
   LatLng? _suggestedLocation;
 
   /// Last-known GPS. Kept after a pin/spots are chosen so clearing where
@@ -2260,14 +2260,20 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
   bool get _hasSelectedWhere =>
       _suggestedLocation != null ||
       _suggestedLinkedSpots.isNotEmpty ||
-      _suggestedSpotListIds.isNotEmpty;
+      _suggestedSpotLists.isNotEmpty;
+
+  String? get _suggestedSpotListName =>
+      linkedSpotListsDisplayName(_suggestedSpotLists);
+
+  List<String> get _suggestedSpotListIds =>
+      linkedSpotListIds(_suggestedSpotLists);
 
   LatLng get _displayLocationForMap {
     return _suggestedLocation ?? _gpsLatLng ?? _mapFallbackCenter;
   }
 
   List<Spot> get _mapDisplaySpots {
-    if (_suggestedSpotListIds.isNotEmpty) {
+    if (_suggestedSpotLists.isNotEmpty) {
       return List<Spot>.from(_suggestedSpotListSpots);
     }
     return List<Spot>.from(_suggestedLinkedSpots);
@@ -2348,7 +2354,9 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
     );
     _suggestedLinkedSpots = List<Spot>.from(collapsed.spots);
     _suggestedLocation = collapsed.pin;
-    _suggestedSpotListIds = List<String>.from(collapsed.spotListIds);
+    _suggestedSpotLists = collapsed.spotListIds
+        .map((id) => placeholderSpotListForEvent(id: id))
+        .toList();
     if (collapsed.kind != EventWhereKind.pin) {
       _locationAddressController.clear();
       if (initialPin != null ||
@@ -2507,7 +2515,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
   }
 
   Future<void> _loadSuggestedLinkedSpots() async {
-    if (_suggestedLinkedSpots.isEmpty && _suggestedSpotListIds.isEmpty) return;
+    if (_suggestedLinkedSpots.isEmpty && _suggestedSpotLists.isEmpty) return;
     if (_suggestedLinkedSpots.isNotEmpty) {
       final spotService = context.read<SpotService>();
       final ids = _suggestedLinkedSpots
@@ -2532,7 +2540,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
         _suggestedLinkedSpots = spots.toList(growable: true);
       });
     }
-    if (_suggestedSpotListIds.isNotEmpty) {
+    if (_suggestedSpotLists.isNotEmpty) {
       await _loadSuggestedSpotLists();
     }
     if (!mounted) return;
@@ -2541,23 +2549,30 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
   }
 
   Future<void> _loadSuggestedSpotLists() async {
-    if (_suggestedSpotListIds.isEmpty) return;
-    final listService = context.read<SpotListService>();
-    final names = <String>[];
-    for (final listId in _suggestedSpotListIds) {
-      final list = await listService.getSpotListById(listId);
-      if (list != null && list.name.trim().isNotEmpty) {
-        names.add(list.name.trim());
+    if (_suggestedSpotLists.isEmpty) {
+      if (_suggestedSpotListSpots.isNotEmpty && mounted) {
+        setState(() => _suggestedSpotListSpots = []);
       }
+      return;
+    }
+    final expectedIds = _suggestedSpotListIds.join(',');
+    final listService = context.read<SpotListService>();
+    final hydrated = <SpotList>[];
+    for (final existing in List<SpotList>.from(_suggestedSpotLists)) {
+      final id = existing.id?.trim();
+      if (id == null || id.isEmpty) continue;
+      final list = await listService.getSpotListById(id);
+      hydrated.add(list ?? existing);
+      if (!mounted || _suggestedSpotListIds.join(',') != expectedIds) return;
     }
     final spots = await loadEligibleSpotsForEventPins(
       firestore: context.read<EventMapService>().firestore,
       spotIds: const [],
-      spotListIds: _suggestedSpotListIds,
+      spotListIds: linkedSpotListIds(hydrated),
     );
-    if (!mounted) return;
+    if (!mounted || _suggestedSpotListIds.join(',') != expectedIds) return;
     setState(() {
-      _suggestedSpotListName = names.isEmpty ? null : names.join(', ');
+      _suggestedSpotLists = hydrated;
       _suggestedSpotListSpots = spots;
     });
   }
@@ -2617,7 +2632,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
   }
 
   bool _typedAddressNeedsResolution() {
-    if (_suggestedLinkedSpots.isNotEmpty || _suggestedSpotListIds.isNotEmpty) {
+    if (_suggestedLinkedSpots.isNotEmpty || _suggestedSpotLists.isNotEmpty) {
       return false;
     }
     final typed = _locationAddressController.text.trim();
@@ -2809,16 +2824,13 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
   }
 
   void _applyPinType(LatLng latLng, {bool notify = true}) {
-    final replacedListName = _suggestedSpotListIds.isEmpty
-        ? null
-        : _suggestedSpotListName?.trim();
+    final replacedListName = _suggestedSpotListName;
     final replacedSpots = _suggestedLinkedSpots.isNotEmpty;
     _suggestedLocation = latLng;
     _locationCleared = false;
     _suggestedLinkedSpots = [];
-    _suggestedSpotListIds = [];
+    _suggestedSpotLists = [];
     _suggestedSpotListSpots = [];
-    _suggestedSpotListName = null;
     if (notify) {
       setState(() => _error = null);
       final l10n = AppLocalizations.of(context)!;
@@ -2833,14 +2845,11 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
   }
 
   void _applySpotsType(List<Spot> spots) {
-    final replacedListName = _suggestedSpotListIds.isEmpty
-        ? null
-        : _suggestedSpotListName?.trim();
+    final replacedListName = _suggestedSpotListName;
     final replacedPin = _suggestedLocation != null;
     _suggestedLinkedSpots = List<Spot>.from(spots);
-    _suggestedSpotListIds = [];
+    _suggestedSpotLists = [];
     _suggestedSpotListSpots = [];
-    _suggestedSpotListName = null;
     _clearSuggestedPinFields();
     setState(() => _error = null);
     final l10n = AppLocalizations.of(context)!;
@@ -2869,7 +2878,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
     if (_isSchedulePickerOpen) return;
     await _ensureGpsForEmptyWhere();
     if (!mounted) return;
-    final listFit = _suggestedSpotListIds.isEmpty
+    final listFit = _suggestedSpotLists.isEmpty
         ? const <LatLng>[]
         : _mapDisplaySpots
               .where(spotHasCoordinates)
@@ -2886,9 +2895,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
           gps: _gpsLatLng,
         ),
         cameraFitLocations: listFit,
-        linkedSpotListName: _suggestedSpotListIds.isEmpty
-            ? null
-            : _suggestedSpotListName,
+        linkedSpotListName: _suggestedSpotListName,
         usageTip: LocationPickerUsageTip.addEvent,
       ),
     );
@@ -2904,6 +2911,35 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
     _applyPinType(latLng);
     _recenterMapForDisplay();
     await _geocodeLocation(latLng);
+    _syncTimeZoneFromLocation();
+  }
+
+  Future<void> _addLinkedList() async {
+    final l10n = AppLocalizations.of(context)!;
+    final selected = await SpotListSelectionDialog.show(
+      context,
+      excludeListIds: _suggestedSpotListIds.toSet(),
+    );
+    if (selected == null || !mounted) return;
+    final selectedListId = selected.id;
+    if (selectedListId == null ||
+        _suggestedSpotLists.any((list) => list.id == selectedListId)) {
+      return;
+    }
+    final replaced =
+        _suggestedLocation != null || _suggestedLinkedSpots.isNotEmpty;
+    setState(() {
+      _suggestedSpotLists = [..._suggestedSpotLists, selected];
+      _suggestedLinkedSpots = [];
+      _clearSuggestedPinFields();
+      _error = null;
+    });
+    if (replaced) {
+      _showWhereReplacedSnack(l10n.addEventWhereReplacedWithList);
+    }
+    await _loadSuggestedSpotLists();
+    if (!mounted) return;
+    _recenterMapForDisplay();
     _syncTimeZoneFromLocation();
   }
 
@@ -3416,6 +3452,15 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
               ),
             ),
             const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _submitting ? null : _addLinkedList,
+                icon: const Icon(Icons.list_alt_outlined, size: 18),
+                label: Text(l10n.addEventLinkListButton),
+              ),
+            ),
+            const SizedBox(height: 8),
             SpotLocationSection(
               embedded: true,
               showRequiredIndicator: false,
@@ -3448,7 +3493,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
             ),
             if (!hasSelectedPin &&
                 _suggestedLinkedSpots.isEmpty &&
-                _suggestedSpotListIds.isEmpty) ...[
+                _suggestedSpotLists.isEmpty) ...[
               const SizedBox(height: 8),
               Text(
                 l10n.addEventLocationNotSet,
@@ -3491,25 +3536,25 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
                             },
                     ),
                   ),
-                  ..._suggestedSpotListIds.map(
-                    (listId) => Chip(
+                  ..._suggestedSpotLists.map(
+                    (list) => Chip(
                       avatar: const Icon(Icons.list_alt_outlined, size: 18),
                       label: Text(
                         l10n.addEventLinkedSpotListLabel(
-                          _suggestedSpotListName?.isNotEmpty == true
-                              ? _suggestedSpotListName!
-                              : listId,
+                          list.name.isNotEmpty ? list.name : (list.id ?? ''),
                         ),
                       ),
                       onDeleted: _submitting
                           ? null
-                          : () {
+                          : () async {
                               setState(() {
-                                _suggestedSpotListIds = [];
-                                _suggestedSpotListName = null;
-                                _suggestedSpotListSpots = [];
+                                _suggestedSpotLists = _suggestedSpotLists
+                                    .where((existing) => existing.id != list.id)
+                                    .toList();
                                 _error = null;
                               });
+                              await _loadSuggestedSpotLists();
+                              if (!mounted) return;
                               _restoreEmptyWhereMapCenter();
                             },
                     ),

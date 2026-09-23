@@ -1597,9 +1597,9 @@
   "@addEventLocationSectionTitle": {
     "description": "Add event page: location section title"
   },
-  "addEventLocationSectionHint": "Choose an exact location, one or more spots, or a spot list.",
+  "addEventLocationSectionHint": "Choose an exact location, one or more spots, or one or more spot lists.",
   "@addEventLocationSectionHint": {
-    "description": "Add event page: explains where is pin or spots or a list, not a mix"
+    "description": "Add event page: explains where is pin or spots or lists, not a mix"
   },
   "addEventChooseOnMapHint": "Choose on map",
   "@addEventChooseOnMapHint": {
@@ -3808,6 +3808,18 @@
         "type": "int"
       }
     }
+  },
+  "spotListSelectionYourLists": "Your lists",
+  "@spotListSelectionYourLists": {
+    "description": "Heading for the signed-in user's linkable spot lists"
+  },
+  "spotListSelectionLookUpOther": "Or look up another list",
+  "@spotListSelectionLookUpOther": {
+    "description": "Heading above list ID/URL lookup when the user already has lists"
+  },
+  "spotListSelectionAlreadyLinked": "This list is already linked",
+  "@spotListSelectionAlreadyLinked": {
+    "description": "Error when the chosen spot list is already attached to the event"
   },
   "eventDetailAdminEditEvent": "Edit event",
   "@eventDetailAdminEditEvent": {

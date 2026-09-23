@@ -1276,7 +1276,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get addEventLocationSectionHint =>
-      'Escolhe uma localização exata, um ou mais spots, ou uma lista de spots.';
+      'Escolhe uma localização exata, um ou mais spots, ou uma ou mais listas de spots.';
 
   @override
   String get addEventChooseOnMapHint => 'Escolher no mapa';
@@ -3872,6 +3872,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String adminSpotListSelectionFoundSubtitle(String visibility, int count) {
     return '$visibility · $count spots';
   }
+
+  @override
+  String get spotListSelectionYourLists => 'As tuas listas';
+
+  @override
+  String get spotListSelectionLookUpOther => 'Ou procura outra lista';
+
+  @override
+  String get spotListSelectionAlreadyLinked => 'Esta lista já está associada';
 
   @override
   String get eventDetailAdminEditEvent => 'Editar evento';
