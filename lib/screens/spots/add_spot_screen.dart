@@ -132,14 +132,31 @@ class _AddSpotScreenState extends State<AddSpotScreen>
     });
   }
 
+  LatLng? get _mapTargetLocation {
+    if (_pickedLocation != null) return _pickedLocation;
+    if (_currentPosition != null) {
+      return LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+    }
+    return null;
+  }
+
+  @override
+  void onMapControllerReady() {
+    final target = _mapTargetLocation;
+    if (target != null) {
+      // Apply whatever location we have once the controller exists. The
+      // automatic GPS request often completes before onMapCreated; without
+      // this, animateCamera was a no-op and the preview stayed on the default.
+      centerMapOnLocation(target);
+    }
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Center map on location after the map controller is created
-    if (_currentPosition != null || _pickedLocation != null) {
-      final target =
-          _pickedLocation ??
-          LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+    final target = _mapTargetLocation;
+    if (target != null) {
       centerMapAfterBuild(target);
     }
   }
