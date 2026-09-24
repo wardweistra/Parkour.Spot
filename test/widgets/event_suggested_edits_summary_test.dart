@@ -82,7 +82,7 @@ void main() {
     expect(find.text('Linking'), findsOneWidget);
     expect(find.text('Remove location'), findsNothing);
     expect(find.text('Location'), findsNothing);
-    expect(find.text('Link list'), findsNothing);
+    expect(find.text('Add spot list'), findsNothing);
   });
 
   testWidgets('list suggestion describes lists instead of a pin mix', (
@@ -97,8 +97,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Link list'), findsOneWidget);
-    expect(find.text('Link list: 1'), findsOneWidget);
+    expect(find.text('Add spot list'), findsOneWidget);
+    expect(find.text('Add spot list: 1'), findsOneWidget);
     expect(find.text('Linking'), findsNothing);
     expect(find.text('Remove location'), findsNothing);
     expect(find.text('Location'), findsNothing);
