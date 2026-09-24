@@ -404,6 +404,23 @@
       ]
     },
     {
+      "collectionGroup": "events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "needsModeratorReview", "order": "ASCENDING" },
+        { "fieldPath": "startAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "eventSourceId", "order": "ASCENDING" },
+        { "fieldPath": "needsModeratorReview", "order": "ASCENDING" },
+        { "fieldPath": "startAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "eventMapPins",
       "queryScope": "COLLECTION",
       "fields": [

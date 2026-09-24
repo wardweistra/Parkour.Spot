@@ -181,7 +181,11 @@ class AdminEventsService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      if (_usesClientSidePaging) {
+      if (_needsModeratorReviewOnly) {
+        // Equality-only query (no orderBy) avoids waiting on a composite index;
+        // volumes are small enough to load and sort client-side.
+        await _fetchAllNeedsReviewEvents();
+      } else if (_usesClientSidePaging) {
         await _fetchUntilPageFull(replaceExisting: true, pageSize: pageSize);
       } else {
         final snapshot = await _buildEventsQuery().limit(pageSize).get();
@@ -197,6 +201,10 @@ class AdminEventsService extends ChangeNotifier {
   }
 
   Future<void> loadMore({int pageSize = _defaultPageSize}) async {
+    if (_needsModeratorReviewOnly) {
+      // Needs-review loads are complete in [fetchEvents].
+      return;
+    }
     if (!_hasMore ||
         _isLoading ||
         _isLoadingMore ||
@@ -648,17 +656,46 @@ class AdminEventsService extends ChangeNotifier {
     return query.orderBy('startAt', descending: true);
   }
 
+  Query<Map<String, dynamic>> _buildNeedsReviewQuery() {
+    Query<Map<String, dynamic>> query = _firestore
+        .collection('events')
+        .where('needsModeratorReview', isEqualTo: true);
+    if (_isExternalSourceFilter) {
+      query = query.where('eventSourceId', isEqualTo: _eventSourceFilter);
+    }
+    return query;
+  }
+
+  Future<void> _fetchAllNeedsReviewEvents() async {
+    final snapshot = await _buildNeedsReviewQuery().get();
+    final events = <ParkourEvent>[];
+    for (final doc in snapshot.docs) {
+      final event = _tryParseEvent(doc);
+      if (event != null && _matchesEventFilters(event)) {
+        events.add(event);
+      }
+    }
+    events.sort((a, b) => b.startAt.compareTo(a.startAt));
+    _events
+      ..clear()
+      ..addAll(events);
+    _lastEventDocument = null;
+    _hasMore = false;
+  }
+
   bool get _isExternalSourceFilter =>
       _eventSourceFilter != eventSourceFilterAll &&
       _eventSourceFilter != eventSourceFilterNative;
 
+  /// Filters that cannot be expressed fully in [_buildEventsQuery] and therefore
+  /// require scanning extra docs until a page of matches is filled.
+  /// [needsModeratorReviewOnly] uses [_fetchAllNeedsReviewEvents] instead.
   bool get _usesClientSidePaging =>
       _eventSourceFilter == eventSourceFilterNative ||
       _upcomingOnly ||
       _excludeDuplicates ||
       _excludeHidden ||
-      _withoutLocationOnly ||
-      _needsModeratorReviewOnly;
+      _withoutLocationOnly;
 
   bool _matchesEventSourceFilter(ParkourEvent event) {
     switch (_eventSourceFilter) {
@@ -723,14 +760,25 @@ class AdminEventsService extends ChangeNotifier {
       }
 
       for (final doc in docs) {
-        final event = ParkourEvent.fromFirestore(doc);
-        if (_matchesEventFilters(event)) {
+        final event = _tryParseEvent(doc);
+        if (event != null && _matchesEventFilters(event)) {
           _events.add(event);
         }
       }
 
       _lastEventDocument = docs.last;
       _hasMore = docs.length >= pageSize;
+    }
+  }
+
+  ParkourEvent? _tryParseEvent(DocumentSnapshot doc) {
+    try {
+      return ParkourEvent.fromFirestore(doc);
+    } catch (e) {
+      debugPrint(
+        'AdminEventsService skipping malformed event ${doc.id}: $e',
+      );
+      return null;
     }
   }
 
@@ -744,8 +792,8 @@ class AdminEventsService extends ChangeNotifier {
       _events.clear();
     }
     for (final doc in docs) {
-      final event = ParkourEvent.fromFirestore(doc);
-      if (_matchesEventFilters(event)) {
+      final event = _tryParseEvent(doc);
+      if (event != null && _matchesEventFilters(event)) {
         _events.add(event);
       }
     }
