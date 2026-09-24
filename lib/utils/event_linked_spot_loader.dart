@@ -81,11 +81,12 @@ Future<List<Spot>> loadEligibleSpotsForEventPins({
   return result;
 }
 
-/// First expandable spot list on [event] that has at least one mappable spot.
-Future<String?> resolveLocatableSpotListIdForEvent({
+/// Expandable spot lists that have at least one mappable spot.
+Future<List<String>> resolveLocatableSpotListIdsForEvent({
   required FirebaseFirestore firestore,
   required List<String> spotListIds,
 }) async {
+  final result = <String>[];
   for (final rawId in spotListIds) {
     final listId = rawId.trim();
     if (listId.isEmpty) continue;
@@ -105,9 +106,24 @@ Future<String?> resolveLocatableSpotListIdForEvent({
     }
     if (!hasEligibleSpot) continue;
 
-    return listId;
+    result.add(listId);
   }
-  return null;
+  return result;
+}
+
+/// Sole expandable spot list with mappable spots, or null if none / ambiguous.
+///
+/// Multi-list events must not silently open the first list on Explore.
+Future<String?> resolveLocatableSpotListIdForEvent({
+  required FirebaseFirestore firestore,
+  required List<String> spotListIds,
+}) async {
+  final listIds = await resolveLocatableSpotListIdsForEvent(
+    firestore: firestore,
+    spotListIds: spotListIds,
+  );
+  if (listIds.length != 1) return null;
+  return listIds.single;
 }
 
 /// Eligible spots from a single expandable spot list.

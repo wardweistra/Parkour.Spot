@@ -148,8 +148,9 @@ Future<EventMapPin?> resolveEventMapPinForLocate({
 
 /// Resolves how to locate an event on Explore.
 ///
-/// When the event links an expandable spot list with mappable spots, the list
-/// is preferred over a single pin.
+/// When the event links exactly one expandable spot list with mappable spots,
+/// that list is preferred. Multiple lists fall through to pin locate so Explore
+/// does not silently open the first list.
 Future<EventLocateTarget?> resolveEventLocateTarget({
   required ParkourEvent event,
   FirebaseFirestore? firestore,
@@ -195,6 +196,35 @@ Future<EventLocateTarget?> resolveEventLocateTarget({
   );
   if (pin == null) return null;
   return EventLocateTarget.pin(pin);
+}
+
+/// Spot pins for a single linked list on event detail.
+Future<List<EventMapPin>> resolveEventDetailMapPinsForSpotList({
+  required ParkourEvent event,
+  required String spotListId,
+  FirebaseFirestore? firestore,
+  Future<List<Spot>> Function({required String listId})? loadEligibleSpots,
+}) async {
+  final eventId = event.id?.trim();
+  if (eventId == null || eventId.isEmpty) return const [];
+
+  final List<Spot> linkedSpots;
+  if (loadEligibleSpots != null) {
+    linkedSpots = await loadEligibleSpots(listId: spotListId);
+  } else {
+    if (firestore == null) {
+      throw ArgumentError('firestore is required when loading linked spots');
+    }
+    linkedSpots = await loadEligibleSpotsForSpotListId(
+      firestore: firestore,
+      listId: spotListId,
+    );
+  }
+
+  return [
+    for (final spot in linkedSpots)
+      eventMapPinFromLinkedSpot(event: event, spot: spot),
+  ];
 }
 
 /// Map pins for event detail preview and inline maps.

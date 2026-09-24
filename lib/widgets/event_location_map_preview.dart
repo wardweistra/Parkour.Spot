@@ -16,18 +16,23 @@ import '../utils/map_bounds_utils.dart';
 import '../utils/marker_icon_utils.dart';
 
 /// Inline map preview for event detail: venue and linked spot pins.
+///
+/// When [spotListId] is set, shows only that list's spots (one map per list).
 class EventLocationMapPreview extends StatefulWidget {
   const EventLocationMapPreview({
     super.key,
     required this.event,
     required this.isSatelliteViewNotifier,
     required this.onTap,
+    this.spotListId,
     this.mapHeroTagPrefix = 'eventDetail',
   });
 
   final ParkourEvent event;
   final ValueNotifier<bool> isSatelliteViewNotifier;
   final VoidCallback onTap;
+  /// When non-null, preview pins come from this list only.
+  final String? spotListId;
   final String mapHeroTagPrefix;
 
   @override
@@ -55,13 +60,22 @@ class _EventLocationMapPreviewState extends State<EventLocationMapPreview> {
         oldWidget.event.longitude != widget.event.longitude ||
         oldWidget.event.spotIds.join(',') != widget.event.spotIds.join(',') ||
         oldWidget.event.spotListIds.join(',') !=
-            widget.event.spotListIds.join(',')) {
+            widget.event.spotListIds.join(',') ||
+        oldWidget.spotListId != widget.spotListId) {
       _pinsFuture = _loadPins();
     }
   }
 
   Future<List<EventMapPin>> _loadPins() {
     final eventMapService = context.read<EventMapService>();
+    final listId = widget.spotListId?.trim();
+    if (listId != null && listId.isNotEmpty) {
+      return resolveEventDetailMapPinsForSpotList(
+        event: widget.event,
+        spotListId: listId,
+        firestore: eventMapService.firestore,
+      );
+    }
     return resolveEventDetailMapPins(
       event: widget.event,
       firestore: eventMapService.firestore,

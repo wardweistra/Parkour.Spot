@@ -1264,13 +1264,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
 
     if (hasWhereSection) {
-      final mightHaveMapPins =
-          hasLocation || hasLinkedSpots || hasLinkedSpotLists;
+      // Combined map only for venue / direct spots. Linked lists each get their
+      // own map inside the list cards so multi-day areas stay unambiguous.
+      final showCombinedMap = hasLocation || hasLinkedSpots;
       widgets.addAll([
         const SizedBox(height: SpotDetailUi.detailSectionGap),
         _detailSectionHeading(context, _whereSectionHeading(l10n, event)),
         const SizedBox(height: SpotDetailUi.detailLabelGap),
-        if (mightHaveMapPins)
+        if (showCombinedMap)
           EventLocationMapPreview(
             event: event,
             isSatelliteViewNotifier: _isSatelliteViewNotifier,
@@ -1294,9 +1295,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         widgets.addAll([
           const SizedBox(height: SpotDetailUi.detailSectionGap),
           _LinkedSpotListsSection(
+            event: event,
             spotListIds: event.spotListIds,
             emptyLabel: l10n.eventDetailNoEventSpots,
-            showSeeOnMapButton: false,
+            isSatelliteViewNotifier: _isSatelliteViewNotifier,
           ),
         ]);
       }
@@ -3804,14 +3806,16 @@ class _EventSpotListPreview {
 
 class _LinkedSpotListsSection extends StatefulWidget {
   const _LinkedSpotListsSection({
+    required this.event,
     required this.spotListIds,
     required this.emptyLabel,
-    this.showSeeOnMapButton = true,
+    required this.isSatelliteViewNotifier,
   });
 
+  final ParkourEvent event;
   final List<String> spotListIds;
   final String emptyLabel;
-  final bool showSeeOnMapButton;
+  final ValueNotifier<bool> isSatelliteViewNotifier;
 
   @override
   State<_LinkedSpotListsSection> createState() =>
@@ -3907,9 +3911,10 @@ class _LinkedSpotListsSectionState extends State<_LinkedSpotListsSection> {
                 top: index > 0 ? SpotDetailUi.detailSubsectionGap : 0,
               ),
               child: _EventSpotListCard(
+                event: widget.event,
                 preview: preview,
                 l10n: l10n,
-                showSeeOnMapButton: widget.showSeeOnMapButton,
+                isSatelliteViewNotifier: widget.isSatelliteViewNotifier,
               ),
             );
           }).toList(),
@@ -3921,14 +3926,20 @@ class _LinkedSpotListsSectionState extends State<_LinkedSpotListsSection> {
 
 class _EventSpotListCard extends StatelessWidget {
   const _EventSpotListCard({
+    required this.event,
     required this.preview,
     required this.l10n,
-    this.showSeeOnMapButton = true,
+    required this.isSatelliteViewNotifier,
   });
 
+  final ParkourEvent event;
   final _EventSpotListPreview preview;
   final AppLocalizations l10n;
-  final bool showSeeOnMapButton;
+  final ValueNotifier<bool> isSatelliteViewNotifier;
+
+  void _openListOnExplore(BuildContext context, String listId) {
+    context.go('/explore?listId=$listId');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -3937,6 +3948,7 @@ class _EventSpotListCard extends StatelessWidget {
     final listId = list.id;
     final description = list.description?.trim();
     final remainingSpots = preview.totalSpotCount - preview.previewSpots.length;
+    final hasListId = listId != null && listId.isNotEmpty;
 
     return Container(
       width: double.infinity,
@@ -3988,8 +4000,18 @@ class _EventSpotListCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ],
-          if (preview.previewSpots.isNotEmpty) ...[
+          if (hasListId) ...[
             const SizedBox(height: 12),
+            EventLocationMapPreview(
+              event: event,
+              spotListId: listId,
+              isSatelliteViewNotifier: isSatelliteViewNotifier,
+              mapHeroTagPrefix: 'eventDetailList_$listId',
+              onTap: () => _openListOnExplore(context, listId),
+            ),
+          ],
+          if (preview.previewSpots.isNotEmpty) ...[
+            const SizedBox(height: 4),
             ...preview.previewSpots.map(
               (spot) => Padding(
                 padding: const EdgeInsets.only(bottom: 6),
@@ -4024,25 +4046,25 @@ class _EventSpotListCard extends StatelessWidget {
                 ),
               ),
           ],
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              if (listId != null)
+          if (hasListId) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
                 FilledButton.tonalIcon(
                   onPressed: () => context.push('/list/$listId'),
                   icon: const Icon(Icons.list_alt_outlined, size: 18),
                   label: Text(l10n.eventDetailEventSpotListViewAll),
                 ),
-              if (listId != null && showSeeOnMapButton)
                 OutlinedButton.icon(
-                  onPressed: () => context.go('/explore?listId=$listId'),
+                  onPressed: () => _openListOnExplore(context, listId),
                   icon: const Icon(Icons.map_outlined, size: 18),
                   label: Text(l10n.eventDetailEventSpotListSeeOnMap),
                 ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ],
       ),
     );

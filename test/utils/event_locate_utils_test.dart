@@ -285,6 +285,40 @@ void main() {
     });
   });
 
+  group('resolveEventDetailMapPinsForSpotList', () {
+    final start = DateTime.utc(2026, 9, 1, 10);
+
+    test('builds pins only for the requested list', () async {
+      final event = ParkourEvent(
+        id: 'e1',
+        title: 'Jam',
+        startAt: start,
+        spotListIds: const ['list-a', 'list-b'],
+      );
+
+      final pins = await resolveEventDetailMapPinsForSpotList(
+        event: event,
+        spotListId: 'list-b',
+        loadEligibleSpots: ({required listId}) async {
+          expect(listId, 'list-b');
+          return [
+            Spot(
+              id: 'spot-b1',
+              name: 'B1',
+              description: '',
+              latitude: 52.4,
+              longitude: 5.4,
+            ),
+          ];
+        },
+      );
+
+      expect(pins, hasLength(1));
+      expect(pins.single.spotId, 'spot-b1');
+      expect(pins.single.kind, EventMapPinKind.spot);
+    });
+  });
+
   group('resolveEventLocateTarget', () {
     final start = DateTime.utc(2026, 9, 1, 10);
 
@@ -314,6 +348,35 @@ void main() {
       expect(target?.isSpotList, isTrue);
       expect(target?.spotListId, 'list-1');
       expect(target?.pin, isNull);
+    });
+
+    test('falls back to pin when multiple locatable spot lists', () async {
+      final event = ParkourEvent(
+        id: 'e-multi-list',
+        title: 'Multi-day event',
+        startAt: start,
+        latitude: 52.1,
+        longitude: 5.1,
+        spotListIds: const ['list-day-1', 'list-day-2'],
+      );
+
+      final target = await resolveEventLocateTarget(
+        event: event,
+        getMapPinsForEvent: (_) async => const [],
+        loadEligibleLinkedSpot: ({required spotIds, required spotListIds}) async {
+          return null;
+        },
+        resolveLocatableSpotListId:
+            ({FirebaseFirestore? firestore, required List<String> spotListIds}) async {
+          // Production helper returns null when more than one list is locatable.
+          expect(spotListIds, ['list-day-1', 'list-day-2']);
+          return null;
+        },
+      );
+
+      expect(target?.isSpotList, isFalse);
+      expect(target?.pin?.latitude, 52.1);
+      expect(target?.pin?.longitude, 5.1);
     });
 
     test('falls back to pin when no locatable spot list', () async {
