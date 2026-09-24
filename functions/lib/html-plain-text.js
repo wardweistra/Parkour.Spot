@@ -55,6 +55,26 @@ function stripHtmlTags(s) {
 }
 
 /**
+ * Drop style/script element contents (not just tags).
+ * End tags allow optional whitespace before `>` (e.g. `</script >`).
+ * Repeats until stable so nested fragments like `<scr<script>ipt>` cannot
+ * survive a single-pass replace.
+ * @param {string} s
+ * @return {string}
+ */
+function stripStyleAndScriptBlocks(s) {
+  let previous;
+  let current = s;
+  do {
+    previous = current;
+    current = current
+        .replace(/<style\b[^>]*>[\s\S]*?<\/style\s*>/gi, "")
+        .replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, "");
+  } while (current !== previous);
+  return current;
+}
+
+/**
  * Convert HTML-ish description text to plain text.
  * Decode before stripping so encoded tags become removable, and strip in a
  * loop so nested incomplete tags cannot survive.
@@ -66,8 +86,7 @@ function htmlToPlainText(html) {
   const brToNl = (value) => value.replace(/<br\s*\/?>/gi, "\n");
   let text = brToNl(String(html));
   // Drop non-visible blocks before decode/strip so CSS/JS is not kept as text.
-  text = text.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "");
-  text = text.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
+  text = stripStyleAndScriptBlocks(text);
   text = decodeBasicHtmlEntities(text);
   text = brToNl(text);
   text = text.replace(/<img\b[^>]*>/gi, "");
@@ -81,5 +100,6 @@ function htmlToPlainText(html) {
 module.exports = {
   decodeBasicHtmlEntities,
   stripHtmlTags,
+  stripStyleAndScriptBlocks,
   htmlToPlainText,
 };
