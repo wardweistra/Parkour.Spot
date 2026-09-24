@@ -1492,6 +1492,58 @@ class AdminEventsService extends ChangeNotifier {
     }
   }
 
+  /// Clears [needsModeratorReview] on every flagged event (batched; handles >500).
+  ///
+  /// Returns the number of events updated, or `null` on failure.
+  Future<int?> clearAllModeratorReviewFlags() async {
+    _error = null;
+    notifyListeners();
+    try {
+      final snapshot = await _firestore
+          .collection('events')
+          .where('needsModeratorReview', isEqualTo: true)
+          .get();
+      if (snapshot.docs.isEmpty) {
+        return 0;
+      }
+
+      const chunk = 500;
+      final now = DateTime.now().toUtc();
+      for (var i = 0; i < snapshot.docs.length; i += chunk) {
+        final batch = _firestore.batch();
+        final end = (i + chunk > snapshot.docs.length)
+            ? snapshot.docs.length
+            : i + chunk;
+        for (var j = i; j < end; j++) {
+          batch.update(snapshot.docs[j].reference, {
+            'needsModeratorReview': false,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+        await batch.commit();
+      }
+
+      for (var i = 0; i < _events.length; i++) {
+        if (_events[i].needsModeratorReview) {
+          _events[i] = _events[i].copyWith(
+            needsModeratorReview: false,
+            updatedAt: now,
+          );
+        }
+      }
+      _needsReviewCount = 0;
+      notifyListeners();
+      return snapshot.docs.length;
+    } catch (e, st) {
+      _error = 'Failed to mark all events as reviewed';
+      debugPrint(
+        'AdminEventsService.clearAllModeratorReviewFlags error: $e\n$st',
+      );
+      notifyListeners();
+      return null;
+    }
+  }
+
   /// Hide or unhide an event (moderator/admin only).
   Future<bool> setEventHidden(
     String eventId,

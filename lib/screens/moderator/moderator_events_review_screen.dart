@@ -23,6 +23,7 @@ class _ModeratorEventsReviewScreenState
   late final AdminEventsService _eventsService;
   bool _scheduledInitialFetch = false;
   bool _restoredFiltersOnDispose = false;
+  bool _isMarkingAllReviewed = false;
 
   ({
     String eventSourceFilter,
@@ -158,6 +159,65 @@ class _ModeratorEventsReviewScreenState
     }
   }
 
+  Future<void> _markAllReviewed() async {
+    final service = context.read<AdminEventsService>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Mark all as reviewed?'),
+        content: const Text(
+          'This will mark every event still flagged for review as reviewed. '
+          'This cannot be undone from this screen.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Mark all as reviewed'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isMarkingAllReviewed = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final count = await service.clearAllModeratorReviewFlags();
+    if (!mounted) return;
+    setState(() => _isMarkingAllReviewed = false);
+
+    if (count == null) {
+      messenger.showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            service.error ?? 'Failed to mark all events as reviewed',
+          ),
+        ),
+      );
+      return;
+    }
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          count == 0
+              ? 'No events needed review'
+              : count == 1
+              ? 'Marked 1 event as reviewed'
+              : 'Marked $count events as reviewed',
+        ),
+        backgroundColor: Colors.green,
+      ),
+    );
+    if (service.needsModeratorReviewOnly) {
+      await service.fetchEvents(forceRefresh: true);
+    }
+  }
+
   void _handleBack(BuildContext context) {
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
@@ -208,6 +268,28 @@ class _ModeratorEventsReviewScreenState
         actions: [
           Consumer<AdminEventsService>(
             builder: (context, service, _) {
+              final hasReviewable = service.events.any(
+                (event) => event.needsModeratorReview,
+              );
+              return IconButton(
+                tooltip: 'Mark all as reviewed',
+                onPressed: service.isLoading ||
+                        _isMarkingAllReviewed ||
+                        !hasReviewable
+                    ? null
+                    : _markAllReviewed,
+                icon: _isMarkingAllReviewed
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.done_all),
+              );
+            },
+          ),
+          Consumer<AdminEventsService>(
+            builder: (context, service, _) {
               return IconButton(
                 tooltip: 'Refresh',
                 icon: service.isLoading
@@ -217,7 +299,7 @@ class _ModeratorEventsReviewScreenState
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.refresh),
-                onPressed: service.isLoading
+                onPressed: service.isLoading || _isMarkingAllReviewed
                     ? null
                     : () => service.fetchEvents(forceRefresh: true),
               );
