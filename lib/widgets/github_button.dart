@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+import 'brand_mark_icon.dart';
 
 class GitHubButton extends StatelessWidget {
   final String url;
   final String label;
 
-  const GitHubButton({
-    super.key,
-    required this.url,
-    required this.label,
-  });
+  const GitHubButton({super.key, required this.url, required this.label});
 
   Future<void> _launchUrl(String url) async {
     final Uri uri = Uri.parse(url);
@@ -25,10 +22,7 @@ class GitHubButton extends StatelessWidget {
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: () => _launchUrl(url),
-        icon: const FaIcon(
-          FontAwesomeIcons.github,
-          size: 18,
-        ),
+        icon: const BrandMarkIcon(asset: BrandMarkIcon.github),
         label: Text(label),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF24292e), // GitHub brand color
@@ -39,4 +33,3 @@ class GitHubButton extends StatelessWidget {
     );
   }
 }
-

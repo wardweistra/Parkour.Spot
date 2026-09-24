@@ -66,7 +66,7 @@ import '../../services/audit_log_service.dart';
 import 'package:parkour_spot/utils/browser_location.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../../widgets/brand_mark_icon.dart';
 import '../../l10n/app_localizations.dart';
 
 String _spotDetailReportCategoryLabel(AppLocalizations l10n, String category) {
@@ -127,7 +127,7 @@ class _CarouselVideoItem {
   /// When true, use BoxFit.contain (e.g. portrait posters); else BoxFit.cover.
   final bool preferContain;
 
-  /// Asset path for brand logo (e.g. Jumpflix). When null and useYoutubeIcon, use FontAwesome YouTube icon.
+  /// Asset path for brand logo (e.g. Jumpflix). When null and [useYoutubeIcon], use the YouTube mark.
   final String? brandLogoAsset;
   final String? brandLabel;
 
@@ -3138,8 +3138,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                                       MainAxisSize.max,
                                                   children: [
                                                     if (item.useYoutubeIcon)
-                                                      FaIcon(
-                                                        FontAwesomeIcons
+                                                      const BrandMarkIcon(
+                                                        asset: BrandMarkIcon
                                                             .youtube,
                                                         color: Colors.white,
                                                         size: 20,
