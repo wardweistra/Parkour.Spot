@@ -121,6 +121,21 @@ void main() {
       expect(updates['latitude'], isA<FieldValue>());
     });
 
+    test('list suggestion keeps more than one list id', () {
+      final updates =
+          EventReportService.buildExistingEventSuggestionUpdateForTest(
+            report: report(
+              suggestedSpotListIds: const <String>['list-2', 'list-1'],
+            ),
+            existingEventData: const <String, dynamic>{
+              'spotListIds': <String>['list-1'],
+            },
+          );
+
+      expect(updates, isNotNull);
+      expect(updates!['spotListIds'], <String>['list-1', 'list-2']);
+    });
+
     test('updates venue coordinates and address when suggested', () {
       final updates =
           EventReportService.buildExistingEventSuggestionUpdateForTest(

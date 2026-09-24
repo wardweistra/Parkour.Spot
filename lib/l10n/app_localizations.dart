@@ -2206,10 +2206,10 @@ abstract class AppLocalizations {
   /// **'Location'**
   String get addEventLocationSectionTitle;
 
-  /// Add event page: explains where is pin or spots or a list, not a mix
+  /// Add event page: explains where is pin or spots or lists, not a mix
   ///
   /// In en, this message translates to:
-  /// **'Choose an exact location, one or more spots, or a spot list.'**
+  /// **'Choose an exact location, one or more spots, or one or more spot lists.'**
   String get addEventLocationSectionHint;
 
   /// Add event page: overlay on the location preview map
@@ -6452,6 +6452,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{visibility} · {count} spots'**
   String adminSpotListSelectionFoundSubtitle(String visibility, int count);
+
+  /// Heading for the signed-in user's linkable spot lists
+  ///
+  /// In en, this message translates to:
+  /// **'Your lists'**
+  String get spotListSelectionYourLists;
+
+  /// Heading above list ID/URL lookup when the user already has lists
+  ///
+  /// In en, this message translates to:
+  /// **'Or look up another list'**
+  String get spotListSelectionLookUpOther;
+
+  /// Error when the chosen spot list is already attached to the event
+  ///
+  /// In en, this message translates to:
+  /// **'This list is already linked'**
+  String get spotListSelectionAlreadyLinked;
 
   /// Admin menu item to edit an event
   ///

@@ -1,5 +1,6 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:parkour_spot/models/spot.dart';
+import 'package:parkour_spot/models/spot_list.dart';
 import 'package:parkour_spot/utils/event_location_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -68,6 +69,84 @@ void main() {
       );
       expect(collapsed.kind, EventWhereKind.pin);
       expect(collapsed.pin, pin);
+    });
+
+    test('keeps more than one list id', () {
+      final collapsed = collapseEventWhere(
+        spotListIds: const ['list-1', 'list-2'],
+      );
+      expect(collapsed.kind, EventWhereKind.list);
+      expect(collapsed.spotListIds, ['list-1', 'list-2']);
+    });
+  });
+
+  group('linkedSpotListsDisplayName', () {
+    SpotList list({required String id, required String name}) {
+      final now = DateTime.utc(2026, 1, 1);
+      return SpotList(
+        id: id,
+        name: name,
+        spotIds: const [],
+        createdBy: 'user',
+        createdAt: now,
+        updatedAt: now,
+      );
+    }
+
+    test('joins multiple list names', () {
+      expect(
+        linkedSpotListsDisplayName([
+          list(id: 'a', name: 'Downtown'),
+          list(id: 'b', name: 'Rooftops'),
+        ]),
+        'Downtown, Rooftops',
+      );
+    });
+
+    test('falls back to ids when names are blank', () {
+      expect(
+        linkedSpotListsDisplayName([list(id: 'list-1', name: '  ')]),
+        'list-1',
+      );
+    });
+
+    test('returns null for an empty collection', () {
+      expect(linkedSpotListsDisplayName(const []), isNull);
+    });
+  });
+
+  group('linkedSpotListIds', () {
+    test('skips blank ids and keeps order', () {
+      final now = DateTime.utc(2026, 1, 1);
+      expect(
+        linkedSpotListIds([
+          SpotList(
+            id: 'list-1',
+            name: 'One',
+            spotIds: const [],
+            createdBy: 'user',
+            createdAt: now,
+            updatedAt: now,
+          ),
+          SpotList(
+            id: '  ',
+            name: 'Blank',
+            spotIds: const [],
+            createdBy: 'user',
+            createdAt: now,
+            updatedAt: now,
+          ),
+          SpotList(
+            id: 'list-2',
+            name: 'Two',
+            spotIds: const [],
+            createdBy: 'user',
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ]),
+        ['list-1', 'list-2'],
+      );
     });
   });
 

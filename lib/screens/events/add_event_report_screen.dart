@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../../config/app_config.dart';
 import '../../models/spot.dart';
+import '../../models/spot_list.dart';
 import '../../services/auth_service.dart';
 import '../../services/event_report_service.dart';
 import '../../services/geocoding_service.dart';
@@ -31,6 +32,7 @@ import '../../widgets/custom_text_field.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_form/image_section.dart';
 import '../../widgets/spot_form/location_section.dart';
+import '../../widgets/spot_list_selection_dialog.dart';
 
 class AddEventReportScreen extends StatefulWidget {
   const AddEventReportScreen({
@@ -97,8 +99,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
 
   List<Spot> _linkedSpots = [];
   List<Spot> _linkedSpotListSpots = [];
-  String? _linkedSpotListId;
-  String? _linkedSpotListName;
+  final List<SpotList> _linkedLists = [];
 
   final List<PreparedImage?> _selectedImages = [];
   bool _isPreparingImages = false;
@@ -115,7 +116,10 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   bool get _hasSelectedWhere =>
       _pickedLocation != null ||
       _linkedSpots.isNotEmpty ||
-      _linkedSpotListId != null;
+      _linkedLists.isNotEmpty;
+
+  String? get _linkedListsDisplayName =>
+      linkedSpotListsDisplayName(_linkedLists);
 
   LatLng get _displayLocationForMap {
     return _pickedLocation ?? _gpsLatLng ?? _mapFallbackCenter;
@@ -192,8 +196,15 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
         ),
       ];
     }
-    _linkedSpotListId = widget.initialSpotListId;
-    _linkedSpotListName = widget.initialSpotListName;
+    final initialListId = widget.initialSpotListId?.trim();
+    if (initialListId != null && initialListId.isNotEmpty) {
+      _linkedLists.add(
+        placeholderSpotListForEvent(
+          id: initialListId,
+          name: widget.initialSpotListName,
+        ),
+      );
+    }
     if (widget.initialSpotListSpots != null &&
         widget.initialSpotListSpots!.isNotEmpty) {
       _linkedSpotListSpots = List<Spot>.from(widget.initialSpotListSpots!);
@@ -201,16 +212,12 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     final collapsed = collapseEventWhere(
       pin: _pickedLocation,
       spots: _linkedSpots,
-      spotListIds: [
-        if (_linkedSpotListId != null && _linkedSpotListId!.trim().isNotEmpty)
-          _linkedSpotListId!,
-      ],
+      spotListIds: linkedSpotListIds(_linkedLists),
     );
     _pickedLocation = collapsed.pin;
     _linkedSpots = List<Spot>.from(collapsed.spots);
     if (collapsed.kind != EventWhereKind.list) {
-      _linkedSpotListId = null;
-      _linkedSpotListName = null;
+      _linkedLists.clear();
       _linkedSpotListSpots = [];
     }
     _mapFallbackCenter = const LatLng(
@@ -228,7 +235,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _geocodeLocation(_pickedLocation!);
       });
-    } else if (_mapDisplaySpots.isEmpty && _linkedSpotListId == null) {
+    } else if (_mapDisplaySpots.isEmpty && _linkedLists.isEmpty) {
       _getCurrentLocation(setAsPickedPin: false);
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -245,14 +252,13 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     _titleController.addListener(_onFormFieldChanged);
     _websiteController.addListener(_onFormFieldChanged);
     _locationAddressController.addListener(_onFormFieldChanged);
-    if (_linkedSpotListId != null) {
+    if (_linkedLists.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_linkedSpotListSpots.isNotEmpty) {
           _recenterMapForDisplay();
           _syncTimeZoneFromLocation();
-        } else {
-          _loadLinkedSpotListSpots();
         }
+        _loadLinkedSpotListSpots();
       });
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -261,9 +267,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   }
 
   void _onAuthChanged() {
-    if (!mounted ||
-        _linkedSpotListId == null ||
-        _linkedSpotListSpots.isNotEmpty) {
+    if (!mounted || _linkedLists.isEmpty) {
       return;
     }
     final authService = _authServiceRef;
@@ -272,8 +276,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   }
 
   Future<void> _loadLinkedSpotListSpots() async {
-    final listId = _linkedSpotListId;
-    if (listId == null) {
+    if (_linkedLists.isEmpty) {
       if (_linkedSpotListSpots.isNotEmpty && mounted) {
         setState(() => _linkedSpotListSpots = []);
         _recenterMapForDisplay();
@@ -282,39 +285,50 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       return;
     }
 
-    if (_linkedSpotListSpots.isNotEmpty) {
-      _recenterMapForDisplay();
-      return;
-    }
-
+    final expectedIds = linkedSpotListIds(_linkedLists).join(',');
     try {
       final spotListService = context.read<SpotListService>();
       final spotService = context.read<SpotService>();
-      final list = await spotListService.getSpotListById(listId);
-      if (!mounted || _linkedSpotListId != listId) return;
-
-      final spotIds = list?.effectiveSpotIds ?? const <String>[];
-      if (spotIds.isEmpty) {
-        setState(() => _linkedSpotListSpots = []);
-        _recenterMapForDisplay();
-        _syncTimeZoneFromLocation();
-        return;
+      final hydrated = <SpotList>[];
+      for (final existing in List<SpotList>.from(_linkedLists)) {
+        final id = existing.id?.trim();
+        if (id == null || id.isEmpty) continue;
+        final list = await spotListService.getSpotListById(id);
+        hydrated.add(list ?? existing);
+        if (!mounted ||
+            linkedSpotListIds(_linkedLists).join(',') != expectedIds) {
+          return;
+        }
       }
 
       final loadedSpots = <Spot>[];
-      for (final spotId in spotIds) {
-        final spot = await spotService.getSpotById(spotId);
-        if (spot != null) loadedSpots.add(spot);
-        if (!mounted || _linkedSpotListId != listId) return;
+      final seen = <String>{};
+      for (final list in hydrated) {
+        for (final spotId in list.effectiveSpotIds) {
+          if (!seen.add(spotId)) continue;
+          final spot = await spotService.getSpotById(spotId);
+          if (spot != null) loadedSpots.add(spot);
+          if (!mounted ||
+              linkedSpotListIds(_linkedLists).join(',') != expectedIds) {
+            return;
+          }
+        }
       }
 
-      setState(() => _linkedSpotListSpots = loadedSpots);
+      setState(() {
+        _linkedLists
+          ..clear()
+          ..addAll(hydrated);
+        _linkedSpotListSpots = loadedSpots;
+      });
       _recenterMapForDisplay();
       _syncTimeZoneFromLocation();
     } catch (e) {
       debugPrint('Failed to load linked spot list spots: $e');
-      if (!mounted || _linkedSpotListId != listId) return;
-      setState(() => _linkedSpotListSpots = []);
+      if (!mounted ||
+          linkedSpotListIds(_linkedLists).join(',') != expectedIds) {
+        return;
+      }
       _syncTimeZoneFromLocation();
     }
   }
@@ -502,7 +516,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
 
   bool get _hasLocationOrLink =>
       _linkedSpots.isNotEmpty ||
-      _linkedSpotListId != null ||
+      _linkedLists.isNotEmpty ||
       _pickedLocation != null;
 
   bool get _canSubmit =>
@@ -733,15 +747,12 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   }
 
   void _clearListFields() {
-    _linkedSpotListId = null;
-    _linkedSpotListName = null;
+    _linkedLists.clear();
     _linkedSpotListSpots = [];
   }
 
   void _applyPinType(LatLng latLng, {bool notify = true}) {
-    final replacedListName = _linkedSpotListId == null
-        ? null
-        : _linkedSpotListName?.trim();
+    final replacedListName = _linkedListsDisplayName;
     final replacedSpots = _linkedSpots.isNotEmpty;
     _pickedLocation = latLng;
     _clearSpotFields();
@@ -760,9 +771,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   }
 
   void _applySpotsType(List<Spot> spots) {
-    final replacedListName = _linkedSpotListId == null
-        ? null
-        : _linkedSpotListName?.trim();
+    final replacedListName = _linkedListsDisplayName;
     final replacedPin = _pickedLocation != null;
     _linkedSpots = List<Spot>.from(spots);
     _clearListFields();
@@ -794,7 +803,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     if (_isSchedulePickerOpen) return;
     await _ensureGpsForEmptyWhere();
     if (!mounted) return;
-    final listFit = _linkedSpotListId == null
+    final listFit = _linkedLists.isEmpty
         ? const <LatLng>[]
         : _mapDisplaySpots
               .where(spotHasCoordinates)
@@ -811,9 +820,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
           gps: _gpsLatLng,
         ),
         cameraFitLocations: listFit,
-        linkedSpotListName: _linkedSpotListId == null
-            ? null
-            : _linkedSpotListName,
+        linkedSpotListName: _linkedListsDisplayName,
         usageTip: LocationPickerUsageTip.addEvent,
       ),
     );
@@ -832,8 +839,32 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     _syncTimeZoneFromLocation();
   }
 
+  Future<void> _addLinkedList() async {
+    final l10n = AppLocalizations.of(context)!;
+    final selected = await SpotListSelectionDialog.show(
+      context,
+      excludeListIds: linkedSpotListIds(_linkedLists).toSet(),
+    );
+    if (selected == null || !mounted) return;
+    final selectedListId = selected.id;
+    if (selectedListId == null ||
+        _linkedLists.any((list) => list.id == selectedListId)) {
+      return;
+    }
+    final replaced = _pickedLocation != null || _linkedSpots.isNotEmpty;
+    setState(() {
+      _linkedLists.add(selected);
+      _clearSpotFields();
+      _clearPinFields(notify: false);
+    });
+    if (replaced) {
+      _showWhereReplacedSnack(l10n.addEventWhereReplacedWithList);
+    }
+    await _loadLinkedSpotListSpots();
+  }
+
   bool _typedAddressNeedsResolution() {
-    if (_linkedSpots.isNotEmpty || _linkedSpotListId != null) {
+    if (_linkedSpots.isNotEmpty || _linkedLists.isNotEmpty) {
       return false;
     }
     final typed = _locationAddressController.text.trim();
@@ -1271,10 +1302,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       final collapsed = collapseEventWhere(
         pin: _pickedLocation,
         spots: _linkedSpots,
-        spotListIds: [
-          if (_linkedSpotListId != null && _linkedSpotListId!.trim().isNotEmpty)
-            _linkedSpotListId!,
-        ],
+        spotListIds: linkedSpotListIds(_linkedLists),
       );
       final isPin = collapsed.kind == EventWhereKind.pin;
       final isSpots = collapsed.kind == EventWhereKind.spots;
@@ -1315,7 +1343,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
         linkedSpotName: isSpots && collapsed.spots.isNotEmpty
             ? collapsed.spots.map((spot) => spot.name).join(', ')
             : null,
-        linkedSpotListName: isList ? _linkedSpotListName : null,
+        linkedSpotListName: isList ? _linkedListsDisplayName : null,
         reporterUserId: user.uid,
         reporterName:
             authService.userProfile?.displayName ??
@@ -1399,9 +1427,18 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
               },
               onMapCreated: onMapCreated,
             ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _isSubmitting ? null : _addLinkedList,
+                icon: const Icon(Icons.list_alt_outlined, size: 18),
+                label: Text(l10n.addEventLinkListButton),
+              ),
+            ),
+            const SizedBox(height: 8),
             if (!hasSelectedPin &&
                 _linkedSpots.isEmpty &&
-                _linkedSpotListId == null) ...[
+                _linkedLists.isEmpty) ...[
               const SizedBox(height: 8),
               Text(
                 l10n.addEventLocationNotSet,
@@ -1443,27 +1480,28 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
                             },
                     ),
                   ),
-                  if (_linkedSpotListId != null)
-                    Chip(
+                  ..._linkedLists.map(
+                    (list) => Chip(
                       avatar: const Icon(Icons.list_alt_outlined, size: 18),
                       label: Text(
                         l10n.addEventLinkedSpotListLabel(
-                          _linkedSpotListName?.isNotEmpty == true
-                              ? _linkedSpotListName!
-                              : _linkedSpotListId!,
+                          list.name.isNotEmpty ? list.name : (list.id ?? ''),
                         ),
                       ),
                       onDeleted: _isSubmitting
                           ? null
-                          : () {
-                              setState(() {
-                                _linkedSpotListId = null;
-                                _linkedSpotListName = null;
-                                _linkedSpotListSpots = [];
-                              });
+                          : () async {
+                              setState(
+                                () => _linkedLists.removeWhere(
+                                  (existing) => existing.id == list.id,
+                                ),
+                              );
+                              await _loadLinkedSpotListSpots();
+                              if (!mounted) return;
                               _restoreEmptyWhereMapCenter();
                             },
                     ),
+                  ),
                 ],
               ),
             ],
