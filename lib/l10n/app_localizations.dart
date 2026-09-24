@@ -2194,10 +2194,10 @@ abstract class AppLocalizations {
   /// **'Location not set'**
   String get addEventLocationNotSet;
 
-  /// Add event page: confirmation when a map pin is active
+  /// Event where section: confirmation when a map pin is active
   ///
   /// In en, this message translates to:
-  /// **'Exact location set'**
+  /// **'Map location set'**
   String get addEventExactLocationSet;
 
   /// Add event page: location section title
@@ -2206,23 +2206,101 @@ abstract class AppLocalizations {
   /// **'Location'**
   String get addEventLocationSectionTitle;
 
-  /// Add event page: explains where is pin or spots or lists, not a mix
+  /// Event where section: explains the three exclusive location modes
   ///
   /// In en, this message translates to:
-  /// **'Choose an exact location, one or more spots, or one or more spot lists.'**
+  /// **'Pick one: one or more spots, one or more spot lists, or a map location.'**
   String get addEventLocationSectionHint;
 
-  /// Add event page: overlay on the location preview map
+  /// Event where section: map-pin mode
+  ///
+  /// In en, this message translates to:
+  /// **'Map location'**
+  String get addEventWhereModeLocation;
+
+  /// Event where section: linked spots mode
+  ///
+  /// In en, this message translates to:
+  /// **'Spots'**
+  String get addEventWhereModeSpots;
+
+  /// Event where section: linked spot list mode
+  ///
+  /// In en, this message translates to:
+  /// **'Spot lists'**
+  String get addEventWhereModeLists;
+
+  /// Event where section: map overlay for exact location mode
   ///
   /// In en, this message translates to:
   /// **'Choose on map'**
   String get addEventChooseOnMapHint;
 
-  /// Add event page: open dialog to link a spot list
+  /// Event where section: map overlay for spots mode
   ///
   /// In en, this message translates to:
-  /// **'Link list'**
+  /// **'Choose spots'**
+  String get addEventChooseSpotsHint;
+
+  /// Event where section: map overlay for spot lists mode
+  ///
+  /// In en, this message translates to:
+  /// **'Choose spot lists'**
+  String get addEventChooseListsHint;
+
+  /// Event where section: empty state in spots mode
+  ///
+  /// In en, this message translates to:
+  /// **'No spots linked'**
+  String get addEventSpotsNotSet;
+
+  /// Event where section: empty state in spot lists mode
+  ///
+  /// In en, this message translates to:
+  /// **'No spot list linked'**
+  String get addEventListsNotSet;
+
+  /// Event where section: open dialog to link the first spot list
+  ///
+  /// In en, this message translates to:
+  /// **'Add spot list'**
   String get addEventLinkListButton;
+
+  /// Event where section: link an additional spot list
+  ///
+  /// In en, this message translates to:
+  /// **'Add another list'**
+  String get addEventAddAnotherListButton;
+
+  /// Event where section: confirm before switching modes with a selection
+  ///
+  /// In en, this message translates to:
+  /// **'Change location type?'**
+  String get addEventWhereSwitchTitle;
+
+  /// Event where section: confirm switching location type
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get addEventWhereSwitchConfirm;
+
+  /// Event where section: body when leaving spots mode
+  ///
+  /// In en, this message translates to:
+  /// **'Your linked spots will be removed.'**
+  String get addEventWhereSwitchClearsSpots;
+
+  /// Event where section: body when leaving spot lists mode
+  ///
+  /// In en, this message translates to:
+  /// **'Your linked spot lists will be removed.'**
+  String get addEventWhereSwitchClearsLists;
+
+  /// Event where section: body when leaving map location mode
+  ///
+  /// In en, this message translates to:
+  /// **'Your map location will be removed.'**
+  String get addEventWhereSwitchClearsLocation;
 
   /// Add event page: snackbar when a pin replaces spots
   ///

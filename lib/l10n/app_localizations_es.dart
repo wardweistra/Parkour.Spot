@@ -1270,20 +1270,62 @@ class AppLocalizationsEs extends AppLocalizations {
   String get addEventLocationNotSet => 'Ubicación no definida';
 
   @override
-  String get addEventExactLocationSet => 'Ubicación exacta definida';
+  String get addEventExactLocationSet => 'Ubicación en el mapa definida';
 
   @override
   String get addEventLocationSectionTitle => 'Ubicación';
 
   @override
   String get addEventLocationSectionHint =>
-      'Elige una ubicación exacta, uno o varios spots, o una o varias listas de spots.';
+      'Elige una opción: uno o varios spots, una o varias listas de spots, o una ubicación en el mapa.';
+
+  @override
+  String get addEventWhereModeLocation => 'Ubicación en el mapa';
+
+  @override
+  String get addEventWhereModeSpots => 'Spots';
+
+  @override
+  String get addEventWhereModeLists => 'Listas de spots';
 
   @override
   String get addEventChooseOnMapHint => 'Elegir en el mapa';
 
   @override
-  String get addEventLinkListButton => 'Vincular lista';
+  String get addEventChooseSpotsHint => 'Elegir spots';
+
+  @override
+  String get addEventChooseListsHint => 'Elegir listas de spots';
+
+  @override
+  String get addEventSpotsNotSet => 'No hay spots vinculados';
+
+  @override
+  String get addEventListsNotSet => 'No hay lista de spots vinculada';
+
+  @override
+  String get addEventLinkListButton => 'Añadir lista de spots';
+
+  @override
+  String get addEventAddAnotherListButton => 'Añadir otra lista';
+
+  @override
+  String get addEventWhereSwitchTitle => '¿Cambiar el tipo de ubicación?';
+
+  @override
+  String get addEventWhereSwitchConfirm => 'Cambiar';
+
+  @override
+  String get addEventWhereSwitchClearsSpots =>
+      'Se eliminarán tus spots vinculados.';
+
+  @override
+  String get addEventWhereSwitchClearsLists =>
+      'Se eliminarán tus listas de spots vinculadas.';
+
+  @override
+  String get addEventWhereSwitchClearsLocation =>
+      'Se eliminará tu ubicación en el mapa.';
 
   @override
   String get addEventWhereReplacedSpots =>

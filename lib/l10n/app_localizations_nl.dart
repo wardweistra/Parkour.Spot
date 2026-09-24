@@ -1262,20 +1262,62 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addEventLocationNotSet => 'Locatie niet ingesteld';
 
   @override
-  String get addEventExactLocationSet => 'Exacte locatie ingesteld';
+  String get addEventExactLocationSet => 'Kaartlocatie ingesteld';
 
   @override
   String get addEventLocationSectionTitle => 'Locatie';
 
   @override
   String get addEventLocationSectionHint =>
-      'Kies een exacte locatie, een of meer spots, of een of meer spotlijsten.';
+      'Kies er één: een of meer spots, een of meer spotlijsten, of een kaartlocatie.';
+
+  @override
+  String get addEventWhereModeLocation => 'Kaartlocatie';
+
+  @override
+  String get addEventWhereModeSpots => 'Spots';
+
+  @override
+  String get addEventWhereModeLists => 'Spotlijsten';
 
   @override
   String get addEventChooseOnMapHint => 'Kies op de kaart';
 
   @override
-  String get addEventLinkListButton => 'Lijst koppelen';
+  String get addEventChooseSpotsHint => 'Kies spots';
+
+  @override
+  String get addEventChooseListsHint => 'Kies spotlijsten';
+
+  @override
+  String get addEventSpotsNotSet => 'Geen spots gekoppeld';
+
+  @override
+  String get addEventListsNotSet => 'Geen spotlijst gekoppeld';
+
+  @override
+  String get addEventLinkListButton => 'Spotlijst toevoegen';
+
+  @override
+  String get addEventAddAnotherListButton => 'Nog een lijst toevoegen';
+
+  @override
+  String get addEventWhereSwitchTitle => 'Locatietype wijzigen?';
+
+  @override
+  String get addEventWhereSwitchConfirm => 'Wijzigen';
+
+  @override
+  String get addEventWhereSwitchClearsSpots =>
+      'Je gekoppelde spots worden verwijderd.';
+
+  @override
+  String get addEventWhereSwitchClearsLists =>
+      'Je gekoppelde spotlijsten worden verwijderd.';
+
+  @override
+  String get addEventWhereSwitchClearsLocation =>
+      'Je kaartlocatie wordt verwijderd.';
 
   @override
   String get addEventWhereReplacedSpots =>

@@ -1279,20 +1279,62 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addEventLocationNotSet => 'Emplacement non défini';
 
   @override
-  String get addEventExactLocationSet => 'Emplacement exact défini';
+  String get addEventExactLocationSet => 'Emplacement sur la carte défini';
 
   @override
   String get addEventLocationSectionTitle => 'Emplacement';
 
   @override
   String get addEventLocationSectionHint =>
-      'Choisissez un emplacement exact, un ou plusieurs spots, ou une ou plusieurs listes de spots.';
+      'Choisissez une option : un ou plusieurs spots, une ou plusieurs listes de spots, ou un emplacement sur la carte.';
+
+  @override
+  String get addEventWhereModeLocation => 'Emplacement sur la carte';
+
+  @override
+  String get addEventWhereModeSpots => 'Spots';
+
+  @override
+  String get addEventWhereModeLists => 'Listes de spots';
 
   @override
   String get addEventChooseOnMapHint => 'Choisir sur la carte';
 
   @override
-  String get addEventLinkListButton => 'Lier une liste';
+  String get addEventChooseSpotsHint => 'Choisir des spots';
+
+  @override
+  String get addEventChooseListsHint => 'Choisir des listes de spots';
+
+  @override
+  String get addEventSpotsNotSet => 'Aucun spot lié';
+
+  @override
+  String get addEventListsNotSet => 'Aucune liste de spots liée';
+
+  @override
+  String get addEventLinkListButton => 'Ajouter une liste de spots';
+
+  @override
+  String get addEventAddAnotherListButton => 'Ajouter une autre liste';
+
+  @override
+  String get addEventWhereSwitchTitle => 'Changer le type d’emplacement ?';
+
+  @override
+  String get addEventWhereSwitchConfirm => 'Changer';
+
+  @override
+  String get addEventWhereSwitchClearsSpots =>
+      'Vos spots liés seront supprimés.';
+
+  @override
+  String get addEventWhereSwitchClearsLists =>
+      'Vos listes de spots liées seront supprimées.';
+
+  @override
+  String get addEventWhereSwitchClearsLocation =>
+      'Votre emplacement sur la carte sera supprimé.';
 
   @override
   String get addEventWhereReplacedSpots =>

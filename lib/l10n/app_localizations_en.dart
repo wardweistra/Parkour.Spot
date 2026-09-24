@@ -1258,20 +1258,62 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addEventLocationNotSet => 'Location not set';
 
   @override
-  String get addEventExactLocationSet => 'Exact location set';
+  String get addEventExactLocationSet => 'Map location set';
 
   @override
   String get addEventLocationSectionTitle => 'Location';
 
   @override
   String get addEventLocationSectionHint =>
-      'Choose an exact location, one or more spots, or one or more spot lists.';
+      'Pick one: one or more spots, one or more spot lists, or a map location.';
+
+  @override
+  String get addEventWhereModeLocation => 'Map location';
+
+  @override
+  String get addEventWhereModeSpots => 'Spots';
+
+  @override
+  String get addEventWhereModeLists => 'Spot lists';
 
   @override
   String get addEventChooseOnMapHint => 'Choose on map';
 
   @override
-  String get addEventLinkListButton => 'Link list';
+  String get addEventChooseSpotsHint => 'Choose spots';
+
+  @override
+  String get addEventChooseListsHint => 'Choose spot lists';
+
+  @override
+  String get addEventSpotsNotSet => 'No spots linked';
+
+  @override
+  String get addEventListsNotSet => 'No spot list linked';
+
+  @override
+  String get addEventLinkListButton => 'Add spot list';
+
+  @override
+  String get addEventAddAnotherListButton => 'Add another list';
+
+  @override
+  String get addEventWhereSwitchTitle => 'Change location type?';
+
+  @override
+  String get addEventWhereSwitchConfirm => 'Change';
+
+  @override
+  String get addEventWhereSwitchClearsSpots =>
+      'Your linked spots will be removed.';
+
+  @override
+  String get addEventWhereSwitchClearsLists =>
+      'Your linked spot lists will be removed.';
+
+  @override
+  String get addEventWhereSwitchClearsLocation =>
+      'Your map location will be removed.';
 
   @override
   String get addEventWhereReplacedSpots =>

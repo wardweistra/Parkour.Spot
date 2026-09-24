@@ -1269,20 +1269,62 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addEventLocationNotSet => 'Localização não definida';
 
   @override
-  String get addEventExactLocationSet => 'Localização exata definida';
+  String get addEventExactLocationSet => 'Localização no mapa definida';
 
   @override
   String get addEventLocationSectionTitle => 'Localização';
 
   @override
   String get addEventLocationSectionHint =>
-      'Escolhe uma localização exata, um ou mais spots, ou uma ou mais listas de spots.';
+      'Escolhe uma opção: um ou mais spots, uma ou mais listas de spots, ou uma localização no mapa.';
+
+  @override
+  String get addEventWhereModeLocation => 'Localização no mapa';
+
+  @override
+  String get addEventWhereModeSpots => 'Spots';
+
+  @override
+  String get addEventWhereModeLists => 'Listas de spots';
 
   @override
   String get addEventChooseOnMapHint => 'Escolher no mapa';
 
   @override
-  String get addEventLinkListButton => 'Associar lista';
+  String get addEventChooseSpotsHint => 'Escolher spots';
+
+  @override
+  String get addEventChooseListsHint => 'Escolher listas de spots';
+
+  @override
+  String get addEventSpotsNotSet => 'Nenhum spot associado';
+
+  @override
+  String get addEventListsNotSet => 'Nenhuma lista de spots associada';
+
+  @override
+  String get addEventLinkListButton => 'Adicionar lista de spots';
+
+  @override
+  String get addEventAddAnotherListButton => 'Adicionar outra lista';
+
+  @override
+  String get addEventWhereSwitchTitle => 'Alterar o tipo de localização?';
+
+  @override
+  String get addEventWhereSwitchConfirm => 'Alterar';
+
+  @override
+  String get addEventWhereSwitchClearsSpots =>
+      'Os teus spots associados serão removidos.';
+
+  @override
+  String get addEventWhereSwitchClearsLists =>
+      'As tuas listas de spots associadas serão removidas.';
+
+  @override
+  String get addEventWhereSwitchClearsLocation =>
+      'A tua localização no mapa será removida.';
 
   @override
   String get addEventWhereReplacedSpots =>

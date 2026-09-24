@@ -1586,9 +1586,9 @@
     }
   },
   "addEventLocationNotSet": "Location not set",
-  "addEventExactLocationSet": "Exact location set",
+  "addEventExactLocationSet": "Map location set",
   "@addEventExactLocationSet": {
-    "description": "Add event page: confirmation when a map pin is active"
+    "description": "Event where section: confirmation when a map pin is active"
   },
   "@addEventLocationNotSet": {
     "description": "Add event page: no map location chosen"
@@ -1597,17 +1597,69 @@
   "@addEventLocationSectionTitle": {
     "description": "Add event page: location section title"
   },
-  "addEventLocationSectionHint": "Choose an exact location, one or more spots, or one or more spot lists.",
+  "addEventLocationSectionHint": "Pick one: one or more spots, one or more spot lists, or a map location.",
   "@addEventLocationSectionHint": {
-    "description": "Add event page: explains where is pin or spots or lists, not a mix"
+    "description": "Event where section: explains the three exclusive location modes"
+  },
+  "addEventWhereModeLocation": "Map location",
+  "@addEventWhereModeLocation": {
+    "description": "Event where section: map-pin mode"
+  },
+  "addEventWhereModeSpots": "Spots",
+  "@addEventWhereModeSpots": {
+    "description": "Event where section: linked spots mode"
+  },
+  "addEventWhereModeLists": "Spot lists",
+  "@addEventWhereModeLists": {
+    "description": "Event where section: linked spot list mode"
   },
   "addEventChooseOnMapHint": "Choose on map",
   "@addEventChooseOnMapHint": {
-    "description": "Add event page: overlay on the location preview map"
+    "description": "Event where section: map overlay for exact location mode"
   },
-  "addEventLinkListButton": "Link list",
+  "addEventChooseSpotsHint": "Choose spots",
+  "@addEventChooseSpotsHint": {
+    "description": "Event where section: map overlay for spots mode"
+  },
+  "addEventChooseListsHint": "Choose spot lists",
+  "@addEventChooseListsHint": {
+    "description": "Event where section: map overlay for spot lists mode"
+  },
+  "addEventSpotsNotSet": "No spots linked",
+  "@addEventSpotsNotSet": {
+    "description": "Event where section: empty state in spots mode"
+  },
+  "addEventListsNotSet": "No spot list linked",
+  "@addEventListsNotSet": {
+    "description": "Event where section: empty state in spot lists mode"
+  },
+  "addEventLinkListButton": "Add spot list",
   "@addEventLinkListButton": {
-    "description": "Add event page: open dialog to link a spot list"
+    "description": "Event where section: open dialog to link the first spot list"
+  },
+  "addEventAddAnotherListButton": "Add another list",
+  "@addEventAddAnotherListButton": {
+    "description": "Event where section: link an additional spot list"
+  },
+  "addEventWhereSwitchTitle": "Change location type?",
+  "@addEventWhereSwitchTitle": {
+    "description": "Event where section: confirm before switching modes with a selection"
+  },
+  "addEventWhereSwitchConfirm": "Change",
+  "@addEventWhereSwitchConfirm": {
+    "description": "Event where section: confirm switching location type"
+  },
+  "addEventWhereSwitchClearsSpots": "Your linked spots will be removed.",
+  "@addEventWhereSwitchClearsSpots": {
+    "description": "Event where section: body when leaving spots mode"
+  },
+  "addEventWhereSwitchClearsLists": "Your linked spot lists will be removed.",
+  "@addEventWhereSwitchClearsLists": {
+    "description": "Event where section: body when leaving spot lists mode"
+  },
+  "addEventWhereSwitchClearsLocation": "Your map location will be removed.",
+  "@addEventWhereSwitchClearsLocation": {
+    "description": "Event where section: body when leaving map location mode"
   },
   "addEventWhereReplacedSpots": "Exact location replaced the linked spots.",
   "@addEventWhereReplacedSpots": {

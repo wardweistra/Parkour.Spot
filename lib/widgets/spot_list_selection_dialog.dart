@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
@@ -192,118 +193,125 @@ class _SpotListSelectionDialogState extends State<SpotListSelectionDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return AlertDialog(
-      title: Text(l10n.adminSpotListSelectionTitle),
-      content: SizedBox(
-        width: 480,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (_isLoadingYourLists)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 16),
-                  child: Center(
-                    child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                )
-              else if (_yourLists.isNotEmpty) ...[
-                Text(
-                  l10n.spotListSelectionYourLists,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                const SizedBox(height: 8),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 220),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: _yourLists.length,
-                    separatorBuilder: (_, _) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final list = _yourLists[index];
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.list_alt_outlined),
-                        title: Text(list.name),
-                        subtitle: Text(
-                          l10n.adminSpotListSelectionFoundSubtitle(
-                            list.visibility.label,
-                            list.spotCount,
-                          ),
-                        ),
-                        onTap: () => _select(list),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  l10n.spotListSelectionLookUpOther,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                const SizedBox(height: 8),
-              ],
-              TextField(
-                controller: _inputController,
-                decoration: InputDecoration(
-                  labelText: l10n.adminSpotListSelectionInputLabel,
-                  hintText: l10n.adminSpotListSelectionInputHint,
-                  border: const OutlineInputBorder(),
-                ),
-                onSubmitted: (_) => _lookup(),
-              ),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: _isLoading ? null : _lookup,
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
+    // Keep web map platform-views from receiving clicks through the dialog.
+    return PointerInterceptor(
+      child: AlertDialog(
+        title: Text(l10n.adminSpotListSelectionTitle),
+        content: SizedBox(
+          width: 480,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_isLoadingYourLists)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 16),
+                    child: Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
                         child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.search),
-                label: Text(l10n.adminSpotListSelectionLookup),
-              ),
-              if (_foundList != null) ...[
-                const SizedBox(height: 16),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.list),
-                  title: Text(_foundList!.name),
-                  subtitle: Text(
-                    l10n.adminSpotListSelectionFoundSubtitle(
-                      _foundList!.visibility.label,
-                      _foundList!.spotCount,
+                      ),
+                    ),
+                  )
+                else if (_yourLists.isNotEmpty) ...[
+                  Text(
+                    l10n.spotListSelectionYourLists,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 220),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: _yourLists.length,
+                      separatorBuilder: (_, _) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final list = _yourLists[index];
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.list_alt_outlined),
+                          title: Text(list.name),
+                          subtitle: Text(
+                            l10n.adminSpotListSelectionFoundSubtitle(
+                              list.visibility.label,
+                              list.spotCount,
+                            ),
+                          ),
+                          onTap: () => _select(list),
+                        );
+                      },
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.spotListSelectionLookUpOther,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                TextField(
+                  controller: _inputController,
+                  decoration: InputDecoration(
+                    labelText: l10n.adminSpotListSelectionInputLabel,
+                    hintText: l10n.adminSpotListSelectionInputHint,
+                    border: const OutlineInputBorder(),
+                  ),
+                  onSubmitted: (_) => _lookup(),
                 ),
-              ],
-              if (_error != null) ...[
                 const SizedBox(height: 12),
-                Text(
-                  _error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                FilledButton.icon(
+                  onPressed: _isLoading ? null : _lookup,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.search),
+                  label: Text(l10n.adminSpotListSelectionLookup),
                 ),
+                if (_foundList != null) ...[
+                  const SizedBox(height: 16),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.list),
+                    title: Text(_foundList!.name),
+                    subtitle: Text(
+                      l10n.adminSpotListSelectionFoundSubtitle(
+                        _foundList!.visibility.label,
+                        _foundList!.spotCount,
+                      ),
+                    ),
+                  ),
+                ],
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.profileCancel),
+          ),
+          FilledButton(
+            onPressed: _foundList?.id == null
+                ? null
+                : () => _select(_foundList!),
+            child: Text(l10n.adminSpotListSelectionSelect),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(l10n.profileCancel),
-        ),
-        FilledButton(
-          onPressed: _foundList?.id == null ? null : () => _select(_foundList!),
-          child: Text(l10n.adminSpotListSelectionSelect),
-        ),
-      ],
     );
   }
 }
