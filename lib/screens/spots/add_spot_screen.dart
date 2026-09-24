@@ -9,6 +9,7 @@ import '../../services/auth_service.dart';
 import '../../services/geocoding_service.dart';
 import '../../services/search_state_service.dart';
 import '../../services/url_service.dart';
+import '../../utils/add_spot_gps_fix_guard.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
@@ -56,6 +57,8 @@ class _AddSpotScreenState extends State<AddSpotScreen>
   bool _isGeocoding = false;
   bool _isSatelliteView = false;
   bool _isLocationPermissionDenied = false;
+  final _gpsFix = AddSpotGpsFixGuard();
+  int _geocodeGeneration = 0;
   SearchStateService? _searchStateServiceRef;
 
   // Spot attributes
@@ -70,6 +73,7 @@ class _AddSpotScreenState extends State<AddSpotScreen>
 
     // If initial location is provided, use it; otherwise get current location
     if (widget.initialLocation != null) {
+      _gpsFix.markExplicit();
       setState(() {
         _pickedLocation = widget.initialLocation;
       });
@@ -153,10 +157,12 @@ class _AddSpotScreenState extends State<AddSpotScreen>
         oldLocation.longitude != newLocation.longitude;
     if (!locationChanged) return;
 
+    _gpsFix.markExplicit();
     setState(() {
       _pickedLocation = newLocation;
       // Ensure map centers on the explicit location and not stale device location.
       _currentPosition = null;
+      _isGettingLocation = false;
     });
     centerMapOnLocationWithDelay(newLocation);
     _geocodeLocation(newLocation.latitude, newLocation.longitude);
@@ -170,7 +176,8 @@ class _AddSpotScreenState extends State<AddSpotScreen>
     super.dispose();
   }
 
-  Future<void> _getCurrentLocation() async {
+  Future<void> _getCurrentLocation({bool requestedByUser = false}) async {
+    final requestGeneration = _gpsFix.beginRequest();
     setState(() {
       _isGettingLocation = true;
     });
@@ -178,7 +185,7 @@ class _AddSpotScreenState extends State<AddSpotScreen>
     // Check permission status
     final permission = await LocationPermissionUtils.checkAndRequestPermission(
       context: context,
-      showErrorMessages: true,
+      showErrorMessages: requestedByUser || !_gpsFix.hasExplicitLocation,
     );
 
     final isPermissionGranted = LocationPermissionUtils.isPermissionGranted(
@@ -192,7 +199,7 @@ class _AddSpotScreenState extends State<AddSpotScreen>
     }
 
     if (!isPermissionGranted) {
-      if (mounted) {
+      if (mounted && _gpsFix.ownsInFlightRequest(requestGeneration)) {
         // If permission denied, ensure we still have a default location for the map
         if (_pickedLocation == null && _currentPosition == null) {
           setState(() {
@@ -221,22 +228,34 @@ class _AddSpotScreenState extends State<AddSpotScreen>
         ),
       );
 
-      if (mounted) {
-        setState(() {
-          _currentPosition = position;
-          // Clear picked location so map shows current location instead
-          _pickedLocation = null;
-          _isLocationPermissionDenied = false;
-        });
-        // Center the map on the new current location with a small delay to ensure controller is ready
-        centerMapOnLocationWithDelay(
-          LatLng(position.latitude, position.longitude),
-        );
-        // Geocode the coordinates to get address
-        _geocodeCurrentLocation();
+      if (!mounted) return;
+      // Skip a late automatic fix if the user already set the pin themselves.
+      if (!_gpsFix.shouldApplyResult(
+        requestGeneration: requestGeneration,
+        requestedByUser: requestedByUser,
+      )) {
+        return;
       }
+
+      setState(() {
+        _currentPosition = position;
+        // Clear picked location so map shows current location instead
+        _pickedLocation = null;
+        _isLocationPermissionDenied = false;
+      });
+      _gpsFix.recordApplied(requestedByUser: requestedByUser);
+      // Center the map on the new current location with a small delay to ensure controller is ready
+      centerMapOnLocationWithDelay(
+        LatLng(position.latitude, position.longitude),
+      );
+      // Geocode the coordinates to get address
+      _geocodeCurrentLocation();
     } catch (e) {
-      if (mounted) {
+      if (mounted &&
+          _gpsFix.shouldApplyResult(
+            requestGeneration: requestGeneration,
+            requestedByUser: requestedByUser,
+          )) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -247,7 +266,7 @@ class _AddSpotScreenState extends State<AddSpotScreen>
         );
       }
     } finally {
-      if (mounted) {
+      if (mounted && _gpsFix.ownsInFlightRequest(requestGeneration)) {
         setState(() {
           _isGettingLocation = false;
         });
@@ -409,10 +428,12 @@ class _AddSpotScreenState extends State<AddSpotScreen>
 
     final picked = result?.location;
     if (picked != null) {
+      _gpsFix.markExplicit();
       setState(() {
         _pickedLocation = picked;
         // Clear current position so map shows picked location instead
         _currentPosition = null;
+        _isGettingLocation = false;
       });
       // Center the map on the new picked location with a small delay to ensure controller is ready
       centerMapOnLocationWithDelay(picked);
@@ -430,6 +451,7 @@ class _AddSpotScreenState extends State<AddSpotScreen>
   }
 
   Future<void> _geocodeLocation(double latitude, double longitude) async {
+    final generation = ++_geocodeGeneration;
     try {
       setState(() {
         _isGeocoding = true;
@@ -444,17 +466,16 @@ class _AddSpotScreenState extends State<AddSpotScreen>
         longitude,
       );
 
-      if (mounted) {
-        setState(() {
-          _currentAddress = result['address'];
-          _currentCity = result['city'];
-          _currentCountryCode = result['countryCode'];
-        });
-      }
+      if (!mounted || generation != _geocodeGeneration) return;
+      setState(() {
+        _currentAddress = result['address'];
+        _currentCity = result['city'];
+        _currentCountryCode = result['countryCode'];
+      });
     } catch (e) {
       debugPrint('Error geocoding location: $e');
     } finally {
-      if (mounted) {
+      if (mounted && generation == _geocodeGeneration) {
         setState(() {
           _isGeocoding = false;
         });
@@ -663,7 +684,8 @@ class _AddSpotScreenState extends State<AddSpotScreen>
               isGeocoding: _isGeocoding,
               isSatelliteView: _isSatelliteView,
               isLocationPermissionDenied: _isLocationPermissionDenied,
-              onRefreshLocation: _getCurrentLocation,
+              onRefreshLocation: () =>
+                  _getCurrentLocation(requestedByUser: true),
               onPickOnMap: _pickLocationOnMap,
               onToggleSatellite: (value) {
                 setState(() {
