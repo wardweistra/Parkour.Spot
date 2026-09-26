@@ -1,33 +1,7 @@
 const {
   decodeBasicHtmlEntities,
-  stripHtmlTags,
-  stripStyleAndScriptBlocks,
   htmlToPlainText,
 } = require("../lib/html-plain-text");
-
-describe("stripHtmlTags", () => {
-  it("removes nested incomplete tags", () => {
-    expect(stripHtmlTags("<scr<script>ipt>alert(1)</script>")).toBe("alert(1)");
-  });
-});
-
-describe("stripStyleAndScriptBlocks", () => {
-  it("removes blocks whose end tags have spaces before >", () => {
-    expect(stripStyleAndScriptBlocks(
-        "A<style>x</style >B<script>y</script >C",
-    )).toBe("ABC");
-  });
-  it("drops nested incomplete script fragments across passes", () => {
-    expect(stripStyleAndScriptBlocks(
-        "keep<scr<script>ipt>evil()</script>end",
-    )).toBe("keep<scrend");
-  });
-  it("drops nested incomplete style fragments across passes", () => {
-    expect(stripStyleAndScriptBlocks(
-        "keep<sty<style>le>evil{}</style>end",
-    )).toBe("keep<styend");
-  });
-});
 
 describe("decodeBasicHtmlEntities", () => {
   it("decodes common named and numeric entities", () => {
@@ -52,10 +26,17 @@ describe("htmlToPlainText", () => {
         "<p>Hi</p><script type=\"text/javascript\">alert(1)</script >",
     )).toBe("Hi");
   });
-  it("drops nested script/style content before tag strip", () => {
-    // Incomplete wrappers may leave harmless letter crumbs after <> removal.
+  it("drops script and style blocks whose end tags contain junk before >", () => {
     expect(htmlToPlainText(
+        "A<script>alert(1)</script\t\n bar>B<style>x{}</style\t\n bar>C",
+    )).toBe("ABC");
+  });
+  it("does not keep a script element from nested incomplete tags", () => {
+    const text = htmlToPlainText(
         "<p>Hi</p><scr<script>ipt>evil()</script><sty<style>le>x{}</style>",
-    )).toBe("Hiscrsty");
+    );
+    expect(text.includes("<script")).toBe(false);
+    expect(text.includes("<style")).toBe(false);
+    expect(text.startsWith("Hi")).toBe(true);
   });
 });
