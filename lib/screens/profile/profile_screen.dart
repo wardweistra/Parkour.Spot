@@ -10,6 +10,7 @@ import '../../services/auth_service.dart';
 import '../../services/admin_events_service.dart';
 import '../../services/event_report_service.dart';
 import '../../services/spot_report_service.dart';
+import '../../services/spot_service.dart';
 import '../../services/user_notification_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../widgets/custom_button.dart';
@@ -450,23 +451,61 @@ class _ProfileScreenState extends State<ProfileScreen>
                                           listen: false,
                                         ).watchNeedsReviewCount(),
                                         builder: (context, reviewSnapshot) {
-                                          final totalNew =
-                                              spotNew +
-                                              eventReportNew +
-                                              (reviewSnapshot.data ?? 0);
-                                          return _buildActionTile(
-                                            context,
-                                            Icons.shield,
-                                            l10n.profileModeratorToolsTitle,
-                                            l10n.profileModeratorToolsSubtitle,
-                                            () {
-                                              // Use go (not push) so Explore/SearchScreen dispose and
-                                              // release Firestore listeners before moderator flows.
-                                              context.go('/moderator');
+                                          final eventReview =
+                                              reviewSnapshot.data ?? 0;
+                                          return StreamBuilder<int>(
+                                            initialData:
+                                                Provider.of<SpotService>(
+                                                  context,
+                                                  listen: false,
+                                                ).duplicatePendingChangesCount,
+                                            stream: Provider.of<SpotService>(
+                                              context,
+                                              listen: false,
+                                            ).watchDuplicatePendingChangesCount(),
+                                            builder:
+                                                (context, spotDupSnapshot) {
+                                              final spotDup =
+                                                  spotDupSnapshot.data ?? 0;
+                                              return StreamBuilder<int>(
+                                                initialData: Provider.of<
+                                                    AdminEventsService>(
+                                                  context,
+                                                  listen: false,
+                                                ).duplicatePendingChangesCount,
+                                                stream: Provider.of<
+                                                    AdminEventsService>(
+                                                  context,
+                                                  listen: false,
+                                                ).watchDuplicatePendingChangesCount(),
+                                                builder:
+                                                    (context, eventDupSnapshot) {
+                                                  final totalNew =
+                                                      spotNew +
+                                                      eventReportNew +
+                                                      eventReview +
+                                                      spotDup +
+                                                      (eventDupSnapshot.data ??
+                                                          0);
+                                                  return _buildActionTile(
+                                                    context,
+                                                    Icons.shield,
+                                                    l10n
+                                                        .profileModeratorToolsTitle,
+                                                    l10n
+                                                        .profileModeratorToolsSubtitle,
+                                                    () {
+                                                      // Use go (not push) so Explore/SearchScreen dispose and
+                                                      // release Firestore listeners before moderator flows.
+                                                      context.go('/moderator');
+                                                    },
+                                                    badgeCount: totalNew > 0
+                                                        ? totalNew
+                                                        : null,
+                                                  );
+                                                },
+                                              );
                                             },
-                                            badgeCount: totalNew > 0
-                                                ? totalNew
-                                                : null,
                                           );
                                         },
                                       );
