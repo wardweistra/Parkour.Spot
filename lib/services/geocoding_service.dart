@@ -250,11 +250,11 @@ class GeocodingService extends ChangeNotifier {
       final callable = _functions.httpsCallable('placesAutocomplete');
       final result = await callable.call({
         'input': input,
-        if (sessionToken != null) 'sessionToken': sessionToken,
+        'sessionToken': ?sessionToken,
         if (biasLat != null && biasLng != null)
           'location': {'lat': biasLat, 'lng': biasLng},
-        if (radiusMeters != null) 'radiusMeters': radiusMeters,
-        if (language != null) 'language': language,
+        'radiusMeters': ?radiusMeters,
+        'language': ?language,
         'types': 'geocode',
       });
 
@@ -293,8 +293,8 @@ class GeocodingService extends ChangeNotifier {
       final callable = _functions.httpsCallable('placeDetails');
       final result = await callable.call({
         'placeId': placeId,
-        if (sessionToken != null) 'sessionToken': sessionToken,
-        if (language != null) 'language': language,
+        'sessionToken': ?sessionToken,
+        'language': ?language,
       });
       if (result.data['success'] == true) {
         return Map<String, dynamic>.from(result.data as Map);

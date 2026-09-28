@@ -89,8 +89,8 @@ class SpotReportService {
           'suggestedName': suggestedName,
         if (suggestedDescription != null && suggestedDescription.isNotEmpty)
           'suggestedDescription': suggestedDescription,
-        if (suggestedLatitude != null) 'suggestedLatitude': suggestedLatitude,
-        if (suggestedLongitude != null) 'suggestedLongitude': suggestedLongitude,
+        'suggestedLatitude': ?suggestedLatitude,
+        'suggestedLongitude': ?suggestedLongitude,
         if (suggestedGoodFor != null && suggestedGoodFor.isNotEmpty)
           'suggestedGoodFor': suggestedGoodFor,
         if (suggestedSpotFeatures != null && suggestedSpotFeatures.isNotEmpty)

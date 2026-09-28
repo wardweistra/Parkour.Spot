@@ -146,9 +146,9 @@ class SpotCheckInService extends ChangeNotifier {
         'checkedInAt': FieldValue.serverTimestamp(),
         'expectedEndAt': Timestamp.fromDate(expectedEndAt),
         'isPrivate': isPrivate,
-        if (commentOut != null) 'comment': commentOut,
-        if (displayName != null) 'displayName': displayName,
-        if (photoURL != null) 'photoURL': photoURL,
+        'comment': ?commentOut,
+        'displayName': ?displayName,
+        'photoURL': ?photoURL,
         if (spotName != null && spotName.trim().isNotEmpty)
           'spotName': spotName.trim(),
       };

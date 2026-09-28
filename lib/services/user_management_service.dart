@@ -456,7 +456,7 @@ class UserManagementService extends ChangeNotifier {
 
       final result = await callable.call({
         'dryRun': dryRun,
-        if (limit != null) 'limit': limit,
+        'limit': ?limit,
       });
       final data = result.data as Map<String, dynamic>?;
 
@@ -506,7 +506,7 @@ class UserManagementService extends ChangeNotifier {
 
       final result = await callable.call({
         'dryRun': dryRun,
-        if (limit != null) 'limit': limit,
+        'limit': ?limit,
       });
       final data = result.data as Map<String, dynamic>?;
 

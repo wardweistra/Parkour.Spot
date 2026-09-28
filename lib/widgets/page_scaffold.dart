@@ -100,7 +100,7 @@ class PageScaffold extends StatelessWidget {
                         )
                       else if (actions != null && actions!.isNotEmpty)
                         const Spacer(),
-                      if (actions != null) ...actions!,
+                      ...?actions,
                     ],
                   ),
                 ),

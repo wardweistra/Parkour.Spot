@@ -102,8 +102,8 @@ class SpotTrainingPlanService extends ChangeNotifier {
         'plannedStartAt': Timestamp.fromDate(plannedStartAt),
         'plannedEndAt': Timestamp.fromDate(plannedEndAt),
         'isPrivate': isPrivate,
-        if (displayName != null) 'displayName': displayName,
-        if (photoURL != null) 'photoURL': photoURL,
+        'displayName': ?displayName,
+        'photoURL': ?photoURL,
         if (spotName != null && spotName.trim().isNotEmpty)
           'spotName': spotName.trim(),
       };

@@ -200,7 +200,7 @@ class AddHubContributionPanel extends StatelessWidget {
     );
 
     final footer = <Widget>[
-      if (badge != null) badge!,
+      ?badge,
       if (onPressed != null) ...[
         if (badge != null) const SizedBox(height: 14),
         CustomButton(

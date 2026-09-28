@@ -417,13 +417,11 @@ class SyncSourceService extends ChangeNotifier {
         'publicUrl': publicUrl,
         'instagramHandle': instagramHandle,
         'isActive': isActive,
-        if (includeFolders != null) 'includeFolders': includeFolders,
-        if (excludeFolders != null) 'excludeFolders': excludeFolders,
-        if (recordFolderName != null) 'recordFolderName': recordFolderName,
-        if (defaultSpotAttributes != null)
-          'defaultSpotAttributes': defaultSpotAttributes,
-        if (folderSpotAttributes != null)
-          'folderSpotAttributes': folderSpotAttributes,
+        'includeFolders': ?includeFolders,
+        'excludeFolders': ?excludeFolders,
+        'recordFolderName': ?recordFolderName,
+        'defaultSpotAttributes': ?defaultSpotAttributes,
+        'folderSpotAttributes': ?folderSpotAttributes,
         if (lightSyncSchedule != null && lightSyncSchedule.isNotEmpty)
           'lightSyncSchedule': lightSyncSchedule,
         if (fullSyncSchedule != null && fullSyncSchedule.isNotEmpty)
@@ -774,7 +772,7 @@ class SyncSourceService extends ChangeNotifier {
     try {
       final callable = _functions.httpsCallable('updateSpotSourceNames');
       final result = await callable.call({
-        if (sourceId != null) 'sourceId': sourceId,
+        'sourceId': ?sourceId,
       });
       return result.data;
     } catch (e) {
@@ -835,7 +833,7 @@ class SyncSourceService extends ChangeNotifier {
         options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
       );
       final result = await callable.call({
-        if (sourceId != null) 'sourceId': sourceId,
+        'sourceId': ?sourceId,
       });
       return result.data;
     } catch (e) {

@@ -23,7 +23,7 @@ class AuditLogService {
       await _firestore.collection('auditLog').add({
         'action': AuditLogAction.spotEdit.toString().split('.').last,
         'spotId': spotId,
-        if (reportId != null) 'reportId': reportId,
+        'reportId': ?reportId,
         'userId': userId,
         'userName': userName,
         'timestamp': FieldValue.serverTimestamp(),
@@ -58,7 +58,7 @@ class AuditLogService {
             .split('.')
             .last,
         'spotId': spotId,
-        if (reportId != null) 'reportId': reportId,
+        'reportId': ?reportId,
         'userId': userId,
         'userName': userName,
         'timestamp': FieldValue.serverTimestamp(),
@@ -118,7 +118,7 @@ class AuditLogService {
                 .split('.')
                 .last,
         'spotId': spotId,
-        if (reportId != null) 'reportId': reportId,
+        'reportId': ?reportId,
         'userId': userId,
         'userName': userName,
         'timestamp': FieldValue.serverTimestamp(),
@@ -156,7 +156,7 @@ class AuditLogService {
             .split('.')
             .last,
         'eventId': eventId,
-        if (reportId != null) 'reportId': reportId,
+        'reportId': ?reportId,
         'userId': userId,
         'userName': userName,
         'timestamp': FieldValue.serverTimestamp(),
@@ -283,7 +283,7 @@ class AuditLogService {
                 .split('.')
                 .last,
         'eventId': eventId,
-        if (reportId != null) 'reportId': reportId,
+        'reportId': ?reportId,
         'userId': userId,
         'userName': userName,
         'timestamp': FieldValue.serverTimestamp(),
@@ -362,11 +362,11 @@ class AuditLogService {
       await _firestore.collection('auditLog').add({
         'action': AuditLogAction.spotDelete.toString().split('.').last,
         'spotId': spotId,
-        if (reportId != null) 'reportId': reportId,
+        'reportId': ?reportId,
         'userId': userId,
         'userName': userName,
         'timestamp': FieldValue.serverTimestamp(),
-        if (metadata != null) 'metadata': metadata,
+        'metadata': ?metadata,
       });
     } catch (e) {
       debugPrint('Error logging spot delete: $e');
@@ -388,13 +388,13 @@ class AuditLogService {
       await _firestore.collection('auditLog').add({
         'action': AuditLogAction.photoAdded.toString().split('.').last,
         'spotId': spotId,
-        if (reportId != null) 'reportId': reportId,
+        'reportId': ?reportId,
         'userId': userId,
         'userName': userName,
         'timestamp': FieldValue.serverTimestamp(),
         'metadata': {
           'photoUrls': photoUrls,
-          if (originalPhotoUrls != null) 'originalPhotoUrls': originalPhotoUrls,
+          'originalPhotoUrls': ?originalPhotoUrls,
           'contributor': {'userId': userId, 'userName': userName},
           if (notes != null && notes.isNotEmpty) 'notes': notes,
         },

@@ -253,7 +253,7 @@ class _HubSectionHeader extends StatelessWidget {
         Expanded(
           child: Text(title, style: Theme.of(context).textTheme.titleLarge),
         ),
-        if (action != null) action!,
+        ?action,
       ],
     );
   }
