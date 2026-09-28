@@ -4137,7 +4137,7 @@
   "@eventDuplicateChangesTitle": {
     "description": "Dialog title when a linked duplicate’s fields changed"
   },
-  "eventDuplicateChangesBody": "This duplicate changed after it was marked. Choose values to copy to “{title}”, or dismiss.",
+  "eventDuplicateChangesBody": "This duplicate changed after it was marked. Select values to copy to “{title}”. Apply selected copies those and dismisses any unchecked ones. Dismiss all clears every change without copying.",
   "@eventDuplicateChangesBody": {
     "description": "Dialog body for reviewing post-link duplicate changes",
     "placeholders": {
@@ -4150,11 +4150,11 @@
   "@eventDuplicateChangesReview": {
     "description": "Button to open the duplicate-changes dialog"
   },
-  "eventDuplicateChangesApply": "Apply",
+  "eventDuplicateChangesApply": "Apply selected",
   "@eventDuplicateChangesApply": {
-    "description": "Apply selected duplicate field values to the original"
+    "description": "Apply selected duplicate field values to the original; unchecked changes are dismissed"
   },
-  "eventDuplicateChangesDismiss": "Dismiss",
+  "eventDuplicateChangesDismiss": "Dismiss all",
   "@eventDuplicateChangesDismiss": {
     "description": "Dismiss pending duplicate field changes without copying"
   },
@@ -4194,7 +4194,7 @@
   "@eventDuplicateChangesMenuItem": {
     "description": "Staff menu item to review post-link duplicate changes"
   },
-  "eventDuplicateChangesMenuSubtitle": "Copy updated fields to the original, or dismiss",
+  "eventDuplicateChangesMenuSubtitle": "Copy selected fields to the original, or dismiss all",
   "@eventDuplicateChangesMenuSubtitle": {
     "description": "Staff menu subtitle for reviewing duplicate changes"
   },
@@ -4228,7 +4228,7 @@
   "@spotDuplicateChangesTitle": {
     "description": "Dialog title when a linked duplicate spot changed"
   },
-  "spotDuplicateChangesBody": "This duplicate changed after it was marked. Choose values to copy to “{name}”, or dismiss.",
+  "spotDuplicateChangesBody": "This duplicate changed after it was marked. Select values to copy to “{name}”. Apply selected copies those and dismisses any unchecked ones. Dismiss all clears every change without copying.",
   "@spotDuplicateChangesBody": {
     "description": "Dialog body for reviewing post-link duplicate spot changes",
     "placeholders": {
@@ -4241,11 +4241,11 @@
   "@spotDuplicateChangesReview": {
     "description": "Button to open the duplicate-spot-changes dialog"
   },
-  "spotDuplicateChangesApply": "Apply",
+  "spotDuplicateChangesApply": "Apply selected",
   "@spotDuplicateChangesApply": {
-    "description": "Apply selected duplicate field values to the original spot"
+    "description": "Apply selected duplicate field values to the original spot; unchecked changes are dismissed"
   },
-  "spotDuplicateChangesDismiss": "Dismiss",
+  "spotDuplicateChangesDismiss": "Dismiss all",
   "@spotDuplicateChangesDismiss": {
     "description": "Dismiss pending duplicate spot field changes without copying"
   },
@@ -4285,7 +4285,7 @@
   "@spotDuplicateChangesMenuItem": {
     "description": "Staff menu item to review post-link duplicate spot changes"
   },
-  "spotDuplicateChangesMenuSubtitle": "Copy updated fields to the original, or dismiss",
+  "spotDuplicateChangesMenuSubtitle": "Copy selected fields to the original, or dismiss all",
   "@spotDuplicateChangesMenuSubtitle": {
     "description": "Staff menu subtitle for reviewing duplicate spot changes"
   },
@@ -4314,6 +4314,102 @@
   "spotDuplicateChangesNoValue": "(empty)",
   "@spotDuplicateChangesNoValue": {
     "description": "Fallback when a changed duplicate spot field has no value"
+  },
+  "duplicateChangesExternal": "Updated on duplicate",
+  "@duplicateChangesExternal": {
+    "description": "Label for the updated duplicate values in the review dialog"
+  },
+  "duplicateChangesNativeSpot": "Current on original",
+  "@duplicateChangesNativeSpot": {
+    "description": "Label for the current original spot value in the duplicate review dialog"
+  },
+  "duplicateChangesNativeEvent": "Current on original",
+  "@duplicateChangesNativeEvent": {
+    "description": "Label for the current original event value in the duplicate review dialog"
+  },
+  "duplicateChangesSameAsPrevious": "Same as previous on duplicate",
+  "@duplicateChangesSameAsPrevious": {
+    "description": "Original value still matches the previous duplicate value"
+  },
+  "duplicateChangesDiffersFromPrevious": "Differs from previous on duplicate",
+  "@duplicateChangesDiffersFromPrevious": {
+    "description": "Original value is not the previous duplicate value"
+  },
+  "duplicateChangesPreviousUnavailable": "Previous duplicate value unavailable",
+  "@duplicateChangesPreviousUnavailable": {
+    "description": "Shown when the duplicate has no stored previous snapshot"
+  },
+  "duplicateChangesNativeSpotUnavailable": "Original spot unavailable",
+  "@duplicateChangesNativeSpotUnavailable": {
+    "description": "Shown when the original spot could not be loaded"
+  },
+  "duplicateChangesNativeEventUnavailable": "Original event unavailable",
+  "@duplicateChangesNativeEventUnavailable": {
+    "description": "Shown when the original event could not be loaded"
+  },
+  "duplicateChangesContentsChanged": "Contents changed",
+  "@duplicateChangesContentsChanged": {
+    "description": "Count is unchanged but the photos, links, or linked spots differ"
+  },
+  "duplicateChangesAddress": "Address",
+  "@duplicateChangesAddress": {
+    "description": "Location sub-field in the duplicate review dialog"
+  },
+  "duplicateChangesCity": "City",
+  "@duplicateChangesCity": {
+    "description": "Location sub-field in the duplicate review dialog"
+  },
+  "duplicateChangesCountry": "Country",
+  "@duplicateChangesCountry": {
+    "description": "Location sub-field in the duplicate review dialog"
+  },
+  "duplicateChangesCoordinates": "Coordinates",
+  "@duplicateChangesCoordinates": {
+    "description": "Location sub-field in the duplicate review dialog"
+  },
+  "duplicateChangesAccess": "Access",
+  "@duplicateChangesAccess": {
+    "description": "Spot attribute sub-field in the duplicate review dialog"
+  },
+  "duplicateChangesFeatures": "Features",
+  "@duplicateChangesFeatures": {
+    "description": "Spot attribute sub-field in the duplicate review dialog"
+  },
+  "duplicateChangesFacilities": "Facilities",
+  "@duplicateChangesFacilities": {
+    "description": "Spot attribute sub-field in the duplicate review dialog"
+  },
+  "duplicateChangesGoodFor": "Good for",
+  "@duplicateChangesGoodFor": {
+    "description": "Spot attribute sub-field in the duplicate review dialog"
+  },
+  "duplicateChangesStart": "Start",
+  "@duplicateChangesStart": {
+    "description": "Schedule sub-field in the duplicate review dialog"
+  },
+  "duplicateChangesEnd": "End",
+  "@duplicateChangesEnd": {
+    "description": "Schedule sub-field in the duplicate review dialog"
+  },
+  "duplicateChangesDateOnly": "Date only",
+  "@duplicateChangesDateOnly": {
+    "description": "Schedule sub-field in the duplicate review dialog"
+  },
+  "duplicateChangesTimeZone": "Time zone",
+  "@duplicateChangesTimeZone": {
+    "description": "Schedule sub-field in the duplicate review dialog"
+  },
+  "duplicateChangesTimeZoneSource": "Time zone source",
+  "@duplicateChangesTimeZoneSource": {
+    "description": "Schedule sub-field in the duplicate review dialog"
+  },
+  "duplicateChangesYes": "Yes",
+  "@duplicateChangesYes": {
+    "description": "Affirmative value for a yes or no schedule field"
+  },
+  "duplicateChangesNo": "No",
+  "@duplicateChangesNo": {
+    "description": "Negative value for a yes or no schedule field"
   },
   "spotDuplicateChangesOpenSpot": "Open spot page",
   "@spotDuplicateChangesOpenSpot": {

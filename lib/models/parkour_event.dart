@@ -50,6 +50,10 @@ class ParkourEvent {
   /// Transferable field groups that differ from the last-reviewed baseline.
   final List<String> duplicateChangedFields;
 
+  /// Transferable-field snapshot from the last review, or from when this event
+  /// was marked as a duplicate.
+  final Map<String, dynamic>? duplicateReviewBaseline;
+
   ParkourEvent({
     this.id,
     required this.title,
@@ -85,6 +89,7 @@ class ParkourEvent {
     this.needsModeratorReview = false,
     this.duplicateHasPendingChanges = false,
     this.duplicateChangedFields = const <String>[],
+    this.duplicateReviewBaseline,
   });
 
   /// Native events are authored on parkour.spot (not imported from an external calendar source).
@@ -172,6 +177,9 @@ class ParkourEvent {
                 .where((item) => item.isNotEmpty)
                 .toList()
           : const <String>[],
+      duplicateReviewBaseline: _readDuplicateReviewBaseline(
+        data['duplicateReviewBaseline'],
+      ),
     );
   }
 
@@ -235,6 +243,9 @@ class ParkourEvent {
                 .where((item) => item.isNotEmpty)
                 .toList()
           : const <String>[],
+      duplicateReviewBaseline: _readDuplicateReviewBaseline(
+        data['duplicateReviewBaseline'],
+      ),
     );
   }
 
@@ -324,6 +335,7 @@ class ParkourEvent {
     bool? needsModeratorReview,
     bool? duplicateHasPendingChanges,
     List<String>? duplicateChangedFields,
+    Object? duplicateReviewBaseline = _unset,
   }) {
     return ParkourEvent(
       id: id ?? this.id,
@@ -397,8 +409,16 @@ class ParkourEvent {
           duplicateHasPendingChanges ?? this.duplicateHasPendingChanges,
       duplicateChangedFields:
           duplicateChangedFields ?? this.duplicateChangedFields,
+      duplicateReviewBaseline: identical(duplicateReviewBaseline, _unset)
+          ? this.duplicateReviewBaseline
+          : duplicateReviewBaseline as Map<String, dynamic>?,
     );
   }
 
   static const Object _unset = Object();
+}
+
+Map<String, dynamic>? _readDuplicateReviewBaseline(dynamic value) {
+  if (value is! Map) return null;
+  return Map<String, dynamic>.from(value);
 }

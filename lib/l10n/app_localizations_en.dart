@@ -4131,17 +4131,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String eventDuplicateChangesBody(String title) {
-    return 'This duplicate changed after it was marked. Choose values to copy to “$title”, or dismiss.';
+    return 'This duplicate changed after it was marked. Select values to copy to “$title”. Apply selected copies those and dismisses any unchecked ones. Dismiss all clears every change without copying.';
   }
 
   @override
   String get eventDuplicateChangesReview => 'Review changes';
 
   @override
-  String get eventDuplicateChangesApply => 'Apply';
+  String get eventDuplicateChangesApply => 'Apply selected';
 
   @override
-  String get eventDuplicateChangesDismiss => 'Dismiss';
+  String get eventDuplicateChangesDismiss => 'Dismiss all';
 
   @override
   String get eventDuplicateChangesApplySuccess => 'Original event updated.';
@@ -4176,7 +4176,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventDuplicateChangesMenuSubtitle =>
-      'Copy updated fields to the original, or dismiss';
+      'Copy selected fields to the original, or dismiss all';
 
   @override
   String get eventDuplicateChangesFailed =>
@@ -4200,17 +4200,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String spotDuplicateChangesBody(String name) {
-    return 'This duplicate changed after it was marked. Choose values to copy to “$name”, or dismiss.';
+    return 'This duplicate changed after it was marked. Select values to copy to “$name”. Apply selected copies those and dismisses any unchecked ones. Dismiss all clears every change without copying.';
   }
 
   @override
   String get spotDuplicateChangesReview => 'Review changes';
 
   @override
-  String get spotDuplicateChangesApply => 'Apply';
+  String get spotDuplicateChangesApply => 'Apply selected';
 
   @override
-  String get spotDuplicateChangesDismiss => 'Dismiss';
+  String get spotDuplicateChangesDismiss => 'Dismiss all';
 
   @override
   String get spotDuplicateChangesApplySuccess => 'Original spot updated.';
@@ -4245,7 +4245,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get spotDuplicateChangesMenuSubtitle =>
-      'Copy updated fields to the original, or dismiss';
+      'Copy selected fields to the original, or dismiss all';
 
   @override
   String get spotDuplicateChangesFailed => 'Failed to update duplicate changes';
@@ -4262,6 +4262,82 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get spotDuplicateChangesNoValue => '(empty)';
+
+  @override
+  String get duplicateChangesExternal => 'Updated on duplicate';
+
+  @override
+  String get duplicateChangesNativeSpot => 'Current on original';
+
+  @override
+  String get duplicateChangesNativeEvent => 'Current on original';
+
+  @override
+  String get duplicateChangesSameAsPrevious => 'Same as previous on duplicate';
+
+  @override
+  String get duplicateChangesDiffersFromPrevious =>
+      'Differs from previous on duplicate';
+
+  @override
+  String get duplicateChangesPreviousUnavailable =>
+      'Previous duplicate value unavailable';
+
+  @override
+  String get duplicateChangesNativeSpotUnavailable =>
+      'Original spot unavailable';
+
+  @override
+  String get duplicateChangesNativeEventUnavailable =>
+      'Original event unavailable';
+
+  @override
+  String get duplicateChangesContentsChanged => 'Contents changed';
+
+  @override
+  String get duplicateChangesAddress => 'Address';
+
+  @override
+  String get duplicateChangesCity => 'City';
+
+  @override
+  String get duplicateChangesCountry => 'Country';
+
+  @override
+  String get duplicateChangesCoordinates => 'Coordinates';
+
+  @override
+  String get duplicateChangesAccess => 'Access';
+
+  @override
+  String get duplicateChangesFeatures => 'Features';
+
+  @override
+  String get duplicateChangesFacilities => 'Facilities';
+
+  @override
+  String get duplicateChangesGoodFor => 'Good for';
+
+  @override
+  String get duplicateChangesStart => 'Start';
+
+  @override
+  String get duplicateChangesEnd => 'End';
+
+  @override
+  String get duplicateChangesDateOnly => 'Date only';
+
+  @override
+  String get duplicateChangesTimeZone => 'Time zone';
+
+  @override
+  String get duplicateChangesTimeZoneSource => 'Time zone source';
+
+  @override
+  String get duplicateChangesYes => 'Yes';
+
+  @override
+  String get duplicateChangesNo => 'No';
 
   @override
   String get spotDuplicateChangesOpenSpot => 'Open spot page';

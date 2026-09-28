@@ -6978,7 +6978,7 @@ abstract class AppLocalizations {
   /// Dialog body for reviewing post-link duplicate changes
   ///
   /// In en, this message translates to:
-  /// **'This duplicate changed after it was marked. Choose values to copy to “{title}”, or dismiss.'**
+  /// **'This duplicate changed after it was marked. Select values to copy to “{title}”. Apply selected copies those and dismisses any unchecked ones. Dismiss all clears every change without copying.'**
   String eventDuplicateChangesBody(String title);
 
   /// Button to open the duplicate-changes dialog
@@ -6987,16 +6987,16 @@ abstract class AppLocalizations {
   /// **'Review changes'**
   String get eventDuplicateChangesReview;
 
-  /// Apply selected duplicate field values to the original
+  /// Apply selected duplicate field values to the original; unchecked changes are dismissed
   ///
   /// In en, this message translates to:
-  /// **'Apply'**
+  /// **'Apply selected'**
   String get eventDuplicateChangesApply;
 
   /// Dismiss pending duplicate field changes without copying
   ///
   /// In en, this message translates to:
-  /// **'Dismiss'**
+  /// **'Dismiss all'**
   String get eventDuplicateChangesDismiss;
 
   /// Snackbar after applying duplicate field changes
@@ -7056,7 +7056,7 @@ abstract class AppLocalizations {
   /// Staff menu subtitle for reviewing duplicate changes
   ///
   /// In en, this message translates to:
-  /// **'Copy updated fields to the original, or dismiss'**
+  /// **'Copy selected fields to the original, or dismiss all'**
   String get eventDuplicateChangesMenuSubtitle;
 
   /// Error snackbar when apply/dismiss of duplicate changes fails
@@ -7092,7 +7092,7 @@ abstract class AppLocalizations {
   /// Dialog body for reviewing post-link duplicate spot changes
   ///
   /// In en, this message translates to:
-  /// **'This duplicate changed after it was marked. Choose values to copy to “{name}”, or dismiss.'**
+  /// **'This duplicate changed after it was marked. Select values to copy to “{name}”. Apply selected copies those and dismisses any unchecked ones. Dismiss all clears every change without copying.'**
   String spotDuplicateChangesBody(String name);
 
   /// Button to open the duplicate-spot-changes dialog
@@ -7101,16 +7101,16 @@ abstract class AppLocalizations {
   /// **'Review changes'**
   String get spotDuplicateChangesReview;
 
-  /// Apply selected duplicate field values to the original spot
+  /// Apply selected duplicate field values to the original spot; unchecked changes are dismissed
   ///
   /// In en, this message translates to:
-  /// **'Apply'**
+  /// **'Apply selected'**
   String get spotDuplicateChangesApply;
 
   /// Dismiss pending duplicate spot field changes without copying
   ///
   /// In en, this message translates to:
-  /// **'Dismiss'**
+  /// **'Dismiss all'**
   String get spotDuplicateChangesDismiss;
 
   /// Snackbar after applying duplicate spot field changes
@@ -7170,7 +7170,7 @@ abstract class AppLocalizations {
   /// Staff menu subtitle for reviewing duplicate spot changes
   ///
   /// In en, this message translates to:
-  /// **'Copy updated fields to the original, or dismiss'**
+  /// **'Copy selected fields to the original, or dismiss all'**
   String get spotDuplicateChangesMenuSubtitle;
 
   /// Error snackbar when apply/dismiss of duplicate spot changes fails
@@ -7196,6 +7196,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'(empty)'**
   String get spotDuplicateChangesNoValue;
+
+  /// Label for the updated duplicate values in the review dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Updated on duplicate'**
+  String get duplicateChangesExternal;
+
+  /// Label for the current original spot value in the duplicate review dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Current on original'**
+  String get duplicateChangesNativeSpot;
+
+  /// Label for the current original event value in the duplicate review dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Current on original'**
+  String get duplicateChangesNativeEvent;
+
+  /// Original value still matches the previous duplicate value
+  ///
+  /// In en, this message translates to:
+  /// **'Same as previous on duplicate'**
+  String get duplicateChangesSameAsPrevious;
+
+  /// Original value is not the previous duplicate value
+  ///
+  /// In en, this message translates to:
+  /// **'Differs from previous on duplicate'**
+  String get duplicateChangesDiffersFromPrevious;
+
+  /// Shown when the duplicate has no stored previous snapshot
+  ///
+  /// In en, this message translates to:
+  /// **'Previous duplicate value unavailable'**
+  String get duplicateChangesPreviousUnavailable;
+
+  /// Shown when the original spot could not be loaded
+  ///
+  /// In en, this message translates to:
+  /// **'Original spot unavailable'**
+  String get duplicateChangesNativeSpotUnavailable;
+
+  /// Shown when the original event could not be loaded
+  ///
+  /// In en, this message translates to:
+  /// **'Original event unavailable'**
+  String get duplicateChangesNativeEventUnavailable;
+
+  /// Count is unchanged but the photos, links, or linked spots differ
+  ///
+  /// In en, this message translates to:
+  /// **'Contents changed'**
+  String get duplicateChangesContentsChanged;
+
+  /// Location sub-field in the duplicate review dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get duplicateChangesAddress;
+
+  /// Location sub-field in the duplicate review dialog
+  ///
+  /// In en, this message translates to:
+  /// **'City'**
+  String get duplicateChangesCity;
+
+  /// Location sub-field in the duplicate review dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Country'**
+  String get duplicateChangesCountry;
+
+  /// Location sub-field in the duplicate review dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Coordinates'**
+  String get duplicateChangesCoordinates;
+
+  /// Spot attribute sub-field in the duplicate review dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Access'**
+  String get duplicateChangesAccess;
+
+  /// Spot attribute sub-field in the duplicate review dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Features'**
+  String get duplicateChangesFeatures;
+
+  /// Spot attribute sub-field in the duplicate review dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Facilities'**
+  String get duplicateChangesFacilities;
+
+  /// Spot attribute sub-field in the duplicate review dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Good for'**
+  String get duplicateChangesGoodFor;
+
+  /// Schedule sub-field in the duplicate review dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get duplicateChangesStart;
+
+  /// Schedule sub-field in the duplicate review dialog
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get duplicateChangesEnd;
+
+  /// Schedule sub-field in the duplicate review dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Date only'**
+  String get duplicateChangesDateOnly;
+
+  /// Schedule sub-field in the duplicate review dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Time zone'**
+  String get duplicateChangesTimeZone;
+
+  /// Schedule sub-field in the duplicate review dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Time zone source'**
+  String get duplicateChangesTimeZoneSource;
+
+  /// Affirmative value for a yes or no schedule field
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get duplicateChangesYes;
+
+  /// Negative value for a yes or no schedule field
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get duplicateChangesNo;
 
   /// Button on the duplicate-spot-updates queue card to open the spot
   ///

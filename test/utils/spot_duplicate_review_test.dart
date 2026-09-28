@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:parkour_spot/l10n/app_localizations.dart';
 import 'package:parkour_spot/models/spot.dart';
 import 'package:parkour_spot/utils/spot_duplicate_review.dart';
 
@@ -142,6 +144,125 @@ void main() {
       expect(baseline['youtubeVideoIds'], ['abc123xyz']);
       expect(baseline['latitude'], 50.8);
       expect(baseline['city'], 'Brussels');
+    });
+  });
+
+  group('spot duplicate field comparison', () {
+    late AppLocalizations l10n;
+
+    setUpAll(() async {
+      l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    });
+
+    test('hydrates a display spot from the stored baseline', () {
+      final hydrated = spotFromDuplicateReviewBaseline(
+        buildSpotDuplicateReviewBaseline(_spot()),
+      );
+      expect(hydrated?.name, 'Central Rails');
+      expect(hydrated?.city, 'Brussels');
+      expect(spotFromDuplicateReviewBaseline(null), isNull);
+    });
+
+    test('name shows from, to, native, and a match', () {
+      final comparison = buildSpotDuplicateFieldComparison(
+        current: _spot(name: 'Updated name'),
+        previous: _spot(),
+        native: _spot(),
+        group: SpotDuplicateFieldGroup.name,
+        l10n: l10n,
+      );
+      expect(comparison.previousUnavailable, isFalse);
+      expect(comparison.nativeMatchesPrevious, isTrue);
+      expect(comparison.lines.single.from, 'Central Rails');
+      expect(comparison.lines.single.to, 'Updated name');
+      expect(comparison.lines.single.native, 'Central Rails');
+    });
+
+    test(
+      'name reports when the native value differs from the previous one',
+      () {
+        final comparison = buildSpotDuplicateFieldComparison(
+          current: _spot(name: 'Updated name'),
+          previous: _spot(),
+          native: _spot(name: 'Native rails'),
+          group: SpotDuplicateFieldGroup.name,
+          l10n: l10n,
+        );
+        expect(comparison.nativeMatchesPrevious, isFalse);
+        expect(comparison.lines.single.native, 'Native rails');
+      },
+    );
+
+    test('missing baseline and native do not claim a match', () {
+      final comparison = buildSpotDuplicateFieldComparison(
+        current: _spot(name: 'Updated name'),
+        previous: null,
+        native: null,
+        group: SpotDuplicateFieldGroup.name,
+        l10n: l10n,
+      );
+      expect(comparison.previousUnavailable, isTrue);
+      expect(comparison.nativeUnavailable, isTrue);
+      expect(comparison.nativeMatchesPrevious, isNull);
+      expect(comparison.currentSummary, 'Updated name');
+      expect(comparison.lines, isEmpty);
+    });
+
+    test('location lists only the sub-field that changed', () {
+      final comparison = buildSpotDuplicateFieldComparison(
+        current: _spot(address: 'Ghent'),
+        previous: _spot(),
+        native: _spot(),
+        group: SpotDuplicateFieldGroup.location,
+        l10n: l10n,
+      );
+      expect(comparison.lines.map((line) => line.label), ['Address']);
+      expect(comparison.lines.single.from, 'Brussels');
+      expect(comparison.lines.single.to, 'Ghent');
+      expect(comparison.lines.single.native, 'Brussels');
+      expect(comparison.nativeMatchesPrevious, isTrue);
+    });
+
+    test('description keeps the full text', () {
+      final description = 'A' * 120;
+      final comparison = buildSpotDuplicateFieldComparison(
+        current: _spot(description: description),
+        previous: _spot(description: 'Short'),
+        native: _spot(description: 'Short'),
+        group: SpotDuplicateFieldGroup.description,
+        l10n: l10n,
+      );
+      expect(comparison.lines.single.from, 'Short');
+      expect(comparison.lines.single.to, description);
+    });
+
+    test('photos note when the count stays the same but contents change', () {
+      final comparison = buildSpotDuplicateFieldComparison(
+        current: _spot(
+          imageUrls: const [
+            'https://cdn.example.com/a.jpg',
+            'https://cdn.example.com/c.jpg',
+          ],
+        ),
+        previous: _spot(
+          imageUrls: const [
+            'https://cdn.example.com/a.jpg',
+            'https://cdn.example.com/b.jpg',
+          ],
+        ),
+        native: _spot(
+          imageUrls: const [
+            'https://cdn.example.com/a.jpg',
+            'https://cdn.example.com/b.jpg',
+          ],
+        ),
+        group: SpotDuplicateFieldGroup.photos,
+        l10n: l10n,
+      );
+      expect(comparison.lines.single.from, '2 photos');
+      expect(comparison.lines.single.to, '2 photos');
+      expect(comparison.lines.single.contentsChanged, isTrue);
+      expect(comparison.nativeMatchesPrevious, isTrue);
     });
   });
 }

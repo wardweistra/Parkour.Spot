@@ -6,6 +6,7 @@ import '../models/spot.dart';
 import '../services/auth_service.dart';
 import '../services/spot_service.dart';
 import '../utils/spot_duplicate_review.dart';
+import 'duplicate_field_comparison_view.dart';
 
 /// Result of [SpotDuplicateChangesDialog] when the moderator confirms.
 class SpotDuplicateChangesResult {
@@ -34,11 +35,13 @@ class SpotDuplicateChangesDialog extends StatefulWidget {
     super.key,
     required this.duplicateSpot,
     required this.originalName,
+    this.originalSpot,
     required this.changedGroups,
   });
 
   final Spot duplicateSpot;
   final String originalName;
+  final Spot? originalSpot;
   final List<SpotDuplicateFieldGroup> changedGroups;
 
   @override
@@ -66,6 +69,9 @@ class _SpotDuplicateChangesDialogState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final groups = widget.changedGroups;
+    final previous = spotFromDuplicateReviewBaseline(
+      widget.duplicateSpot.duplicateReviewBaseline,
+    );
 
     return AlertDialog(
       title: Text(l10n.spotDuplicateChangesTitle),
@@ -80,17 +86,23 @@ class _SpotDuplicateChangesDialogState
               ...groups.map((group) {
                 return CheckboxListTile(
                   title: Text(group.label(l10n)),
-                  subtitle: Text(
-                    formatSpotDuplicateFieldGroupValue(
-                      spot: widget.duplicateSpot,
+                  subtitle: DuplicateFieldComparisonView(
+                    comparison: buildSpotDuplicateFieldComparison(
+                      current: widget.duplicateSpot,
+                      previous: previous,
+                      native: widget.originalSpot,
                       group: group,
                       l10n: l10n,
                     ),
+                    nativeLabel: l10n.duplicateChangesNativeSpot,
+                    nativeUnavailableLabel:
+                        l10n.duplicateChangesNativeSpotUnavailable,
                   ),
                   value: _isSelected(group),
                   onChanged: (value) => _toggle(group, value),
                   contentPadding: EdgeInsets.zero,
                   controlAffinity: ListTileControlAffinity.leading,
+                  titleAlignment: ListTileTitleAlignment.top,
                 );
               }),
             ],
@@ -109,7 +121,7 @@ class _SpotDuplicateChangesDialogState
           child: Text(l10n.spotDuplicateChangesDismiss),
         ),
         FilledButton(
-          onPressed: groups.isEmpty
+          onPressed: _selected.isEmpty
               ? null
               : () => Navigator.of(context).pop(
                   SpotDuplicateChangesResult(
@@ -270,9 +282,10 @@ Future<bool> reviewSpotDuplicateChanges({
 
   final originalId = duplicateSpot.duplicateOf?.trim();
   var originalName = l10n.spotDetailOriginalSpotFallback;
+  Spot? originalSpot;
   if (originalId != null && originalId.isNotEmpty) {
-    final original = await spots.getSpotById(originalId);
-    final name = original?.name.trim();
+    originalSpot = await spots.getSpotById(originalId);
+    final name = originalSpot?.name.trim();
     if (name != null && name.isNotEmpty) {
       originalName = name;
     }
@@ -287,6 +300,7 @@ Future<bool> reviewSpotDuplicateChanges({
     builder: (context) => SpotDuplicateChangesDialog(
       duplicateSpot: duplicateSpot,
       originalName: originalName,
+      originalSpot: originalSpot,
       changedGroups: groups,
     ),
   );

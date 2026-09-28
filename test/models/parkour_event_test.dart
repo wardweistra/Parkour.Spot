@@ -180,9 +180,11 @@ void main() {
         'duplicateOf': 'native-original',
         'duplicateHasPendingChanges': true,
         'duplicateChangedFields': ['title', 'schedule', 'unknown'],
+        'duplicateReviewBaseline': {'title': 'Previous jam'},
       });
       expect(event.duplicateHasPendingChanges, isTrue);
       expect(event.duplicateChangedFields, ['title', 'schedule', 'unknown']);
+      expect(event.duplicateReviewBaseline, {'title': 'Previous jam'});
       expect(event.hasDuplicatePendingChanges, isTrue);
     });
 
@@ -193,6 +195,7 @@ void main() {
         duplicateOf: 'orig-id',
         duplicateHasPendingChanges: true,
         duplicateChangedFields: const ['title'],
+        duplicateReviewBaseline: const {'title': 'Previous jam'},
       );
       final map = event.toFirestore();
       expect(map.containsKey('duplicateHasPendingChanges'), isFalse);

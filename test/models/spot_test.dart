@@ -46,9 +46,11 @@ void main() {
         'duplicateOf': 'native-original',
         'duplicateHasPendingChanges': true,
         'duplicateChangedFields': ['name', 'location', 'unknown'],
+        'duplicateReviewBaseline': {'name': 'Previous rails'},
       });
       expect(spot.duplicateHasPendingChanges, isTrue);
       expect(spot.duplicateChangedFields, ['name', 'location', 'unknown']);
+      expect(spot.duplicateReviewBaseline, {'name': 'Previous rails'});
       expect(spot.hasDuplicatePendingChanges, isTrue);
     });
 
@@ -61,6 +63,7 @@ void main() {
         duplicateOf: 'orig-id',
         duplicateHasPendingChanges: true,
         duplicateChangedFields: const ['name'],
+        duplicateReviewBaseline: const {'name': 'Previous rails'},
       );
       final map = spot.toFirestore();
       expect(map.containsKey('duplicateHasPendingChanges'), isFalse);

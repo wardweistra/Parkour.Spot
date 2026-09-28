@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:parkour_spot/l10n/app_localizations.dart';
 import 'package:parkour_spot/models/parkour_event.dart';
 import 'package:parkour_spot/utils/event_duplicate_review.dart';
 
@@ -145,5 +147,113 @@ void main() {
         DateTime.utc(2026, 5, 13, 10),
       );
     });
+  });
+
+  group('event duplicate field comparison', () {
+    late AppLocalizations l10n;
+
+    setUpAll(() async {
+      l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    });
+
+    test('hydrates a display event from the stored baseline', () {
+      final hydrated = eventFromDuplicateReviewBaseline(
+        buildEventDuplicateReviewBaseline(_event()),
+      );
+      expect(hydrated?.title, 'Jam Session');
+      expect(hydrated?.city, 'Brussels');
+      expect(eventFromDuplicateReviewBaseline(null), isNull);
+    });
+
+    test('title shows from, to, native, and a match', () {
+      final comparison = buildEventDuplicateFieldComparison(
+        context: null,
+        current: _event(title: 'Updated title'),
+        previous: _event(),
+        native: _event(),
+        group: EventDuplicateFieldGroup.title,
+        l10n: l10n,
+      );
+      expect(comparison.nativeMatchesPrevious, isTrue);
+      expect(comparison.lines.single.from, 'Jam Session');
+      expect(comparison.lines.single.to, 'Updated title');
+      expect(comparison.lines.single.native, 'Jam Session');
+    });
+
+    test(
+      'title reports when the native value differs from the previous one',
+      () {
+        final comparison = buildEventDuplicateFieldComparison(
+          context: null,
+          current: _event(title: 'Updated title'),
+          previous: _event(),
+          native: _event(title: 'Native jam'),
+          group: EventDuplicateFieldGroup.title,
+          l10n: l10n,
+        );
+        expect(comparison.nativeMatchesPrevious, isFalse);
+        expect(comparison.lines.single.native, 'Native jam');
+      },
+    );
+
+    test('missing baseline and native do not claim a match', () {
+      final comparison = buildEventDuplicateFieldComparison(
+        context: null,
+        current: _event(title: 'Updated title'),
+        previous: null,
+        native: null,
+        group: EventDuplicateFieldGroup.title,
+        l10n: l10n,
+      );
+      expect(comparison.previousUnavailable, isTrue);
+      expect(comparison.nativeUnavailable, isTrue);
+      expect(comparison.nativeMatchesPrevious, isNull);
+      expect(comparison.currentSummary, 'Updated title');
+    });
+
+    test('location lists only the sub-field that changed', () {
+      final comparison = buildEventDuplicateFieldComparison(
+        context: null,
+        current: _event(city: 'Ghent'),
+        previous: _event(),
+        native: _event(),
+        group: EventDuplicateFieldGroup.location,
+        l10n: l10n,
+      );
+      expect(comparison.lines.map((line) => line.label), ['City']);
+      expect(comparison.lines.single.from, 'Brussels');
+      expect(comparison.lines.single.to, 'Ghent');
+      expect(comparison.nativeMatchesPrevious, isTrue);
+    });
+
+    test('description keeps the full text', () {
+      final description = 'B' * 120;
+      final comparison = buildEventDuplicateFieldComparison(
+        context: null,
+        current: _event(description: description),
+        previous: _event(description: 'Short'),
+        native: _event(description: 'Short'),
+        group: EventDuplicateFieldGroup.description,
+        l10n: l10n,
+      );
+      expect(comparison.lines.single.from, 'Short');
+      expect(comparison.lines.single.to, description);
+    });
+
+    test(
+      'linked spots note when the count stays the same but contents change',
+      () {
+        final comparison = buildEventDuplicateFieldComparison(
+          context: null,
+          current: _event(spotIds: const ['spot-2']),
+          previous: _event(spotIds: const ['spot-1']),
+          native: _event(spotIds: const ['spot-1']),
+          group: EventDuplicateFieldGroup.linkedSpots,
+          l10n: l10n,
+        );
+        expect(comparison.lines.single.contentsChanged, isTrue);
+        expect(comparison.nativeMatchesPrevious, isTrue);
+      },
+    );
   });
 }

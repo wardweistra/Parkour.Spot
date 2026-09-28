@@ -10,6 +10,8 @@ void main() {
   Future<SpotDuplicateChangesResult?> pumpDialog(
     WidgetTester tester, {
     required List<SpotDuplicateFieldGroup> changedGroups,
+    Spot? originalSpot,
+    Map<String, dynamic>? duplicateReviewBaseline,
     required Future<void> Function(WidgetTester tester) interact,
   }) async {
     SpotDuplicateChangesResult? result;
@@ -40,8 +42,10 @@ void main() {
                       duplicateChangedFields: changedGroups
                           .map((group) => group.firestoreValue)
                           .toList(),
+                      duplicateReviewBaseline: duplicateReviewBaseline,
                     ),
                     originalName: 'Original Rails',
+                    originalSpot: originalSpot,
                     changedGroups: changedGroups,
                   ),
                 );
@@ -86,7 +90,8 @@ void main() {
       ],
       interact: (tester) async {
         await tester.tap(find.text('Name'));
-        await tester.tap(find.text('Apply'));
+        await tester.pump();
+        await tester.tap(find.text('Apply selected'));
       },
     );
 
@@ -94,6 +99,30 @@ void main() {
     expect(result!.dismissed, isFalse);
     expect(result.overwriteName, isTrue);
     expect(result.overwriteDescription, isFalse);
+  });
+
+  testWidgets('apply stays disabled until a field is selected', (tester) async {
+    await pumpDialog(
+      tester,
+      changedGroups: const [
+        SpotDuplicateFieldGroup.name,
+        SpotDuplicateFieldGroup.description,
+      ],
+      interact: (tester) async {
+        final apply = tester.widget<FilledButton>(
+          find.widgetWithText(FilledButton, 'Apply selected'),
+        );
+        expect(apply.onPressed, isNull);
+
+        await tester.tap(find.text('Name'));
+        await tester.pump();
+
+        final enabled = tester.widget<FilledButton>(
+          find.widgetWithText(FilledButton, 'Apply selected'),
+        );
+        expect(enabled.onPressed, isNotNull);
+      },
+    );
   });
 
   testWidgets('dismiss returns dismissed result without applying fields', (
@@ -104,12 +133,75 @@ void main() {
       changedGroups: const [SpotDuplicateFieldGroup.name],
       interact: (tester) async {
         await tester.tap(find.text('Name'));
-        await tester.tap(find.text('Dismiss'));
+        await tester.tap(find.text('Dismiss all'));
       },
     );
 
     expect(result, isNotNull);
     expect(result!.dismissed, isTrue);
     expect(result.overwriteName, isFalse);
+  });
+
+  testWidgets('shows updated duplicate change and omits matching original value', (
+    tester,
+  ) async {
+    await pumpDialog(
+      tester,
+      changedGroups: const [SpotDuplicateFieldGroup.name],
+      duplicateReviewBaseline: const {'name': 'Central Rails'},
+      originalSpot: Spot(
+        name: 'Central Rails',
+        description: '',
+        latitude: 0,
+        longitude: 0,
+      ),
+      interact: (tester) async {},
+    );
+
+    expect(find.text('Updated on duplicate'), findsOneWidget);
+    expect(find.text('Central Rails'), findsOneWidget);
+    expect(find.text('Updated name'), findsOneWidget);
+    expect(find.text('−'), findsOneWidget);
+    expect(find.text('+'), findsOneWidget);
+    expect(find.text('Current on original'), findsOneWidget);
+    expect(find.text('Same as previous on duplicate'), findsOneWidget);
+  });
+
+  testWidgets('shows when the original value differs from the previous one', (
+    tester,
+  ) async {
+    await pumpDialog(
+      tester,
+      changedGroups: const [SpotDuplicateFieldGroup.name],
+      duplicateReviewBaseline: const {'name': 'Central Rails'},
+      originalSpot: Spot(
+        name: 'Native rails',
+        description: '',
+        latitude: 0,
+        longitude: 0,
+      ),
+      interact: (tester) async {},
+    );
+
+    expect(find.text('Central Rails'), findsOneWidget);
+    expect(find.text('Updated name'), findsOneWidget);
+    expect(find.text('Native rails'), findsOneWidget);
+    expect(find.text('Differs from previous on duplicate'), findsOneWidget);
+  });
+
+  testWidgets('does not claim a match when baseline or original is missing', (
+    tester,
+  ) async {
+    await pumpDialog(
+      tester,
+      changedGroups: const [SpotDuplicateFieldGroup.name],
+      interact: (tester) async {},
+    );
+
+    expect(find.text('Updated name'), findsOneWidget);
+    expect(find.text('Previous duplicate value unavailable'), findsOneWidget);
+    expect(find.text('Original spot unavailable'), findsOneWidget);
+    expect(find.text('Same as previous on duplicate'), findsNothing);
+    expect(find.text('Differs from previous on duplicate'), findsNothing);
   });
 }

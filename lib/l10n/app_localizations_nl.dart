@@ -4155,17 +4155,17 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String eventDuplicateChangesBody(String title) {
-    return 'Dit duplicaat is gewijzigd nadat het als zodanig is gemarkeerd. Kies waarden om naar «$title» te kopiëren, of negeer ze.';
+    return 'Dit duplicaat is gewijzigd nadat het als zodanig is gemarkeerd. Selecteer waarden om naar «$title» te kopiëren. Geselecteerde toepassen kopieert die en negeert alle niet-geselecteerde. Alles negeren wist elke wijziging zonder te kopiëren.';
   }
 
   @override
   String get eventDuplicateChangesReview => 'Wijzigingen beoordelen';
 
   @override
-  String get eventDuplicateChangesApply => 'Toepassen';
+  String get eventDuplicateChangesApply => 'Geselecteerde toepassen';
 
   @override
-  String get eventDuplicateChangesDismiss => 'Negeren';
+  String get eventDuplicateChangesDismiss => 'Alles negeren';
 
   @override
   String get eventDuplicateChangesApplySuccess => 'Origineel event bijgewerkt.';
@@ -4200,7 +4200,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get eventDuplicateChangesMenuSubtitle =>
-      'Kopieer bijgewerkte velden naar het origineel, of negeer ze';
+      'Kopieer geselecteerde velden naar het origineel, of negeer alles';
 
   @override
   String get eventDuplicateChangesFailed =>
@@ -4224,17 +4224,17 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String spotDuplicateChangesBody(String name) {
-    return 'Dit duplicaat is gewijzigd nadat het als zodanig is gemarkeerd. Kies waarden om naar «$name» te kopiëren, of negeer ze.';
+    return 'Dit duplicaat is gewijzigd nadat het als zodanig is gemarkeerd. Selecteer waarden om naar «$name» te kopiëren. Geselecteerde toepassen kopieert die en negeert alle niet-geselecteerde. Alles negeren wist elke wijziging zonder te kopiëren.';
   }
 
   @override
   String get spotDuplicateChangesReview => 'Wijzigingen beoordelen';
 
   @override
-  String get spotDuplicateChangesApply => 'Toepassen';
+  String get spotDuplicateChangesApply => 'Geselecteerde toepassen';
 
   @override
-  String get spotDuplicateChangesDismiss => 'Negeren';
+  String get spotDuplicateChangesDismiss => 'Alles negeren';
 
   @override
   String get spotDuplicateChangesApplySuccess => 'Originele spot bijgewerkt.';
@@ -4269,7 +4269,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get spotDuplicateChangesMenuSubtitle =>
-      'Kopieer bijgewerkte velden naar het origineel, of negeer ze';
+      'Kopieer geselecteerde velden naar het origineel, of negeer alles';
 
   @override
   String get spotDuplicateChangesFailed =>
@@ -4287,6 +4287,82 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get spotDuplicateChangesNoValue => '(leeg)';
+
+  @override
+  String get duplicateChangesExternal => 'Bijgewerkt op duplicaat';
+
+  @override
+  String get duplicateChangesNativeSpot => 'Huidig op origineel';
+
+  @override
+  String get duplicateChangesNativeEvent => 'Huidig op origineel';
+
+  @override
+  String get duplicateChangesSameAsPrevious => 'Zelfde als vorige op duplicaat';
+
+  @override
+  String get duplicateChangesDiffersFromPrevious =>
+      'Wijkt af van vorige op duplicaat';
+
+  @override
+  String get duplicateChangesPreviousUnavailable =>
+      'Vorige duplicaatwaarde niet beschikbaar';
+
+  @override
+  String get duplicateChangesNativeSpotUnavailable =>
+      'Originele spot niet beschikbaar';
+
+  @override
+  String get duplicateChangesNativeEventUnavailable =>
+      'Origineel event niet beschikbaar';
+
+  @override
+  String get duplicateChangesContentsChanged => 'Inhoud gewijzigd';
+
+  @override
+  String get duplicateChangesAddress => 'Adres';
+
+  @override
+  String get duplicateChangesCity => 'Stad';
+
+  @override
+  String get duplicateChangesCountry => 'Land';
+
+  @override
+  String get duplicateChangesCoordinates => 'Coördinaten';
+
+  @override
+  String get duplicateChangesAccess => 'Toegang';
+
+  @override
+  String get duplicateChangesFeatures => 'Kenmerken';
+
+  @override
+  String get duplicateChangesFacilities => 'Voorzieningen';
+
+  @override
+  String get duplicateChangesGoodFor => 'Geschikt voor';
+
+  @override
+  String get duplicateChangesStart => 'Start';
+
+  @override
+  String get duplicateChangesEnd => 'Einde';
+
+  @override
+  String get duplicateChangesDateOnly => 'Alleen datum';
+
+  @override
+  String get duplicateChangesTimeZone => 'Tijdzone';
+
+  @override
+  String get duplicateChangesTimeZoneSource => 'Tijdzonebron';
+
+  @override
+  String get duplicateChangesYes => 'Ja';
+
+  @override
+  String get duplicateChangesNo => 'Nee';
 
   @override
   String get spotDuplicateChangesOpenSpot => 'Spotpagina openen';

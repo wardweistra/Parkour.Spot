@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/spot_attributes.dart';
 import '../l10n/app_localizations.dart';
 import '../models/spot.dart';
+import 'duplicate_field_comparison.dart';
 
 /// Transferable field groups used when reviewing post-link duplicate changes.
 enum SpotDuplicateFieldGroup {
@@ -249,8 +250,7 @@ String formatSpotDuplicateFieldGroupValue({
     case SpotDuplicateFieldGroup.description:
       final description = spot.description.trim();
       if (description.isEmpty) return l10n.spotDuplicateChangesNoValue;
-      if (description.length <= 80) return description;
-      return '${description.substring(0, 79)}…';
+      return description;
     case SpotDuplicateFieldGroup.location:
       final city = spot.city?.trim();
       if (city != null && city.isNotEmpty) return city;
@@ -280,4 +280,381 @@ String formatSpotDuplicateFieldGroupValue({
       if (parts.isEmpty) return l10n.spotDuplicateChangesNoValue;
       return parts.join(', ');
   }
+}
+
+/// Display model for a stored review baseline. Null when none was saved.
+Spot? spotFromDuplicateReviewBaseline(Map<String, dynamic>? baseline) {
+  if (baseline == null) return null;
+  return Spot.fromMap(baseline);
+}
+
+/// Whether [native] still matches [previous] for [group].
+/// Null when either record is missing.
+bool? spotDuplicateNativeMatchesPrevious({
+  required Spot? previous,
+  required Spot? native,
+  required SpotDuplicateFieldGroup group,
+}) {
+  if (previous == null || native == null) return null;
+  return !changedSpotDuplicateFieldGroups(
+    previous: previous,
+    current: native,
+  ).contains(group);
+}
+
+/// External from/to lines and the native match for one changed group.
+DuplicateFieldComparison buildSpotDuplicateFieldComparison({
+  required Spot current,
+  required Spot? previous,
+  required Spot? native,
+  required SpotDuplicateFieldGroup group,
+  required AppLocalizations l10n,
+}) {
+  final summary = formatSpotDuplicateFieldGroupValue(
+    spot: current,
+    group: group,
+    l10n: l10n,
+  );
+  final nativeSummary = native == null
+      ? null
+      : formatSpotDuplicateFieldGroupValue(
+          spot: native,
+          group: group,
+          l10n: l10n,
+        );
+  if (previous == null) {
+    return DuplicateFieldComparison(
+      lines: const [],
+      currentSummary: summary,
+      nativeSummary: nativeSummary,
+      previousUnavailable: true,
+      nativeUnavailable: native == null,
+    );
+  }
+  return DuplicateFieldComparison(
+    lines: _spotChangeLines(
+      previous: previous,
+      current: current,
+      native: native,
+      group: group,
+      l10n: l10n,
+    ),
+    currentSummary: summary,
+    nativeSummary: nativeSummary,
+    previousUnavailable: false,
+    nativeUnavailable: native == null,
+    nativeMatchesPrevious: spotDuplicateNativeMatchesPrevious(
+      previous: previous,
+      native: native,
+      group: group,
+    ),
+  );
+}
+
+String _displayText(String? value, AppLocalizations l10n) {
+  final trimmed = value?.trim();
+  if (trimmed == null || trimmed.isEmpty) {
+    return l10n.spotDuplicateChangesNoValue;
+  }
+  return trimmed;
+}
+
+String _labeledList(
+  List<String>? values,
+  String category,
+  AppLocalizations l10n,
+) {
+  final labels = [
+    for (final value in _normalizedList(values))
+      SpotAttributes.getLabel(category, value),
+  ]..sort();
+  if (labels.isEmpty) return l10n.spotDuplicateChangesNoValue;
+  return labels.join(', ');
+}
+
+String _formatFacilities(Spot spot, AppLocalizations l10n) {
+  final facilities = _normalizedMap(spot.spotFacilities);
+  if (facilities.isEmpty) return l10n.spotDuplicateChangesNoValue;
+  final keys = facilities.keys.toList()..sort();
+  return keys
+      .map((key) {
+        final label = SpotAttributes.getLabel('facilities', key);
+        return '$label: ${facilities[key]}';
+      })
+      .join(', ');
+}
+
+String _spotCoordinates(Spot spot) {
+  return '${spot.latitude.toStringAsFixed(5)}, '
+      '${spot.longitude.toStringAsFixed(5)}';
+}
+
+String _nativeText(String? value) => value ?? '';
+
+DuplicateChangeLine _countLine({
+  required String from,
+  required String to,
+  required String native,
+  required bool sameCount,
+  required bool contentsEqual,
+}) {
+  return DuplicateChangeLine(
+    from: from,
+    to: to,
+    native: native,
+    contentsChanged: sameCount && !contentsEqual,
+  );
+}
+
+List<DuplicateChangeLine> _spotChangeLines({
+  required Spot previous,
+  required Spot current,
+  required Spot? native,
+  required SpotDuplicateFieldGroup group,
+  required AppLocalizations l10n,
+}) {
+  switch (group) {
+    case SpotDuplicateFieldGroup.photos:
+      final previousUrls = _normalizedList(previous.imageUrls);
+      final currentUrls = _normalizedList(current.imageUrls);
+      return [
+        _countLine(
+          from: l10n.spotDuplicateChangesPhotosValue(previousUrls.length),
+          to: l10n.spotDuplicateChangesPhotosValue(currentUrls.length),
+          native: _nativeText(
+            native == null
+                ? null
+                : l10n.spotDuplicateChangesPhotosValue(
+                    _normalizedList(native.imageUrls).length,
+                  ),
+          ),
+          sameCount: previousUrls.length == currentUrls.length,
+          contentsEqual: _stringListsEqual(previousUrls, currentUrls),
+        ),
+      ];
+    case SpotDuplicateFieldGroup.youtube:
+      final previousIds = _normalizedList(previous.youtubeVideoIds);
+      final currentIds = _normalizedList(current.youtubeVideoIds);
+      return [
+        _countLine(
+          from: l10n.spotDuplicateChangesYoutubeValue(previousIds.length),
+          to: l10n.spotDuplicateChangesYoutubeValue(currentIds.length),
+          native: _nativeText(
+            native == null
+                ? null
+                : l10n.spotDuplicateChangesYoutubeValue(
+                    _normalizedList(native.youtubeVideoIds).length,
+                  ),
+          ),
+          sameCount: previousIds.length == currentIds.length,
+          contentsEqual: _stringListsEqual(previousIds, currentIds),
+        ),
+      ];
+    case SpotDuplicateFieldGroup.name:
+    case SpotDuplicateFieldGroup.description:
+      return [
+        DuplicateChangeLine(
+          from: formatSpotDuplicateFieldGroupValue(
+            spot: previous,
+            group: group,
+            l10n: l10n,
+          ),
+          to: formatSpotDuplicateFieldGroupValue(
+            spot: current,
+            group: group,
+            l10n: l10n,
+          ),
+          native: _nativeText(
+            native == null
+                ? null
+                : formatSpotDuplicateFieldGroupValue(
+                    spot: native,
+                    group: group,
+                    l10n: l10n,
+                  ),
+          ),
+        ),
+      ];
+    case SpotDuplicateFieldGroup.location:
+      return _locationLines(previous, current, native, l10n);
+    case SpotDuplicateFieldGroup.attributes:
+      return _attributeLines(previous, current, native, l10n);
+  }
+}
+
+void _addLine({
+  required List<DuplicateChangeLine> lines,
+  required bool changed,
+  required String label,
+  required String from,
+  required String to,
+  required String native,
+}) {
+  if (!changed) return;
+  lines.add(
+    DuplicateChangeLine(label: label, from: from, to: to, native: native),
+  );
+}
+
+List<DuplicateChangeLine> _locationLines(
+  Spot previous,
+  Spot current,
+  Spot? native,
+  AppLocalizations l10n,
+) {
+  final lines = <DuplicateChangeLine>[];
+  _addLine(
+    lines: lines,
+    changed: !_nullableStringsEqual(previous.address, current.address),
+    label: l10n.duplicateChangesAddress,
+    from: _displayText(previous.address, l10n),
+    to: _displayText(current.address, l10n),
+    native: _nativeText(
+      native == null ? null : _displayText(native.address, l10n),
+    ),
+  );
+  _addLine(
+    lines: lines,
+    changed: !_nullableStringsEqual(previous.city, current.city),
+    label: l10n.duplicateChangesCity,
+    from: _displayText(previous.city, l10n),
+    to: _displayText(current.city, l10n),
+    native: _nativeText(
+      native == null ? null : _displayText(native.city, l10n),
+    ),
+  );
+  _addLine(
+    lines: lines,
+    changed: !_nullableStringsEqual(previous.countryCode, current.countryCode),
+    label: l10n.duplicateChangesCountry,
+    from: _displayText(previous.countryCode, l10n),
+    to: _displayText(current.countryCode, l10n),
+    native: _nativeText(
+      native == null ? null : _displayText(native.countryCode, l10n),
+    ),
+  );
+  _addLine(
+    lines: lines,
+    changed:
+        previous.latitude != current.latitude ||
+        previous.longitude != current.longitude,
+    label: l10n.duplicateChangesCoordinates,
+    from: _spotCoordinates(previous),
+    to: _spotCoordinates(current),
+    native: _nativeText(native == null ? null : _spotCoordinates(native)),
+  );
+  if (lines.isNotEmpty) return lines;
+  return [
+    DuplicateChangeLine(
+      from: formatSpotDuplicateFieldGroupValue(
+        spot: previous,
+        group: SpotDuplicateFieldGroup.location,
+        l10n: l10n,
+      ),
+      to: formatSpotDuplicateFieldGroupValue(
+        spot: current,
+        group: SpotDuplicateFieldGroup.location,
+        l10n: l10n,
+      ),
+      native: _nativeText(
+        native == null
+            ? null
+            : formatSpotDuplicateFieldGroupValue(
+                spot: native,
+                group: SpotDuplicateFieldGroup.location,
+                l10n: l10n,
+              ),
+      ),
+    ),
+  ];
+}
+
+List<DuplicateChangeLine> _attributeLines(
+  Spot previous,
+  Spot current,
+  Spot? native,
+  AppLocalizations l10n,
+) {
+  final lines = <DuplicateChangeLine>[];
+  _addLine(
+    lines: lines,
+    changed: !_nullableStringsEqual(previous.spotAccess, current.spotAccess),
+    label: l10n.duplicateChangesAccess,
+    from: _accessLabel(previous, l10n),
+    to: _accessLabel(current, l10n),
+    native: _nativeText(native == null ? null : _accessLabel(native, l10n)),
+  );
+  _addLine(
+    lines: lines,
+    changed: !_stringSetsEqual(
+      _normalizedList(previous.spotFeatures),
+      _normalizedList(current.spotFeatures),
+    ),
+    label: l10n.duplicateChangesFeatures,
+    from: _labeledList(previous.spotFeatures, 'features', l10n),
+    to: _labeledList(current.spotFeatures, 'features', l10n),
+    native: _nativeText(
+      native == null
+          ? null
+          : _labeledList(native.spotFeatures, 'features', l10n),
+    ),
+  );
+  _addLine(
+    lines: lines,
+    changed: !_stringMapsEqual(
+      _normalizedMap(previous.spotFacilities),
+      _normalizedMap(current.spotFacilities),
+    ),
+    label: l10n.duplicateChangesFacilities,
+    from: _formatFacilities(previous, l10n),
+    to: _formatFacilities(current, l10n),
+    native: _nativeText(
+      native == null ? null : _formatFacilities(native, l10n),
+    ),
+  );
+  _addLine(
+    lines: lines,
+    changed: !_stringSetsEqual(
+      _normalizedList(previous.goodFor),
+      _normalizedList(current.goodFor),
+    ),
+    label: l10n.duplicateChangesGoodFor,
+    from: _labeledList(previous.goodFor, 'goodFor', l10n),
+    to: _labeledList(current.goodFor, 'goodFor', l10n),
+    native: _nativeText(
+      native == null ? null : _labeledList(native.goodFor, 'goodFor', l10n),
+    ),
+  );
+  if (lines.isNotEmpty) return lines;
+  return [
+    DuplicateChangeLine(
+      from: formatSpotDuplicateFieldGroupValue(
+        spot: previous,
+        group: SpotDuplicateFieldGroup.attributes,
+        l10n: l10n,
+      ),
+      to: formatSpotDuplicateFieldGroupValue(
+        spot: current,
+        group: SpotDuplicateFieldGroup.attributes,
+        l10n: l10n,
+      ),
+      native: _nativeText(
+        native == null
+            ? null
+            : formatSpotDuplicateFieldGroupValue(
+                spot: native,
+                group: SpotDuplicateFieldGroup.attributes,
+                l10n: l10n,
+              ),
+      ),
+    ),
+  ];
+}
+
+String _accessLabel(Spot spot, AppLocalizations l10n) {
+  final access = spot.spotAccess?.trim();
+  if (access == null || access.isEmpty) {
+    return l10n.spotDuplicateChangesNoValue;
+  }
+  return SpotAttributes.getLabel('access', access);
 }

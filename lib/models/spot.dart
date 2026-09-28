@@ -38,6 +38,10 @@ class Spot {
 
   /// Transferable field groups that differ from the last-reviewed baseline.
   final List<String> duplicateChangedFields;
+
+  /// Transferable-field snapshot from the last review, or from when this spot
+  /// was marked as a duplicate.
+  final Map<String, dynamic>? duplicateReviewBaseline;
   final bool hidden; // Whether the spot is hidden from public view
   final List<Map<String, String>>?
   contributors; // List of contributors who improved the spot
@@ -103,6 +107,7 @@ class Spot {
     this.duplicateOf,
     this.duplicateHasPendingChanges = false,
     this.duplicateChangedFields = const <String>[],
+    this.duplicateReviewBaseline,
     this.hidden = false,
     this.contributors,
     this.createdFromCreateNative = false,
@@ -169,6 +174,9 @@ class Spot {
                 .where((item) => item.isNotEmpty)
                 .toList()
           : const <String>[],
+      duplicateReviewBaseline: _readDuplicateReviewBaseline(
+        data['duplicateReviewBaseline'],
+      ),
       hidden: data['hidden'] == true,
       contributors: data['contributors'] != null
           ? (data['contributors'] as List)
@@ -242,6 +250,9 @@ class Spot {
                 .where((item) => item.isNotEmpty)
                 .toList()
           : const <String>[],
+      duplicateReviewBaseline: _readDuplicateReviewBaseline(
+        data['duplicateReviewBaseline'],
+      ),
       hidden: data['hidden'] == true,
       contributors: data['contributors'] is List
           ? (data['contributors'] as List)
@@ -332,6 +343,7 @@ class Spot {
     Object? duplicateOf = _unset,
     bool? duplicateHasPendingChanges,
     List<String>? duplicateChangedFields,
+    Object? duplicateReviewBaseline = _unset,
     bool? hidden,
     List<Map<String, String>>? contributors,
     bool? createdFromCreateNative,
@@ -383,6 +395,9 @@ class Spot {
           duplicateHasPendingChanges ?? this.duplicateHasPendingChanges,
       duplicateChangedFields:
           duplicateChangedFields ?? this.duplicateChangedFields,
+      duplicateReviewBaseline: identical(duplicateReviewBaseline, _unset)
+          ? this.duplicateReviewBaseline
+          : duplicateReviewBaseline as Map<String, dynamic>?,
       hidden: hidden ?? this.hidden,
       contributors: contributors ?? this.contributors,
       createdFromCreateNative:
@@ -394,4 +409,9 @@ class Spot {
   String toString() {
     return 'Spot(id: $id, name: $name, description: $description, lat: $latitude, lng: $longitude)';
   }
+}
+
+Map<String, dynamic>? _readDuplicateReviewBaseline(dynamic value) {
+  if (value is! Map) return null;
+  return Map<String, dynamic>.from(value);
 }

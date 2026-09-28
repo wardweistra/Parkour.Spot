@@ -6,6 +6,7 @@ import '../models/parkour_event.dart';
 import '../services/admin_events_service.dart';
 import '../services/auth_service.dart';
 import '../utils/event_duplicate_review.dart';
+import 'duplicate_field_comparison_view.dart';
 
 /// Result of [EventDuplicateChangesDialog] when the moderator confirms.
 class EventDuplicateChangesResult {
@@ -36,11 +37,13 @@ class EventDuplicateChangesDialog extends StatefulWidget {
     super.key,
     required this.duplicateEvent,
     required this.originalTitle,
+    this.originalEvent,
     required this.changedGroups,
   });
 
   final ParkourEvent duplicateEvent;
   final String originalTitle;
+  final ParkourEvent? originalEvent;
   final List<EventDuplicateFieldGroup> changedGroups;
 
   @override
@@ -68,6 +71,9 @@ class _EventDuplicateChangesDialogState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final groups = widget.changedGroups;
+    final previous = eventFromDuplicateReviewBaseline(
+      widget.duplicateEvent.duplicateReviewBaseline,
+    );
 
     return AlertDialog(
       title: Text(l10n.eventDuplicateChangesTitle),
@@ -82,18 +88,24 @@ class _EventDuplicateChangesDialogState
               ...groups.map((group) {
                 return CheckboxListTile(
                   title: Text(group.label(l10n)),
-                  subtitle: Text(
-                    formatEventDuplicateFieldGroupValue(
+                  subtitle: DuplicateFieldComparisonView(
+                    comparison: buildEventDuplicateFieldComparison(
                       context: context,
-                      event: widget.duplicateEvent,
+                      current: widget.duplicateEvent,
+                      previous: previous,
+                      native: widget.originalEvent,
                       group: group,
                       l10n: l10n,
                     ),
+                    nativeLabel: l10n.duplicateChangesNativeEvent,
+                    nativeUnavailableLabel:
+                        l10n.duplicateChangesNativeEventUnavailable,
                   ),
                   value: _isSelected(group),
                   onChanged: (value) => _toggle(group, value),
                   contentPadding: EdgeInsets.zero,
                   controlAffinity: ListTileControlAffinity.leading,
+                  titleAlignment: ListTileTitleAlignment.top,
                 );
               }),
             ],
@@ -112,7 +124,7 @@ class _EventDuplicateChangesDialogState
           child: Text(l10n.eventDuplicateChangesDismiss),
         ),
         FilledButton(
-          onPressed: groups.isEmpty
+          onPressed: _selected.isEmpty
               ? null
               : () => Navigator.of(context).pop(
                   EventDuplicateChangesResult(
@@ -278,9 +290,10 @@ Future<bool> reviewEventDuplicateChanges({
 
   final originalId = duplicateEvent.duplicateOf?.trim();
   var originalTitle = l10n.eventDetailOriginalEventFallback;
+  ParkourEvent? originalEvent;
   if (originalId != null && originalId.isNotEmpty) {
-    final original = await admin.getEventById(originalId);
-    final title = original?.title.trim();
+    originalEvent = await admin.getEventById(originalId);
+    final title = originalEvent?.title.trim();
     if (title != null && title.isNotEmpty) {
       originalTitle = title;
     }
@@ -295,6 +308,7 @@ Future<bool> reviewEventDuplicateChanges({
     builder: (context) => EventDuplicateChangesDialog(
       duplicateEvent: duplicateEvent,
       originalTitle: originalTitle,
+      originalEvent: originalEvent,
       changedGroups: groups,
     ),
   );

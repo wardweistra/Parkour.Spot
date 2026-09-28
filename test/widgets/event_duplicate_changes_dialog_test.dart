@@ -10,6 +10,8 @@ void main() {
   Future<EventDuplicateChangesResult?> pumpDialog(
     WidgetTester tester, {
     required List<EventDuplicateFieldGroup> changedGroups,
+    ParkourEvent? originalEvent,
+    Map<String, dynamic>? duplicateReviewBaseline,
     required Future<void> Function(WidgetTester tester) interact,
   }) async {
     EventDuplicateChangesResult? result;
@@ -40,8 +42,10 @@ void main() {
                       duplicateChangedFields: changedGroups
                           .map((group) => group.firestoreValue)
                           .toList(),
+                      duplicateReviewBaseline: duplicateReviewBaseline,
                     ),
                     originalTitle: 'Original Jam',
+                    originalEvent: originalEvent,
                     changedGroups: changedGroups,
                   ),
                 );
@@ -86,7 +90,8 @@ void main() {
       ],
       interact: (tester) async {
         await tester.tap(find.text('Title'));
-        await tester.tap(find.text('Apply'));
+        await tester.pump();
+        await tester.tap(find.text('Apply selected'));
       },
     );
 
@@ -94,6 +99,30 @@ void main() {
     expect(result!.dismissed, isFalse);
     expect(result.overwriteTitle, isTrue);
     expect(result.overwriteWebsite, isFalse);
+  });
+
+  testWidgets('apply stays disabled until a field is selected', (tester) async {
+    await pumpDialog(
+      tester,
+      changedGroups: const [
+        EventDuplicateFieldGroup.title,
+        EventDuplicateFieldGroup.website,
+      ],
+      interact: (tester) async {
+        final apply = tester.widget<FilledButton>(
+          find.widgetWithText(FilledButton, 'Apply selected'),
+        );
+        expect(apply.onPressed, isNull);
+
+        await tester.tap(find.text('Title'));
+        await tester.pump();
+
+        final enabled = tester.widget<FilledButton>(
+          find.widgetWithText(FilledButton, 'Apply selected'),
+        );
+        expect(enabled.onPressed, isNotNull);
+      },
+    );
   });
 
   testWidgets('dismiss returns dismissed result without applying fields', (
@@ -104,12 +133,71 @@ void main() {
       changedGroups: const [EventDuplicateFieldGroup.title],
       interact: (tester) async {
         await tester.tap(find.text('Title'));
-        await tester.tap(find.text('Dismiss'));
+        await tester.tap(find.text('Dismiss all'));
       },
     );
 
     expect(result, isNotNull);
     expect(result!.dismissed, isTrue);
     expect(result.overwriteTitle, isFalse);
+  });
+
+  testWidgets('shows updated duplicate change and omits matching original value', (
+    tester,
+  ) async {
+    await pumpDialog(
+      tester,
+      changedGroups: const [EventDuplicateFieldGroup.title],
+      duplicateReviewBaseline: const {'title': 'Jam Session'},
+      originalEvent: ParkourEvent(
+        title: 'Jam Session',
+        startAt: DateTime.utc(2026, 7, 2),
+      ),
+      interact: (tester) async {},
+    );
+
+    expect(find.text('Updated on duplicate'), findsOneWidget);
+    expect(find.text('Jam Session'), findsOneWidget);
+    expect(find.text('Updated title'), findsOneWidget);
+    expect(find.text('−'), findsOneWidget);
+    expect(find.text('+'), findsOneWidget);
+    expect(find.text('Current on original'), findsOneWidget);
+    expect(find.text('Same as previous on duplicate'), findsOneWidget);
+  });
+
+  testWidgets('shows when the original value differs from the previous one', (
+    tester,
+  ) async {
+    await pumpDialog(
+      tester,
+      changedGroups: const [EventDuplicateFieldGroup.title],
+      duplicateReviewBaseline: const {'title': 'Jam Session'},
+      originalEvent: ParkourEvent(
+        title: 'Native jam',
+        startAt: DateTime.utc(2026, 7, 2),
+      ),
+      interact: (tester) async {},
+    );
+
+    expect(find.text('Jam Session'), findsOneWidget);
+    expect(find.text('Updated title'), findsOneWidget);
+    expect(find.text('Native jam'), findsOneWidget);
+    expect(find.text('Differs from previous on duplicate'), findsOneWidget);
+  });
+
+  testWidgets('does not claim a match when baseline or original is missing', (
+    tester,
+  ) async {
+    await pumpDialog(
+      tester,
+      changedGroups: const [EventDuplicateFieldGroup.title],
+      interact: (tester) async {},
+    );
+
+    expect(find.text('Updated title'), findsOneWidget);
+    expect(find.text('Previous duplicate value unavailable'), findsOneWidget);
+    expect(find.text('Original event unavailable'), findsOneWidget);
+    expect(find.text('Same as previous on duplicate'), findsNothing);
+    expect(find.text('Differs from previous on duplicate'), findsNothing);
   });
 }

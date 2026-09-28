@@ -4200,17 +4200,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String eventDuplicateChangesBody(String title) {
-    return 'Dieses Duplikat hat sich geändert, nachdem es als solches markiert wurde. Wähle Werte, die nach „$title“ kopiert werden sollen, oder verwirf sie.';
+    return 'Dieses Duplikat hat sich geändert, nachdem es als solches markiert wurde. Wähle Werte, die nach „$title“ kopiert werden sollen. Auswahl übernehmen kopiert diese und verwirft alle nicht ausgewählten. Alles verwerfen löscht jede Änderung ohne zu kopieren.';
   }
 
   @override
   String get eventDuplicateChangesReview => 'Änderungen prüfen';
 
   @override
-  String get eventDuplicateChangesApply => 'Übernehmen';
+  String get eventDuplicateChangesApply => 'Auswahl übernehmen';
 
   @override
-  String get eventDuplicateChangesDismiss => 'Verwerfen';
+  String get eventDuplicateChangesDismiss => 'Alles verwerfen';
 
   @override
   String get eventDuplicateChangesApplySuccess =>
@@ -4246,7 +4246,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get eventDuplicateChangesMenuSubtitle =>
-      'Aktualisierte Felder ins Original kopieren oder verwerfen';
+      'Ausgewählte Felder ins Original kopieren oder alles verwerfen';
 
   @override
   String get eventDuplicateChangesFailed =>
@@ -4270,17 +4270,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String spotDuplicateChangesBody(String name) {
-    return 'Dieses Duplikat hat sich geändert, nachdem es als solches markiert wurde. Wähle Werte, die nach „$name“ kopiert werden sollen, oder verwirf sie.';
+    return 'Dieses Duplikat hat sich geändert, nachdem es als solches markiert wurde. Wähle Werte, die nach „$name“ kopiert werden sollen. Auswahl übernehmen kopiert diese und verwirft alle nicht ausgewählten. Alles verwerfen löscht jede Änderung ohne zu kopieren.';
   }
 
   @override
   String get spotDuplicateChangesReview => 'Änderungen prüfen';
 
   @override
-  String get spotDuplicateChangesApply => 'Übernehmen';
+  String get spotDuplicateChangesApply => 'Auswahl übernehmen';
 
   @override
-  String get spotDuplicateChangesDismiss => 'Verwerfen';
+  String get spotDuplicateChangesDismiss => 'Alles verwerfen';
 
   @override
   String get spotDuplicateChangesApplySuccess => 'Original-Spot aktualisiert.';
@@ -4315,7 +4315,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get spotDuplicateChangesMenuSubtitle =>
-      'Aktualisierte Felder ins Original kopieren oder verwerfen';
+      'Ausgewählte Felder ins Original kopieren oder alles verwerfen';
 
   @override
   String get spotDuplicateChangesFailed =>
@@ -4333,6 +4333,82 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get spotDuplicateChangesNoValue => '(leer)';
+
+  @override
+  String get duplicateChangesExternal => 'Aktualisiert am Duplikat';
+
+  @override
+  String get duplicateChangesNativeSpot => 'Aktuell am Original';
+
+  @override
+  String get duplicateChangesNativeEvent => 'Aktuell am Original';
+
+  @override
+  String get duplicateChangesSameAsPrevious => 'Gleich wie zuvor am Duplikat';
+
+  @override
+  String get duplicateChangesDiffersFromPrevious =>
+      'Weicht vom vorherigen am Duplikat ab';
+
+  @override
+  String get duplicateChangesPreviousUnavailable =>
+      'Vorheriger Duplikatwert nicht verfügbar';
+
+  @override
+  String get duplicateChangesNativeSpotUnavailable =>
+      'Original-Spot nicht verfügbar';
+
+  @override
+  String get duplicateChangesNativeEventUnavailable =>
+      'Original-Event nicht verfügbar';
+
+  @override
+  String get duplicateChangesContentsChanged => 'Inhalte geändert';
+
+  @override
+  String get duplicateChangesAddress => 'Adresse';
+
+  @override
+  String get duplicateChangesCity => 'Stadt';
+
+  @override
+  String get duplicateChangesCountry => 'Land';
+
+  @override
+  String get duplicateChangesCoordinates => 'Koordinaten';
+
+  @override
+  String get duplicateChangesAccess => 'Zugang';
+
+  @override
+  String get duplicateChangesFeatures => 'Merkmale';
+
+  @override
+  String get duplicateChangesFacilities => 'Einrichtungen';
+
+  @override
+  String get duplicateChangesGoodFor => 'Gut für';
+
+  @override
+  String get duplicateChangesStart => 'Beginn';
+
+  @override
+  String get duplicateChangesEnd => 'Ende';
+
+  @override
+  String get duplicateChangesDateOnly => 'Nur Datum';
+
+  @override
+  String get duplicateChangesTimeZone => 'Zeitzone';
+
+  @override
+  String get duplicateChangesTimeZoneSource => 'Zeitzonenquelle';
+
+  @override
+  String get duplicateChangesYes => 'Ja';
+
+  @override
+  String get duplicateChangesNo => 'Nein';
 
   @override
   String get spotDuplicateChangesOpenSpot => 'Spot-Seite öffnen';
