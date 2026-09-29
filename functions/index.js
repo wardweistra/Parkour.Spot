@@ -166,6 +166,7 @@ const {
   EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR,
   EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR,
   EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR,
+  EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL,
   hasExternalEventAddressChanged,
   hasExternalEventContentChanges,
   hasExternalEventPlaceFields,
@@ -174,6 +175,7 @@ const {
   parseExternalEventsFromSquarespace,
   parseExternalEventsFromBoomTechPublishedCalendar,
   parseExternalEventsFromWixEvents,
+  parseExternalEventsFromJumpEvents,
   buildExternalEventKey,
   partitionExternalEventsByKey,
   shouldGeocodeExternalEventAddress,
@@ -190,6 +192,11 @@ const {
   normalizeWixEventsPageUrl,
   wixEventsPublicUrl,
 } = require("./lib/wix-events");
+const {
+  fetchJumpEventsCalendarEvents,
+  normalizeJumpEventsFeedUrl,
+  jumpEventsPublicUrl,
+} = require("./lib/jump-events");
 const {
   deleteEventMapPins,
   materializeEventMapPins,
@@ -4513,7 +4520,8 @@ function normalizeIcsUrl(value) {
 /**
  * Normalizes and validates a feed URL for an event sync source type.
  * @param {*} value
- * @param {"ics"|"boomTechPublishedCalendar"|"wixEventsCalendar"|"squarespaceCalendar"} sourceType
+ * @param {"ics"|"boomTechPublishedCalendar"|"wixEventsCalendar"|
+ *   "squarespaceCalendar"|"jumpEventsNl"} sourceType
  * @return {string}
  */
 function normalizeEventSyncFeedUrl(value, sourceType) {
@@ -4523,6 +4531,9 @@ function normalizeEventSyncFeedUrl(value, sourceType) {
   }
   if (normalizedType === EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR) {
     return normalizeWixEventsPageUrl(value);
+  }
+  if (normalizedType === EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL) {
+    return normalizeJumpEventsFeedUrl(value);
   }
   if (normalizedType !== EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR) {
     return normalizeIcsUrl(value);
@@ -5113,6 +5124,18 @@ async function syncExternalEventSource(sourceDoc) {
         siteOrigin: fetched.siteOrigin,
         sourceDefaultTimeZone,
       });
+    } else if (sourceType === EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL) {
+      const fetched = await fetchJumpEventsCalendarEvents(feedUrl, {
+        downloadText: downloadTextFromUrl,
+      });
+      feedBytes = fetched.items.length;
+      parsedEvents = parseExternalEventsFromJumpEvents(fetched.items, {
+        sourceId,
+        sourceName,
+        siteOrigin: fetched.siteOrigin,
+        feedDefaultTimeZone: fetched.defaultTimeZone,
+        sourceDefaultTimeZone,
+      });
     } else {
       const feedText = await downloadTextFromUrl(feedUrl);
       feedBytes = feedText.length;
@@ -5413,6 +5436,10 @@ exports.createEventSyncSource = onCall(
           normalizedSourceType === EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR
         ) {
           sourceData.publicUrl = wixEventsPublicUrl(normalizedFeedUrl);
+        } else if (
+          normalizedSourceType === EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL
+        ) {
+          sourceData.publicUrl = jumpEventsPublicUrl(normalizedFeedUrl);
         }
         if (typeof syncSchedule === "string" && syncSchedule.trim().length > 0) {
           sourceData.syncSchedule = syncSchedule.trim();

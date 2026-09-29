@@ -244,6 +244,8 @@ class _EventSyncSourcesScreenState extends State<EventSyncSourcesScreen> {
                                     ? 'Wix Events'
                                     : source.isSquarespaceCalendar
                                     ? 'Squarespace'
+                                    : source.isJumpEventsNl
+                                    ? 'Jump Events NL'
                                     : 'ICS',
                               ),
                             ),
@@ -471,11 +473,17 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
   bool get _isSquarespaceSourceType =>
       _sourceType == EventSyncSource.sourceTypeSquarespaceCalendar;
 
+  bool get _isJumpEventsNlSourceType =>
+      _sourceType == EventSyncSource.sourceTypeJumpEventsNl;
+
   bool get _isPageUrlSourceType =>
-      _isSquarespaceSourceType || _isWixEventsSourceType;
+      _isSquarespaceSourceType ||
+      _isWixEventsSourceType ||
+      _isJumpEventsNlSourceType;
 
   String get _feedUrlLabel {
     if (_isBoomTechSourceType) return 'Published calendar URL';
+    if (_isJumpEventsNlSourceType) return 'Jump Events URL';
     if (_isPageUrlSourceType) return 'Events page URL';
     return 'ICS URL';
   }
@@ -489,6 +497,9 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
     }
     if (_isSquarespaceSourceType) {
       return 'Public Squarespace events page, e.g. https://example.com/events';
+    }
+    if (_isJumpEventsNlSourceType) {
+      return 'https://jumpevents.nl/ or https://jumpevents.nl/api/events';
     }
     return 'Google Calendar public .ics URL';
   }
@@ -506,6 +517,10 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
       return 'Fallback when the Squarespace site JSON has no website.timeZone. '
           'Re-sync after changing this.';
     }
+    if (_isJumpEventsNlSourceType) {
+      return 'Overrides the Jump Events default (Europe/Amsterdam). '
+          'Re-sync after changing this.';
+    }
     return 'Used for all-day and floating timed events when the ICS feed has '
         'no event or calendar timezone. Re-sync after changing this.';
   }
@@ -513,6 +528,9 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
   String _pagePublicUrlFromFeed(String feedUrl) {
     final uri = Uri.tryParse(feedUrl.trim());
     if (uri == null || uri.host.isEmpty) return feedUrl.trim();
+    if (_isJumpEventsNlSourceType) {
+      return 'https://jumpevents.nl/';
+    }
     if (_isSquarespaceSourceType) {
       final params = Map<String, String>.from(uri.queryParameters)
         ..remove('format');
@@ -585,15 +603,25 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                       value: EventSyncSource.sourceTypeSquarespaceCalendar,
                       child: Text('Squarespace calendar'),
                     ),
+                    DropdownMenuItem(
+                      value: EventSyncSource.sourceTypeJumpEventsNl,
+                      child: Text('Jump Events NL'),
+                    ),
                   ],
                   onChanged: (value) {
                     if (value == null) return;
                     setState(() => _sourceType = value);
+                    if (value == EventSyncSource.sourceTypeJumpEventsNl &&
+                        _icsUrlCtrl.text.trim().isEmpty) {
+                      _icsUrlCtrl.text = 'https://jumpevents.nl/';
+                    }
                     if ((value ==
                                 EventSyncSource
                                     .sourceTypeSquarespaceCalendar ||
                             value ==
-                                EventSyncSource.sourceTypeWixEventsCalendar) &&
+                                EventSyncSource.sourceTypeWixEventsCalendar ||
+                            value ==
+                                EventSyncSource.sourceTypeJumpEventsNl) &&
                         _publicUrlCtrl.text.trim().isEmpty &&
                         _icsUrlCtrl.text.trim().isNotEmpty) {
                       _publicUrlCtrl.text = _pagePublicUrlFromFeed(
@@ -630,6 +658,13 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                     if (_isWixEventsSourceType &&
                         uri.path.contains('/api/published_calendar')) {
                       return 'Use a public Wix Events page URL, not BoomTech';
+                    }
+                    if (_isJumpEventsNlSourceType) {
+                      final host = uri.host.toLowerCase();
+                      if (host != 'jumpevents.nl' &&
+                          host != 'www.jumpevents.nl') {
+                        return 'URL must be on jumpevents.nl';
+                      }
                     }
                     return null;
                   },

@@ -1210,11 +1210,13 @@ const EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR_LEGACY =
 const EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR = "wixEventsCalendar";
 /** @type {"squarespaceCalendar"} */
 const EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR = "squarespaceCalendar";
+/** @type {"jumpEventsNl"} */
+const EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL = "jumpEventsNl";
 
 /**
  * @param {*} value
  * @return {"ics"|"boomTechPublishedCalendar"|
- *   "wixEventsCalendar"|"squarespaceCalendar"}
+ *   "wixEventsCalendar"|"squarespaceCalendar"|"jumpEventsNl"}
  */
 function normalizeEventSyncSourceType(value) {
   if (
@@ -1228,6 +1230,9 @@ function normalizeEventSyncSourceType(value) {
   }
   if (value === EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR) {
     return EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR;
+  }
+  if (value === EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL) {
+    return EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL;
   }
   return EVENT_SYNC_SOURCE_TYPE_ICS;
 }
@@ -2036,12 +2041,265 @@ function parseExternalEventsFromWixEvents(
   return parsedEvents;
 }
 
+/**
+ * Prefer English Jump Events fields when present, else Dutch.
+ * @param {*} primary
+ * @param {*} fallback
+ * @return {string|null}
+ */
+function pickJumpEventsLocalizedField(primary, fallback) {
+  return decodeImportedPlainField(primary) ||
+    decodeImportedPlainField(fallback);
+}
+
+/**
+ * @param {*} value
+ * @return {{hour: number, minute: number, second: number}|null}
+ */
+function parseJumpEventsClockTime(value) {
+  const raw = toNonEmptyString(value);
+  if (!raw) return null;
+  const match = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(raw);
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const second = match[3] != null ? Number(match[3]) : 0;
+  if (
+    !Number.isFinite(hour) ||
+    !Number.isFinite(minute) ||
+    !Number.isFinite(second) ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59 ||
+    second < 0 ||
+    second > 59
+  ) {
+    return null;
+  }
+  return {hour, minute, second};
+}
+
+/**
+ * @param {string} dateRaw
+ * @param {string|null|undefined} timeRaw
+ * @return {string|null}
+ */
+function buildJumpEventsLocalDateTime(dateRaw, timeRaw) {
+  const dateParts = parseIsoDateOnly(dateRaw);
+  if (!dateParts) return null;
+  const clock = parseJumpEventsClockTime(timeRaw);
+  if (!clock) return null;
+  const yyyy = String(dateParts.year).padStart(4, "0");
+  const mm = String(dateParts.month).padStart(2, "0");
+  const dd = String(dateParts.day).padStart(2, "0");
+  const hh = String(clock.hour).padStart(2, "0");
+  const min = String(clock.minute).padStart(2, "0");
+  const ss = String(clock.second).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}:${ss}`;
+}
+
+/**
+ * @param {*} eventId
+ * @param {string|null|undefined} siteOrigin
+ * @return {string|null}
+ */
+function buildJumpEventsEventPageUrl(eventId, siteOrigin) {
+  const id = eventId != null ? toNonEmptyString(String(eventId)) : null;
+  if (!id) return null;
+  const origin = toNonEmptyString(siteOrigin) || "https://jumpevents.nl";
+  try {
+    return new URL(`/evenement/${encodeURIComponent(id)}`, origin).toString();
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * @param {Object} item
+ * @return {string}
+ */
+function buildJumpEventsDescription(item) {
+  const parts = [];
+  const description = pickJumpEventsLocalizedField(
+      item.descriptionEn,
+      item.description,
+  );
+  if (description) parts.push(description);
+
+  const extraInfo = pickJumpEventsLocalizedField(
+      item.extraInfoEn,
+      item.extraInfo,
+  );
+  if (extraInfo) parts.push(extraInfo);
+
+  const competitionPrice = pickJumpEventsLocalizedField(
+      item.competitionPriceEn,
+      item.competitionPrice,
+  );
+  if (competitionPrice) {
+    parts.push(`Competition price: ${competitionPrice}`);
+  }
+  const workshopPrice = pickJumpEventsLocalizedField(
+      item.workshopPriceEn,
+      item.workshopPrice,
+  );
+  if (workshopPrice) {
+    parts.push(`Workshop price: ${workshopPrice}`);
+  }
+
+  const levels = Array.isArray(item.levels) ?
+    item.levels.map((level) => toNonEmptyString(level)).filter(Boolean) :
+    [];
+  if (levels.length > 0) {
+    parts.push(`Levels: ${levels.join(", ")}`);
+  }
+  const ageCategories = Array.isArray(item.ageCategories) ?
+    item.ageCategories
+        .map((category) => toNonEmptyString(category))
+        .filter(Boolean) :
+    [];
+  if (ageCategories.length > 0) {
+    parts.push(`Age categories: ${ageCategories.join(", ")}`);
+  }
+
+  return parts.join("\n\n");
+}
+
+/**
+ * Parses Jump Events NL agenda items into normalized event payloads.
+ * @param {Array<*>} items
+ * @param {Object} sourceMeta
+ * @param {string} sourceMeta.sourceId
+ * @param {string} sourceMeta.sourceName
+ * @param {string=} sourceMeta.siteOrigin
+ * @param {string=} sourceMeta.feedDefaultTimeZone
+ * @param {string=} sourceMeta.sourceDefaultTimeZone
+ * @return {Array<Object>}
+ */
+function parseExternalEventsFromJumpEvents(
+    items,
+    {
+      sourceId,
+      sourceName,
+      siteOrigin = null,
+      feedDefaultTimeZone = null,
+      sourceDefaultTimeZone = null,
+    },
+) {
+  if (!Array.isArray(items)) {
+    throw new Error("Jump Events calendar items must be an array");
+  }
+
+  const feedTimeZone = normalizeImportedTimeZone(feedDefaultTimeZone);
+  const normalizedSourceDefaultTimeZone =
+    normalizeEventSyncSourceDefaultTimeZone(sourceDefaultTimeZone);
+
+  let defaultTimeZone = null;
+  let defaultTimeZoneSource = null;
+  if (normalizedSourceDefaultTimeZone) {
+    defaultTimeZone = normalizedSourceDefaultTimeZone;
+    defaultTimeZoneSource = EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT;
+  } else if (feedTimeZone) {
+    defaultTimeZone = feedTimeZone;
+    defaultTimeZoneSource = EVENT_TIME_ZONE_SOURCE_FEED;
+  }
+
+  const parsedEvents = [];
+  for (const item of items) {
+    if (!item || typeof item !== "object") continue;
+
+    const uid = item.id != null ? toNonEmptyString(String(item.id)) : null;
+    if (!uid) continue;
+
+    const startDateRaw = toNonEmptyString(item.date);
+    if (!startDateRaw) continue;
+    const endDateRaw = toNonEmptyString(item.endDate) || startDateRaw;
+    const startTimeRaw = toNonEmptyString(item.startTime);
+    const endTimeRaw = toNonEmptyString(item.endTime);
+    const isDateOnly = !startTimeRaw;
+
+    let startRaw;
+    let endRaw = null;
+    if (isDateOnly) {
+      startRaw = startDateRaw;
+      endRaw = endDateRaw;
+    } else {
+      startRaw = buildJumpEventsLocalDateTime(startDateRaw, startTimeRaw);
+      if (!startRaw) continue;
+      if (endTimeRaw) {
+        endRaw = buildJumpEventsLocalDateTime(endDateRaw, endTimeRaw);
+      }
+    }
+
+    const schedule = resolveBoomTechEventSchedule(
+        startRaw,
+        endRaw,
+        isDateOnly,
+        defaultTimeZone,
+        defaultTimeZoneSource,
+    );
+    if (!schedule || !schedule.startAt) continue;
+
+    const rawDescription = buildJumpEventsDescription(item);
+    const description = normalizeImportedEventDescription(rawDescription);
+    const websiteUrl = buildJumpEventsEventPageUrl(uid, siteOrigin);
+    const address = pickJumpEventsLocalizedField(
+        item.locationEn,
+        item.location,
+    );
+
+    const eventPayload = {
+      title: pickJumpEventsLocalizedField(item.titleEn, item.title) ||
+        "Untitled event",
+      description,
+      websiteUrl,
+      address,
+      startAt: schedule.startAt,
+      endAt: schedule.endAt,
+      isDateOnly: schedule.isDateOnly,
+      eventSourceId: sourceId,
+      eventSourceName: sourceName,
+      externalEventUid: uid,
+      externalEventRecurrenceId: null,
+      externalEventKey: buildExternalEventKey(uid, null),
+    };
+    if (schedule.timeZone) {
+      eventPayload.timeZone = schedule.timeZone;
+    }
+    if (schedule.timeZoneSource) {
+      eventPayload.timeZoneSource = schedule.timeZoneSource;
+    }
+
+    const photoFilename = toNonEmptyString(item.photo);
+    let externalImageUrl = null;
+    if (photoFilename && siteOrigin) {
+      try {
+        externalImageUrl = new URL(
+            `/uploads/${encodeURIComponent(photoFilename)}`,
+            siteOrigin,
+        ).toString();
+      } catch (_) {
+        externalImageUrl = null;
+      }
+    }
+    externalImageUrl = normalizeExternalImageUrl(externalImageUrl);
+    if (externalImageUrl) {
+      eventPayload.externalImageUrl = externalImageUrl;
+    }
+    parsedEvents.push(eventPayload);
+  }
+
+  return parsedEvents;
+}
+
 module.exports = {
   EVENT_SYNC_SOURCE_TYPE_ICS,
   EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR,
   EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR_LEGACY,
   EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR,
   EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR,
+  EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL,
   EVENT_TIME_ZONE_SOURCE_FEED,
   EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT,
   buildExternalEventKey,
@@ -2064,6 +2322,7 @@ module.exports = {
   parseExternalEventsFromBoomTechPublishedCalendar,
   parseExternalEventsFromWixEvents,
   parseExternalEventsFromSquarespace,
+  parseExternalEventsFromJumpEvents,
   normalizeRecurrenceId,
   partitionExternalEventsByKey,
   removeExtractedWebsiteUrlFromDescription,

@@ -21,7 +21,9 @@ const {
   EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR,
   EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR,
   EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR,
+  EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL,
   parseExternalEventsFromWixEvents,
+  parseExternalEventsFromJumpEvents,
 } = require("../lib/event-sync");
 
 describe("event-sync helpers", () => {
@@ -1137,6 +1139,104 @@ describe("event-sync helpers", () => {
     it("recognizes wixEventsCalendar", () => {
       expect(normalizeEventSyncSourceType("wixEventsCalendar"))
           .toBe(EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR);
+    });
+
+    it("recognizes jumpEventsNl", () => {
+      expect(normalizeEventSyncSourceType("jumpEventsNl"))
+          .toBe(EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL);
+    });
+  });
+
+  describe("parseExternalEventsFromJumpEvents", () => {
+    const sampleItems = [
+      {
+        id: "19062312-50e6-4408-b796-ff1da741c1b0",
+        title: "Dutch Parkour League FREESTYLE Houten",
+        titleEn: "Dutch Parkour League FREESTYLE Houten",
+        date: "2026-12-06",
+        endDate: "",
+        startTime: "13:00",
+        endTime: "21:00",
+        location: "JUMP freerun Houten",
+        locationEn: "JUMP freerun Houten",
+        description: "NL beschrijving",
+        descriptionEn: "EN description",
+        extraInfo: "NL extra",
+        extraInfoEn: "EN extra",
+        competitionPrice: "30,-",
+        competitionPriceEn: "€30",
+        workshopPrice: "GRATIS!",
+        workshopPriceEn: "FREE!",
+        levels: ["Open / alle niveaus"],
+        ageCategories: ["Open / alle leeftijden"],
+        link: "https://shop.dutchgymnastics.nl/collections/dutch-parkour",
+        photo: "a4483444564d7094.jpeg",
+      },
+      {
+        id: "all-day-1",
+        title: "All day jam",
+        date: "2026-08-01",
+        endDate: "2026-08-02",
+        startTime: "",
+        endTime: "",
+        location: "Amsterdam",
+      },
+      {
+        id: "missing-date",
+        title: "Skipped",
+      },
+    ];
+
+    it("parses timed and all-day Jump Events with English preference", () => {
+      const events = parseExternalEventsFromJumpEvents(sampleItems, {
+        sourceId: "jump-1",
+        sourceName: "Jump Events NL",
+        siteOrigin: "https://jumpevents.nl",
+        feedDefaultTimeZone: "Europe/Amsterdam",
+      });
+
+      expect(events).toHaveLength(2);
+
+      const timed = events[0];
+      expect(timed.externalEventUid).toBe(
+          "19062312-50e6-4408-b796-ff1da741c1b0",
+      );
+      expect(timed.title).toBe("Dutch Parkour League FREESTYLE Houten");
+      expect(timed.address).toBe("JUMP freerun Houten");
+      expect(timed.websiteUrl).toBe(
+          "https://jumpevents.nl/evenement/" +
+          "19062312-50e6-4408-b796-ff1da741c1b0",
+      );
+      expect(timed.isDateOnly).toBe(false);
+      expect(timed.timeZone).toBe("Europe/Amsterdam");
+      expect(timed.timeZoneSource).toBe(EVENT_TIME_ZONE_SOURCE_FEED);
+      expect(timed.startAt.toISOString()).toBe("2026-12-06T12:00:00.000Z");
+      expect(timed.endAt.toISOString()).toBe("2026-12-06T20:00:00.000Z");
+      expect(timed.description).toContain("EN description");
+      expect(timed.description).toContain("EN extra");
+      expect(timed.description).toContain("Competition price: €30");
+      expect(timed.description).not.toContain("dutchgymnastics.nl");
+      expect(timed.externalImageUrl).toBe(
+          "https://jumpevents.nl/uploads/a4483444564d7094.jpeg",
+      );
+
+      const allDay = events[1];
+      expect(allDay.isDateOnly).toBe(true);
+      expect(allDay.startAt.toISOString()).toBe("2026-07-31T22:00:00.000Z");
+    });
+
+    it("lets sourceDefaultTimeZone override the feed default", () => {
+      const events = parseExternalEventsFromJumpEvents([sampleItems[0]], {
+        sourceId: "jump-1",
+        sourceName: "Jump Events NL",
+        feedDefaultTimeZone: "Europe/Amsterdam",
+        sourceDefaultTimeZone: "Europe/London",
+      });
+      expect(events).toHaveLength(1);
+      expect(events[0].timeZone).toBe("Europe/London");
+      expect(events[0].timeZoneSource)
+          .toBe(EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT);
+      expect(events[0].startAt.toISOString()).toBe("2026-12-06T13:00:00.000Z");
     });
   });
 
