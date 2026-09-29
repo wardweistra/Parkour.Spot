@@ -41,7 +41,13 @@ DateTime? _parseTimestamp(dynamic timestamp) {
 
 class EventSyncSource {
   static const String sourceTypeIcs = 'ics';
-  static const String sourceTypeWixPublishedCalendar = 'wixPublishedCalendar';
+  static const String sourceTypeBoomTechPublishedCalendar =
+      'boomTechPublishedCalendar';
+
+  /// Legacy Firestore value; normalized to [sourceTypeBoomTechPublishedCalendar].
+  static const String sourceTypeWixPublishedCalendarLegacy =
+      'wixPublishedCalendar';
+  static const String sourceTypeWixEventsCalendar = 'wixEventsCalendar';
   static const String sourceTypeSquarespaceCalendar = 'squarespaceCalendar';
 
   final String id;
@@ -79,8 +85,12 @@ class EventSyncSource {
   factory EventSyncSource.fromMap(Map<String, dynamic> data) {
     final rawSourceType = data['sourceType']?.toString();
     final String sourceType;
-    if (rawSourceType == EventSyncSource.sourceTypeWixPublishedCalendar) {
-      sourceType = EventSyncSource.sourceTypeWixPublishedCalendar;
+    if (rawSourceType == EventSyncSource.sourceTypeBoomTechPublishedCalendar ||
+        rawSourceType ==
+            EventSyncSource.sourceTypeWixPublishedCalendarLegacy) {
+      sourceType = EventSyncSource.sourceTypeBoomTechPublishedCalendar;
+    } else if (rawSourceType == EventSyncSource.sourceTypeWixEventsCalendar) {
+      sourceType = EventSyncSource.sourceTypeWixEventsCalendar;
     } else if (rawSourceType == EventSyncSource.sourceTypeSquarespaceCalendar) {
       sourceType = EventSyncSource.sourceTypeSquarespaceCalendar;
     } else {
@@ -108,8 +118,10 @@ class EventSyncSource {
     );
   }
 
-  bool get isWixPublishedCalendar =>
-      sourceType == sourceTypeWixPublishedCalendar;
+  bool get isBoomTechPublishedCalendar =>
+      sourceType == sourceTypeBoomTechPublishedCalendar;
+
+  bool get isWixEventsCalendar => sourceType == sourceTypeWixEventsCalendar;
 
   bool get isSquarespaceCalendar =>
       sourceType == sourceTypeSquarespaceCalendar;

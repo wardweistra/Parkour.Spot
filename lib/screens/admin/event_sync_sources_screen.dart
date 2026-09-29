@@ -238,8 +238,10 @@ class _EventSyncSourcesScreenState extends State<EventSyncSourcesScreen> {
                           children: [
                             Chip(
                               label: Text(
-                                source.isWixPublishedCalendar
-                                    ? 'Wix calendar'
+                                source.isBoomTechPublishedCalendar
+                                    ? 'BoomTech calendar'
+                                    : source.isWixEventsCalendar
+                                    ? 'Wix Events'
                                     : source.isSquarespaceCalendar
                                     ? 'Squarespace'
                                     : 'ICS',
@@ -460,21 +462,30 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
     _autoSyncEnabled = widget.source?.autoSyncEnabled ?? false;
   }
 
-  bool get _isWixSourceType =>
-      _sourceType == EventSyncSource.sourceTypeWixPublishedCalendar;
+  bool get _isBoomTechSourceType =>
+      _sourceType == EventSyncSource.sourceTypeBoomTechPublishedCalendar;
+
+  bool get _isWixEventsSourceType =>
+      _sourceType == EventSyncSource.sourceTypeWixEventsCalendar;
 
   bool get _isSquarespaceSourceType =>
       _sourceType == EventSyncSource.sourceTypeSquarespaceCalendar;
 
+  bool get _isPageUrlSourceType =>
+      _isSquarespaceSourceType || _isWixEventsSourceType;
+
   String get _feedUrlLabel {
-    if (_isWixSourceType) return 'Published calendar URL';
-    if (_isSquarespaceSourceType) return 'Events page URL';
+    if (_isBoomTechSourceType) return 'Published calendar URL';
+    if (_isPageUrlSourceType) return 'Events page URL';
     return 'ICS URL';
   }
 
   String get _feedUrlHelperText {
-    if (_isWixSourceType) {
-      return 'Full BoomTech/Wix published_calendar URL including the instance token';
+    if (_isBoomTechSourceType) {
+      return 'Full BoomTech published_calendar URL including the instance token';
+    }
+    if (_isWixEventsSourceType) {
+      return 'Public Wix Events page, e.g. https://www.springstofparkour.com/events';
     }
     if (_isSquarespaceSourceType) {
       return 'Public Squarespace events page, e.g. https://example.com/events';
@@ -483,8 +494,12 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
   }
 
   String get _defaultTimeZoneHelperText {
-    if (_isWixSourceType) {
+    if (_isBoomTechSourceType) {
       return 'Fallback when the published calendar and event have no time_zone. '
+          'Re-sync after changing this.';
+    }
+    if (_isWixEventsSourceType) {
+      return 'Fallback when a Wix event has no scheduling.timeZoneId. '
           'Re-sync after changing this.';
     }
     if (_isSquarespaceSourceType) {
@@ -495,12 +510,15 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
         'no event or calendar timezone. Re-sync after changing this.';
   }
 
-  String _squarespacePublicUrlFromFeed(String feedUrl) {
+  String _pagePublicUrlFromFeed(String feedUrl) {
     final uri = Uri.tryParse(feedUrl.trim());
     if (uri == null || uri.host.isEmpty) return feedUrl.trim();
-    final params = Map<String, String>.from(uri.queryParameters)
-      ..remove('format');
-    return uri.replace(queryParameters: params).toString();
+    if (_isSquarespaceSourceType) {
+      final params = Map<String, String>.from(uri.queryParameters)
+        ..remove('format');
+      return uri.replace(queryParameters: params).toString();
+    }
+    return uri.replace(fragment: '').toString();
   }
 
   String _defaultTimeZoneLabel(String value) {
@@ -555,8 +573,13 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                       child: Text('ICS feed'),
                     ),
                     DropdownMenuItem(
-                      value: EventSyncSource.sourceTypeWixPublishedCalendar,
-                      child: Text('Wix published calendar'),
+                      value:
+                          EventSyncSource.sourceTypeBoomTechPublishedCalendar,
+                      child: Text('BoomTech published calendar'),
+                    ),
+                    DropdownMenuItem(
+                      value: EventSyncSource.sourceTypeWixEventsCalendar,
+                      child: Text('Wix Events calendar'),
                     ),
                     DropdownMenuItem(
                       value: EventSyncSource.sourceTypeSquarespaceCalendar,
@@ -566,11 +589,14 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                   onChanged: (value) {
                     if (value == null) return;
                     setState(() => _sourceType = value);
-                    if (value ==
-                            EventSyncSource.sourceTypeSquarespaceCalendar &&
+                    if ((value ==
+                                EventSyncSource
+                                    .sourceTypeSquarespaceCalendar ||
+                            value ==
+                                EventSyncSource.sourceTypeWixEventsCalendar) &&
                         _publicUrlCtrl.text.trim().isEmpty &&
                         _icsUrlCtrl.text.trim().isNotEmpty) {
-                      _publicUrlCtrl.text = _squarespacePublicUrlFromFeed(
+                      _publicUrlCtrl.text = _pagePublicUrlFromFeed(
                         _icsUrlCtrl.text.trim(),
                       );
                     }
@@ -583,12 +609,11 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                     helperText: _feedUrlHelperText,
                   ),
                   onChanged: (value) {
-                    if (!_isSquarespaceSourceType) return;
+                    if (!_isPageUrlSourceType) return;
                     if (_publicUrlCtrl.text.trim().isNotEmpty) return;
                     final trimmed = value.trim();
                     if (trimmed.isEmpty) return;
-                    _publicUrlCtrl.text =
-                        _squarespacePublicUrlFromFeed(trimmed);
+                    _publicUrlCtrl.text = _pagePublicUrlFromFeed(trimmed);
                   },
                   validator: (value) {
                     final trimmed = value?.trim() ?? '';
@@ -598,9 +623,13 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                     if (uri.scheme != 'http' && uri.scheme != 'https') {
                       return 'URL must start with http or https';
                     }
-                    if (_isWixSourceType &&
+                    if (_isBoomTechSourceType &&
                         !uri.path.contains('/api/published_calendar')) {
                       return 'URL must include /api/published_calendar';
+                    }
+                    if (_isWixEventsSourceType &&
+                        uri.path.contains('/api/published_calendar')) {
+                      return 'Use a public Wix Events page URL, not BoomTech';
                     }
                     return null;
                   },

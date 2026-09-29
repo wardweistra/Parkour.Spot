@@ -163,14 +163,16 @@ const {
 } = require("./lib/folder-filter");
 const {
   EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR,
-  EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR,
+  EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR,
+  EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR,
   hasExternalEventAddressChanged,
   hasExternalEventContentChanges,
   hasExternalEventPlaceFields,
   hasStoredEventCoordinates,
   parseExternalEventsFromIcs,
   parseExternalEventsFromSquarespace,
-  parseExternalEventsFromWixPublishedCalendar,
+  parseExternalEventsFromBoomTechPublishedCalendar,
+  parseExternalEventsFromWixEvents,
   buildExternalEventKey,
   partitionExternalEventsByKey,
   shouldGeocodeExternalEventAddress,
@@ -182,6 +184,11 @@ const {
   normalizeSquarespaceEventsPageUrl,
   squarespaceEventsPublicUrl,
 } = require("./lib/squarespace-events");
+const {
+  fetchWixEventsCalendarEvents,
+  normalizeWixEventsPageUrl,
+  wixEventsPublicUrl,
+} = require("./lib/wix-events");
 const {
   deleteEventMapPins,
   materializeEventMapPins,
@@ -4505,7 +4512,7 @@ function normalizeIcsUrl(value) {
 /**
  * Normalizes and validates a feed URL for an event sync source type.
  * @param {*} value
- * @param {"ics"|"wixPublishedCalendar"|"squarespaceCalendar"} sourceType
+ * @param {"ics"|"boomTechPublishedCalendar"|"wixEventsCalendar"|"squarespaceCalendar"} sourceType
  * @return {string}
  */
 function normalizeEventSyncFeedUrl(value, sourceType) {
@@ -4513,7 +4520,10 @@ function normalizeEventSyncFeedUrl(value, sourceType) {
   if (normalizedType === EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR) {
     return normalizeSquarespaceEventsPageUrl(value);
   }
-  if (normalizedType !== EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR) {
+  if (normalizedType === EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR) {
+    return normalizeWixEventsPageUrl(value);
+  }
+  if (normalizedType !== EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR) {
     return normalizeIcsUrl(value);
   }
 
@@ -4532,7 +4542,7 @@ function normalizeEventSyncFeedUrl(value, sourceType) {
   }
   if (!parsed.pathname.includes("/api/published_calendar")) {
     throw new Error(
-        "wixPublishedCalendar icsUrl must point to /api/published_calendar",
+        "boomTechPublishedCalendar icsUrl must point to /api/published_calendar",
     );
   }
   return parsed.toString();
@@ -4712,10 +4722,26 @@ async function resolveExternalEventImages(parsedEvent, existingData = null) {
 /**
  * Downloads text content and follows redirects.
  * @param {string} url
- * @param {number=} redirectCount
+ * @param {Object|number=} options Or legacy redirectCount number.
+ * @param {Object<string, string>=} options.headers
+ * @param {number=} options.redirectCount
  * @return {Promise<string>}
  */
-function downloadTextFromUrl(url, redirectCount = 0) {
+function downloadTextFromUrl(url, options = {}) {
+  let redirectCount = 0;
+  /** @type {Object<string, string>} */
+  let extraHeaders = {};
+  if (typeof options === "number") {
+    redirectCount = options;
+  } else if (options && typeof options === "object") {
+    redirectCount = typeof options.redirectCount === "number" ?
+      options.redirectCount :
+      0;
+    if (options.headers && typeof options.headers === "object") {
+      extraHeaders = options.headers;
+    }
+  }
+
   if (redirectCount > 5) {
     throw new Error("Too many redirects while fetching ICS");
   }
@@ -4731,6 +4757,7 @@ function downloadTextFromUrl(url, redirectCount = 0) {
       headers: {
         "User-Agent": "ParkourSpotEventSync/1.0",
         "Accept": "application/json, text/calendar, text/plain, */*",
+        ...extraHeaders,
       },
     }, (response) => {
       if (
@@ -4744,7 +4771,10 @@ function downloadTextFromUrl(url, redirectCount = 0) {
             response.headers.location,
             parsedUrl,
         ).toString();
-        resolve(downloadTextFromUrl(redirectedUrl, redirectCount + 1));
+        resolve(downloadTextFromUrl(redirectedUrl, {
+          redirectCount: redirectCount + 1,
+          headers: extraHeaders,
+        }));
         return;
       }
 
@@ -5154,10 +5184,21 @@ async function syncExternalEventSource(sourceDoc) {
         siteOrigin: fetched.siteOrigin,
         sourceDefaultTimeZone,
       });
+    } else if (sourceType === EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR) {
+      const fetched = await fetchWixEventsCalendarEvents(feedUrl, {
+        downloadText: downloadTextFromUrl,
+      });
+      feedBytes = fetched.items.length;
+      parsedEvents = parseExternalEventsFromWixEvents(fetched.items, {
+        sourceId,
+        sourceName,
+        siteOrigin: fetched.siteOrigin,
+        sourceDefaultTimeZone,
+      });
     } else {
       const feedText = await downloadTextFromUrl(feedUrl);
       feedBytes = feedText.length;
-      if (sourceType === EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR) {
+      if (sourceType === EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR) {
         let payload;
         try {
           payload = JSON.parse(feedText);
@@ -5166,11 +5207,14 @@ async function syncExternalEventSource(sourceDoc) {
               `Failed parsing published_calendar JSON: ${error.message}`,
           );
         }
-        parsedEvents = parseExternalEventsFromWixPublishedCalendar(payload, {
-          sourceId,
-          sourceName,
-          sourceDefaultTimeZone,
-        });
+        parsedEvents = parseExternalEventsFromBoomTechPublishedCalendar(
+            payload,
+            {
+              sourceId,
+              sourceName,
+              sourceDefaultTimeZone,
+            },
+        );
       } else {
         parsedEvents = parseExternalEventsFromIcs(feedText, {
           sourceId,
@@ -5447,6 +5491,10 @@ exports.createEventSyncSource = onCall(
           normalizedSourceType === EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR
         ) {
           sourceData.publicUrl = squarespaceEventsPublicUrl(normalizedFeedUrl);
+        } else if (
+          normalizedSourceType === EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR
+        ) {
+          sourceData.publicUrl = wixEventsPublicUrl(normalizedFeedUrl);
         }
         if (typeof syncSchedule === "string" && syncSchedule.trim().length > 0) {
           sourceData.syncSchedule = syncSchedule.trim();

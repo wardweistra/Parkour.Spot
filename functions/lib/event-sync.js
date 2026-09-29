@@ -1197,18 +1197,34 @@ function parseExternalEventsFromIcs(
 
 /** @type {"ics"} */
 const EVENT_SYNC_SOURCE_TYPE_ICS = "ics";
-/** @type {"wixPublishedCalendar"} */
-const EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR = "wixPublishedCalendar";
+/** @type {"boomTechPublishedCalendar"} */
+const EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR =
+  "boomTechPublishedCalendar";
+/**
+ * Legacy sourceType string still present on older eventSyncSources docs.
+ * @type {"wixPublishedCalendar"}
+ */
+const EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR_LEGACY =
+  "wixPublishedCalendar";
+/** @type {"wixEventsCalendar"} */
+const EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR = "wixEventsCalendar";
 /** @type {"squarespaceCalendar"} */
 const EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR = "squarespaceCalendar";
 
 /**
  * @param {*} value
- * @return {"ics"|"wixPublishedCalendar"|"squarespaceCalendar"}
+ * @return {"ics"|"boomTechPublishedCalendar"|
+ *   "wixEventsCalendar"|"squarespaceCalendar"}
  */
 function normalizeEventSyncSourceType(value) {
-  if (value === EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR) {
-    return EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR;
+  if (
+    value === EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR ||
+    value === EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR_LEGACY
+  ) {
+    return EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR;
+  }
+  if (value === EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR) {
+    return EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR;
   }
   if (value === EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR) {
     return EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR;
@@ -1258,7 +1274,7 @@ function normalizeExternalImageUrl(raw) {
  * @param {*} value
  * @return {boolean}
  */
-function isWixAllDayFlag(value) {
+function isBoomTechAllDayFlag(value) {
   return value === true || value === 1 || value === "1";
 }
 
@@ -1305,7 +1321,7 @@ function parseIsoLocalDateTime(value) {
  * @param {Object|null|undefined} venue
  * @return {{latitude: number, longitude: number}|null}
  */
-function extractWixVenueCoordinates(venue) {
+function extractBoomTechVenueCoordinates(venue) {
   if (!venue || typeof venue !== "object") return null;
   const lat = Number(venue.lat);
   const lngRaw = venue.lng != null ? venue.lng : venue.long;
@@ -1318,7 +1334,7 @@ function extractWixVenueCoordinates(venue) {
  * @param {*} raw
  * @return {string|null}
  */
-function normalizeWixWebsiteCandidate(raw) {
+function normalizeBoomTechWebsiteCandidate(raw) {
   const value = toNonEmptyString(raw);
   if (!value) return null;
   if (value.toLowerCase() === "event_page") return null;
@@ -1329,16 +1345,16 @@ function normalizeWixWebsiteCandidate(raw) {
  * @param {Object} event
  * @return {string|null}
  */
-function extractWixWebsiteUrl(event) {
-  const link = normalizeWixWebsiteCandidate(event.link);
+function extractBoomTechWebsiteUrl(event) {
+  const link = normalizeBoomTechWebsiteCandidate(event.link);
   if (link) return link;
   const organizerWebsite = event.organizer &&
       typeof event.organizer === "object" ?
-    normalizeWixWebsiteCandidate(event.organizer.website) :
+    normalizeBoomTechWebsiteCandidate(event.organizer.website) :
     null;
   if (organizerWebsite) return organizerWebsite;
   const venueWebsite = event.venue && typeof event.venue === "object" ?
-    normalizeWixWebsiteCandidate(event.venue.website) :
+    normalizeBoomTechWebsiteCandidate(event.venue.website) :
     null;
   return venueWebsite;
 }
@@ -1351,7 +1367,7 @@ function extractWixWebsiteUrl(event) {
  * @param {string|null} timeZoneSource
  * @return {Object|null}
  */
-function resolveWixEventSchedule(
+function resolveBoomTechEventSchedule(
     startRaw,
     endRaw,
     isDateOnly,
@@ -1450,7 +1466,7 @@ function resolveWixEventSchedule(
 }
 
 /**
- * Parses BoomTech/Wix published_calendar JSON into normalized event payloads.
+ * Parses BoomTech published_calendar JSON into normalized event payloads.
  * @param {Object} payload
  * @param {Object} sourceMeta
  * @param {string} sourceMeta.sourceId
@@ -1458,7 +1474,7 @@ function resolveWixEventSchedule(
  * @param {string=} sourceMeta.sourceDefaultTimeZone
  * @return {Array<Object>}
  */
-function parseExternalEventsFromWixPublishedCalendar(
+function parseExternalEventsFromBoomTechPublishedCalendar(
     payload,
     {sourceId, sourceName, sourceDefaultTimeZone = null},
 ) {
@@ -1492,7 +1508,7 @@ function parseExternalEventsFromWixPublishedCalendar(
     if (!startRaw) continue;
 
     const endRaw = toNonEmptyString(event.end);
-    const isDateOnly = isWixAllDayFlag(event.all_day) ||
+    const isDateOnly = isBoomTechAllDayFlag(event.all_day) ||
         parseIsoDateOnly(startRaw) != null;
 
     const eventTimeZone = normalizeImportedTimeZone(event.time_zone);
@@ -1503,7 +1519,7 @@ function parseExternalEventsFromWixPublishedCalendar(
       timeZoneSource = EVENT_TIME_ZONE_SOURCE_FEED;
     }
 
-    const schedule = resolveWixEventSchedule(
+    const schedule = resolveBoomTechEventSchedule(
         startRaw,
         endRaw,
         isDateOnly,
@@ -1521,7 +1537,7 @@ function parseExternalEventsFromWixPublishedCalendar(
         rawDescription,
     );
     const websiteUrl =
-        extractWixWebsiteUrl(event) ||
+        extractBoomTechWebsiteUrl(event) ||
         toNonEmptyString(lastUrlInDescription);
 
     const descriptionAfterUrlRemoval =
@@ -1536,7 +1552,7 @@ function parseExternalEventsFromWixPublishedCalendar(
     const address = venue ?
       (toNonEmptyString(venue.address) || toNonEmptyString(venue.name)) :
       null;
-    const coords = extractWixVenueCoordinates(venue);
+    const coords = extractBoomTechVenueCoordinates(venue);
 
     const eventPayload = {
       title: toNonEmptyString(event.title) || "Untitled event",
@@ -1820,9 +1836,211 @@ function parseExternalEventsFromSquarespace(
   return parsedEvents;
 }
 
+/**
+ * @param {*} status
+ * @return {boolean}
+ */
+function isWixEventsUpcomingStatus(status) {
+  return status === 0 || status === "SCHEDULED";
+}
+
+/**
+ * @param {*} value
+ * @return {Date|null}
+ */
+function parseWixEventsUtcDate(value) {
+  const raw = toNonEmptyString(value);
+  if (!raw) return null;
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * @param {Object|null|undefined} location
+ * @return {{latitude: number, longitude: number}|null}
+ */
+function extractWixEventsLocationCoordinates(location) {
+  if (!location || typeof location !== "object") return null;
+  const coordinates = location.coordinates &&
+      typeof location.coordinates === "object" ?
+    location.coordinates :
+    null;
+  if (!coordinates) return null;
+  const lat = Number(coordinates.lat);
+  const lng = Number(coordinates.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+  return {latitude: lat, longitude: lng};
+}
+
+/**
+ * @param {Object} event
+ * @param {string|null} siteOrigin
+ * @return {string|null}
+ */
+function extractWixEventsWebsiteUrl(event, siteOrigin) {
+  const registration = event.registration &&
+      typeof event.registration === "object" ?
+    event.registration :
+    null;
+  const external = registration &&
+      registration.external &&
+      typeof registration.external === "object" ?
+    registration.external :
+    null;
+  const externalUrl = external ?
+    toNonEmptyString(external.registration) :
+    null;
+  if (externalUrl) {
+    try {
+      const parsed = new URL(externalUrl);
+      if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+        return parsed.toString();
+      }
+    } catch (_) {
+      // Fall through to slug-based URL.
+    }
+  }
+
+  const slug = toNonEmptyString(event.slug);
+  if (!slug || !siteOrigin) return null;
+  try {
+    return new URL(`/${slug.replace(/^\/+/, "")}`, siteOrigin).toString();
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * Parses Wix Events calendar items into normalized event payloads.
+ * Only upcoming (SCHEDULED) events are imported.
+ * @param {Array<*>} items
+ * @param {Object} sourceMeta
+ * @param {string} sourceMeta.sourceId
+ * @param {string} sourceMeta.sourceName
+ * @param {string=} sourceMeta.siteOrigin
+ * @param {string=} sourceMeta.sourceDefaultTimeZone
+ * @return {Array<Object>}
+ */
+function parseExternalEventsFromWixEvents(
+    items,
+    {
+      sourceId,
+      sourceName,
+      siteOrigin = null,
+      sourceDefaultTimeZone = null,
+    },
+) {
+  if (!Array.isArray(items)) {
+    throw new Error("Wix Events calendar items must be an array");
+  }
+
+  const normalizedSourceDefaultTimeZone =
+    normalizeEventSyncSourceDefaultTimeZone(sourceDefaultTimeZone);
+
+  const parsedEvents = [];
+  for (const event of items) {
+    if (!event || typeof event !== "object") continue;
+    if (!isWixEventsUpcomingStatus(event.status)) continue;
+
+    const uid = event.id != null ? toNonEmptyString(String(event.id)) : null;
+    if (!uid) continue;
+
+    const scheduling = event.scheduling &&
+        typeof event.scheduling === "object" ?
+      event.scheduling :
+      null;
+    const config = scheduling &&
+        scheduling.config &&
+        typeof scheduling.config === "object" ?
+      scheduling.config :
+      null;
+    if (!config || config.scheduleTbd === true) continue;
+
+    let startAt = parseWixEventsUtcDate(config.startDate);
+    if (!startAt) continue;
+    let endAt = parseWixEventsUtcDate(config.endDate);
+
+    const eventTimeZone = normalizeImportedTimeZone(config.timeZoneId);
+    let timeZone = eventTimeZone || normalizedSourceDefaultTimeZone || null;
+    let timeZoneSource = null;
+    if (eventTimeZone) {
+      timeZoneSource = EVENT_TIME_ZONE_SOURCE_FEED;
+    } else if (normalizedSourceDefaultTimeZone) {
+      timeZoneSource = EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT;
+    }
+
+    let isDateOnly = false;
+    if (endAt && timeZone) {
+      const promoted = promoteTimedSpanToAllDaySchedule(
+          startAt,
+          endAt,
+          timeZone,
+          timeZoneSource,
+      );
+      if (promoted) {
+        startAt = promoted.startAt;
+        endAt = promoted.endAt;
+        isDateOnly = promoted.isDateOnly;
+        timeZone = promoted.timeZone;
+        timeZoneSource = promoted.timeZoneSource;
+      }
+    }
+
+    const rawDescription = toNonEmptyString(event.description) ||
+      toNonEmptyString(event.about) ||
+      "";
+    const description = normalizeImportedEventDescription(rawDescription);
+    const websiteUrl = extractWixEventsWebsiteUrl(event, siteOrigin);
+
+    const location = event.location && typeof event.location === "object" ?
+      event.location :
+      null;
+    const address = location ?
+      (toNonEmptyString(location.address) || toNonEmptyString(location.name)) :
+      null;
+    const coords = extractWixEventsLocationCoordinates(location);
+
+    const eventPayload = {
+      title: toNonEmptyString(event.title) || "Untitled event",
+      description: toNonEmptyString(description),
+      websiteUrl,
+      address,
+      startAt,
+      endAt,
+      isDateOnly,
+      eventSourceId: sourceId,
+      eventSourceName: sourceName,
+      externalEventUid: uid,
+      externalEventRecurrenceId: null,
+      externalEventKey: buildExternalEventKey(uid, null),
+    };
+    if (timeZone) eventPayload.timeZone = timeZone;
+    if (timeZoneSource) eventPayload.timeZoneSource = timeZoneSource;
+    if (coords) {
+      eventPayload.latitude = coords.latitude;
+      eventPayload.longitude = coords.longitude;
+    }
+    const mainImage = event.mainImage && typeof event.mainImage === "object" ?
+      event.mainImage :
+      null;
+    const externalImageUrl = normalizeExternalImageUrl(
+        mainImage ? mainImage.url : null,
+    );
+    if (externalImageUrl) {
+      eventPayload.externalImageUrl = externalImageUrl;
+    }
+    parsedEvents.push(eventPayload);
+  }
+
+  return parsedEvents;
+}
+
 module.exports = {
   EVENT_SYNC_SOURCE_TYPE_ICS,
-  EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR,
+  EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR,
+  EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR_LEGACY,
+  EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR,
   EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR,
   EVENT_TIME_ZONE_SOURCE_FEED,
   EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT,
@@ -1843,7 +2061,8 @@ module.exports = {
   normalizeImportedEventDescription,
   normalizeImportedTimeZone,
   parseExternalEventsFromIcs,
-  parseExternalEventsFromWixPublishedCalendar,
+  parseExternalEventsFromBoomTechPublishedCalendar,
+  parseExternalEventsFromWixEvents,
   parseExternalEventsFromSquarespace,
   normalizeRecurrenceId,
   partitionExternalEventsByKey,

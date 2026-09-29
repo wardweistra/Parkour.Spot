@@ -13,12 +13,15 @@ const {
   normalizeImportedTimeZone,
   parseExternalEventsFromIcs,
   parseExternalEventsFromSquarespace,
-  parseExternalEventsFromWixPublishedCalendar,
+  parseExternalEventsFromBoomTechPublishedCalendar,
   partitionExternalEventsByKey,
   removeExtractedWebsiteUrlFromDescription,
   selectCanonicalExternalEventDuplicate,
   shouldGeocodeExternalEventAddress,
   EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR,
+  EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR,
+  EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR,
+  parseExternalEventsFromWixEvents,
 } = require("../lib/event-sync");
 
 describe("event-sync helpers", () => {
@@ -838,7 +841,7 @@ describe("event-sync helpers", () => {
     });
   });
 
-  describe("parseExternalEventsFromWixPublishedCalendar", () => {
+  describe("parseExternalEventsFromBoomTechPublishedCalendar", () => {
     const basePayload = {
       time_zone: "Europe/Berlin",
       events: [
@@ -892,7 +895,7 @@ describe("event-sync helpers", () => {
     };
 
     it("maps ids, venue address/coords, and website fields", () => {
-      const events = parseExternalEventsFromWixPublishedCalendar(basePayload, {
+      const events = parseExternalEventsFromBoomTechPublishedCalendar(basePayload, {
         sourceId: "wix-1",
         sourceName: "Jam Calendar",
       });
@@ -947,7 +950,7 @@ describe("event-sync helpers", () => {
           },
         ],
       };
-      const events = parseExternalEventsFromWixPublishedCalendar(payload, {
+      const events = parseExternalEventsFromBoomTechPublishedCalendar(payload, {
         sourceId: "wix-1",
         sourceName: "Jam Calendar",
       });
@@ -986,7 +989,7 @@ describe("event-sync helpers", () => {
           },
         ],
       };
-      const events = parseExternalEventsFromWixPublishedCalendar(payload, {
+      const events = parseExternalEventsFromBoomTechPublishedCalendar(payload, {
         sourceId: "wix-1",
         sourceName: "Jam Calendar",
       });
@@ -995,7 +998,7 @@ describe("event-sync helpers", () => {
     });
 
     it("uses calendar time_zone as feed default for all-day and floating timed", () => {
-      const events = parseExternalEventsFromWixPublishedCalendar(basePayload, {
+      const events = parseExternalEventsFromBoomTechPublishedCalendar(basePayload, {
         sourceId: "wix-1",
         sourceName: "Jam Calendar",
       });
@@ -1025,7 +1028,7 @@ describe("event-sync helpers", () => {
         time_zone: "",
         events: [basePayload.events[0]],
       };
-      const events = parseExternalEventsFromWixPublishedCalendar(payload, {
+      const events = parseExternalEventsFromBoomTechPublishedCalendar(payload, {
         sourceId: "wix-1",
         sourceName: "Jam Calendar",
         sourceDefaultTimeZone: "Europe/Amsterdam",
@@ -1055,7 +1058,7 @@ describe("event-sync helpers", () => {
           },
         ],
       };
-      const events = parseExternalEventsFromWixPublishedCalendar(payload, {
+      const events = parseExternalEventsFromBoomTechPublishedCalendar(payload, {
         sourceId: "wix-1",
         sourceName: "Jam Calendar",
         sourceDefaultTimeZone: "Europe/Berlin",
@@ -1072,7 +1075,7 @@ describe("event-sync helpers", () => {
     });
 
     it("prefers event-level time_zone when set", () => {
-      const events = parseExternalEventsFromWixPublishedCalendar(basePayload, {
+      const events = parseExternalEventsFromBoomTechPublishedCalendar(basePayload, {
         sourceId: "wix-1",
         sourceName: "Jam Calendar",
       });
@@ -1107,7 +1110,7 @@ describe("event-sync helpers", () => {
           },
         ],
       };
-      const events = parseExternalEventsFromWixPublishedCalendar(payload, {
+      const events = parseExternalEventsFromBoomTechPublishedCalendar(payload, {
         sourceId: "wix-1",
         sourceName: "Jam Calendar",
       });
@@ -1122,6 +1125,175 @@ describe("event-sync helpers", () => {
     it("recognizes squarespaceCalendar", () => {
       expect(normalizeEventSyncSourceType("squarespaceCalendar"))
           .toBe(EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR);
+    });
+
+    it("maps boomTechPublishedCalendar and legacy wixPublishedCalendar", () => {
+      expect(normalizeEventSyncSourceType("boomTechPublishedCalendar"))
+          .toBe(EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR);
+      expect(normalizeEventSyncSourceType("wixPublishedCalendar"))
+          .toBe(EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR);
+    });
+
+    it("recognizes wixEventsCalendar", () => {
+      expect(normalizeEventSyncSourceType("wixEventsCalendar"))
+          .toBe(EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR);
+    });
+  });
+
+  describe("parseExternalEventsFromWixEvents", () => {
+    const baseItems = [
+      {
+        id: "313ff5ad-e0fa-4908-b847-a8f05e4b6fd1",
+        title: "HAL 5 Skill Competition 2026",
+        slug: "hal-5-skill-competition-2026",
+        status: 0,
+        description: "Save the date! More info to be announced.",
+        about: "",
+        scheduling: {
+          config: {
+            scheduleTbd: false,
+            startDate: "2026-11-15T11:00:00.000Z",
+            endDate: "2026-11-15T19:00:00.023Z",
+            timeZoneId: "Europe/Brussels",
+          },
+        },
+        location: {
+          name: "HAL 5 Parkour Gym",
+          address: "Hal 5, Diestsesteenweg 104, 3010 Leuven, Belgium",
+          coordinates: {lat: 50.8832367, lng: 4.7221158},
+        },
+        mainImage: {
+          url: "https://static.wixstatic.com/media/a8d822_photo.jpeg",
+        },
+        registration: {type: 4, status: 0},
+      },
+      {
+        id: "ended-1",
+        title: "Past jam",
+        slug: "past-jam",
+        status: 2,
+        description: "Already happened",
+        scheduling: {
+          config: {
+            startDate: "2025-01-01T12:00:00.000Z",
+            endDate: "2025-01-01T16:00:00.000Z",
+            timeZoneId: "Europe/Brussels",
+          },
+        },
+        location: {name: "HAL 5", address: "Leuven"},
+      },
+      {
+        id: "ladies-1",
+        title: "Ladies in Leuven 2027",
+        slug: "ladies-in-leuven-2027",
+        status: "SCHEDULED",
+        description: "Women-only jam",
+        scheduling: {
+          config: {
+            startDate: "2027-02-13T11:00:00.000Z",
+            endDate: "2027-02-13T19:00:00.000Z",
+            timeZoneId: "Europe/Brussels",
+          },
+        },
+        location: {
+          name: "Hal 5 Parkour Gym",
+          address: "Diestsesteenweg 104, 3010 Leuven, Belgium",
+          coordinates: {lat: 50.88, lng: 4.72},
+        },
+        registration: {
+          type: 3,
+          status: 6,
+          external: {
+            registration:
+              "http://www.springstofparkour.com/ladies-in-leuven-2027",
+          },
+        },
+      },
+    ];
+
+    it("imports only upcoming events with schedule, place, and image", () => {
+      const events = parseExternalEventsFromWixEvents(baseItems, {
+        sourceId: "wix-1",
+        sourceName: "Springstof",
+        siteOrigin: "https://www.springstofparkour.com",
+      });
+      expect(events).toHaveLength(2);
+      expect(events.map((e) => e.externalEventUid)).toEqual([
+        "313ff5ad-e0fa-4908-b847-a8f05e4b6fd1",
+        "ladies-1",
+      ]);
+      expect(events[0].title).toBe("HAL 5 Skill Competition 2026");
+      expect(events[0].timeZone).toBe("Europe/Brussels");
+      expect(events[0].timeZoneSource).toBe(EVENT_TIME_ZONE_SOURCE_FEED);
+      expect(events[0].startAt.toISOString())
+          .toBe("2026-11-15T11:00:00.000Z");
+      expect(events[0].endAt.toISOString())
+          .toBe("2026-11-15T19:00:00.023Z");
+      expect(events[0].address)
+          .toBe("Hal 5, Diestsesteenweg 104, 3010 Leuven, Belgium");
+      expect(events[0].latitude).toBeCloseTo(50.8832367);
+      expect(events[0].longitude).toBeCloseTo(4.7221158);
+      expect(events[0].externalImageUrl)
+          .toBe("https://static.wixstatic.com/media/a8d822_photo.jpeg");
+      expect(events[0].websiteUrl)
+          .toBe("https://www.springstofparkour.com/hal-5-skill-competition-2026");
+      expect(events[0].description)
+          .toBe("Save the date! More info to be announced.");
+    });
+
+    it("prefers external registration URL over slug", () => {
+      const events = parseExternalEventsFromWixEvents(baseItems, {
+        sourceId: "wix-1",
+        sourceName: "Springstof",
+        siteOrigin: "https://www.springstofparkour.com",
+      });
+      const ladies = events.find((e) => e.externalEventUid === "ladies-1");
+      expect(ladies.websiteUrl)
+          .toBe("http://www.springstofparkour.com/ladies-in-leuven-2027");
+    });
+
+    it("uses sourceDefaultTimeZone when event has no timeZoneId", () => {
+      const events = parseExternalEventsFromWixEvents([{
+        id: "tz-1",
+        title: "Floating",
+        slug: "floating",
+        status: 0,
+        description: "No tz",
+        scheduling: {
+          config: {
+            startDate: "2026-10-04T16:00:00.000Z",
+            endDate: "2026-10-04T20:00:00.000Z",
+          },
+        },
+        location: {name: "Glendale"},
+      }], {
+        sourceId: "wix-1",
+        sourceName: "Citi Limits",
+        siteOrigin: "https://www.citilimitsparkour.com",
+        sourceDefaultTimeZone: "America/Phoenix",
+      });
+      expect(events).toHaveLength(1);
+      expect(events[0].timeZone).toBe("America/Phoenix");
+      expect(events[0].timeZoneSource)
+          .toBe(EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT);
+    });
+
+    it("skips scheduleTbd events", () => {
+      const events = parseExternalEventsFromWixEvents([{
+        id: "tbd-1",
+        title: "TBD",
+        status: 0,
+        scheduling: {
+          config: {
+            scheduleTbd: true,
+            startDate: "2026-11-15T11:00:00.000Z",
+          },
+        },
+      }], {
+        sourceId: "wix-1",
+        sourceName: "Test",
+      });
+      expect(events).toHaveLength(0);
     });
   });
 
