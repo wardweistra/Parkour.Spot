@@ -71,6 +71,88 @@ function buildExternalEventKey(uid, recurrenceId) {
 }
 
 /**
+ * Reads createdAt as epoch millis for ordering duplicate event docs.
+ * @param {Object|null|undefined} data
+ * @return {number}
+ */
+function externalEventCreatedAtMillis(data) {
+  if (!data || typeof data !== "object") return Number.POSITIVE_INFINITY;
+  const asDate = normalizeDate(data.createdAt);
+  return asDate ? asDate.getTime() : Number.POSITIVE_INFINITY;
+}
+
+/**
+ * Among docs that share an externalEventKey, keep the oldest created one.
+ * Prefer reviewed / linked docs when timestamps are equal.
+ * @param {Array<Object>} candidates
+ * @return {{keep: (Object|null), drop: Array<Object>}}
+ */
+function selectCanonicalExternalEventDuplicate(candidates) {
+  if (!Array.isArray(candidates) || candidates.length === 0) {
+    return {keep: null, drop: []};
+  }
+  if (candidates.length === 1) {
+    return {keep: candidates[0], drop: []};
+  }
+
+  const scored = candidates.slice().sort((left, right) => {
+    const createdDiff =
+      externalEventCreatedAtMillis(left.data) -
+      externalEventCreatedAtMillis(right.data);
+    if (createdDiff !== 0) return createdDiff;
+
+    const leftReviewed = left.data && left.data.needsModeratorReview === false;
+    const rightReviewed =
+      right.data && right.data.needsModeratorReview === false;
+    if (leftReviewed !== rightReviewed) return leftReviewed ? -1 : 1;
+
+    const leftSpots = Array.isArray(left.data && left.data.spotIds) ?
+      left.data.spotIds.length :
+      0;
+    const rightSpots = Array.isArray(right.data && right.data.spotIds) ?
+      right.data.spotIds.length :
+      0;
+    if (leftSpots !== rightSpots) return rightSpots - leftSpots;
+
+    return String(left.id).localeCompare(String(right.id));
+  });
+
+  return {keep: scored[0], drop: scored.slice(1)};
+}
+
+/**
+ * Partitions existing source events by externalEventKey and lists
+ * extras to drop.
+ * @param {Array<Object>} entries
+ * @return {{byKey: Map<string, Object>, duplicatesToDelete: Array<Object>}}
+ */
+function partitionExternalEventsByKey(entries) {
+  /** @type {Map<string, Array<Object>>} */
+  const grouped = new Map();
+  for (const entry of entries || []) {
+    if (!entry || typeof entry !== "object") continue;
+    const key = toNonEmptyString(entry.key);
+    if (!key) continue;
+    const list = grouped.get(key) || [];
+    list.push({id: entry.id, data: entry.data || {}});
+    grouped.set(key, list);
+  }
+
+  /** @type {Map<string, Object>} */
+  const byKey = new Map();
+  /** @type {Array<Object>} */
+  const duplicatesToDelete = [];
+  for (const [key, candidates] of grouped.entries()) {
+    const {keep, drop} = selectCanonicalExternalEventDuplicate(candidates);
+    if (keep) byKey.set(key, keep);
+    for (const dup of drop) {
+      duplicatesToDelete.push(dup);
+    }
+  }
+  return {byKey, duplicatesToDelete};
+}
+
+/**
  * Compares nullable strings while ignoring whitespace and empty-string/null.
  * @param {*} left
  * @param {*} right
@@ -1764,11 +1846,13 @@ module.exports = {
   parseExternalEventsFromWixPublishedCalendar,
   parseExternalEventsFromSquarespace,
   normalizeRecurrenceId,
+  partitionExternalEventsByKey,
   removeExtractedWebsiteUrlFromDescription,
   resolveAllDaySchedule,
   resolveFloatingTimedSchedule,
   resolveTimezoneForMidnightPromotion,
   isLocalMidnightToMidnight,
   promoteTimedSpanToAllDaySchedule,
+  selectCanonicalExternalEventDuplicate,
   shouldGeocodeExternalEventAddress,
 };

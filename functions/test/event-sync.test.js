@@ -14,7 +14,9 @@ const {
   parseExternalEventsFromIcs,
   parseExternalEventsFromSquarespace,
   parseExternalEventsFromWixPublishedCalendar,
+  partitionExternalEventsByKey,
   removeExtractedWebsiteUrlFromDescription,
+  selectCanonicalExternalEventDuplicate,
   shouldGeocodeExternalEventAddress,
   EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR,
 } = require("../lib/event-sync");
@@ -31,6 +33,56 @@ describe("event-sync helpers", () => {
           "20260513T120000Z",
       );
       expect(key).toBe("recurring-uid::20260513T120000Z");
+    });
+  });
+
+  describe("partitionExternalEventsByKey", () => {
+    it("keeps the oldest doc and lists newer same-key docs for delete", () => {
+      const older = {
+        id: "old",
+        data: {
+          createdAt: new Date("2026-09-28T19:40:00.000Z"),
+          needsModeratorReview: true,
+        },
+      };
+      const newer = {
+        id: "new",
+        data: {
+          createdAt: new Date("2026-09-28T19:56:00.000Z"),
+          needsModeratorReview: true,
+        },
+      };
+      const {keep, drop} = selectCanonicalExternalEventDuplicate([newer, older]);
+      expect(keep.id).toBe("old");
+      expect(drop.map((d) => d.id)).toEqual(["new"]);
+
+      const {byKey, duplicatesToDelete} = partitionExternalEventsByKey([
+        {id: newer.id, data: newer.data, key: "uid-1"},
+        {id: older.id, data: older.data, key: "uid-1"},
+        {
+          id: "solo",
+          data: {createdAt: new Date("2026-09-28T19:40:00.000Z")},
+          key: "uid-2",
+        },
+      ]);
+      expect(byKey.get("uid-1").id).toBe("old");
+      expect(byKey.get("uid-2").id).toBe("solo");
+      expect(duplicatesToDelete.map((d) => d.id)).toEqual(["new"]);
+    });
+
+    it("prefers reviewed docs when createdAt ties", () => {
+      const createdAt = new Date("2026-09-28T19:40:00.000Z");
+      const {keep} = selectCanonicalExternalEventDuplicate([
+        {
+          id: "unreviewed",
+          data: {createdAt, needsModeratorReview: true},
+        },
+        {
+          id: "reviewed",
+          data: {createdAt, needsModeratorReview: false},
+        },
+      ]);
+      expect(keep.id).toBe("reviewed");
     });
   });
 

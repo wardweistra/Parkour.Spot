@@ -172,6 +172,7 @@ const {
   parseExternalEventsFromSquarespace,
   parseExternalEventsFromWixPublishedCalendar,
   buildExternalEventKey,
+  partitionExternalEventsByKey,
   shouldGeocodeExternalEventAddress,
   normalizeEventSyncSourceDefaultTimeZone,
   normalizeEventSyncSourceType,
@@ -5053,6 +5054,65 @@ async function buildExternalEventChangedUpdate(
   return updateData;
 }
 
+/** Stale event-sync lock recovery window (callable timeout is 1 hour). */
+const EVENT_SYNC_LOCK_STALE_MS = 2 * 60 * 60 * 1000;
+
+/**
+ * Acquires an exclusive sync lock on an event sync source document.
+ * @param {FirebaseFirestore.DocumentReference} sourceRef
+ * @return {Promise<void>}
+ */
+async function acquireEventSyncLock(sourceRef) {
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(sourceRef);
+    if (!snap.exists) {
+      throw new Error("Event sync source not found");
+    }
+    const data = snap.data() || {};
+    if (data.syncInProgress === true) {
+      const startedAt = data.syncStartedAt &&
+          typeof data.syncStartedAt.toDate === "function" ?
+        data.syncStartedAt.toDate() :
+        null;
+      const ageMs = startedAt ? Date.now() - startedAt.getTime() : 0;
+      if (!startedAt || ageMs < EVENT_SYNC_LOCK_STALE_MS) {
+        throw new Error(
+            "Sync already in progress for this event source. " +
+            "Wait for it to finish, then try again.",
+        );
+      }
+      logger.warn("externalEventSync.staleLockRecovered", {
+        sourceId: sourceRef.id,
+        syncStartedAt: startedAt ? startedAt.toISOString() : null,
+        ageMs,
+      });
+    }
+    tx.update(sourceRef, {
+      syncInProgress: true,
+      syncStartedAt: FieldValue.serverTimestamp(),
+    });
+  });
+}
+
+/**
+ * Clears the exclusive sync lock on an event sync source document.
+ * @param {FirebaseFirestore.DocumentReference} sourceRef
+ * @return {Promise<void>}
+ */
+async function releaseEventSyncLock(sourceRef) {
+  try {
+    await sourceRef.update({
+      syncInProgress: false,
+      syncStartedAt: FieldValue.delete(),
+    });
+  } catch (error) {
+    logger.error("externalEventSync.lockReleaseFailed", {
+      sourceId: sourceRef.id,
+      error: error && error.message ? error.message : String(error),
+    });
+  }
+}
+
 /**
  * Syncs one external event source into events collection.
  * @param {DocumentSnapshot} sourceDoc
@@ -5066,244 +5126,280 @@ async function syncExternalEventSource(sourceDoc) {
     sourceData.name.trim() :
     sourceId;
   const sourceType = normalizeEventSyncSourceType(sourceData.sourceType);
-  logger.info("externalEventSync.start", {
-    sourceId,
-    sourceType,
-    mapsApiKeyConfigured: Boolean(
-        typeof process.env.GOOGLE_MAPS_API_KEY === "string" &&
-        process.env.GOOGLE_MAPS_API_KEY.trim().length > 0,
-    ),
-  });
-  const feedUrl = normalizeEventSyncFeedUrl(sourceData.icsUrl, sourceType);
-  const sourceDefaultTimeZone =
-    normalizeEventSyncSourceDefaultTimeZone(sourceData.defaultTimeZone);
-  let parsedEvents;
-  let feedBytes = 0;
-  if (sourceType === EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR) {
-    const fetched = await fetchSquarespaceCalendarEvents(feedUrl, {
-      downloadText: downloadTextFromUrl,
-    });
-    feedBytes = fetched.items.length;
-    parsedEvents = parseExternalEventsFromSquarespace(fetched.items, {
+
+  await acquireEventSyncLock(sourceDoc.ref);
+  try {
+    logger.info("externalEventSync.start", {
       sourceId,
-      sourceName,
-      websiteTimeZone: fetched.websiteTimeZone,
-      siteOrigin: fetched.siteOrigin,
-      sourceDefaultTimeZone,
+      sourceType,
+      mapsApiKeyConfigured: Boolean(
+          typeof process.env.GOOGLE_MAPS_API_KEY === "string" &&
+          process.env.GOOGLE_MAPS_API_KEY.trim().length > 0,
+      ),
     });
-  } else {
-    const feedText = await downloadTextFromUrl(feedUrl);
-    feedBytes = feedText.length;
-    if (sourceType === EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR) {
-      let payload;
-      try {
-        payload = JSON.parse(feedText);
-      } catch (error) {
-        throw new Error(
-            `Failed parsing published_calendar JSON: ${error.message}`,
-        );
-      }
-      parsedEvents = parseExternalEventsFromWixPublishedCalendar(payload, {
+    const feedUrl = normalizeEventSyncFeedUrl(sourceData.icsUrl, sourceType);
+    const sourceDefaultTimeZone =
+      normalizeEventSyncSourceDefaultTimeZone(sourceData.defaultTimeZone);
+    let parsedEvents;
+    let feedBytes = 0;
+    if (sourceType === EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR) {
+      const fetched = await fetchSquarespaceCalendarEvents(feedUrl, {
+        downloadText: downloadTextFromUrl,
+      });
+      feedBytes = fetched.items.length;
+      parsedEvents = parseExternalEventsFromSquarespace(fetched.items, {
         sourceId,
         sourceName,
+        websiteTimeZone: fetched.websiteTimeZone,
+        siteOrigin: fetched.siteOrigin,
         sourceDefaultTimeZone,
       });
     } else {
-      parsedEvents = parseExternalEventsFromIcs(feedText, {
-        sourceId,
-        sourceName,
-        sourceDefaultTimeZone,
-      });
-    }
-  }
-  logger.info("externalEventSync.parsed", {
-    sourceId,
-    sourceType,
-    totalParsed: parsedEvents.length,
-    feedBytes,
-  });
-
-  const uniqueEventsByKey = new Map();
-  for (const parsedEvent of parsedEvents) {
-    uniqueEventsByKey.set(parsedEvent.externalEventKey, parsedEvent);
-  }
-  const uniqueEvents = Array.from(uniqueEventsByKey.values());
-  const externalEventGeocodeOptions = {
-    googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
-    geocodeCache: new Map(),
-  };
-
-  const existingEventsSnapshot = await db
-      .collection("events")
-      .where("eventSourceId", "==", sourceId)
-      .get();
-  const existingByKey = new Map();
-  for (const existingDoc of existingEventsSnapshot.docs) {
-    const existingData = existingDoc.data() || {};
-    let existingKey = null;
-    if (
-      typeof existingData.externalEventKey === "string" &&
-      existingData.externalEventKey.trim().length > 0
-    ) {
-      existingKey = existingData.externalEventKey.trim();
-    } else if (
-      typeof existingData.externalEventUid === "string" &&
-      existingData.externalEventUid.trim().length > 0
-    ) {
-      try {
-        existingKey = buildExternalEventKey(
-            existingData.externalEventUid,
-            existingData.externalEventRecurrenceId || null,
-        );
-      } catch (_) {
-        existingKey = null;
-      }
-    }
-
-    if (existingKey) {
-      existingByKey.set(existingKey, {ref: existingDoc.ref, data: existingData});
-    }
-  }
-
-  let batch = db.batch();
-  let operationCount = 0;
-  const stats = {
-    totalParsed: parsedEvents.length,
-    totalUnique: uniqueEvents.length,
-    duplicatesInFeed: parsedEvents.length - uniqueEvents.length,
-    created: 0,
-    changed: 0,
-    unchanged: 0,
-    coordinatesBackfilled: 0,
-    imagesBackfilled: 0,
-    placeBackfilled: 0,
-  };
-
-  const commitBatch = async () => {
-    if (operationCount === 0) return;
-    await batch.commit();
-    batch = db.batch();
-    operationCount = 0;
-  };
-
-  for (const parsedEvent of uniqueEvents) {
-    const existing = existingByKey.get(parsedEvent.externalEventKey);
-    if (!existing) {
-      const newEventRef = db.collection("events").doc();
-      const createData = await buildExternalEventCreateData(
-          parsedEvent,
-          externalEventGeocodeOptions,
-      );
-      batch.set(newEventRef, createData);
-      stats.created += 1;
-      operationCount += 1;
-    } else if (hasExternalEventContentChanges(existing.data, parsedEvent)) {
-      const updateData = await buildExternalEventChangedUpdate(
-          parsedEvent,
-          existing.data,
-          externalEventGeocodeOptions,
-      );
-      batch.update(existing.ref, updateData);
-      stats.changed += 1;
-      operationCount += 1;
-    } else {
-      const backfillUpdate = {};
-      if (
-        hasStoredEventCoordinates(parsedEvent) &&
-        !hasStoredEventCoordinates(existing.data)
-      ) {
-        backfillUpdate.latitude = Number(parsedEvent.latitude);
-        backfillUpdate.longitude = Number(parsedEvent.longitude);
-        stats.coordinatesBackfilled += 1;
-      } else if (shouldGeocodeExternalEventAddress(existing.data, parsedEvent)) {
-        const geocodedLocation = await geocodeExternalEventAddress(
-            parsedEvent.address,
-            externalEventGeocodeOptions,
-        );
-        if (geocodedLocation) {
-          backfillUpdate.latitude = geocodedLocation.latitude;
-          backfillUpdate.longitude = geocodedLocation.longitude;
-          if (geocodedLocation.city) {
-            backfillUpdate.city = geocodedLocation.city;
-          }
-          if (geocodedLocation.countryCode) {
-            backfillUpdate.countryCode = geocodedLocation.countryCode;
-          }
-          stats.coordinatesBackfilled += 1;
+      const feedText = await downloadTextFromUrl(feedUrl);
+      feedBytes = feedText.length;
+      if (sourceType === EVENT_SYNC_SOURCE_TYPE_WIX_PUBLISHED_CALENDAR) {
+        let payload;
+        try {
+          payload = JSON.parse(feedText);
+        } catch (error) {
+          throw new Error(
+              `Failed parsing published_calendar JSON: ${error.message}`,
+          );
         }
-      }
-
-      const coordsForPlace = hasStoredEventCoordinates(backfillUpdate) ?
-        backfillUpdate :
-        (hasStoredEventCoordinates(parsedEvent) ?
-          parsedEvent :
-          existing.data);
-      if (
-        hasStoredEventCoordinates(coordsForPlace) &&
-        !hasExternalEventPlaceFields(existing.data) &&
-        !hasExternalEventPlaceFields(backfillUpdate)
-      ) {
-        const wrotePlace = await applyExternalEventPlaceFromCoordinates(
-            backfillUpdate,
-            coordsForPlace.latitude,
-            coordsForPlace.longitude,
-            externalEventGeocodeOptions,
-        );
-        if (wrotePlace) {
-          stats.placeBackfilled += 1;
-        }
-      }
-
-      const existingImageUrls = Array.isArray(existing.data.imageUrls) ?
-        existing.data.imageUrls :
-        [];
-      const needsImageBackfill =
-        typeof parsedEvent.externalImageUrl === "string" &&
-        parsedEvent.externalImageUrl.trim().length > 0 &&
-        existingImageUrls.length === 0;
-      if (needsImageBackfill) {
-        const resolvedImages = await resolveExternalEventImages(
-            parsedEvent,
-            existing.data,
-        );
-        if (Array.isArray(resolvedImages.imageUrls) &&
-            resolvedImages.imageUrls.length > 0) {
-          backfillUpdate.imageUrls = resolvedImages.imageUrls;
-          backfillUpdate.externalImageUrl = resolvedImages.externalImageUrl;
-          stats.imagesBackfilled += 1;
-        }
-      }
-
-      if (Object.keys(backfillUpdate).length > 0) {
-        backfillUpdate.updatedAt = FieldValue.serverTimestamp();
-        backfillUpdate.externalSyncLastSeenAt = FieldValue.serverTimestamp();
-        batch.update(existing.ref, backfillUpdate);
+        parsedEvents = parseExternalEventsFromWixPublishedCalendar(payload, {
+          sourceId,
+          sourceName,
+          sourceDefaultTimeZone,
+        });
       } else {
-        batch.update(existing.ref, {
-          externalSyncLastSeenAt: FieldValue.serverTimestamp(),
+        parsedEvents = parseExternalEventsFromIcs(feedText, {
+          sourceId,
+          sourceName,
+          sourceDefaultTimeZone,
         });
       }
-      stats.unchanged += 1;
-      operationCount += 1;
+    }
+    logger.info("externalEventSync.parsed", {
+      sourceId,
+      sourceType,
+      totalParsed: parsedEvents.length,
+      feedBytes,
+    });
+
+    const uniqueEventsByKey = new Map();
+    for (const parsedEvent of parsedEvents) {
+      uniqueEventsByKey.set(parsedEvent.externalEventKey, parsedEvent);
+    }
+    const uniqueEvents = Array.from(uniqueEventsByKey.values());
+    const externalEventGeocodeOptions = {
+      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
+      geocodeCache: new Map(),
+    };
+
+    const existingEventsSnapshot = await db
+        .collection("events")
+        .where("eventSourceId", "==", sourceId)
+        .get();
+    const partitionEntries = [];
+    for (const existingDoc of existingEventsSnapshot.docs) {
+      const existingData = existingDoc.data() || {};
+      let existingKey = null;
+      if (
+        typeof existingData.externalEventKey === "string" &&
+        existingData.externalEventKey.trim().length > 0
+      ) {
+        existingKey = existingData.externalEventKey.trim();
+      } else if (
+        typeof existingData.externalEventUid === "string" &&
+        existingData.externalEventUid.trim().length > 0
+      ) {
+        try {
+          existingKey = buildExternalEventKey(
+              existingData.externalEventUid,
+              existingData.externalEventRecurrenceId || null,
+          );
+        } catch (_) {
+          existingKey = null;
+        }
+      }
+      partitionEntries.push({
+        id: existingDoc.id,
+        data: existingData,
+        key: existingKey,
+      });
+    }
+    const {byKey: canonicalByKey, duplicatesToDelete} =
+      partitionExternalEventsByKey(partitionEntries);
+    const existingByKey = new Map();
+    for (const [key, canonical] of canonicalByKey.entries()) {
+      existingByKey.set(key, {
+        ref: db.collection("events").doc(canonical.id),
+        data: canonical.data,
+      });
     }
 
-    if (operationCount >= 400) {
+    let batch = db.batch();
+    let operationCount = 0;
+    const stats = {
+      totalParsed: parsedEvents.length,
+      totalUnique: uniqueEvents.length,
+      duplicatesInFeed: parsedEvents.length - uniqueEvents.length,
+      duplicatesRemoved: 0,
+      created: 0,
+      changed: 0,
+      unchanged: 0,
+      coordinatesBackfilled: 0,
+      imagesBackfilled: 0,
+      placeBackfilled: 0,
+    };
+
+    const commitBatch = async () => {
+      if (operationCount === 0) return;
+      await batch.commit();
+      batch = db.batch();
+      operationCount = 0;
+    };
+
+    for (const duplicate of duplicatesToDelete) {
+      batch.delete(db.collection("events").doc(duplicate.id));
+      stats.duplicatesRemoved += 1;
+      operationCount += 1;
+      if (operationCount >= 400) {
+        await commitBatch();
+      }
+    }
+    if (duplicatesToDelete.length > 0) {
+      logger.warn("externalEventSync.duplicatesRemoved", {
+        sourceId,
+        count: duplicatesToDelete.length,
+      });
       await commitBatch();
     }
+
+    for (const parsedEvent of uniqueEvents) {
+      const existing = existingByKey.get(parsedEvent.externalEventKey);
+      if (!existing) {
+        const newEventRef = db.collection("events").doc();
+        const createData = await buildExternalEventCreateData(
+            parsedEvent,
+            externalEventGeocodeOptions,
+        );
+        batch.set(newEventRef, createData);
+        stats.created += 1;
+        operationCount += 1;
+      } else if (hasExternalEventContentChanges(existing.data, parsedEvent)) {
+        const updateData = await buildExternalEventChangedUpdate(
+            parsedEvent,
+            existing.data,
+            externalEventGeocodeOptions,
+        );
+        batch.update(existing.ref, updateData);
+        stats.changed += 1;
+        operationCount += 1;
+      } else {
+        const backfillUpdate = {};
+        if (
+          hasStoredEventCoordinates(parsedEvent) &&
+          !hasStoredEventCoordinates(existing.data)
+        ) {
+          backfillUpdate.latitude = Number(parsedEvent.latitude);
+          backfillUpdate.longitude = Number(parsedEvent.longitude);
+          stats.coordinatesBackfilled += 1;
+        } else if (
+          shouldGeocodeExternalEventAddress(existing.data, parsedEvent)
+        ) {
+          const geocodedLocation = await geocodeExternalEventAddress(
+              parsedEvent.address,
+              externalEventGeocodeOptions,
+          );
+          if (geocodedLocation) {
+            backfillUpdate.latitude = geocodedLocation.latitude;
+            backfillUpdate.longitude = geocodedLocation.longitude;
+            if (geocodedLocation.city) {
+              backfillUpdate.city = geocodedLocation.city;
+            }
+            if (geocodedLocation.countryCode) {
+              backfillUpdate.countryCode = geocodedLocation.countryCode;
+            }
+            stats.coordinatesBackfilled += 1;
+          }
+        }
+
+        const coordsForPlace = hasStoredEventCoordinates(backfillUpdate) ?
+          backfillUpdate :
+          (hasStoredEventCoordinates(parsedEvent) ?
+            parsedEvent :
+            existing.data);
+        if (
+          hasStoredEventCoordinates(coordsForPlace) &&
+          !hasExternalEventPlaceFields(existing.data) &&
+          !hasExternalEventPlaceFields(backfillUpdate)
+        ) {
+          const wrotePlace = await applyExternalEventPlaceFromCoordinates(
+              backfillUpdate,
+              coordsForPlace.latitude,
+              coordsForPlace.longitude,
+              externalEventGeocodeOptions,
+          );
+          if (wrotePlace) {
+            stats.placeBackfilled += 1;
+          }
+        }
+
+        const existingImageUrls = Array.isArray(existing.data.imageUrls) ?
+          existing.data.imageUrls :
+          [];
+        const needsImageBackfill =
+          typeof parsedEvent.externalImageUrl === "string" &&
+          parsedEvent.externalImageUrl.trim().length > 0 &&
+          existingImageUrls.length === 0;
+        if (needsImageBackfill) {
+          const resolvedImages = await resolveExternalEventImages(
+              parsedEvent,
+              existing.data,
+          );
+          if (Array.isArray(resolvedImages.imageUrls) &&
+              resolvedImages.imageUrls.length > 0) {
+            backfillUpdate.imageUrls = resolvedImages.imageUrls;
+            backfillUpdate.externalImageUrl = resolvedImages.externalImageUrl;
+            stats.imagesBackfilled += 1;
+          }
+        }
+
+        if (Object.keys(backfillUpdate).length > 0) {
+          backfillUpdate.updatedAt = FieldValue.serverTimestamp();
+          backfillUpdate.externalSyncLastSeenAt = FieldValue.serverTimestamp();
+          batch.update(existing.ref, backfillUpdate);
+        } else {
+          batch.update(existing.ref, {
+            externalSyncLastSeenAt: FieldValue.serverTimestamp(),
+          });
+        }
+        stats.unchanged += 1;
+        operationCount += 1;
+      }
+
+      if (operationCount >= 400) {
+        await commitBatch();
+      }
+    }
+
+    await commitBatch();
+    await sourceDoc.ref.update({
+      lastSyncAt: FieldValue.serverTimestamp(),
+      lastSyncStats: stats,
+    });
+
+    return {
+      sourceId,
+      sourceName,
+      stats,
+    };
+  } finally {
+    await releaseEventSyncLock(sourceDoc.ref);
   }
-
-  await commitBatch();
-  await sourceDoc.ref.update({
-    lastSyncAt: FieldValue.serverTimestamp(),
-    lastSyncStats: stats,
-  });
-
-  return {
-    sourceId,
-    sourceName,
-    stats,
-  };
 }
+
 
 // Function to create an event sync source (admin only).
 exports.createEventSyncSource = onCall(
