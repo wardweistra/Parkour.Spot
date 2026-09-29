@@ -27,6 +27,7 @@ const yauzl = require("yauzl");
 const http = require("http");
 const https = require("https");
 const path = require("path");
+const {downloadTextFromUrl} = require("./lib/download-text");
 const {google} = require("googleapis");
 const countries = require("i18n-iso-countries");
 
@@ -4717,89 +4718,6 @@ async function resolveExternalEventImages(parsedEvent, existingData = null) {
     imageUrls: [],
     uploaded: false,
   };
-}
-
-/**
- * Downloads text content and follows redirects.
- * @param {string} url
- * @param {Object|number=} options Or legacy redirectCount number.
- * @param {Object<string, string>=} options.headers
- * @param {number=} options.redirectCount
- * @return {Promise<string>}
- */
-function downloadTextFromUrl(url, options = {}) {
-  let redirectCount = 0;
-  /** @type {Object<string, string>} */
-  let extraHeaders = {};
-  if (typeof options === "number") {
-    redirectCount = options;
-  } else if (options && typeof options === "object") {
-    redirectCount = typeof options.redirectCount === "number" ?
-      options.redirectCount :
-      0;
-    if (options.headers && typeof options.headers === "object") {
-      extraHeaders = options.headers;
-    }
-  }
-
-  if (redirectCount > 5) {
-    throw new Error("Too many redirects while fetching ICS");
-  }
-
-  const parsedUrl = new URL(url);
-  if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
-    throw new Error("ICS URL must use http or https");
-  }
-  const client = parsedUrl.protocol === "http:" ? http : https;
-
-  return new Promise((resolve, reject) => {
-    const request = client.get(parsedUrl, {
-      headers: {
-        "User-Agent": "ParkourSpotEventSync/1.0",
-        "Accept": "application/json, text/calendar, text/plain, */*",
-        ...extraHeaders,
-      },
-    }, (response) => {
-      if (
-        response.statusCode &&
-        response.statusCode >= 300 &&
-        response.statusCode < 400 &&
-        response.headers.location
-      ) {
-        response.resume();
-        const redirectedUrl = new URL(
-            response.headers.location,
-            parsedUrl,
-        ).toString();
-        resolve(downloadTextFromUrl(redirectedUrl, {
-          redirectCount: redirectCount + 1,
-          headers: extraHeaders,
-        }));
-        return;
-      }
-
-      if (!response.statusCode || response.statusCode >= 400) {
-        const statusCode = response.statusCode || 0;
-        response.resume();
-        reject(new Error(`Failed fetching ICS (HTTP ${statusCode})`));
-        return;
-      }
-
-      let body = "";
-      response.setEncoding("utf8");
-      response.on("data", (chunk) => {
-        body += chunk;
-      });
-      response.on("end", () => {
-        resolve(body);
-      });
-    });
-
-    request.on("error", reject);
-    request.setTimeout(15000, () => {
-      request.destroy(new Error("ICS request timed out"));
-    });
-  });
 }
 
 /**
