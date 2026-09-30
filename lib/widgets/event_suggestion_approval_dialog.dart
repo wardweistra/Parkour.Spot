@@ -410,6 +410,7 @@ class _EventSuggestionApprovalDialogState
                   report: report,
                   sectionTitle: l10n.eventDetailQuickActionSuggestEdit,
                   currentLocation: _currentLocationForMap(targetEvent),
+                  currentEvent: targetEvent,
                 ),
                 const SizedBox(height: 12),
               ],

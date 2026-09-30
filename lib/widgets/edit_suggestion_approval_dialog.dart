@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'location_review_map.dart';
+import 'text_diff_view.dart';
+import '../l10n/app_localizations.dart';
 import '../models/spot.dart';
 import '../models/spot_report.dart';
 import '../constants/spot_attributes.dart';
@@ -9,6 +11,7 @@ import '../services/spot_service.dart';
 import '../services/spot_report_service.dart';
 import '../services/auth_service.dart';
 import '../services/geocoding_service.dart';
+
 /// Dialog for moderators to accept or reject individual edit suggestions from a spot report.
 class EditSuggestionApprovalDialog extends StatefulWidget {
   final SpotReport report;
@@ -299,12 +302,51 @@ class _EditSuggestionApprovalDialogState
     }
   }
 
+  String _emptyValue(AppLocalizations l10n) => l10n.spotDuplicateChangesNoValue;
+
+  String _displayText(String? value, AppLocalizations l10n) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return _emptyValue(l10n);
+    return trimmed;
+  }
+
+  String _labeledList(
+    List<String>? values,
+    String category,
+    AppLocalizations l10n,
+  ) {
+    final labels = [
+      for (final value in values ?? const <String>[])
+        if (value.trim().isNotEmpty) SpotAttributes.getLabel(category, value),
+    ]..sort();
+    if (labels.isEmpty) return _emptyValue(l10n);
+    return labels.join(', ');
+  }
+
+  String _facilitiesText(
+    Map<String, String>? facilities,
+    AppLocalizations l10n,
+  ) {
+    if (facilities == null || facilities.isEmpty) return _emptyValue(l10n);
+    final keys = facilities.keys.toList()..sort();
+    return keys
+        .map((key) {
+          final label = SpotAttributes.getLabel('facilities', key);
+          return '$label: ${facilities[key]}';
+        })
+        .join(', ');
+  }
+
+  String _coordinates(double latitude, double longitude) {
+    return '${latitude.toStringAsFixed(5)}, ${longitude.toStringAsFixed(5)}';
+  }
+
   Widget _buildFieldRow(
     BuildContext context, {
     required String fieldLabel,
     required String fieldKey,
-    required Widget currentWidget,
-    required Widget suggestedWidget,
+    required String before,
+    required String after,
   }) {
     final theme = Theme.of(context);
     final accepted = _accepted[fieldKey] ?? false;
@@ -336,43 +378,7 @@ class _EditSuggestionApprovalDialogState
             ],
           ),
           const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Current',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    currentWidget,
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Suggested',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    suggestedWidget,
-                  ],
-                ),
-              ),
-            ],
-          ),
+          TextDiffView(before: before, after: after),
         ],
       ),
     );
@@ -381,6 +387,7 @@ class _EditSuggestionApprovalDialogState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
     final report = widget.report;
     final spot = _targetSpot;
 
@@ -580,36 +587,16 @@ class _EditSuggestionApprovalDialogState
                   context,
                   fieldLabel: 'Title',
                   fieldKey: 'name',
-                  currentWidget: Text(
-                    spot.name,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  suggestedWidget: Text(
-                    report.suggestedName!,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
+                  before: _displayText(spot.name, l10n),
+                  after: _displayText(report.suggestedName, l10n),
                 ),
               if (report.suggestedDescription != null)
                 _buildFieldRow(
                   context,
                   fieldLabel: 'Description',
                   fieldKey: 'description',
-                  currentWidget: Text(
-                    spot.description,
-                    style: theme.textTheme.bodySmall,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  suggestedWidget: Text(
-                    report.suggestedDescription!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  before: _displayText(spot.description, l10n),
+                  after: _displayText(report.suggestedDescription, l10n),
                 ),
               if (report.suggestedLatitude != null &&
                   report.suggestedLongitude != null) ...[
@@ -658,51 +645,12 @@ class _EditSuggestionApprovalDialogState
                         height: 280,
                       ),
                       const SizedBox(height: 8),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Current',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: theme.colorScheme.onSurface
-                                        .withValues(alpha: 0.6),
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${spot.latitude.toStringAsFixed(4)}, ${spot.longitude.toStringAsFixed(4)}',
-                                  style: theme.textTheme.bodySmall,
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Suggested',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: theme.colorScheme.primary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${report.suggestedLatitude!.toStringAsFixed(4)}, ${report.suggestedLongitude!.toStringAsFixed(4)}',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                      TextDiffView(
+                        before: _coordinates(spot.latitude, spot.longitude),
+                        after: _coordinates(
+                          report.suggestedLatitude!,
+                          report.suggestedLongitude!,
+                        ),
                       ),
                     ],
                   ),
@@ -714,19 +662,8 @@ class _EditSuggestionApprovalDialogState
                   context,
                   fieldLabel: 'Good for',
                   fieldKey: 'goodFor',
-                  currentWidget: _buildChipList(
-                    context,
-                    (spot.goodFor ?? [])
-                        .map((k) => SpotAttributes.getLabel('goodFor', k))
-                        .toList(),
-                  ),
-                  suggestedWidget: _buildChipList(
-                    context,
-                    report.suggestedGoodFor!
-                        .map((k) => SpotAttributes.getLabel('goodFor', k))
-                        .toList(),
-                    isSuggested: true,
-                  ),
+                  before: _labeledList(spot.goodFor, 'goodFor', l10n),
+                  after: _labeledList(report.suggestedGoodFor, 'goodFor', l10n),
                 ),
               if (report.suggestedSpotFeatures != null &&
                   report.suggestedSpotFeatures!.isNotEmpty)
@@ -734,18 +671,11 @@ class _EditSuggestionApprovalDialogState
                   context,
                   fieldLabel: 'Features',
                   fieldKey: 'spotFeatures',
-                  currentWidget: _buildChipList(
-                    context,
-                    (spot.spotFeatures ?? [])
-                        .map((k) => SpotAttributes.getLabel('features', k))
-                        .toList(),
-                  ),
-                  suggestedWidget: _buildChipList(
-                    context,
-                    report.suggestedSpotFeatures!
-                        .map((k) => SpotAttributes.getLabel('features', k))
-                        .toList(),
-                    isSuggested: true,
+                  before: _labeledList(spot.spotFeatures, 'features', l10n),
+                  after: _labeledList(
+                    report.suggestedSpotFeatures,
+                    'features',
+                    l10n,
                   ),
                 ),
               if (report.suggestedSpotAccess != null)
@@ -753,17 +683,12 @@ class _EditSuggestionApprovalDialogState
                   context,
                   fieldLabel: 'Access',
                   fieldKey: 'spotAccess',
-                  currentWidget: Text(
-                    spot.spotAccess != null
-                        ? SpotAttributes.getLabel('access', spot.spotAccess!)
-                        : '—',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  suggestedWidget: Text(
-                    SpotAttributes.getLabel('access', report.suggestedSpotAccess!),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
+                  before: spot.spotAccess != null
+                      ? SpotAttributes.getLabel('access', spot.spotAccess!)
+                      : _emptyValue(l10n),
+                  after: SpotAttributes.getLabel(
+                    'access',
+                    report.suggestedSpotAccess!,
                   ),
                 ),
               if (report.suggestedSpotFacilities != null &&
@@ -772,14 +697,10 @@ class _EditSuggestionApprovalDialogState
                   context,
                   fieldLabel: 'Facilities',
                   fieldKey: 'spotFacilities',
-                  currentWidget: _buildFacilitiesText(
-                    context,
-                    spot.spotFacilities ?? {},
-                  ),
-                  suggestedWidget: _buildFacilitiesText(
-                    context,
-                    report.suggestedSpotFacilities!,
-                    isSuggested: true,
+                  before: _facilitiesText(spot.spotFacilities, l10n),
+                  after: _facilitiesText(
+                    report.suggestedSpotFacilities,
+                    l10n,
                   ),
                 ),
               Text(
@@ -833,54 +754,6 @@ class _EditSuggestionApprovalDialogState
               : Text(_isRejectAll() ? 'Submit Review' : 'Apply Selected'),
         ),
       ],
-    );
-  }
-
-  Widget _buildChipList(
-    BuildContext context,
-    List<String> labels, {
-    bool isSuggested = false,
-  }) {
-    final theme = Theme.of(context);
-    if (labels.isEmpty) {
-      return Text('—', style: theme.textTheme.bodySmall);
-    }
-    return Wrap(
-      spacing: 4,
-      runSpacing: 4,
-      children: labels.map((l) {
-        return Chip(
-          label: Text(l, style: const TextStyle(fontSize: 12)),
-          visualDensity: VisualDensity.compact,
-          padding: EdgeInsets.zero,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          backgroundColor: isSuggested
-              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
-              : theme.colorScheme.surfaceContainerHighest,
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildFacilitiesText(
-    BuildContext context,
-    Map<String, String> facilities, {
-    bool isSuggested = false,
-  }) {
-    final theme = Theme.of(context);
-    if (facilities.isEmpty) {
-      return Text('—', style: theme.textTheme.bodySmall);
-    }
-    final entries = facilities.entries.map((e) {
-      final label = SpotAttributes.getLabel('facilities', e.key);
-      final value = e.value;
-      return '$label: $value';
-    }).join(', ');
-    return Text(
-      entries,
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: isSuggested ? theme.colorScheme.primary : null,
-      ),
     );
   }
 }

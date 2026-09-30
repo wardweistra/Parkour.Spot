@@ -3,19 +3,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:parkour_spot/l10n/app_localizations.dart';
 import 'package:parkour_spot/models/event_report.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:parkour_spot/models/parkour_event.dart';
 import 'package:parkour_spot/widgets/location_review_map.dart';
 import 'package:parkour_spot/widgets/event_suggested_edits_summary.dart';
+import 'package:parkour_spot/widgets/text_diff_view.dart';
 
 void main() {
   Future<void> pumpSummary(
     WidgetTester tester, {
     required EventReport report,
+    ParkourEvent? currentEvent,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: EventSuggestedEditsSummary(report: report)),
+        home: Scaffold(
+          body: EventSuggestedEditsSummary(
+            report: report,
+            currentEvent: currentEvent,
+          ),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -151,4 +159,38 @@ void main() {
 
     expect(find.text('Suggested changes'), findsNothing);
   });
+
+  testWidgets(
+    'shows unified diffs against the current event when provided',
+    (tester) async {
+      final report = EventReport(
+        id: 'report-1',
+        title: 'Jam session',
+        status: 'New',
+        startAt: DateTime.utc(2026, 5, 28, 18),
+        suggestedTitle: 'Evening jam',
+        suggestedDescription: 'Bring shoes',
+        targetEventId: 'event-1',
+      );
+      final currentEvent = ParkourEvent(
+        id: 'event-1',
+        title: 'Jam session',
+        description: 'Casual training',
+        startAt: DateTime.utc(2026, 5, 28, 18),
+      );
+
+      await pumpSummary(
+        tester,
+        report: report,
+        currentEvent: currentEvent,
+      );
+
+      expect(find.byType(TextDiffView), findsNWidgets(2));
+      expect(find.textContaining('Jam session'), findsWidgets);
+      expect(find.textContaining('Evening jam'), findsOneWidget);
+      expect(find.textContaining('Casual training'), findsOneWidget);
+      expect(find.textContaining('Bring shoes'), findsOneWidget);
+      expect(find.text('Title: Evening jam'), findsNothing);
+    },
+  );
 }
