@@ -20,7 +20,18 @@ const {
   failSyncRun,
   restoreSpotProgressFromRun,
   formatSyncRunReportText,
+  pruneOldSyncRuns,
 } = require("../lib/sync-runs");
+
+function toMillis(value) {
+  if (value == null) return null;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value.toDate === "function") {
+    return value.toDate().getTime();
+  }
+  if (typeof value === "number") return value;
+  return null;
+}
 
 function createMockDb() {
   const docs = new Map();
@@ -29,6 +40,7 @@ function createMockDb() {
     const key = `${collectionName}/${id}`;
     return {
       id,
+      path: key,
       set: jest.fn(async (data) => {
         docs.set(key, {...data});
       }),
@@ -49,6 +61,9 @@ function createMockDb() {
         }
         docs.set(key, next);
       }),
+      delete: jest.fn(async () => {
+        docs.delete(key);
+      }),
       get: jest.fn(async () => {
         const data = docs.get(key);
         return {
@@ -57,6 +72,82 @@ function createMockDb() {
           data: () => (data ? {...data} : undefined),
         };
       }),
+    };
+  };
+
+  const listCollectionDocs = (collectionName) => {
+    const prefix = `${collectionName}/`;
+    const result = [];
+    for (const [key, data] of docs.entries()) {
+      if (!key.startsWith(prefix)) continue;
+      const id = key.slice(prefix.length);
+      if (id.includes("/")) continue;
+      result.push({
+        id,
+        ref: makeDocRef(collectionName, id),
+        data: () => ({...data}),
+      });
+    }
+    return result;
+  };
+
+  const makeQuery = (collectionName, filters = [], order = null, limitCount = null) => {
+    const runGet = async () => {
+      let rows = listCollectionDocs(collectionName);
+      for (const filter of filters) {
+        const {field, op, value} = filter;
+        rows = rows.filter((row) => {
+          const raw = row.data()[field];
+          if (op === "<") {
+            const left = toMillis(raw);
+            const right = toMillis(value);
+            if (left == null || right == null) return false;
+            return left < right;
+          }
+          if (op === "==") {
+            return raw === value;
+          }
+          return true;
+        });
+      }
+      if (order && order.field) {
+        const dir = order.direction === "desc" ? -1 : 1;
+        rows.sort((a, b) => {
+          const am = toMillis(a.data()[order.field]);
+          const bm = toMillis(b.data()[order.field]);
+          if (am == null && bm == null) return 0;
+          if (am == null) return 1;
+          if (bm == null) return -1;
+          return (am - bm) * dir;
+        });
+      }
+      if (typeof limitCount === "number") {
+        rows = rows.slice(0, limitCount);
+      }
+      return {
+        docs: rows,
+        size: rows.length,
+        empty: rows.length === 0,
+      };
+    };
+
+    return {
+      where: (field, op, value) =>
+        makeQuery(
+            collectionName,
+            [...filters, {field, op, value}],
+            order,
+            limitCount,
+        ),
+      orderBy: (field, direction = "asc") =>
+        makeQuery(
+            collectionName,
+            filters,
+            {field, direction},
+            limitCount,
+        ),
+      limit: (n) => makeQuery(collectionName, filters, order, n),
+      get: runGet,
     };
   };
 
@@ -71,7 +162,35 @@ function createMockDb() {
         }
         return makeDocRef(name, id);
       },
+      get: async () => {
+        const rows = listCollectionDocs(name);
+        return {
+          docs: rows,
+          size: rows.length,
+          empty: rows.length === 0,
+        };
+      },
+      where: (field, op, value) =>
+        makeQuery(name, [{field, op, value}], null, null),
+      orderBy: (field, direction = "asc") =>
+        makeQuery(name, [], {field, direction}, null),
+      limit: (n) => makeQuery(name, [], null, n),
     }),
+    batch: () => {
+      const ops = [];
+      return {
+        delete: (ref) => {
+          ops.push({type: "delete", ref});
+        },
+        commit: async () => {
+          for (const op of ops) {
+            if (op.type === "delete" && op.ref && op.ref.path) {
+              docs.delete(op.ref.path);
+            }
+          }
+        },
+      };
+    },
   };
 
   const FieldValue = {
@@ -333,6 +452,115 @@ describe("sync-runs helpers", () => {
       expect(text).toContain("Alpha");
       expect(text).toContain("yt123");
       expect(text).toContain(ISSUE_YOUTUBE_MISSING_THUMBNAIL);
+    });
+  });
+
+  describe("pruneOldSyncRuns", () => {
+    const now = new Date("2026-10-01T12:00:00.000Z");
+    const daysAgo = (n) =>
+      new Date(now.getTime() - n * 24 * 60 * 60 * 1000);
+
+    it("deletes old finished runs that are not referenced", async () => {
+      const {db, docs} = createMockDb();
+      await db.collection("syncRuns").doc("old-free").set({
+        status: STATUS_SUCCEEDED,
+        finishedAt: daysAgo(45),
+      });
+      await db.collection("syncRuns").doc("recent").set({
+        status: STATUS_SUCCEEDED,
+        finishedAt: daysAgo(5),
+      });
+      await db.collection("syncSources").doc("s1").set({name: "S1"});
+
+      const result = await pruneOldSyncRuns(db, {
+        olderThanDays: 30,
+        now,
+      });
+
+      expect(result.scanned).toBe(1);
+      expect(result.deleted).toBe(1);
+      expect(result.skippedProtected).toBe(0);
+      expect(docs.has("syncRuns/old-free")).toBe(false);
+      expect(docs.has("syncRuns/recent")).toBe(true);
+    });
+
+    it("keeps old finished runs still referenced as lastCompletedRunId", async () => {
+      const {db, docs} = createMockDb();
+      await db.collection("syncRuns").doc("old-protected").set({
+        status: STATUS_SUCCEEDED,
+        finishedAt: daysAgo(60),
+      });
+      await db.collection("syncSources").doc("s1").set({
+        lastCompletedRunId: "old-protected",
+      });
+
+      const result = await pruneOldSyncRuns(db, {
+        olderThanDays: 30,
+        now,
+      });
+
+      expect(result.scanned).toBe(1);
+      expect(result.deleted).toBe(0);
+      expect(result.skippedProtected).toBe(1);
+      expect(docs.has("syncRuns/old-protected")).toBe(true);
+    });
+
+    it("keeps recent finished runs", async () => {
+      const {db, docs} = createMockDb();
+      await db.collection("syncRuns").doc("fresh").set({
+        status: STATUS_FAILED,
+        finishedAt: daysAgo(1),
+      });
+
+      const result = await pruneOldSyncRuns(db, {
+        olderThanDays: 30,
+        now,
+      });
+
+      expect(result.scanned).toBe(0);
+      expect(result.deleted).toBe(0);
+      expect(docs.has("syncRuns/fresh")).toBe(true);
+    });
+
+    it("does not delete running runs with null finishedAt", async () => {
+      const {db, docs} = createMockDb();
+      await db.collection("syncRuns").doc("running").set({
+        status: STATUS_RUNNING,
+        finishedAt: null,
+        startedAt: daysAgo(40),
+      });
+      await db.collection("eventSyncSources").doc("e1").set({
+        lastFailedRunId: "other",
+      });
+
+      const result = await pruneOldSyncRuns(db, {
+        olderThanDays: 30,
+        now,
+      });
+
+      expect(result.scanned).toBe(0);
+      expect(result.deleted).toBe(0);
+      expect(docs.has("syncRuns/running")).toBe(true);
+    });
+
+    it("respects eventSyncSources pointer protection", async () => {
+      const {db, docs} = createMockDb();
+      await db.collection("syncRuns").doc("old-event").set({
+        status: STATUS_FAILED,
+        finishedAt: daysAgo(31),
+      });
+      await db.collection("eventSyncSources").doc("e1").set({
+        lastFailedRunId: "old-event",
+      });
+
+      const result = await pruneOldSyncRuns(db, {
+        olderThanDays: 30,
+        now,
+      });
+
+      expect(result.deleted).toBe(0);
+      expect(result.skippedProtected).toBe(1);
+      expect(docs.has("syncRuns/old-event")).toBe(true);
     });
   });
 });

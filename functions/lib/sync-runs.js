@@ -408,6 +408,107 @@ function formatSyncRunReportText(run) {
   return lines.join("\n");
 }
 
+/** Default retention for finished syncRuns. */
+const DEFAULT_PRUNE_OLDER_THAN_DAYS = 30;
+/** Max docs scanned/deleted per prune invocation. */
+const DEFAULT_PRUNE_BATCH_LIMIT = 400;
+
+const SYNC_RUN_POINTER_FIELDS = [
+  "currentSyncRunId",
+  "lastCompletedRunId",
+  "lastFailedRunId",
+];
+
+/**
+ * Collects sync run ids still referenced by spot/event sync sources.
+ * @param {FirebaseFirestore.Firestore} db
+ * @return {Promise<Set<string>>}
+ */
+async function collectProtectedSyncRunIds(db) {
+  const protectedIds = new Set();
+  const addFromSnapshot = (snap) => {
+    if (!snap || !Array.isArray(snap.docs)) return;
+    for (const doc of snap.docs) {
+      const data = typeof doc.data === "function" ? doc.data() : null;
+      if (!data || typeof data !== "object") continue;
+      for (const field of SYNC_RUN_POINTER_FIELDS) {
+        const value = data[field];
+        if (typeof value === "string" && value.trim().length > 0) {
+          protectedIds.add(value.trim());
+        }
+      }
+    }
+  };
+
+  const spotSnap = await db.collection("syncSources").get();
+  addFromSnapshot(spotSnap);
+  const eventSnap = await db.collection("eventSyncSources").get();
+  addFromSnapshot(eventSnap);
+  return protectedIds;
+}
+
+/**
+ * Deletes finished syncRuns older than the retention window.
+ * Skips ids still pointed at by syncSources / eventSyncSources.
+ * Running docs (`finishedAt` null) are excluded by the inequality query.
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {Object=} options
+ * @param {number=} options.olderThanDays
+ * @param {number=} options.batchLimit
+ * @param {Date=} options.now
+ * @return {Promise<Object>} `{scanned, deleted, skippedProtected, cutoffIso}`
+ */
+async function pruneOldSyncRuns(db, options = {}) {
+  const olderThanDays = typeof options.olderThanDays === "number" &&
+      options.olderThanDays > 0 ?
+    options.olderThanDays :
+    DEFAULT_PRUNE_OLDER_THAN_DAYS;
+  const batchLimit = typeof options.batchLimit === "number" &&
+      options.batchLimit > 0 ?
+    Math.min(Math.floor(options.batchLimit), 500) :
+    DEFAULT_PRUNE_BATCH_LIMIT;
+  const now = options.now instanceof Date ? options.now : new Date();
+  const cutoff = new Date(now.getTime() - olderThanDays * 24 * 60 * 60 * 1000);
+
+  const protectedIds = await collectProtectedSyncRunIds(db);
+
+  const snap = await db.collection("syncRuns")
+      .where("finishedAt", "<", cutoff)
+      .orderBy("finishedAt", "asc")
+      .limit(batchLimit)
+      .get();
+
+  const docs = Array.isArray(snap.docs) ? snap.docs : [];
+  let skippedProtected = 0;
+  const toDelete = [];
+  for (const doc of docs) {
+    if (protectedIds.has(doc.id)) {
+      skippedProtected += 1;
+      continue;
+    }
+    toDelete.push(doc.ref);
+  }
+
+  let deleted = 0;
+  const writeChunkSize = 400;
+  for (let i = 0; i < toDelete.length; i += writeChunkSize) {
+    const chunk = toDelete.slice(i, i + writeChunkSize);
+    const batch = db.batch();
+    for (const ref of chunk) {
+      batch.delete(ref);
+    }
+    await batch.commit();
+    deleted += chunk.length;
+  }
+
+  return {
+    scanned: docs.length,
+    deleted,
+    skippedProtected,
+    cutoffIso: cutoff.toISOString(),
+  };
+}
+
 module.exports = {
   SOURCE_KIND_SPOT,
   SOURCE_KIND_EVENT,
@@ -422,6 +523,8 @@ module.exports = {
   TRIGGER_RESUME,
   ISSUE_YOUTUBE_MISSING_THUMBNAIL,
   ISSUE_YOUTUBE_UNCACHED_THUMBNAIL,
+  DEFAULT_PRUNE_OLDER_THAN_DAYS,
+  DEFAULT_PRUNE_BATCH_LIMIT,
   emptySpotStats,
   emptyEventStats,
   resolveRunIdFromSource,
@@ -434,4 +537,6 @@ module.exports = {
   failSyncRun,
   restoreSpotProgressFromRun,
   formatSyncRunReportText,
+  collectProtectedSyncRunIds,
+  pruneOldSyncRuns,
 };

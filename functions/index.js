@@ -164,6 +164,7 @@ const {
   failSyncRun,
   restoreSpotProgressFromRun,
   emptySpotStats,
+  pruneOldSyncRuns,
 } = require("./lib/sync-runs");
 const {createImagePipeline} = require("./lib/image-pipeline");
 const {
@@ -1516,6 +1517,32 @@ exports.runTrainingPlanCheckInRemindersScheduled = onSchedule(
         console.log("Training plan check-in reminders:", result);
       } catch (e) {
         console.error("runTrainingPlanCheckInReminders error", e);
+      }
+    },
+);
+
+/**
+ * Daily prune of finished syncRuns older than 30 days.
+ * Keeps runs still referenced by source last/current pointers.
+ */
+exports.pruneOldSyncRunsScheduled = onSchedule(
+    {
+      schedule: "every 24 hours",
+      timeZone: "UTC",
+      region: "europe-west1",
+      memory: "512MiB",
+      timeoutSeconds: 300,
+    },
+    async () => {
+      try {
+        const result = await pruneOldSyncRuns(db, {
+          olderThanDays: 30,
+          batchLimit: 400,
+        });
+        console.log("pruneOldSyncRuns:", result);
+      } catch (e) {
+        console.error("pruneOldSyncRunsScheduled error", e);
+        throw e;
       }
     },
 );
