@@ -1,1 +1,51 @@
-{}
+{
+  "de": [
+    "auditLogCategorySpotSyncs",
+    "auditLogCategoryEventSyncs",
+    "auditLogCategoryModeratorActions",
+    "auditLogCategoryCreations",
+    "auditLogLoadOlder",
+    "auditLogLoadNewer",
+    "auditLogEmptyFiltered"
+  ],
+
+  "es": [
+    "auditLogCategorySpotSyncs",
+    "auditLogCategoryEventSyncs",
+    "auditLogCategoryModeratorActions",
+    "auditLogCategoryCreations",
+    "auditLogLoadOlder",
+    "auditLogLoadNewer",
+    "auditLogEmptyFiltered"
+  ],
+
+  "fr": [
+    "auditLogCategorySpotSyncs",
+    "auditLogCategoryEventSyncs",
+    "auditLogCategoryModeratorActions",
+    "auditLogCategoryCreations",
+    "auditLogLoadOlder",
+    "auditLogLoadNewer",
+    "auditLogEmptyFiltered"
+  ],
+
+  "nl": [
+    "auditLogCategorySpotSyncs",
+    "auditLogCategoryEventSyncs",
+    "auditLogCategoryModeratorActions",
+    "auditLogCategoryCreations",
+    "auditLogLoadOlder",
+    "auditLogLoadNewer",
+    "auditLogEmptyFiltered"
+  ],
+
+  "pt": [
+    "auditLogCategorySpotSyncs",
+    "auditLogCategoryEventSyncs",
+    "auditLogCategoryModeratorActions",
+    "auditLogCategoryCreations",
+    "auditLogLoadOlder",
+    "auditLogLoadNewer",
+    "auditLogEmptyFiltered"
+  ]
+}

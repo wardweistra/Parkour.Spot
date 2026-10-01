@@ -7742,6 +7742,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'YouTube thumbnail'**
   String get editSpotYoutubeThumbnailSemanticLabel;
+
+  /// Audit log filter chip: spot source sync entries
+  ///
+  /// In en, this message translates to:
+  /// **'Spot syncs'**
+  String get auditLogCategorySpotSyncs;
+
+  /// Audit log filter chip: event source sync entries
+  ///
+  /// In en, this message translates to:
+  /// **'Event syncs'**
+  String get auditLogCategoryEventSyncs;
+
+  /// Audit log filter chip: moderator and admin actions
+  ///
+  /// In en, this message translates to:
+  /// **'Moderator actions'**
+  String get auditLogCategoryModeratorActions;
+
+  /// Audit log filter chip: new spots, users, reports, ratings, sync sources
+  ///
+  /// In en, this message translates to:
+  /// **'Creations'**
+  String get auditLogCategoryCreations;
+
+  /// Audit log: extend the visible window further into the past
+  ///
+  /// In en, this message translates to:
+  /// **'Load older'**
+  String get auditLogLoadOlder;
+
+  /// Audit log: extend the visible window toward now
+  ///
+  /// In en, this message translates to:
+  /// **'Load newer'**
+  String get auditLogLoadNewer;
+
+  /// Audit log: window has data but category chips hide all rows
+  ///
+  /// In en, this message translates to:
+  /// **'No entries match the selected filters'**
+  String get auditLogEmptyFiltered;
 }
 
 class _AppLocalizationsDelegate

@@ -4738,5 +4738,33 @@
   "editSpotYoutubeThumbnailSemanticLabel": "YouTube thumbnail",
   "@editSpotYoutubeThumbnailSemanticLabel": {
     "description": "Moderator edit spot: semantic label for video thumbnail preview"
+  },
+  "auditLogCategorySpotSyncs": "Spot syncs",
+  "@auditLogCategorySpotSyncs": {
+    "description": "Audit log filter chip: spot source sync entries"
+  },
+  "auditLogCategoryEventSyncs": "Event syncs",
+  "@auditLogCategoryEventSyncs": {
+    "description": "Audit log filter chip: event source sync entries"
+  },
+  "auditLogCategoryModeratorActions": "Moderator actions",
+  "@auditLogCategoryModeratorActions": {
+    "description": "Audit log filter chip: moderator and admin actions"
+  },
+  "auditLogCategoryCreations": "Creations",
+  "@auditLogCategoryCreations": {
+    "description": "Audit log filter chip: new spots, users, reports, ratings, sync sources"
+  },
+  "auditLogLoadOlder": "Load older",
+  "@auditLogLoadOlder": {
+    "description": "Audit log: extend the visible window further into the past"
+  },
+  "auditLogLoadNewer": "Load newer",
+  "@auditLogLoadNewer": {
+    "description": "Audit log: extend the visible window toward now"
+  },
+  "auditLogEmptyFiltered": "No entries match the selected filters",
+  "@auditLogEmptyFiltered": {
+    "description": "Audit log: window has data but category chips hide all rows"
   }
 }

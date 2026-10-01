@@ -2,43 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/audit_log.dart';
+import '../../models/audit_log_entry.dart';
 import '../../models/spot.dart';
 import '../../models/user.dart' as app_user;
 import '../../models/rating.dart';
 import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
+import '../../utils/audit_log_feed.dart';
 import '../../widgets/resized_spot_image.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-
-enum AuditLogEntryType {
-  spotCreation,
-  userCreation,
-  spotReportCreation,
-  ratingCreation,
-  syncSourceCreation,
-  auditLogAction,
-}
-
-class AuditLogEntry {
-  final AuditLogEntryType type;
-  final DateTime timestamp;
-  final String? id;
-  final String? title;
-  final String? subtitle;
-  final String? details;
-  final Map<String, dynamic>? metadata;
-
-  AuditLogEntry({
-    required this.type,
-    required this.timestamp,
-    this.id,
-    this.title,
-    this.subtitle,
-    this.details,
-    this.metadata,
-  });
-}
+import 'package:parkour_spot/l10n/app_localizations.dart';
 
 class _DateTimeRangePickerDialog extends StatefulWidget {
   final DateTime initialStart;
@@ -251,12 +225,15 @@ class AuditLogViewerScreen extends StatefulWidget {
 class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
   List<AuditLogEntry> _entries = [];
   bool _isLoading = true;
+  bool _isExtending = false;
   String? _error;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  late final Set<AuditLogCategory> _selectedCategories =
+      defaultSelectedAuditLogCategories();
 
   // Date range for filtering
   DateTimeRange _dateRange = DateTimeRange(
-    start: DateTime.now().subtract(const Duration(hours: 24)),
+    start: DateTime.now().subtract(auditLogWindowStep),
     end: DateTime.now(),
   );
 
@@ -266,11 +243,13 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
     _loadAuditLogs();
   }
 
-  Future<void> _loadAuditLogs() async {
+  Future<void> _loadAuditLogs({bool isExtension = false}) async {
     setState(() {
-      _isLoading = true;
+      if (!isExtension) {
+        _isLoading = true;
+        _entries = [];
+      }
       _error = null;
-      _entries = [];
     });
 
     try {
@@ -952,11 +931,11 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
         );
       }
 
-      // Merge with existing entries and sort by timestamp
-      _entries.addAll(newEntries);
-      _entries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      // Replace feed with the freshly merged window
+      newEntries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
       setState(() {
+        _entries = newEntries;
         _isLoading = false;
       });
     } catch (e) {
@@ -985,6 +964,103 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
       });
       _loadAuditLogs();
     }
+  }
+
+  List<AuditLogEntry> get _visibleEntries =>
+      filterAuditLogEntriesByCategories(_entries, _selectedCategories);
+
+  void _toggleCategory(AuditLogCategory category, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedCategories.add(category);
+      } else {
+        _selectedCategories.remove(category);
+      }
+    });
+  }
+
+  Future<void> _loadOlder() async {
+    if (_isLoading || _isExtending) return;
+    setState(() {
+      _dateRange = extendAuditLogRangeOlder(_dateRange);
+      _isExtending = true;
+    });
+    await _loadAuditLogs(isExtension: true);
+    if (mounted) {
+      setState(() => _isExtending = false);
+    }
+  }
+
+  Future<void> _loadNewer() async {
+    if (_isLoading || _isExtending) return;
+    if (!canExtendAuditLogRangeNewer(_dateRange)) return;
+    setState(() {
+      _dateRange = extendAuditLogRangeNewer(_dateRange);
+      _isExtending = true;
+    });
+    await _loadAuditLogs(isExtension: true);
+    if (mounted) {
+      setState(() => _isExtending = false);
+    }
+  }
+
+  String _labelForCategory(AppLocalizations l10n, AuditLogCategory category) {
+    switch (category) {
+      case AuditLogCategory.spotSyncs:
+        return l10n.auditLogCategorySpotSyncs;
+      case AuditLogCategory.eventSyncs:
+        return l10n.auditLogCategoryEventSyncs;
+      case AuditLogCategory.moderatorActions:
+        return l10n.auditLogCategoryModeratorActions;
+      case AuditLogCategory.creations:
+        return l10n.auditLogCategoryCreations;
+    }
+  }
+
+  Widget _buildCategoryChipRow(AppLocalizations l10n) {
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: SizedBox(
+        height: 56,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          children: [
+            for (final category in AuditLogCategory.values) ...[
+              FilterChip(
+                label: Text(_labelForCategory(l10n, category)),
+                selected: _selectedCategories.contains(category),
+                onSelected: _isLoading
+                    ? null
+                    : (selected) => _toggleCategory(category, selected),
+              ),
+              const SizedBox(width: 8),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExtendControl({
+    required String label,
+    required VoidCallback? onPressed,
+    required IconData icon,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: _isExtending
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Icon(icon, size: 18),
+        label: Text(label),
+      ),
+    );
   }
 
   /// Formats changes for display with bullet points, array diffs, and image previews
@@ -1796,6 +1872,10 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
     final dateTimeFormat = DateFormat('MMM d, yyyy HH:mm');
     final dateRangeText =
         '${dateTimeFormat.format(_dateRange.start)} - ${dateTimeFormat.format(_dateRange.end)}';
+    final l10n = AppLocalizations.of(context)!;
+    final visibleEntries = _visibleEntries;
+    final showLoadNewer = canExtendAuditLogRangeNewer(_dateRange);
+    final newerOffset = showLoadNewer ? 1 : 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -1819,465 +1899,561 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.access_time),
-            onPressed: _selectDateTimeRange,
+            onPressed: _isLoading || _isExtending
+                ? null
+                : _selectDateTimeRange,
             tooltip: 'Select date and time range',
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadAuditLogs,
+            onPressed: _isLoading || _isExtending
+                ? null
+                : () => _loadAuditLogs(),
             tooltip: 'Refresh',
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(_error!),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadAuditLogs,
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            )
-          : _entries.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.inbox, size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No audit log entries found',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'for the selected date range',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            )
-          : RefreshIndicator(
-              onRefresh: _loadAuditLogs,
-              child: ListView.builder(
-                padding: const EdgeInsets.all(8),
-                itemCount: _entries.length,
-                itemBuilder: (context, index) {
-                  final entry = _entries[index];
-                  final dateFormat = DateFormat('yyyy-MM-dd HH:mm:ss');
-                  final formattedDate = dateFormat.format(entry.timestamp);
-
-                  final spotIds = _getSpotIdsFromEntry(entry);
-                  final eventIds = _getEventIdsFromEntry(entry);
-
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildCategoryChipRow(l10n),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(_error!),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => _loadAuditLogs(),
+                          child: const Text('Retry'),
+                        ),
+                      ],
                     ),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: _getColorForType(
-                          entry.type,
-                        ).withValues(alpha: 0.2),
-                        child: Icon(
-                          _getIconForType(entry.type),
-                          color: _getColorForType(entry.type),
-                          size: 20,
+                  )
+                : RefreshIndicator(
+                    onRefresh: () => _loadAuditLogs(),
+                    child: _buildEntriesList(
+                      l10n: l10n,
+                      visibleEntries: visibleEntries,
+                      showLoadNewer: showLoadNewer,
+                      newerOffset: newerOffset,
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEntriesList({
+    required AppLocalizations l10n,
+    required List<AuditLogEntry> visibleEntries,
+    required bool showLoadNewer,
+    required int newerOffset,
+  }) {
+    if (_entries.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(8),
+        children: [
+          if (showLoadNewer)
+            _buildExtendControl(
+              label: l10n.auditLogLoadNewer,
+              icon: Icons.expand_less,
+              onPressed: _isExtending ? null : _loadNewer,
+            ),
+          const SizedBox(height: 48),
+          const Icon(Icons.inbox, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(
+            'No audit log entries found',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'for the selected date range',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: 24),
+          _buildExtendControl(
+            label: l10n.auditLogLoadOlder,
+            icon: Icons.expand_more,
+            onPressed: _isExtending ? null : _loadOlder,
+          ),
+        ],
+      );
+    }
+
+    if (visibleEntries.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(8),
+        children: [
+          if (showLoadNewer)
+            _buildExtendControl(
+              label: l10n.auditLogLoadNewer,
+              icon: Icons.expand_less,
+              onPressed: _isExtending ? null : _loadNewer,
+            ),
+          const SizedBox(height: 48),
+          Icon(
+            Icons.filter_alt_off_outlined,
+            size: 64,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            l10n.auditLogEmptyFiltered,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 24),
+          _buildExtendControl(
+            label: l10n.auditLogLoadOlder,
+            icon: Icons.expand_more,
+            onPressed: _isExtending ? null : _loadOlder,
+          ),
+        ],
+      );
+    }
+
+    final itemCount = visibleEntries.length + newerOffset + 1;
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(8),
+      itemCount: itemCount,
+      itemBuilder: (context, index) {
+        if (showLoadNewer && index == 0) {
+          return _buildExtendControl(
+            label: l10n.auditLogLoadNewer,
+            icon: Icons.expand_less,
+            onPressed: _isExtending ? null : _loadNewer,
+          );
+        }
+        if (index == itemCount - 1) {
+          return _buildExtendControl(
+            label: l10n.auditLogLoadOlder,
+            icon: Icons.expand_more,
+            onPressed: _isExtending ? null : _loadOlder,
+          );
+        }
+
+        final entry = visibleEntries[index - newerOffset];
+        final dateFormat = DateFormat('yyyy-MM-dd HH:mm:ss');
+        final formattedDate = dateFormat.format(entry.timestamp);
+
+        final spotIds = _getSpotIdsFromEntry(entry);
+        final eventIds = _getEventIdsFromEntry(entry);
+
+        return Card(
+          margin: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 4,
+          ),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: _getColorForType(
+                entry.type,
+              ).withValues(alpha: 0.2),
+              child: Icon(
+                _getIconForType(entry.type),
+                color: _getColorForType(entry.type),
+                size: 20,
+              ),
+            ),
+            title: Text(
+              entry.title ?? 'Unknown',
+              style: const TextStyle(),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                SelectableText(
+                  entry.subtitle ?? '',
+                  style: const TextStyle(fontSize: 13),
+                ),
+                // Show changes widget for Spot Edited entries
+                if (entry.type == AuditLogEntryType.auditLogAction &&
+                    entry.metadata?['action'] != null &&
+                    entry.metadata!['action'].toString().contains(
+                      'spotEdit',
+                    ) &&
+                    entry.metadata?['changes'] != null &&
+                    (entry.metadata!['changes']
+                            as Map<String, dynamic>)
+                        .isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _buildChangesWidget(
+                    entry.metadata!['changes']
+                        as Map<String, dynamic>,
+                  ),
+                ] else if (entry.details != null) ...[
+                  const SizedBox(height: 4),
+                  SelectableText(
+                    entry.details!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 4),
+                Text(
+                  formattedDate,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[500],
+                  ),
+                ),
+              ],
+            ),
+            trailing:
+                (spotIds.isNotEmpty ||
+                    eventIds.isNotEmpty ||
+                    _isSpotReportStatusChange(entry) ||
+                    _isSpotReportCreation(entry) ||
+                    _isUserCreation(entry) ||
+                    _hasReportId(entry) ||
+                    _isSpotEdit(entry))
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Spot buttons
+                      ...spotIds.asMap().entries.map((spotEntry) {
+                        final isLast =
+                            spotEntry.key == spotIds.length - 1;
+                        final hasOtherButtons =
+                            eventIds.isNotEmpty ||
+                            _isSpotReportStatusChange(entry) ||
+                            _isSpotReportCreation(entry) ||
+                            _isUserCreation(entry) ||
+                            _hasReportId(entry) ||
+                            _isSpotEdit(entry);
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            right: isLast && !hasOtherButtons ? 0 : 4,
+                          ),
+                          child: IconButton(
+                            icon: Icon(
+                              spotIds.length > 1 && spotEntry.key == 0
+                                  ? Icons.location_on
+                                  : Icons.open_in_new,
+                              size: 20,
+                            ),
+                            tooltip:
+                                spotIds.length > 1 &&
+                                    spotEntry.key == 0
+                                ? 'Open original spot'
+                                : spotIds.length > 1
+                                ? 'Open duplicate spot'
+                                : 'Open spot',
+                            onPressed: () =>
+                                _navigateToSpot(spotEntry.value),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        );
+                      }),
+                      ...eventIds.map(
+                        (eventId) => IconButton(
+                          icon: const Icon(
+                            Icons.event_outlined,
+                            size: 20,
+                          ),
+                          tooltip: 'Open event',
+                          onPressed: () => _navigateToEvent(eventId),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                         ),
                       ),
-                      title: Text(
-                        entry.title ?? 'Unknown',
-                        style: const TextStyle(),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 4),
-                          SelectableText(
-                            entry.subtitle ?? '',
-                            style: const TextStyle(fontSize: 13),
+                      // Spot Report Queue button
+                      if (_isSpotReportStatusChange(entry) ||
+                          _isSpotReportCreation(entry) ||
+                          _hasReportId(entry) ||
+                          _isSpotEdit(entry))
+                        IconButton(
+                          icon: const Icon(
+                            Icons.report_problem,
+                            size: 20,
                           ),
-                          // Show changes widget for Spot Edited entries
-                          if (entry.type == AuditLogEntryType.auditLogAction &&
-                              entry.metadata?['action'] != null &&
-                              entry.metadata!['action'].toString().contains(
-                                'spotEdit',
-                              ) &&
-                              entry.metadata?['changes'] != null &&
-                              (entry.metadata!['changes']
-                                      as Map<String, dynamic>)
-                                  .isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            _buildChangesWidget(
-                              entry.metadata!['changes']
-                                  as Map<String, dynamic>,
-                            ),
-                          ] else if (entry.details != null) ...[
-                            const SizedBox(height: 4),
-                            SelectableText(
-                              entry.details!,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 4),
-                          Text(
-                            formattedDate,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey[500],
-                            ),
+                          tooltip: 'Open spot report queue',
+                          onPressed: () =>
+                              context.push('/moderator/reports'),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      // User Management button
+                      if (_isUserCreation(entry))
+                        IconButton(
+                          icon: const Icon(
+                            Icons.people_outline,
+                            size: 20,
+                          ),
+                          tooltip: 'Open User Management',
+                          onPressed: () =>
+                              context.push('/admin/users'),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                    ],
+                  )
+                : null,
+            isThreeLine: true,
+            onTap: () {
+              // Show details dialog
+              final dialogSpotIds = _getSpotIdsFromEntry(entry);
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text(entry.title ?? 'Details'),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SelectableText('Type: ${entry.type.name}'),
+                        const SizedBox(height: 8),
+                        SelectableText('Timestamp: $formattedDate'),
+                        if (entry.id != null) ...[
+                          const SizedBox(height: 8),
+                          SelectableText('ID: ${entry.id}'),
+                        ],
+                        // Show changes widget for Spot Edited entries
+                        if (entry.type ==
+                                AuditLogEntryType.auditLogAction &&
+                            entry.metadata?['action'] != null &&
+                            entry.metadata!['action']
+                                .toString()
+                                .contains('spotEdit') &&
+                            entry.metadata?['changes'] != null &&
+                            (entry.metadata!['changes']
+                                    as Map<String, dynamic>)
+                                .isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          const Text('Changes:', style: TextStyle()),
+                          const SizedBox(height: 8),
+                          _buildChangesWidget(
+                            entry.metadata!['changes']
+                                as Map<String, dynamic>,
                           ),
                         ],
-                      ),
-                      trailing:
-                          (spotIds.isNotEmpty ||
-                              eventIds.isNotEmpty ||
-                              _isSpotReportStatusChange(entry) ||
-                              _isSpotReportCreation(entry) ||
-                              _isUserCreation(entry) ||
-                              _hasReportId(entry) ||
-                              _isSpotEdit(entry))
-                          ? Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                // Spot buttons
-                                ...spotIds.asMap().entries.map((spotEntry) {
-                                  final isLast =
-                                      spotEntry.key == spotIds.length - 1;
-                                  final hasOtherButtons =
-                                      eventIds.isNotEmpty ||
-                                      _isSpotReportStatusChange(entry) ||
-                                      _isSpotReportCreation(entry) ||
-                                      _isUserCreation(entry) ||
-                                      _hasReportId(entry) ||
-                                      _isSpotEdit(entry);
-                                  return Padding(
-                                    padding: EdgeInsets.only(
-                                      right: isLast && !hasOtherButtons ? 0 : 4,
-                                    ),
-                                    child: IconButton(
-                                      icon: Icon(
-                                        spotIds.length > 1 && spotEntry.key == 0
-                                            ? Icons.location_on
-                                            : Icons.open_in_new,
-                                        size: 20,
-                                      ),
-                                      tooltip:
-                                          spotIds.length > 1 &&
-                                              spotEntry.key == 0
-                                          ? 'Open original spot'
-                                          : spotIds.length > 1
-                                          ? 'Open duplicate spot'
-                                          : 'Open spot',
-                                      onPressed: () =>
-                                          _navigateToSpot(spotEntry.value),
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
-                                    ),
-                                  );
-                                }),
-                                ...eventIds.map(
-                                  (eventId) => IconButton(
-                                    icon: const Icon(
-                                      Icons.event_outlined,
-                                      size: 20,
-                                    ),
-                                    tooltip: 'Open event',
-                                    onPressed: () => _navigateToEvent(eventId),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
+                        // Show report link and notes for Spot Edited entries
+                        if (entry.type ==
+                                AuditLogEntryType.auditLogAction &&
+                            entry.metadata?['action'] != null &&
+                            entry.metadata!['action']
+                                .toString()
+                                .contains('spotEdit')) ...[
+                          if (entry.metadata?['reportId'] != null ||
+                              entry.metadata?['metadata']?['notes'] !=
+                                  null) ...[
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Additional Information:',
+                              style: TextStyle(),
+                            ),
+                            const SizedBox(height: 8),
+                            if (entry.metadata?['reportId'] != null)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: 4,
+                                ),
+                                child: SelectableText(
+                                  'Linked to report: ${entry.metadata!['reportId']}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
                                   ),
                                 ),
-                                // Spot Report Queue button
-                                if (_isSpotReportStatusChange(entry) ||
-                                    _isSpotReportCreation(entry) ||
-                                    _hasReportId(entry) ||
-                                    _isSpotEdit(entry))
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.report_problem,
-                                      size: 20,
-                                    ),
-                                    tooltip: 'Open spot report queue',
-                                    onPressed: () =>
-                                        context.push('/moderator/reports'),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                  ),
-                                // User Management button
-                                if (_isUserCreation(entry))
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.people_outline,
-                                      size: 20,
-                                    ),
-                                    tooltip: 'Open User Management',
-                                    onPressed: () =>
-                                        context.push('/admin/users'),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                  ),
-                              ],
-                            )
-                          : null,
-                      isThreeLine: true,
-                      onTap: () {
-                        // Show details dialog
-                        final dialogSpotIds = _getSpotIdsFromEntry(entry);
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: Text(entry.title ?? 'Details'),
-                            content: SingleChildScrollView(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SelectableText('Type: ${entry.type.name}'),
-                                  const SizedBox(height: 8),
-                                  SelectableText('Timestamp: $formattedDate'),
-                                  if (entry.id != null) ...[
-                                    const SizedBox(height: 8),
-                                    SelectableText('ID: ${entry.id}'),
-                                  ],
-                                  // Show changes widget for Spot Edited entries
-                                  if (entry.type ==
-                                          AuditLogEntryType.auditLogAction &&
-                                      entry.metadata?['action'] != null &&
-                                      entry.metadata!['action']
-                                          .toString()
-                                          .contains('spotEdit') &&
-                                      entry.metadata?['changes'] != null &&
-                                      (entry.metadata!['changes']
-                                              as Map<String, dynamic>)
-                                          .isNotEmpty) ...[
-                                    const SizedBox(height: 16),
-                                    const Text('Changes:', style: TextStyle()),
-                                    const SizedBox(height: 8),
-                                    _buildChangesWidget(
-                                      entry.metadata!['changes']
-                                          as Map<String, dynamic>,
-                                    ),
-                                  ],
-                                  // Show report link and notes for Spot Edited entries
-                                  if (entry.type ==
-                                          AuditLogEntryType.auditLogAction &&
-                                      entry.metadata?['action'] != null &&
-                                      entry.metadata!['action']
-                                          .toString()
-                                          .contains('spotEdit')) ...[
-                                    if (entry.metadata?['reportId'] != null ||
-                                        entry.metadata?['metadata']?['notes'] !=
-                                            null) ...[
-                                      const SizedBox(height: 16),
-                                      const Text(
-                                        'Additional Information:',
-                                        style: TextStyle(),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      if (entry.metadata?['reportId'] != null)
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            bottom: 4,
-                                          ),
-                                          child: SelectableText(
-                                            'Linked to report: ${entry.metadata!['reportId']}',
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ),
-                                      if (entry
-                                              .metadata?['metadata']?['notes'] !=
-                                          null)
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            bottom: 4,
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              const Text(
-                                                'Notes:',
-                                                style: TextStyle(fontSize: 12),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              SelectableText(
-                                                entry.metadata!['metadata']!['notes']
-                                                    as String,
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                    ],
-                                  ],
-                                  if (dialogSpotIds.isNotEmpty) ...[
-                                    const SizedBox(height: 16),
+                              ),
+                            if (entry
+                                    .metadata?['metadata']?['notes'] !=
+                                null)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: 4,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
                                     const Text(
-                                      'Related Spots:',
-                                      style: TextStyle(),
+                                      'Notes:',
+                                      style: TextStyle(fontSize: 12),
                                     ),
-                                    const SizedBox(height: 8),
-                                    ...dialogSpotIds.asMap().entries.map(
-                                      (spotEntry) => Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 8,
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: SelectableText(
-                                                dialogSpotIds.length > 1 &&
-                                                        spotEntry.key == 0
-                                                    ? 'Original: ${spotEntry.value}'
-                                                    : dialogSpotIds.length > 1
-                                                    ? 'Duplicate: ${spotEntry.value}'
-                                                    : 'Spot: ${spotEntry.value}',
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(
-                                                Icons.open_in_new,
-                                                size: 20,
-                                              ),
-                                              tooltip: 'Open spot',
-                                              onPressed: () {
-                                                Navigator.of(context).pop();
-                                                _navigateToSpot(
-                                                  spotEntry.value,
-                                                );
-                                              },
-                                              padding: EdgeInsets.zero,
-                                              constraints:
-                                                  const BoxConstraints(),
-                                            ),
-                                          ],
-                                        ),
+                                    const SizedBox(height: 4),
+                                    SelectableText(
+                                      entry.metadata!['metadata']!['notes']
+                                          as String,
+                                      style: const TextStyle(
+                                        fontSize: 12,
                                       ),
                                     ),
                                   ],
-                                  if (entry.metadata != null &&
-                                      entry.metadata!.isNotEmpty &&
-                                      !(entry.type ==
-                                              AuditLogEntryType
-                                                  .auditLogAction &&
-                                          entry.metadata?['action'] != null &&
-                                          entry.metadata!['action']
-                                              .toString()
-                                              .contains('spotEdit'))) ...[
-                                    const SizedBox(height: 16),
-                                    const Text('Metadata:', style: TextStyle()),
-                                    const SizedBox(height: 8),
-                                    ...entry.metadata!.entries
-                                        .where(
-                                          (e) => e.key != 'changes',
-                                        ) // Exclude changes as it's shown separately
-                                        .map(
-                                          (e) => Padding(
-                                            padding: const EdgeInsets.only(
-                                              bottom: 4,
-                                            ),
-                                            child: SelectableText(
-                                              '${e.key}: ${e.value}',
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                  ],
+                                ),
+                              ),
+                          ],
+                        ],
+                        if (dialogSpotIds.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Related Spots:',
+                            style: TextStyle(),
+                          ),
+                          const SizedBox(height: 8),
+                          ...dialogSpotIds.asMap().entries.map(
+                            (spotEntry) => Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: 8,
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: SelectableText(
+                                      dialogSpotIds.length > 1 &&
+                                              spotEntry.key == 0
+                                          ? 'Original: ${spotEntry.value}'
+                                          : dialogSpotIds.length > 1
+                                          ? 'Duplicate: ${spotEntry.value}'
+                                          : 'Spot: ${spotEntry.value}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.open_in_new,
+                                      size: 20,
+                                    ),
+                                    tooltip: 'Open spot',
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                      _navigateToSpot(
+                                        spotEntry.value,
+                                      );
+                                    },
+                                    padding: EdgeInsets.zero,
+                                    constraints:
+                                        const BoxConstraints(),
+                                  ),
                                 ],
                               ),
                             ),
-                            actions: [
-                              if (dialogSpotIds.isNotEmpty) ...[
-                                ...dialogSpotIds.asMap().entries.map(
-                                  (spotEntry) => TextButton.icon(
-                                    icon: Icon(
-                                      dialogSpotIds.length > 1 &&
-                                              spotEntry.key == 0
-                                          ? Icons.location_on
-                                          : Icons.open_in_new,
-                                      size: 18,
-                                    ),
-                                    label: Text(
-                                      dialogSpotIds.length > 1 &&
-                                              spotEntry.key == 0
-                                          ? 'Open Original'
-                                          : dialogSpotIds.length > 1
-                                          ? 'Open Duplicate'
-                                          : 'Open Spot',
-                                    ),
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                      _navigateToSpot(spotEntry.value);
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                              ],
-                              if (_isSpotReportStatusChange(entry) ||
-                                  _isSpotReportCreation(entry) ||
-                                  _hasReportId(entry) ||
-                                  _isSpotEdit(entry))
-                                TextButton.icon(
-                                  icon: const Icon(
-                                    Icons.report_problem,
-                                    size: 18,
-                                  ),
-                                  label: const Text('Open Report Queue'),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                    context.push('/moderator/reports');
-                                  },
-                                ),
-                              if (_isUserCreation(entry))
-                                TextButton.icon(
-                                  icon: const Icon(
-                                    Icons.people_outline,
-                                    size: 18,
-                                  ),
-                                  label: const Text('Open User Management'),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                    context.push('/admin/users');
-                                  },
-                                ),
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                child: const Text('Close'),
-                              ),
-                            ],
                           ),
-                        );
-                      },
+                        ],
+                        if (entry.metadata != null &&
+                            entry.metadata!.isNotEmpty &&
+                            !(entry.type ==
+                                    AuditLogEntryType
+                                        .auditLogAction &&
+                                entry.metadata?['action'] != null &&
+                                entry.metadata!['action']
+                                    .toString()
+                                    .contains('spotEdit'))) ...[
+                          const SizedBox(height: 16),
+                          const Text('Metadata:', style: TextStyle()),
+                          const SizedBox(height: 8),
+                          ...entry.metadata!.entries
+                              .where(
+                                (e) => e.key != 'changes',
+                              ) // Exclude changes as it's shown separately
+                              .map(
+                                (e) => Padding(
+                                  padding: const EdgeInsets.only(
+                                    bottom: 4,
+                                  ),
+                                  child: SelectableText(
+                                    '${e.key}: ${e.value}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                        ],
+                      ],
                     ),
-                  );
-                },
-              ),
-            ),
+                  ),
+                  actions: [
+                    if (dialogSpotIds.isNotEmpty) ...[
+                      ...dialogSpotIds.asMap().entries.map(
+                        (spotEntry) => TextButton.icon(
+                          icon: Icon(
+                            dialogSpotIds.length > 1 &&
+                                    spotEntry.key == 0
+                                ? Icons.location_on
+                                : Icons.open_in_new,
+                            size: 18,
+                          ),
+                          label: Text(
+                            dialogSpotIds.length > 1 &&
+                                    spotEntry.key == 0
+                                ? 'Open Original'
+                                : dialogSpotIds.length > 1
+                                ? 'Open Duplicate'
+                                : 'Open Spot',
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            _navigateToSpot(spotEntry.value);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if (_isSpotReportStatusChange(entry) ||
+                        _isSpotReportCreation(entry) ||
+                        _hasReportId(entry) ||
+                        _isSpotEdit(entry))
+                      TextButton.icon(
+                        icon: const Icon(
+                          Icons.report_problem,
+                          size: 18,
+                        ),
+                        label: const Text('Open Report Queue'),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          context.push('/moderator/reports');
+                        },
+                      ),
+                    if (_isUserCreation(entry))
+                      TextButton.icon(
+                        icon: const Icon(
+                          Icons.people_outline,
+                          size: 18,
+                        ),
+                        label: const Text('Open User Management'),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          context.push('/admin/users');
+                        },
+                      ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

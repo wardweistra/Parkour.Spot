@@ -4627,4 +4627,25 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get editSpotYoutubeThumbnailSemanticLabel => 'YouTube-miniatuur';
+
+  @override
+  String get auditLogCategorySpotSyncs => 'Spot syncs';
+
+  @override
+  String get auditLogCategoryEventSyncs => 'Event syncs';
+
+  @override
+  String get auditLogCategoryModeratorActions => 'Moderator actions';
+
+  @override
+  String get auditLogCategoryCreations => 'Creations';
+
+  @override
+  String get auditLogLoadOlder => 'Load older';
+
+  @override
+  String get auditLogLoadNewer => 'Load newer';
+
+  @override
+  String get auditLogEmptyFiltered => 'No entries match the selected filters';
 }
