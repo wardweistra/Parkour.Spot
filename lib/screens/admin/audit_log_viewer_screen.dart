@@ -834,6 +834,38 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                 ? 'Sync completed without changes.'
                 : summaryLines.join('\n');
             break;
+          case AuditLogAction.eventSourceSync:
+            title = 'Event source synced';
+            final eventSyncMetadata = auditLog.metadata ?? {};
+            final eventSourceName =
+                eventSyncMetadata['sourceName'] as String? ?? 'Unknown source';
+            subtitle = 'Source: $eventSourceName';
+
+            final eventStatsMap =
+                eventSyncMetadata['stats'] is Map<String, dynamic>
+                ? Map<String, dynamic>.from(
+                    eventSyncMetadata['stats'] as Map,
+                  )
+                : eventSyncMetadata['stats'] is Map
+                ? Map<String, dynamic>.from(eventSyncMetadata['stats'] as Map)
+                : null;
+
+            final eventSummaryLines = <String>[];
+            if (eventStatsMap != null) {
+              final totalParsed = eventStatsMap['totalParsed'] ?? 0;
+              final created = eventStatsMap['created'] ?? 0;
+              final changed = eventStatsMap['changed'] ?? 0;
+              final unchanged = eventStatsMap['unchanged'] ?? 0;
+              eventSummaryLines.add('Total events in feed: $totalParsed');
+              eventSummaryLines.add(
+                'Created: $created • Changed: $changed • Unchanged: $unchanged',
+              );
+            }
+
+            details = eventSummaryLines.isEmpty
+                ? 'Sync completed without changes.'
+                : eventSummaryLines.join('\n');
+            break;
           case AuditLogAction.photoAdded:
             title = 'Photos Added';
             subtitle = auditLog.userName != null
@@ -903,9 +935,12 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
             details: details,
             metadata: {
               if (auditLog.action != AuditLogAction.spotSourceSync &&
+                  auditLog.action != AuditLogAction.eventSourceSync &&
                   auditLog.spotId != null)
                 'spotId': auditLog.spotId,
-              if (auditLog.eventId != null) 'eventId': auditLog.eventId,
+              if (auditLog.action != AuditLogAction.eventSourceSync &&
+                  auditLog.eventId != null)
+                'eventId': auditLog.eventId,
               if (auditLog.reportId != null) 'reportId': auditLog.reportId,
               'userId': auditLog.userId,
               'userName': auditLog.userName,

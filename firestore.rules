@@ -668,6 +668,13 @@ service cloud.firestore {
       allow read: if true; // Allow all users to read sync sources
       // Only allow admin users to write (this would be handled by Firebase Functions with admin privileges)
     }
+
+    // SyncRuns collection - durable sync run reports (spot + event)
+    // Written only by Cloud Functions; admins can read for observability UI
+    match /syncRuns/{runId} {
+      allow read: if requestingUserIsAdmin();
+      allow create, update, delete: if false;
+    }
     
     // AuditLog collection - logs moderator actions on spots
     match /auditLog/{logId} {

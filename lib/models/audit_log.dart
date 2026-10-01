@@ -15,6 +15,7 @@ enum AuditLogAction {
   spotReportStatusChange,
   spotDelete,
   spotSourceSync,
+  eventSourceSync,
   photoAdded,
   photoRejected,
 }

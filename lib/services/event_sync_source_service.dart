@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 
+import '../models/sync_run.dart';
+
 Map<String, dynamic> _callableMap(dynamic value) {
   if (value is! Map) {
     throw FormatException('Expected Map, got ${value.runtimeType}');
@@ -65,6 +67,10 @@ class EventSyncSource {
   final String? syncSchedule;
   final bool? autoSyncEnabled;
   final String? defaultTimeZone;
+  final String? currentSyncRunId;
+  final String? lastCompletedRunId;
+  final String? lastFailedRunId;
+  final SyncSourceLastError? lastError;
 
   const EventSyncSource({
     required this.id,
@@ -81,6 +87,10 @@ class EventSyncSource {
     this.syncSchedule,
     this.autoSyncEnabled,
     this.defaultTimeZone,
+    this.currentSyncRunId,
+    this.lastCompletedRunId,
+    this.lastFailedRunId,
+    this.lastError,
   });
 
   factory EventSyncSource.fromMap(Map<String, dynamic> data) {
@@ -118,6 +128,12 @@ class EventSyncSource {
           ? data['autoSyncEnabled'] as bool
           : null,
       defaultTimeZone: data['defaultTimeZone'] as String?,
+      currentSyncRunId: data['currentSyncRunId']?.toString(),
+      lastCompletedRunId: data['lastCompletedRunId']?.toString(),
+      lastFailedRunId: data['lastFailedRunId']?.toString(),
+      lastError: data['lastError'] != null
+          ? SyncSourceLastError.fromDynamic(data['lastError'])
+          : null,
     );
   }
 

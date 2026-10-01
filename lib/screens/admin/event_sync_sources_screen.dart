@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../services/auth_service.dart';
 import '../../services/event_sync_source_service.dart';
 import '../../utils/event_schedule_utils.dart';
+import '../../widgets/admin/sync_run_report_dialog.dart';
 
 const TextStyle _kEventSyncChipLabelText = TextStyle(
   fontSize: 11,
@@ -29,6 +30,11 @@ class _EventSyncSourcesScreenState extends State<EventSyncSourcesScreen> {
         service.fetchSources(includeInactive: true);
       }
     });
+  }
+
+  Future<void> _openSyncRunReport(String runId) async {
+    if (!mounted) return;
+    await showSyncRunReportDialog(context, runId: runId);
   }
 
   Future<void> _openEditDialog({EventSyncSource? source}) async {
@@ -306,6 +312,68 @@ class _EventSyncSourcesScreenState extends State<EventSyncSourcesScreen> {
                               ),
                             ],
                           ),
+                        if (source.lastError != null) ...[
+                          const SizedBox(height: 4),
+                          Chip(
+                            backgroundColor: Theme.of(context)
+                                .colorScheme
+                                .errorContainer,
+                            label: Text(
+                              'Last error: ${source.lastError!.message}',
+                              style: _kEventSyncChipLabelText.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onErrorContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (source.currentSyncRunId != null ||
+                            source.lastCompletedRunId != null ||
+                            source.lastFailedRunId != null) ...[
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: [
+                              if (source.currentSyncRunId != null)
+                                TextButton.icon(
+                                  onPressed: () => _openSyncRunReport(
+                                    source.currentSyncRunId!,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.pending_actions,
+                                    size: 18,
+                                  ),
+                                  label: const Text('View current run'),
+                                ),
+                              if (source.lastCompletedRunId != null)
+                                TextButton.icon(
+                                  onPressed: () => _openSyncRunReport(
+                                    source.lastCompletedRunId!,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.article_outlined,
+                                    size: 18,
+                                  ),
+                                  label: const Text('View last run'),
+                                ),
+                              if (source.lastFailedRunId != null &&
+                                  source.lastFailedRunId !=
+                                      source.lastCompletedRunId)
+                                TextButton.icon(
+                                  onPressed: () => _openSyncRunReport(
+                                    source.lastFailedRunId!,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.error_outline,
+                                    size: 18,
+                                  ),
+                                  label: const Text('View last failed run'),
+                                ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                     isThreeLine: true,

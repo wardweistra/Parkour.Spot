@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../models/sync_run.dart';
+
 /// Callable/JSON on web can yield [Iterable]s that are not `List` on dart2wasm; avoid `as List`.
 List<String>? _stringListFromDynamic(dynamic value) {
   if (value == null) return null;
@@ -110,6 +112,10 @@ class SyncSource {
   final String? syncType; // "light" or "full" - type of sync in progress
   final Map<String, dynamic>?
   syncProgress; // Progress tracking: {processedCount, totalCount, lastProcessedIndex}
+  final String? currentSyncRunId;
+  final String? lastCompletedRunId;
+  final String? lastFailedRunId;
+  final SyncSourceLastError? lastError;
 
   SyncSource({
     required this.id,
@@ -141,6 +147,10 @@ class SyncSource {
     this.syncInProgress,
     this.syncType,
     this.syncProgress,
+    this.currentSyncRunId,
+    this.lastCompletedRunId,
+    this.lastFailedRunId,
+    this.lastError,
   });
 
   bool get isOpenStreetMap => sourceType == sourceTypeOpenStreetMap;
@@ -215,6 +225,12 @@ class SyncSource {
       syncInProgress: data['syncInProgress'],
       syncType: data['syncType'],
       syncProgress: _coerceToStringKeyMap(data['syncProgress']),
+      currentSyncRunId: data['currentSyncRunId']?.toString(),
+      lastCompletedRunId: data['lastCompletedRunId']?.toString(),
+      lastFailedRunId: data['lastFailedRunId']?.toString(),
+      lastError: data['lastError'] != null
+          ? SyncSourceLastError.fromDynamic(data['lastError'])
+          : null,
     );
   }
 

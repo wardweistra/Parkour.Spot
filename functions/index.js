@@ -158,6 +158,24 @@ const {
 } = require("./lib/naver-bookmarks");
 const {shouldRunSync} = require("./lib/sync-helpers");
 const {
+  SOURCE_KIND_SPOT,
+  SOURCE_KIND_EVENT,
+  SYNC_TYPE_EVENT,
+  TRIGGER_MANUAL,
+  TRIGGER_SCHEDULED,
+  TRIGGER_RESUME,
+  ISSUE_YOUTUBE_MISSING_THUMBNAIL,
+  ISSUE_YOUTUBE_UNCACHED_THUMBNAIL,
+  resolveRunIdFromSource,
+  createSyncRun,
+  bumpInvocation,
+  persistRunningProgress,
+  finalizeSyncRunSucceeded,
+  failSyncRun,
+  restoreSpotProgressFromRun,
+  emptySpotStats,
+} = require("./lib/sync-runs");
+const {
   normalizeFolderList,
   applyFolderFilter,
   sortFoldersByIncludeOrder,
@@ -2681,11 +2699,22 @@ async function geocodeCoordinates(latitude, longitude, apiKey) {
  * @param {string} apiKey - The Google Maps API key
  * @param {boolean} [updateImagesForExistingSpots=false] - Whether to update images for existing spots
  * @param {number} [startIndex=0] - The index to start processing from (for resuming)
+ * @param {Object} [options={}] - Extra options
+ * @param {string} [options.trigger] - manual | scheduled | resume
  * @return {Promise<Object>} Processing result with statistics
  */
-async function processSyncSource(source, sourceId, apiKey, updateImagesForExistingSpots = false, startIndex = 0) {
+async function processSyncSource(
+    source,
+    sourceId,
+    apiKey,
+    updateImagesForExistingSpots = false,
+    startIndex = 0,
+    options = {},
+) {
   const syncType = updateImagesForExistingSpots ? "full" : "light";
   const isResuming = startIndex > 0;
+  const trigger = options.trigger ||
+    (isResuming ? TRIGGER_RESUME : TRIGGER_MANUAL);
   console.log(`Processing source: ${source.name} (${sourceId}) with updateImagesForExistingSpots=${updateImagesForExistingSpots}${isResuming ? ` (resuming from index ${startIndex})` : ""}`);
 
   // Timeout configuration - leave 5 minutes buffer
@@ -2697,6 +2726,9 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
   const isNaverMapSource = source.sourceType === SOURCE_TYPE_NAVERMAP;
   const appliesPlacemarkAttributes =
     isOpenStreetMapSource || isNaverMapSource;
+
+  let syncRunId = null;
+  const sourceDocRef = db.collection("syncSources").doc(sourceId);
 
   let placemarks = [];
   if (isOpenStreetMapSource) {
@@ -2837,25 +2869,7 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
     );
   }
 
-  // Mark sync as in progress (if not already marked)
-  const sourceDocRef = db.collection("syncSources").doc(sourceId);
-  if (!isResuming) {
-    const initialSyncProgress = {
-      processedCount: 0,
-      totalCount: placemarks.length,
-      lastProcessedIndex: 0,
-    };
-    if (source.recordFolderName === true) {
-      initialSyncProgress.collectedFolders = [];
-    }
-
-    await sourceDocRef.update({
-      syncInProgress: true,
-      syncType: syncType,
-      syncProgress: initialSyncProgress,
-    });
-  }
-
+  // Mark sync as in progress and open/resume a durable sync run
   let created = 0;
   let updated = 0;
   let unchanged = 0;
@@ -2864,634 +2878,714 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
   let removed = 0;
   let skipped = 0;
   const processedSpotIds = new Set();
-  const addedSpotSummaries = [];
-  const updatedSpotSummaries = [];
-  const removedSpotSummaries = [];
+  let addedSpotSummaries = [];
+  let updatedSpotSummaries = [];
+  let removedSpotSummaries = [];
+  let syncIssues = [];
 
-  // Collect all unique folder names from successfully processed spots if recordFolderName is enabled.
-  // On resumed syncs, restore folders collected in earlier partial runs.
-  const previouslyCollectedFolders = (
+  try {
+    if (!isResuming) {
+      syncRunId = await createSyncRun(db, FieldValue, {
+        sourceKind: SOURCE_KIND_SPOT,
+        sourceId,
+        sourceName: source.name,
+        syncType,
+        trigger,
+        stats: {
+          ...emptySpotStats(),
+          total: placemarks.length,
+        },
+      });
+      const initialSyncProgress = {
+        processedCount: 0,
+        totalCount: placemarks.length,
+        lastProcessedIndex: 0,
+        runId: syncRunId,
+      };
+      if (source.recordFolderName === true) {
+        initialSyncProgress.collectedFolders = [];
+      }
+
+      await sourceDocRef.update({
+        syncInProgress: true,
+        syncType: syncType,
+        syncProgress: initialSyncProgress,
+        currentSyncRunId: syncRunId,
+        lastError: FieldValue.delete(),
+      });
+    } else {
+      syncRunId = resolveRunIdFromSource(source);
+      if (syncRunId) {
+        const bumped = await bumpInvocation(db, FieldValue, syncRunId);
+        if (bumped) {
+          const restored = restoreSpotProgressFromRun(bumped.data);
+          created = restored.created;
+          updated = restored.updated;
+          unchanged = restored.unchanged;
+          removed = restored.removed;
+          skipped = restored.skipped;
+          geocoded = restored.geocoded;
+          geocodingFailed = restored.geocodingFailed;
+          addedSpotSummaries = restored.added;
+          updatedSpotSummaries = restored.updatedSummaries;
+          removedSpotSummaries = restored.removedSummaries;
+          syncIssues = restored.issues;
+        }
+      } else {
+        // Legacy in-progress sync without a run id: open a run mid-flight
+        syncRunId = await createSyncRun(db, FieldValue, {
+          sourceKind: SOURCE_KIND_SPOT,
+          sourceId,
+          sourceName: source.name,
+          syncType,
+          trigger: TRIGGER_RESUME,
+          stats: {
+            ...emptySpotStats(),
+            total: placemarks.length,
+          },
+        });
+        await sourceDocRef.update({
+          "currentSyncRunId": syncRunId,
+          "syncProgress.runId": syncRunId,
+        });
+      }
+    }
+
+    // Collect all unique folder names from successfully processed spots if recordFolderName is enabled.
+    // On resumed syncs, restore folders collected in earlier partial runs.
+    const previouslyCollectedFolders = (
     isResuming &&
     source.recordFolderName === true &&
     Array.isArray(source.syncProgress?.collectedFolders)
   ) ? source.syncProgress.collectedFolders : [];
-  const allFolders = new Set(
-      previouslyCollectedFolders
-          .filter((folder) => typeof folder === "string")
-          .map((folder) => folder.trim())
-          .filter((folder) => folder.length > 0),
-  );
-
-  if (source.recordFolderName === true) {
-    console.log(
-        `[FOLDER COLLECTION] Starting folder collection for source: ${source.name}`,
+    const allFolders = new Set(
+        previouslyCollectedFolders
+            .filter((folder) => typeof folder === "string")
+            .map((folder) => folder.trim())
+            .filter((folder) => folder.length > 0),
     );
-    console.log(
-        `[FOLDER COLLECTION] Total placemarks to process: ${placemarks.length}`,
-    );
-    if (isResuming) {
-      console.log(
-          `[FOLDER COLLECTION] Restored ${allFolders.size} folder(s) from previous partial runs`,
-      );
-    }
-
-    // Log all folder names found in placemarks before processing
-    const foldersInPlacemarks = new Set();
-    placemarks.forEach((placemark) => {
-      if (placemark.folderName) {
-        foldersInPlacemarks.add(placemark.folderName);
-      }
-    });
-    console.log(
-        `[FOLDER COLLECTION] Folders found in placemarks: [${Array.from(foldersInPlacemarks).join(", ")}]`,
-    );
-  }
-
-  // Process each placemark in batches
-  for (let i = startIndex; i < placemarks.length; i++) {
-    // Check if we're running out of time before processing next batch
-    const elapsed = Date.now() - startTime;
-    const timeRemaining = timeoutMs - elapsed;
-
-    if (timeRemaining < MIN_TIME_REMAINING) {
-      console.log(`Approaching timeout. Processed ${i - startIndex} spots (${i}/${placemarks.length} total). Saving progress...`);
-
-      // Save progress
-      const syncProgressUpdate = {
-        processedCount: i,
-        totalCount: placemarks.length,
-        lastProcessedIndex: i,
-      };
-      if (source.recordFolderName === true) {
-        syncProgressUpdate.collectedFolders = Array.from(allFolders);
-      }
-      await sourceDocRef.update({
-        syncProgress: syncProgressUpdate,
-      });
-
-      // Return partial result
-      return {
-        sourceId: sourceId,
-        sourceName: source.name,
-        stats: {
-          total: placemarks.length,
-          created,
-          updated,
-          unchanged,
-          removed,
-          skipped,
-          geocoded,
-          geocodingFailed,
-          geocodingSuccessRate: placemarks.length > 0 ?
-            ((geocoded / placemarks.length) * 100).toFixed(1) + "%" :
-            "0%",
-        },
-        partial: true,
-        processed: i - startIndex,
-        remaining: placemarks.length - i,
-        message: `Partial sync: ${i - startIndex}/${placemarks.length - startIndex} spots processed. Will resume on next run.`,
-      };
-    }
-    const placemark = placemarks[i];
-    const {name, description, coordinates, address: placemarkAddress} = placemark;
 
     if (source.recordFolderName === true) {
       console.log(
-          `[FOLDER COLLECTION] Processing spot "${name}" with folder: ${placemark.folderName || "null"}`,
+          `[FOLDER COLLECTION] Starting folder collection for source: ${source.name}`,
+      );
+      console.log(
+          `[FOLDER COLLECTION] Total placemarks to process: ${placemarks.length}`,
+      );
+      if (isResuming) {
+        console.log(
+            `[FOLDER COLLECTION] Restored ${allFolders.size} folder(s) from previous partial runs`,
+        );
+      }
+
+      // Log all folder names found in placemarks before processing
+      const foldersInPlacemarks = new Set();
+      placemarks.forEach((placemark) => {
+        if (placemark.folderName) {
+          foldersInPlacemarks.add(placemark.folderName);
+        }
+      });
+      console.log(
+          `[FOLDER COLLECTION] Folders found in placemarks: [${Array.from(foldersInPlacemarks).join(", ")}]`,
       );
     }
 
-    let finalCoordinates = coordinates;
-    let address = placemarkAddress;
-    let city = null;
-    let countryCode = null;
-    let existingSpotData = null;
-    const placemarkExternalId =
+    const buildCumulativeStats = () => ({
+      total: placemarks.length,
+      created,
+      updated,
+      unchanged,
+      removed,
+      skipped,
+      geocoded,
+      geocodingFailed,
+      geocodingSuccessRate: placemarks.length > 0 ?
+      ((geocoded / placemarks.length) * 100).toFixed(1) + "%" :
+      "0%",
+    });
+
+    // Process each placemark in batches
+    for (let i = startIndex; i < placemarks.length; i++) {
+    // Check if we're running out of time before processing next batch
+      const elapsed = Date.now() - startTime;
+      const timeRemaining = timeoutMs - elapsed;
+
+      if (timeRemaining < MIN_TIME_REMAINING) {
+        console.log(`Approaching timeout. Processed ${i - startIndex} spots (${i}/${placemarks.length} total). Saving progress...`);
+
+        // Save progress
+        const syncProgressUpdate = {
+          processedCount: i,
+          totalCount: placemarks.length,
+          lastProcessedIndex: i,
+          runId: syncRunId,
+        };
+        if (source.recordFolderName === true) {
+          syncProgressUpdate.collectedFolders = Array.from(allFolders);
+        }
+        await sourceDocRef.update({
+          syncProgress: syncProgressUpdate,
+          currentSyncRunId: syncRunId,
+        });
+
+        const partialStats = buildCumulativeStats();
+        if (syncRunId) {
+          await persistRunningProgress(db, syncRunId, {
+            stats: partialStats,
+            added: addedSpotSummaries,
+            updated: updatedSpotSummaries,
+            removed: removedSpotSummaries,
+            issues: syncIssues,
+          });
+        }
+
+        // Return partial result
+        return {
+          sourceId: sourceId,
+          sourceName: source.name,
+          stats: partialStats,
+          partial: true,
+          runId: syncRunId,
+          processed: i - startIndex,
+          remaining: placemarks.length - i,
+          message: `Partial sync: ${i - startIndex}/${placemarks.length - startIndex} spots processed. Will resume on next run.`,
+        };
+      }
+      const placemark = placemarks[i];
+      const {name, description, coordinates, address: placemarkAddress} = placemark;
+
+      if (source.recordFolderName === true) {
+        console.log(
+            `[FOLDER COLLECTION] Processing spot "${name}" with folder: ${placemark.folderName || "null"}`,
+        );
+      }
+
+      let finalCoordinates = coordinates;
+      let address = placemarkAddress;
+      let city = null;
+      let countryCode = null;
+      let existingSpotData = null;
+      const placemarkExternalId =
       typeof placemark.externalId === "string" ?
         placemark.externalId.trim() :
         "";
 
-    // If placemark has no coordinates but has an address, geocode the address
-    if (!coordinates && placemarkAddress) {
-      console.log(`Reverse geocoding address for spot: ${name} - ${placemarkAddress}`);
-
-      // Add small delay to respect API rate limits
-      if (i > 0) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      }
-
-      const reverseGeocodeResult = await reverseGeocodeAddress(placemarkAddress, apiKey);
-
-      if (reverseGeocodeResult.success) {
-        finalCoordinates = {
-          latitude: reverseGeocodeResult.latitude,
-          longitude: reverseGeocodeResult.longitude,
-          altitude: 0,
-        };
-        address = placemarkAddress; // Use the original address
-        geocoded++;
-        console.log(`✓ Reverse geocoded spot: ${name} - ${placemarkAddress} -> ${finalCoordinates.latitude}, ${finalCoordinates.longitude}`);
-      } else {
-        geocodingFailed++;
-        console.warn(`✗ Reverse geocoding failed for spot: ${name} - ${reverseGeocodeResult.error}`);
-        continue; // Skip this placemark if we can't get coordinates
-      }
-    }
-
-    if (!finalCoordinates ||
-        typeof finalCoordinates.latitude !== "number" ||
-        typeof finalCoordinates.longitude !== "number") {
-      skipped++;
-      console.warn(`Skipping placemark without coordinates: ${name}`);
-      continue;
-    }
-
-    // Prefer stable external id match (OSM); fall back to exact lat/lng.
-    let existingSpots;
-    if (placemarkExternalId) {
-      existingSpots = await db
-          .collection("spots")
-          .where("spotSource", "==", sourceId)
-          .where("spotSourceExternalId", "==", placemarkExternalId)
-          .limit(1)
-          .get();
-    } else {
-      existingSpots = await db
-          .collection("spots")
-          .where("spotSource", "==", sourceId)
-          .where("latitude", "==", finalCoordinates.latitude)
-          .where("longitude", "==", finalCoordinates.longitude)
-          .get();
-    }
-
-    const coordsChangedForExisting = !existingSpots.empty && (() => {
-      const existingData = existingSpots.docs[0].data() || {};
-      return existingData.latitude !== finalCoordinates.latitude ||
-        existingData.longitude !== finalCoordinates.longitude;
-    })();
-
-    if (existingSpots.empty) {
-      // Only geocode for NEW spots (if we don't already have address from reverse geocoding)
-      if (!address) {
-        console.log(
-            `Geocoding new spot: ${name} at ${finalCoordinates.latitude}, ${finalCoordinates.longitude}`,
-        );
+      // If placemark has no coordinates but has an address, geocode the address
+      if (!coordinates && placemarkAddress) {
+        console.log(`Reverse geocoding address for spot: ${name} - ${placemarkAddress}`);
 
         // Add small delay to respect API rate limits
         if (i > 0) {
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
 
-        const geocodeResult = await geocodeCoordinates(
-            finalCoordinates.latitude,
-            finalCoordinates.longitude,
-            apiKey,
-        );
+        const reverseGeocodeResult = await reverseGeocodeAddress(placemarkAddress, apiKey);
 
-        if (geocodeResult.success) {
-          address = geocodeResult.address;
-          city = geocodeResult.city;
-          countryCode = geocodeResult.countryCode;
+        if (reverseGeocodeResult.success) {
+          finalCoordinates = {
+            latitude: reverseGeocodeResult.latitude,
+            longitude: reverseGeocodeResult.longitude,
+            altitude: 0,
+          };
+          address = placemarkAddress; // Use the original address
           geocoded++;
-          console.log(`✓ Geocoded new spot: ${name} - ${address}`);
+          console.log(`✓ Reverse geocoded spot: ${name} - ${placemarkAddress} -> ${finalCoordinates.latitude}, ${finalCoordinates.longitude}`);
         } else {
           geocodingFailed++;
-          console.warn(
-              `✗ Geocoding failed for new spot: ${name} - ${geocodeResult.error}`,
-          );
-        }
-      } else {
-        // We have address from reverse geocoding, now get city and country
-        console.log(`Getting city/country for spot: ${name} at ${finalCoordinates.latitude}, ${finalCoordinates.longitude}`);
-
-        const geocodeResult = await geocodeCoordinates(
-            finalCoordinates.latitude,
-            finalCoordinates.longitude,
-            apiKey,
-        );
-
-        if (geocodeResult.success) {
-          city = geocodeResult.city;
-          countryCode = geocodeResult.countryCode;
-          geocoded++;
-          console.log(`✓ Got city/country for spot: ${name} - ${city}, ${countryCode}`);
-        } else {
-          geocodingFailed++;
-          console.warn(`✗ Failed to get city/country for spot: ${name} - ${geocodeResult.error}`);
+          console.warn(`✗ Reverse geocoding failed for spot: ${name} - ${reverseGeocodeResult.error}`);
+          continue; // Skip this placemark if we can't get coordinates
         }
       }
-    } else {
-      // For existing spots, keep their current address data unless coords moved.
-      const existingSpot = existingSpots.docs[0];
-      existingSpotData = existingSpot.data();
-      if (coordsChangedForExisting) {
-        console.log(
-            `Coordinates changed for spot: ${name}; re-geocoding address`,
-        );
-        if (i > 0) {
-          await new Promise((resolve) => setTimeout(resolve, 100));
+
+      if (!finalCoordinates ||
+        typeof finalCoordinates.latitude !== "number" ||
+        typeof finalCoordinates.longitude !== "number") {
+        skipped++;
+        console.warn(`Skipping placemark without coordinates: ${name}`);
+        continue;
+      }
+
+      // Prefer stable external id match (OSM); fall back to exact lat/lng.
+      let existingSpots;
+      if (placemarkExternalId) {
+        existingSpots = await db
+            .collection("spots")
+            .where("spotSource", "==", sourceId)
+            .where("spotSourceExternalId", "==", placemarkExternalId)
+            .limit(1)
+            .get();
+      } else {
+        existingSpots = await db
+            .collection("spots")
+            .where("spotSource", "==", sourceId)
+            .where("latitude", "==", finalCoordinates.latitude)
+            .where("longitude", "==", finalCoordinates.longitude)
+            .get();
+      }
+
+      const coordsChangedForExisting = !existingSpots.empty && (() => {
+        const existingData = existingSpots.docs[0].data() || {};
+        return existingData.latitude !== finalCoordinates.latitude ||
+        existingData.longitude !== finalCoordinates.longitude;
+      })();
+
+      if (existingSpots.empty) {
+      // Only geocode for NEW spots (if we don't already have address from reverse geocoding)
+        if (!address) {
+          console.log(
+              `Geocoding new spot: ${name} at ${finalCoordinates.latitude}, ${finalCoordinates.longitude}`,
+          );
+
+          // Add small delay to respect API rate limits
+          if (i > 0) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+
+          const geocodeResult = await geocodeCoordinates(
+              finalCoordinates.latitude,
+              finalCoordinates.longitude,
+              apiKey,
+          );
+
+          if (geocodeResult.success) {
+            address = geocodeResult.address;
+            city = geocodeResult.city;
+            countryCode = geocodeResult.countryCode;
+            geocoded++;
+            console.log(`✓ Geocoded new spot: ${name} - ${address}`);
+          } else {
+            geocodingFailed++;
+            console.warn(
+                `✗ Geocoding failed for new spot: ${name} - ${geocodeResult.error}`,
+            );
+          }
+        } else {
+        // We have address from reverse geocoding, now get city and country
+          console.log(`Getting city/country for spot: ${name} at ${finalCoordinates.latitude}, ${finalCoordinates.longitude}`);
+
+          const geocodeResult = await geocodeCoordinates(
+              finalCoordinates.latitude,
+              finalCoordinates.longitude,
+              apiKey,
+          );
+
+          if (geocodeResult.success) {
+            city = geocodeResult.city;
+            countryCode = geocodeResult.countryCode;
+            geocoded++;
+            console.log(`✓ Got city/country for spot: ${name} - ${city}, ${countryCode}`);
+          } else {
+            geocodingFailed++;
+            console.warn(`✗ Failed to get city/country for spot: ${name} - ${geocodeResult.error}`);
+          }
         }
-        const geocodeResult = await geocodeCoordinates(
-            finalCoordinates.latitude,
-            finalCoordinates.longitude,
-            apiKey,
-        );
-        if (geocodeResult.success) {
-          address = geocodeResult.address;
-          city = geocodeResult.city;
-          countryCode = geocodeResult.countryCode;
-          geocoded++;
-          console.log(`✓ Re-geocoded moved spot: ${name} - ${address}`);
+      } else {
+      // For existing spots, keep their current address data unless coords moved.
+        const existingSpot = existingSpots.docs[0];
+        existingSpotData = existingSpot.data();
+        if (coordsChangedForExisting) {
+          console.log(
+              `Coordinates changed for spot: ${name}; re-geocoding address`,
+          );
+          if (i > 0) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+          const geocodeResult = await geocodeCoordinates(
+              finalCoordinates.latitude,
+              finalCoordinates.longitude,
+              apiKey,
+          );
+          if (geocodeResult.success) {
+            address = geocodeResult.address;
+            city = geocodeResult.city;
+            countryCode = geocodeResult.countryCode;
+            geocoded++;
+            console.log(`✓ Re-geocoded moved spot: ${name} - ${address}`);
+          } else {
+            address = existingSpotData.address;
+            city = existingSpotData.city;
+            countryCode = existingSpotData.countryCode;
+            geocodingFailed++;
+            console.warn(
+                `✗ Re-geocoding failed for moved spot: ${name} - ${geocodeResult.error}`,
+            );
+          }
         } else {
           address = existingSpotData.address;
           city = existingSpotData.city;
           countryCode = existingSpotData.countryCode;
-          geocodingFailed++;
-          console.warn(
-              `✗ Re-geocoding failed for moved spot: ${name} - ${geocodeResult.error}`,
-          );
+          console.log(`Keeping existing address data for spot: ${name}`);
         }
-      } else {
-        address = existingSpotData.address;
-        city = existingSpotData.city;
-        countryCode = existingSpotData.countryCode;
-        console.log(`Keeping existing address data for spot: ${name}`);
       }
-    }
 
-    // Process images for this placemark (with existing data for hash optimization)
-    console.log(
-        `Processing images for spot: ${name} from source: ${source.name}`,
-    );
-    const imageResult = await processPlacemarkImages(
-        placemark,
-        existingSpotData,
-        updateImagesForExistingSpots,
-    );
-
-    // Extract YouTube IDs from the raw description for storage and thumbnails
-    const youtubeVideoIds = extractYoutubeVideoIdsFromDescription(
-        description || "",
-    );
-
-    // If a YouTube thumbnail failed to download (e.g., 404), don't keep the video ID
-    // We determine success by checking if the thumbnail URL was cached during image processing
-    let filteredYoutubeVideoIds = [];
-
-    // For existing spots in default sync mode, skip YouTube thumbnail processing
-    if (!updateImagesForExistingSpots && existingSpotData) {
-      // Preserve existing YouTube video IDs without processing thumbnails
-      if (existingSpotData.youtubeVideoIds && Array.isArray(existingSpotData.youtubeVideoIds)) {
-        filteredYoutubeVideoIds = existingSpotData.youtubeVideoIds;
-        console.log(`Skipping YouTube thumbnail processing for existing spot: ${name} (preserving ${filteredYoutubeVideoIds.length} existing video IDs)`);
-      }
-    } else if (youtubeVideoIds && youtubeVideoIds.length > 0) {
-      // Process YouTube thumbnails for new spots or when doing full sync
-      const validationResults = await Promise.all(
-          youtubeVideoIds.map(async (vid) => {
-            const thumbUrl = await resolveYoutubeThumbnailUrl(vid);
-            if (!thumbUrl) {
-              const folderName = placemark.folderName || "unknown";
-              console.warn(
-                  `Dropping YouTube ID ${vid} due to missing thumbnail ` +
-                  `(folder: ${folderName}, spot: ${name})`,
-              );
-              return null;
-            }
-            const cachedPublicUrl = await checkImageUrlCache(thumbUrl);
-            if (!cachedPublicUrl) {
-              const folderName = placemark.folderName || "unknown";
-              console.warn(
-                  `Dropping YouTube ID ${vid} due to missing/cached thumbnail: ` +
-                  `${thumbUrl} (folder: ${folderName}, spot: ${name})`,
-              );
-              return null;
-            }
-            return vid;
-          }),
+      // Process images for this placemark (with existing data for hash optimization)
+      console.log(
+          `Processing images for spot: ${name} from source: ${source.name}`,
       );
-      filteredYoutubeVideoIds = validationResults.filter((v) => Boolean(v));
-    }
+      const imageResult = await processPlacemarkImages(
+          placemark,
+          existingSpotData,
+          updateImagesForExistingSpots,
+      );
 
-    // Clean the description to remove HTML
-    const cleanedDescription = cleanDescription(description);
-    const effectiveSpotAttributeDefaults = getEffectiveSpotAttributeDefaults(
-        sourceDefaultSpotAttributes,
-        folderSpotAttributeDefaultsLookup,
-        placemark.folderName,
-        placemark.folderPath,
-    );
+      // Extract YouTube IDs from the raw description for storage and thumbnails
+      const youtubeVideoIds = extractYoutubeVideoIdsFromDescription(
+          description || "",
+      );
 
-    const spotData = {
-      name: name.trim(),
-      description: cleanedDescription.trim(),
-      latitude: finalCoordinates.latitude,
-      longitude: finalCoordinates.longitude,
-      address: address,
-      city: city,
-      countryCode: countryCode,
-      spotSource: sourceId,
-      spotSourceName: source.name,
-      spotSourceRemoved: false,
-      updatedAt: FieldValue.serverTimestamp(),
-      externalSyncLastSeenAt: FieldValue.serverTimestamp(),
-      externalSyncLastChangedAt: FieldValue.serverTimestamp(),
-    };
+      // If a YouTube thumbnail failed to download (e.g., 404), don't keep the video ID
+      // We determine success by checking if the thumbnail URL was cached during image processing
+      let filteredYoutubeVideoIds = [];
 
-    if (placemarkExternalId) {
-      spotData.spotSourceExternalId = placemarkExternalId;
-    }
-
-    // Optionally record folder name on spot if configured and available
-    if (source.recordFolderName === true) {
-      if (placemark.folderName) {
-        spotData.folderName = placemark.folderName;
-      } else {
-        spotData.folderName = null;
+      // For existing spots in default sync mode, skip YouTube thumbnail processing
+      if (!updateImagesForExistingSpots && existingSpotData) {
+      // Preserve existing YouTube video IDs without processing thumbnails
+        if (existingSpotData.youtubeVideoIds && Array.isArray(existingSpotData.youtubeVideoIds)) {
+          filteredYoutubeVideoIds = existingSpotData.youtubeVideoIds;
+          console.log(`Skipping YouTube thumbnail processing for existing spot: ${name} (preserving ${filteredYoutubeVideoIds.length} existing video IDs)`);
+        }
+      } else if (youtubeVideoIds && youtubeVideoIds.length > 0) {
+      // Process YouTube thumbnails for new spots or when doing full sync
+        const validationResults = await Promise.all(
+            youtubeVideoIds.map(async (vid) => {
+              const thumbUrl = await resolveYoutubeThumbnailUrl(vid);
+              if (!thumbUrl) {
+                const folderName = placemark.folderName || "unknown";
+                console.warn(
+                    `Dropping YouTube ID ${vid} due to missing thumbnail ` +
+                  `(folder: ${folderName}, spot: ${name})`,
+                );
+                syncIssues.push({
+                  type: ISSUE_YOUTUBE_MISSING_THUMBNAIL,
+                  videoId: vid,
+                  spotName: name,
+                  folderName,
+                });
+                return null;
+              }
+              const cachedPublicUrl = await checkImageUrlCache(thumbUrl);
+              if (!cachedPublicUrl) {
+                const folderName = placemark.folderName || "unknown";
+                console.warn(
+                    `Dropping YouTube ID ${vid} due to missing/cached thumbnail: ` +
+                  `${thumbUrl} (folder: ${folderName}, spot: ${name})`,
+                );
+                syncIssues.push({
+                  type: ISSUE_YOUTUBE_UNCACHED_THUMBNAIL,
+                  videoId: vid,
+                  spotName: name,
+                  folderName,
+                  thumbnailUrl: thumbUrl,
+                });
+                return null;
+              }
+              return vid;
+            }),
+        );
+        filteredYoutubeVideoIds = validationResults.filter((v) => Boolean(v));
       }
-    }
 
-    const placemarkAttributeDefaults = appliesPlacemarkAttributes ?
+      // Clean the description to remove HTML
+      const cleanedDescription = cleanDescription(description);
+      const effectiveSpotAttributeDefaults = getEffectiveSpotAttributeDefaults(
+          sourceDefaultSpotAttributes,
+          folderSpotAttributeDefaultsLookup,
+          placemark.folderName,
+          placemark.folderPath,
+      );
+
+      const spotData = {
+        name: name.trim(),
+        description: cleanedDescription.trim(),
+        latitude: finalCoordinates.latitude,
+        longitude: finalCoordinates.longitude,
+        address: address,
+        city: city,
+        countryCode: countryCode,
+        spotSource: sourceId,
+        spotSourceName: source.name,
+        spotSourceRemoved: false,
+        updatedAt: FieldValue.serverTimestamp(),
+        externalSyncLastSeenAt: FieldValue.serverTimestamp(),
+        externalSyncLastChangedAt: FieldValue.serverTimestamp(),
+      };
+
+      if (placemarkExternalId) {
+        spotData.spotSourceExternalId = placemarkExternalId;
+      }
+
+      // Optionally record folder name on spot if configured and available
+      if (source.recordFolderName === true) {
+        if (placemark.folderName) {
+          spotData.folderName = placemark.folderName;
+        } else {
+          spotData.folderName = null;
+        }
+      }
+
+      const placemarkAttributeDefaults = appliesPlacemarkAttributes ?
       placemarkOsmAttributeDefaults(placemark) :
       null;
-    const mergedAttributeDefaults = mergeSpotAttributeDefaults(
-        effectiveSpotAttributeDefaults,
-        placemarkAttributeDefaults,
-    );
+      const mergedAttributeDefaults = mergeSpotAttributeDefaults(
+          effectiveSpotAttributeDefaults,
+          placemarkAttributeDefaults,
+      );
 
-    let attributesFilledOnUpdate = false;
-    if (existingSpots.empty) {
-      if (mergedAttributeDefaults) {
-        applySpotAttributeDefaultsToSpotData(
-            spotData,
-            mergedAttributeDefaults,
-        );
-      }
-    } else if (appliesPlacemarkAttributes) {
+      let attributesFilledOnUpdate = false;
+      if (existingSpots.empty) {
+        if (mergedAttributeDefaults) {
+          applySpotAttributeDefaultsToSpotData(
+              spotData,
+              mergedAttributeDefaults,
+          );
+        }
+      } else if (appliesPlacemarkAttributes) {
       // Preserve existing attributes on the write payload, then fill unset only.
-      if (existingSpotData) {
-        if (existingSpotData.spotAccess !== undefined) {
-          spotData.spotAccess = existingSpotData.spotAccess;
+        if (existingSpotData) {
+          if (existingSpotData.spotAccess !== undefined) {
+            spotData.spotAccess = existingSpotData.spotAccess;
+          }
+          if (existingSpotData.spotFeatures !== undefined) {
+            spotData.spotFeatures = existingSpotData.spotFeatures;
+          }
+          if (existingSpotData.goodFor !== undefined) {
+            spotData.goodFor = existingSpotData.goodFor;
+          }
+          if (existingSpotData.spotFacilities !== undefined) {
+            spotData.spotFacilities = existingSpotData.spotFacilities;
+          }
         }
-        if (existingSpotData.spotFeatures !== undefined) {
-          spotData.spotFeatures = existingSpotData.spotFeatures;
-        }
-        if (existingSpotData.goodFor !== undefined) {
-          spotData.goodFor = existingSpotData.goodFor;
-        }
-        if (existingSpotData.spotFacilities !== undefined) {
-          spotData.spotFacilities = existingSpotData.spotFacilities;
+        if (mergedAttributeDefaults) {
+          attributesFilledOnUpdate = fillUnsetSpotAttributes(
+              spotData,
+              mergedAttributeDefaults,
+          );
         }
       }
-      if (mergedAttributeDefaults) {
-        attributesFilledOnUpdate = fillUnsetSpotAttributes(
-            spotData,
-            mergedAttributeDefaults,
-        );
-      }
-    }
 
-    // Add YouTube video IDs
-    // For existing spots with updateImagesForExistingSpots=false, preserve existing array
-    // For new spots or when updateImagesForExistingSpots=true, use processed/validated IDs
-    if (existingSpots.empty) {
+      // Add YouTube video IDs
+      // For existing spots with updateImagesForExistingSpots=false, preserve existing array
+      // For new spots or when updateImagesForExistingSpots=true, use processed/validated IDs
+      if (existingSpots.empty) {
       // New spot - use processed YouTube IDs
-      if (filteredYoutubeVideoIds.length > 0) {
-        spotData.youtubeVideoIds = filteredYoutubeVideoIds;
-      } else if (youtubeVideoIds && youtubeVideoIds.length > 0) {
-        // No valid thumbnails found, clear the array
-        spotData.youtubeVideoIds = [];
-      }
-    } else {
-      // Existing spot
-      if (updateImagesForExistingSpots) {
-        // Full sync - use processed YouTube IDs
         if (filteredYoutubeVideoIds.length > 0) {
           spotData.youtubeVideoIds = filteredYoutubeVideoIds;
-        } else if (
-          (existingSpotData && Array.isArray(existingSpotData.youtubeVideoIds) && existingSpotData.youtubeVideoIds.length > 0) ||
-          (youtubeVideoIds && youtubeVideoIds.length > 0)
-        ) {
-          // Explicitly clear previously stored IDs if thumbnails failed or links now broken
+        } else if (youtubeVideoIds && youtubeVideoIds.length > 0) {
+        // No valid thumbnails found, clear the array
           spotData.youtubeVideoIds = [];
         }
       } else {
-        // Default sync - preserve existing YouTube IDs (already set in filteredYoutubeVideoIds)
-        if (filteredYoutubeVideoIds.length > 0) {
-          spotData.youtubeVideoIds = filteredYoutubeVideoIds;
-        }
-        // If no existing YouTube IDs, don't set the field to preserve existing state
-      }
-    }
-
-    // Add image URLs and hashes
-    // For existing spots with updateImagesForExistingSpots=false, preserve existing arrays
-    // For new spots or when updateImagesForExistingSpots=true, use processed images
-    if (existingSpots.empty) {
-      // New spot - always use processed images
-      if (imageResult.imageUrls.length > 0) {
-        spotData.imageUrls = imageResult.imageUrls;
-        spotData.imageHashes = imageResult.imageHashes;
-      }
-    } else {
       // Existing spot
-      if (updateImagesForExistingSpots) {
-        // Full sync - use processed images
+        if (updateImagesForExistingSpots) {
+        // Full sync - use processed YouTube IDs
+          if (filteredYoutubeVideoIds.length > 0) {
+            spotData.youtubeVideoIds = filteredYoutubeVideoIds;
+          } else if (
+            (existingSpotData && Array.isArray(existingSpotData.youtubeVideoIds) && existingSpotData.youtubeVideoIds.length > 0) ||
+          (youtubeVideoIds && youtubeVideoIds.length > 0)
+          ) {
+          // Explicitly clear previously stored IDs if thumbnails failed or links now broken
+            spotData.youtubeVideoIds = [];
+          }
+        } else {
+        // Default sync - preserve existing YouTube IDs (already set in filteredYoutubeVideoIds)
+          if (filteredYoutubeVideoIds.length > 0) {
+            spotData.youtubeVideoIds = filteredYoutubeVideoIds;
+          }
+        // If no existing YouTube IDs, don't set the field to preserve existing state
+        }
+      }
+
+      // Add image URLs and hashes
+      // For existing spots with updateImagesForExistingSpots=false, preserve existing arrays
+      // For new spots or when updateImagesForExistingSpots=true, use processed images
+      if (existingSpots.empty) {
+      // New spot - always use processed images
         if (imageResult.imageUrls.length > 0) {
           spotData.imageUrls = imageResult.imageUrls;
           spotData.imageHashes = imageResult.imageHashes;
-        } else if (existingSpotData && existingSpotData.imageUrls && existingSpotData.imageUrls.length > 0) {
-          // If placemark has no images but existing spot has images, clear them
-          spotData.imageUrls = [];
-          spotData.imageHashes = [];
         }
       } else {
+      // Existing spot
+        if (updateImagesForExistingSpots) {
+        // Full sync - use processed images
+          if (imageResult.imageUrls.length > 0) {
+            spotData.imageUrls = imageResult.imageUrls;
+            spotData.imageHashes = imageResult.imageHashes;
+          } else if (existingSpotData && existingSpotData.imageUrls && existingSpotData.imageUrls.length > 0) {
+          // If placemark has no images but existing spot has images, clear them
+            spotData.imageUrls = [];
+            spotData.imageHashes = [];
+          }
+        } else {
         // Default sync - preserve existing images (already handled in processPlacemarkImages)
-        if (imageResult.imageUrls.length > 0) {
-          spotData.imageUrls = imageResult.imageUrls;
-          spotData.imageHashes = imageResult.imageHashes;
-        }
+          if (imageResult.imageUrls.length > 0) {
+            spotData.imageUrls = imageResult.imageUrls;
+            spotData.imageHashes = imageResult.imageHashes;
+          }
         // If no images returned, don't set imageUrls/imageHashes to preserve existing arrays
+        }
       }
-    }
 
-    const effectiveImageUrls = Array.isArray(spotData.imageUrls) ?
+      const effectiveImageUrls = Array.isArray(spotData.imageUrls) ?
       spotData.imageUrls :
       (Array.isArray(existingSpotData && existingSpotData.imageUrls) ?
         existingSpotData.imageUrls :
         []);
-    spotData.hasImages = deriveHasImages(
-        effectiveImageUrls,
-        existingSpotData && existingSpotData.imageUrl,
-    );
-
-    if (existingSpots.empty) {
-      // Create new spot - initialize rating fields to 0 and ranking field
-      spotData.averageRating = 0;
-      spotData.ratingCount = 0;
-      spotData.wilsonLowerBound = 0;
-      spotData.ranking = Math.random(); // Random ranking for new spots
-      spotData.duplicateOf = null; // Initialize duplicateOf field
-      spotData.hidden = false; // Initialize hidden field
-      spotData.createdAt = FieldValue.serverTimestamp();
-      const newSpotRef = await db.collection("spots").add(cleanUndefinedValues(spotData));
-      created++;
-      processedSpotIds.add(newSpotRef.id);
-      addedSpotSummaries.push({
-        id: newSpotRef.id,
-        name: spotData.name,
-      });
-      console.log(
-          `Created new spot: ${name} from source: ${source.name} with ${imageResult.imageUrls.length} images and geocoded address`,
+      spotData.hasImages = deriveHasImages(
+          effectiveImageUrls,
+          existingSpotData && existingSpotData.imageUrl,
       );
-    } else {
-      // Update existing spot - preserve existing rating and ranking fields
-      const existingSpot = existingSpots.docs[0];
-      const existingData = existingSpot.data();
 
-      // Preserve existing rating fields if they exist
-      if (existingData.averageRating !== undefined) {
-        spotData.averageRating = existingData.averageRating;
-      }
-      if (existingData.ratingCount !== undefined) {
-        spotData.ratingCount = existingData.ratingCount;
-      }
-      if (existingData.wilsonLowerBound !== undefined) {
-        spotData.wilsonLowerBound = existingData.wilsonLowerBound;
-      }
-      // Preserve existing ranking field if it exists
-      if (existingData.ranking !== undefined) {
-        spotData.ranking = existingData.ranking;
-      }
-      // Preserve existing duplicateOf field if it exists
-      if (existingData.duplicateOf !== undefined) {
-        spotData.duplicateOf = existingData.duplicateOf;
-      }
-      // Preserve existing hidden field if it exists
-      if (existingData.hidden !== undefined) {
-        spotData.hidden = existingData.hidden;
-      }
-
-      // Remove spotSourceRemovedAt field if it exists (only valid in update operations)
-      spotData.spotSourceRemovedAt = FieldValue.delete();
-
-      processedSpotIds.add(existingSpot.id);
-      if (
-        hasImportedSpotContentChanges(existingData, spotData) ||
-        attributesFilledOnUpdate
-      ) {
-        await existingSpot.ref.update(cleanUndefinedValues(spotData));
-        updatedSpotSummaries.push({
-          id: existingSpot.id,
+      if (existingSpots.empty) {
+      // Create new spot - initialize rating fields to 0 and ranking field
+        spotData.averageRating = 0;
+        spotData.ratingCount = 0;
+        spotData.wilsonLowerBound = 0;
+        spotData.ranking = Math.random(); // Random ranking for new spots
+        spotData.duplicateOf = null; // Initialize duplicateOf field
+        spotData.hidden = false; // Initialize hidden field
+        spotData.createdAt = FieldValue.serverTimestamp();
+        const newSpotRef = await db.collection("spots").add(cleanUndefinedValues(spotData));
+        created++;
+        processedSpotIds.add(newSpotRef.id);
+        addedSpotSummaries.push({
+          id: newSpotRef.id,
           name: spotData.name,
         });
-        updated++;
         console.log(
-            `Updated existing spot: ${name} from source: ${source.name} with ${imageResult.imageUrls.length} images (preserved rating: ${existingData.averageRating || 0}, count: ${existingData.ratingCount || 0})`,
+            `Created new spot: ${name} from source: ${source.name} with ${imageResult.imageUrls.length} images and geocoded address`,
         );
       } else {
-        await existingSpot.ref.update({
-          externalSyncLastSeenAt: FieldValue.serverTimestamp(),
-        });
-        unchanged++;
+      // Update existing spot - preserve existing rating and ranking fields
+        const existingSpot = existingSpots.docs[0];
+        const existingData = existingSpot.data();
+
+        // Preserve existing rating fields if they exist
+        if (existingData.averageRating !== undefined) {
+          spotData.averageRating = existingData.averageRating;
+        }
+        if (existingData.ratingCount !== undefined) {
+          spotData.ratingCount = existingData.ratingCount;
+        }
+        if (existingData.wilsonLowerBound !== undefined) {
+          spotData.wilsonLowerBound = existingData.wilsonLowerBound;
+        }
+        // Preserve existing ranking field if it exists
+        if (existingData.ranking !== undefined) {
+          spotData.ranking = existingData.ranking;
+        }
+        // Preserve existing duplicateOf field if it exists
+        if (existingData.duplicateOf !== undefined) {
+          spotData.duplicateOf = existingData.duplicateOf;
+        }
+        // Preserve existing hidden field if it exists
+        if (existingData.hidden !== undefined) {
+          spotData.hidden = existingData.hidden;
+        }
+
+        // Remove spotSourceRemovedAt field if it exists (only valid in update operations)
+        spotData.spotSourceRemovedAt = FieldValue.delete();
+
+        processedSpotIds.add(existingSpot.id);
+        if (
+          hasImportedSpotContentChanges(existingData, spotData) ||
+        attributesFilledOnUpdate
+        ) {
+          await existingSpot.ref.update(cleanUndefinedValues(spotData));
+          updatedSpotSummaries.push({
+            id: existingSpot.id,
+            name: spotData.name,
+          });
+          updated++;
+          console.log(
+              `Updated existing spot: ${name} from source: ${source.name} with ${imageResult.imageUrls.length} images (preserved rating: ${existingData.averageRating || 0}, count: ${existingData.ratingCount || 0})`,
+          );
+        } else {
+          await existingSpot.ref.update({
+            externalSyncLastSeenAt: FieldValue.serverTimestamp(),
+          });
+          unchanged++;
+          console.log(
+              `Unchanged existing spot: ${name} from source: ${source.name}`,
+          );
+        }
+      }
+
+      // Collect folder name from successfully processed spot if recordFolderName is enabled
+      if (source.recordFolderName === true && placemark.folderName) {
+        const wasNew = !allFolders.has(placemark.folderName);
+        allFolders.add(placemark.folderName);
         console.log(
-            `Unchanged existing spot: ${name} from source: ${source.name}`,
+            `[FOLDER COLLECTION] Added folder "${placemark.folderName}" from spot "${name}" ${wasNew ? "(NEW)" : "(EXISTING)"}`,
         );
+      } else if (source.recordFolderName === true) {
+        console.log(`[FOLDER COLLECTION] Spot "${name}" has no folder name`);
+      }
+
+      // Force garbage collection after every 10 spots to free memory
+      if (i % 10 === 0 && global.gc) {
+        global.gc();
+        console.log(`Processed ${i + 1}/${placemarks.length} spots, forced GC`);
+      }
+
+      // Update progress after each batch
+      if ((i + 1) % BATCH_SIZE === 0 || (i + 1) === placemarks.length) {
+        const syncProgressUpdate = {
+          processedCount: i + 1,
+          totalCount: placemarks.length,
+          lastProcessedIndex: i + 1,
+          runId: syncRunId,
+        };
+        if (source.recordFolderName === true) {
+          syncProgressUpdate.collectedFolders = Array.from(allFolders);
+        }
+        await sourceDocRef.update({
+          syncProgress: syncProgressUpdate,
+        });
+        console.log(`Progress update: ${i + 1}/${placemarks.length} spots processed`);
       }
     }
 
-    // Collect folder name from successfully processed spot if recordFolderName is enabled
-    if (source.recordFolderName === true && placemark.folderName) {
-      const wasNew = !allFolders.has(placemark.folderName);
-      allFolders.add(placemark.folderName);
-      console.log(
-          `[FOLDER COLLECTION] Added folder "${placemark.folderName}" from spot "${name}" ${wasNew ? "(NEW)" : "(EXISTING)"}`,
-      );
-    } else if (source.recordFolderName === true) {
-      console.log(`[FOLDER COLLECTION] Spot "${name}" has no folder name`);
-    }
+    // Identify and label spots that were not present in this sync
+    // Only do this when we've processed ALL placemarks from the beginning
+    // (i.e., when startIndex === 0 and we completed the full sync)
+    // This prevents incorrectly marking spots as removed during multi-stage syncs
+    if (startIndex === 0) {
+      const sourceSpotsSnapshot = await db
+          .collection("spots")
+          .where("spotSource", "==", sourceId)
+          .get();
 
-    // Force garbage collection after every 10 spots to free memory
-    if (i % 10 === 0 && global.gc) {
-      global.gc();
-      console.log(`Processed ${i + 1}/${placemarks.length} spots, forced GC`);
-    }
+      for (const doc of sourceSpotsSnapshot.docs) {
+        if (processedSpotIds.has(doc.id)) {
+          continue;
+        }
 
-    // Update progress after each batch
-    if ((i + 1) % BATCH_SIZE === 0 || (i + 1) === placemarks.length) {
-      const syncProgressUpdate = {
-        processedCount: i + 1,
-        totalCount: placemarks.length,
-        lastProcessedIndex: i + 1,
-      };
-      if (source.recordFolderName === true) {
-        syncProgressUpdate.collectedFolders = Array.from(allFolders);
+        const spotRecord = doc.data() || {};
+        if (spotRecord.spotSourceRemoved === true) {
+          continue; // Already labeled as removed
+        }
+
+        await doc.ref.update({
+          spotSourceRemoved: true,
+          spotSourceRemovedAt: FieldValue.serverTimestamp(),
+        });
+
+        removed++;
+        removedSpotSummaries.push({
+          id: doc.id,
+          name: spotRecord.name || doc.id,
+        });
       }
-      await sourceDocRef.update({
-        syncProgress: syncProgressUpdate,
-      });
-      console.log(`Progress update: ${i + 1}/${placemarks.length} spots processed`);
+    } else {
+      console.log(`Skipping removal check: sync resumed from index ${startIndex}, will check removals when sync completes from beginning`);
     }
-  }
 
-  // Identify and label spots that were not present in this sync
-  // Only do this when we've processed ALL placemarks from the beginning
-  // (i.e., when startIndex === 0 and we completed the full sync)
-  // This prevents incorrectly marking spots as removed during multi-stage syncs
-  if (startIndex === 0) {
-    const sourceSpotsSnapshot = await db
-        .collection("spots")
-        .where("spotSource", "==", sourceId)
-        .get();
+    const stats = buildCumulativeStats();
 
-    for (const doc of sourceSpotsSnapshot.docs) {
-      if (processedSpotIds.has(doc.id)) {
-        continue;
-      }
-
-      const spotRecord = doc.data() || {};
-      if (spotRecord.spotSourceRemoved === true) {
-        continue; // Already labeled as removed
-      }
-
-      await doc.ref.update({
-        spotSourceRemoved: true,
-        spotSourceRemovedAt: FieldValue.serverTimestamp(),
-      });
-
-      removed++;
-      removedSpotSummaries.push({
-        id: doc.id,
-        name: spotRecord.name || doc.id,
-      });
-    }
-  } else {
-    console.log(`Skipping removal check: sync resumed from index ${startIndex}, will check removals when sync completes from beginning`);
-  }
-
-  const geocodingSuccessRate =
-    placemarks.length > 0 ?
-      ((geocoded / placemarks.length) * 100).toFixed(1) + "%" :
-      "0%";
-
-  const stats = {
-    total: placemarks.length,
-    created,
-    updated,
-    unchanged,
-    removed,
-    skipped,
-    geocoded,
-    geocodingFailed,
-    geocodingSuccessRate,
-  };
-
-  // Sync completed - clear progress tracking and update last sync time
-  const sourceDoc = await db.collection("syncSources").doc(sourceId).get();
-  if (sourceDoc.exists) {
-    const updateData = {
-      lastSyncAt: FieldValue.serverTimestamp(),
-      lastSyncStats: stats,
+    // Sync completed - finalize durable run and clear progress tracking
+    const sourceExtraUpdate = {
       syncInProgress: false,
       syncProgress: FieldValue.delete(),
       syncType: FieldValue.delete(),
@@ -3509,40 +3603,84 @@ async function processSyncSource(source, sourceId, apiKey, updateImagesForExisti
       console.log(
           `[FOLDER COLLECTION] Final sorted allFolders: [${sortedFolders.join(", ")}]`,
       );
-      updateData.allFolders = sortedFolders;
+      sourceExtraUpdate.allFolders = sortedFolders;
     }
 
-    await sourceDoc.ref.update(updateData);
-  }
+    if (syncRunId) {
+      await finalizeSyncRunSucceeded(db, FieldValue, {
+        runId: syncRunId,
+        sourceRef: sourceDocRef,
+        stats,
+        added: addedSpotSummaries,
+        updated: updatedSpotSummaries,
+        removed: removedSpotSummaries,
+        issues: syncIssues,
+        sourceExtraUpdate,
+      });
+    } else {
+      await sourceDocRef.update({
+        ...sourceExtraUpdate,
+        lastSyncAt: FieldValue.serverTimestamp(),
+        lastSyncStats: stats,
+      });
+    }
 
-  try {
-    await db.collection("auditLog").add({
-      action: "spotSourceSync",
-      spotId: `syncSource:${sourceId}`,
-      userId: null,
-      userName: "Spot Sync Service",
-      timestamp: FieldValue.serverTimestamp(),
-      metadata: {
-        sourceId: sourceId,
-        sourceName: source.name,
-        stats: stats,
-        addedSpots: addedSpotSummaries,
-        updatedSpots: updatedSpotSummaries,
-        removedSpots: removedSpotSummaries,
-      },
-    });
+    try {
+      await db.collection("auditLog").add({
+        action: "spotSourceSync",
+        spotId: `syncSource:${sourceId}`,
+        userId: null,
+        userName: "Spot Sync Service",
+        timestamp: FieldValue.serverTimestamp(),
+        metadata: {
+          sourceId: sourceId,
+          sourceName: source.name,
+          syncType,
+          runId: syncRunId,
+          stats: stats,
+          addedSpots: addedSpotSummaries,
+          updatedSpots: updatedSpotSummaries,
+          removedSpots: removedSpotSummaries,
+          issueCount: syncIssues.length,
+        },
+      });
+    } catch (error) {
+      console.error(
+          `Failed to write audit log entry for source ${sourceId}:`,
+          error,
+      );
+    }
+
+    return {
+      sourceId: sourceId,
+      sourceName: source.name,
+      stats,
+      runId: syncRunId,
+    };
   } catch (error) {
-    console.error(
-        `Failed to write audit log entry for source ${sourceId}:`,
-        error,
-    );
+    console.error(`Sync failed for source ${sourceId}:`, error);
+    await failSyncRun(db, FieldValue, {
+      runId: syncRunId,
+      sourceRef: sourceDocRef,
+      errorMessage: error && error.message ? error.message : String(error),
+      clearInProgress: true,
+      stats: {
+        total: placemarks.length,
+        created,
+        updated,
+        unchanged,
+        removed,
+        skipped,
+        geocoded,
+        geocodingFailed,
+      },
+      added: addedSpotSummaries,
+      updated: updatedSpotSummaries,
+      removed: removedSpotSummaries,
+      issues: syncIssues,
+    });
+    throw error;
   }
-
-  return {
-    sourceId: sourceId,
-    sourceName: source.name,
-    stats,
-  };
 }
 
 /**
@@ -3748,7 +3886,14 @@ exports.syncSingleSource = onCall(
 
         try {
         // Use the shared helper function
-          const result = await processSyncSource(source, sourceId, apiKey, updateImagesForExistingSpots);
+          const result = await processSyncSource(
+              source,
+              sourceId,
+              apiKey,
+              updateImagesForExistingSpots,
+              0,
+              {trigger: TRIGGER_MANUAL},
+          );
 
           const response = {
             success: true,
@@ -3832,6 +3977,7 @@ exports.resumeSync = onCall(
               apiKey,
               isFullSync,
               startIndex,
+              {trigger: TRIGGER_RESUME},
           );
 
           const response = {
@@ -3909,7 +4055,14 @@ exports.syncAllSources = onCall(
 
           try {
           // Use the shared helper function
-            const result = await processSyncSource(source, sourceId, apiKey, updateImagesForExistingSpots);
+            const result = await processSyncSource(
+                source,
+                sourceId,
+                apiKey,
+                updateImagesForExistingSpots,
+                0,
+                {trigger: TRIGGER_MANUAL},
+            );
 
             const sourceResult = {
               sourceId: result.sourceId,
@@ -5075,9 +5228,11 @@ async function releaseEventSyncLock(sourceRef) {
 /**
  * Syncs one external event source into events collection.
  * @param {DocumentSnapshot} sourceDoc
+ * @param {Object} [options={}]
+ * @param {string} [options.trigger] - manual | scheduled
  * @return {Promise<Object>}
  */
-async function syncExternalEventSource(sourceDoc) {
+async function syncExternalEventSource(sourceDoc, options = {}) {
   const sourceData = sourceDoc.data() || {};
   const sourceId = sourceDoc.id;
   const sourceName = typeof sourceData.name === "string" &&
@@ -5085,12 +5240,27 @@ async function syncExternalEventSource(sourceDoc) {
     sourceData.name.trim() :
     sourceId;
   const sourceType = normalizeEventSyncSourceType(sourceData.sourceType);
+  const trigger = options.trigger || TRIGGER_MANUAL;
+  let syncRunId = null;
 
   await acquireEventSyncLock(sourceDoc.ref);
   try {
+    syncRunId = await createSyncRun(db, FieldValue, {
+      sourceKind: SOURCE_KIND_EVENT,
+      sourceId,
+      sourceName,
+      syncType: SYNC_TYPE_EVENT,
+      trigger,
+    });
+    await sourceDoc.ref.update({
+      currentSyncRunId: syncRunId,
+      lastError: FieldValue.delete(),
+    });
+
     logger.info("externalEventSync.start", {
       sourceId,
       sourceType,
+      runId: syncRunId,
       mapsApiKeyConfigured: Boolean(
           typeof process.env.GOOGLE_MAPS_API_KEY === "string" &&
           process.env.GOOGLE_MAPS_API_KEY.trim().length > 0,
@@ -5370,16 +5540,59 @@ async function syncExternalEventSource(sourceDoc) {
     }
 
     await commitBatch();
-    await sourceDoc.ref.update({
-      lastSyncAt: FieldValue.serverTimestamp(),
-      lastSyncStats: stats,
-    });
+    if (syncRunId) {
+      await finalizeSyncRunSucceeded(db, FieldValue, {
+        runId: syncRunId,
+        sourceRef: sourceDoc.ref,
+        stats,
+      });
+    } else {
+      await sourceDoc.ref.update({
+        lastSyncAt: FieldValue.serverTimestamp(),
+        lastSyncStats: stats,
+      });
+    }
+
+    try {
+      await db.collection("auditLog").add({
+        action: "eventSourceSync",
+        eventId: `eventSyncSource:${sourceId}`,
+        userId: null,
+        userName: "Event Sync Service",
+        timestamp: FieldValue.serverTimestamp(),
+        metadata: {
+          sourceId,
+          sourceName,
+          runId: syncRunId,
+          stats,
+        },
+      });
+    } catch (auditError) {
+      console.error(
+          `Failed to write event sync audit log for source ${sourceId}:`,
+          auditError,
+      );
+    }
 
     return {
       sourceId,
       sourceName,
       stats,
+      runId: syncRunId,
     };
+  } catch (error) {
+    logger.error("externalEventSync.failed", {
+      sourceId,
+      runId: syncRunId,
+      error: error && error.message ? error.message : String(error),
+    });
+    await failSyncRun(db, FieldValue, {
+      runId: syncRunId,
+      sourceRef: sourceDoc.ref,
+      errorMessage: error && error.message ? error.message : String(error),
+      clearInProgress: true,
+    });
+    throw error;
   } finally {
     await releaseEventSyncLock(sourceDoc.ref);
   }
@@ -5706,7 +5919,9 @@ exports.syncEventSource = onCall(
           throw new Error("Cannot sync an inactive event source");
         }
 
-        const result = await syncExternalEventSource(sourceDoc);
+        const result = await syncExternalEventSource(sourceDoc, {
+          trigger: TRIGGER_MANUAL,
+        });
         return {
           success: true,
           sourceId: result.sourceId,
@@ -5763,7 +5978,9 @@ exports.syncAllEventSources = onCall(
 
         for (const sourceDoc of snapshot.docs) {
           try {
-            const result = await syncExternalEventSource(sourceDoc);
+            const result = await syncExternalEventSource(sourceDoc, {
+              trigger: TRIGGER_MANUAL,
+            });
             totalStats.totalParsed += result.stats.totalParsed;
             totalStats.totalUnique += result.stats.totalUnique;
             totalStats.duplicatesInFeed += result.stats.duplicatesInFeed;
@@ -5854,7 +6071,9 @@ exports.checkAndRunEventAutoSyncs = onSchedule(
             console.log(
                 `Running scheduled event sync for source: ${source.name} (${sourceId})`,
             );
-            const result = await syncExternalEventSource(sourceDoc);
+            const result = await syncExternalEventSource(sourceDoc, {
+              trigger: TRIGGER_SCHEDULED,
+            });
             return {
               success: true,
               sourceId: result.sourceId,
@@ -9076,6 +9295,7 @@ exports.checkAndRunAutoSyncs = onSchedule(
                   apiKey,
                   isFullSync,
                   startIndex,
+                  {trigger: TRIGGER_RESUME},
               );
 
               // If sync completed (not partial), update timestamp and clear progress
@@ -9135,7 +9355,9 @@ exports.checkAndRunAutoSyncs = onSchedule(
           if (shouldRunFullSync) {
             try {
               console.log(`Running scheduled full sync for source: ${source.name} (${sourceId})`);
-              const result = await processSyncSource(source, sourceId, apiKey, true);
+              const result = await processSyncSource(source, sourceId, apiKey, true, 0, {
+                trigger: TRIGGER_SCHEDULED,
+              });
 
               // If sync completed (not partial), update timestamp
               if (!result.partial) {
@@ -9173,7 +9395,9 @@ exports.checkAndRunAutoSyncs = onSchedule(
             // Run light sync if scheduled (only if full sync wasn't needed)
             try {
               console.log(`Running scheduled light sync for source: ${source.name} (${sourceId})`);
-              const result = await processSyncSource(source, sourceId, apiKey, false);
+              const result = await processSyncSource(source, sourceId, apiKey, false, 0, {
+                trigger: TRIGGER_SCHEDULED,
+              });
 
               // If sync completed (not partial), update timestamp
               if (!result.partial) {

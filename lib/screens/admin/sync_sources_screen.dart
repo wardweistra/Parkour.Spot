@@ -7,6 +7,7 @@ import '../../constants/spot_attributes.dart';
 import '../../services/auth_service.dart';
 import '../../services/sync_source_service.dart';
 import '../../utils/kml_file_picker.dart';
+import '../../widgets/admin/sync_run_report_dialog.dart';
 import '../../widgets/spot_form/attributes_section.dart';
 
 /// Material [Chip] / [ActionChip] labels use theme label styles that read as semi-bold.
@@ -64,6 +65,11 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
   void dispose() {
     _refreshTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _openSyncRunReport(String runId) async {
+    if (!mounted) return;
+    await showSyncRunReportDialog(context, runId: runId);
   }
 
   void _startPeriodicRefresh() {
@@ -611,6 +617,68 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                                     ),
                                     labelStyle: _kSyncChipLabelText,
                                     backgroundColor: Colors.grey.shade200,
+                                  ),
+                              ],
+                            ),
+                          ],
+                          if (s.lastError != null) ...[
+                            const SizedBox(height: 4),
+                            Chip(
+                              backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .errorContainer,
+                              label: Text(
+                                'Last error: ${s.lastError!.message}',
+                                style: _kSyncChipLabelText.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onErrorContainer,
+                                ),
+                              ),
+                              labelStyle: _kSyncChipLabelText,
+                            ),
+                          ],
+                          if (s.currentSyncRunId != null ||
+                              s.lastCompletedRunId != null ||
+                              s.lastFailedRunId != null) ...[
+                            const SizedBox(height: 4),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              children: [
+                                if (s.currentSyncRunId != null)
+                                  TextButton.icon(
+                                    onPressed: () => _openSyncRunReport(
+                                      s.currentSyncRunId!,
+                                    ),
+                                    icon: const Icon(
+                                      Icons.pending_actions,
+                                      size: 18,
+                                    ),
+                                    label: const Text('View current run'),
+                                  ),
+                                if (s.lastCompletedRunId != null)
+                                  TextButton.icon(
+                                    onPressed: () => _openSyncRunReport(
+                                      s.lastCompletedRunId!,
+                                    ),
+                                    icon: const Icon(
+                                      Icons.article_outlined,
+                                      size: 18,
+                                    ),
+                                    label: const Text('View last run'),
+                                  ),
+                                if (s.lastFailedRunId != null &&
+                                    s.lastFailedRunId != s.lastCompletedRunId)
+                                  TextButton.icon(
+                                    onPressed: () => _openSyncRunReport(
+                                      s.lastFailedRunId!,
+                                    ),
+                                    icon: const Icon(
+                                      Icons.error_outline,
+                                      size: 18,
+                                    ),
+                                    label: const Text('View last failed run'),
                                   ),
                               ],
                             ),
