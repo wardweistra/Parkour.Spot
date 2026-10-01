@@ -6,7 +6,8 @@
     "auditLogCategoryCreations",
     "auditLogLoadOlder",
     "auditLogLoadNewer",
-    "auditLogEmptyFiltered"
+    "auditLogEmptyFiltered",
+    "auditLogViewSyncRun"
   ],
 
   "es": [
@@ -16,7 +17,8 @@
     "auditLogCategoryCreations",
     "auditLogLoadOlder",
     "auditLogLoadNewer",
-    "auditLogEmptyFiltered"
+    "auditLogEmptyFiltered",
+    "auditLogViewSyncRun"
   ],
 
   "fr": [
@@ -26,7 +28,8 @@
     "auditLogCategoryCreations",
     "auditLogLoadOlder",
     "auditLogLoadNewer",
-    "auditLogEmptyFiltered"
+    "auditLogEmptyFiltered",
+    "auditLogViewSyncRun"
   ],
 
   "nl": [
@@ -36,7 +39,8 @@
     "auditLogCategoryCreations",
     "auditLogLoadOlder",
     "auditLogLoadNewer",
-    "auditLogEmptyFiltered"
+    "auditLogEmptyFiltered",
+    "auditLogViewSyncRun"
   ],
 
   "pt": [
@@ -46,6 +50,7 @@
     "auditLogCategoryCreations",
     "auditLogLoadOlder",
     "auditLogLoadNewer",
-    "auditLogEmptyFiltered"
+    "auditLogEmptyFiltered",
+    "auditLogViewSyncRun"
   ]
 }

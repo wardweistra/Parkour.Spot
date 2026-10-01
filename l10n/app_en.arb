@@ -4766,5 +4766,9 @@
   "auditLogEmptyFiltered": "No entries match the selected filters",
   "@auditLogEmptyFiltered": {
     "description": "Audit log: window has data but category chips hide all rows"
+  },
+  "auditLogViewSyncRun": "View sync run",
+  "@auditLogViewSyncRun": {
+    "description": "Audit log: open the durable syncRuns report for a sync entry"
   }
 }

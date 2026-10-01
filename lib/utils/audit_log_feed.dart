@@ -122,3 +122,20 @@ bool canExtendAuditLogRangeNewer(
   final cappedNow = now ?? DateTime.now();
   return range.end.isBefore(cappedNow.subtract(epsilon));
 }
+
+/// Sync run id from a merged feed entry, when the audit row linked one.
+/// Prefers nested Firestore `metadata.runId` (as stored on [AuditLogEntry]).
+String? syncRunIdFromAuditLogEntry(AuditLogEntry entry) {
+  final nested = entry.metadata?['metadata'];
+  if (nested is Map) {
+    final runId = nested['runId'];
+    if (runId is String && runId.trim().isNotEmpty) {
+      return runId.trim();
+    }
+  }
+  final top = entry.metadata?['runId'];
+  if (top is String && top.trim().isNotEmpty) {
+    return top.trim();
+  }
+  return null;
+}

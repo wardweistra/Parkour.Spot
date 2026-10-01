@@ -4664,4 +4664,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get auditLogEmptyFiltered => 'No entries match the selected filters';
+
+  @override
+  String get auditLogViewSyncRun => 'View sync run';
 }

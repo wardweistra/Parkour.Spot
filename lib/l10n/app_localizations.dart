@@ -7784,6 +7784,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No entries match the selected filters'**
   String get auditLogEmptyFiltered;
+
+  /// Audit log: open the durable syncRuns report for a sync entry
+  ///
+  /// In en, this message translates to:
+  /// **'View sync run'**
+  String get auditLogViewSyncRun;
 }
 
 class _AppLocalizationsDelegate

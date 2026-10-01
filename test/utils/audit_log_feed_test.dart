@@ -137,4 +137,26 @@ void main() {
       );
     });
   });
+
+  group('syncRunIdFromAuditLogEntry', () {
+    test('reads nested metadata.runId', () {
+      final entry = AuditLogEntry(
+        type: AuditLogEntryType.auditLogAction,
+        timestamp: DateTime(2026, 1, 1),
+        metadata: {
+          'action': 'AuditLogAction.spotSourceSync',
+          'metadata': {'runId': ' run-123 ', 'sourceId': 's1'},
+        },
+      );
+      expect(syncRunIdFromAuditLogEntry(entry), 'run-123');
+    });
+
+    test('returns null when missing', () {
+      final entry = AuditLogEntry(
+        type: AuditLogEntryType.spotCreation,
+        timestamp: DateTime(2026, 1, 1),
+      );
+      expect(syncRunIdFromAuditLogEntry(entry), isNull);
+    });
+  });
 }

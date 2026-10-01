@@ -9,6 +9,7 @@ import '../../models/rating.dart';
 import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
 import '../../utils/audit_log_feed.dart';
+import '../../widgets/admin/sync_run_report_dialog.dart';
 import '../../widgets/resized_spot_image.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -1751,6 +1752,10 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
     return false;
   }
 
+  Future<void> _openSyncRunReport(String runId) {
+    return showSyncRunReportDialog(context, runId: runId);
+  }
+
   /// Get list of spot IDs from an audit log entry
   /// Returns original spot first (if applicable), then the main spot
   List<String> _getSpotIdsFromEntry(AuditLogEntry entry) {
@@ -2129,7 +2134,8 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                     _isSpotReportCreation(entry) ||
                     _isUserCreation(entry) ||
                     _hasReportId(entry) ||
-                    _isSpotEdit(entry))
+                    _isSpotEdit(entry) ||
+                    syncRunIdFromAuditLogEntry(entry) != null)
                 ? Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -2143,7 +2149,8 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                             _isSpotReportCreation(entry) ||
                             _isUserCreation(entry) ||
                             _hasReportId(entry) ||
-                            _isSpotEdit(entry);
+                            _isSpotEdit(entry) ||
+                            syncRunIdFromAuditLogEntry(entry) != null;
                         return Padding(
                           padding: EdgeInsets.only(
                             right: isLast && !hasOtherButtons ? 0 : 4,
@@ -2207,6 +2214,23 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                           tooltip: 'Open User Management',
                           onPressed: () =>
                               context.push('/admin/users'),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      if (syncRunIdFromAuditLogEntry(entry) != null)
+                        IconButton(
+                          icon: const Icon(
+                            Icons.article_outlined,
+                            size: 20,
+                          ),
+                          tooltip: l10n.auditLogViewSyncRun,
+                          onPressed: () {
+                            final runId =
+                                syncRunIdFromAuditLogEntry(entry);
+                            if (runId != null) {
+                              _openSyncRunReport(runId);
+                            }
+                          },
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                         ),
@@ -2441,6 +2465,22 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                         onPressed: () {
                           Navigator.of(context).pop();
                           context.push('/admin/users');
+                        },
+                      ),
+                    if (syncRunIdFromAuditLogEntry(entry) != null)
+                      TextButton.icon(
+                        icon: const Icon(
+                          Icons.article_outlined,
+                          size: 18,
+                        ),
+                        label: Text(l10n.auditLogViewSyncRun),
+                        onPressed: () {
+                          final runId =
+                              syncRunIdFromAuditLogEntry(entry);
+                          Navigator.of(context).pop();
+                          if (runId != null) {
+                            _openSyncRunReport(runId);
+                          }
                         },
                       ),
                     TextButton(
