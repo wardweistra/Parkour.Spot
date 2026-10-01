@@ -608,6 +608,13 @@ class SyncSourceService extends ChangeNotifier {
     }
   }
 
+  /// Cloud Function name for a single-source sync.
+  /// Full sync uses a separate export so it does not share a warm instance
+  /// with light sync.
+  static String callableNameForSingleSourceSync({required bool full}) {
+    return full ? 'syncSingleSourceFull' : 'syncSingleSource';
+  }
+
   Future<Map<String, dynamic>?> syncSingleSource(
     String sourceId, {
     bool updateImagesForExistingSpots = false,
@@ -617,10 +624,14 @@ class SyncSourceService extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      final callable = _functions.httpsCallable('syncSingleSource');
+      final callableName = callableNameForSingleSourceSync(
+        full: updateImagesForExistingSpots,
+      );
+      final callable = _functions.httpsCallable(callableName);
       final result = await callable.call({
         'sourceId': sourceId,
-        'updateImagesForExistingSpots': updateImagesForExistingSpots,
+        if (updateImagesForExistingSpots)
+          'updateImagesForExistingSpots': true,
       });
 
       _syncingSources.remove(sourceId);

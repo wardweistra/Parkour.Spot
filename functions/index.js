@@ -24,7 +24,6 @@ const {
 const admin = require("firebase-admin");
 const sharp = require("sharp");
 const yauzl = require("yauzl");
-const http = require("http");
 const https = require("https");
 const path = require("path");
 const {downloadTextFromUrl} = require("./lib/download-text");
@@ -48,7 +47,6 @@ const {
   getResizedImageUrlForApi,
   getResizedPathInfo,
   getImageContentTypeForPath,
-  isEphemeralImageHost,
   isGoogleUserContentUrl,
 } = require("./lib/url-helpers");
 const {
@@ -112,8 +110,6 @@ const {
 } = require("./lib/text-processing");
 const {
   isPlausibleYoutubeVideoId,
-  extractYoutubeVideoIdFromThumbnailUrl,
-  resolveYoutubeThumbnailUrl,
 } = require("./lib/youtube-thumbnails");
 const {
   pickSpotIdsForTitleSearch,
@@ -129,15 +125,11 @@ const {
 const {
   detectImportFormat,
   detectImportFormatFromBuffer,
-  generateImageHash,
 } = require("./lib/import-helpers");
 const {
   parseKmlPlacemarks,
   parseKmlTopLevelFolders,
 } = require("./lib/kml-parser");
-const {
-  GOOGLE_EARTH_IMAGE_SIZE_CANDIDATES,
-} = require("./lib/google-earth-images");
 const {
   SOURCE_TYPE_FILE,
   SOURCE_TYPE_OPENSTREETMAP,
@@ -164,8 +156,6 @@ const {
   TRIGGER_MANUAL,
   TRIGGER_SCHEDULED,
   TRIGGER_RESUME,
-  ISSUE_YOUTUBE_MISSING_THUMBNAIL,
-  ISSUE_YOUTUBE_UNCACHED_THUMBNAIL,
   resolveRunIdFromSource,
   createSyncRun,
   bumpInvocation,
@@ -175,6 +165,13 @@ const {
   restoreSpotProgressFromRun,
   emptySpotStats,
 } = require("./lib/sync-runs");
+const {createImagePipeline} = require("./lib/image-pipeline");
+const {
+  getPublicUrl,
+  downloadAndUploadImage,
+  downloadAndUploadYoutubeThumbnail,
+  ensureSpotImages,
+} = createImagePipeline({db, bucket, FieldValue});
 const {
   normalizeFolderList,
   applyFolderFilter,
@@ -1677,90 +1674,6 @@ async function removeEventSearchTerms(eventId) {
 
 
 /**
- * Downloads a binary URL following redirects, with a descriptive User-Agent
- * (required by Wikimedia and similar hosts).
- * @param {string} url
- * @param {number=} redirectCount
- * @return {Promise<{buffer: Buffer, contentType: ?string, finalUrl: string}>}
- */
-function downloadBinaryWithRedirects(url, redirectCount = 0) {
-  if (redirectCount > 8) {
-    return Promise.reject(new Error("Too many redirects while downloading image"));
-  }
-
-  let parsedUrl;
-  try {
-    parsedUrl = new URL(url);
-  } catch (error) {
-    return Promise.reject(new Error(`Invalid image URL: ${url}`));
-  }
-  if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
-    return Promise.reject(new Error("Image URL must use http or https"));
-  }
-  const client = parsedUrl.protocol === "http:" ? http : https;
-
-  return new Promise((resolve, reject) => {
-    const request = client.get(parsedUrl, {
-      headers: {
-        "User-Agent": "ParkourSpotImageSync/1.0 (+https://parkour.spot)",
-        "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
-      },
-    }, (response) => {
-      if (
-        response.statusCode &&
-        response.statusCode >= 300 &&
-        response.statusCode < 400 &&
-        response.headers.location
-      ) {
-        response.resume();
-        const redirectedUrl = new URL(
-            response.headers.location,
-            parsedUrl,
-        ).toString();
-        resolve(downloadBinaryWithRedirects(redirectedUrl, redirectCount + 1));
-        return;
-      }
-
-      if (!response.statusCode || response.statusCode >= 400) {
-        const statusCode = response.statusCode || 0;
-        response.resume();
-        reject(new Error(
-            `Failed downloading image (HTTP ${statusCode}): ${url}`,
-        ));
-        return;
-      }
-
-      const contentType = response.headers["content-type"] ?
-        String(response.headers["content-type"]).toLowerCase() :
-        null;
-      if (contentType && contentType.includes("text/html")) {
-        response.resume();
-        reject(new Error(
-            `Refusing to treat HTML as image: ${url}`,
-        ));
-        return;
-      }
-
-      const chunks = [];
-      response.on("data", (chunk) => chunks.push(chunk));
-      response.on("end", () => {
-        resolve({
-          buffer: Buffer.concat(chunks),
-          contentType,
-          finalUrl: parsedUrl.toString(),
-        });
-      });
-      response.on("error", reject);
-    });
-
-    request.on("error", reject);
-    request.setTimeout(60000, () => {
-      request.destroy(new Error(`Image download timed out: ${url}`));
-    });
-  });
-}
-
-/**
  * Downloads a file from the given URL
  * @param {string} url - The URL to download from
  * @return {Promise<Buffer>} A promise that resolves to the file buffer
@@ -1840,49 +1753,6 @@ async function deleteGoogleEarthImportFiles(sourceData) {
   } catch (error) {
     console.warn(`Failed to delete Google Earth import file ${storagePath}:`, error);
   }
-}
-
-/**
- * Checks if an image with the given hash already exists in Firebase Storage
- * @param {string} imageHash - The content hash of the image
- * @param {string=} storageFolder - Storage folder prefix (`spots` or `events`)
- * @return {Promise<string|null>} A promise that resolves to the existing
- * file path or null
- */
-async function checkImageExists(imageHash, storageFolder = "spots") {
-  try {
-    const prefix = `${storageFolder}/`;
-    // List files in the folder with the hash prefix
-    const [files] = await bucket.getFiles({
-      prefix,
-      delimiter: "/",
-    });
-
-    for (const file of files) {
-      const fileName = file.name;
-      // Check if filename contains our hash (format: folder/name_hash_index.ext)
-      if (fileName.includes(`_${imageHash}_`)) {
-        // Verify the file still exists and is accessible
-        const [exists] = await file.exists();
-        if (exists) {
-          return fileName;
-        }
-      }
-    }
-    return null;
-  } catch (error) {
-    console.error("Error checking if image exists:", error);
-    return null;
-  }
-}
-
-/**
- * Gets the public URL for a file in Firebase Storage
- * @param {string} fileName - The file name in Firebase Storage
- * @return {string} The public URL for the file
- */
-function getPublicUrl(fileName) {
-  return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
 }
 
 /**
@@ -2108,420 +1978,6 @@ function parseGeoJsonFeatures(geojsonText) {
     console.error("Failed to parse GeoJSON:", e);
     return [];
   }
-}
-
-/**
- * Checks if an image URL has already been processed and cached
- * @param {string} imageUrl - The URL of the image to check
- * @return {Promise<string|null>} A promise that resolves to the cached public URL or null
- */
-async function checkImageUrlCache(imageUrl) {
-  try {
-    // Skip URL-based cache for ephemeral Google URLs
-    if (isEphemeralImageHost(imageUrl)) {
-      return null;
-    }
-    const imageCacheRef = db
-        .collection("imageCache")
-        .doc(encodeURIComponent(imageUrl));
-    const imageCacheDoc = await imageCacheRef.get();
-
-    if (imageCacheDoc.exists) {
-      const cacheData = imageCacheDoc.data();
-      const {hash, publicUrl} = cacheData;
-
-      // Check if the cached image still exists in storage
-      const existingFileName = await checkImageExists(hash);
-      if (existingFileName) {
-        console.log(
-            `Found cached image for URL: ${imageUrl.substring(0, 50)}...`,
-        );
-        return publicUrl;
-      } else {
-        // Cached image no longer exists in storage, remove from cache
-        console.log(
-            `Cached image no longer exists, removing from cache: ${imageUrl.substring(0, 50)}...`,
-        );
-        await imageCacheRef.delete();
-      }
-    }
-    return null;
-  } catch (error) {
-    console.error("Error checking image URL cache:", error);
-    return null;
-  }
-}
-
-/**
- * Caches image metadata for future lookups
- * @param {string} imageUrl - The original URL of the image
- * @param {string} imageHash - The content hash of the image
- * @param {string} publicUrl - The public URL of the uploaded image
- */
-async function cacheImageMetadata(imageUrl, imageHash, publicUrl) {
-  try {
-    // Skip storing cache entries for ephemeral Google URLs
-    if (isEphemeralImageHost(imageUrl)) {
-      return;
-    }
-    const imageCacheRef = db
-        .collection("imageCache")
-        .doc(encodeURIComponent(imageUrl));
-    await imageCacheRef.set({
-      url: imageUrl,
-      hash: imageHash,
-      publicUrl: publicUrl,
-      lastChecked: FieldValue.serverTimestamp(),
-    });
-    console.log(`Cached image metadata for: ${imageUrl.substring(0, 50)}...`);
-  } catch (error) {
-    console.error("Error caching image metadata:", error);
-  }
-}
-
-/**
- * Optimizes an image buffer using Sharp for better performance and smaller file sizes
- * @param {Buffer} imageBuffer - The original image buffer
- * @return {Promise<Buffer>} A promise that resolves to the optimized image buffer
- */
-async function optimizeImage(imageBuffer) {
-  let sharpInstance = null;
-  try {
-    // Get image metadata — throws if buffer is not a decodable image
-    const metadata = await sharp(imageBuffer).metadata();
-    if (!metadata || !metadata.format) {
-      throw new Error("Unrecognized image format");
-    }
-
-    // Set maximum dimensions to reduce file size while maintaining quality
-    const maxWidth = 1920;
-    const maxHeight = 1920;
-
-    sharpInstance = sharp(imageBuffer);
-
-    // Resize if image is too large
-    if (metadata.width > maxWidth || metadata.height > maxHeight) {
-      sharpInstance = sharpInstance.resize(maxWidth, maxHeight, {
-        fit: "inside",
-        withoutEnlargement: true,
-      });
-    }
-
-    // Convert to JPEG with optimization
-    const optimizedBuffer = await sharpInstance
-        .jpeg({
-          quality: 85, // Good balance between quality and file size
-          progressive: true, // Progressive JPEG for better loading
-          mozjpeg: true, // Use mozjpeg encoder for better compression
-        })
-        .toBuffer();
-
-    console.log(`Image optimized: ${imageBuffer.length} bytes -> ${optimizedBuffer.length} bytes (${((1 - optimizedBuffer.length / imageBuffer.length) * 100).toFixed(1)}% reduction)`);
-
-    // Clean up sharp instance to free memory
-    sharpInstance = null;
-
-    return optimizedBuffer;
-  } catch (error) {
-    console.error("Error optimizing image:", error);
-    // Clean up sharp instance on error
-    sharpInstance = null;
-    // Do not upload undecodable buffers (e.g. HTML wiki pages) as images.
-    return null;
-  }
-}
-
-/**
- * Downloads and uploads an image to Firebase Storage (with URL-based deduplication and hash validation)
- * @param {string} imageUrl - The URL of the image to download
- * @param {string} spotName - The name of the spot for filename generation
- * @param {number} imageIndex - The index of the image for filename generation
- * @param {string|null} storedHash - Previously stored hash for this image (if available)
- * @param {string=} storageFolder - Storage folder prefix (`spots` or `events`)
- * @return {Promise<Object|null>} A promise that resolves to {url, hash} or null
- */
-async function downloadAndUploadImage(
-    imageUrl,
-    spotName,
-    imageIndex,
-    storedHash = null,
-    storageFolder = "spots",
-) {
-  let imageBuffer = null;
-  try {
-    console.log(`Processing image ${imageIndex + 1} for spot: ${spotName}`);
-
-    // First, check if we've already processed this URL
-    const cachedPublicUrl = await checkImageUrlCache(imageUrl);
-    if (cachedPublicUrl) {
-      console.log(
-          `Using cached image for URL: ${imageUrl.substring(0, 50)}...`,
-      );
-      // Get the hash from cache
-      const imageCacheRef = db
-          .collection("imageCache")
-          .doc(encodeURIComponent(imageUrl));
-      const imageCacheDoc = await imageCacheRef.get();
-      const cachedHash = imageCacheDoc.exists ?
-        imageCacheDoc.data().hash :
-        null;
-      return {url: cachedPublicUrl, hash: cachedHash};
-    }
-
-    // If we have a stored hash, check if the image still exists by that hash
-    if (storedHash) {
-      const existingFileName = await checkImageExists(
-          storedHash,
-          storageFolder,
-      );
-      if (existingFileName) {
-        console.log(
-            `Using stored hash for existing image: ${storedHash.substring(0, 8)}...`,
-        );
-        const publicUrl = getPublicUrl(existingFileName);
-
-        // Cache this URL-to-hash mapping for future use
-        await cacheImageMetadata(imageUrl, storedHash, publicUrl);
-
-        return {url: publicUrl, hash: storedHash};
-      } else {
-        console.log(
-            `Stored hash no longer valid, will download and recalculate: ${storedHash.substring(0, 8)}...`,
-        );
-      }
-    }
-
-    // Download image (follow redirects; send User-Agent for Wikimedia)
-    const downloaded = await downloadBinaryWithRedirects(imageUrl);
-    imageBuffer = downloaded.buffer;
-
-    // Generate content-based hash
-    const imageHash = generateImageHash(imageBuffer);
-    console.log(`Generated hash for image: ${imageHash.substring(0, 8)}...`);
-
-    // Validate against stored hash if available
-    if (storedHash && storedHash !== imageHash) {
-      console.warn(
-          `Hash mismatch! Stored: ${storedHash.substring(0, 8)}..., Calculated: ${imageHash.substring(0, 8)}...`,
-      );
-      console.warn(`Image may have changed, using new hash`);
-    }
-
-    // Check if image already exists by hash
-    const existingFileName = await checkImageExists(imageHash, storageFolder);
-    if (existingFileName) {
-      console.log(`Image already exists, reusing: ${existingFileName}`);
-      const publicUrl = getPublicUrl(existingFileName);
-
-      // Cache this URL-to-hash mapping for future use
-      await cacheImageMetadata(imageUrl, imageHash, publicUrl);
-
-      // Clear buffer immediately if we're reusing existing image
-      imageBuffer = null;
-      return {url: publicUrl, hash: imageHash};
-    }
-
-    // Generate filename with hash instead of timestamp
-    let extension = ".jpg";
-    try {
-      const pathExt = path.extname(new URL(downloaded.finalUrl || imageUrl).pathname);
-      if (pathExt && pathExt.length <= 5) {
-        extension = pathExt;
-      }
-    } catch (_) {
-      extension = ".jpg";
-    }
-    if (extension.toLowerCase() === ".html" || extension.toLowerCase() === ".htm") {
-      extension = ".jpg";
-    }
-    const safeFolder = storageFolder === "events" ? "events" : "spots";
-    const filename =
-      `${safeFolder}/${spotName.replace(/[^a-zA-Z0-9]/g, "_")}_` +
-      `${imageHash}_${imageIndex}${extension}`;
-
-    // Optimize the image before uploading
-    const optimizedImageBuffer = await optimizeImage(imageBuffer);
-
-    // Clear original buffer to free memory
-    imageBuffer = null;
-
-    if (!optimizedImageBuffer) {
-      console.warn(
-          `Skipping non-decodable image for spot: ${spotName} (${imageUrl})`,
-      );
-      return null;
-    }
-
-    // Upload optimized image to Firebase Storage
-    const file = bucket.file(filename);
-    await file.save(optimizedImageBuffer, {
-      metadata: {
-        contentType: "image/jpeg",
-        cacheControl: "public, max-age=31536000",
-      },
-    });
-
-    // Make file publicly accessible
-    await file.makePublic();
-
-    // Return public URL and hash
-    const publicUrl = getPublicUrl(filename);
-    console.log(`Uploaded new image to: ${publicUrl}`);
-
-    // Cache this URL-to-hash mapping for future use
-    await cacheImageMetadata(imageUrl, imageHash, publicUrl);
-
-    return {url: publicUrl, hash: imageHash};
-  } catch (error) {
-    console.error(
-        `Failed to download/upload image ${imageIndex + 1} for ` + `${spotName}:`,
-        error,
-    );
-    return null;
-  } finally {
-    // Explicitly clear the buffer to free memory
-    if (imageBuffer) {
-      imageBuffer = null;
-    }
-  }
-}
-
-/**
- * Downloads a YouTube thumbnail and uploads it to Storage.
- * Tries maxresdefault, then sddefault, then hqdefault.
- * @param {string} videoId
- * @param {string} spotName
- * @param {number} imageIndex
- * @return {Promise<{url: string, hash: string}|null>}
- */
-async function downloadAndUploadYoutubeThumbnail(videoId, spotName, imageIndex) {
-  const thumbUrl = await resolveYoutubeThumbnailUrl(videoId);
-  if (!thumbUrl) {
-    return null;
-  }
-  return downloadAndUploadImage(thumbUrl, spotName, imageIndex);
-}
-
-/**
- * Processes images for a placemark by downloading and uploading them
- * @param {Object} placemark - The placemark data containing image URLs
- * @param {Object} existingSpotData - Existing spot data (if updating)
- * @param {boolean} [updateImagesForExistingSpots=false] - Whether to update images for existing spots
- * @return {Promise<Object>} A promise that resolves to an object containing
- *     imageUrls and imageHashes arrays
- */
-async function processPlacemarkImages(placemark, existingSpotData = null, updateImagesForExistingSpots = false) {
-  const imageUrls = extractImageUrls(placemark);
-
-  if (imageUrls.length === 0) {
-    return {imageUrls: [], imageHashes: []};
-  }
-
-  // If updateImagesForExistingSpots is false and we have existing spot data,
-  // skip processing and return the existing image arrays (preserve as-is)
-  if (!updateImagesForExistingSpots && existingSpotData) {
-    console.log(`Skipping image processing for existing spot: ${placemark.name} (preserving existing images)`);
-    return {
-      imageUrls: existingSpotData.imageUrls || [],
-      imageHashes: existingSpotData.imageHashes || [],
-    };
-  }
-
-  console.log(`Found ${imageUrls.length} images for spot: ${placemark.name}`);
-
-  const uploadedImageUrls = [];
-  const imageHashes = [];
-
-  // Create URL-to-hash mapping from existing spot data
-  const urlToHashMap = new Map();
-  if (
-    existingSpotData &&
-    existingSpotData.imageUrls &&
-    existingSpotData.imageHashes
-  ) {
-    for (let i = 0; i < existingSpotData.imageUrls.length; i++) {
-      if (existingSpotData.imageUrls[i] && existingSpotData.imageHashes[i]) {
-        urlToHashMap.set(
-            existingSpotData.imageUrls[i],
-            existingSpotData.imageHashes[i],
-        );
-      }
-    }
-  }
-
-  // Process images sequentially to avoid memory issues
-  // Processing in parallel was causing heap out of memory errors
-  for (let i = 0; i < imageUrls.length; i++) {
-    let url = imageUrls[i];
-    console.log(`Processing image ${i + 1}/${imageUrls.length} for spot: ${placemark.name}`);
-
-    const youtubeVideoId = extractYoutubeVideoIdFromThumbnailUrl(url);
-    if (youtubeVideoId) {
-      const resolvedUrl = await resolveYoutubeThumbnailUrl(youtubeVideoId);
-      if (!resolvedUrl) {
-        console.warn(
-            `Skipping unavailable YouTube thumbnail for video ${youtubeVideoId} ` +
-            `(spot: ${placemark.name})`,
-        );
-        continue;
-      }
-      url = resolvedUrl;
-    }
-
-    // Check if we have a stored hash for this specific image URL
-    let storedHash = null;
-    if (urlToHashMap.has(url)) {
-      storedHash = urlToHashMap.get(url);
-    }
-
-    const result = await downloadAndUploadImage(
-        url,
-        placemark.name,
-        i,
-        storedHash,
-    );
-
-    let finalResult = result;
-    if (
-      !finalResult &&
-      typeof url === "string" &&
-      isGoogleUserContentUrl(url)
-    ) {
-      for (const size of GOOGLE_EARTH_IMAGE_SIZE_CANDIDATES) {
-        const retryUrl = url.replace(/fife=s\d+/i, `fife=s${size}`);
-        if (retryUrl === url) continue;
-        finalResult = await downloadAndUploadImage(
-            retryUrl,
-            placemark.name,
-            i,
-            storedHash,
-        );
-        if (finalResult) break;
-      }
-    }
-
-    // Add successful result to our arrays
-    if (finalResult) {
-      uploadedImageUrls.push(finalResult.url);
-      imageHashes.push(finalResult.hash);
-    }
-
-    // Force garbage collection hint after each image to free memory
-    if (global.gc) {
-      global.gc();
-    }
-
-    // Small delay to allow GC to complete and prevent memory buildup
-    if (i < imageUrls.length - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-  }
-
-  console.log(
-      `Successfully processed ${uploadedImageUrls.length} images ` +
-      `for spot: ${placemark.name}`,
-  );
-  return {imageUrls: uploadedImageUrls, imageHashes};
 }
 
 /**
@@ -3218,72 +2674,25 @@ async function processSyncSource(
         }
       }
 
-      // Process images for this placemark (with existing data for hash optimization)
+      // Process images + YouTube validation (cache-first pipeline)
       console.log(
           `Processing images for spot: ${name} from source: ${source.name}`,
       );
-      const imageResult = await processPlacemarkImages(
-          placemark,
-          existingSpotData,
-          updateImagesForExistingSpots,
-      );
-
-      // Extract YouTube IDs from the raw description for storage and thumbnails
       const youtubeVideoIds = extractYoutubeVideoIdsFromDescription(
           description || "",
       );
-
-      // If a YouTube thumbnail failed to download (e.g., 404), don't keep the video ID
-      // We determine success by checking if the thumbnail URL was cached during image processing
-      let filteredYoutubeVideoIds = [];
-
-      // For existing spots in default sync mode, skip YouTube thumbnail processing
-      if (!updateImagesForExistingSpots && existingSpotData) {
-      // Preserve existing YouTube video IDs without processing thumbnails
-        if (existingSpotData.youtubeVideoIds && Array.isArray(existingSpotData.youtubeVideoIds)) {
-          filteredYoutubeVideoIds = existingSpotData.youtubeVideoIds;
-          console.log(`Skipping YouTube thumbnail processing for existing spot: ${name} (preserving ${filteredYoutubeVideoIds.length} existing video IDs)`);
-        }
-      } else if (youtubeVideoIds && youtubeVideoIds.length > 0) {
-      // Process YouTube thumbnails for new spots or when doing full sync
-        const validationResults = await Promise.all(
-            youtubeVideoIds.map(async (vid) => {
-              const thumbUrl = await resolveYoutubeThumbnailUrl(vid);
-              if (!thumbUrl) {
-                const folderName = placemark.folderName || "unknown";
-                console.warn(
-                    `Dropping YouTube ID ${vid} due to missing thumbnail ` +
-                  `(folder: ${folderName}, spot: ${name})`,
-                );
-                syncIssues.push({
-                  type: ISSUE_YOUTUBE_MISSING_THUMBNAIL,
-                  videoId: vid,
-                  spotName: name,
-                  folderName,
-                });
-                return null;
-              }
-              const cachedPublicUrl = await checkImageUrlCache(thumbUrl);
-              if (!cachedPublicUrl) {
-                const folderName = placemark.folderName || "unknown";
-                console.warn(
-                    `Dropping YouTube ID ${vid} due to missing/cached thumbnail: ` +
-                  `${thumbUrl} (folder: ${folderName}, spot: ${name})`,
-                );
-                syncIssues.push({
-                  type: ISSUE_YOUTUBE_UNCACHED_THUMBNAIL,
-                  videoId: vid,
-                  spotName: name,
-                  folderName,
-                  thumbnailUrl: thumbUrl,
-                });
-                return null;
-              }
-              return vid;
-            }),
-        );
-        filteredYoutubeVideoIds = validationResults.filter((v) => Boolean(v));
+      const imageResult = await ensureSpotImages({
+        sourceUrls: extractImageUrls(placemark),
+        youtubeVideoIds,
+        existing: existingSpotData,
+        mode: updateImagesForExistingSpots ? "full" : "light",
+        spotName: name,
+        folderName: placemark.folderName || "unknown",
+      });
+      if (Array.isArray(imageResult.issues) && imageResult.issues.length > 0) {
+        syncIssues.push(...imageResult.issues);
       }
+      const filteredYoutubeVideoIds = imageResult.youtubeVideoIds || [];
 
       // Clean the description to remove HTML
       const cleanedDescription = cleanDescription(description);
@@ -3418,7 +2827,7 @@ async function processSyncSource(
             spotData.imageHashes = [];
           }
         } else {
-        // Default sync - preserve existing images (already handled in processPlacemarkImages)
+        // Default sync - preserve existing images (already handled in ensureSpotImages)
           if (imageResult.imageUrls.length > 0) {
             spotData.imageUrls = imageResult.imageUrls;
             spotData.imageHashes = imageResult.imageHashes;
@@ -3847,7 +3256,8 @@ async function ensureModerator(request) {
   }
 }
 
-// Function to sync a single source by ID (admin only)
+// Function to sync a single source by ID (admin only) — light sync only.
+// Full sync must use syncSingleSourceFull so it runs on a separate Cloud Run instance.
 exports.syncSingleSource = onCall(
     {
       region: "europe-west1",
@@ -3858,10 +3268,17 @@ exports.syncSingleSource = onCall(
     async (request) => {
       try {
         await ensureAdmin(request);
-        const {sourceId, updateImagesForExistingSpots = false} = request.data || {};
+        const {sourceId} = request.data || {};
 
         if (!sourceId) {
           throw new Error("sourceId is required");
+        }
+
+        if (request.data && request.data.updateImagesForExistingSpots === true) {
+          throw new Error(
+              "Full sync must use syncSingleSourceFull " +
+              "(separate instance from light sync)",
+          );
         }
 
         const apiKey = process.env.GOOGLE_MAPS_API_KEY;
@@ -3869,7 +3286,7 @@ exports.syncSingleSource = onCall(
           throw new Error("Google Maps API key not configured");
         }
 
-        console.log(`Starting sync for single source: ${sourceId} (updateImagesForExistingSpots=${updateImagesForExistingSpots})`);
+        console.log(`Starting light sync for single source: ${sourceId}`);
 
         // Get the specific sync source
         const sourceDoc = await db.collection("syncSources").doc(sourceId).get();
@@ -3885,12 +3302,11 @@ exports.syncSingleSource = onCall(
         }
 
         try {
-        // Use the shared helper function
           const result = await processSyncSource(
               source,
               sourceId,
               apiKey,
-              updateImagesForExistingSpots,
+              false,
               0,
               {trigger: TRIGGER_MANUAL},
           );
@@ -3914,6 +3330,81 @@ exports.syncSingleSource = onCall(
       } catch (error) {
         console.error("Error syncing single source:", error);
         throw new Error(`Failed to sync single source: ${error.message}`);
+      }
+    },
+);
+
+// Manual full sync for a single source (separate Cloud Run service from light).
+exports.syncSingleSourceFull = onCall(
+    {
+      region: "europe-west1",
+      memory: "2GiB",
+      timeoutSeconds: 3600,
+      secrets: ["GOOGLE_MAPS_API_KEY"],
+    },
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {sourceId} = request.data || {};
+
+        if (!sourceId) {
+          throw new Error("sourceId is required");
+        }
+
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+          throw new Error("Google Maps API key not configured");
+        }
+
+        console.log(`Starting full sync for single source: ${sourceId}`);
+
+        const sourceDoc = await db.collection("syncSources").doc(sourceId).get();
+
+        if (!sourceDoc.exists) {
+          throw new Error(`Sync source with ID ${sourceId} not found`);
+        }
+
+        const source = sourceDoc.data();
+
+        if (!source.isActive) {
+          throw new Error(`Sync source ${source.name} is not active`);
+        }
+
+        try {
+          const result = await processSyncSource(
+              source,
+              sourceId,
+              apiKey,
+              true,
+              0,
+              {trigger: TRIGGER_MANUAL},
+          );
+
+          const response = {
+            success: true,
+            message: `Full sync completed for source: ${source.name} with geocoding`,
+            sourceId: result.sourceId,
+            sourceName: result.sourceName,
+            stats: result.stats,
+          };
+
+          console.log(
+              `Completed full sync for source: ${source.name}`,
+              result.stats,
+          );
+          return response;
+        } catch (sourceError) {
+          console.error(
+              `Error processing full sync for source ${source.name}:`,
+              sourceError,
+          );
+          throw new Error(
+              `Failed to full-sync source ${source.name}: ${sourceError.message}`,
+          );
+        }
+      } catch (error) {
+        console.error("Error full-syncing single source:", error);
+        throw new Error(`Failed to full-sync single source: ${error.message}`);
       }
     },
 );

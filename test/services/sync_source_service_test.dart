@@ -70,4 +70,17 @@ void main() {
       );
     });
   });
+
+  group('syncSingleSource callable routing', () {
+    test('light uses syncSingleSource; full uses syncSingleSourceFull', () {
+      expect(
+        SyncSourceService.callableNameForSingleSourceSync(full: false),
+        'syncSingleSource',
+      );
+      expect(
+        SyncSourceService.callableNameForSingleSourceSync(full: true),
+        'syncSingleSourceFull',
+      );
+    });
+  });
 }
