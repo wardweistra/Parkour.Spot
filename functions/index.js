@@ -240,6 +240,8 @@ const {
   computeSpotRatingAggregates,
 } = require("./lib/spot-rating-stats");
 
+const {writeAuditLog, resolveAuditActor} = require("./lib/audit-log");
+
 // Import shared HTML template
 const {generateHtmlPage} = require("./html-template");
 
@@ -3073,6 +3075,7 @@ async function processSyncSource(
           sourceName: source.name,
           syncType,
           runId: syncRunId,
+          status: "succeeded",
           stats: stats,
           addedSpots: addedSpotSummaries,
           updatedSpots: updatedSpotSummaries,
@@ -3095,10 +3098,11 @@ async function processSyncSource(
     };
   } catch (error) {
     console.error(`Sync failed for source ${sourceId}:`, error);
+    const errorMessage = error && error.message ? error.message : String(error);
     await failSyncRun(db, FieldValue, {
       runId: syncRunId,
       sourceRef: sourceDocRef,
-      errorMessage: error && error.message ? error.message : String(error),
+      errorMessage,
       clearInProgress: true,
       stats: {
         total: placemarks.length,
@@ -3114,6 +3118,31 @@ async function processSyncSource(
       updated: updatedSpotSummaries,
       removed: removedSpotSummaries,
       issues: syncIssues,
+    });
+    await writeAuditLog(db, FieldValue, {
+      action: "spotSourceSync",
+      spotId: `syncSource:${sourceId}`,
+      userId: null,
+      userName: "Spot Sync Service",
+      metadata: {
+        sourceId,
+        sourceName: source && source.name ? source.name : null,
+        syncType,
+        runId: syncRunId,
+        status: "failed",
+        errorMessage,
+        stats: {
+          total: placemarks.length,
+          created,
+          updated,
+          unchanged,
+          removed,
+          skipped,
+          geocoded,
+          geocodingFailed,
+        },
+        issueCount: syncIssues.length,
+      },
     });
     throw error;
   }
@@ -3759,6 +3788,17 @@ exports.createSyncSource = onCall(
 
         const docRef = await db.collection("syncSources").add(sourceData);
 
+        const actor = await resolveAuditActor(db, request);
+        await writeAuditLog(db, FieldValue, {
+          action: "syncSourceCreate",
+          userId: actor.userId,
+          userName: actor.userName,
+          metadata: {
+            sourceId: docRef.id,
+            name: name,
+          },
+        });
+
         return {
           success: true,
           message: "Sync source created successfully",
@@ -3940,6 +3980,17 @@ exports.updateSyncSource = onCall(
 
         await db.collection("syncSources").doc(sourceId).update(updateData);
 
+        const actor = await resolveAuditActor(db, request);
+        await writeAuditLog(db, FieldValue, {
+          action: "syncSourceUpdate",
+          userId: actor.userId,
+          userName: actor.userName,
+          metadata: {
+            sourceId,
+            name: name !== undefined ? name : null,
+          },
+        });
+
         return {
           success: true,
           message: "Sync source updated successfully",
@@ -4066,8 +4117,20 @@ exports.deleteSyncSource = onCall(
         if (!sourceDoc.exists) {
           throw new Error("Sync source not found");
         }
+        const sourceName = sourceDoc.data().name || null;
         await deleteGoogleEarthImportFiles(sourceDoc.data());
         await db.collection("syncSources").doc(sourceId).delete();
+
+        const actor = await resolveAuditActor(db, request);
+        await writeAuditLog(db, FieldValue, {
+          action: "syncSourceDelete",
+          userId: actor.userId,
+          userName: actor.userName,
+          metadata: {
+            sourceId,
+            name: sourceName,
+          },
+        });
 
         return {
           success: true,
@@ -5082,6 +5145,7 @@ async function syncExternalEventSource(sourceDoc, options = {}) {
           sourceId,
           sourceName,
           runId: syncRunId,
+          status: "succeeded",
           stats,
         },
       });
@@ -5099,16 +5163,30 @@ async function syncExternalEventSource(sourceDoc, options = {}) {
       runId: syncRunId,
     };
   } catch (error) {
+    const errorMessage = error && error.message ? error.message : String(error);
     logger.error("externalEventSync.failed", {
       sourceId,
       runId: syncRunId,
-      error: error && error.message ? error.message : String(error),
+      error: errorMessage,
     });
     await failSyncRun(db, FieldValue, {
       runId: syncRunId,
       sourceRef: sourceDoc.ref,
-      errorMessage: error && error.message ? error.message : String(error),
+      errorMessage,
       clearInProgress: true,
+    });
+    await writeAuditLog(db, FieldValue, {
+      action: "eventSourceSync",
+      eventId: `eventSyncSource:${sourceId}`,
+      userId: null,
+      userName: "Event Sync Service",
+      metadata: {
+        sourceId,
+        sourceName: sourceName || null,
+        runId: syncRunId,
+        status: "failed",
+        errorMessage,
+      },
     });
     throw error;
   } finally {
@@ -5190,6 +5268,16 @@ exports.createEventSyncSource = onCall(
         }
 
         const docRef = await db.collection("eventSyncSources").add(sourceData);
+        const actor = await resolveAuditActor(db, request);
+        await writeAuditLog(db, FieldValue, {
+          action: "eventSyncSourceCreate",
+          userId: actor.userId,
+          userName: actor.userName,
+          metadata: {
+            sourceId: docRef.id,
+            name: name.trim(),
+          },
+        });
         return {
           success: true,
           sourceId: docRef.id,
@@ -5307,6 +5395,17 @@ exports.updateEventSyncSource = onCall(
         await db.collection("eventSyncSources").doc(sourceId.trim())
             .update(updateData);
 
+        const actor = await resolveAuditActor(db, request);
+        await writeAuditLog(db, FieldValue, {
+          action: "eventSyncSourceUpdate",
+          userId: actor.userId,
+          userName: actor.userName,
+          metadata: {
+            sourceId: sourceId.trim(),
+            name: name !== undefined ? name.trim() : null,
+          },
+        });
+
         return {
           success: true,
           sourceId: sourceId.trim(),
@@ -5330,10 +5429,26 @@ exports.deleteEventSyncSource = onCall(
           throw new Error("sourceId is required");
         }
 
-        await db.collection("eventSyncSources").doc(sourceId.trim()).delete();
+        const trimmedSourceId = sourceId.trim();
+        const existing = await db.collection("eventSyncSources")
+            .doc(trimmedSourceId).get();
+        const sourceName = existing.exists && existing.data() ?
+          (existing.data().name || null) :
+          null;
+        await db.collection("eventSyncSources").doc(trimmedSourceId).delete();
+        const actor = await resolveAuditActor(db, request);
+        await writeAuditLog(db, FieldValue, {
+          action: "eventSyncSourceDelete",
+          userId: actor.userId,
+          userName: actor.userName,
+          metadata: {
+            sourceId: trimmedSourceId,
+            name: sourceName,
+          },
+        });
         return {
           success: true,
-          sourceId: sourceId.trim(),
+          sourceId: trimmedSourceId,
           message: "Event sync source deleted successfully",
         };
       } catch (error) {
@@ -6002,6 +6117,17 @@ exports.setUserAdmin = onCall({region: "europe-west1"}, async (request) => {
     } catch (claimErr) {
       console.warn("Failed to set custom claims:", claimErr.message);
     }
+
+    const actor = await resolveAuditActor(db, request);
+    await writeAuditLog(db, FieldValue, {
+      action: "userAdminChanged",
+      userId: actor.userId,
+      userName: actor.userName,
+      metadata: {
+        targetUserId: uid,
+        isAdmin,
+      },
+    });
 
     return {success: true, uid: uid, isAdmin: isAdmin};
   } catch (error) {
@@ -8484,6 +8610,18 @@ exports.deleteSpot = onCall({region: "europe-west1"}, async (request) => {
 
     console.log(`Admin deleted spot: ${spotName} (${spotId})`);
 
+    const actor = await resolveAuditActor(db, request);
+    await writeAuditLog(db, FieldValue, {
+      action: "spotDelete",
+      spotId,
+      userId: actor.userId,
+      userName: actor.userName,
+      metadata: {
+        spotName,
+        via: "deleteSpot",
+      },
+    });
+
     return {
       success: true,
       message: `Spot "${spotName}" deleted successfully`,
@@ -8522,6 +8660,20 @@ exports.deleteSpots = onCall(
         await batch.commit();
 
         console.log(`Admin successfully deleted ${deletedSpots.length} spots`);
+
+        const actor = await resolveAuditActor(db, request);
+        for (const deletedSpotId of deletedSpots) {
+          await writeAuditLog(db, FieldValue, {
+            action: "spotDelete",
+            spotId: deletedSpotId,
+            userId: actor.userId,
+            userName: actor.userName,
+            metadata: {
+              via: "deleteSpots",
+              batchSize: deletedSpots.length,
+            },
+          });
+        }
 
         return {
           success: true,
@@ -11201,6 +11353,17 @@ exports.createApiClient = onCall({region: "europe-west1"}, async (request) => {
       createdBy: request.auth?.uid || null,
     });
 
+    const actor = await resolveAuditActor(db, request);
+    await writeAuditLog(db, FieldValue, {
+      action: "apiClientCreate",
+      userId: actor.userId,
+      userName: actor.userName,
+      metadata: {
+        clientId: clientRef.id,
+        name: name.trim(),
+      },
+    });
+
     return {
       clientId: clientRef.id,
       apiKey,
@@ -11237,6 +11400,17 @@ exports.updateApiClient = onCall({region: "europe-west1"}, async (request) => {
       return {success: true};
     }
     await db.collection(API_CLIENTS_COLLECTION).doc(clientId).update(updateData);
+    const actor = await resolveAuditActor(db, request);
+    await writeAuditLog(db, FieldValue, {
+      action: "apiClientUpdate",
+      userId: actor.userId,
+      userName: actor.userName,
+      metadata: {
+        clientId,
+        name: updateData.name || null,
+        active: updateData.active !== undefined ? updateData.active : null,
+      },
+    });
     return {success: true};
   } catch (error) {
     console.error("updateApiClient error:", error);
@@ -11256,6 +11430,7 @@ exports.deleteApiClient = onCall({region: "europe-west1"}, async (request) => {
     if (!clientSnap.exists) {
       throw new Error("API client not found");
     }
+    const clientName = clientSnap.data().name || null;
     const usageSnap = await clientRef.collection("usage").get();
     const batch = db.batch();
     for (const d of usageSnap.docs) {
@@ -11263,6 +11438,16 @@ exports.deleteApiClient = onCall({region: "europe-west1"}, async (request) => {
     }
     batch.delete(clientRef);
     await batch.commit();
+    const actor = await resolveAuditActor(db, request);
+    await writeAuditLog(db, FieldValue, {
+      action: "apiClientDelete",
+      userId: actor.userId,
+      userName: actor.userName,
+      metadata: {
+        clientId,
+        name: clientName,
+      },
+    });
     return {success: true};
   } catch (error) {
     console.error("deleteApiClient error:", error);

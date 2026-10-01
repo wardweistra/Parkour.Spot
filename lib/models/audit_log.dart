@@ -18,6 +18,21 @@ enum AuditLogAction {
   eventSourceSync,
   photoAdded,
   photoRejected,
+  eventCreate,
+  eventEdit,
+  eventReportStatusChange,
+  eventDuplicateCleared,
+  userModeratorChanged,
+  userAdminChanged,
+  syncSourceCreate,
+  syncSourceUpdate,
+  syncSourceDelete,
+  eventSyncSourceCreate,
+  eventSyncSourceUpdate,
+  eventSyncSourceDelete,
+  apiClientCreate,
+  apiClientUpdate,
+  apiClientDelete,
 }
 
 class AuditLog {

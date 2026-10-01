@@ -39,6 +39,8 @@ AuditLogCategory auditLogCategoryForAction(AuditLogAction action) {
       return AuditLogCategory.spotSyncs;
     case AuditLogAction.eventSourceSync:
       return AuditLogCategory.eventSyncs;
+    case AuditLogAction.eventCreate:
+      return AuditLogCategory.creations;
     case AuditLogAction.spotEdit:
     case AuditLogAction.spotMarkedAsDuplicate:
     case AuditLogAction.spotHidden:
@@ -54,6 +56,20 @@ AuditLogCategory auditLogCategoryForAction(AuditLogAction action) {
     case AuditLogAction.spotDelete:
     case AuditLogAction.photoAdded:
     case AuditLogAction.photoRejected:
+    case AuditLogAction.eventEdit:
+    case AuditLogAction.eventReportStatusChange:
+    case AuditLogAction.eventDuplicateCleared:
+    case AuditLogAction.userModeratorChanged:
+    case AuditLogAction.userAdminChanged:
+    case AuditLogAction.syncSourceCreate:
+    case AuditLogAction.syncSourceUpdate:
+    case AuditLogAction.syncSourceDelete:
+    case AuditLogAction.eventSyncSourceCreate:
+    case AuditLogAction.eventSyncSourceUpdate:
+    case AuditLogAction.eventSyncSourceDelete:
+    case AuditLogAction.apiClientCreate:
+    case AuditLogAction.apiClientUpdate:
+    case AuditLogAction.apiClientDelete:
       return AuditLogCategory.moderatorActions;
   }
 }

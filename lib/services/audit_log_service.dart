@@ -434,4 +434,116 @@ class AuditLogService {
       // Don't throw - audit logging should not break the main operation
     }
   }
+
+  Future<void> logEventCreate({
+    required String eventId,
+    String? userId,
+    String? userName,
+    Map<String, dynamic>? metadata,
+  }) async {
+    try {
+      await _firestore.collection('auditLog').add({
+        'action': AuditLogAction.eventCreate.toString().split('.').last,
+        'eventId': eventId,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'metadata': ?metadata,
+      });
+    } catch (e) {
+      debugPrint('Error logging event create: $e');
+    }
+  }
+
+  Future<void> logEventEdit({
+    required String eventId,
+    required Map<String, dynamic> changes,
+    String? userId,
+    String? userName,
+  }) async {
+    try {
+      await _firestore.collection('auditLog').add({
+        'action': AuditLogAction.eventEdit.toString().split('.').last,
+        'eventId': eventId,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'changes': changes,
+      });
+    } catch (e) {
+      debugPrint('Error logging event edit: $e');
+    }
+  }
+
+  Future<void> logEventReportStatusChange({
+    required String reportId,
+    required String eventId,
+    required String oldStatus,
+    required String newStatus,
+    String? userId,
+    String? userName,
+    Map<String, dynamic>? metadata,
+  }) async {
+    try {
+      await _firestore.collection('auditLog').add({
+        'action': AuditLogAction.eventReportStatusChange
+            .toString()
+            .split('.')
+            .last,
+        'reportId': reportId,
+        'eventId': eventId,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'changes': {
+          'status': {'from': oldStatus, 'to': newStatus},
+        },
+        'metadata': ?metadata,
+      });
+    } catch (e) {
+      debugPrint('Error logging event report status change: $e');
+    }
+  }
+
+  Future<void> logEventDuplicateCleared({
+    required String eventId,
+    String? userId,
+    String? userName,
+  }) async {
+    try {
+      await _firestore.collection('auditLog').add({
+        'action':
+            AuditLogAction.eventDuplicateCleared.toString().split('.').last,
+        'eventId': eventId,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('Error logging event duplicate cleared: $e');
+    }
+  }
+
+  Future<void> logUserModeratorChanged({
+    required String targetUserId,
+    required bool isModerator,
+    String? userId,
+    String? userName,
+  }) async {
+    try {
+      await _firestore.collection('auditLog').add({
+        'action':
+            AuditLogAction.userModeratorChanged.toString().split('.').last,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'metadata': {
+          'targetUserId': targetUserId,
+          'isModerator': isModerator,
+        },
+      });
+    } catch (e) {
+      debugPrint('Error logging user moderator change: $e');
+    }
+  }
 }

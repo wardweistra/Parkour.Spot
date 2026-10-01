@@ -744,8 +744,11 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
             }
             break;
           case AuditLogAction.spotSourceSync:
-            title = 'Spot Source Synced';
             final syncMetadata = auditLog.metadata ?? {};
+            final syncFailed = syncMetadata['status'] == 'failed';
+            title = syncFailed
+                ? 'Spot source sync failed'
+                : 'Spot source synced';
             final sourceName =
                 syncMetadata['sourceName'] as String? ?? 'Unknown source';
             subtitle = 'Source: $sourceName';
@@ -773,6 +776,13 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                     .toList();
               }
               return const [];
+            }
+
+            if (syncFailed) {
+              final errorMessage =
+                  syncMetadata['errorMessage'] as String? ?? 'Unknown error';
+              details = 'Error: $errorMessage';
+              break;
             }
 
             final addedNames = formatSpotList(syncMetadata['addedSpots']);
@@ -815,11 +825,22 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                 : summaryLines.join('\n');
             break;
           case AuditLogAction.eventSourceSync:
-            title = 'Event source synced';
             final eventSyncMetadata = auditLog.metadata ?? {};
+            final eventSyncFailed = eventSyncMetadata['status'] == 'failed';
+            title = eventSyncFailed
+                ? 'Event source sync failed'
+                : 'Event source synced';
             final eventSourceName =
                 eventSyncMetadata['sourceName'] as String? ?? 'Unknown source';
             subtitle = 'Source: $eventSourceName';
+
+            if (eventSyncFailed) {
+              final errorMessage =
+                  eventSyncMetadata['errorMessage'] as String? ??
+                  'Unknown error';
+              details = 'Error: $errorMessage';
+              break;
+            }
 
             final eventStatsMap =
                 eventSyncMetadata['stats'] is Map<String, dynamic>
@@ -902,6 +923,168 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
             } else {
               details = 'Photo suggestions rejected';
             }
+            break;
+          case AuditLogAction.eventCreate:
+            title = 'Event created';
+            subtitle = auditLog.userName != null
+                ? 'Created by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Created by ${auditLog.userId}'
+                : 'Created by unknown';
+            details = auditLog.eventId != null
+                ? 'Event: ${auditLog.eventId}'
+                : null;
+            break;
+          case AuditLogAction.eventEdit:
+            title = 'Event edited';
+            subtitle = auditLog.userName != null
+                ? 'Edited by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Edited by ${auditLog.userId}'
+                : 'Edited by unknown';
+            details = null;
+            break;
+          case AuditLogAction.eventReportStatusChange:
+            title = 'Event report status changed';
+            subtitle = auditLog.userName != null
+                ? 'Updated by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Updated by ${auditLog.userId}'
+                : 'Updated by unknown';
+            final statusChange = auditLog.changes?['status'];
+            if (statusChange is Map) {
+              details =
+                  'Status: ${statusChange['from']} → ${statusChange['to']}';
+              if (auditLog.reportId != null) {
+                details = '$details\nReport: ${auditLog.reportId}';
+              }
+              final outcome = auditLog.metadata?['outcome'];
+              if (outcome != null) {
+                details = '$details\nOutcome: $outcome';
+              }
+            } else {
+              details = auditLog.reportId != null
+                  ? 'Report: ${auditLog.reportId}'
+                  : null;
+            }
+            break;
+          case AuditLogAction.eventDuplicateCleared:
+            title = 'Event duplicate status cleared';
+            subtitle = auditLog.userName != null
+                ? 'Cleared by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Cleared by ${auditLog.userId}'
+                : 'Cleared by unknown';
+            details = auditLog.eventId != null
+                ? 'Event: ${auditLog.eventId}'
+                : null;
+            break;
+          case AuditLogAction.userModeratorChanged:
+            title = 'Moderator status changed';
+            subtitle = auditLog.userName != null
+                ? 'Changed by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Changed by ${auditLog.userId}'
+                : 'Changed by unknown';
+            final modTarget = auditLog.metadata?['targetUserId'];
+            final isModerator = auditLog.metadata?['isModerator'];
+            details =
+                'Target user: ${modTarget ?? 'unknown'}\n'
+                'Moderator: ${isModerator == true ? 'yes' : 'no'}';
+            break;
+          case AuditLogAction.userAdminChanged:
+            title = 'Admin status changed';
+            subtitle = auditLog.userName != null
+                ? 'Changed by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Changed by ${auditLog.userId}'
+                : 'Changed by unknown';
+            final adminTarget = auditLog.metadata?['targetUserId'];
+            final isAdmin = auditLog.metadata?['isAdmin'];
+            details =
+                'Target user: ${adminTarget ?? 'unknown'}\n'
+                'Admin: ${isAdmin == true ? 'yes' : 'no'}';
+            break;
+          case AuditLogAction.syncSourceCreate:
+            title = 'Sync source created';
+            subtitle = auditLog.userName != null
+                ? 'Created by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Created by ${auditLog.userId}'
+                : 'Created by unknown';
+            details = _sourceCrudDetails(auditLog.metadata);
+            break;
+          case AuditLogAction.syncSourceUpdate:
+            title = 'Sync source updated';
+            subtitle = auditLog.userName != null
+                ? 'Updated by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Updated by ${auditLog.userId}'
+                : 'Updated by unknown';
+            details = _sourceCrudDetails(auditLog.metadata);
+            break;
+          case AuditLogAction.syncSourceDelete:
+            title = 'Sync source deleted';
+            subtitle = auditLog.userName != null
+                ? 'Deleted by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Deleted by ${auditLog.userId}'
+                : 'Deleted by unknown';
+            details = _sourceCrudDetails(auditLog.metadata);
+            break;
+          case AuditLogAction.eventSyncSourceCreate:
+            title = 'Event sync source created';
+            subtitle = auditLog.userName != null
+                ? 'Created by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Created by ${auditLog.userId}'
+                : 'Created by unknown';
+            details = _sourceCrudDetails(auditLog.metadata);
+            break;
+          case AuditLogAction.eventSyncSourceUpdate:
+            title = 'Event sync source updated';
+            subtitle = auditLog.userName != null
+                ? 'Updated by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Updated by ${auditLog.userId}'
+                : 'Updated by unknown';
+            details = _sourceCrudDetails(auditLog.metadata);
+            break;
+          case AuditLogAction.eventSyncSourceDelete:
+            title = 'Event sync source deleted';
+            subtitle = auditLog.userName != null
+                ? 'Deleted by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Deleted by ${auditLog.userId}'
+                : 'Deleted by unknown';
+            details = _sourceCrudDetails(auditLog.metadata);
+            break;
+          case AuditLogAction.apiClientCreate:
+            title = 'API client created';
+            subtitle = auditLog.userName != null
+                ? 'Created by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Created by ${auditLog.userId}'
+                : 'Created by unknown';
+            details = _apiClientCrudDetails(auditLog.metadata);
+            break;
+          case AuditLogAction.apiClientUpdate:
+            title = 'API client updated';
+            subtitle = auditLog.userName != null
+                ? 'Updated by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Updated by ${auditLog.userId}'
+                : 'Updated by unknown';
+            details = _apiClientCrudDetails(auditLog.metadata);
+            break;
+          case AuditLogAction.apiClientDelete:
+            title = 'API client deleted';
+            subtitle = auditLog.userName != null
+                ? 'Deleted by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Deleted by ${auditLog.userId}'
+                : 'Deleted by unknown';
+            details = _apiClientCrudDetails(auditLog.metadata);
             break;
         }
 
@@ -1003,6 +1186,33 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
     if (mounted) {
       setState(() => _isExtending = false);
     }
+  }
+
+  String? _sourceCrudDetails(Map<String, dynamic>? metadata) {
+    if (metadata == null) return null;
+    final lines = <String>[];
+    final sourceId = metadata['sourceId'];
+    final name = metadata['name'];
+    if (sourceId != null) lines.add('Source id: $sourceId');
+    if (name != null && name.toString().isNotEmpty) {
+      lines.add('Name: $name');
+    }
+    return lines.isEmpty ? null : lines.join('\n');
+  }
+
+  String? _apiClientCrudDetails(Map<String, dynamic>? metadata) {
+    if (metadata == null) return null;
+    final lines = <String>[];
+    final clientId = metadata['clientId'];
+    final name = metadata['name'];
+    if (clientId != null) lines.add('Client id: $clientId');
+    if (name != null && name.toString().isNotEmpty) {
+      lines.add('Name: $name');
+    }
+    if (metadata.containsKey('active') && metadata['active'] != null) {
+      lines.add('Active: ${metadata['active'] == true ? 'yes' : 'no'}');
+    }
+    return lines.isEmpty ? null : lines.join('\n');
   }
 
   String _labelForCategory(AppLocalizations l10n, AuditLogCategory category) {
@@ -2092,12 +2302,15 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                   entry.subtitle ?? '',
                   style: const TextStyle(fontSize: 13),
                 ),
-                // Show changes widget for Spot Edited entries
+                // Show changes widget for spot/event edited entries
                 if (entry.type == AuditLogEntryType.auditLogAction &&
                     entry.metadata?['action'] != null &&
-                    entry.metadata!['action'].toString().contains(
-                      'spotEdit',
-                    ) &&
+                    (entry.metadata!['action'].toString().contains(
+                          'spotEdit',
+                        ) ||
+                        entry.metadata!['action'].toString().contains(
+                          'eventEdit',
+                        )) &&
                     entry.metadata?['changes'] != null &&
                     (entry.metadata!['changes']
                             as Map<String, dynamic>)
@@ -2257,13 +2470,16 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                           const SizedBox(height: 8),
                           SelectableText('ID: ${entry.id}'),
                         ],
-                        // Show changes widget for Spot Edited entries
+                        // Show changes widget for spot/event edited entries
                         if (entry.type ==
                                 AuditLogEntryType.auditLogAction &&
                             entry.metadata?['action'] != null &&
-                            entry.metadata!['action']
-                                .toString()
-                                .contains('spotEdit') &&
+                            (entry.metadata!['action']
+                                    .toString()
+                                    .contains('spotEdit') ||
+                                entry.metadata!['action']
+                                    .toString()
+                                    .contains('eventEdit')) &&
                             entry.metadata?['changes'] != null &&
                             (entry.metadata!['changes']
                                     as Map<String, dynamic>)

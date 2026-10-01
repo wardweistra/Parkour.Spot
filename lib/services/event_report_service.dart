@@ -7,18 +7,24 @@ import 'package:http/http.dart' as http;
 
 import '../models/event_report.dart';
 import '../services/admin_events_service.dart';
+import '../services/audit_log_service.dart';
 import '../utils/event_linked_spot_loader.dart';
 import '../utils/event_suggestion_utils.dart';
 import '../utils/image_preparation.dart';
 import '../utils/ui_yield.dart';
 
 class EventReportService {
-  EventReportService({FirebaseFirestore? firestore, FirebaseStorage? storage})
-    : _firestore = firestore ?? FirebaseFirestore.instance,
-      _storage = storage ?? FirebaseStorage.instance;
+  EventReportService({
+    FirebaseFirestore? firestore,
+    FirebaseStorage? storage,
+    AuditLogService? auditLogService,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _storage = storage ?? FirebaseStorage.instance,
+       _auditLogService = auditLogService ?? AuditLogService();
 
   final FirebaseFirestore _firestore;
   final FirebaseStorage _storage;
+  final AuditLogService _auditLogService;
 
   static const int maxSuggestedPhotos = 20;
   static const String eventSuggestionsPrefix = 'eventSuggestions/';
@@ -445,7 +451,15 @@ class EventReportService {
     if (!statuses.contains(status)) return false;
 
     try {
-      await _firestore.collection('eventReports').doc(reportId).update({
+      final reportRef = _firestore.collection('eventReports').doc(reportId);
+      final snapshot = await reportRef.get();
+      if (!snapshot.exists || snapshot.data() == null) {
+        return false;
+      }
+      final report = EventReport.fromSnapshot(snapshot);
+      final oldStatus = report.status;
+
+      await reportRef.update({
         'status': status,
         if (reviewedBy != null && reviewedBy.isNotEmpty)
           'reviewedBy': reviewedBy,
@@ -455,6 +469,19 @@ class EventReportService {
           'reviewedAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      final eventId =
+          report.targetEventId?.trim().isNotEmpty == true
+              ? report.targetEventId!.trim()
+              : (report.approvedEventId?.trim() ?? '');
+      await _auditLogService.logEventReportStatusChange(
+        reportId: reportId,
+        eventId: eventId,
+        oldStatus: oldStatus,
+        newStatus: status,
+        userId: reviewedBy,
+        userName: reviewedByName,
+      );
       return true;
     } catch (e) {
       debugPrint('Error updating event report status: $e');
@@ -651,6 +678,21 @@ class EventReportService {
         });
         return eventRef.id;
       });
+      if (result != null) {
+        await _auditLogService.logEventReportStatusChange(
+          reportId: reportId,
+          eventId: result,
+          oldStatus: report.status,
+          newStatus: 'Approved',
+          userId: approverUserId,
+          userName: approverName,
+          metadata: {
+            'outcome': 'approved',
+            if (moderatorNotes != null && moderatorNotes.trim().isNotEmpty)
+              'notes': moderatorNotes.trim(),
+          },
+        );
+      }
       return result;
     } catch (e) {
       debugPrint('Error approving event report: $e');
@@ -728,6 +770,20 @@ class EventReportService {
         'reviewedAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+      await _auditLogService.logEventReportStatusChange(
+        reportId: reportId,
+        eventId: targetEventId,
+        oldStatus: report.status,
+        newStatus: 'Approved',
+        userId: approverUserId,
+        userName: approverName,
+        metadata: {
+          'outcome': 'duplicateApproved',
+          'nativeOriginalEventId': trimmedNativeId,
+          if (moderatorNotes != null && moderatorNotes.trim().isNotEmpty)
+            'notes': moderatorNotes.trim(),
+        },
+      );
       return targetEventId;
     } catch (e) {
       debugPrint('Error approving duplicate event report: $e');
@@ -772,6 +828,23 @@ class EventReportService {
         'reviewedAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+      final eventId =
+          report.targetEventId?.trim().isNotEmpty == true
+              ? report.targetEventId!.trim()
+              : '';
+      await _auditLogService.logEventReportStatusChange(
+        reportId: reportId,
+        eventId: eventId,
+        oldStatus: report.status,
+        newStatus: 'Rejected',
+        userId: reviewerUserId,
+        userName: reviewerName,
+        metadata: {
+          'outcome': 'rejected',
+          if (moderatorNotes != null && moderatorNotes.trim().isNotEmpty)
+            'notes': moderatorNotes.trim(),
+        },
+      );
       return true;
     } catch (e) {
       debugPrint('Error rejecting event report: $e');

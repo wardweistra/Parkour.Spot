@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/user.dart' as app_user;
+import 'audit_log_service.dart';
 
 /// Simple immutable data class representing aggregate statistics for a user.
 class UserStats {
@@ -24,10 +26,14 @@ class UserStats {
 
 /// Service responsible for loading admin-facing user information and actions.
 class UserManagementService extends ChangeNotifier {
-  UserManagementService({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  UserManagementService({
+    FirebaseFirestore? firestore,
+    AuditLogService? auditLogService,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance,
+       _auditLogService = auditLogService ?? AuditLogService();
 
   final FirebaseFirestore _firestore;
+  final AuditLogService _auditLogService;
 
   final List<app_user.User> _users = <app_user.User>[];
   bool _isLoading = false;
@@ -316,6 +322,13 @@ class UserManagementService extends ChangeNotifier {
       if (index != -1) {
         _users[index] = _users[index].copyWith(isModerator: isModerator);
       }
+      final actor = FirebaseAuth.instance.currentUser;
+      await _auditLogService.logUserModeratorChanged(
+        targetUserId: userId,
+        isModerator: isModerator,
+        userId: actor?.uid,
+        userName: actor?.displayName,
+      );
       return true;
     } catch (e, stackTrace) {
       debugPrint('UserManagementService.updateModeratorStatus error: $e');

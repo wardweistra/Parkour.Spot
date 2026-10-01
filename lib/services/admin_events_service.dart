@@ -319,6 +319,10 @@ class AdminEventsService extends ChangeNotifier {
       final ref = await _firestore
           .collection('events')
           .add(nativeEvent.toFirestore());
+      await _auditLogService.logEventCreate(
+        eventId: ref.id,
+        userId: createdBy,
+      );
       notifyListeners();
       return ref.id;
     } catch (e, st) {
@@ -348,6 +352,8 @@ class AdminEventsService extends ChangeNotifier {
     String? countryCode,
     required List<String> spotIds,
     List<String> spotListIds = const <String>[],
+    String? userId,
+    String? userName,
   }) async {
     final trimmedId = eventId.trim();
     if (trimmedId.isEmpty) {
@@ -443,6 +449,17 @@ class AdminEventsService extends ChangeNotifier {
       }
       applyFieldDeletesForClearedEventLocation(updateData, updated);
       await _firestore.collection('events').doc(trimmedId).update(updateData);
+
+      final changes = _buildEventEditChanges(existing, updated);
+      if (changes.isNotEmpty) {
+        final actor = FirebaseAuth.instance.currentUser;
+        await _auditLogService.logEventEdit(
+          eventId: trimmedId,
+          changes: changes,
+          userId: userId ?? actor?.uid,
+          userName: userName ?? actor?.displayName,
+        );
+      }
 
       final index = _events.indexWhere((e) => e.id == trimmedId);
       if (index >= 0) {
@@ -1310,7 +1327,11 @@ class AdminEventsService extends ChangeNotifier {
     }
   }
 
-  Future<bool> clearEventDuplicateStatus(String eventId) async {
+  Future<bool> clearEventDuplicateStatus(
+    String eventId, {
+    String? userId,
+    String? userName,
+  }) async {
     _error = null;
     notifyListeners();
     final id = eventId.trim();
@@ -1325,6 +1346,12 @@ class AdminEventsService extends ChangeNotifier {
         ...buildDuplicateReviewClearUpdates(),
         'updatedAt': Timestamp.fromDate(DateTime.now().toUtc()),
       });
+      final actor = FirebaseAuth.instance.currentUser;
+      await _auditLogService.logEventDuplicateCleared(
+        eventId: id,
+        userId: userId ?? actor?.uid,
+        userName: userName ?? actor?.displayName,
+      );
       notifyListeners();
       return true;
     } catch (e, st) {
@@ -1641,5 +1668,49 @@ class AdminEventsService extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  Map<String, dynamic> _buildEventEditChanges(
+    ParkourEvent before,
+    ParkourEvent after,
+  ) {
+    final changes = <String, dynamic>{};
+
+    void track(String field, Object? oldValue, Object? newValue) {
+      final oldNorm = oldValue ?? '';
+      final newNorm = newValue ?? '';
+      if (oldNorm.toString() != newNorm.toString()) {
+        changes[field] = {'from': oldValue, 'to': newValue};
+      }
+    }
+
+    track('title', before.title, after.title);
+    track('description', before.description, after.description);
+    track('websiteUrl', before.websiteUrl, after.websiteUrl);
+    track('address', before.address, after.address);
+    track('city', before.city, after.city);
+    track('countryCode', before.countryCode, after.countryCode);
+    track('latitude', before.latitude, after.latitude);
+    track('longitude', before.longitude, after.longitude);
+    track('startAt', before.startAt.toIso8601String(), after.startAt.toIso8601String());
+    track(
+      'endAt',
+      before.endAt?.toIso8601String(),
+      after.endAt?.toIso8601String(),
+    );
+    track('isDateOnly', before.isDateOnly, after.isDateOnly);
+    track('timeZone', before.timeZone, after.timeZone);
+    track('spotIds', before.spotIds.join(','), after.spotIds.join(','));
+    track(
+      'spotListIds',
+      before.spotListIds.join(','),
+      after.spotListIds.join(','),
+    );
+    track(
+      'imageUrls',
+      before.imageUrls.join(','),
+      after.imageUrls.join(','),
+    );
+    return changes;
   }
 }

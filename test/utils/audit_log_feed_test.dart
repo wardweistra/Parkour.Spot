@@ -17,6 +17,25 @@ void main() {
       );
     });
 
+    test('maps failed syncs to sync chips', () {
+      // Failed syncs reuse the same action enums; category is by action only.
+      expect(
+        auditLogCategoryForAction(AuditLogAction.spotSourceSync),
+        AuditLogCategory.spotSyncs,
+      );
+      expect(
+        auditLogCategoryForAction(AuditLogAction.eventSourceSync),
+        AuditLogCategory.eventSyncs,
+      );
+    });
+
+    test('maps event create to creations', () {
+      expect(
+        auditLogCategoryForAction(AuditLogAction.eventCreate),
+        AuditLogCategory.creations,
+      );
+    });
+
     test('maps moderator actions', () {
       expect(
         auditLogCategoryForAction(AuditLogAction.spotEdit),
@@ -28,6 +47,46 @@ void main() {
       );
       expect(
         auditLogCategoryForAction(AuditLogAction.spotDelete),
+        AuditLogCategory.moderatorActions,
+      );
+      expect(
+        auditLogCategoryForAction(AuditLogAction.eventEdit),
+        AuditLogCategory.moderatorActions,
+      );
+      expect(
+        auditLogCategoryForAction(AuditLogAction.eventReportStatusChange),
+        AuditLogCategory.moderatorActions,
+      );
+      expect(
+        auditLogCategoryForAction(AuditLogAction.eventDuplicateCleared),
+        AuditLogCategory.moderatorActions,
+      );
+      expect(
+        auditLogCategoryForAction(AuditLogAction.userModeratorChanged),
+        AuditLogCategory.moderatorActions,
+      );
+      expect(
+        auditLogCategoryForAction(AuditLogAction.userAdminChanged),
+        AuditLogCategory.moderatorActions,
+      );
+      expect(
+        auditLogCategoryForAction(AuditLogAction.syncSourceCreate),
+        AuditLogCategory.moderatorActions,
+      );
+      expect(
+        auditLogCategoryForAction(AuditLogAction.eventSyncSourceDelete),
+        AuditLogCategory.moderatorActions,
+      );
+      expect(
+        auditLogCategoryForAction(AuditLogAction.apiClientCreate),
+        AuditLogCategory.moderatorActions,
+      );
+      expect(
+        auditLogCategoryForAction(AuditLogAction.apiClientUpdate),
+        AuditLogCategory.moderatorActions,
+      );
+      expect(
+        auditLogCategoryForAction(AuditLogAction.apiClientDelete),
         AuditLogCategory.moderatorActions,
       );
     });
@@ -149,6 +208,22 @@ void main() {
         },
       );
       expect(syncRunIdFromAuditLogEntry(entry), 'run-123');
+    });
+
+    test('reads runId from failed sync metadata', () {
+      final entry = AuditLogEntry(
+        type: AuditLogEntryType.auditLogAction,
+        timestamp: DateTime(2026, 1, 1),
+        metadata: {
+          'action': 'AuditLogAction.spotSourceSync',
+          'metadata': {
+            'runId': 'run-fail-1',
+            'status': 'failed',
+            'errorMessage': 'timeout',
+          },
+        },
+      );
+      expect(syncRunIdFromAuditLogEntry(entry), 'run-fail-1');
     });
 
     test('returns null when missing', () {
