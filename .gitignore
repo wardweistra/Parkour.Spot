@@ -105,6 +105,9 @@ yarn-error.log*
 .env.production
 .DS_Store
 
+# Google Cloud SDK local config/credentials (never commit)
+.gcloud-config/
+
 # Generated from FIREBASE_* env (scripts/generate-firebase-messaging-sw.js).
 # Production vs emulator configs must not bounce this file in git.
 web/firebase-messaging-sw.js
