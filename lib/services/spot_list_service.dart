@@ -2,12 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import '../models/spot_list.dart';
+import '../services/audit_log_service.dart';
 import '../services/auth_service.dart';
 import '../utils/http_url_utils.dart' as http_url;
 
 class SpotListService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final AuthService _authService;
+  final AuditLogService _auditLogService;
 
   bool _isLoading = false;
   String? _error;
@@ -15,7 +17,8 @@ class SpotListService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  SpotListService(this._authService);
+  SpotListService(this._authService, {AuditLogService? auditLogService})
+    : _auditLogService = auditLogService ?? AuditLogService();
 
   /// Check if the current user is authenticated
   bool _isAuthenticated() {
@@ -25,6 +28,24 @@ class SpotListService extends ChangeNotifier {
   /// Get the current user ID
   String? _getCurrentUserId() {
     return _authService.currentUser?.uid;
+  }
+
+  String? _actorName() {
+    return _authService.userProfile?.displayName ??
+        _authService.currentUser?.displayName;
+  }
+
+  void _trackChange(
+    Map<String, dynamic> changes,
+    String field,
+    Object? oldValue,
+    Object? newValue,
+  ) {
+    final oldNorm = oldValue ?? '';
+    final newNorm = newValue ?? '';
+    if (oldNorm.toString() != newNorm.toString()) {
+      changes[field] = {'from': oldValue, 'to': newValue};
+    }
   }
 
   /// Create a new spot list
@@ -73,6 +94,16 @@ class SpotListService extends ChangeNotifier {
       final docRef = await _firestore
           .collection('spotLists')
           .add(spotList.toFirestore());
+
+      await _auditLogService.logSpotListCreate(
+        listId: docRef.id,
+        userId: userId,
+        userName: _actorName(),
+        metadata: {
+          'name': spotList.name,
+          'visibility': visibility.name,
+        },
+      );
 
       _isLoading = false;
       notifyListeners();
@@ -227,6 +258,34 @@ class SpotListService extends ChangeNotifier {
 
       await _firestore.collection('spotLists').doc(listId).update(updates);
 
+      final changes = <String, dynamic>{};
+      if (name != null) {
+        _trackChange(changes, 'name', list.name, name.trim());
+      }
+      if (description != null) {
+        _trackChange(
+          changes,
+          'description',
+          list.description,
+          description.trim(),
+        );
+      }
+      if (visibility != null) {
+        _trackChange(changes, 'visibility', list.visibility.name, visibility.name);
+      }
+      if (moreInfoUrl != null) {
+        _trackChange(changes, 'moreInfoUrl', list.moreInfoUrl, moreInfoUrl.trim());
+      }
+      if (changes.isNotEmpty) {
+        await _auditLogService.logSpotListEdit(
+          listId: listId,
+          changes: changes,
+          userId: userId,
+          userName: _actorName(),
+          metadata: {'name': list.name},
+        );
+      }
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -299,6 +358,23 @@ class SpotListService extends ChangeNotifier {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      final nextSpotIds = [...list.spotIds, spotId];
+      await _auditLogService.logSpotListEdit(
+        listId: listId,
+        changes: {
+          'spotIds': {
+            'from': list.spotIds.join(','),
+            'to': nextSpotIds.join(','),
+          },
+        },
+        userId: userId,
+        userName: _actorName(),
+        metadata: {
+          'name': list.name,
+          'addedSpotId': spotId,
+        },
+      );
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -355,6 +431,23 @@ class SpotListService extends ChangeNotifier {
         'spotIds': FieldValue.arrayRemove([spotId]),
         'updatedAt': FieldValue.serverTimestamp(),
       });
+
+      final nextSpotIds = list.spotIds.where((id) => id != spotId).toList();
+      await _auditLogService.logSpotListEdit(
+        listId: listId,
+        changes: {
+          'spotIds': {
+            'from': list.spotIds.join(','),
+            'to': nextSpotIds.join(','),
+          },
+        },
+        userId: userId,
+        userName: _actorName(),
+        metadata: {
+          'name': list.name,
+          'removedSpotId': spotId,
+        },
+      );
 
       _isLoading = false;
       notifyListeners();
@@ -432,6 +525,33 @@ class SpotListService extends ChangeNotifier {
       }
 
       await _firestore.collection('spotLists').doc(listId).update(updates);
+
+      final changes = <String, dynamic>{};
+      _trackChange(changes, 'name', list.name, name.trim());
+      _trackChange(changes, 'description', list.description, description.trim());
+      _trackChange(changes, 'visibility', list.visibility.name, visibility.name);
+      _trackChange(changes, 'moreInfoUrl', list.moreInfoUrl, moreInfoUrl.trim());
+      _trackChange(
+        changes,
+        'spotIds',
+        list.spotIds.join(','),
+        effectiveSpotIds.join(','),
+      );
+      _trackChange(
+        changes,
+        'sectionCount',
+        list.sections?.length ?? 0,
+        nonEmptySections.length,
+      );
+      if (changes.isNotEmpty) {
+        await _auditLogService.logSpotListEdit(
+          listId: listId,
+          changes: changes,
+          userId: userId,
+          userName: _actorName(),
+          metadata: {'name': name.trim()},
+        );
+      }
 
       _isLoading = false;
       notifyListeners();
@@ -535,6 +655,29 @@ class SpotListService extends ChangeNotifier {
           'spotIds': effectiveSpotIds,
           'updatedAt': FieldValue.serverTimestamp(),
         });
+      }
+
+      final changes = <String, dynamic>{};
+      _trackChange(
+        changes,
+        'spotIds',
+        list.spotIds.join(','),
+        effectiveSpotIds.join(','),
+      );
+      _trackChange(
+        changes,
+        'sectionCount',
+        list.sections?.length ?? 0,
+        sections.length,
+      );
+      if (changes.isNotEmpty) {
+        await _auditLogService.logSpotListEdit(
+          listId: listId,
+          changes: changes,
+          userId: userId,
+          userName: _actorName(),
+          metadata: {'name': list.name},
+        );
       }
 
       _isLoading = false;
@@ -760,6 +903,19 @@ class SpotListService extends ChangeNotifier {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      await _auditLogService.logSpotListEdit(
+        listId: listId,
+        changes: {
+          'spotIds': {
+            'from': list.spotIds.join(','),
+            'to': newSpotIds.join(','),
+          },
+        },
+        userId: userId,
+        userName: _actorName(),
+        metadata: {'name': list.name},
+      );
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -801,6 +957,16 @@ class SpotListService extends ChangeNotifier {
       notifyListeners();
 
       await _firestore.collection('spotLists').doc(listId).delete();
+
+      await _auditLogService.logSpotListDelete(
+        listId: listId,
+        userId: userId,
+        userName: _actorName(),
+        metadata: {
+          'name': list.name,
+          'visibility': list.visibility.name,
+        },
+      );
 
       _isLoading = false;
       notifyListeners();

@@ -8,7 +8,7 @@ enum AuditLogCategory {
   spotSyncs,
   eventSyncs,
   moderatorActions,
-  creations,
+  communityActivity,
 }
 
 /// Default window step for load older / load newer.
@@ -25,8 +25,7 @@ AuditLogCategory auditLogCategoryForEntryType(AuditLogEntryType type) {
     case AuditLogEntryType.userCreation:
     case AuditLogEntryType.spotReportCreation:
     case AuditLogEntryType.ratingCreation:
-    case AuditLogEntryType.syncSourceCreation:
-      return AuditLogCategory.creations;
+      return AuditLogCategory.communityActivity;
     case AuditLogEntryType.auditLogAction:
       return AuditLogCategory.moderatorActions;
   }
@@ -40,7 +39,10 @@ AuditLogCategory auditLogCategoryForAction(AuditLogAction action) {
     case AuditLogAction.eventSourceSync:
       return AuditLogCategory.eventSyncs;
     case AuditLogAction.eventCreate:
-      return AuditLogCategory.creations;
+    case AuditLogAction.spotListCreate:
+    case AuditLogAction.spotListEdit:
+    case AuditLogAction.spotListDelete:
+      return AuditLogCategory.communityActivity;
     case AuditLogAction.spotEdit:
     case AuditLogAction.spotMarkedAsDuplicate:
     case AuditLogAction.spotHidden:

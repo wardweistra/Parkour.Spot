@@ -4751,9 +4751,9 @@
   "@auditLogCategoryModeratorActions": {
     "description": "Audit log filter chip: moderator and admin actions"
   },
-  "auditLogCategoryCreations": "Creations",
-  "@auditLogCategoryCreations": {
-    "description": "Audit log filter chip: new spots, users, reports, ratings, sync sources"
+  "auditLogCategoryCommunityActivity": "Community activity",
+  "@auditLogCategoryCommunityActivity": {
+    "description": "Audit log filter chip: organic creates, event create, and spot-list activity"
   },
   "auditLogLoadOlder": "Load older",
   "@auditLogLoadOlder": {

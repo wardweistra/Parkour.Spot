@@ -18,7 +18,6 @@ void main() {
     });
 
     test('maps failed syncs to sync chips', () {
-      // Failed syncs reuse the same action enums; category is by action only.
       expect(
         auditLogCategoryForAction(AuditLogAction.spotSourceSync),
         AuditLogCategory.spotSyncs,
@@ -29,10 +28,22 @@ void main() {
       );
     });
 
-    test('maps event create to creations', () {
+    test('maps community activity actions', () {
       expect(
         auditLogCategoryForAction(AuditLogAction.eventCreate),
-        AuditLogCategory.creations,
+        AuditLogCategory.communityActivity,
+      );
+      expect(
+        auditLogCategoryForAction(AuditLogAction.spotListCreate),
+        AuditLogCategory.communityActivity,
+      );
+      expect(
+        auditLogCategoryForAction(AuditLogAction.spotListEdit),
+        AuditLogCategory.communityActivity,
+      );
+      expect(
+        auditLogCategoryForAction(AuditLogAction.spotListDelete),
+        AuditLogCategory.communityActivity,
       );
     });
 
@@ -93,12 +104,15 @@ void main() {
   });
 
   group('auditLogCategoryForEntry', () {
-    test('maps creations by entry type', () {
+    test('maps community activity by entry type', () {
       final entry = AuditLogEntry(
         type: AuditLogEntryType.spotCreation,
         timestamp: DateTime(2026, 1, 1),
       );
-      expect(auditLogCategoryForEntry(entry), AuditLogCategory.creations);
+      expect(
+        auditLogCategoryForEntry(entry),
+        AuditLogCategory.communityActivity,
+      );
     });
 
     test('maps audit actions from metadata', () {

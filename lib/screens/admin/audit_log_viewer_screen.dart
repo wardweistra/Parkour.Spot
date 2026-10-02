@@ -432,52 +432,9 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
         }
       }
 
-      // Fetch sync source creations within date range
-      Query<Map<String, dynamic>> syncSourcesQuery = _firestore
-          .collection('syncSources')
-          .where(
-            'createdAt',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(startDate),
-          )
-          .where('createdAt', isLessThan: Timestamp.fromDate(endDate))
-          .orderBy('createdAt', descending: true);
-
-      final syncSourcesSnapshot = await syncSourcesQuery.get();
-
-      for (var doc in syncSourcesSnapshot.docs) {
-        final data = doc.data();
-        final createdAt = data['createdAt'] is Timestamp
-            ? (data['createdAt'] as Timestamp).toDate()
-            : null;
-        if (createdAt != null) {
-          final sourceName = data['name'] as String? ?? 'Unknown source';
-          final isActive = data['isActive'] as bool? ?? true;
-
-          newEntries.add(
-            AuditLogEntry(
-              type: AuditLogEntryType.syncSourceCreation,
-              timestamp: createdAt,
-              id: doc.id,
-              title: 'Sync Source Created: $sourceName',
-              subtitle: isActive
-                  ? 'Active sync source'
-                  : 'Inactive sync source',
-              details:
-                  data['description'] as String? ??
-                  data['kmzUrl'] as String? ??
-                  '',
-              metadata: {
-                'sourceId': doc.id,
-                'name': sourceName,
-                'kmzUrl': data['kmzUrl'] as String?,
-                'isActive': isActive,
-              },
-            ),
-          );
-        }
-      }
-
-      // Fetch audit log entries within date range
+      // Fetch durable auditLog entries within date range.
+      // Organic creates (spots, users, spot reports, ratings) are merged above
+      // from entity createdAt. Do not add new entity merges — ops write auditLog.
       Query<Map<String, dynamic>> auditLogQuery = _firestore
           .collection('auditLog')
           .where(
@@ -1086,6 +1043,33 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                 : 'Deleted by unknown';
             details = _apiClientCrudDetails(auditLog.metadata);
             break;
+          case AuditLogAction.spotListCreate:
+            title = 'Spot list created';
+            subtitle = auditLog.userName != null
+                ? 'Created by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Created by ${auditLog.userId}'
+                : 'Created by unknown';
+            details = _spotListCrudDetails(auditLog);
+            break;
+          case AuditLogAction.spotListEdit:
+            title = 'Spot list edited';
+            subtitle = auditLog.userName != null
+                ? 'Edited by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Edited by ${auditLog.userId}'
+                : 'Edited by unknown';
+            details = null;
+            break;
+          case AuditLogAction.spotListDelete:
+            title = 'Spot list deleted';
+            subtitle = auditLog.userName != null
+                ? 'Deleted by ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'Deleted by ${auditLog.userId}'
+                : 'Deleted by unknown';
+            details = _spotListCrudDetails(auditLog);
+            break;
         }
 
         newEntries.add(
@@ -1104,6 +1088,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
               if (auditLog.action != AuditLogAction.eventSourceSync &&
                   auditLog.eventId != null)
                 'eventId': auditLog.eventId,
+              if (auditLog.listId != null) 'listId': auditLog.listId,
               if (auditLog.reportId != null) 'reportId': auditLog.reportId,
               'userId': auditLog.userId,
               'userName': auditLog.userName,
@@ -1215,6 +1200,22 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
     return lines.isEmpty ? null : lines.join('\n');
   }
 
+  String? _spotListCrudDetails(AuditLog auditLog) {
+    final lines = <String>[];
+    if (auditLog.listId != null) {
+      lines.add('List id: ${auditLog.listId}');
+    }
+    final name = auditLog.metadata?['name'];
+    if (name != null && name.toString().isNotEmpty) {
+      lines.add('Name: $name');
+    }
+    final visibility = auditLog.metadata?['visibility'];
+    if (visibility != null) {
+      lines.add('Visibility: $visibility');
+    }
+    return lines.isEmpty ? null : lines.join('\n');
+  }
+
   String _labelForCategory(AppLocalizations l10n, AuditLogCategory category) {
     switch (category) {
       case AuditLogCategory.spotSyncs:
@@ -1223,8 +1224,8 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
         return l10n.auditLogCategoryEventSyncs;
       case AuditLogCategory.moderatorActions:
         return l10n.auditLogCategoryModeratorActions;
-      case AuditLogCategory.creations:
-        return l10n.auditLogCategoryCreations;
+      case AuditLogCategory.communityActivity:
+        return l10n.auditLogCategoryCommunityActivity;
     }
   }
 
@@ -1899,8 +1900,6 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
         return Icons.report_problem;
       case AuditLogEntryType.ratingCreation:
         return Icons.star;
-      case AuditLogEntryType.syncSourceCreation:
-        return Icons.sync;
       case AuditLogEntryType.auditLogAction:
         return Icons.edit;
     }
@@ -1916,8 +1915,6 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
         return Colors.orange;
       case AuditLogEntryType.ratingCreation:
         return Colors.amber;
-      case AuditLogEntryType.syncSourceCreation:
-        return Colors.purple;
       case AuditLogEntryType.auditLogAction:
         return Colors.orange;
     }
@@ -2310,6 +2307,9 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                         ) ||
                         entry.metadata!['action'].toString().contains(
                           'eventEdit',
+                        ) ||
+                        entry.metadata!['action'].toString().contains(
+                          'spotListEdit',
                         )) &&
                     entry.metadata?['changes'] != null &&
                     (entry.metadata!['changes']
@@ -2479,7 +2479,10 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                     .contains('spotEdit') ||
                                 entry.metadata!['action']
                                     .toString()
-                                    .contains('eventEdit')) &&
+                                    .contains('eventEdit') ||
+                                entry.metadata!['action']
+                                    .toString()
+                                    .contains('spotListEdit')) &&
                             entry.metadata?['changes'] != null &&
                             (entry.metadata!['changes']
                                     as Map<String, dynamic>)

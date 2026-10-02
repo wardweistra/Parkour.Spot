@@ -7761,11 +7761,11 @@ abstract class AppLocalizations {
   /// **'Moderator actions'**
   String get auditLogCategoryModeratorActions;
 
-  /// Audit log filter chip: new spots, users, reports, ratings, sync sources
+  /// Audit log filter chip: organic creates, event create, and spot-list activity
   ///
   /// In en, this message translates to:
-  /// **'Creations'**
-  String get auditLogCategoryCreations;
+  /// **'Community activity'**
+  String get auditLogCategoryCommunityActivity;
 
   /// Audit log: extend the visible window further into the past
   ///

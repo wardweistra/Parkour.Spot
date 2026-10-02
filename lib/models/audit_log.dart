@@ -33,6 +33,9 @@ enum AuditLogAction {
   apiClientCreate,
   apiClientUpdate,
   apiClientDelete,
+  spotListCreate,
+  spotListEdit,
+  spotListDelete,
 }
 
 class AuditLog {
@@ -40,6 +43,7 @@ class AuditLog {
   final AuditLogAction action;
   final String? spotId;
   final String? eventId;
+  final String? listId;
   final String? reportId; // Optional report ID for spot report-related actions
   final String? userId;
   final String? userName;
@@ -52,6 +56,7 @@ class AuditLog {
     required this.action,
     this.spotId,
     this.eventId,
+    this.listId,
     this.reportId,
     this.userId,
     this.userName,
@@ -70,6 +75,7 @@ class AuditLog {
       ),
       spotId: data['spotId'] as String?,
       eventId: data['eventId'] as String?,
+      listId: data['listId'] as String?,
       reportId: data['reportId'] as String?,
       userId: data['userId'] as String?,
       userName: data['userName'] as String?,
@@ -84,6 +90,7 @@ class AuditLog {
       'action': action.toString().split('.').last,
       if (spotId != null) 'spotId': spotId,
       if (eventId != null) 'eventId': eventId,
+      if (listId != null) 'listId': listId,
       if (reportId != null) 'reportId': reportId,
       'userId': userId,
       'userName': userName,
@@ -93,4 +100,3 @@ class AuditLog {
     };
   }
 }
-

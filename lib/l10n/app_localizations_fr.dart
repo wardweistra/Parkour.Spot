@@ -4695,7 +4695,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get auditLogCategoryModeratorActions => 'Moderator actions';
 
   @override
-  String get auditLogCategoryCreations => 'Creations';
+  String get auditLogCategoryCommunityActivity => 'Community activity';
 
   @override
   String get auditLogLoadOlder => 'Load older';

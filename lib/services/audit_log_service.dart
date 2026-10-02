@@ -546,4 +546,66 @@ class AuditLogService {
       debugPrint('Error logging user moderator change: $e');
     }
   }
+
+  Future<void> logSpotListCreate({
+    required String listId,
+    String? userId,
+    String? userName,
+    Map<String, dynamic>? metadata,
+  }) async {
+    try {
+      await _firestore.collection('auditLog').add({
+        'action': AuditLogAction.spotListCreate.toString().split('.').last,
+        'listId': listId,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'metadata': ?metadata,
+      });
+    } catch (e) {
+      debugPrint('Error logging spot list create: $e');
+    }
+  }
+
+  Future<void> logSpotListEdit({
+    required String listId,
+    required Map<String, dynamic> changes,
+    String? userId,
+    String? userName,
+    Map<String, dynamic>? metadata,
+  }) async {
+    try {
+      await _firestore.collection('auditLog').add({
+        'action': AuditLogAction.spotListEdit.toString().split('.').last,
+        'listId': listId,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'changes': changes,
+        'metadata': ?metadata,
+      });
+    } catch (e) {
+      debugPrint('Error logging spot list edit: $e');
+    }
+  }
+
+  Future<void> logSpotListDelete({
+    required String listId,
+    String? userId,
+    String? userName,
+    Map<String, dynamic>? metadata,
+  }) async {
+    try {
+      await _firestore.collection('auditLog').add({
+        'action': AuditLogAction.spotListDelete.toString().split('.').last,
+        'listId': listId,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'metadata': ?metadata,
+      });
+    } catch (e) {
+      debugPrint('Error logging spot list delete: $e');
+    }
+  }
 }
