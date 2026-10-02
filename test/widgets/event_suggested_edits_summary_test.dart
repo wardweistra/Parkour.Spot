@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:parkour_spot/l10n/app_localizations.dart';
 import 'package:parkour_spot/models/event_report.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:parkour_spot/models/parkour_event.dart';
-import 'package:parkour_spot/widgets/location_review_map.dart';
+import 'package:parkour_spot/models/spot.dart';
 import 'package:parkour_spot/widgets/event_suggested_edits_summary.dart';
+import 'package:parkour_spot/widgets/location_review_map.dart';
+import 'package:parkour_spot/widgets/location_suggestion_review.dart';
 import 'package:parkour_spot/widgets/text_diff_view.dart';
 
 void main() {
@@ -26,7 +28,8 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
   }
 
   EventReport buildReport({
@@ -35,12 +38,18 @@ void main() {
     List<String>? suggestedSpotListIds,
     double? suggestedLatitude,
     double? suggestedLongitude,
+    double? latitude,
+    double? longitude,
+    String? address,
   }) {
     return EventReport(
       id: 'report-1',
       title: 'Jam session',
       status: 'New',
       startAt: DateTime.utc(2026, 5, 28, 18),
+      latitude: latitude,
+      longitude: longitude,
+      address: address,
       suggestedLocationRemoved: suggestedLocationRemoved,
       suggestedSpotIds: suggestedSpotIds,
       suggestedSpotListIds: suggestedSpotListIds,
@@ -50,20 +59,25 @@ void main() {
   }
 
   testWidgets(
-    'shows remove location chip and detail when location is removed',
+    'shows remove location chip and location review when location is removed',
     (tester) async {
       await pumpSummary(
         tester,
-        report: buildReport(suggestedLocationRemoved: true),
+        report: buildReport(
+          suggestedLocationRemoved: true,
+          latitude: 42.1,
+          longitude: 24.5,
+          address: 'Park street',
+        ),
       );
 
-      expect(find.text('Remove location'), findsOneWidget);
-      expect(find.text('Location: Remove location'), findsOneWidget);
+      expect(find.text('Remove location'), findsWidgets);
+      expect(find.byType(LocationSuggestionReview), findsOneWidget);
       expect(find.byType(Chip), findsOneWidget);
     },
   );
 
-  testWidgets('shows linked spots count when spot linking changes', (
+  testWidgets('shows linked spot ids while names are unavailable', (
     tester,
   ) async {
     await pumpSummary(
@@ -72,10 +86,13 @@ void main() {
     );
 
     expect(find.text('Linking'), findsOneWidget);
-    expect(find.text('Linking: 2 linked spots'), findsOneWidget);
+    expect(find.byType(LocationSuggestionReview), findsOneWidget);
+    expect(find.textContaining('spot-a'), findsOneWidget);
+    expect(find.textContaining('spot-b'), findsOneWidget);
+    expect(find.text('Linking: 2 linked spots'), findsNothing);
   });
 
-  testWidgets('spots suggestion does not also show location removal', (
+  testWidgets('spots suggestion does not also show location removal chip', (
     tester,
   ) async {
     await pumpSummary(
@@ -88,8 +105,8 @@ void main() {
     );
 
     expect(find.text('Linking'), findsOneWidget);
-    expect(find.text('Remove location'), findsNothing);
-    expect(find.text('Location'), findsNothing);
+    expect(find.widgetWithText(Chip, 'Remove location'), findsNothing);
+    expect(find.widgetWithText(Chip, 'Location'), findsNothing);
     expect(find.text('Add spot list'), findsNothing);
   });
 
@@ -106,10 +123,9 @@ void main() {
     );
 
     expect(find.text('Add spot list'), findsOneWidget);
-    expect(find.text('Add spot list: 1'), findsOneWidget);
+    expect(find.textContaining('list-1'), findsOneWidget);
     expect(find.text('Linking'), findsNothing);
-    expect(find.text('Remove location'), findsNothing);
-    expect(find.text('Location'), findsNothing);
+    expect(find.widgetWithText(Chip, 'Remove location'), findsNothing);
   });
 
   testWidgets('shows location chip when coordinates are suggested', (
@@ -123,10 +139,17 @@ void main() {
       ),
     );
 
-    expect(find.text('Location'), findsOneWidget);
-    expect(find.textContaining('52.12345, 4.56789'), findsOneWidget);
+    expect(find.widgetWithText(Chip, 'Location'), findsOneWidget);
+    expect(find.byType(LocationSuggestionReview), findsOneWidget);
     expect(find.byType(LocationReviewMap), findsOneWidget);
     expect(find.byType(GoogleMap), findsOneWidget);
+    expect(find.byType(TextDiffView), findsOneWidget);
+    final plain = tester
+        .widgetList<RichText>(find.byType(RichText))
+        .map((rich) => rich.text.toPlainText())
+        .join('\n');
+    // Changed spaces render as middle dots in the shared text diff.
+    expect(plain, contains('52.12345,·4.56789'));
   });
 
   testWidgets(
@@ -193,4 +216,50 @@ void main() {
       expect(find.text('Title: Evening jam'), findsNothing);
     },
   );
+
+  testWidgets('location review shows linked spot names in the summary', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: LocationSuggestionReview(
+            current: LocationSuggestionSide.pin(
+              latitude: 42.13845,
+              longitude: 24.53547,
+              address: 'Parkour Park, Stamboliyski',
+              city: 'Stamboliyski',
+              countryCode: 'BG',
+            ),
+            suggested: LocationSuggestionSide.linkedSpots(
+              spotIds: const <String>['spot-1'],
+              spotsById: <String, Spot>{
+                'spot-1': Spot(
+                  id: 'spot-1',
+                  name: 'Parkour Park Stamboliyski',
+                  description: '',
+                  latitude: 42.14,
+                  longitude: 24.54,
+                ),
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final plain = tester
+        .widgetList<RichText>(find.byType(RichText))
+        .map((rich) => rich.text.toPlainText())
+        .join('\n');
+    // Changed spaces render as middle dots in the shared text diff.
+    expect(plain, contains('Parkour Park·Stamboliyski'));
+    expect(plain, isNot(contains('Linking: 1 linked spot')));
+    expect(find.byType(LocationReviewMap), findsOneWidget);
+    expect(find.text('Current'), findsOneWidget);
+    expect(find.text('Suggested'), findsOneWidget);
+  });
 }

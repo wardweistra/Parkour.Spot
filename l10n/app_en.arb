@@ -4698,6 +4698,19 @@
       }
     }
   },
+  "locationReviewCurrentLabel": "Current",
+  "@locationReviewCurrentLabel": {
+    "description": "Legend label for the current location pin on moderator location review maps"
+  },
+  "locationReviewSuggestedLabel": "Suggested",
+  "@locationReviewSuggestedLabel": {
+    "description": "Legend label for the suggested location pin on moderator location review maps"
+  },
+  "locationSuggestionReviewHint": "Review the suggested location on the map below.",
+  "@locationSuggestionReviewHint": {
+    "description": "Hint above the map when moderators review a location edit suggestion"
+  },
+
   "editSpotYoutubeSectionTitle": "YouTube links",
   "@editSpotYoutubeSectionTitle": {
     "description": "Moderator edit spot: YouTube links card title"

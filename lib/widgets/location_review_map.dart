@@ -2,27 +2,36 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import '../l10n/app_localizations.dart';
 import '../utils/marker_icon_utils.dart';
 
 /// Read-only map for moderators reviewing a proposed location change.
 ///
-/// Shows one pin for a new location, or current vs suggested pins when both
-/// coordinates are provided.
+/// Shows current and/or suggested pins using the same explore spot pin assets.
+/// Prefer [currentPins]/[suggestedPins] for multi-point sides; the single
+/// [current]/[suggested] fields remain as shortcuts.
 class LocationReviewMap extends StatefulWidget {
-  const LocationReviewMap({
+  LocationReviewMap({
     super.key,
     this.current,
     this.suggested,
+    this.currentPins = const <LatLng>[],
+    this.suggestedPins = const <LatLng>[],
     this.height = 220,
     this.showSatelliteToggle = true,
     this.interactive = true,
   }) : assert(
-         current != null || suggested != null,
-         'Provide at least one of current or suggested',
+         current != null ||
+             suggested != null ||
+             currentPins.isNotEmpty ||
+             suggestedPins.isNotEmpty,
+         'Provide at least one current or suggested pin',
        );
 
   final LatLng? current;
   final LatLng? suggested;
+  final List<LatLng> currentPins;
+  final List<LatLng> suggestedPins;
   final double height;
   final bool showSatelliteToggle;
   final bool interactive;
@@ -35,6 +44,23 @@ class _LocationReviewMapState extends State<LocationReviewMap> {
   bool _isSatelliteView = false;
   BitmapDescriptor? _currentPinIcon;
   BitmapDescriptor? _suggestedPinIcon;
+
+  List<LatLng> get _currentPins {
+    return <LatLng>[
+      if (widget.current != null) widget.current!,
+      ...widget.currentPins,
+    ];
+  }
+
+  List<LatLng> get _suggestedPins {
+    return <LatLng>[
+      if (widget.suggested != null) widget.suggested!,
+      ...widget.suggestedPins,
+    ];
+  }
+
+  bool get _isComparison =>
+      _currentPins.isNotEmpty && _suggestedPins.isNotEmpty;
 
   @override
   void initState() {
@@ -61,29 +87,37 @@ class _LocationReviewMapState extends State<LocationReviewMap> {
     });
   }
 
-  bool get _isComparison =>
-      widget.current != null &&
-      widget.suggested != null &&
-      (widget.current!.latitude != widget.suggested!.latitude ||
-          widget.current!.longitude != widget.suggested!.longitude);
+  List<LatLng> get _allPins => <LatLng>[..._currentPins, ..._suggestedPins];
 
   LatLng get _cameraTarget {
-    if (_isComparison) {
-      return LatLng(
-        (widget.current!.latitude + widget.suggested!.latitude) / 2,
-        (widget.current!.longitude + widget.suggested!.longitude) / 2,
-      );
+    final pins = _allPins;
+    if (pins.isEmpty) return const LatLng(0, 0);
+    if (pins.length == 1) return pins.first;
+    var lat = 0.0;
+    var lng = 0.0;
+    for (final pin in pins) {
+      lat += pin.latitude;
+      lng += pin.longitude;
     }
-    return widget.suggested ?? widget.current!;
+    return LatLng(lat / pins.length, lng / pins.length);
   }
 
   double get _cameraZoom {
-    if (!_isComparison) return 16;
+    final pins = _allPins;
+    if (pins.length < 2) return 16;
 
-    final latSpan = (widget.current!.latitude - widget.suggested!.latitude)
-        .abs();
-    final lngSpan = (widget.current!.longitude - widget.suggested!.longitude)
-        .abs();
+    var minLat = pins.first.latitude;
+    var maxLat = pins.first.latitude;
+    var minLng = pins.first.longitude;
+    var maxLng = pins.first.longitude;
+    for (final pin in pins.skip(1)) {
+      if (pin.latitude < minLat) minLat = pin.latitude;
+      if (pin.latitude > maxLat) maxLat = pin.latitude;
+      if (pin.longitude < minLng) minLng = pin.longitude;
+      if (pin.longitude > maxLng) maxLng = pin.longitude;
+    }
+    final latSpan = (maxLat - minLat).abs();
+    final lngSpan = (maxLng - minLng).abs();
     final span = (latSpan > lngSpan ? latSpan : lngSpan) * 111000;
     if (span > 10000) return 10;
     if (span > 5000) return 11;
@@ -94,39 +128,53 @@ class _LocationReviewMapState extends State<LocationReviewMap> {
 
   Set<Marker> _buildMarkers() {
     final markers = <Marker>{};
+    final currentPins = _currentPins;
+    final suggestedPins = _suggestedPins;
+    final showCurrent = currentPins.isNotEmpty &&
+        (_isComparison || suggestedPins.isEmpty);
+    final showSuggested = suggestedPins.isNotEmpty &&
+        (_isComparison || currentPins.isEmpty);
 
-    if (widget.current != null && (_isComparison || widget.suggested == null)) {
-      markers.add(
-        Marker(
-          markerId: const MarkerId('current'),
-          position: widget.current!,
-          infoWindow: const InfoWindow(
-            title: 'Current',
-            snippet: 'Existing location',
+    if (showCurrent) {
+      for (var i = 0; i < currentPins.length; i++) {
+        markers.add(
+          Marker(
+            markerId: MarkerId('current_$i'),
+            position: currentPins[i],
+            infoWindow: InfoWindow(
+              title: currentPins.length == 1
+                  ? 'Current'
+                  : 'Current ${i + 1}',
+              snippet: 'Existing location',
+            ),
+            icon: _currentPinIcon ?? BitmapDescriptor.defaultMarker,
+            anchor: const Offset(0.5, 1.0),
+            zIndexInt: i,
           ),
-          icon: _currentPinIcon ?? BitmapDescriptor.defaultMarker,
-          anchor: const Offset(0.5, 1.0),
-          zIndexInt: 0,
-        ),
-      );
+        );
+      }
     }
 
-    if (widget.suggested != null && (_isComparison || widget.current == null)) {
-      markers.add(
-        Marker(
-          markerId: const MarkerId('suggested'),
-          position: widget.suggested!,
-          infoWindow: InfoWindow(
-            title: _isComparison ? 'Suggested' : 'Location',
-            snippet: _isComparison
-                ? 'Proposed location'
-                : 'Proposed location',
+    if (showSuggested) {
+      for (var i = 0; i < suggestedPins.length; i++) {
+        markers.add(
+          Marker(
+            markerId: MarkerId('suggested_$i'),
+            position: suggestedPins[i],
+            infoWindow: InfoWindow(
+              title: !_isComparison
+                  ? 'Location'
+                  : suggestedPins.length == 1
+                  ? 'Suggested'
+                  : 'Suggested ${i + 1}',
+              snippet: 'Proposed location',
+            ),
+            icon: _suggestedPinIcon ?? BitmapDescriptor.defaultMarker,
+            anchor: const Offset(0.5, 1.0),
+            zIndexInt: 100 + i,
           ),
-          icon: _suggestedPinIcon ?? BitmapDescriptor.defaultMarker,
-          anchor: const Offset(0.5, 1.0),
-          zIndexInt: 1,
-        ),
-      );
+        );
+      }
     }
 
     return markers;
@@ -135,6 +183,7 @@ class _LocationReviewMapState extends State<LocationReviewMap> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
@@ -144,7 +193,7 @@ class _LocationReviewMapState extends State<LocationReviewMap> {
           children: [
             GoogleMap(
               key: ValueKey(
-                'location_review_${widget.current?.latitude}_${widget.current?.longitude}_${widget.suggested?.latitude}_${widget.suggested?.longitude}',
+                'location_review_${_currentPins.map((p) => '${p.latitude},${p.longitude}').join('|')}_${_suggestedPins.map((p) => '${p.latitude},${p.longitude}').join('|')}',
               ),
               initialCameraPosition: CameraPosition(
                 target: _cameraTarget,
@@ -172,7 +221,7 @@ class _LocationReviewMapState extends State<LocationReviewMap> {
                     setState(() => _isSatelliteView = !_isSatelliteView);
                   },
                   heroTag:
-                      'locationReviewMapType_${widget.current?.latitude}_${widget.suggested?.latitude}',
+                      'locationReviewMapType_${_cameraTarget.latitude}_${_cameraTarget.longitude}',
                   mini: true,
                   tooltip: _isSatelliteView ? 'Switch to Map' : 'Switch to Hybrid',
                   child: Icon(
@@ -200,13 +249,19 @@ class _LocationReviewMapState extends State<LocationReviewMap> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        _legendDot(theme.colorScheme.onSurfaceVariant),
+                        _legendPin(MarkerIconUtils.mapPinNormalAsset),
                         const SizedBox(width: 6),
-                        Text('Current', style: theme.textTheme.labelSmall),
+                        Text(
+                          l10n?.locationReviewCurrentLabel ?? 'Current',
+                          style: theme.textTheme.labelSmall,
+                        ),
                         const SizedBox(width: 12),
-                        _legendDot(theme.colorScheme.primary),
+                        _legendPin(MarkerIconUtils.mapPinNormalSelectedAsset),
                         const SizedBox(width: 6),
-                        Text('Suggested', style: theme.textTheme.labelSmall),
+                        Text(
+                          l10n?.locationReviewSuggestedLabel ?? 'Suggested',
+                          style: theme.textTheme.labelSmall,
+                        ),
                       ],
                     ),
                   ),
@@ -218,11 +273,22 @@ class _LocationReviewMapState extends State<LocationReviewMap> {
     );
   }
 
-  Widget _legendDot(Color color) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  Widget _legendPin(String assetPath) {
+    return Image.asset(
+      assetPath,
+      height: 18,
+      width: MarkerIconUtils.mapPinLogicalWidthForHeight(18),
+      filterQuality: FilterQuality.medium,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          width: 8,
+          height: 8,
+          decoration: const BoxDecoration(
+            color: MarkerIconUtils.mapPinNormalFallbackFill,
+            shape: BoxShape.circle,
+          ),
+        );
+      },
     );
   }
 }

@@ -4623,6 +4623,16 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get locationReviewCurrentLabel => 'Atual';
+
+  @override
+  String get locationReviewSuggestedLabel => 'Sugerido';
+
+  @override
+  String get locationSuggestionReviewHint =>
+      'Reveja a localização sugerida no mapa abaixo.';
+
+  @override
   String get editSpotYoutubeSectionTitle => 'Ligações YouTube';
 
   @override

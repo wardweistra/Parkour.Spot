@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/event_report.dart';
 import '../models/parkour_event.dart';
+import '../models/spot.dart';
+import '../services/spot_list_service.dart';
+import '../services/spot_service.dart';
 import '../utils/event_schedule_utils.dart';
-import 'location_review_map.dart';
+import 'location_suggestion_review.dart';
 import 'text_diff_view.dart';
 
 enum _SuggestedWhereKind { none, pin, spots, list, cleared }
@@ -13,9 +17,10 @@ enum _SuggestedWhereKind { none, pin, spots, list, cleared }
 /// Summarizes which fields a user suggested changing on an existing event.
 ///
 /// Shows compact field chips for quick scanning, plus optional detail rows.
-/// When [currentEvent] is provided, details use the same unified diff view as
-/// duplicate field updates.
-class EventSuggestedEditsSummary extends StatelessWidget {
+/// When [currentEvent] is provided, non-location details use the same unified
+/// diff view as duplicate field updates. Location changes use the shared
+/// [LocationSuggestionReview] (map + named linked spots).
+class EventSuggestedEditsSummary extends StatefulWidget {
   const EventSuggestedEditsSummary({
     super.key,
     required this.report,
@@ -38,57 +43,155 @@ class EventSuggestedEditsSummary extends StatelessWidget {
   final bool compactMap;
 
   @override
-  Widget build(BuildContext context) {
-    if (!report.hasSuggestedEdits) {
-      return const SizedBox.shrink();
-    }
+  State<EventSuggestedEditsSummary> createState() =>
+      _EventSuggestedEditsSummaryState();
+}
 
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context)!;
-    final title = sectionTitle ?? l10n.eventSuggestionChangedFieldsTitle;
+class _EventSuggestedEditsSummaryState
+    extends State<EventSuggestedEditsSummary> {
+  Map<String, Spot> _spotsById = const <String, Spot>{};
+  Map<String, String> _listNamesById = const <String, String>{};
+  bool _loadingLinked = false;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: theme.textTheme.titleSmall?.copyWith(
-            color: theme.colorScheme.secondary,
-          ),
-        ),
-        if (showChips) ...[
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _buildFieldChips(context, l10n),
-          ),
-        ],
-        if (showDetails) ...[
-          const SizedBox(height: 8),
-          if (currentEvent != null)
-            ..._buildDiffRows(context, l10n, currentEvent!)
-          else
-            ..._buildDetailRows(context, l10n),
-        ],
-        if (showLocationMap) ...[..._buildLocationMap(context, l10n)],
-      ],
-    );
+  EventReport get report => widget.report;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLinkedEntities();
   }
 
-  LatLng? _resolvedCurrentLocation() {
-    final override = currentLocation;
-    if (override != null) return override;
-    final event = currentEvent;
-    if (event?.latitude != null && event?.longitude != null) {
-      return LatLng(event!.latitude!, event.longitude!);
+  @override
+  void didUpdateWidget(covariant EventSuggestedEditsSummary oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.report.id != widget.report.id ||
+        oldWidget.currentEvent?.id != widget.currentEvent?.id ||
+        !_sameIds(
+          oldWidget.report.suggestedSpotIds,
+          widget.report.suggestedSpotIds,
+        ) ||
+        !_sameIds(
+          oldWidget.report.suggestedSpotListIds,
+          widget.report.suggestedSpotListIds,
+        ) ||
+        !_sameIds(oldWidget.report.spotIds, widget.report.spotIds) ||
+        !_sameIds(oldWidget.report.spotListIds, widget.report.spotListIds) ||
+        !_sameIds(
+          oldWidget.currentEvent?.spotIds,
+          widget.currentEvent?.spotIds,
+        ) ||
+        !_sameIds(
+          oldWidget.currentEvent?.spotListIds,
+          widget.currentEvent?.spotListIds,
+        )) {
+      _loadLinkedEntities();
     }
-    final lat = report.latitude;
-    final lng = report.longitude;
-    if (lat != null && lng != null) {
-      return LatLng(lat, lng);
+  }
+
+  T? _maybeRead<T>(BuildContext context) {
+    try {
+      return context.read<T>();
+    } on ProviderNotFoundException {
+      return null;
     }
-    return null;
+  }
+
+  bool _sameIds(List<String>? a, List<String>? b) {
+    final left = (a ?? const <String>[])
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList();
+    final right = (b ?? const <String>[])
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList();
+    if (left.length != right.length) return false;
+    for (var i = 0; i < left.length; i++) {
+      if (left[i] != right[i]) return false;
+    }
+    return true;
+  }
+
+  Set<String> _collectSpotIds() {
+    final ids = <String>{};
+    void addAll(List<String>? values) {
+      if (values == null) return;
+      for (final id in values) {
+        final trimmed = id.trim();
+        if (trimmed.isNotEmpty) ids.add(trimmed);
+      }
+    }
+
+    addAll(report.suggestedSpotIds);
+    addAll(report.spotIds);
+    addAll(widget.currentEvent?.spotIds);
+    return ids;
+  }
+
+  Set<String> _collectListIds() {
+    final ids = <String>{};
+    void addAll(List<String>? values) {
+      if (values == null) return;
+      for (final id in values) {
+        final trimmed = id.trim();
+        if (trimmed.isNotEmpty) ids.add(trimmed);
+      }
+    }
+
+    addAll(report.suggestedSpotListIds);
+    addAll(report.spotListIds);
+    addAll(widget.currentEvent?.spotListIds);
+    return ids;
+  }
+
+  Future<void> _loadLinkedEntities() async {
+    final spotIds = _collectSpotIds();
+    final listIds = _collectListIds();
+    if (spotIds.isEmpty && listIds.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _spotsById = const <String, Spot>{};
+          _listNamesById = const <String, String>{};
+          _loadingLinked = false;
+        });
+      }
+      return;
+    }
+
+    final spotService = _maybeRead<SpotService>(context);
+    final listService = _maybeRead<SpotListService>(context);
+
+    setState(() => _loadingLinked = true);
+
+    final spotsById = <String, Spot>{};
+    final listNamesById = <String, String>{};
+
+    try {
+      if (spotService != null && spotIds.isNotEmpty) {
+        for (final id in spotIds) {
+          final spot = await spotService.getSpotById(id);
+          if (spot != null) spotsById[id] = spot;
+        }
+      }
+      if (listService != null && listIds.isNotEmpty) {
+        for (final id in listIds) {
+          final list = await listService.getSpotListById(id);
+          final name = list?.name.trim();
+          if (name != null && name.isNotEmpty) {
+            listNamesById[id] = name;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading linked entities for edit suggestion: $e');
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _spotsById = spotsById;
+      _listNamesById = listNamesById;
+      _loadingLinked = false;
+    });
   }
 
   bool _hasSuggestedIds(List<String>? ids) {
@@ -111,43 +214,158 @@ class EventSuggestedEditsSummary extends StatelessWidget {
     return _SuggestedWhereKind.none;
   }
 
-  LatLng? _resolvedSuggestedLocation() {
-    if (_suggestedWhereKind != _SuggestedWhereKind.pin) return null;
-    if (report.suggestedLatitude != null && report.suggestedLongitude != null) {
-      return LatLng(report.suggestedLatitude!, report.suggestedLongitude!);
+  LocationSuggestionSide? _currentLocationSide(AppLocalizations l10n) {
+    final event = widget.currentEvent;
+    final listIds = event?.spotListIds ?? report.spotListIds;
+    if (listIds.any((id) => id.trim().isNotEmpty)) {
+      return LocationSuggestionSide.linkedLists(
+        listIds: listIds,
+        listNamesById: _listNamesById,
+        fallbackLabel: l10n.addEventLinkListButton,
+      );
     }
+
+    final spotIds = event?.spotIds ?? report.spotIds;
+    if (spotIds.any((id) => id.trim().isNotEmpty)) {
+      return LocationSuggestionSide.linkedSpots(
+        spotIds: spotIds,
+        spotsById: _spotsById,
+        fallbackLabel: l10n.eventSuggestionLinkedSpotsCount(
+          spotIds.where((id) => id.trim().isNotEmpty).length,
+        ),
+      );
+    }
+
+    final override = widget.currentLocation;
+    if (override != null) {
+      return LocationSuggestionSide.pin(
+        latitude: override.latitude,
+        longitude: override.longitude,
+        address: event?.address ?? report.address,
+        city: event?.city ?? report.city,
+        countryCode: event?.countryCode ?? report.countryCode,
+      );
+    }
+
+    final lat = event?.latitude ?? report.latitude;
+    final lng = event?.longitude ?? report.longitude;
+    if (lat != null && lng != null) {
+      return LocationSuggestionSide.pin(
+        latitude: lat,
+        longitude: lng,
+        address: event?.address ?? report.address,
+        city: event?.city ?? report.city,
+        countryCode: event?.countryCode ?? report.countryCode,
+      );
+    }
+
     return null;
   }
 
-  List<Widget> _buildLocationMap(BuildContext context, AppLocalizations l10n) {
-    final current = _resolvedCurrentLocation();
-    final suggested = _resolvedSuggestedLocation();
+  LocationSuggestionSide? _suggestedLocationSide(AppLocalizations l10n) {
+    switch (_suggestedWhereKind) {
+      case _SuggestedWhereKind.spots:
+        return LocationSuggestionSide.linkedSpots(
+          spotIds: report.suggestedSpotIds!,
+          spotsById: _spotsById,
+          fallbackLabel: l10n.eventSuggestionLinkedSpotsCount(
+            report.suggestedSpotIds!
+                .where((id) => id.trim().isNotEmpty)
+                .length,
+          ),
+        );
+      case _SuggestedWhereKind.list:
+        return LocationSuggestionSide.linkedLists(
+          listIds: report.suggestedSpotListIds!,
+          listNamesById: _listNamesById,
+          fallbackLabel: l10n.addEventLinkListButton,
+        );
+      case _SuggestedWhereKind.cleared:
+        return LocationSuggestionSide.cleared(l10n.eventSuggestionLocationRemoved);
+      case _SuggestedWhereKind.pin:
+        return LocationSuggestionSide.pin(
+          latitude: report.suggestedLatitude!,
+          longitude: report.suggestedLongitude!,
+          address: report.suggestedAddress,
+          city: report.suggestedCity,
+          countryCode: report.suggestedCountryCode,
+        );
+      case _SuggestedWhereKind.none:
+        return null;
+    }
+  }
 
-    if (_suggestedWhereKind == _SuggestedWhereKind.cleared) {
-      if (current == null) return const <Widget>[];
-      return [
-        const SizedBox(height: 12),
-        LocationReviewMap(
-          current: current,
-          height: compactMap ? 180 : 220,
-          showSatelliteToggle: !compactMap,
-          interactive: !compactMap,
-        ),
-      ];
+  @override
+  Widget build(BuildContext context) {
+    if (!report.hasSuggestedEdits) {
+      return const SizedBox.shrink();
     }
 
-    if (suggested == null) return const <Widget>[];
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final title = widget.sectionTitle ?? l10n.eventSuggestionChangedFieldsTitle;
 
-    return [
-      const SizedBox(height: 12),
-      LocationReviewMap(
-        current: current,
-        suggested: suggested,
-        height: compactMap ? 180 : 280,
-        showSatelliteToggle: !compactMap,
-        interactive: !compactMap,
-      ),
-    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.titleSmall?.copyWith(
+            color: theme.colorScheme.secondary,
+          ),
+        ),
+        if (widget.showChips) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _buildFieldChips(context, l10n),
+          ),
+        ],
+        if (widget.showDetails) ...[
+          const SizedBox(height: 8),
+          if (widget.currentEvent != null)
+            ..._buildDiffRows(context, l10n, widget.currentEvent!)
+          else
+            ..._buildDetailRows(context, l10n),
+          if (_suggestedWhereKind != _SuggestedWhereKind.none) ...[
+            const SizedBox(height: 10),
+            if (_loadingLinked &&
+                (_suggestedWhereKind == _SuggestedWhereKind.spots ||
+                    _suggestedWhereKind == _SuggestedWhereKind.list))
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: LinearProgressIndicator(minHeight: 2),
+              ),
+            LocationSuggestionReview(
+              current: _currentLocationSide(l10n) ??
+                  LocationSuggestionSide(
+                    summaryLines: <String>[l10n.eventDuplicateChangesNoValue],
+                  ),
+              suggested: _suggestedLocationSide(l10n)!,
+              compactMap: widget.compactMap,
+              showMap: widget.showLocationMap,
+              hint: widget.showLocationMap &&
+                      !widget.compactMap &&
+                      (_currentLocationSide(l10n)?.pins.isNotEmpty == true ||
+                          _suggestedLocationSide(l10n)?.pins.isNotEmpty == true)
+                  ? l10n.locationSuggestionReviewHint
+                  : null,
+            ),
+          ],
+        ] else if (widget.showLocationMap &&
+            _suggestedWhereKind != _SuggestedWhereKind.none) ...[
+          const SizedBox(height: 8),
+          LocationSuggestionReview(
+            current: _currentLocationSide(l10n) ??
+                const LocationSuggestionSide(),
+            suggested: _suggestedLocationSide(l10n)!,
+            compactMap: widget.compactMap,
+            showMap: true,
+          ),
+        ],
+      ],
+    );
   }
 
   List<Widget> _buildFieldChips(BuildContext context, AppLocalizations l10n) {
@@ -232,81 +450,6 @@ class EventSuggestedEditsSummary extends StatelessWidget {
       isDateOnly: isDateOnly,
       timeZone: timeZone,
     );
-  }
-
-  String _locationSummary({
-    required double? latitude,
-    required double? longitude,
-    required String? address,
-    required String? city,
-    required String? countryCode,
-    required AppLocalizations l10n,
-  }) {
-    final parts = <String>[];
-    if (latitude != null && longitude != null) {
-      parts.add(
-        '${latitude.toStringAsFixed(5)}, ${longitude.toStringAsFixed(5)}',
-      );
-    }
-    final trimmedAddress = address?.trim();
-    if (trimmedAddress?.isNotEmpty ?? false) {
-      parts.add(trimmedAddress!);
-    }
-    final trimmedCity = city?.trim();
-    final trimmedCountry = countryCode?.trim().toUpperCase();
-    if (trimmedCity?.isNotEmpty ?? false) {
-      if (trimmedCountry?.isNotEmpty ?? false) {
-        parts.add('$trimmedCity, $trimmedCountry');
-      } else {
-        parts.add(trimmedCity!);
-      }
-    } else if (trimmedCountry?.isNotEmpty ?? false) {
-      parts.add(trimmedCountry!);
-    }
-    if (parts.isEmpty) return _empty(l10n);
-    return parts.join(' · ');
-  }
-
-  String _currentWhereSummary(ParkourEvent event, AppLocalizations l10n) {
-    if (event.spotListIds.isNotEmpty) {
-      return '${l10n.addEventLinkListButton}: ${event.spotListIds.length}';
-    }
-    if (event.spotIds.isNotEmpty) {
-      return '${l10n.addEventLinkingSectionTitle}: ${l10n.eventSuggestionLinkedSpotsCount(event.spotIds.length)}';
-    }
-    if (event.latitude != null && event.longitude != null) {
-      return _locationSummary(
-        latitude: event.latitude,
-        longitude: event.longitude,
-        address: event.address,
-        city: event.city,
-        countryCode: event.countryCode,
-        l10n: l10n,
-      );
-    }
-    return _empty(l10n);
-  }
-
-  String _suggestedWhereSummary(AppLocalizations l10n) {
-    switch (_suggestedWhereKind) {
-      case _SuggestedWhereKind.spots:
-        return '${l10n.addEventLinkingSectionTitle}: ${l10n.eventSuggestionLinkedSpotsCount(report.suggestedSpotIds!.length)}';
-      case _SuggestedWhereKind.list:
-        return '${l10n.addEventLinkListButton}: ${report.suggestedSpotListIds!.length}';
-      case _SuggestedWhereKind.cleared:
-        return l10n.eventSuggestionLocationRemoved;
-      case _SuggestedWhereKind.pin:
-        return _locationSummary(
-          latitude: report.suggestedLatitude,
-          longitude: report.suggestedLongitude,
-          address: report.suggestedAddress,
-          city: report.suggestedCity,
-          countryCode: report.suggestedCountryCode,
-          l10n: l10n,
-        );
-      case _SuggestedWhereKind.none:
-        return _empty(l10n);
-    }
   }
 
   List<Widget> _buildDiffRows(
@@ -402,13 +545,6 @@ class EventSuggestedEditsSummary extends StatelessWidget {
         ),
       );
     }
-    if (_suggestedWhereKind != _SuggestedWhereKind.none) {
-      addDiff(
-        l10n.addEventLocationSectionTitle,
-        _currentWhereSummary(event, l10n),
-        _suggestedWhereSummary(l10n),
-      );
-    }
 
     return rows;
   }
@@ -465,38 +601,6 @@ class EventSuggestedEditsSummary extends StatelessWidget {
     if (report.suggestedEndAt != null) {
       addRow(
         '${l10n.eventDetailEndsLabel}: ${_formatSuggestedDateTime(context, report.suggestedEndAt!)}',
-      );
-    }
-    switch (_suggestedWhereKind) {
-      case _SuggestedWhereKind.spots:
-        addRow(
-          '${l10n.addEventLinkingSectionTitle}: ${l10n.eventSuggestionLinkedSpotsCount(report.suggestedSpotIds!.length)}',
-        );
-      case _SuggestedWhereKind.list:
-        addRow(
-          '${l10n.addEventLinkListButton}: ${report.suggestedSpotListIds!.length}',
-        );
-      case _SuggestedWhereKind.cleared:
-        addRow(
-          '${l10n.addEventLocationSectionTitle}: ${l10n.eventSuggestionLocationRemoved}',
-        );
-      case _SuggestedWhereKind.pin:
-        break;
-      case _SuggestedWhereKind.none:
-        break;
-    }
-    if (_suggestedWhereKind == _SuggestedWhereKind.pin &&
-        report.suggestedLatitude != null &&
-        report.suggestedLongitude != null) {
-      addRow(
-        '${l10n.addEventLocationSectionTitle}: ${_locationSummary(
-          latitude: report.suggestedLatitude,
-          longitude: report.suggestedLongitude,
-          address: report.suggestedAddress,
-          city: report.suggestedCity,
-          countryCode: report.suggestedCountryCode,
-          l10n: l10n,
-        )}',
       );
     }
 

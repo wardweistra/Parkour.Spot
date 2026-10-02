@@ -4598,6 +4598,16 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get locationReviewCurrentLabel => 'Huidig';
+
+  @override
+  String get locationReviewSuggestedLabel => 'Voorgesteld';
+
+  @override
+  String get locationSuggestionReviewHint =>
+      'Bekijk de voorgestelde locatie op de kaart hieronder.';
+
+  @override
   String get editSpotYoutubeSectionTitle => 'YouTube-links';
 
   @override
