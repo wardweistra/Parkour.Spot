@@ -8,6 +8,7 @@ import '../../models/user.dart' as app_user;
 import '../../models/rating.dart';
 import '../../services/auth_service.dart';
 import '../../services/url_service.dart';
+import '../../utils/audit_log_changes.dart';
 import '../../utils/audit_log_feed.dart';
 import '../../widgets/admin/sync_run_report_dialog.dart';
 import '../../widgets/resized_spot_image.dart';
@@ -1277,10 +1278,15 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
 
   /// Formats changes for display with bullet points, array diffs, and image previews
   Widget _buildChangesWidget(Map<String, dynamic> changes) {
+    final meaningfulChanges = filterMeaningfulAuditChanges(changes);
+    if (meaningfulChanges.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
-      children: changes.entries.map((entry) {
+      children: meaningfulChanges.entries.map((entry) {
         final fieldName = entry.key;
         final changeData = entry.value as Map<String, dynamic>;
         final fromValue = changeData['from'];
@@ -1412,14 +1418,15 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
               fromMap[key] != toMap[key],
         )
         .toList();
-    final unchanged = allKeys
-        .where(
-          (key) =>
-              fromMap.containsKey(key) &&
-              toMap.containsKey(key) &&
-              fromMap[key] == toMap[key],
-        )
-        .toList();
+
+    final hasNullTransition =
+        (fromWasNull && toMap.isNotEmpty) || (toWasNull && fromMap.isNotEmpty);
+    if (!hasNullTransition &&
+        removed.isEmpty &&
+        added.isEmpty &&
+        changed.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -1486,36 +1493,6 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
               ),
             ),
           ],
-          if (unchanged.isNotEmpty &&
-              removed.isEmpty &&
-              added.isEmpty &&
-              changed.isEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Text(
-                'No changes (${unchanged.length} keys)',
-                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-              ),
-            ),
-          ],
-          if (removed.isEmpty &&
-              added.isEmpty &&
-              changed.isEmpty &&
-              unchanged.isEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Text(
-                fromWasNull && toWasNull
-                    ? 'Was null, now null'
-                    : 'No items (was empty, now empty)',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[600],
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -1564,7 +1541,12 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
     // Compute differences
     final removed = fromList.where((item) => !toList.contains(item)).toList();
     final added = toList.where((item) => !fromList.contains(item)).toList();
-    final unchanged = fromList.where((item) => toList.contains(item)).toList();
+
+    final hasNullTransition =
+        (fromWasNull && toList.isNotEmpty) || (toWasNull && fromList.isNotEmpty);
+    if (!hasNullTransition && removed.isEmpty && added.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     // Special handling for images
     if (fieldName == 'imageUrls') {
@@ -1676,47 +1658,6 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                 ),
               ),
             ],
-            if (unchanged.isNotEmpty &&
-                (removed.isNotEmpty || added.isNotEmpty)) ...[
-              Padding(
-                padding: const EdgeInsets.only(left: 12, bottom: 4),
-                child: Text(
-                  'Unchanged (${unchanged.length}):',
-                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 12),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: unchanged
-                      .map(
-                        (url) => _buildImagePreview(
-                          url.toString(),
-                          isRemoved: false,
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
-            ],
-            // Show message if both lists are empty
-            if (removed.isEmpty && added.isEmpty && unchanged.isEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.only(left: 12),
-                child: Text(
-                  fromWasNull && toWasNull
-                      ? 'Was null, now null'
-                      : 'No items (was empty, now empty)',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[600],
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ),
-            ],
           ],
         ),
       );
@@ -1776,31 +1717,6 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                 ),
               ),
             ],
-          ],
-          if (unchanged.isNotEmpty && removed.isEmpty && added.isEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Text(
-                'No changes (${unchanged.length} items)',
-                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-              ),
-            ),
-          ],
-          // Show message if both lists are empty
-          if (removed.isEmpty && added.isEmpty && unchanged.isEmpty) ...[
-            Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Text(
-                fromWasNull && toWasNull
-                    ? 'Was null, now null'
-                    : 'No items (was empty, now empty)',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[600],
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
           ],
         ],
       ),
@@ -2312,9 +2228,9 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                           'spotListEdit',
                         )) &&
                     entry.metadata?['changes'] != null &&
-                    (entry.metadata!['changes']
-                            as Map<String, dynamic>)
-                        .isNotEmpty) ...[
+                    filterMeaningfulAuditChanges(
+                      entry.metadata!['changes'] as Map<String, dynamic>,
+                    ).isNotEmpty) ...[
                   const SizedBox(height: 8),
                   _buildChangesWidget(
                     entry.metadata!['changes']
@@ -2484,9 +2400,10 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                     .toString()
                                     .contains('spotListEdit')) &&
                             entry.metadata?['changes'] != null &&
-                            (entry.metadata!['changes']
-                                    as Map<String, dynamic>)
-                                .isNotEmpty) ...[
+                            filterMeaningfulAuditChanges(
+                              entry.metadata!['changes']
+                                  as Map<String, dynamic>,
+                            ).isNotEmpty) ...[
                           const SizedBox(height: 16),
                           const Text('Changes:', style: TextStyle()),
                           const SizedBox(height: 8),
