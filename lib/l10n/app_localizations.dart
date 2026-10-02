@@ -7689,6 +7689,24 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{No linked spots} =1{1 linked spot} other{{count} linked spots}}'**
   String eventSuggestionLinkedSpotsCount(int count);
 
+  /// Legend label for the current location pin on moderator location review maps
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get locationReviewCurrentLabel;
+
+  /// Legend label for the suggested location pin on moderator location review maps
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested'**
+  String get locationReviewSuggestedLabel;
+
+  /// Hint above the map when moderators review a location edit suggestion
+  ///
+  /// In en, this message translates to:
+  /// **'Review the suggested location on the map below.'**
+  String get locationSuggestionReviewHint;
+
   /// Moderator edit spot: YouTube links card title
   ///
   /// In en, this message translates to:
