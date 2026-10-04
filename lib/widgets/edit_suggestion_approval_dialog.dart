@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'location_review_map.dart';
+import 'location_suggestion_review.dart';
 import 'text_diff_view.dart';
 import '../l10n/app_localizations.dart';
 import '../models/spot.dart';
@@ -337,10 +336,6 @@ class _EditSuggestionApprovalDialogState
         .join(', ');
   }
 
-  String _coordinates(double latitude, double longitude) {
-    return '${latitude.toStringAsFixed(5)}, ${longitude.toStringAsFixed(5)}';
-  }
-
   Widget _buildFieldRow(
     BuildContext context, {
     required String fieldLabel,
@@ -602,57 +597,43 @@ class _EditSuggestionApprovalDialogState
                   report.suggestedLongitude != null) ...[
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            'Location',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
+                  child: LocationSuggestionReview(
+                    current: LocationSuggestionSide.pin(
+                      latitude: spot.latitude,
+                      longitude: spot.longitude,
+                      address: spot.address,
+                      city: spot.city,
+                      countryCode: spot.countryCode,
+                    ),
+                    suggested: LocationSuggestionSide.pin(
+                      latitude: report.suggestedLatitude!,
+                      longitude: report.suggestedLongitude!,
+                    ),
+                    hint: l10n.locationSuggestionReviewHint,
+                    header: Row(
+                      children: [
+                        Text(
+                          l10n.addEventLocationSectionTitle,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const Spacer(),
+                        SegmentedButton<bool>(
+                          segments: const [
+                            ButtonSegment(value: true, label: Text('Accept')),
+                            ButtonSegment(
+                              value: false,
+                              label: Text('Reject'),
                             ),
-                          ),
-                          const Spacer(),
-                          SegmentedButton<bool>(
-                            segments: const [
-                              ButtonSegment(value: true, label: Text('Accept')),
-                              ButtonSegment(
-                                  value: false, label: Text('Reject')),
-                            ],
-                            selected: {_accepted['location'] ?? true},
-                            onSelectionChanged: (s) {
-                              setState(
-                                  () => _accepted['location'] = s.first);
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Review the suggested location on the map below.',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                          ],
+                          selected: {_accepted['location'] ?? true},
+                          onSelectionChanged: (s) {
+                            setState(() => _accepted['location'] = s.first);
+                          },
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      LocationReviewMap(
-                        current: LatLng(spot.latitude, spot.longitude),
-                        suggested: LatLng(
-                          report.suggestedLatitude!,
-                          report.suggestedLongitude!,
-                        ),
-                        height: 280,
-                      ),
-                      const SizedBox(height: 8),
-                      TextDiffView(
-                        before: _coordinates(spot.latitude, spot.longitude),
-                        after: _coordinates(
-                          report.suggestedLatitude!,
-                          report.suggestedLongitude!,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],

@@ -66,7 +66,8 @@ class MarkerIconUtils {
       sortByLatitudeNorthFirst(spots, (Spot s) => s.latitude);
 
   /// Approximate fill when PNG is missing from the bundle (e.g. stale `build/`).
-  static const Color mapPinNormalFallbackFill = Color(0xFF1A237E);
+  /// Matches the coral/pink explore spot pin (`map-icon-normal`).
+  static const Color mapPinNormalFallbackFill = Color(0xFFF04030);
   static const Color mapPinListFallbackFill = Color(0xFFE91E63);
   static const Color mapPinAddFallbackFill = Color(0xFFE53935);
   static const Color mapPinEventFallbackFill = Color(0xFF7B1FA2);
