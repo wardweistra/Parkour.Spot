@@ -777,5 +777,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+
+    // about.parkour.spot build-time snapshots (Admin SDK only)
+    match /snapshots/{document=**} {
+      allow read, write: if false;
+    }
   }
 }

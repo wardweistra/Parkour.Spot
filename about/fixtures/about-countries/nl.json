@@ -1,0 +1,49 @@
+{
+  "countryCode": "nl",
+  "generatedAt": "2026-10-02T00:00:00.000Z",
+  "cities": [
+    {
+      "city": "Amsterdam",
+      "citySlug": "amsterdam",
+      "ratedSpotCount": 5,
+      "eventCount": 1
+    }
+  ],
+  "spots": [
+    {
+      "id": "spot-dam",
+      "name": "Dam square rails",
+      "averageRating": 4.6,
+      "ratingCount": 12,
+      "ranking": 14.2,
+      "imageUrl": null,
+      "city": "Amsterdam",
+      "citySlug": "amsterdam",
+      "countryCode": "nl"
+    },
+    {
+      "id": "spot-vondel",
+      "name": "Vondelpark walls",
+      "averageRating": 4.4,
+      "ratingCount": 9,
+      "ranking": 13.8,
+      "imageUrl": null,
+      "city": "Amsterdam",
+      "citySlug": "amsterdam",
+      "countryCode": "nl"
+    }
+  ],
+  "events": [
+    {
+      "slug": "amsterdam-jam-abcd1234",
+      "eventId": "abcd1234efgh",
+      "title": "Amsterdam jam",
+      "startAt": "2026-11-15T10:00:00.000Z",
+      "endAt": "2026-11-15T16:00:00.000Z",
+      "city": "Amsterdam",
+      "citySlug": "amsterdam",
+      "countryCode": "nl",
+      "imageUrl": null
+    }
+  ]
+}

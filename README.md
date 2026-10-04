@@ -155,15 +155,52 @@ Use Java 17 or 21 (`flutter config --jdk-dir` / `JAVA_HOME`). Gradle 8.14 cannot
 
 #### **Firebase Deployment**
 ```bash
-# Deploy hosting
+# Bind hosting targets once per machine (required; .firebaserc is gitignored)
+# Create the second Hosting site in Firebase Console first (e.g. parkourspot-about),
+# then attach custom domain about.parkour.spot to that site.
+firebase target:apply hosting app <default-hosting-site-id>
+firebase target:apply hosting about <about-hosting-site-id>
+
+# Deploy the Flutter app (WASM) hosting target
+./scripts/build_production.sh
+firebase deploy --only hosting:app
+
+# Deploy the crawlable about site (after building about/)
+cd about && ABOUT_USE_FIXTURES=1 npm run build && cd ..
+# Production about builds should use Firestore snapshots (CI does this):
+# GOOGLE_APPLICATION_CREDENTIALS=... npm run build
+firebase deploy --only hosting:about
+
+# Deploy both hosting targets
 firebase deploy --only hosting
 
-# Deploy functions
+# Deploy functions (includes nightly about snapshots + sitemap jobs)
 firebase deploy --only functions
 
 # Deploy indexes
 firebase deploy --only firestore:indexes
 ```
+
+#### **about.parkour.spot**
+
+Static Astro site in `about/`. Once per night, Cloud Function `generateAboutSnapshotsScheduled` (00:30 UTC) writes Firestore `snapshots/**` (Admin-only) and dispatches GitHub Actions `about-rebuild`. That single dispatch is the only automatic deploy: the workflow rebuilds from snapshots and deploys `hosting:about`. Monitor via Actions → **About site deploy** run history and Functions logs for `generateAboutSnapshotsScheduled`; recover with **Run workflow** or the admin callable `generateAboutSnapshots`.
+
+**URL map (geo paths match the app):**
+
+| about.parkour.spot | parkour.spot |
+| --- | --- |
+| `/nl` | `/nl` |
+| `/nl/amsterdam` | `/nl/amsterdam` |
+| `/events/{slug}` | `/event/{eventId}` |
+
+**Secrets / setup**
+
+- Functions secret `GITHUB_ABOUT_DEPLOY_TOKEN` — GitHub PAT that can send `repository_dispatch` to this repo.
+- Optional env `ABOUT_GITHUB_REPO` (default `wardweistra/Parkour.Spot`).
+- GitHub Actions secrets: `FIREBASE_SERVICE_ACCOUNT`, `FIREBASE_PROJECT_ID`, `FIREBASE_HOSTING_SITE_APP`, `FIREBASE_HOSTING_SITE_ABOUT`.
+- Force rebuild: Actions → “About site deploy” → Run workflow, or admin callable `generateAboutSnapshots`.
+
+Local preview: `cd about && npm ci && npm run dev` (uses `about/fixtures/`).
 
 ### **Other Development Scripts**
 ```bash
@@ -181,6 +218,11 @@ firebase deploy --only firestore:indexes
 - **Cloud Functions** (unit tests for helper logic in `functions/`):
   ```bash
   cd functions && npm test
+  ```
+
+- **About site** (Astro build against fixtures):
+  ```bash
+  cd about && npm ci && npm run build:fixtures
   ```
 
 ### **Emulator Data Management**

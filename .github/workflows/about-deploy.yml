@@ -1,0 +1,63 @@
+name: About site deploy
+
+on:
+  # Fired by generateAboutSnapshotsScheduled / generateAboutSnapshots after snapshots write
+  repository_dispatch:
+    types: [about-rebuild]
+  # Manual rebuild from current Firestore snapshots (monitor / recover)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    name: Build and deploy about.parkour.spot
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: about
+
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: about/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Write Firebase credentials
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          echo "$FIREBASE_SERVICE_ACCOUNT" > "${RUNNER_TEMP}/firebase-sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=${RUNNER_TEMP}/firebase-sa.json" >> "$GITHUB_ENV"
+
+      - name: Build Astro site from Firestore snapshots
+        run: npm run build
+        env:
+          ABOUT_USE_FIXTURES: "0"
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools@14
+
+      - name: Configure Firebase hosting targets
+        working-directory: ${{ github.workspace }}
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_HOSTING_SITE_APP: ${{ secrets.FIREBASE_HOSTING_SITE_APP }}
+          FIREBASE_HOSTING_SITE_ABOUT: ${{ secrets.FIREBASE_HOSTING_SITE_ABOUT }}
+        run: |
+          python3 -c "import json,os; p=os.environ['FIREBASE_PROJECT_ID']; open('.firebaserc','w').write(json.dumps({'projects':{'default':p},'targets':{p:{'hosting':{'app':[os.environ['FIREBASE_HOSTING_SITE_APP']],'about':[os.environ['FIREBASE_HOSTING_SITE_ABOUT']]}}}}, indent=2)+'\n')"
+
+      - name: Deploy hosting:about
+        working-directory: ${{ github.workspace }}
+        run: |
+          firebase deploy --only hosting:about --project "$FIREBASE_PROJECT_ID" --non-interactive
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ env.GOOGLE_APPLICATION_CREDENTIALS }}

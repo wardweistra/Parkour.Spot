@@ -82,6 +82,11 @@ hosting/.cache
 /functions/node_modules/
 /functions/.env
 
+# About static site (Astro)
+/about/node_modules/
+/about/dist/
+/about/.astro/
+
 # Firebase Emulators
 /firebase-*.zip
 /.firebase/

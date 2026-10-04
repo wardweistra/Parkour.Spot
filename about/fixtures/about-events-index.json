@@ -1,0 +1,27 @@
+{
+  "generatedAt": "2026-10-02T00:00:00.000Z",
+  "events": [
+    {
+      "slug": "amsterdam-jam-abcd1234",
+      "eventId": "abcd1234efgh",
+      "title": "Amsterdam jam",
+      "startAt": "2026-11-15T10:00:00.000Z",
+      "endAt": "2026-11-15T16:00:00.000Z",
+      "city": "Amsterdam",
+      "citySlug": "amsterdam",
+      "countryCode": "nl",
+      "imageUrl": null
+    },
+    {
+      "slug": "paris-roof-session-efgh5678",
+      "eventId": "efgh5678ijkl",
+      "title": "Paris roof session",
+      "startAt": "2026-12-01T14:00:00.000Z",
+      "endAt": null,
+      "city": "Paris",
+      "citySlug": "paris",
+      "countryCode": "fr",
+      "imageUrl": null
+    }
+  ]
+}

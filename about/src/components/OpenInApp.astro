@@ -1,0 +1,10 @@
+---
+interface Props {
+  href: string;
+  label?: string;
+}
+
+const {href, label = "Open in app"} = Astro.props;
+---
+
+<a class="btn btn--primary" href={href}>{label}</a>

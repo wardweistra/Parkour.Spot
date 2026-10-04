@@ -1,0 +1,74 @@
+export type SpotSummary = {
+  id: string;
+  name: string;
+  averageRating: number;
+  ratingCount: number;
+  ranking: number;
+  imageUrl: string | null;
+  city: string;
+  citySlug: string;
+  countryCode: string;
+};
+
+export type EventSummary = {
+  slug: string;
+  eventId: string;
+  title: string;
+  startAt: string | null;
+  endAt: string | null;
+  isDateOnly?: boolean;
+  timeZone?: string | null;
+  city: string | null;
+  citySlug: string | null;
+  countryCode: string | null;
+  imageUrl: string | null;
+  websiteUrl?: string | null;
+};
+
+export type EventDetail = EventSummary & {
+  description: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  imageUrls: string[];
+};
+
+export type CityRef = {
+  city: string;
+  citySlug: string;
+  ratedSpotCount: number;
+  eventCount: number;
+};
+
+export type CountrySnapshot = {
+  countryCode: string;
+  generatedAt: string;
+  cities: CityRef[];
+  spots: SpotSummary[];
+  events: EventSummary[];
+};
+
+export type CitySnapshot = {
+  countryCode: string;
+  city: string;
+  citySlug: string;
+  generatedAt: string;
+  spots: SpotSummary[];
+  events: EventSummary[];
+};
+
+export type AboutIndex = {
+  generatedAt: string;
+  countries: Array<{
+    code: string;
+    cityCount: number;
+    spotCount: number;
+    eventCount: number;
+  }>;
+  eventCount: number;
+};
+
+export type EventsIndex = {
+  generatedAt: string;
+  events: EventSummary[];
+};

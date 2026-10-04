@@ -10,83 +10,120 @@
     "source": "functions",
     "region": "europe-west1"
   },
-  "hosting": {
-    "public": "build/web",
-    "ignore": [
-      "firebase.json",
-      "**/node_modules/**",
-      "**/.DS_Store",
-      "**/.git/**",
-      "**/.svn/**",
-      "**/.hg/**"
-    ],
-    "headers": [
-      {
-        "source": "**",
-        "headers": [
-          {
-            "key": "Cross-Origin-Opener-Policy",
-            "value": "same-origin-allow-popups"
-          }
-        ]
-      },
-      {
-        "source": "/.well-known/assetlinks.json",
-        "headers": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ]
-      }
-    ],
-    "rewrites": [
-      {
-        "source": "/api/v1/**",
-        "function": "getSpotByApi"
-      },
-      {
-        "source": "/spot/**",
-        "function": "spotPage"
-      },
-      {
-        "source": "/sitemap.xml",
-        "function": "serveSitemap"
-      },
-      {
-        "source": "/sitemaps/**",
-        "function": "serveSitemap"
-      },
-      {
-        "source": "/user/**",
-        "function": "userAndListPage"
-      },
-      {
-        "source": "/list/**",
-        "function": "userAndListPage"
-      },
-      {
-        "source": "/event/**",
-        "function": "userAndListPage"
-      },
-      {
-        "source": "/:countryCode/:city/:spotId",
-        "function": "spotPage"
-      },
-      {
-        "source": "/:countryCode/:city",
-        "function": "spotPage"
-      },
-      {
-        "source": "/:countryCode",
-        "function": "spotPage"
-      },
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ]
-  },
+  "hosting": [
+    {
+      "target": "app",
+      "public": "build/web",
+      "ignore": [
+        "firebase.json",
+        "**/node_modules/**",
+        "**/.DS_Store",
+        "**/.git/**",
+        "**/.svn/**",
+        "**/.hg/**"
+      ],
+      "headers": [
+        {
+          "source": "**",
+          "headers": [
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "same-origin-allow-popups"
+            }
+          ]
+        },
+        {
+          "source": "/.well-known/assetlinks.json",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      ],
+      "rewrites": [
+        {
+          "source": "/api/v1/**",
+          "function": "getSpotByApi"
+        },
+        {
+          "source": "/spot/**",
+          "function": "spotPage"
+        },
+        {
+          "source": "/sitemap.xml",
+          "function": "serveSitemap"
+        },
+        {
+          "source": "/sitemaps/**",
+          "function": "serveSitemap"
+        },
+        {
+          "source": "/user/**",
+          "function": "userAndListPage"
+        },
+        {
+          "source": "/list/**",
+          "function": "userAndListPage"
+        },
+        {
+          "source": "/event/**",
+          "function": "userAndListPage"
+        },
+        {
+          "source": "/:countryCode/:city/:spotId",
+          "function": "spotPage"
+        },
+        {
+          "source": "/:countryCode/:city",
+          "function": "spotPage"
+        },
+        {
+          "source": "/:countryCode",
+          "function": "spotPage"
+        },
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    },
+    {
+      "target": "about",
+      "public": "about/dist",
+      "ignore": [
+        "firebase.json",
+        "**/node_modules/**",
+        "**/.DS_Store",
+        "**/.git/**",
+        "**/.svn/**",
+        "**/.hg/**"
+      ],
+      "headers": [
+        {
+          "source": "**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public,max-age=3600"
+            }
+          ]
+        },
+        {
+          "source": "**/*.@(js|css|svg|webp|png|jpg|jpeg|woff2)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public,max-age=86400"
+            }
+          ]
+        }
+      ],
+      "cleanUrls": true,
+      "trailingSlash": false
+    }
+  ],
   "extensions": {
     "storage-resize-images": "firebase/storage-resize-images@0.2.10"
   },

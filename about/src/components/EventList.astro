@@ -1,0 +1,76 @@
+---
+import type {EventSummary} from "../lib/types";
+import {aboutCityPath, aboutEventPath} from "../lib/urls";
+
+interface Props {
+  events: EventSummary[];
+  emptyLabel?: string;
+  showPlaceLinks?: boolean;
+}
+
+const {
+  events,
+  emptyLabel = "No upcoming events in this snapshot.",
+  showPlaceLinks = true,
+} = Astro.props;
+
+function formatWhen(iso: string | null): string {
+  if (!iso) return "Date TBA";
+  try {
+    return new Intl.DateTimeFormat("en", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(iso));
+  } catch {
+    return iso;
+  }
+}
+---
+
+{
+  events.length === 0 ? (
+    <p class="empty">{emptyLabel}</p>
+  ) : (
+    <ul class="stack-list">
+      {events.map((event) => (
+        <li>
+          {event.imageUrl ? (
+            <img
+              class="stack-list__thumb"
+              src={event.imageUrl}
+              alt=""
+              width="64"
+              height="64"
+              loading="lazy"
+            />
+          ) : (
+            <div class="stack-list__thumb" aria-hidden="true" />
+          )}
+          <div>
+            <p class="stack-list__title">
+              <a href={aboutEventPath(event.slug)}>{event.title}</a>
+            </p>
+            <p class="stack-list__meta">
+              {formatWhen(event.startAt)}
+              {event.city && event.countryCode
+                ? ` · ${event.city}, ${event.countryCode.toUpperCase()}`
+                : ""}
+            </p>
+            {showPlaceLinks && event.countryCode && event.citySlug && (
+              <p class="stack-list__meta">
+                <a
+                  href={aboutCityPath(event.countryCode, event.citySlug)}
+                >
+                  Area hub
+                </a>
+              </p>
+            )}
+          </div>
+          <a class="chip" href={aboutEventPath(event.slug)}>
+            Details
+          </a>
+        </li>
+      ))}
+    </ul>
+  )
+}

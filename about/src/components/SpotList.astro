@@ -1,0 +1,62 @@
+---
+import type {SpotSummary} from "../lib/types";
+import {appSpotUrl} from "../lib/urls";
+
+interface Props {
+  spots: SpotSummary[];
+  emptyLabel?: string;
+}
+
+const {
+  spots,
+  emptyLabel = "No rated spots in this snapshot yet.",
+} = Astro.props;
+---
+
+{
+  spots.length === 0 ? (
+    <p class="empty">{emptyLabel}</p>
+  ) : (
+    <ul class="stack-list">
+      {spots.map((spot) => (
+        <li>
+          {spot.imageUrl ? (
+            <img
+              class="stack-list__thumb"
+              src={spot.imageUrl}
+              alt=""
+              width="64"
+              height="64"
+              loading="lazy"
+            />
+          ) : (
+            <div class="stack-list__thumb" aria-hidden="true" />
+          )}
+          <div>
+            <p class="stack-list__title">
+              <a
+                href={appSpotUrl(
+                  spot.countryCode,
+                  spot.citySlug,
+                  spot.id,
+                )}
+              >
+                {spot.name}
+              </a>
+            </p>
+            <p class="stack-list__meta">
+              {spot.averageRating.toFixed(1)} average · {spot.ratingCount}{" "}
+              {spot.ratingCount === 1 ? "rating" : "ratings"}
+            </p>
+          </div>
+          <a
+            class="chip"
+            href={appSpotUrl(spot.countryCode, spot.citySlug, spot.id)}
+          >
+            View
+          </a>
+        </li>
+      ))}
+    </ul>
+  )
+}

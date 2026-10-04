@@ -1,0 +1,19 @@
+{
+  "slug": "amsterdam-jam-abcd1234",
+  "eventId": "abcd1234efgh",
+  "title": "Amsterdam jam",
+  "startAt": "2026-11-15T10:00:00.000Z",
+  "endAt": "2026-11-15T16:00:00.000Z",
+  "isDateOnly": false,
+  "timeZone": "Europe/Amsterdam",
+  "city": "Amsterdam",
+  "citySlug": "amsterdam",
+  "countryCode": "nl",
+  "imageUrl": null,
+  "imageUrls": [],
+  "websiteUrl": "https://example.com/amsterdam-jam",
+  "description": "A community jam across central Amsterdam spots. All levels welcome.",
+  "address": "Dam, Amsterdam",
+  "latitude": 52.3731,
+  "longitude": 4.8922
+}

@@ -65,6 +65,9 @@ fi
 if [[ ! -f .firebaserc ]]; then
   printf '%s\n' '{"projects":{"default":"parkourspot-93c90"}}' > .firebaserc
 fi
+# Optional multi-site targets (about.parkour.spot). Apply locally when sites exist:
+#   firebase target:apply hosting app <default-site-id>
+#   firebase target:apply hosting about <about-site-id>
 
 flutter pub get
 (cd functions && npm ci)

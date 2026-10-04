@@ -1,0 +1,12 @@
+{
+  "generatedAt": "2026-10-02T00:00:00.000Z",
+  "countries": [
+    {
+      "code": "nl",
+      "cityCount": 1,
+      "spotCount": 5,
+      "eventCount": 1
+    }
+  ],
+  "eventCount": 2
+}

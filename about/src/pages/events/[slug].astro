@@ -1,0 +1,100 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import OpenInApp from "../../components/OpenInApp.astro";
+import {buildEventJsonLd} from "../../lib/schema";
+import {listEventSlugs, loadEvent} from "../../lib/snapshots";
+import {
+  aboutCityPath,
+  aboutCountryPath,
+  appEventUrl,
+} from "../../lib/urls";
+
+export async function getStaticPaths() {
+  const slugs = await listEventSlugs();
+  return slugs.map((slug) => ({params: {slug}}));
+}
+
+const {slug} = Astro.params;
+const event = slug ? await loadEvent(slug) : null;
+
+if (!event) {
+  return Astro.redirect("/events");
+}
+
+const jsonLd = buildEventJsonLd(event);
+const description =
+  event.description?.slice(0, 160) ||
+  `Parkour event: ${event.title}`;
+
+function formatWhen(iso: string | null): string {
+  if (!iso) return "Date TBA";
+  try {
+    return new Intl.DateTimeFormat("en", {
+      dateStyle: "full",
+      timeStyle: event.isDateOnly ? undefined : "short",
+    }).format(new Date(iso));
+  } catch {
+    return iso;
+  }
+}
+
+const heroImage =
+  event.imageUrls?.[0] || event.imageUrl || null;
+---
+
+<BaseLayout
+  title={event.title}
+  description={description}
+  canonicalPath={`/events/${event.slug}`}
+  jsonLd={jsonLd}
+>
+  <article class="event-hero">
+    <div>
+      <h1 class="page-title">{event.title}</h1>
+      <p class="page-lede">{formatWhen(event.startAt)}</p>
+      {
+        event.city && event.countryCode && (
+          <p class="muted">
+            {event.address ? `${event.address} · ` : ""}
+            {event.city}, {event.countryCode.toUpperCase()}
+            {" · "}
+            {event.citySlug ? (
+              <a href={aboutCityPath(event.countryCode, event.citySlug)}>
+                Area hub
+              </a>
+            ) : (
+              <a href={aboutCountryPath(event.countryCode)}>
+                Country hub
+              </a>
+            )}
+          </p>
+        )
+      }
+      <div class="hero__actions" style="margin-top: 1.5rem;">
+        <OpenInApp href={appEventUrl(event.eventId)} />
+        {
+          event.websiteUrl && (
+            <a class="btn btn--outlined" href={event.websiteUrl} rel="noopener noreferrer">
+              Event website
+            </a>
+          )
+        }
+      </div>
+      {
+        event.description && (
+          <div class="section prose">
+            <h2 class="section__title">About this event</h2>
+            <p>{event.description}</p>
+          </div>
+        )
+      }
+    </div>
+    {
+      heroImage && (
+        <div class="event-hero__image">
+          <img src={heroImage} alt="" loading="eager" />
+        </div>
+      )
+    }
+  </article>
+</BaseLayout>

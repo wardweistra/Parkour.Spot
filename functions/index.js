@@ -251,6 +251,10 @@ const {
   getSitemapFromStorage,
 } = require("./generate-sitemaps");
 
+const {
+  generateAboutSnapshotsAndDispatch,
+} = require("./generate-about-snapshots");
+
 /** App description appended to spot, list, and user page meta descriptions */
 const APP_DESCRIPTION = "Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.";
 
@@ -9165,6 +9169,55 @@ exports.generateSitemaps = onCall(
       } catch (error) {
         console.error("Error in manual sitemap generation:", error);
         throw new Error(`Sitemap generation failed: ${error.message}`);
+      }
+    },
+);
+
+/**
+ * Daily about.parkour.spot snapshots (places + events), then GitHub rebuild.
+ * Runs shortly after sitemap generation.
+ */
+exports.generateAboutSnapshotsScheduled = onSchedule(
+    {
+      schedule: "every day 00:30",
+      timeZone: "UTC",
+      region: "europe-west1",
+      memory: "1GiB",
+      timeoutSeconds: 540,
+      secrets: ["GITHUB_ABOUT_DEPLOY_TOKEN"],
+    },
+    async () => {
+      console.log("Scheduled about snapshots started");
+      try {
+        const result = await generateAboutSnapshotsAndDispatch();
+        console.log("Scheduled about snapshots completed:", result);
+      } catch (error) {
+        console.error("Error in scheduled about snapshots:", error);
+        throw error;
+      }
+    },
+);
+
+/**
+ * Admin callable: regenerate about snapshots and trigger rebuild.
+ */
+exports.generateAboutSnapshots = onCall(
+    {
+      region: "europe-west1",
+      memory: "1GiB",
+      timeoutSeconds: 540,
+      secrets: ["GITHUB_ABOUT_DEPLOY_TOKEN"],
+    },
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        console.log("Manual about snapshots started");
+        const result = await generateAboutSnapshotsAndDispatch();
+        console.log("Manual about snapshots completed:", result);
+        return {success: true, ...result};
+      } catch (error) {
+        console.error("Error in manual about snapshots:", error);
+        throw new Error(`About snapshot generation failed: ${error.message}`);
       }
     },
 );

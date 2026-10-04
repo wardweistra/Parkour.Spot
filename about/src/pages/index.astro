@@ -1,0 +1,56 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import OpenInApp from "../components/OpenInApp.astro";
+import {loadAboutIndex} from "../lib/snapshots";
+import {aboutCountryPath, appHomeUrl} from "../lib/urls";
+
+const index = await loadAboutIndex();
+---
+
+<BaseLayout
+  title="ParkourSpot"
+  description="A community atlas for discovering, rating, and sharing parkour spots worldwide — open to explore, built with the community."
+  canonicalPath="/"
+>
+  <section class="hero">
+    <h1 class="hero__brand">ParkourSpot</h1>
+    <p class="hero__lead">
+      Find trustworthy places to train, understand them quickly, and pass them
+      on. Core discovery stays open — no login wall on the map.
+    </p>
+    <div class="hero__actions">
+      <OpenInApp href={appHomeUrl()} label="Open the map" />
+      <a class="btn btn--outlined" href="/events">Browse events</a>
+    </div>
+  </section>
+
+  <section class="section prose">
+    <h2 class="section__title">What this site is for</h2>
+    <p>
+      The main app at parkour.spot is a Flutter web map. This site publishes
+      crawlable pages — explanations, area hubs, and events — so search engines
+      and people landing from the web can read the same community knowledge in
+      plain HTML.
+    </p>
+  </section>
+
+  {
+    index.countries.length > 0 && (
+      <section class="section">
+        <h2 class="section__title">Area hubs</h2>
+        <p class="section__hint">
+          Daily snapshots of places with enough rated spots. Paths match the
+          app (for example /nl/amsterdam).
+        </p>
+        <div class="chip-row">
+          {index.countries.map((c) => (
+            <a class="chip" href={aboutCountryPath(c.code)}>
+              {c.code.toUpperCase()}
+              <span class="muted"> · {c.cityCount} cities</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )
+  }
+</BaseLayout>

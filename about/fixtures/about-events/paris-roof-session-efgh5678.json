@@ -1,0 +1,19 @@
+{
+  "slug": "paris-roof-session-efgh5678",
+  "eventId": "efgh5678ijkl",
+  "title": "Paris roof session",
+  "startAt": "2026-12-01T14:00:00.000Z",
+  "endAt": null,
+  "isDateOnly": false,
+  "timeZone": "Europe/Paris",
+  "city": "Paris",
+  "citySlug": "paris",
+  "countryCode": "fr",
+  "imageUrl": null,
+  "imageUrls": [],
+  "websiteUrl": null,
+  "description": "Evening rooftop conditioning and flow.",
+  "address": null,
+  "latitude": 48.8566,
+  "longitude": 2.3522
+}
