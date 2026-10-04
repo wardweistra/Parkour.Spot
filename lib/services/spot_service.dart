@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:math';
 import '../models/spot.dart';
 import '../models/rating.dart';
+import '../utils/audit_log_changes.dart';
 import '../utils/duplicate_spot_resolution_utils.dart';
 import '../utils/image_preparation.dart';
 import '../utils/image_url_utils.dart';
@@ -514,27 +515,6 @@ class SpotService extends ChangeNotifier {
   Map<String, dynamic> _computeSpotChanges(Spot oldSpot, Spot newSpot) {
     final changes = <String, dynamic>{};
 
-    // Helper to compare values
-    bool valuesEqual(dynamic oldVal, dynamic newVal) {
-      if (oldVal == null && newVal == null) return true;
-      if (oldVal == null || newVal == null) return false;
-      if (oldVal is List && newVal is List) {
-        if (oldVal.length != newVal.length) return false;
-        for (int i = 0; i < oldVal.length; i++) {
-          if (oldVal[i] != newVal[i]) return false;
-        }
-        return true;
-      }
-      if (oldVal is Map && newVal is Map) {
-        if (oldVal.length != newVal.length) return false;
-        for (final key in oldVal.keys) {
-          if (oldVal[key] != newVal[key]) return false;
-        }
-        return true;
-      }
-      return oldVal == newVal;
-    }
-
     // Helper to serialize value for storage
     dynamic serializeValue(dynamic value) {
       if (value == null) return null;
@@ -545,11 +525,11 @@ class SpotService extends ChangeNotifier {
     }
 
     // Compare each field
-    if (!valuesEqual(oldSpot.name, newSpot.name)) {
+    if (!auditValuesEquivalent(oldSpot.name, newSpot.name)) {
       changes['name'] = {'from': oldSpot.name, 'to': newSpot.name};
     }
 
-    if (!valuesEqual(oldSpot.description, newSpot.description)) {
+    if (!auditValuesEquivalent(oldSpot.description, newSpot.description)) {
       changes['description'] = {
         'from': oldSpot.description,
         'to': newSpot.description,
@@ -564,64 +544,70 @@ class SpotService extends ChangeNotifier {
       };
     }
 
-    if (!valuesEqual(oldSpot.address, newSpot.address)) {
+    if (!auditValuesEquivalent(oldSpot.address, newSpot.address)) {
       changes['address'] = {'from': oldSpot.address, 'to': newSpot.address};
     }
 
-    if (!valuesEqual(oldSpot.city, newSpot.city)) {
+    if (!auditValuesEquivalent(oldSpot.city, newSpot.city)) {
       changes['city'] = {'from': oldSpot.city, 'to': newSpot.city};
     }
 
-    if (!valuesEqual(oldSpot.countryCode, newSpot.countryCode)) {
+    if (!auditValuesEquivalent(oldSpot.countryCode, newSpot.countryCode)) {
       changes['countryCode'] = {
         'from': oldSpot.countryCode,
         'to': newSpot.countryCode,
       };
     }
 
-    if (!valuesEqual(oldSpot.imageUrls, newSpot.imageUrls)) {
+    if (!auditValuesEquivalent(oldSpot.imageUrls, newSpot.imageUrls)) {
       changes['imageUrls'] = {
         'from': serializeValue(oldSpot.imageUrls),
         'to': serializeValue(newSpot.imageUrls),
       };
     }
 
-    if (!valuesEqual(oldSpot.youtubeVideoIds, newSpot.youtubeVideoIds)) {
+    if (!auditValuesEquivalent(
+      oldSpot.youtubeVideoIds,
+      newSpot.youtubeVideoIds,
+    )) {
       changes['youtubeVideoIds'] = {
         'from': serializeValue(oldSpot.youtubeVideoIds),
         'to': serializeValue(newSpot.youtubeVideoIds),
       };
     }
 
-    if (!valuesEqual(oldSpot.spotAccess, newSpot.spotAccess)) {
+    if (!auditValuesEquivalent(oldSpot.spotAccess, newSpot.spotAccess)) {
       changes['spotAccess'] = {
         'from': oldSpot.spotAccess,
         'to': newSpot.spotAccess,
       };
     }
 
-    if (!valuesEqual(oldSpot.spotFeatures, newSpot.spotFeatures)) {
+    if (!auditValuesEquivalent(oldSpot.spotFeatures, newSpot.spotFeatures)) {
       changes['spotFeatures'] = {
         'from': serializeValue(oldSpot.spotFeatures),
         'to': serializeValue(newSpot.spotFeatures),
       };
     }
 
-    if (!valuesEqual(oldSpot.spotFacilities, newSpot.spotFacilities)) {
+    if (!auditValuesEquivalent(
+      oldSpot.spotFacilities,
+      newSpot.spotFacilities,
+    )) {
       changes['spotFacilities'] = {
         'from': serializeValue(oldSpot.spotFacilities),
         'to': serializeValue(newSpot.spotFacilities),
       };
     }
 
-    if (!valuesEqual(oldSpot.goodFor, newSpot.goodFor)) {
+    if (!auditValuesEquivalent(oldSpot.goodFor, newSpot.goodFor)) {
       changes['goodFor'] = {
         'from': serializeValue(oldSpot.goodFor),
         'to': serializeValue(newSpot.goodFor),
       };
     }
 
-    if (!valuesEqual(oldSpot.duplicateOf, newSpot.duplicateOf)) {
+    if (!auditValuesEquivalent(oldSpot.duplicateOf, newSpot.duplicateOf)) {
       changes['duplicateOf'] = {
         'from': oldSpot.duplicateOf,
         'to': newSpot.duplicateOf,
