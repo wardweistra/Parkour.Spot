@@ -9,6 +9,7 @@ import 'package:parkour_spot/widgets/event_suggested_edits_summary.dart';
 import 'package:parkour_spot/widgets/location_review_map.dart';
 import 'package:parkour_spot/widgets/location_suggestion_review.dart';
 import 'package:parkour_spot/widgets/text_diff_view.dart';
+import 'package:parkour_spot/widgets/value_before_after_view.dart';
 
 void main() {
   Future<void> pumpSummary(
@@ -143,13 +144,8 @@ void main() {
     expect(find.byType(LocationSuggestionReview), findsOneWidget);
     expect(find.byType(LocationReviewMap), findsOneWidget);
     expect(find.byType(GoogleMap), findsOneWidget);
-    expect(find.byType(TextDiffView), findsOneWidget);
-    final plain = tester
-        .widgetList<RichText>(find.byType(RichText))
-        .map((rich) => rich.text.toPlainText())
-        .join('\n');
-    // Changed spaces render as middle dots in the shared text diff.
-    expect(plain, contains('52.12345,·4.56789'));
+    expect(find.byType(ValueBeforeAfterView), findsOneWidget);
+    expect(find.textContaining('52.12345, 4.56789'), findsOneWidget);
   });
 
   testWidgets(
@@ -170,8 +166,8 @@ void main() {
       await pumpSummary(tester, report: report);
 
       expect(find.byType(LocationReviewMap), findsOneWidget);
-      expect(find.text('Current'), findsOneWidget);
-      expect(find.text('Suggested'), findsOneWidget);
+      expect(find.text('Current'), findsNWidgets(2));
+      expect(find.text('Suggested'), findsNWidgets(2));
     },
   );
 
@@ -209,6 +205,7 @@ void main() {
       );
 
       expect(find.byType(TextDiffView), findsNWidgets(2));
+      expect(find.byType(ValueBeforeAfterView), findsNothing);
       expect(find.textContaining('Jam session'), findsWidgets);
       expect(find.textContaining('Evening jam'), findsOneWidget);
       expect(find.textContaining('Casual training'), findsOneWidget);
@@ -251,15 +248,39 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final plain = tester
-        .widgetList<RichText>(find.byType(RichText))
-        .map((rich) => rich.text.toPlainText())
-        .join('\n');
-    // Changed spaces render as middle dots in the shared text diff.
-    expect(plain, contains('Parkour Park·Stamboliyski'));
-    expect(plain, isNot(contains('Linking: 1 linked spot')));
+    expect(find.text('Parkour Park Stamboliyski'), findsOneWidget);
+    expect(find.textContaining('42.13845'), findsOneWidget);
     expect(find.byType(LocationReviewMap), findsOneWidget);
-    expect(find.text('Current'), findsOneWidget);
-    expect(find.text('Suggested'), findsOneWidget);
+    expect(find.byType(ValueBeforeAfterView), findsOneWidget);
+    expect(find.text('Current'), findsNWidgets(2));
+    expect(find.text('Suggested'), findsNWidgets(2));
+  });
+
+  testWidgets('uses before/after for non-text event fields', (tester) async {
+    final report = EventReport(
+      id: 'report-1',
+      title: 'Jam session',
+      status: 'New',
+      startAt: DateTime.utc(2026, 5, 28, 18),
+      suggestedWebsiteUrl: 'https://example.com/new',
+      targetEventId: 'event-1',
+    );
+    final currentEvent = ParkourEvent(
+      id: 'event-1',
+      title: 'Jam session',
+      websiteUrl: 'https://example.com/old',
+      startAt: DateTime.utc(2026, 5, 28, 18),
+    );
+
+    await pumpSummary(
+      tester,
+      report: report,
+      currentEvent: currentEvent,
+    );
+
+    expect(find.byType(TextDiffView), findsNothing);
+    expect(find.byType(ValueBeforeAfterView), findsOneWidget);
+    expect(find.text('https://example.com/old'), findsOneWidget);
+    expect(find.text('https://example.com/new'), findsOneWidget);
   });
 }

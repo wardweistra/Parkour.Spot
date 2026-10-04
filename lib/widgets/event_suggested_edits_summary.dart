@@ -11,14 +11,15 @@ import '../services/spot_service.dart';
 import '../utils/event_schedule_utils.dart';
 import 'location_suggestion_review.dart';
 import 'text_diff_view.dart';
+import 'value_before_after_view.dart';
 
 enum _SuggestedWhereKind { none, pin, spots, list, cleared }
 
 /// Summarizes which fields a user suggested changing on an existing event.
 ///
 /// Shows compact field chips for quick scanning, plus optional detail rows.
-/// When [currentEvent] is provided, non-location details use the same unified
-/// diff view as duplicate field updates. Location changes use the shared
+/// When [currentEvent] is provided, title and description use [TextDiffView];
+/// other fields use [ValueBeforeAfterView]. Location changes use the shared
 /// [LocationSuggestionReview] (map + named linked spots).
 class EventSuggestedEditsSummary extends StatefulWidget {
   const EventSuggestedEditsSummary({
@@ -420,7 +421,8 @@ class _EventSuggestedEditsSummaryState
     return trimmed;
   }
 
-  String _yesNo(bool value) => value ? 'Yes' : 'No';
+  String _yesNo(bool value, AppLocalizations l10n) =>
+      value ? l10n.duplicateChangesYes : l10n.duplicateChangesNo;
 
   String _formatDateTime(
     BuildContext context,
@@ -465,52 +467,60 @@ class _EventSuggestedEditsSummaryState
     );
     final rows = <Widget>[];
 
-    void addDiff(String label, String before, String after) {
+    void addField(String label, Widget comparison) {
       if (rows.isNotEmpty) {
         rows.add(const SizedBox(height: 10));
       }
       rows.add(Text(label, style: labelStyle));
       rows.add(const SizedBox(height: 2));
-      rows.add(TextDiffView(before: before, after: after));
+      rows.add(comparison);
+    }
+
+    void addTextDiff(String label, String before, String after) {
+      addField(label, TextDiffView(before: before, after: after));
+    }
+
+    void addValueChange(String label, String before, String after) {
+      addField(label, ValueBeforeAfterView(before: before, after: after));
     }
 
     if (report.suggestedTitle?.trim().isNotEmpty ?? false) {
-      addDiff(
+      addTextDiff(
         l10n.addEventTitleLabel,
         _displayText(event.title, l10n),
         _displayText(report.suggestedTitle, l10n),
       );
     }
     if (report.suggestedDescription?.trim().isNotEmpty ?? false) {
-      addDiff(
+      addTextDiff(
         l10n.addEventDescriptionLabel,
         _displayText(event.description, l10n),
         _displayText(report.suggestedDescription, l10n),
       );
     }
     if (report.suggestedWebsiteUrl?.trim().isNotEmpty ?? false) {
-      addDiff(
+      addValueChange(
         l10n.addEventWebsiteLabel,
         _displayText(event.websiteUrl, l10n),
         _displayText(report.suggestedWebsiteUrl, l10n),
       );
     }
     if (report.suggestedIsDateOnly != null) {
-      addDiff(
+      addValueChange(
         l10n.addEventAllDay,
-        _yesNo(event.isDateOnly),
-        _yesNo(report.suggestedIsDateOnly!),
+        _yesNo(event.isDateOnly, l10n),
+        _yesNo(report.suggestedIsDateOnly!, l10n),
       );
     }
     if (report.suggestedTimeZone?.trim().isNotEmpty ?? false) {
-      addDiff(
+      addValueChange(
         l10n.addEventTimezoneLabel,
         _displayText(event.timeZone, l10n),
         _displayText(report.suggestedTimeZone, l10n),
       );
     }
     if (report.suggestedStartAt != null) {
-      addDiff(
+      addValueChange(
         l10n.eventDetailStartsLabel,
         _formatOptionalDateTime(
           context,
@@ -528,7 +538,7 @@ class _EventSuggestedEditsSummaryState
       );
     }
     if (report.suggestedEndAt != null) {
-      addDiff(
+      addValueChange(
         l10n.eventDetailEndsLabel,
         _formatOptionalDateTime(
           context,
