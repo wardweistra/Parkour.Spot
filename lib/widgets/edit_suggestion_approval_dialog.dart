@@ -16,10 +16,7 @@ import '../services/geocoding_service.dart';
 class EditSuggestionApprovalDialog extends StatefulWidget {
   final SpotReport report;
 
-  const EditSuggestionApprovalDialog({
-    super.key,
-    required this.report,
-  });
+  const EditSuggestionApprovalDialog({super.key, required this.report});
 
   @override
   State<EditSuggestionApprovalDialog> createState() =>
@@ -85,8 +82,7 @@ class _EditSuggestionApprovalDialogState
 
       Spot? originalSpot;
       if (spot.duplicateOf != null) {
-        originalSpot =
-            await spotService.getSpotById(spot.duplicateOf!);
+        originalSpot = await spotService.getSpotById(spot.duplicateOf!);
       }
 
       if (!mounted) return;
@@ -166,8 +162,10 @@ class _EditSuggestionApprovalDialogState
         .where((e) => e.value)
         .map((e) => e.key)
         .toList();
-    final rejectedFields =
-        _accepted.entries.where((e) => !e.value).map((e) => e.key).toList();
+    final rejectedFields = _accepted.entries
+        .where((e) => !e.value)
+        .map((e) => e.key)
+        .toList();
     final notes = _notesController.text.trim().isEmpty
         ? null
         : _notesController.text.trim();
@@ -178,7 +176,10 @@ class _EditSuggestionApprovalDialogState
     });
 
     try {
-      final reportService = Provider.of<SpotReportService>(context, listen: false);
+      final reportService = Provider.of<SpotReportService>(
+        context,
+        listen: false,
+      );
       final authService = Provider.of<AuthService>(context, listen: false);
 
       if (acceptedFields.isEmpty) {
@@ -192,7 +193,8 @@ class _EditSuggestionApprovalDialogState
           reportId: widget.report.id,
           status: 'Done',
           userId: authService.currentUser?.uid,
-          userName: authService.userProfile?.displayName ??
+          userName:
+              authService.userProfile?.displayName ??
               authService.currentUser?.displayName,
         );
         if (mounted) {
@@ -202,12 +204,15 @@ class _EditSuggestionApprovalDialogState
       }
 
       final spotService = Provider.of<SpotService>(context, listen: false);
-      final geocodingService =
-          Provider.of<GeocodingService>(context, listen: false);
+      final geocodingService = Provider.of<GeocodingService>(
+        context,
+        listen: false,
+      );
 
       final Map<String, dynamic> updates = {};
 
-      if (acceptedFields.contains('name') && widget.report.suggestedName != null) {
+      if (acceptedFields.contains('name') &&
+          widget.report.suggestedName != null) {
         updates['name'] = widget.report.suggestedName;
       }
       if (acceptedFields.contains('description') &&
@@ -260,7 +265,8 @@ class _EditSuggestionApprovalDialogState
         reporterUserName: widget.report.reporterName,
         reportId: widget.report.id,
         moderatorUserId: authService.currentUser?.uid,
-        moderatorUserName: authService.userProfile?.displayName ??
+        moderatorUserName:
+            authService.userProfile?.displayName ??
             authService.currentUser?.displayName ??
             authService.currentUser?.email,
         notes: notes,
@@ -279,7 +285,8 @@ class _EditSuggestionApprovalDialogState
           reportId: widget.report.id,
           status: 'Done',
           userId: authService.currentUser?.uid,
-          userName: authService.userProfile?.displayName ??
+          userName:
+              authService.userProfile?.displayName ??
               authService.currentUser?.displayName,
         );
         if (mounted) {
@@ -310,10 +317,7 @@ class _EditSuggestionApprovalDialogState
     return trimmed;
   }
 
-  List<String> _sortedLabels(
-    List<String>? values,
-    String category,
-  ) {
+  List<String> _sortedLabels(List<String>? values, String category) {
     final labels = [
       for (final value in values ?? const <String>[])
         if (value.trim().isNotEmpty) SpotAttributes.getLabel(category, value),
@@ -453,327 +457,339 @@ class _EditSuggestionApprovalDialogState
           Expanded(child: Text('Review Edit Suggestions')),
         ],
       ),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 500),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_isTargetSpotFromSource) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.errorContainer,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: theme.colorScheme.error,
+      // Fixed width so AlertDialog's IntrinsicWidth does not probe
+      // LayoutBuilder children (ValueBeforeAfterView / ListLabelChangeView).
+      content: SizedBox(
+        width: 600,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 500),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_isTargetSpotFromSource) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: theme.colorScheme.error),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: theme.colorScheme.onErrorContainer,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Cannot Apply Edit Suggestions',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.onErrorContainer,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'The selected spot is from an external source (${spot.spotSourceName ?? "external source"}). '
+                                'Edit suggestions can only be applied to native spots.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onErrorContainer,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        color: theme.colorScheme.onErrorContainer,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Cannot Apply Edit Suggestions',
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.onErrorContainer,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'The selected spot is from an external source (${spot.spotSourceName ?? "external source"}). '
-                              'Edit suggestions can only be applied to native spots.',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onErrorContainer,
-                              ),
-                            ),
-                          ],
+                  const SizedBox(height: 16),
+                ],
+                if (_isTargetSpotDuplicate) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: theme.colorScheme.error),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: theme.colorScheme.onErrorContainer,
+                          size: 24,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              if (_isTargetSpotDuplicate) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.errorContainer,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: theme.colorScheme.error,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Cannot Apply Edit Suggestions',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.onErrorContainer,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'The selected spot is a duplicate. '
+                                'Edit suggestions can only be applied to the original spot.\n\n'
+                                'Please select the original spot below.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onErrorContainer,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        color: theme.colorScheme.onErrorContainer,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Cannot Apply Edit Suggestions',
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.onErrorContainer,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'The selected spot is a duplicate. '
-                              'Edit suggestions can only be applied to the original spot.\n\n'
-                              'Please select the original spot below.',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onErrorContainer,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 16),
+                ],
+                if (_originalSpot != null) ...[
+                  Text(
+                    'Target Spot',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              if (_originalSpot != null) ...[
+                  const SizedBox(height: 8),
+                  RadioGroup<String>(
+                    groupValue: _targetSpotId,
+                    onChanged: (String? value) {
+                      final isCurrentDisabled =
+                          _isApplying ||
+                          (_currentSpot?.duplicateOf != null &&
+                              _currentSpot!.duplicateOf!.isNotEmpty) ||
+                          (_currentSpot?.spotSource != null &&
+                              _currentSpot!.spotSource!.isNotEmpty);
+                      final isOriginalDisabled =
+                          _isApplying ||
+                          (_originalSpot!.spotSource != null &&
+                              _originalSpot!.spotSource!.isNotEmpty);
+
+                      if (value == widget.report.spotId && isCurrentDisabled)
+                        return;
+                      if (value == _originalSpot!.id && isOriginalDisabled)
+                        return;
+
+                      setState(() => _targetSpotId = value);
+                    },
+                    child: Column(
+                      children: [
+                        RadioListTile<String>(
+                          title: Text(
+                            'Reported spot: ${widget.report.spotName}',
+                          ),
+                          subtitle:
+                              (_currentSpot?.duplicateOf != null &&
+                                  _currentSpot!.duplicateOf!.isNotEmpty)
+                              ? Text(
+                                  'The reported spot (duplicate of ${_originalSpot?.name ?? "another spot"})',
+                                )
+                              : _currentSpot?.spotSource != null
+                              ? Text(
+                                  'The reported spot (from ${_currentSpot?.spotSourceName ?? "external source"})',
+                                )
+                              : const Text('The reported spot'),
+                          value: widget.report.spotId,
+                          enabled:
+                              !_isApplying &&
+                              !(_currentSpot?.duplicateOf != null &&
+                                  _currentSpot!.duplicateOf!.isNotEmpty) &&
+                              !(_currentSpot?.spotSource != null &&
+                                  _currentSpot!.spotSource!.isNotEmpty),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        RadioListTile<String>(
+                          title: Text('Original spot: ${_originalSpot!.name}'),
+                          subtitle:
+                              _originalSpot!.spotSource != null &&
+                                  _originalSpot!.spotSource!.isNotEmpty
+                              ? Text(
+                                  'The original spot (from ${_originalSpot!.spotSourceName ?? "external source"})',
+                                )
+                              : const Text('The original spot (recommended)'),
+                          value: _originalSpot!.id!,
+                          enabled:
+                              !_isApplying &&
+                              !(_originalSpot!.spotSource != null &&
+                                  _originalSpot!.spotSource!.isNotEmpty),
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (report.suggestedName != null)
+                  _buildFieldRow(
+                    context,
+                    fieldLabel: 'Title',
+                    fieldKey: 'name',
+                    before: _displayText(spot.name, l10n),
+                    after: _displayText(report.suggestedName, l10n),
+                    useTextDiff: true,
+                  ),
+                if (report.suggestedDescription != null)
+                  _buildFieldRow(
+                    context,
+                    fieldLabel: 'Description',
+                    fieldKey: 'description',
+                    before: _displayText(spot.description, l10n),
+                    after: _displayText(report.suggestedDescription, l10n),
+                    useTextDiff: true,
+                  ),
+                if (report.suggestedLatitude != null &&
+                    report.suggestedLongitude != null) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: LocationSuggestionReview(
+                      current: LocationSuggestionSide.pin(
+                        latitude: spot.latitude,
+                        longitude: spot.longitude,
+                        address: spot.address,
+                        city: spot.city,
+                        countryCode: spot.countryCode,
+                      ),
+                      suggested: LocationSuggestionSide.pin(
+                        latitude: report.suggestedLatitude!,
+                        longitude: report.suggestedLongitude!,
+                      ),
+                      hint: l10n.locationSuggestionReviewHint,
+                      header: Row(
+                        children: [
+                          Text(
+                            l10n.addEventLocationSectionTitle,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const Spacer(),
+                          SegmentedButton<bool>(
+                            segments: const [
+                              ButtonSegment(value: true, label: Text('Accept')),
+                              ButtonSegment(
+                                value: false,
+                                label: Text('Reject'),
+                              ),
+                            ],
+                            selected: {_accepted['location'] ?? true},
+                            onSelectionChanged: (s) {
+                              setState(() => _accepted['location'] = s.first);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+                if (report.suggestedGoodFor != null &&
+                    report.suggestedGoodFor!.isNotEmpty)
+                  _buildListFieldRow(
+                    context,
+                    fieldLabel: 'Good for',
+                    fieldKey: 'goodFor',
+                    beforeLabels: _sortedLabels(spot.goodFor, 'goodFor'),
+                    afterLabels: _sortedLabels(
+                      report.suggestedGoodFor,
+                      'goodFor',
+                    ),
+                  ),
+                if (report.suggestedSpotFeatures != null &&
+                    report.suggestedSpotFeatures!.isNotEmpty)
+                  _buildListFieldRow(
+                    context,
+                    fieldLabel: 'Features',
+                    fieldKey: 'spotFeatures',
+                    beforeLabels: _sortedLabels(spot.spotFeatures, 'features'),
+                    afterLabels: _sortedLabels(
+                      report.suggestedSpotFeatures,
+                      'features',
+                    ),
+                  ),
+                if (report.suggestedSpotAccess != null)
+                  _buildFieldRow(
+                    context,
+                    fieldLabel: 'Access',
+                    fieldKey: 'spotAccess',
+                    before: spot.spotAccess != null
+                        ? SpotAttributes.getLabel('access', spot.spotAccess!)
+                        : _emptyValue(l10n),
+                    after: SpotAttributes.getLabel(
+                      'access',
+                      report.suggestedSpotAccess!,
+                    ),
+                    useTextDiff: false,
+                  ),
+                if (report.suggestedSpotFacilities != null &&
+                    report.suggestedSpotFacilities!.isNotEmpty)
+                  _buildFieldRow(
+                    context,
+                    fieldLabel: 'Facilities',
+                    fieldKey: 'spotFacilities',
+                    before: _facilitiesText(spot.spotFacilities, l10n),
+                    after: _facilitiesText(
+                      report.suggestedSpotFacilities,
+                      l10n,
+                    ),
+                    useTextDiff: false,
+                  ),
                 Text(
-                  'Target Spot',
+                  'Comment (Optional)',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 8),
-                RadioGroup<String>(
-                  groupValue: _targetSpotId,
-                  onChanged: (String? value) {
-                    final isCurrentDisabled = _isApplying ||
-                        (_currentSpot?.duplicateOf != null &&
-                            _currentSpot!.duplicateOf!.isNotEmpty) ||
-                        (_currentSpot?.spotSource != null &&
-                            _currentSpot!.spotSource!.isNotEmpty);
-                    final isOriginalDisabled = _isApplying ||
-                        (_originalSpot!.spotSource != null &&
-                            _originalSpot!.spotSource!.isNotEmpty);
-
-                    if (value == widget.report.spotId && isCurrentDisabled) return;
-                    if (value == _originalSpot!.id && isOriginalDisabled) return;
-
-                    setState(() => _targetSpotId = value);
-                  },
-                  child: Column(
-                    children: [
-                      RadioListTile<String>(
-                        title: Text(
-                            'Reported spot: ${widget.report.spotName}'),
-                        subtitle: (_currentSpot?.duplicateOf != null &&
-                                _currentSpot!.duplicateOf!.isNotEmpty)
-                            ? Text(
-                                'The reported spot (duplicate of ${_originalSpot?.name ?? "another spot"})')
-                            : _currentSpot?.spotSource != null
-                                ? Text(
-                                    'The reported spot (from ${_currentSpot?.spotSourceName ?? "external source"})')
-                                : const Text('The reported spot'),
-                        value: widget.report.spotId,
-                        enabled: !_isApplying &&
-                            !(_currentSpot?.duplicateOf != null &&
-                                _currentSpot!.duplicateOf!.isNotEmpty) &&
-                            !(_currentSpot?.spotSource != null &&
-                                _currentSpot!.spotSource!.isNotEmpty),
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      RadioListTile<String>(
-                        title: Text(
-                            'Original spot: ${_originalSpot!.name}'),
-                        subtitle: _originalSpot!.spotSource != null &&
-                                _originalSpot!.spotSource!.isNotEmpty
-                            ? Text(
-                                'The original spot (from ${_originalSpot!.spotSourceName ?? "external source"})')
-                            : const Text(
-                                'The original spot (recommended)'),
-                        value: _originalSpot!.id!,
-                        enabled: !_isApplying &&
-                            !(_originalSpot!.spotSource != null &&
-                                _originalSpot!.spotSource!.isNotEmpty),
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ],
+                TextField(
+                  controller: _notesController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText:
+                        'Document why you accepted or rejected these suggestions...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: theme.colorScheme.surfaceContainerHighest,
                   ),
+                  enabled: !_isApplying,
                 ),
-                const SizedBox(height: 16),
-              ],
-              if (report.suggestedName != null)
-                _buildFieldRow(
-                  context,
-                  fieldLabel: 'Title',
-                  fieldKey: 'name',
-                  before: _displayText(spot.name, l10n),
-                  after: _displayText(report.suggestedName, l10n),
-                  useTextDiff: true,
-                ),
-              if (report.suggestedDescription != null)
-                _buildFieldRow(
-                  context,
-                  fieldLabel: 'Description',
-                  fieldKey: 'description',
-                  before: _displayText(spot.description, l10n),
-                  after: _displayText(report.suggestedDescription, l10n),
-                  useTextDiff: true,
-                ),
-              if (report.suggestedLatitude != null &&
-                  report.suggestedLongitude != null) ...[
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: LocationSuggestionReview(
-                    current: LocationSuggestionSide.pin(
-                      latitude: spot.latitude,
-                      longitude: spot.longitude,
-                      address: spot.address,
-                      city: spot.city,
-                      countryCode: spot.countryCode,
-                    ),
-                    suggested: LocationSuggestionSide.pin(
-                      latitude: report.suggestedLatitude!,
-                      longitude: report.suggestedLongitude!,
-                    ),
-                    hint: l10n.locationSuggestionReviewHint,
-                    header: Row(
-                      children: [
-                        Text(
-                          l10n.addEventLocationSectionTitle,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const Spacer(),
-                        SegmentedButton<bool>(
-                          segments: const [
-                            ButtonSegment(value: true, label: Text('Accept')),
-                            ButtonSegment(
-                              value: false,
-                              label: Text('Reject'),
-                            ),
-                          ],
-                          selected: {_accepted['location'] ?? true},
-                          onSelectionChanged: (s) {
-                            setState(() => _accepted['location'] = s.first);
-                          },
-                        ),
-                      ],
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
                     ),
                   ),
-                ),
+                ],
               ],
-              if (report.suggestedGoodFor != null &&
-                  report.suggestedGoodFor!.isNotEmpty)
-                _buildListFieldRow(
-                  context,
-                  fieldLabel: 'Good for',
-                  fieldKey: 'goodFor',
-                  beforeLabels: _sortedLabels(spot.goodFor, 'goodFor'),
-                  afterLabels: _sortedLabels(
-                    report.suggestedGoodFor,
-                    'goodFor',
-                  ),
-                ),
-              if (report.suggestedSpotFeatures != null &&
-                  report.suggestedSpotFeatures!.isNotEmpty)
-                _buildListFieldRow(
-                  context,
-                  fieldLabel: 'Features',
-                  fieldKey: 'spotFeatures',
-                  beforeLabels: _sortedLabels(spot.spotFeatures, 'features'),
-                  afterLabels: _sortedLabels(
-                    report.suggestedSpotFeatures,
-                    'features',
-                  ),
-                ),
-              if (report.suggestedSpotAccess != null)
-                _buildFieldRow(
-                  context,
-                  fieldLabel: 'Access',
-                  fieldKey: 'spotAccess',
-                  before: spot.spotAccess != null
-                      ? SpotAttributes.getLabel('access', spot.spotAccess!)
-                      : _emptyValue(l10n),
-                  after: SpotAttributes.getLabel(
-                    'access',
-                    report.suggestedSpotAccess!,
-                  ),
-                  useTextDiff: false,
-                ),
-              if (report.suggestedSpotFacilities != null &&
-                  report.suggestedSpotFacilities!.isNotEmpty)
-                _buildFieldRow(
-                  context,
-                  fieldLabel: 'Facilities',
-                  fieldKey: 'spotFacilities',
-                  before: _facilitiesText(spot.spotFacilities, l10n),
-                  after: _facilitiesText(
-                    report.suggestedSpotFacilities,
-                    l10n,
-                  ),
-                  useTextDiff: false,
-                ),
-              Text(
-                'Comment (Optional)',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _notesController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText:
-                      'Document why you accepted or rejected these suggestions...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: theme.colorScheme.surfaceContainerHighest,
-                ),
-                enabled: !_isApplying,
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  _error!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ],
-            ],
+            ),
           ),
         ),
       ),
       actions: [
         TextButton(
-          onPressed: _isApplying ? null : () => Navigator.of(context).pop(false),
+          onPressed: _isApplying
+              ? null
+              : () => Navigator.of(context).pop(false),
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed:
-              (_isApplying || !_canSubmit()) ? null : _apply,
+          onPressed: (_isApplying || !_canSubmit()) ? null : _apply,
           child: _isApplying
               ? const SizedBox(
                   width: 16,

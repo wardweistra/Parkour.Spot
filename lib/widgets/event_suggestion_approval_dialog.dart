@@ -275,238 +275,252 @@ class _EventSuggestionApprovalDialogState
     return PopScope(
       canPop: !_isApproving,
       child: AlertDialog(
-      title: Text(l10n.eventSuggestionApprovalTitle),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 520),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_isApproving && _approvalPhase != null) ...[
-                ImageProcessingBanner(
-                  message: _approvalPhase!,
-                  progressLabel: _approvalProgress,
-                ),
-                const SizedBox(height: 12),
-              ],
-              Text(
-                report.targetEventTitle?.trim().isNotEmpty == true
-                    ? report.targetEventTitle!.trim()
-                    : report.title,
-                style: theme.textTheme.titleMedium,
-              ),
-              const SizedBox(height: 12),
-              if (_isTargetEventFromSource) ...[
-                _buildWarningBanner(
-                  theme: theme,
-                  title: l10n.eventSuggestionCannotApproveExternalTitle,
-                  body: l10n.eventSuggestionCannotApproveExternalBody(
-                    sourceName,
+        title: Text(l10n.eventSuggestionApprovalTitle),
+        // Fixed width so AlertDialog's IntrinsicWidth does not probe
+        // LayoutBuilder children (ValueBeforeAfterView via summary).
+        content: SizedBox(
+          width: 600,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 520),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_isApproving && _approvalPhase != null) ...[
+                    ImageProcessingBanner(
+                      message: _approvalPhase!,
+                      progressLabel: _approvalProgress,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  Text(
+                    report.targetEventTitle?.trim().isNotEmpty == true
+                        ? report.targetEventTitle!.trim()
+                        : report.title,
+                    style: theme.textTheme.titleMedium,
                   ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              if (_isTargetEventDuplicate) ...[
-                _buildWarningBanner(
-                  theme: theme,
-                  title: l10n.eventSuggestionCannotApproveDuplicateTitle,
-                  body: l10n.eventSuggestionCannotApproveDuplicateBody,
-                ),
-                const SizedBox(height: 16),
-              ],
-              if (_originalEvent != null) ...[
-                Text(
-                  l10n.eventSuggestionTargetEventLabel,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                RadioGroup<String>(
-                  groupValue: _targetEventId,
-                  onChanged: (String? value) {
-                    final isCurrentDisabled =
-                        _isApproving ||
-                        (_currentEvent?.duplicateOf?.trim().isNotEmpty ??
-                            false) ||
-                        !_currentEvent!.isNativeEvent;
-                    final isOriginalDisabled =
-                        _isApproving || !_originalEvent!.isNativeEvent;
+                  const SizedBox(height: 12),
+                  if (_isTargetEventFromSource) ...[
+                    _buildWarningBanner(
+                      theme: theme,
+                      title: l10n.eventSuggestionCannotApproveExternalTitle,
+                      body: l10n.eventSuggestionCannotApproveExternalBody(
+                        sourceName,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  if (_isTargetEventDuplicate) ...[
+                    _buildWarningBanner(
+                      theme: theme,
+                      title: l10n.eventSuggestionCannotApproveDuplicateTitle,
+                      body: l10n.eventSuggestionCannotApproveDuplicateBody,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  if (_originalEvent != null) ...[
+                    Text(
+                      l10n.eventSuggestionTargetEventLabel,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    RadioGroup<String>(
+                      groupValue: _targetEventId,
+                      onChanged: (String? value) {
+                        final isCurrentDisabled =
+                            _isApproving ||
+                            (_currentEvent?.duplicateOf?.trim().isNotEmpty ??
+                                false) ||
+                            !_currentEvent!.isNativeEvent;
+                        final isOriginalDisabled =
+                            _isApproving || !_originalEvent!.isNativeEvent;
 
-                    if (value == widget.report.targetEventId &&
-                        isCurrentDisabled) {
-                      return;
-                    }
-                    if (value == _originalEvent!.id && isOriginalDisabled) {
-                      return;
-                    }
+                        if (value == widget.report.targetEventId &&
+                            isCurrentDisabled) {
+                          return;
+                        }
+                        if (value == _originalEvent!.id && isOriginalDisabled) {
+                          return;
+                        }
 
-                    setState(() => _targetEventId = value);
-                  },
-                  child: Column(
-                    children: [
-                      RadioListTile<String>(
-                        title: Text(
-                          l10n.eventSuggestionCurrentEventLabel(
-                            report.targetEventTitle?.trim().isNotEmpty == true
-                                ? report.targetEventTitle!.trim()
-                                : report.title,
-                          ),
-                        ),
-                        subtitle: Text(
-                          _currentEvent?.duplicateOf?.trim().isNotEmpty == true
-                              ? l10n.eventSuggestionReportedEventDuplicateSubtitle(
-                                  _originalEvent?.title ?? '',
-                                )
-                              : !_currentEvent!.isNativeEvent
-                              ? l10n.eventSuggestionReportedEventExternalSubtitle(
-                                  _currentEvent!.eventSourceName
-                                              ?.trim()
-                                              .isNotEmpty ==
-                                          true
-                                      ? _currentEvent!.eventSourceName!.trim()
-                                      : sourceName,
-                                )
-                              : l10n.eventSuggestionReportedEventSubtitle,
-                        ),
-                        value: widget.report.targetEventId!,
-                        enabled:
-                            !_isApproving &&
-                            !(_currentEvent?.duplicateOf?.trim().isNotEmpty ??
-                                false) &&
-                            _currentEvent!.isNativeEvent,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      RadioListTile<String>(
-                        title: Text(
-                          l10n.eventSuggestionOriginalEventLabel(
-                            _originalEvent!.title,
-                          ),
-                        ),
-                        subtitle: Text(
-                          !_originalEvent!.isNativeEvent
-                              ? l10n.eventSuggestionOriginalEventExternalSubtitle(
-                                  _originalEvent!.eventSourceName
-                                              ?.trim()
-                                              .isNotEmpty ==
-                                          true
-                                      ? _originalEvent!.eventSourceName!.trim()
-                                      : sourceName,
-                                )
-                              : l10n.eventSuggestionOriginalEventRecommendedSubtitle,
-                        ),
-                        value: _originalEvent!.id!,
-                        enabled: !_isApproving && _originalEvent!.isNativeEvent,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              if (report.hasSuggestedEdits) ...[
-                EventSuggestedEditsSummary(
-                  report: report,
-                  sectionTitle: l10n.eventDetailQuickActionSuggestEdit,
-                  currentLocation: _currentLocationForMap(targetEvent),
-                  currentEvent: targetEvent,
-                ),
-                const SizedBox(height: 12),
-              ],
-              if (report.suggestedPhotoUrls.isNotEmpty) ...[
-                Text(
-                  l10n.eventDetailQuickActionSuggestPhoto,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: theme.colorScheme.secondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: report.suggestedPhotoUrls.map((photoUrl) {
-                    return Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: theme.colorScheme.outline),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          photoUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Center(
-                                child: Icon(Icons.broken_image_outlined),
+                        setState(() => _targetEventId = value);
+                      },
+                      child: Column(
+                        children: [
+                          RadioListTile<String>(
+                            title: Text(
+                              l10n.eventSuggestionCurrentEventLabel(
+                                report.targetEventTitle?.trim().isNotEmpty ==
+                                        true
+                                    ? report.targetEventTitle!.trim()
+                                    : report.title,
                               ),
-                        ),
+                            ),
+                            subtitle: Text(
+                              _currentEvent?.duplicateOf?.trim().isNotEmpty ==
+                                      true
+                                  ? l10n.eventSuggestionReportedEventDuplicateSubtitle(
+                                      _originalEvent?.title ?? '',
+                                    )
+                                  : !_currentEvent!.isNativeEvent
+                                  ? l10n.eventSuggestionReportedEventExternalSubtitle(
+                                      _currentEvent!.eventSourceName
+                                                  ?.trim()
+                                                  .isNotEmpty ==
+                                              true
+                                          ? _currentEvent!.eventSourceName!
+                                                .trim()
+                                          : sourceName,
+                                    )
+                                  : l10n.eventSuggestionReportedEventSubtitle,
+                            ),
+                            value: widget.report.targetEventId!,
+                            enabled:
+                                !_isApproving &&
+                                !(_currentEvent?.duplicateOf
+                                        ?.trim()
+                                        .isNotEmpty ??
+                                    false) &&
+                                _currentEvent!.isNativeEvent,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          RadioListTile<String>(
+                            title: Text(
+                              l10n.eventSuggestionOriginalEventLabel(
+                                _originalEvent!.title,
+                              ),
+                            ),
+                            subtitle: Text(
+                              !_originalEvent!.isNativeEvent
+                                  ? l10n.eventSuggestionOriginalEventExternalSubtitle(
+                                      _originalEvent!.eventSourceName
+                                                  ?.trim()
+                                                  .isNotEmpty ==
+                                              true
+                                          ? _originalEvent!.eventSourceName!
+                                                .trim()
+                                          : sourceName,
+                                    )
+                                  : l10n.eventSuggestionOriginalEventRecommendedSubtitle,
+                            ),
+                            value: _originalEvent!.id!,
+                            enabled:
+                                !_isApproving && _originalEvent!.isNativeEvent,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ],
                       ),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 12),
-              ],
-              Text(
-                l10n.eventSuggestionModeratorNotesLabel,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _notesController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: l10n.eventSuggestionModeratorNotesHint,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  if (report.hasSuggestedEdits) ...[
+                    EventSuggestedEditsSummary(
+                      report: report,
+                      sectionTitle: l10n.eventDetailQuickActionSuggestEdit,
+                      currentLocation: _currentLocationForMap(targetEvent),
+                      currentEvent: targetEvent,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  if (report.suggestedPhotoUrls.isNotEmpty) ...[
+                    Text(
+                      l10n.eventDetailQuickActionSuggestPhoto,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: theme.colorScheme.secondary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: report.suggestedPhotoUrls.map((photoUrl) {
+                        return Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: theme.colorScheme.outline,
+                            ),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              photoUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Center(
+                                    child: Icon(Icons.broken_image_outlined),
+                                  ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  Text(
+                    l10n.eventSuggestionModeratorNotesLabel,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  filled: true,
-                  fillColor: theme.colorScheme.surfaceContainerHighest,
-                ),
-                enabled: !_isApproving,
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  _error!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _notesController,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      hintText: l10n.eventSuggestionModeratorNotesHint,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: theme.colorScheme.surfaceContainerHighest,
+                    ),
+                    enabled: !_isApproving,
                   ),
-                ),
-              ],
-            ],
+                  if (_error != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _error!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _isApproving
-              ? null
-              : () => Navigator.of(context).pop(null),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: (_isApproving || !_canApprove()) ? null : _approve,
-          child: _isApproving
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(_approvalPhase ?? l10n.eventSuggestionApproveButton),
-                  ],
-                )
-              : Text(l10n.eventSuggestionApproveButton),
-        ),
-      ],
+        actions: [
+          TextButton(
+            onPressed: _isApproving
+                ? null
+                : () => Navigator.of(context).pop(null),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: (_isApproving || !_canApprove()) ? null : _approve,
+            child: _isApproving
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(_approvalPhase ?? l10n.eventSuggestionApproveButton),
+                    ],
+                  )
+                : Text(l10n.eventSuggestionApproveButton),
+          ),
+        ],
       ),
     );
   }
