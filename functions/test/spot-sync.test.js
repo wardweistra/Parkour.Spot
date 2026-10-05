@@ -1,8 +1,17 @@
 const {
+  buildImportedSpotCoordKey,
+  buildImportedSpotLookup,
   hasImportedSpotContentChanges,
+  normalizeImportedSpotName,
   normalizeSpotSyncSourceType,
+  resolveImportedSpotMatch,
+  roundSyncCoordinate,
   spotSyncSourceRequiresUrl,
 } = require("../lib/spot-sync");
+
+function mockSpotDoc(id, data) {
+  return {id, data: () => data};
+}
 
 describe("spot-sync helpers", () => {
   describe("hasImportedSpotContentChanges", () => {
@@ -158,6 +167,80 @@ describe("spot-sync helpers", () => {
       const existing = {...incoming};
       const incomingFalse = {...incoming, hasImages: false};
       expect(hasImportedSpotContentChanges(existing, incomingFalse)).toBe(false);
+    });
+  });
+
+  describe("imported spot matching", () => {
+    it("normalizes CJK names with NFC for lookup", () => {
+      const nfc = "【宝山】上海大学";
+      const nfd = nfc.normalize("NFD");
+      expect(normalizeImportedSpotName(nfc)).toBe(nfc);
+      expect(normalizeImportedSpotName(nfd)).toBe(nfc);
+    });
+
+    it("matches by rounded coordinates when floats differ slightly", () => {
+      const lat = 31.316247;
+      const lng = 121.392102;
+      const lookup = buildImportedSpotLookup([
+        mockSpotDoc("a", {
+          name: "【宝山】上海大学",
+          latitude: lat + 0.0000004,
+          longitude: lng - 0.0000003,
+          spotSourceRemoved: false,
+        }),
+      ]);
+      const match = resolveImportedSpotMatch(lookup, {
+        latitude: lat,
+        longitude: lng,
+        name: "【宝山】上海大学",
+      });
+      expect(match?.id).toBe("a");
+    });
+
+    it("falls back to name when external id is new but coords match", () => {
+      const lookup = buildImportedSpotLookup([
+        mockSpotDoc("legacy", {
+          name: "【宝山】上海大学",
+          latitude: 31.316247,
+          longitude: 121.392102,
+        }),
+      ]);
+      const match = resolveImportedSpotMatch(lookup, {
+        externalId: "new-google-id",
+        latitude: 31.316247,
+        longitude: 121.392102,
+        name: "【宝山】上海大学",
+      });
+      expect(match?.id).toBe("legacy");
+    });
+
+    it("prefers a spot that is not marked removed from source", () => {
+      const lookup = buildImportedSpotLookup([
+        mockSpotDoc("removed", {
+          name: "Spot A",
+          latitude: 1,
+          longitude: 2,
+          spotSourceRemoved: true,
+        }),
+        mockSpotDoc("active", {
+          name: "Spot A",
+          latitude: 1,
+          longitude: 2,
+          spotSourceRemoved: false,
+        }),
+      ]);
+      const match = resolveImportedSpotMatch(lookup, {
+        latitude: 1,
+        longitude: 2,
+        name: "Spot A",
+      });
+      expect(match?.id).toBe("active");
+    });
+
+    it("rounds coordinates to six decimal places", () => {
+      expect(roundSyncCoordinate(31.3162474)).toBe(31.316247);
+      expect(buildImportedSpotCoordKey(31.3162474, 121.3921026))
+          .toBe("31.316247,121.392103");
     });
   });
 

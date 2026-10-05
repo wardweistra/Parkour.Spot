@@ -135,8 +135,12 @@ const {
   SOURCE_TYPE_OPENSTREETMAP,
   SOURCE_TYPE_NAVERMAP,
   SOURCE_TYPE_GOOGLE_EARTH,
+  buildImportedSpotLookup,
   hasImportedSpotContentChanges,
   normalizeSpotSyncSourceType,
+  registerImportedSpotInLookup,
+  resolveImportedSpotMatch,
+  roundSyncCoordinate,
   spotSyncSourceRequiresUrl,
 } = require("./lib/spot-sync");
 const {
@@ -2493,6 +2497,14 @@ async function processSyncSource(
       "0%",
     });
 
+    const existingSourceSpotsSnapshot = await db
+        .collection("spots")
+        .where("spotSource", "==", sourceId)
+        .get();
+    const importedSpotLookup = buildImportedSpotLookup(
+        existingSourceSpotsSnapshot.docs,
+    );
+
     // Process each placemark in batches
     for (let i = startIndex; i < placemarks.length; i++) {
     // Check if we're running out of time before processing next batch
@@ -2594,31 +2606,29 @@ async function processSyncSource(
         continue;
       }
 
-      // Prefer stable external id match (OSM); fall back to exact lat/lng.
-      let existingSpots;
-      if (placemarkExternalId) {
-        existingSpots = await db
-            .collection("spots")
-            .where("spotSource", "==", sourceId)
-            .where("spotSourceExternalId", "==", placemarkExternalId)
-            .limit(1)
-            .get();
-      } else {
-        existingSpots = await db
-            .collection("spots")
-            .where("spotSource", "==", sourceId)
-            .where("latitude", "==", finalCoordinates.latitude)
-            .where("longitude", "==", finalCoordinates.longitude)
-            .get();
-      }
+      finalCoordinates = {
+        ...finalCoordinates,
+        latitude: roundSyncCoordinate(finalCoordinates.latitude),
+        longitude: roundSyncCoordinate(finalCoordinates.longitude),
+      };
 
-      const coordsChangedForExisting = !existingSpots.empty && (() => {
-        const existingData = existingSpots.docs[0].data() || {};
+      const matchedImportedSpot = resolveImportedSpotMatch(
+          importedSpotLookup,
+          {
+            externalId: placemarkExternalId || undefined,
+            latitude: finalCoordinates.latitude,
+            longitude: finalCoordinates.longitude,
+            name,
+          },
+      );
+
+      const coordsChangedForExisting = matchedImportedSpot != null && (() => {
+        const existingData = matchedImportedSpot.data() || {};
         return existingData.latitude !== finalCoordinates.latitude ||
         existingData.longitude !== finalCoordinates.longitude;
       })();
 
-      if (existingSpots.empty) {
+      if (matchedImportedSpot == null) {
       // Only geocode for NEW spots (if we don't already have address from reverse geocoding)
         if (!address) {
           console.log(
@@ -2670,8 +2680,7 @@ async function processSyncSource(
         }
       } else {
       // For existing spots, keep their current address data unless coords moved.
-        const existingSpot = existingSpots.docs[0];
-        existingSpotData = existingSpot.data();
+        existingSpotData = matchedImportedSpot.data();
         if (coordsChangedForExisting) {
           console.log(
               `Coordinates changed for spot: ${name}; re-geocoding address`,
@@ -2774,7 +2783,7 @@ async function processSyncSource(
       );
 
       let attributesFilledOnUpdate = false;
-      if (existingSpots.empty) {
+      if (matchedImportedSpot == null) {
         if (mergedAttributeDefaults) {
           applySpotAttributeDefaultsToSpotData(
               spotData,
@@ -2808,7 +2817,7 @@ async function processSyncSource(
       // Add YouTube video IDs
       // For existing spots with updateImagesForExistingSpots=false, preserve existing array
       // For new spots or when updateImagesForExistingSpots=true, use processed/validated IDs
-      if (existingSpots.empty) {
+      if (matchedImportedSpot == null) {
       // New spot - use processed YouTube IDs
         if (filteredYoutubeVideoIds.length > 0) {
           spotData.youtubeVideoIds = filteredYoutubeVideoIds;
@@ -2841,7 +2850,7 @@ async function processSyncSource(
       // Add image URLs and hashes
       // For existing spots with updateImagesForExistingSpots=false, preserve existing arrays
       // For new spots or when updateImagesForExistingSpots=true, use processed images
-      if (existingSpots.empty) {
+      if (matchedImportedSpot == null) {
       // New spot - always use processed images
         if (imageResult.imageUrls.length > 0) {
           spotData.imageUrls = imageResult.imageUrls;
@@ -2879,7 +2888,7 @@ async function processSyncSource(
           existingSpotData && existingSpotData.imageUrl,
       );
 
-      if (existingSpots.empty) {
+      if (matchedImportedSpot == null) {
       // Create new spot - initialize rating fields to 0 and ranking field
         spotData.averageRating = 0;
         spotData.ratingCount = 0;
@@ -2891,6 +2900,11 @@ async function processSyncSource(
         const newSpotRef = await db.collection("spots").add(cleanUndefinedValues(spotData));
         created++;
         processedSpotIds.add(newSpotRef.id);
+        registerImportedSpotInLookup(importedSpotLookup, {
+          id: newSpotRef.id,
+          ref: newSpotRef,
+          data: () => spotData,
+        });
         addedSpotSummaries.push({
           id: newSpotRef.id,
           name: spotData.name,
@@ -2900,7 +2914,7 @@ async function processSyncSource(
         );
       } else {
       // Update existing spot - preserve existing rating and ranking fields
-        const existingSpot = existingSpots.docs[0];
+        const existingSpot = matchedImportedSpot;
         const existingData = existingSpot.data();
 
         // Preserve existing rating fields if they exist
