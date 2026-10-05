@@ -26,13 +26,57 @@ async function readFixtureJson<T>(relativePath: string): Promise<T> {
   return JSON.parse(raw) as T;
 }
 
+function emptyAboutIndex(): AboutIndex {
+  return {
+    generatedAt: new Date().toISOString(),
+    countries: [],
+    eventCount: 0,
+  };
+}
+
+function emptyEventsIndex(): EventsIndex {
+  return {generatedAt: new Date().toISOString(), events: []};
+}
+
+function normalizeAboutIndex(data: Partial<AboutIndex> | undefined): AboutIndex {
+  if (!data) return emptyAboutIndex();
+  return {
+    generatedAt:
+      typeof data.generatedAt === "string"
+        ? data.generatedAt
+        : new Date().toISOString(),
+    countries: Array.isArray(data.countries) ? data.countries : [],
+    eventCount: typeof data.eventCount === "number" ? data.eventCount : 0,
+  };
+}
+
+function normalizeEventsIndex(
+  data: Partial<EventsIndex> | undefined,
+): EventsIndex {
+  if (!data) return emptyEventsIndex();
+  return {
+    generatedAt:
+      typeof data.generatedAt === "string"
+        ? data.generatedAt
+        : new Date().toISOString(),
+    events: Array.isArray(data.events) ? data.events : [],
+  };
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let adminDb: any = null;
 
+/**
+ * firebase-admin is CommonJS; under Astro/Vite ESM the namespace may land on
+ * `.default`. Unwrap that before reading `.apps` / calling `.initializeApp`.
+ */
 async function getDb() {
   if (adminDb) return adminDb;
-  const admin = await import("firebase-admin");
-  if (!admin.apps.length) {
+  const mod = await import("firebase-admin");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const admin = ((mod as any).default ?? mod) as typeof import("firebase-admin");
+  const apps = admin.apps ?? [];
+  if (apps.length === 0) {
     admin.initializeApp({
       credential: admin.credential.applicationDefault(),
     });
@@ -51,18 +95,14 @@ async function getDb() {
  */
 export async function loadAboutIndex(): Promise<AboutIndex> {
   if (useFixtures()) {
-    return readFixtureJson<AboutIndex>("about-index.json");
+    return normalizeAboutIndex(
+      await readFixtureJson<AboutIndex>("about-index.json"),
+    );
   }
   const db = await getDb();
   const snap = await db.collection("snapshots").doc("about-index").get();
-  if (!snap.exists) {
-    return {
-      generatedAt: new Date().toISOString(),
-      countries: [],
-      eventCount: 0,
-    };
-  }
-  return snap.data() as AboutIndex;
+  if (!snap.exists) return emptyAboutIndex();
+  return normalizeAboutIndex(snap.data() as Partial<AboutIndex>);
 }
 
 export async function loadCountry(
@@ -85,7 +125,14 @@ export async function loadCountry(
     .collection("countries")
     .doc(cc)
     .get();
-  return snap.exists ? (snap.data() as CountrySnapshot) : null;
+  if (!snap.exists) return null;
+  const data = snap.data() as CountrySnapshot;
+  return {
+    ...data,
+    cities: Array.isArray(data.cities) ? data.cities : [],
+    spots: Array.isArray(data.spots) ? data.spots : [],
+    events: Array.isArray(data.events) ? data.events : [],
+  };
 }
 
 export async function loadCity(
@@ -107,19 +154,25 @@ export async function loadCity(
     .collection("cities")
     .doc(id)
     .get();
-  return snap.exists ? (snap.data() as CitySnapshot) : null;
+  if (!snap.exists) return null;
+  const data = snap.data() as CitySnapshot;
+  return {
+    ...data,
+    spots: Array.isArray(data.spots) ? data.spots : [],
+    events: Array.isArray(data.events) ? data.events : [],
+  };
 }
 
 export async function loadEventsIndex(): Promise<EventsIndex> {
   if (useFixtures()) {
-    return readFixtureJson<EventsIndex>("about-events-index.json");
+    return normalizeEventsIndex(
+      await readFixtureJson<EventsIndex>("about-events-index.json"),
+    );
   }
   const db = await getDb();
   const snap = await db.collection("snapshots").doc("about-events-index").get();
-  if (!snap.exists) {
-    return {generatedAt: new Date().toISOString(), events: []};
-  }
-  return snap.data() as EventsIndex;
+  if (!snap.exists) return emptyEventsIndex();
+  return normalizeEventsIndex(snap.data() as Partial<EventsIndex>);
 }
 
 export async function loadEvent(slug: string): Promise<EventDetail | null> {
@@ -142,7 +195,9 @@ export async function loadEvent(slug: string): Promise<EventDetail | null> {
 
 export async function listCountryCodes(): Promise<string[]> {
   const index = await loadAboutIndex();
-  return index.countries.map((c) => c.code.toLowerCase());
+  return (index.countries ?? [])
+    .filter((c) => typeof c?.code === "string" && c.code.length === 2)
+    .map((c) => c.code.toLowerCase());
 }
 
 export async function listCityParams(): Promise<
@@ -152,8 +207,9 @@ export async function listCityParams(): Promise<
   const out: Array<{countryCode: string; city: string}> = [];
   for (const code of codes) {
     const country = await loadCountry(code);
-    if (!country) continue;
+    if (!country?.cities?.length) continue;
     for (const city of country.cities) {
+      if (typeof city?.citySlug !== "string" || !city.citySlug) continue;
       out.push({countryCode: code, city: city.citySlug});
     }
   }
@@ -172,5 +228,7 @@ export async function listEventSlugs(): Promise<string[]> {
     }
   }
   const index = await loadEventsIndex();
-  return index.events.map((e) => e.slug);
+  return (index.events ?? [])
+    .filter((e) => typeof e?.slug === "string" && e.slug.length > 0)
+    .map((e) => e.slug);
 }
