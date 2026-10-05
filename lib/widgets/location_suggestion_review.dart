@@ -4,7 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../l10n/app_localizations.dart';
 import '../models/spot.dart';
 import 'location_review_map.dart';
-import 'text_diff_view.dart';
+import 'value_before_after_view.dart';
 
 /// One side of a location edit suggestion (current or suggested).
 class LocationSuggestionSide {
@@ -115,7 +115,7 @@ class LocationSuggestionSide {
 }
 
 /// Shared moderator UI for reviewing a location edit suggestion on a spot or
-/// event: comparison map (when pins exist) plus unified text diff of summaries.
+/// event: comparison map (when pins exist) plus before/after summary panels.
 class LocationSuggestionReview extends StatelessWidget {
   const LocationSuggestionReview({
     super.key,
@@ -147,8 +147,13 @@ class LocationSuggestionReview extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final empty = l10n.eventDuplicateChangesNoValue;
     final sectionTitle = title ?? l10n.addEventLocationSectionTitle;
-    final before = current.summaryText(empty);
-    final after = suggested.summaryText(empty);
+    final beforeLines = current.summaryLines.isEmpty
+        ? <String>[empty]
+        : current.summaryLines;
+    final afterLines = suggested.summaryLines.isEmpty
+        ? <String>[empty]
+        : suggested.summaryLines;
+    final summariesDiffer = beforeLines.join('\n') != afterLines.join('\n');
     final height = mapHeight ?? (compactMap ? 180.0 : 280.0);
 
     return Column(
@@ -182,9 +187,12 @@ class LocationSuggestionReview extends StatelessWidget {
             interactive: !compactMap,
           ),
         ],
-        if (before != after || !_hasMapPins) ...[
+        if (summariesDiffer || !_hasMapPins) ...[
           const SizedBox(height: 8),
-          TextDiffView(before: before, after: after),
+          ValueBeforeAfterView.fromLines(
+            beforeLines: beforeLines,
+            afterLines: afterLines,
+          ),
         ],
       ],
     );

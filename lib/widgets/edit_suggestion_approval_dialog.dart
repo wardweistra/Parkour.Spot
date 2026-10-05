@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'location_suggestion_review.dart';
 import 'text_diff_view.dart';
+import 'value_before_after_view.dart';
 import '../l10n/app_localizations.dart';
 import '../models/spot.dart';
 import '../models/spot_report.dart';
@@ -309,17 +310,15 @@ class _EditSuggestionApprovalDialogState
     return trimmed;
   }
 
-  String _labeledList(
+  List<String> _sortedLabels(
     List<String>? values,
     String category,
-    AppLocalizations l10n,
   ) {
     final labels = [
       for (final value in values ?? const <String>[])
         if (value.trim().isNotEmpty) SpotAttributes.getLabel(category, value),
     ]..sort();
-    if (labels.isEmpty) return _emptyValue(l10n);
-    return labels.join(', ');
+    return labels;
   }
 
   String _facilitiesText(
@@ -336,44 +335,87 @@ class _EditSuggestionApprovalDialogState
         .join(', ');
   }
 
+  Widget _buildFieldHeader(
+    BuildContext context, {
+    required String fieldLabel,
+    required String fieldKey,
+  }) {
+    final theme = Theme.of(context);
+    final accepted = _accepted[fieldKey] ?? false;
+
+    return Row(
+      children: [
+        Text(
+          fieldLabel,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const Spacer(),
+        SegmentedButton<bool>(
+          segments: const [
+            ButtonSegment(value: true, label: Text('Accept')),
+            ButtonSegment(value: false, label: Text('Reject')),
+          ],
+          selected: {accepted},
+          onSelectionChanged: (s) {
+            setState(() => _accepted[fieldKey] = s.first);
+          },
+        ),
+      ],
+    );
+  }
+
   Widget _buildFieldRow(
     BuildContext context, {
     required String fieldLabel,
     required String fieldKey,
     required String before,
     required String after,
+    required bool useTextDiff,
   }) {
-    final theme = Theme.of(context);
-    final accepted = _accepted[fieldKey] ?? false;
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                fieldLabel,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Spacer(),
-              SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(value: true, label: Text('Accept')),
-                  ButtonSegment(value: false, label: Text('Reject')),
-                ],
-                selected: {accepted},
-                onSelectionChanged: (s) {
-                  setState(() => _accepted[fieldKey] = s.first);
-                },
-              ),
-            ],
+          _buildFieldHeader(
+            context,
+            fieldLabel: fieldLabel,
+            fieldKey: fieldKey,
           ),
           const SizedBox(height: 8),
-          TextDiffView(before: before, after: after),
+          if (useTextDiff)
+            TextDiffView(before: before, after: after)
+          else
+            ValueBeforeAfterView(before: before, after: after),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildListFieldRow(
+    BuildContext context, {
+    required String fieldLabel,
+    required String fieldKey,
+    required List<String> beforeLabels,
+    required List<String> afterLabels,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildFieldHeader(
+            context,
+            fieldLabel: fieldLabel,
+            fieldKey: fieldKey,
+          ),
+          const SizedBox(height: 8),
+          ListLabelChangeView(
+            beforeLabels: beforeLabels,
+            afterLabels: afterLabels,
+          ),
         ],
       ),
     );
@@ -584,6 +626,7 @@ class _EditSuggestionApprovalDialogState
                   fieldKey: 'name',
                   before: _displayText(spot.name, l10n),
                   after: _displayText(report.suggestedName, l10n),
+                  useTextDiff: true,
                 ),
               if (report.suggestedDescription != null)
                 _buildFieldRow(
@@ -592,6 +635,7 @@ class _EditSuggestionApprovalDialogState
                   fieldKey: 'description',
                   before: _displayText(spot.description, l10n),
                   after: _displayText(report.suggestedDescription, l10n),
+                  useTextDiff: true,
                 ),
               if (report.suggestedLatitude != null &&
                   report.suggestedLongitude != null) ...[
@@ -639,24 +683,26 @@ class _EditSuggestionApprovalDialogState
               ],
               if (report.suggestedGoodFor != null &&
                   report.suggestedGoodFor!.isNotEmpty)
-                _buildFieldRow(
+                _buildListFieldRow(
                   context,
                   fieldLabel: 'Good for',
                   fieldKey: 'goodFor',
-                  before: _labeledList(spot.goodFor, 'goodFor', l10n),
-                  after: _labeledList(report.suggestedGoodFor, 'goodFor', l10n),
+                  beforeLabels: _sortedLabels(spot.goodFor, 'goodFor'),
+                  afterLabels: _sortedLabels(
+                    report.suggestedGoodFor,
+                    'goodFor',
+                  ),
                 ),
               if (report.suggestedSpotFeatures != null &&
                   report.suggestedSpotFeatures!.isNotEmpty)
-                _buildFieldRow(
+                _buildListFieldRow(
                   context,
                   fieldLabel: 'Features',
                   fieldKey: 'spotFeatures',
-                  before: _labeledList(spot.spotFeatures, 'features', l10n),
-                  after: _labeledList(
+                  beforeLabels: _sortedLabels(spot.spotFeatures, 'features'),
+                  afterLabels: _sortedLabels(
                     report.suggestedSpotFeatures,
                     'features',
-                    l10n,
                   ),
                 ),
               if (report.suggestedSpotAccess != null)
@@ -671,6 +717,7 @@ class _EditSuggestionApprovalDialogState
                     'access',
                     report.suggestedSpotAccess!,
                   ),
+                  useTextDiff: false,
                 ),
               if (report.suggestedSpotFacilities != null &&
                   report.suggestedSpotFacilities!.isNotEmpty)
@@ -683,6 +730,7 @@ class _EditSuggestionApprovalDialogState
                     report.suggestedSpotFacilities,
                     l10n,
                   ),
+                  useTextDiff: false,
                 ),
               Text(
                 'Comment (Optional)',
