@@ -57,6 +57,9 @@ This is the recommended approach for most developers. No Firebase production acc
 
 # Terminal 2: Run the app with emulators
 ./scripts/run_local_with_emulators.sh
+
+# About site from checked-in fixtures (no production database, no emulators)
+./scripts/run_about_local.sh
 ```
 
 **🌱 Emulator Seed Data**: When you start emulators for the first time, seed data from `scripts/seed-data/` is automatically copied to `.firebase/emulator-data/`. This gives you a working dataset with test users, spots, and other sample data to develop with. Your changes are automatically saved when you stop the emulators.
@@ -104,6 +107,12 @@ FIREBASE_MEASUREMENT_ID=your_measurement_id_here
 ./scripts/run_production.sh
 ```
 
+The crawlable about site can be served the same way, reading production Firestore snapshots instead of `about/fixtures/`. Add `GOOGLE_APPLICATION_CREDENTIALS` to `.env` (see `env.example`), then:
+
+```bash
+./scripts/run_about_production.sh
+```
+
 ### **Backend Google Maps API Key**
 
 The autocomplete and geocoding features use a server-side Google Maps API key via Firebase Functions secrets. Make sure to set the secret in your Firebase project:
@@ -149,8 +158,11 @@ Use Java 17 or 21 (`flutter config --jdk-dir` / `JAVA_HOME`). Gradle 8.14 cannot
 
 #### **Production Build**
 ```bash
-# Build for production
+# Build the Flutter app for production
 ./scripts/build_production.sh
+
+# Build about.parkour.spot from Firestore snapshots
+./scripts/build_about_production.sh
 ```
 
 #### **Firebase Deployment**
@@ -165,10 +177,8 @@ firebase target:apply hosting about <about-hosting-site-id>
 ./scripts/build_production.sh
 firebase deploy --only hosting:app
 
-# Deploy the crawlable about site (after building about/)
-cd about && ABOUT_USE_FIXTURES=1 npm run build && cd ..
-# Production about builds should use Firestore snapshots (CI does this):
-# GOOGLE_APPLICATION_CREDENTIALS=... npm run build
+# Deploy the crawlable about site from Firestore snapshots
+./scripts/build_about_production.sh
 firebase deploy --only hosting:about
 
 # Deploy both hosting targets
@@ -200,7 +210,7 @@ Static Astro site in `about/`. Once per night, Cloud Function `generateAboutSnap
 - GitHub Actions secrets: `FIREBASE_SERVICE_ACCOUNT`, `FIREBASE_PROJECT_ID`, `FIREBASE_HOSTING_SITE_APP`, `FIREBASE_HOSTING_SITE_ABOUT`.
 - Force rebuild: Actions → “About site deploy” → Run workflow, or admin callable `generateAboutSnapshots`.
 
-Local preview: `cd about && npm ci && npm run dev` (uses `about/fixtures/`).
+Local snapshot preview: `./scripts/run_about_production.sh` (production Firestore snapshots). Fixture preview: `./scripts/run_about_local.sh`.
 
 ### **Other Development Scripts**
 ```bash

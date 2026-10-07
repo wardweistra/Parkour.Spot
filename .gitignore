@@ -6,6 +6,7 @@
 .buildlog/
 .history
 .swiftpm/
+.DS_Store
 
 /urbn
 
@@ -108,7 +109,9 @@ yarn-error.log*
 .env
 .env.local
 .env.production
-.DS_Store
+
+# Firebase Service Account
+/firebase-service-account.json
 
 # Google Cloud SDK local config/credentials (never commit)
 .gcloud-config/
