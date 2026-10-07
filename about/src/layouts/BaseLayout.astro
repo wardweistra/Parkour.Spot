@@ -21,7 +21,7 @@ const {
 
 const canonical = new URL(canonicalPath, Astro.site).toString();
 const pageTitle =
-  title.includes(SITE_NAME) || title.includes("ParkourSpot")
+  title.includes(SITE_NAME)
     ? title
     : `${title} · ${SITE_NAME}`;
 ---

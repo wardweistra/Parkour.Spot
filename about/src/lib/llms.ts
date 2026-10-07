@@ -1,3 +1,4 @@
+import {SITE_NAME} from "./brand";
 import {
   APP_DEFINITION,
   cityHubTitle,
@@ -27,7 +28,7 @@ export function buildLlmsTxt(input: {
     countryName(a.code).localeCompare(countryName(b.code), "en"),
   );
   const lines = [
-    "# ParkourSpot",
+    `# ${SITE_NAME}`,
     "",
     `> ${APP_DEFINITION}`,
     "",
@@ -37,8 +38,8 @@ export function buildLlmsTxt(input: {
     "",
     "## Start here",
     "",
-    `- [ParkourSpot](${aboutAbsolute("/")}): What ParkourSpot is, and which countries have pages in this refresh.`,
-    `- [How ParkourSpot works](${aboutAbsolute("/how-it-works")}): Open map, ratings, photos, adding a spot, events, and how these pages relate to the app.`,
+    `- [${SITE_NAME}](${aboutAbsolute("/")}): What ${SITE_NAME} is, and which countries have pages in this refresh.`,
+    `- [How ${SITE_NAME} works](${aboutAbsolute("/how-it-works")}): Open map, ratings, photos, adding a spot, events, and how these pages relate to the app.`,
     `- [Events](${aboutAbsolute("/events")}): Upcoming public parkour events.`,
     "",
     "## Countries and cities",

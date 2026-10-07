@@ -1,3 +1,4 @@
+import {SITE_NAME} from "./brand";
 import {APP_DEFINITION} from "./citation";
 import type {EventDetail, SpotSummary} from "./types";
 import {ABOUT_ORIGIN, APP_ORIGIN, aboutEventPath, appSpotUrl} from "./urls";
@@ -70,16 +71,14 @@ export function buildSiteGraph(): Record<string, unknown> {
       {
         "@type": "Organization",
         "@id": orgId,
-        name: "ParkourSpot",
-        alternateName: "Parkour·Spot",
+        name: SITE_NAME,
         url: APP_ORIGIN,
         sameAs: [`${ABOUT_ORIGIN}/`],
       },
       {
         "@type": ["WebApplication", "SoftwareApplication"],
         "@id": appId,
-        name: "ParkourSpot",
-        alternateName: "Parkour·Spot",
+        name: SITE_NAME,
         url: APP_ORIGIN,
         applicationCategory: "SportsApplication",
         operatingSystem: "Web",
@@ -103,8 +102,7 @@ export function buildSiteGraph(): Record<string, unknown> {
       {
         "@type": "WebSite",
         "@id": `${ABOUT_ORIGIN}/#website`,
-        name: "ParkourSpot",
-        alternateName: "Parkour·Spot",
+        name: SITE_NAME,
         url: `${ABOUT_ORIGIN}/`,
         description: APP_DEFINITION,
         publisher: {"@id": orgId},

@@ -11,6 +11,7 @@ import {
   moreOnMapLabel,
   resolveSpotCount,
 } from "../../lib/citation";
+import {SITE_NAME} from "../../lib/brand";
 import {buildPlaceJsonLd} from "../../lib/schema";
 import {listCityParams, loadCity, loadCountry} from "../../lib/snapshots";
 import {
@@ -64,7 +65,7 @@ const jsonLd = buildPlaceJsonLd({
   pageUrl: aboutAbsolute(pagePath),
   spots: listed,
   breadcrumbs: [
-    {name: "ParkourSpot", url: aboutAbsolute("/")},
+    {name: SITE_NAME, url: aboutAbsolute("/")},
     {name: countryName(cc), url: aboutAbsolute(aboutCountryPath(cc))},
     {name: hub.city, url: aboutAbsolute(pagePath)},
   ],

@@ -1,16 +1,19 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import OpenInApp from "../components/OpenInApp.astro";
+import {SITE_NAME} from "../lib/brand";
 import {APP_DEFINITION} from "../lib/citation";
 import {appHomeUrl} from "../lib/urls";
+
+const pageTitle = `How ${SITE_NAME} works`;
 ---
 
 <BaseLayout
-  title="How ParkourSpot works"
+  title={pageTitle}
   description={APP_DEFINITION}
   canonicalPath="/how-it-works"
 >
-  <h1 class="page-title">How ParkourSpot works</h1>
+  <h1 class="page-title">{pageTitle}</h1>
   <div class="prose">
     <p class="page-lede">
       {APP_DEFINITION} Ratings, photos, and places come from people who train

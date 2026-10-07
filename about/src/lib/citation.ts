@@ -1,9 +1,11 @@
+import {SITE_NAME} from "./brand";
+
 /**
  * Quotable facts for about.parkour.spot.
  * Counts are every public spot. Pages show a short highest-rated sample.
  */
 export const APP_DEFINITION =
-  "ParkourSpot is a free community map for finding, rating, and sharing parkour spots worldwide, open to explore without an account.";
+  `${SITE_NAME} is a free community map for finding, rating, and sharing parkour spots worldwide, open to explore without an account.`;
 
 /** English country names that take "the" ("the Netherlands", "the United States"). */
 const REGION_WITH_ARTICLE = new Set([
@@ -143,7 +145,7 @@ export function cityHubLede(input: {
 }): string | null {
   const total = Math.max(input.spotCount, input.listedCount);
   if (total < 1) return null;
-  const lead = `${input.city} has ${countNoun(total, "parkour spot")} on ParkourSpot.`;
+  const lead = `${input.city} has ${countNoun(total, "parkour spot")} on ${SITE_NAME}.`;
   if (input.listedCount < 1) return lead;
   if (total > input.listedCount) {
     const sample =
@@ -166,13 +168,13 @@ export function countryHubLede(input: {
   const place = phrase.charAt(0).toUpperCase() + phrase.slice(1);
   const cities = input.cityNames.map((name) => name.trim()).filter(Boolean);
   if (cities.length === 0 || input.spotCount < 1) {
-    return `${place} on ParkourSpot.`;
+    return `${place} on ${SITE_NAME}.`;
   }
   const spots = countNoun(input.spotCount, "parkour spot");
   const base =
     cities.length === 1
-      ? `${place} has ${spots} in ${cities[0]} on ParkourSpot.`
-      : `${place} has ${spots} across ${countNoun(cities.length, "city", "cities")} on ParkourSpot.`;
+      ? `${place} has ${spots} in ${cities[0]} on ${SITE_NAME}.`
+      : `${place} has ${spots} across ${countNoun(cities.length, "city", "cities")} on ${SITE_NAME}.`;
   if (input.listedCount < 1) return base;
   if (input.spotCount > input.listedCount) {
     const sample =
