@@ -579,10 +579,12 @@ class _EditSuggestionApprovalDialogState
                           (_originalSpot!.spotSource != null &&
                               _originalSpot!.spotSource!.isNotEmpty);
 
-                      if (value == widget.report.spotId && isCurrentDisabled)
+                      if (value == widget.report.spotId && isCurrentDisabled) {
                         return;
-                      if (value == _originalSpot!.id && isOriginalDisabled)
+                      }
+                      if (value == _originalSpot!.id && isOriginalDisabled) {
                         return;
+                      }
 
                       setState(() => _targetSpotId = value);
                     },

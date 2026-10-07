@@ -1,4 +1,5 @@
 /// Helpers for audit-log field diffs (write-time equality + display filtering).
+library;
 
 bool _isEffectivelyEmptyCollection(Object? value) {
   if (value == null) return true;
