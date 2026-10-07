@@ -1,7 +1,8 @@
 ---
 import "../styles/global.css";
 import {SITE_NAME} from "../lib/brand";
-import {APP_DEFINITION} from "../lib/citation";
+import {APP_DEFINITION, formatUpdatedAt} from "../lib/citation";
+import {loadAboutIndex} from "../lib/snapshots";
 
 interface Props {
   title: string;
@@ -19,6 +20,8 @@ const {
   noIndex = false,
 } = Astro.props;
 
+const aboutIndex = await loadAboutIndex();
+const updatedLabel = formatUpdatedAt(aboutIndex.generatedAt);
 const canonical = new URL(canonicalPath, Astro.site).toString();
 const pageTitle =
   title.includes(SITE_NAME)
@@ -97,7 +100,16 @@ const pageTitle =
             ·
             <a href="https://parkour.spot">Open the map</a>
           </p>
-          <p class="muted">about.parkour.spot</p>
+          <p class="muted">
+            about.parkour.spot{
+              updatedLabel && (
+                <>
+                  {" "}
+                  · Updated {updatedLabel}
+                </>
+              )
+            }
+          </p>
         </div>
       </footer>
     </div>

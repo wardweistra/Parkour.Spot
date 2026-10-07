@@ -269,10 +269,25 @@ img {
   line-height: 1.3;
 }
 
-.section__hint {
-  margin: 0 0 var(--space-md);
-  color: var(--color-on-surface-variant);
-  max-width: var(--measure);
+.section[id],
+.faq-question {
+  scroll-margin-top: var(--space-lg);
+}
+
+.on-this-page {
+  margin: 0 0 var(--space-sm);
+}
+
+.faq-question {
+  margin: var(--space-xl) 0 var(--space-xs);
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.prose .faq-question:first-child {
+  margin-top: 0;
 }
 
 .stack-list {

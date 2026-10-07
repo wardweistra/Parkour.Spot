@@ -2,7 +2,12 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import OpenInApp from "../components/OpenInApp.astro";
 import {SITE_NAME} from "../lib/brand";
-import {APP_DEFINITION} from "../lib/citation";
+import {
+  HOW_IT_WORKS_GROUPS,
+  HOW_IT_WORKS_LEDE,
+  paragraphHtml,
+} from "../lib/how-it-works";
+import {buildFaqPageJsonLd} from "../lib/schema";
 import {appHomeUrl} from "../lib/urls";
 
 const pageTitle = `How ${SITE_NAME} works`;
@@ -10,69 +15,36 @@ const pageTitle = `How ${SITE_NAME} works`;
 
 <BaseLayout
   title={pageTitle}
-  description={APP_DEFINITION}
+  description={HOW_IT_WORKS_LEDE}
   canonicalPath="/how-it-works"
+  jsonLd={buildFaqPageJsonLd()}
 >
   <h1 class="page-title">{pageTitle}</h1>
-  <div class="prose">
-    <p class="page-lede">
-      {APP_DEFINITION} Ratings, photos, and places come from people who train
-      there.
-    </p>
-
-    <section class="section" id="open-map">
-      <h2 class="section__title">Open map</h2>
-      <p>
-        The map lives at <a href={appHomeUrl()}>parkour.spot</a>. You can
-        browse spots, photos, and ratings without signing in. An account is
-        for contributing, such as adding a spot or leaving a rating.
-      </p>
-    </section>
-
-    <section class="section" id="ratings">
-      <h2 class="section__title">Ratings</h2>
-      <p>
-        Each rated spot shows an average and how many people rated it. Country
-        and city pages show up to 10 of the highest rated spots and how many
-        more are on the map.
-      </p>
-    </section>
-
-    <section class="section" id="photos">
-      <h2 class="section__title">Photos</h2>
-      <p>
-        Spots can include photos from the community, so you can see the place
-        before you train there.
-      </p>
-    </section>
-
-    <section class="section" id="add-a-spot">
-      <h2 class="section__title">Add a spot</h2>
-      <p>
-        Signed-in members can add a spot, including photos, so the next person
-        can find it.
-      </p>
-    </section>
-
-    <section class="section" id="events">
-      <h2 class="section__title">Events</h2>
-      <p>
-        Upcoming public jams and sessions are listed on the
-        <a href="/events">events</a> page and on the area page for their city.
-        Each event page has the time and place, and links to the same event on
-        the map.
-      </p>
-    </section>
-
-    <section class="section" id="plain-html">
-      <h2 class="section__title">Plain HTML for the same places</h2>
-      <p>
-        This site, about.parkour.spot, is the readable copy of the atlas:
-        static HTML, refreshed daily. A path such as /nl/amsterdam is the same
-        place on both sites.
-      </p>
-    </section>
-  </div>
+  <p class="page-lede">{HOW_IT_WORKS_LEDE}</p>
+  <nav class="chip-row on-this-page" aria-label="On this page">
+    {
+      HOW_IT_WORKS_GROUPS.map((group) => (
+        <a class="chip" href={`#${group.id}`}>{group.title}</a>
+      ))
+    }
+  </nav>
+  {
+    HOW_IT_WORKS_GROUPS.map((group) => (
+      <section class="section" id={group.id}>
+        <h2 class="section__title">{group.title}</h2>
+        <div class="prose">
+          {group.questions.map((item) => (
+            <>
+              <h3 class="faq-question" id={item.id}>{item.question}</h3>
+              {item.paragraphs.map((paragraph) => (
+                <p set:html={paragraphHtml(paragraph)} />
+              ))}
+            </>
+          ))}
+        </div>
+      </section>
+    ))
+  }
   <div class="hub-open">
     <OpenInApp href={appHomeUrl()} label="Open the map" />
   </div>

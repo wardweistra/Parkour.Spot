@@ -80,7 +80,7 @@ const jsonLd = buildPlaceJsonLd({
     <h2 class="section__title">Cities</h2>
     {
       cities.length === 0 ? (
-        <p class="empty">No eligible cities in this snapshot.</p>
+        <p class="empty">No cities yet.</p>
       ) : (
         <div class="chip-row">
           {cities.map((city) => (
@@ -121,11 +121,4 @@ const jsonLd = buildPlaceJsonLd({
     />
   </section>
 
-  <section class="section">
-    <h2 class="section__title">Local knowledge</h2>
-    <p class="section__hint">
-      Gyms, classes, and community groups for this area will appear here when
-      we have verified listings.
-    </p>
-  </section>
 </BaseLayout>

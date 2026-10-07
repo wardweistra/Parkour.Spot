@@ -5,6 +5,11 @@ export function appHomeUrl(): string {
   return APP_ORIGIN;
 }
 
+export function appPath(path: string): string {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return `${APP_ORIGIN}${normalized}`;
+}
+
 export function appCountryUrl(countryCode: string): string {
   return `${APP_ORIGIN}/${countryCode.toLowerCase()}`;
 }

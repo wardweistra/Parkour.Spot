@@ -9,7 +9,7 @@ import {
 } from "../lib/citation";
 import {buildSiteGraph} from "../lib/schema";
 import {loadCoverage} from "../lib/snapshots";
-import {aboutCityPath, aboutCountryPath, appHomeUrl} from "../lib/urls";
+import {aboutCountryPath, appHomeUrl} from "../lib/urls";
 
 const coverage = await loadCoverage();
 const countryCount = coverage.countries.length;
@@ -25,19 +25,7 @@ const facts = coverageSentence({
   spotCount,
   cityCount,
   countryCount,
-  generatedAt: coverage.generatedAt,
 });
-
-const netherlands = coverage.countries.find((country) => country.code === "nl");
-const amsterdam = netherlands?.cities.find(
-  (city) => city.citySlug === "amsterdam",
-);
-const exampleCountry = amsterdam && netherlands ? netherlands : coverage.countries[0];
-const exampleCity = amsterdam ?? exampleCountry?.cities[0];
-const examplePath =
-  exampleCountry && exampleCity
-    ? aboutCityPath(exampleCountry.code, exampleCity.citySlug)
-    : null;
 
 const countries = [...coverage.countries].sort((a, b) =>
   countryName(a.code).localeCompare(countryName(b.code), "en"),
@@ -63,18 +51,11 @@ const countries = [...coverage.countries].sort((a, b) =>
     <h2 class="section__title">The public atlas</h2>
     {facts && <p>{facts}</p>}
     <p>
-      Country and city pages use the same paths as the map at{" "}
-      <a href={appHomeUrl()}>parkour.spot</a>.{" "}
-      {
-        examplePath && (
-          <>
-            The same path works on both sites, for example{" "}
-            <a href={examplePath}>{examplePath}</a>.{" "}
-          </>
-        )
-      }
-      <a href="/how-it-works">How {SITE_NAME} works</a> covers the map, ratings,
-      photos, and events.
+      Spots, photos, and ratings come from people who train there, so you can
+      see a place before you go.{" "}
+      <a href="/how-it-works">How {SITE_NAME} works</a> covers finding spots
+      and events, adding them, keeping lists, and planning training with the
+      community.
     </p>
   </section>
 

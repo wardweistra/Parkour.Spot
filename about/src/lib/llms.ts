@@ -5,8 +5,8 @@ import {
   countNoun,
   countryHubTitle,
   countryName,
-  formatAtlasDate,
 } from "./citation";
+import {HOW_IT_WORKS_GROUPS} from "./how-it-works";
 import type {CoverageCountry} from "./snapshots";
 import {aboutAbsolute, aboutCityPath, aboutCountryPath} from "./urls";
 
@@ -21,7 +21,6 @@ function cityLine(countryCode: string, city: CoverageCountry["cities"][number]):
 }
 
 export function buildLlmsTxt(input: {
-  generatedAt: string;
   countries: CoverageCountry[];
 }): string {
   const countries = [...input.countries].sort((a, b) =>
@@ -32,22 +31,29 @@ export function buildLlmsTxt(input: {
     "",
     `> ${APP_DEFINITION}`,
     "",
-    "The interactive map is https://parkour.spot. This site is the static HTML copy of the same places, refreshed daily. Spot counts are every public spot. Place pages show up to 10 of the highest rated.",
-    "",
-    `Snapshot date: ${formatAtlasDate(input.generatedAt)}.`,
+    "The map is https://parkour.spot. Spots, photos, and ratings come from people who train there. You can explore without an account.",
     "",
     "## Start here",
     "",
-    `- [${SITE_NAME}](${aboutAbsolute("/")}): What ${SITE_NAME} is, and which countries have pages in this refresh.`,
-    `- [How ${SITE_NAME} works](${aboutAbsolute("/how-it-works")}): Open map, ratings, photos, adding a spot, events, and how these pages relate to the app.`,
+    `- [${SITE_NAME}](${aboutAbsolute("/")}): What ${SITE_NAME} is, and which countries have place pages.`,
+    `- [How ${SITE_NAME} works](${aboutAbsolute("/how-it-works")}): How to find spots and events, add them, keep lists, and train with the community.`,
     `- [Events](${aboutAbsolute("/events")}): Upcoming public parkour events.`,
+    "",
+    "## Tasks",
+    "",
+    ...HOW_IT_WORKS_GROUPS.flatMap((group) =>
+      group.questions.map(
+        (question) =>
+          `- [${question.question}](${aboutAbsolute(`/how-it-works#${question.id}`)})`,
+      ),
+    ),
     "",
     "## Countries and cities",
     "",
   ];
 
   if (countries.length === 0) {
-    lines.push("No country pages in this refresh.");
+    lines.push("No country pages yet.");
   } else {
     for (const country of countries) {
       const path = aboutCountryPath(country.code);

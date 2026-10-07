@@ -1,5 +1,6 @@
 import {SITE_NAME} from "./brand";
 import {APP_DEFINITION} from "./citation";
+import {answerPlainText, howItWorksQuestions} from "./how-it-works";
 import type {EventDetail, SpotSummary} from "./types";
 import {ABOUT_ORIGIN, APP_ORIGIN, aboutEventPath, appSpotUrl} from "./urls";
 
@@ -91,6 +92,10 @@ export function buildSiteGraph(): Record<string, unknown> {
           "Spot photos",
           "Add a spot",
           "Parkour events",
+          "Spot lists",
+          "Want to visit and been to",
+          "Training plans",
+          "Check-ins",
         ],
         offers: {
           "@type": "Offer",
@@ -108,6 +113,22 @@ export function buildSiteGraph(): Record<string, unknown> {
         publisher: {"@id": orgId},
       },
     ],
+  };
+}
+
+/** FAQPage for /how-it-works. Answer text matches the visible page. */
+export function buildFaqPageJsonLd(): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: howItWorksQuestions().map((question) => ({
+      "@type": "Question",
+      name: question.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: answerPlainText(question),
+      },
+    })),
   };
 }
 

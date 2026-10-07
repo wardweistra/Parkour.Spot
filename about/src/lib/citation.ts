@@ -61,15 +61,23 @@ export function countryHubTitle(countryCode: string): string {
   return `Parkour spots in ${countryInPhrase(countryCode)}`;
 }
 
-export function formatAtlasDate(iso: string): string {
+/** Calendar date and UTC time for a snapshot `generatedAt` value. */
+export function formatUpdatedAt(iso: string): string | null {
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "the latest refresh";
-  return new Intl.DateTimeFormat("en-GB", {
+  if (Number.isNaN(date.getTime())) return null;
+  const day = new Intl.DateTimeFormat("en-GB", {
     day: "numeric",
     month: "long",
     year: "numeric",
     timeZone: "UTC",
   }).format(date);
+  const time = new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: "UTC",
+  }).format(date);
+  return `${day}, ${time} UTC`;
 }
 
 export function formatCount(n: number): string {
@@ -126,15 +134,13 @@ export function coverageSentence(input: {
   spotCount: number;
   cityCount: number;
   countryCount: number;
-  generatedAt: string;
 }): string | null {
   if (input.countryCount < 1 || input.cityCount < 1) return null;
-  const when = formatAtlasDate(input.generatedAt);
   const places = `in ${countNoun(input.cityCount, "city", "cities")} across ${countNoun(input.countryCount, "country", "countries")}`;
   if (input.spotCount < 1) {
-    return `As of ${when}, these pages cover ${places}. Pages are refreshed daily.`;
+    return `${SITE_NAME} lists parkour spots ${places}.`;
   }
-  return `As of ${when}, these pages cover ${countNoun(input.spotCount, "parkour spot")} ${places}. Pages are refreshed daily.`;
+  return `${SITE_NAME} has ${countNoun(input.spotCount, "parkour spot")} ${places}.`;
 }
 
 export function cityHubLede(input: {
