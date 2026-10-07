@@ -1,19 +1,25 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import OpenInApp from "../components/OpenInApp.astro";
-import {loadAboutIndex} from "../lib/snapshots";
+import {listCityParams, loadAboutIndex} from "../lib/snapshots";
+import {SITE_NAME} from "../lib/brand";
 import {aboutCountryPath, appHomeUrl} from "../lib/urls";
 
 const index = await loadAboutIndex();
+const cityCountByCountry = new Map<string, number>();
+for (const city of await listCityParams()) {
+  const code = city.countryCode.toLowerCase();
+  cityCountByCountry.set(code, (cityCountByCountry.get(code) ?? 0) + 1);
+}
 ---
 
 <BaseLayout
-  title="ParkourSpot"
+  title={SITE_NAME}
   description="A community atlas for discovering, rating, and sharing parkour spots worldwide — open to explore, built with the community."
   canonicalPath="/"
 >
   <section class="hero">
-    <h1 class="hero__brand">ParkourSpot</h1>
+    <h1 class="hero__brand">{SITE_NAME}</h1>
     <p class="hero__lead">
       Find trustworthy places to train, understand them quickly, and pass them
       on. Core discovery stays open — no login wall on the map.
@@ -43,12 +49,18 @@ const index = await loadAboutIndex();
           app (for example /nl/amsterdam).
         </p>
         <div class="chip-row">
-          {index.countries.map((c) => (
-            <a class="chip" href={aboutCountryPath(c.code)}>
-              {c.code.toUpperCase()}
-              <span class="muted"> · {c.cityCount} cities</span>
-            </a>
-          ))}
+          {index.countries.map((c) => {
+            const cityCount = cityCountByCountry.get(c.code.toLowerCase()) ?? 0;
+            return (
+              <a class="chip" href={aboutCountryPath(c.code)}>
+                {c.code.toUpperCase()}
+                <span class="muted">
+                  {" "}
+                  · {cityCount} {cityCount === 1 ? "city" : "cities"}
+                </span>
+              </a>
+            );
+          })}
         </div>
       </section>
     )

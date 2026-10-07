@@ -1,18 +1,34 @@
 ---
 import type {EventSummary} from "../lib/types";
-import {aboutCityPath, aboutEventPath} from "../lib/urls";
+import {aboutEventPath, eventAreaHubLink} from "../lib/urls";
 
 interface Props {
   events: EventSummary[];
   emptyLabel?: string;
   showPlaceLinks?: boolean;
+  /** `${countryCode}/${citySlug}` for city pages that were actually generated. */
+  cityHubKeys?: string[];
+  /** Country codes that have a generated hub. Omit to avoid linking a missing city up to a country. */
+  countryHubCodes?: string[];
 }
 
 const {
   events,
   emptyLabel = "No upcoming events in this snapshot.",
   showPlaceLinks = true,
+  cityHubKeys = [],
+  countryHubCodes = [],
 } = Astro.props;
+
+const cityHubs = new Set(cityHubKeys);
+const countryHubs = new Set(
+  countryHubCodes.map((code) => code.toLowerCase()),
+);
+
+function placeLink(event: EventSummary): {href: string; label: string} | null {
+  if (!showPlaceLinks) return null;
+  return eventAreaHubLink(event, cityHubs, countryHubs);
+}
 
 function formatWhen(iso: string | null): string {
   if (!iso) return "Date TBA";
@@ -32,45 +48,44 @@ function formatWhen(iso: string | null): string {
     <p class="empty">{emptyLabel}</p>
   ) : (
     <ul class="stack-list">
-      {events.map((event) => (
-        <li>
-          {event.imageUrl ? (
-            <img
-              class="stack-list__thumb"
-              src={event.imageUrl}
-              alt=""
-              width="64"
-              height="64"
-              loading="lazy"
-            />
-          ) : (
-            <div class="stack-list__thumb" aria-hidden="true" />
-          )}
-          <div>
-            <p class="stack-list__title">
-              <a href={aboutEventPath(event.slug)}>{event.title}</a>
-            </p>
-            <p class="stack-list__meta">
-              {formatWhen(event.startAt)}
-              {event.city && event.countryCode
-                ? ` · ${event.city}, ${event.countryCode.toUpperCase()}`
-                : ""}
-            </p>
-            {showPlaceLinks && event.countryCode && event.citySlug && (
-              <p class="stack-list__meta">
-                <a
-                  href={aboutCityPath(event.countryCode, event.citySlug)}
-                >
-                  Area hub
-                </a>
-              </p>
+      {events.map((event) => {
+        const hub = placeLink(event);
+        return (
+          <li>
+            {event.imageUrl ? (
+              <img
+                class="stack-list__thumb"
+                src={event.imageUrl}
+                alt=""
+                width="64"
+                height="64"
+                loading="lazy"
+              />
+            ) : (
+              <div class="stack-list__thumb" aria-hidden="true" />
             )}
-          </div>
-          <a class="chip" href={aboutEventPath(event.slug)}>
-            Details
-          </a>
-        </li>
-      ))}
+            <div>
+              <p class="stack-list__title">
+                <a href={aboutEventPath(event.slug)}>{event.title}</a>
+              </p>
+              <p class="stack-list__meta">
+                {formatWhen(event.startAt)}
+                {event.city && event.countryCode
+                  ? ` · ${event.city}, ${event.countryCode.toUpperCase()}`
+                  : ""}
+              </p>
+              {hub && (
+                <p class="stack-list__meta">
+                  <a href={hub.href}>{hub.label}</a>
+                </p>
+              )}
+            </div>
+            <a class="chip" href={aboutEventPath(event.slug)}>
+              Details
+            </a>
+          </li>
+        );
+      })}
     </ul>
   )
 }

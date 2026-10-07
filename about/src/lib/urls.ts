@@ -33,6 +33,31 @@ export function aboutCityPath(countryCode: string, citySlug: string): string {
   return `/${countryCode.toLowerCase()}/${citySlug}`;
 }
 
+export function cityHubKey(countryCode: string, citySlug: string): string {
+  return `${countryCode.toLowerCase()}/${citySlug}`;
+}
+
+/**
+ * Link an event to a generated area page. City hubs win; a country hub is
+ * used only when that country page exists and the city page does not.
+ */
+export function eventAreaHubLink(
+  event: {countryCode: string | null; citySlug: string | null},
+  cityHubKeys: ReadonlySet<string>,
+  countryHubCodes: ReadonlySet<string>,
+): {href: string; label: string} | null {
+  const cc = event.countryCode?.trim().toLowerCase() ?? "";
+  if (!cc) return null;
+  const citySlug = event.citySlug?.trim() ?? "";
+  if (citySlug && cityHubKeys.has(cityHubKey(cc, citySlug))) {
+    return {href: aboutCityPath(cc, citySlug), label: "Area hub"};
+  }
+  if (countryHubCodes.has(cc)) {
+    return {href: aboutCountryPath(cc), label: "Country hub"};
+  }
+  return null;
+}
+
 export function aboutEventPath(slug: string): string {
   return `/events/${slug}`;
 }

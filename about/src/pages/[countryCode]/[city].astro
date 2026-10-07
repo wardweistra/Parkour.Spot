@@ -3,6 +3,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import SpotList from "../../components/SpotList.astro";
 import EventList from "../../components/EventList.astro";
 import OpenInApp from "../../components/OpenInApp.astro";
+import {qualifyingSpots} from "../../lib/ratings";
 import {listCityParams, loadCity} from "../../lib/snapshots";
 import {aboutCountryPath, appCityUrl} from "../../lib/urls";
 
@@ -23,7 +24,7 @@ if (
 }
 
 const hub = await loadCity(countryCode, citySlug);
-if (!hub) {
+if (!hub || qualifyingSpots(hub.spots).length === 0) {
   return Astro.redirect(`/${countryCode.toLowerCase()}`);
 }
 

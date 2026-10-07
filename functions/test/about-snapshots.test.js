@@ -71,7 +71,7 @@ describe("about-snapshots", () => {
           countryCode: "fr",
           city: "Paris",
           ratingCount: 1,
-          ranking: i,
+          ranking: 10 + i,
         });
       }
       const {cityDocs} = buildPlaceSnapshots(spots);
@@ -79,6 +79,45 @@ describe("about-snapshots", () => {
       expect(top).toHaveLength(20);
       expect(top[0].id).toBe("s24");
       expect(top[19].id).toBe("s5");
+    });
+
+    it("drops spots below the explore Wilson average", () => {
+      const spots = [];
+      for (let i = 0; i < MIN_RATED_SPOTS_PER_CITY; i++) {
+        spots.push({
+          id: `good${i}`,
+          name: `Good${i}`,
+          countryCode: "de",
+          city: "Berlin",
+          ratingCount: 4,
+          ranking: 12 + i,
+        });
+      }
+      spots.push({
+        id: "weak",
+        name: "Weak",
+        countryCode: "de",
+        city: "Berlin",
+        ratingCount: 8,
+        averageRating: 2.1,
+        ranking: -4,
+      });
+      for (let i = 0; i < MIN_RATED_SPOTS_PER_CITY; i++) {
+        spots.push({
+          id: `bad${i}`,
+          name: `Bad${i}`,
+          countryCode: "de",
+          city: "Hamburg",
+          ratingCount: 3,
+          ranking: -2 - i,
+        });
+      }
+
+      const {cityDocs} = buildPlaceSnapshots(spots);
+      const berlin = cityDocs.get("de_berlin").spots.map((s) => s.id);
+      expect(berlin).not.toContain("weak");
+      expect(berlin).toHaveLength(MIN_RATED_SPOTS_PER_CITY);
+      expect(cityDocs.has("de_hamburg")).toBe(false);
     });
   });
 
@@ -92,7 +131,7 @@ describe("about-snapshots", () => {
           countryCode: "nl",
           city: "Amsterdam",
           ratingCount: 1,
-          ranking: i,
+          ranking: 10 + i,
         });
       }
       const placeState = buildPlaceSnapshots(spots, {

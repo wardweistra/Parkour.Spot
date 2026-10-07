@@ -3,10 +3,12 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import SpotList from "../../components/SpotList.astro";
 import EventList from "../../components/EventList.astro";
 import OpenInApp from "../../components/OpenInApp.astro";
-import {listCountryCodes, loadCountry} from "../../lib/snapshots";
+import {SITE_NAME} from "../../lib/brand";
+import {listCountryCodes, loadCountry, qualifyingCityRefs} from "../../lib/snapshots";
 import {
   aboutCityPath,
   appCountryUrl,
+  cityHubKey,
 } from "../../lib/urls";
 
 export async function getStaticPaths() {
@@ -25,12 +27,13 @@ if (!country) {
 }
 
 const cc = country.countryCode.toLowerCase();
+const cities = await qualifyingCityRefs(country);
 const title = `${cc.toUpperCase()} · Parkour spots and events`;
 ---
 
 <BaseLayout
   title={title}
-  description={`Best-rated parkour spots and upcoming events in ${cc.toUpperCase()}, refreshed daily from ParkourSpot.`}
+  description={`Best-rated parkour spots and upcoming events in ${cc.toUpperCase()}, refreshed daily from ${SITE_NAME}.`}
   canonicalPath={`/${cc}`}
 >
   <h1 class="page-title">{cc.toUpperCase()}</h1>
@@ -45,11 +48,11 @@ const title = `${cc.toUpperCase()} · Parkour spots and events`;
   <section class="section">
     <h2 class="section__title">Cities</h2>
     {
-      country.cities.length === 0 ? (
+      cities.length === 0 ? (
         <p class="empty">No eligible cities in this snapshot.</p>
       ) : (
         <div class="chip-row">
-          {country.cities.map((city) => (
+          {cities.map((city) => (
             <a class="chip" href={aboutCityPath(cc, city.citySlug)}>
               {city.city}
             </a>
@@ -66,7 +69,10 @@ const title = `${cc.toUpperCase()} · Parkour spots and events`;
 
   <section class="section">
     <h2 class="section__title">Upcoming events</h2>
-    <EventList events={country.events} />
+    <EventList
+      events={country.events}
+      cityHubKeys={cities.map((city) => cityHubKey(cc, city.citySlug))}
+    />
   </section>
 
   <section class="section">

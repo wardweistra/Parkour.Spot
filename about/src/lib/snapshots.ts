@@ -1,7 +1,9 @@
 import {readFile, readdir} from "node:fs/promises";
 import path from "node:path";
+import {qualifyingSpots} from "./ratings";
 import type {
   AboutIndex,
+  CityRef,
   CitySnapshot,
   CountrySnapshot,
   EventDetail,
@@ -204,6 +206,20 @@ export async function listCountryCodes(): Promise<string[]> {
     .map((c) => c.code.toLowerCase());
 }
 
+/** City chips whose snapshot still has a spot at or above the Wilson average. */
+export async function qualifyingCityRefs(
+  country: CountrySnapshot,
+): Promise<CityRef[]> {
+  const kept: CityRef[] = [];
+  for (const city of country.cities ?? []) {
+    if (typeof city?.citySlug !== "string" || !city.citySlug) continue;
+    const hub = await loadCity(country.countryCode, city.citySlug);
+    if (!hub || qualifyingSpots(hub.spots).length === 0) continue;
+    kept.push(city);
+  }
+  return kept;
+}
+
 export async function listCityParams(): Promise<
   Array<{countryCode: string; city: string}>
 > {
@@ -211,9 +227,9 @@ export async function listCityParams(): Promise<
   const out: Array<{countryCode: string; city: string}> = [];
   for (const code of codes) {
     const country = await loadCountry(code);
-    if (!country?.cities?.length) continue;
-    for (const city of country.cities) {
-      if (typeof city?.citySlug !== "string" || !city.citySlug) continue;
+    if (!country) continue;
+    const cities = await qualifyingCityRefs(country);
+    for (const city of cities) {
       out.push({countryCode: code, city: city.citySlug});
     }
   }

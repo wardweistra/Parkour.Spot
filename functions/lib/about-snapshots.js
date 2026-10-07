@@ -6,6 +6,7 @@
 
 const {slugify} = require("../utils");
 const {isEventPast} = require("./event-map-pins");
+const {isAboveAverageRanking} = require("./spot-rating-stats");
 
 const MIN_RATED_SPOTS_PER_CITY = 5;
 const TOP_SPOTS_LIMIT = 20;
@@ -205,7 +206,12 @@ function buildPlaceSnapshots(spots, options = {}) {
 
     for (const [, entry] of citiesMap.entries()) {
       const citySlug = slugify(entry.city);
-      const rated = entry.spots.filter((s) => (Number(s.ratingCount) || 0) >= 1);
+      // Same cut as Explore: ranking >= 10 means the Wilson score is at or
+      // above wilsonLowerBoundAvg. Below-average spots stay out of "highest
+      // rated" even when they have been rated.
+      const rated = entry.spots.filter((s) =>
+        (Number(s.ratingCount) || 0) >= 1 && isAboveAverageRanking(s.ranking),
+      );
       if (rated.length < minRated) continue;
 
       const ranked = [...rated].sort(

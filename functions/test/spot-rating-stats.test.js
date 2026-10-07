@@ -3,6 +3,7 @@ const {
   computeSpotRatingAggregates,
   clampRating,
   rankingFromWilson,
+  isAboveAverageRanking,
 } = require("../lib/spot-rating-stats");
 
 describe("spot-rating-stats", () => {
@@ -101,6 +102,16 @@ describe("spot-rating-stats", () => {
     it("treats equal as above average", () => {
       expect(rankingFromWilson(2.5, 2.5)).toBe(12.5);
       expect(rankingFromWilson(1, 2)).toBe(-9);
+    });
+  });
+
+  describe("isAboveAverageRanking", () => {
+    it("matches the explore ranking split", () => {
+      expect(isAboveAverageRanking(10)).toBe(true);
+      expect(isAboveAverageRanking(rankingFromWilson(2.5, 2.5))).toBe(true);
+      expect(isAboveAverageRanking(rankingFromWilson(1, 2))).toBe(false);
+      expect(isAboveAverageRanking(0.4)).toBe(false);
+      expect(isAboveAverageRanking(Number.NaN)).toBe(false);
     });
   });
 });

@@ -70,15 +70,33 @@ function uniqueRatingsByUser(ratings) {
 }
 
 /**
+ * Explore selection stores at-or-above-average spots as wilson + this offset
+ * and below-average spots as wilson - this offset. Wilson itself is 0..5, so
+ * a stored ranking >= this value is the same cut the map uses.
+ */
+const ABOVE_AVERAGE_RANKING_OFFSET = 10;
+
+/**
  * @param {number} wilsonLowerBound
  * @param {number} wilsonLowerBoundAvg
  * @return {number}
  */
 function rankingFromWilson(wilsonLowerBound, wilsonLowerBoundAvg) {
   if (wilsonLowerBound >= wilsonLowerBoundAvg) {
-    return wilsonLowerBound + 10;
+    return wilsonLowerBound + ABOVE_AVERAGE_RANKING_OFFSET;
   }
-  return wilsonLowerBound - 10;
+  return wilsonLowerBound - ABOVE_AVERAGE_RANKING_OFFSET;
+}
+
+/**
+ * True when a stored ranking is at or above the Wilson average Explore uses.
+ * Unrated spots use a random ranking in [0, 1), so they fail this check.
+ * @param {*} ranking
+ * @return {boolean}
+ */
+function isAboveAverageRanking(ranking) {
+  const value = Number(ranking);
+  return Number.isFinite(value) && value >= ABOVE_AVERAGE_RANKING_OFFSET;
 }
 
 /**
@@ -142,7 +160,9 @@ module.exports = {
   ratingRecencyMillis,
   clampRating,
   uniqueRatingsByUser,
+  ABOVE_AVERAGE_RANKING_OFFSET,
   rankingFromWilson,
+  isAboveAverageRanking,
   wilsonLowerBoundFromSum,
   computeSpotRatingAggregates,
 };

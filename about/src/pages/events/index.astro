@@ -1,16 +1,21 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import EventList from "../../components/EventList.astro";
-import {loadEventsIndex} from "../../lib/snapshots";
-import {appHomeUrl} from "../../lib/urls";
+import {SITE_NAME} from "../../lib/brand";
+import {listCityParams, listCountryCodes, loadEventsIndex} from "../../lib/snapshots";
+import {appHomeUrl, cityHubKey} from "../../lib/urls";
 import OpenInApp from "../../components/OpenInApp.astro";
 
 const index = await loadEventsIndex();
+const cityHubKeys = (await listCityParams()).map((city) =>
+  cityHubKey(city.countryCode, city.city),
+);
+const countryHubCodes = await listCountryCodes();
 ---
 
 <BaseLayout
   title="Events"
-  description="Upcoming parkour events from the ParkourSpot community, refreshed daily."
+  description={`Upcoming parkour events from the ${SITE_NAME} community, refreshed daily.`}
   canonicalPath="/events"
 >
   <h1 class="page-title">Events</h1>
@@ -21,5 +26,9 @@ const index = await loadEventsIndex();
   <div class="hub-open">
     <OpenInApp href={appHomeUrl()} label="Open the map" />
   </div>
-  <EventList events={index.events} />
+  <EventList
+    events={index.events}
+    cityHubKeys={cityHubKeys}
+    countryHubCodes={countryHubCodes}
+  />
 </BaseLayout>

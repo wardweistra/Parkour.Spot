@@ -2,12 +2,8 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import OpenInApp from "../../components/OpenInApp.astro";
 import {buildEventJsonLd} from "../../lib/schema";
-import {listEventSlugs, loadEvent} from "../../lib/snapshots";
-import {
-  aboutCityPath,
-  aboutCountryPath,
-  appEventUrl,
-} from "../../lib/urls";
+import {listEventSlugs, loadCity, loadCountry, loadEvent} from "../../lib/snapshots";
+import {appEventUrl, cityHubKey, eventAreaHubLink} from "../../lib/urls";
 
 export async function getStaticPaths() {
   const slugs = await listEventSlugs();
@@ -41,6 +37,18 @@ function formatWhen(iso: string | null): string {
 
 const heroImage =
   event.imageUrls?.[0] || event.imageUrl || null;
+
+const countryCode = event.countryCode?.trim().toLowerCase() ?? "";
+const citySlug = event.citySlug?.trim() ?? "";
+const cityHub =
+  countryCode && citySlug ? await loadCity(countryCode, citySlug) : null;
+const countryHub =
+  !cityHub && countryCode ? await loadCountry(countryCode) : null;
+const areaHub = eventAreaHubLink(
+  event,
+  cityHub ? new Set([cityHubKey(countryCode, citySlug)]) : new Set(),
+  countryHub ? new Set([countryCode]) : new Set(),
+);
 ---
 
 <BaseLayout
@@ -58,15 +66,11 @@ const heroImage =
           <p class="muted">
             {event.address ? `${event.address} · ` : ""}
             {event.city}, {event.countryCode.toUpperCase()}
-            {" · "}
-            {event.citySlug ? (
-              <a href={aboutCityPath(event.countryCode, event.citySlug)}>
-                Area hub
-              </a>
-            ) : (
-              <a href={aboutCountryPath(event.countryCode)}>
-                Country hub
-              </a>
+            {areaHub && (
+              <>
+                {" · "}
+                <a href={areaHub.href}>{areaHub.label}</a>
+              </>
             )}
           </p>
         )

@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import {SITE_NAME} from "../lib/brand";
 
 interface Props {
   title: string;
@@ -10,15 +11,15 @@ interface Props {
 
 const {
   title,
-  description = "ParkourSpot is a community atlas for discovering and sharing parkour spots worldwide.",
+  description = `${SITE_NAME} is a community atlas for discovering and sharing parkour spots worldwide.`,
   canonicalPath = "/",
   jsonLd = null,
 } = Astro.props;
 
 const canonical = new URL(canonicalPath, Astro.site).toString();
-const pageTitle = title.includes("ParkourSpot")
+const pageTitle = title.includes(SITE_NAME)
   ? title
-  : `${title} · ParkourSpot`;
+  : `${title} · ${SITE_NAME}`;
 ---
 
 <!doctype html>
@@ -33,7 +34,7 @@ const pageTitle = title.includes("ParkourSpot")
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta property="og:site_name" content="ParkourSpot" />
+    <meta property="og:site_name" content={SITE_NAME} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -56,7 +57,7 @@ const pageTitle = title.includes("ParkourSpot")
         <div class="site-header__inner">
           <a class="site-header__brand" href="/">
             <img src="/logo-square.svg" alt="" width="36" height="36" />
-            <span>ParkourSpot</span>
+            <span>{SITE_NAME}</span>
           </a>
           <nav class="site-nav" aria-label="Primary">
             <a href="/">About</a>
