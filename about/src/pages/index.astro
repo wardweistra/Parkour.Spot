@@ -1,68 +1,207 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import OpenInApp from "../components/OpenInApp.astro";
+import Screenshot from "../components/Screenshot.astro";
+import StatGrid from "../components/StatGrid.astro";
 import {SITE_NAME} from "../lib/brand";
 import {
   APP_DEFINITION,
+  MISSION,
+  activityFacts,
+  countNoun,
   countryName,
-  coverageSentence,
+  curationFacts,
+  formatUpdatedAt,
+  libraryFacts,
+  metaDescription,
+  statsSentence,
 } from "../lib/citation";
 import {buildSiteGraph} from "../lib/schema";
-import {loadCoverage} from "../lib/snapshots";
-import {aboutCountryPath, appHomeUrl} from "../lib/urls";
+import {loadCoverage, loadStats} from "../lib/snapshots";
+import {OPEN_SOURCE_URL, aboutCountryPath, appHomeUrl} from "../lib/urls";
 
+const stats = await loadStats();
 const coverage = await loadCoverage();
-const countryCount = coverage.countries.length;
-const cityCount = coverage.countries.reduce(
-  (sum, country) => sum + country.cities.length,
-  0,
-);
-const spotCount = coverage.countries.reduce(
-  (sum, country) => sum + country.spotCount,
-  0,
-);
-const facts = coverageSentence({
-  spotCount,
-  cityCount,
-  countryCount,
-});
+const headline = statsSentence(stats);
+const library = libraryFacts(stats);
+const recent = activityFacts(stats);
+const curation = curationFacts(stats);
+const windowDays = stats.activityWindowDays ?? 30;
+const snapshotLabel = stats.generatedAt ? formatUpdatedAt(stats.generatedAt) : null;
+const sourcePhrase =
+  typeof stats.spotSourceCount === "number" && stats.spotSourceCount > 0
+    ? countNoun(stats.spotSourceCount, "spot list")
+    : null;
 
 const countries = [...coverage.countries].sort((a, b) =>
   countryName(a.code).localeCompare(countryName(b.code), "en"),
 );
+
+const description = headline
+  ? metaDescription(`${headline} Free, open source, and open to explore without an account.`)
+  : APP_DEFINITION;
 ---
 
 <BaseLayout
   title={SITE_NAME}
-  description={APP_DEFINITION}
+  description={description}
   canonicalPath="/"
-  jsonLd={buildSiteGraph()}
+  jsonLd={buildSiteGraph(stats)}
 >
-  <section class="hero">
-    <h1 class="hero__brand">{SITE_NAME}</h1>
-    <p class="hero__lead">{APP_DEFINITION}</p>
-    <div class="hero__actions">
-      <OpenInApp href={appHomeUrl()} label="Open the map" />
-      <a class="btn btn--outlined" href="/events">Browse events</a>
+  <section class="hero hero--split">
+    <div class="hero__text">
+      <h1 class="hero__brand">{SITE_NAME}</h1>
+      <p class="hero__tagline">
+        Find the best parkour spots, events, and communities, whether it's
+        around the corner or on your next trip.
+      </p>
+      {headline && <p class="hero__lead">{headline}</p>}
+      <div class="hero__actions">
+        <OpenInApp href={appHomeUrl()} label="Open the map" />
+        <a class="btn btn--outlined" href="/events">Browse events</a>
+      </div>
+      <p class="muted hero__note">
+        Free and open source. No account needed to explore.
+      </p>
+    </div>
+    <Screenshot id="mapDesktop" eager />
+  </section>
+
+  {
+    library.length > 0 && (
+      <section class="section" aria-labelledby="numbers-title">
+        <h2 class="section__title" id="numbers-title">
+          {SITE_NAME} in numbers
+        </h2>
+        <StatGrid facts={library} label={`${SITE_NAME} in numbers`} />
+      </section>
+    )
+  }
+
+  {
+    recent.length > 0 && (
+      <section class="section" aria-labelledby="activity-title">
+        <h2 class="section__title" id="activity-title">
+          Active in the last {windowDays} days
+        </h2>
+        <p class="muted">
+          People check in at spots, plan sessions together, and add and rate
+          spots every day.
+        </p>
+        <StatGrid
+          facts={recent}
+          label={`Activity in the last ${windowDays} days`}
+          compact
+        />
+      </section>
+    )
+  }
+
+  <section class="section prose" aria-labelledby="why-title">
+    <h2 class="section__title" id="why-title">Why it exists</h2>
+    <p>{MISSION}</p>
+    <p>
+      Parkour spot apps have come and gone, and too often their maps went with
+      them. {SITE_NAME} builds on the lists that local communities have kept
+      for years{sourcePhrase ? ` (${sourcePhrase} so far)` : ""}, from the Apex
+      Speed Run map to national lists from Czechia and Sweden. The URBN Jumpers
+      team donated their spot data too, so those spots live on here.
+    </p>
+    <p>
+      The spot data stays free and open, and{" "}
+      <a href={OPEN_SOURCE_URL}>the code is open source</a>, so the community
+      never has to start from zero again.
+    </p>
+  </section>
+
+  <section class="section feature-rows" aria-labelledby="use-title">
+    <h2 class="section__title" id="use-title">What you can do</h2>
+    <div class="feature-row">
+      <div class="feature-row__text prose">
+        <h3 class="feature-row__title">Find spots and events</h3>
+        <p>
+          Search a city or spot name, or center the map on where you are. Each
+          spot shows photos, what it is good for, and a community rating, so
+          you can see a place before you go.
+        </p>
+        <p>
+          Upcoming jams, workshops, and gatherings show up on the same map,
+          with the time and place.
+        </p>
+        <p><a href="/how-it-works#find">How finding spots and events works</a></p>
+      </div>
+      <Screenshot id="eventsMobile" />
+    </div>
+    <div class="feature-row feature-row--reverse">
+      <div class="feature-row__text prose">
+        <h3 class="feature-row__title">Train together</h3>
+        <p>
+          Check in when you arrive so others can see you are training there
+          now, or share a plan to train later. Anyone looking at the spot can
+          join you.
+        </p>
+        <p>
+          Keep lists of spots you have been to and want to visit, or build a
+          spot list for a jam and share it with your crew.
+        </p>
+        <p>
+          <a href="/how-it-works#community">How check-ins and plans work</a>
+        </p>
+      </div>
+      <Screenshot id="spotCommunityMobile" />
     </div>
   </section>
 
-  <section class="section prose">
-    <h2 class="section__title">The public atlas</h2>
-    {facts && <p>{facts}</p>}
+  <section class="section" aria-labelledby="quality-title">
+    <h2 class="section__title" id="quality-title">
+      Looked after by the people who train there
+    </h2>
+    <div class="card-grid">
+      <div class="card">
+        <h3 class="card__title">Ratings</h3>
+        <p>
+          Everyone gets one rating per spot, and the best-rated spots come
+          first in every country and city.
+        </p>
+      </div>
+      <div class="card">
+        <h3 class="card__title">Suggestions and reports</h3>
+        <p>
+          Anyone can suggest a better name, photo, or location, or flag a spot
+          that is closed or unsafe, even without an account.
+        </p>
+      </div>
+      <div class="card">
+        <h3 class="card__title">Moderation</h3>
+        <p>
+          New photos are checked automatically, moderators review
+          contributions, and duplicate spots from different lists are merged.
+        </p>
+      </div>
+    </div>
+    <StatGrid facts={curation} label="Curation totals" compact />
+    <p class="more-link">
+      <a href="/how-it-works#about-the-map">How spots are sourced and checked</a>
+    </p>
+  </section>
+
+  <section class="section prose" aria-labelledby="install-title">
+    <h2 class="section__title" id="install-title">Use it like an app</h2>
     <p>
-      Spots, photos, and ratings come from people who train there, so you can
-      see a place before you go.{" "}
-      <a href="/how-it-works">How {SITE_NAME} works</a> covers finding spots
-      and events, adding them, keeping lists, and planning training with the
-      community.
+      Open <a href={appHomeUrl()}>parkour.spot</a> in any browser on your phone
+      or computer. From there you can install it to your home screen, and it
+      works just like a native app.
+    </p>
+    <p>
+      Create a free account when you want to add spots and events, save them
+      for later, and find a crew for your next session.
     </p>
   </section>
 
   {
     countries.length > 0 && (
       <section class="section">
-        <h2 class="section__title">Countries</h2>
+        <h2 class="section__title">Browse by country</h2>
         <div class="chip-row">
           {countries.map((country) => (
             <a class="chip" href={aboutCountryPath(country.code)}>
@@ -76,6 +215,14 @@ const countries = [...coverage.countries].sort((a, b) =>
           ))}
         </div>
       </section>
+    )
+  }
+
+  {
+    snapshotLabel && (
+      <p class="muted snapshot-note">
+        Figures from the nightly snapshot of {snapshotLabel}.
+      </p>
     )
   }
 </BaseLayout>

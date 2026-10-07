@@ -3,6 +3,7 @@ import path from "node:path";
 import {resolveSpotCount} from "./citation";
 import type {
   AboutIndex,
+  AboutStats,
   CityRef,
   CitySnapshot,
   CountrySnapshot,
@@ -34,7 +35,24 @@ function emptyAboutIndex(): AboutIndex {
     generatedAt: new Date().toISOString(),
     countries: [],
     eventCount: 0,
+    stats: {},
   };
+}
+
+/** Keep finite, non-negative numbers and the timestamp; drop everything else. */
+function normalizeStats(raw: unknown): AboutStats {
+  if (!raw || typeof raw !== "object") return {};
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (key === "generatedAt") {
+      if (typeof value === "string") out.generatedAt = value;
+      continue;
+    }
+    if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+      out[key] = value;
+    }
+  }
+  return out as AboutStats;
 }
 
 function emptyEventsIndex(): EventsIndex {
@@ -50,6 +68,7 @@ function normalizeAboutIndex(data: Partial<AboutIndex> | undefined): AboutIndex 
         : new Date().toISOString(),
     countries: Array.isArray(data.countries) ? data.countries : [],
     eventCount: typeof data.eventCount === "number" ? data.eventCount : 0,
+    stats: normalizeStats(data.stats),
   };
 }
 
@@ -99,7 +118,14 @@ async function getDb() {
  * - snapshots/about/cities/{cc}_{citySlug}
  * - snapshots/about/events/{slug}
  */
-export async function loadAboutIndex(): Promise<AboutIndex> {
+let aboutIndexPromise: Promise<AboutIndex> | null = null;
+
+export function loadAboutIndex(): Promise<AboutIndex> {
+  aboutIndexPromise ??= fetchAboutIndex();
+  return aboutIndexPromise;
+}
+
+async function fetchAboutIndex(): Promise<AboutIndex> {
   if (useFixtures()) {
     return normalizeAboutIndex(
       await readFixtureJson<AboutIndex>("about-index.json"),
@@ -109,6 +135,27 @@ export async function loadAboutIndex(): Promise<AboutIndex> {
   const snap = await db.collection("snapshots").doc("about-index").get();
   if (!snap.exists) return emptyAboutIndex();
   return normalizeAboutIndex(snap.data() as Partial<AboutIndex>);
+}
+
+/**
+ * Site-wide totals. Snapshots written before `stats` existed fall back to
+ * the per-country index, which only counts spots with a city.
+ */
+export async function loadStats(): Promise<AboutStats> {
+  const index = await loadAboutIndex();
+  const stats: AboutStats = {...index.stats};
+  if (stats.spotCount == null && index.countries.length > 0) {
+    stats.spotCount = index.countries.reduce(
+      (sum, country) => sum + (Number(country.spotCount) || 0),
+      0,
+    );
+    stats.countryCount = index.countries.filter(
+      (country) => (Number(country.spotCount) || 0) > 0,
+    ).length;
+  }
+  stats.upcomingEventCount ??= index.eventCount;
+  stats.generatedAt ??= index.generatedAt;
+  return stats;
 }
 
 export async function loadCountry(

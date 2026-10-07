@@ -1,0 +1,25 @@
+---
+import {SCREENSHOTS, type ScreenshotId} from "../lib/screenshots";
+
+interface Props {
+  id: ScreenshotId;
+  eager?: boolean;
+  caption?: string;
+}
+
+const {id, eager = false, caption} = Astro.props;
+const shot = SCREENSHOTS[id];
+---
+
+<figure class:list={["screenshot", `screenshot--${shot.kind}`]}>
+  <img
+    src={shot.src}
+    alt={shot.alt}
+    width={shot.width}
+    height={shot.height}
+    loading={eager ? "eager" : "lazy"}
+    fetchpriority={eager ? "high" : undefined}
+    decoding="async"
+  />
+  {caption && <figcaption class="screenshot__caption">{caption}</figcaption>}
+</figure>

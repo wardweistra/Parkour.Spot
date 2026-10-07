@@ -8,5 +8,24 @@
       "eventCount": 1
     }
   ],
-  "eventCount": 2
+  "eventCount": 2,
+  "stats": {
+    "generatedAt": "2026-10-02T00:00:00.000Z",
+    "activityWindowDays": 30,
+    "spotCount": 32786,
+    "countryCount": 100,
+    "cityCount": 6120,
+    "spotSourceCount": 195,
+    "spotsWithPhotosCount": 19840,
+    "spotsAdded30d": 412,
+    "upcomingEventCount": 58,
+    "eventCountryCount": 21,
+    "deduplicatedCount": 1420,
+    "ratingCount": 2310,
+    "ratings30d": 186,
+    "checkIns30d": 74,
+    "trainingPlans30d": 31,
+    "improvementSuggestionCount": 519,
+    "monthlyActiveUsers": 1012
+  }
 }

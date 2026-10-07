@@ -7,13 +7,20 @@ import {
   cityHubLede,
   cityHubTitle,
   countryName,
+  hubEventsSentence,
   metaDescription,
   moreOnMapLabel,
   resolveSpotCount,
+  worldwideContext,
 } from "../../lib/citation";
 import {SITE_NAME} from "../../lib/brand";
 import {buildPlaceJsonLd} from "../../lib/schema";
-import {listCityParams, loadCity, loadCountry} from "../../lib/snapshots";
+import {
+  listCityParams,
+  loadCity,
+  loadCountry,
+  loadStats,
+} from "../../lib/snapshots";
 import {
   aboutAbsolute,
   aboutCityPath,
@@ -52,12 +59,19 @@ const spotCount = resolveSpotCount(
 );
 const title = cityHubTitle(hub.city);
 const topNames = listed.slice(0, 3).map((spot) => spot.name);
-const lede = cityHubLede({
-  city: hub.city,
-  spotCount,
-  listedCount: listed.length,
-  topNames,
-});
+const lede =
+  [
+    cityHubLede({
+      city: hub.city,
+      spotCount,
+      listedCount: listed.length,
+      topNames,
+    }),
+    hubEventsSentence(hub.events?.length ?? 0, hub.city),
+  ]
+    .filter(Boolean)
+    .join(" ") || null;
+const worldwide = worldwideContext(await loadStats());
 const moreLabel = moreOnMapLabel(spotCount, listed.length);
 const pagePath = aboutCityPath(cc, hub.citySlug);
 const jsonLd = buildPlaceJsonLd({
@@ -106,5 +120,13 @@ const jsonLd = buildPlaceJsonLd({
     <h2 class="section__title">Upcoming events</h2>
     <EventList events={hub.events} showPlaceLinks={false} />
   </section>
+
+  {
+    worldwide && (
+      <p class="muted hub-context">
+        {worldwide} <a href="/">About {SITE_NAME}</a>
+      </p>
+    )
+  }
 
 </BaseLayout>

@@ -1,8 +1,14 @@
 import {SITE_NAME} from "./brand";
-import {APP_DEFINITION} from "./citation";
+import {APP_DEFINITION, MISSION, statsSentence} from "./citation";
 import {answerPlainText, howItWorksQuestions} from "./how-it-works";
-import type {EventDetail, SpotSummary} from "./types";
-import {ABOUT_ORIGIN, APP_ORIGIN, aboutEventPath, appSpotUrl} from "./urls";
+import type {AboutStats, EventDetail, SpotSummary} from "./types";
+import {
+  ABOUT_ORIGIN,
+  APP_ORIGIN,
+  OPEN_SOURCE_URL,
+  aboutEventPath,
+  appSpotUrl,
+} from "./urls";
 
 export function buildEventJsonLd(event: EventDetail): Record<string, unknown> {
   const url = `${ABOUT_ORIGIN}${aboutEventPath(event.slug)}`;
@@ -63,9 +69,10 @@ export function buildEventJsonLd(event: EventDetail): Record<string, unknown> {
 }
 
 /** Entity graph for the homepage: the app, the organization, and this site. */
-export function buildSiteGraph(): Record<string, unknown> {
+export function buildSiteGraph(stats: AboutStats): Record<string, unknown> {
   const orgId = `${APP_ORIGIN}/#organization`;
   const appId = `${APP_ORIGIN}/#app`;
+  const live = statsSentence(stats);
   return {
     "@context": "https://schema.org",
     "@graph": [
@@ -74,7 +81,8 @@ export function buildSiteGraph(): Record<string, unknown> {
         "@id": orgId,
         name: SITE_NAME,
         url: APP_ORIGIN,
-        sameAs: [`${ABOUT_ORIGIN}/`],
+        description: MISSION,
+        sameAs: [`${ABOUT_ORIGIN}/`, OPEN_SOURCE_URL],
       },
       {
         "@type": ["WebApplication", "SoftwareApplication"],
@@ -85,7 +93,7 @@ export function buildSiteGraph(): Record<string, unknown> {
         operatingSystem: "Web",
         browserRequirements: "Requires a web browser",
         isAccessibleForFree: true,
-        description: APP_DEFINITION,
+        description: live ? `${APP_DEFINITION} ${live}` : APP_DEFINITION,
         featureList: [
           "Open map without an account",
           "Community ratings",
@@ -96,6 +104,9 @@ export function buildSiteGraph(): Record<string, unknown> {
           "Want to visit and been to",
           "Training plans",
           "Check-ins",
+          "Spot sources from local communities",
+          "Install as app (PWA)",
+          "Report and suggest improvements",
         ],
         offers: {
           "@type": "Offer",
@@ -117,11 +128,11 @@ export function buildSiteGraph(): Record<string, unknown> {
 }
 
 /** FAQPage for /how-it-works. Answer text matches the visible page. */
-export function buildFaqPageJsonLd(): Record<string, unknown> {
+export function buildFaqPageJsonLd(stats: AboutStats): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: howItWorksQuestions().map((question) => ({
+    mainEntity: howItWorksQuestions(stats).map((question) => ({
       "@type": "Question",
       name: question.question,
       acceptedAnswer: {

@@ -1,46 +1,58 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import OpenInApp from "../components/OpenInApp.astro";
+import Screenshot from "../components/Screenshot.astro";
 import {SITE_NAME} from "../lib/brand";
+import {metaDescription} from "../lib/citation";
 import {
-  HOW_IT_WORKS_GROUPS,
-  HOW_IT_WORKS_LEDE,
+  howItWorksGroups,
+  howItWorksLede,
   paragraphHtml,
 } from "../lib/how-it-works";
 import {buildFaqPageJsonLd} from "../lib/schema";
+import {loadStats} from "../lib/snapshots";
 import {appHomeUrl} from "../lib/urls";
 
 const pageTitle = `How ${SITE_NAME} works`;
+const stats = await loadStats();
+const lede = howItWorksLede(stats);
+const groups = howItWorksGroups(stats);
 ---
 
 <BaseLayout
   title={pageTitle}
-  description={HOW_IT_WORKS_LEDE}
+  description={metaDescription(lede)}
   canonicalPath="/how-it-works"
-  jsonLd={buildFaqPageJsonLd()}
+  jsonLd={buildFaqPageJsonLd(stats)}
 >
   <h1 class="page-title">{pageTitle}</h1>
-  <p class="page-lede">{HOW_IT_WORKS_LEDE}</p>
+  <p class="page-lede">{lede}</p>
   <nav class="chip-row on-this-page" aria-label="On this page">
     {
-      HOW_IT_WORKS_GROUPS.map((group) => (
+      groups.map((group) => (
         <a class="chip" href={`#${group.id}`}>{group.title}</a>
       ))
     }
   </nav>
   {
-    HOW_IT_WORKS_GROUPS.map((group) => (
-      <section class="section" id={group.id}>
+    groups.map((group) => (
+      <section
+        class:list={["section", {"faq-group--with-shot": group.screenshot}]}
+        id={group.id}
+      >
         <h2 class="section__title">{group.title}</h2>
-        <div class="prose">
-          {group.questions.map((item) => (
-            <>
-              <h3 class="faq-question" id={item.id}>{item.question}</h3>
-              {item.paragraphs.map((paragraph) => (
-                <p set:html={paragraphHtml(paragraph)} />
-              ))}
-            </>
-          ))}
+        <div class="faq-group__body">
+          <div class="prose">
+            {group.questions.map((item) => (
+              <>
+                <h3 class="faq-question" id={item.id}>{item.question}</h3>
+                {item.paragraphs.map((paragraph) => (
+                  <p set:html={paragraphHtml(paragraph)} />
+                ))}
+              </>
+            ))}
+          </div>
+          {group.screenshot && <Screenshot id={group.screenshot} />}
         </div>
       </section>
     ))

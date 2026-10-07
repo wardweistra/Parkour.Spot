@@ -1,5 +1,6 @@
 export const APP_ORIGIN = "https://parkour.spot";
 export const ABOUT_ORIGIN = "https://about.parkour.spot";
+export const OPEN_SOURCE_URL = "https://github.com/wardweistra/Parkour.Spot";
 
 export function appHomeUrl(): string {
   return APP_ORIGIN;

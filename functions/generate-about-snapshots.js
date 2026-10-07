@@ -9,6 +9,7 @@ const {
   buildPlaceSnapshots,
   attachEventsAndBuildIndexes,
 } = require("./lib/about-snapshots");
+const {activityWindowStart, buildAboutStats} = require("./lib/about-stats");
 
 const db = getFirestore();
 
@@ -70,6 +71,82 @@ async function writeAboutSnapshots(payload) {
 }
 
 /**
+ * Run a count() aggregate. A failed count becomes null so one missing index
+ * or collection does not block the nightly snapshot.
+ * @param {string} label
+ * @param {Object} query
+ * @return {Promise<number|null>}
+ */
+async function safeCount(label, query) {
+  try {
+    const snap = await query.count().get();
+    return snap.data().count;
+  } catch (error) {
+    console.warn(`About stats: ${label} count failed:`, error.message);
+    return null;
+  }
+}
+
+/**
+ * @return {Promise<number|null>}
+ */
+async function latestMonthlyActiveUsers() {
+  try {
+    const snap = await db.collection("userActivityMetrics")
+        .orderBy("date", "desc")
+        .limit(1)
+        .get();
+    if (snap.empty) return null;
+    const mau = Number(snap.docs[0].data().mau);
+    return Number.isFinite(mau) ? mau : null;
+  } catch (error) {
+    console.warn("About stats: MAU lookup failed:", error.message);
+    return null;
+  }
+}
+
+/**
+ * Activity and curation totals for the about stats block.
+ * @param {Date} now
+ * @return {Promise<Object>}
+ */
+async function loadActivityCounts(now) {
+  const since = activityWindowStart(now);
+  const [
+    deduplicatedCount,
+    ratingCount,
+    ratings30d,
+    checkIns30d,
+    plansOpen30d,
+    plansConverted30d,
+    improvementSuggestionCount,
+    monthlyActiveUsers,
+  ] = await Promise.all([
+    safeCount("deduplicated", db.collection("spots").where("duplicateOf", "!=", null)),
+    safeCount("ratings", db.collection("ratings")),
+    safeCount("ratings30d", db.collection("ratings").where("createdAt", ">=", since)),
+    safeCount("checkIns30d", db.collection("spotCheckIns").where("checkedInAt", ">=", since)),
+    safeCount("plans30d", db.collection("spotTrainingPlans").where("createdAt", ">=", since)),
+    // Plans are deleted when converted to a check-in; the check-in keeps the plan's createdAt.
+    safeCount("convertedPlans30d", db.collection("spotCheckIns").where("convertedPlanCreatedAt", ">=", since)),
+    safeCount("spotReports", db.collection("spotReports")),
+    latestMonthlyActiveUsers(),
+  ]);
+  const trainingPlans30d = plansOpen30d == null && plansConverted30d == null ?
+    null :
+    (plansOpen30d || 0) + (plansConverted30d || 0);
+  return {
+    deduplicatedCount,
+    ratingCount,
+    ratings30d,
+    checkIns30d,
+    trainingPlans30d,
+    improvementSuggestionCount,
+    monthlyActiveUsers,
+  };
+}
+
+/**
  * Fetch spots + events, build snapshots, write to Firestore.
  * @param {Object} [options]
  * @return {Promise<Object>}
@@ -93,6 +170,13 @@ async function generateAboutSnapshots(options = {}) {
     generatedAt: now.toISOString(),
   });
   const assembled = attachEventsAndBuildIndexes(placeState, events, now);
+  assembled.aboutIndex.stats = buildAboutStats({
+    spots,
+    upcomingEvents: assembled.eventsIndex.events,
+    counts: await loadActivityCounts(now),
+    now,
+  });
+  console.log("About stats:", assembled.aboutIndex.stats);
   const counts = await writeAboutSnapshots(assembled);
 
   console.log("About snapshots written:", counts);

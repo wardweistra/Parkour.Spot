@@ -1,5 +1,14 @@
 import {SITE_NAME} from "./brand";
-import {appHomeUrl, appPath} from "./urls";
+import {
+  ACTIVITY_FLOOR,
+  activityFacts,
+  countNoun,
+  statsSentence,
+  upcomingEventsPhrase,
+} from "./citation";
+import type {ScreenshotId} from "./screenshots";
+import type {AboutStats} from "./types";
+import {OPEN_SOURCE_URL, appHomeUrl, appPath} from "./urls";
 
 /**
  * Shared copy for /how-it-works, its FAQPage schema, and the llms.txt task index.
@@ -23,6 +32,7 @@ export interface HowItWorksGroup {
   id: string;
   title: string;
   questions: HowItWorksQuestion[];
+  screenshot?: ScreenshotId;
 }
 
 export function isAnswerLink(part: AnswerPart): part is AnswerLink {
@@ -58,8 +68,78 @@ export function answerPlainText(question: HowItWorksQuestion): string {
     .join("\n\n");
 }
 
-export const HOW_IT_WORKS_LEDE =
+const HOW_IT_WORKS_INTRO =
   `${SITE_NAME} is a free community map for finding parkour spots and events, adding and rating spots, keeping lists, and planning training with other people. You can explore the map without an account.`;
+
+export function howItWorksLede(stats: AboutStats): string {
+  const live = statsSentence(stats);
+  return live ? `${HOW_IT_WORKS_INTRO} ${live}` : HOW_IT_WORKS_INTRO;
+}
+
+function positive(n: number | undefined): n is number {
+  return typeof n === "number" && Number.isFinite(n) && n > 0;
+}
+
+function libraryParagraph(stats: AboutStats): AnswerPart[][] {
+  if (!positive(stats.spotCount)) return [];
+  const countries = positive(stats.countryCount)
+    ? ` in ${countNoun(stats.countryCount, "country", "countries")}`
+    : "";
+  return [[`The map has ${countNoun(stats.spotCount, "public spot")}${countries}.`]];
+}
+
+function eventsParagraph(stats: AboutStats): AnswerPart[][] {
+  const phrase = upcomingEventsPhrase(stats);
+  return phrase ? [[`Right now there are ${phrase} on the map.`]] : [];
+}
+
+function sourcesParagraph(stats: AboutStats): AnswerPart[][] {
+  if (!positive(stats.spotSourceCount)) return [];
+  return [[
+    `So far ${countNoun(stats.spotSourceCount, "community spot list")} feed the map, and new spots and lists are added every day.`,
+  ]];
+}
+
+function curationParagraph(stats: AboutStats): AnswerPart[][] {
+  const parts: string[] = [];
+  if (positive(stats.improvementSuggestionCount)) {
+    parts.push(`${countNoun(stats.improvementSuggestionCount, "suggestion and report", "suggestions and reports")} from the community`);
+  }
+  if (positive(stats.deduplicatedCount)) {
+    parts.push(`${countNoun(stats.deduplicatedCount, "duplicate spot")} merged`);
+  }
+  if (parts.length === 0) return [];
+  return [[`So far that adds up to ${parts.join(" and ")}.`]];
+}
+
+function activityQuestion(stats: AboutStats): HowItWorksQuestion[] {
+  const recent = activityFacts(stats);
+  const mau = positive(stats.monthlyActiveUsers) &&
+    stats.monthlyActiveUsers >= ACTIVITY_FLOOR
+    ? stats.monthlyActiveUsers
+    : undefined;
+  if (recent.length === 0 && mau == null) return [];
+  const days = stats.activityWindowDays ?? 30;
+  const paragraphs: AnswerPart[][] = [];
+  if (mau != null) {
+    paragraphs.push([`${countNoun(mau, "person", "people")} used ${SITE_NAME} in the last ${days} days.`]);
+  }
+  if (recent.length > 0) {
+    const list = recent.map((fact) => `${fact.value} ${fact.label}`);
+    const joined = list.length === 1
+      ? list[0]
+      : `${list.slice(0, -1).join(", ")}, and ${list[list.length - 1]}`;
+    paragraphs.push([`In the same ${days} days the community logged ${joined}.`]);
+  }
+  paragraphs.push([
+    "These figures are recounted every night, so they always reflect the current map.",
+  ]);
+  return [{
+    id: "how-active",
+    question: `How active is the ${SITE_NAME} community?`,
+    paragraphs,
+  }];
+}
 
 const CONTACT_EMAIL = "parkour.spot@wardweistra.nl";
 
@@ -68,7 +148,8 @@ const addSpot = appPath("/spots/add");
 const addEvent = appPath("/events/add");
 const mySpots = appPath("/profile/lists");
 
-export const HOW_IT_WORKS_GROUPS: HowItWorksGroup[] = [
+export function howItWorksGroups(stats: AboutStats): HowItWorksGroup[] {
+  return [
   {
     id: "open-map",
     title: "Open map",
@@ -104,6 +185,7 @@ export const HOW_IT_WORKS_GROUPS: HowItWorksGroup[] = [
   {
     id: "find",
     title: "Find",
+    screenshot: "eventsMobile",
     questions: [
       {
         id: "find-spots-near-me",
@@ -117,6 +199,7 @@ export const HOW_IT_WORKS_GROUPS: HowItWorksGroup[] = [
           [
             "Each spot can include photos and a community rating, so you can see the place before you train there.",
           ],
+          ...libraryParagraph(stats),
           [
             {href: "/", label: "Country and city pages"},
             " on this site list places that already have public spots.",
@@ -144,6 +227,7 @@ export const HOW_IT_WORKS_GROUPS: HowItWorksGroup[] = [
             {href: explore, label: "Explore"},
             " tab, with the time and place.",
           ],
+          ...eventsParagraph(stats),
           [
             "You can also browse them on the ",
             {href: "/events", label: "events page"},
@@ -296,6 +380,7 @@ export const HOW_IT_WORKS_GROUPS: HowItWorksGroup[] = [
   {
     id: "community",
     title: "Community",
+    screenshot: "spotCommunityMobile",
     questions: [
       {
         id: "rate-spot",
@@ -345,10 +430,77 @@ export const HOW_IT_WORKS_GROUPS: HowItWorksGroup[] = [
           ],
         ],
       },
+      ...activityQuestion(stats),
     ],
   },
-];
+  {
+    id: "about-the-map",
+    title: "About the map",
+    questions: [
+      {
+        id: "where-spots-come-from",
+        question: `Where do the spots on ${SITE_NAME} come from?`,
+        paragraphs: [
+          [
+            "From two places: people who train there add spots directly, and local communities share the spot lists they have kept for years, such as the Apex Speed Run map and national lists from Czechia and Sweden. The URBN Jumpers team donated their spot data too.",
+          ],
+          ...sourcesParagraph(stats),
+          [
+            "Keep a list of spots yourself? ",
+            {href: "#add-many-spots", label: "Here is how to add it"},
+            ".",
+          ],
+        ],
+      },
+      {
+        id: "spot-quality",
+        question: "How is spot information kept accurate?",
+        paragraphs: [
+          [
+            "Everyone gets one rating per spot, and the best-rated spots come first in every country and city.",
+          ],
+          [
+            "Anyone can suggest a better name, photo, or location, or flag a spot that is closed, unsafe, or not a spot at all, even without an account.",
+          ],
+          [
+            "New photos are checked automatically for harmful content, moderators review new contributions and reports, and duplicate spots from different lists are merged into one.",
+          ],
+          ...curationParagraph(stats),
+        ],
+      },
+      {
+        id: "install-app",
+        question: `Can I install ${SITE_NAME} as an app?`,
+        paragraphs: [
+          [
+            "Yes. Open ",
+            {href: appHomeUrl(), label: "parkour.spot"},
+            " in your browser and choose Install app or Add to home screen from the browser menu. On iPhone, tap Share and then Add to Home Screen.",
+          ],
+          [
+            "It then opens from your home screen like any other app, on Android, iPhone, and computers.",
+          ],
+        ],
+      },
+      {
+        id: "open-source",
+        question: `Is ${SITE_NAME} open source?`,
+        paragraphs: [
+          [
+            "Yes. ",
+            {href: OPEN_SOURCE_URL, label: "The code is open source"},
+            ", and the spot data stays freely available.",
+          ],
+          [
+            "Parkour spot apps have come and gone, and too often their maps disappeared with them. The aim is that the community's spot knowledge outlives any single app.",
+          ],
+        ],
+      },
+    ],
+  },
+  ];
+}
 
-export function howItWorksQuestions(): HowItWorksQuestion[] {
-  return HOW_IT_WORKS_GROUPS.flatMap((group) => group.questions);
+export function howItWorksQuestions(stats: AboutStats): HowItWorksQuestion[] {
+  return howItWorksGroups(stats).flatMap((group) => group.questions);
 }

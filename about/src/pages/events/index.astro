@@ -2,26 +2,41 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import EventList from "../../components/EventList.astro";
 import {SITE_NAME} from "../../lib/brand";
-import {listCityParams, listCountryCodes, loadEventsIndex} from "../../lib/snapshots";
-import {appHomeUrl, cityHubKey} from "../../lib/urls";
+import {upcomingEventsPhrase} from "../../lib/citation";
+import {
+  listCityParams,
+  listCountryCodes,
+  loadEventsIndex,
+  loadStats,
+} from "../../lib/snapshots";
+import {appHomeUrl, appPath, cityHubKey} from "../../lib/urls";
 import OpenInApp from "../../components/OpenInApp.astro";
 
 const index = await loadEventsIndex();
+const stats = await loadStats();
 const cityHubKeys = (await listCityParams()).map((city) =>
   cityHubKey(city.countryCode, city.city),
 );
 const countryHubCodes = await listCountryCodes();
+const phrase = upcomingEventsPhrase({
+  ...stats,
+  upcomingEventCount: stats.upcomingEventCount ?? index.events.length,
+});
+const description = phrase
+  ? `${phrase.charAt(0).toUpperCase()}${phrase.slice(1)} on ${SITE_NAME}: jams, workshops, and gatherings from the parkour community.`
+  : `Upcoming public parkour events from the ${SITE_NAME} community.`;
 ---
 
 <BaseLayout
   title="Events"
-  description={`Upcoming public parkour events from the ${SITE_NAME} community.`}
+  description={description}
   canonicalPath="/events"
 >
   <h1 class="page-title">Events</h1>
   <p class="page-lede">
-    Upcoming public parkour events from the {SITE_NAME} community. Open an
-    event for the time and place, or jump into the map.
+    {description} Open an event for the time and place, or see them all on the
+    map. Organizing one? <a href={appPath("/events/add")}>Add your event</a>, and
+    a moderator will check it before it goes live.
   </p>
   <div class="hub-open">
     <OpenInApp href={appHomeUrl()} label="Open the map" />

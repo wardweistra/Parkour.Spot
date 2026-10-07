@@ -60,6 +60,27 @@ export type CitySnapshot = {
   events: EventSummary[];
 };
 
+/** Site-wide totals from the nightly snapshot. Any field may be missing. */
+export type AboutStats = {
+  generatedAt?: string;
+  activityWindowDays?: number;
+  spotCount?: number;
+  countryCount?: number;
+  cityCount?: number;
+  spotSourceCount?: number;
+  spotsWithPhotosCount?: number;
+  spotsAdded30d?: number;
+  upcomingEventCount?: number;
+  eventCountryCount?: number;
+  deduplicatedCount?: number;
+  ratingCount?: number;
+  ratings30d?: number;
+  checkIns30d?: number;
+  trainingPlans30d?: number;
+  improvementSuggestionCount?: number;
+  monthlyActiveUsers?: number;
+};
+
 export type AboutIndex = {
   generatedAt: string;
   countries: Array<{
@@ -69,6 +90,7 @@ export type AboutIndex = {
     eventCount: number;
   }>;
   eventCount: number;
+  stats: AboutStats;
 };
 
 export type EventsIndex = {

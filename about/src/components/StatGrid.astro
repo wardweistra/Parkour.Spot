@@ -1,0 +1,24 @@
+---
+import type {StatFact} from "../lib/citation";
+
+interface Props {
+  facts: StatFact[];
+  label: string;
+  compact?: boolean;
+}
+
+const {facts, label, compact = false} = Astro.props;
+---
+
+{
+  facts.length > 0 && (
+    <dl class:list={["stat-grid", {"stat-grid--compact": compact}]} aria-label={label}>
+      {facts.map((fact) => (
+        <div class="stat-grid__item" id={`stat-${fact.id}`}>
+          <dt class="stat-grid__label">{fact.label}</dt>
+          <dd class="stat-grid__value">{fact.value}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}

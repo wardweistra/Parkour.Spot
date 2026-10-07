@@ -6,14 +6,22 @@ import OpenInApp from "../../components/OpenInApp.astro";
 import {
   countryHubLede,
   countryHubTitle,
+  countryInPhrase,
   countryName,
+  hubEventsSentence,
   metaDescription,
   moreOnMapLabel,
   resolveSpotCount,
+  worldwideContext,
 } from "../../lib/citation";
 import {SITE_NAME} from "../../lib/brand";
 import {buildPlaceJsonLd} from "../../lib/schema";
-import {listCountryCodes, loadCityRefs, loadCountry} from "../../lib/snapshots";
+import {
+  listCountryCodes,
+  loadCityRefs,
+  loadCountry,
+  loadStats,
+} from "../../lib/snapshots";
 import {
   aboutAbsolute,
   aboutCityPath,
@@ -44,13 +52,19 @@ const fromCities = cities.reduce((sum, city) => sum + (city.spotCount ?? 0), 0);
 const spotCount = resolveSpotCount(country.spotCount, fromCities || listed.length);
 const title = countryHubTitle(cc);
 const topNames = listed.slice(0, 3).map((spot) => spot.name);
-const lede = countryHubLede({
-  countryCode: cc,
-  spotCount,
-  cityNames: cities.map((city) => city.city),
-  listedCount: listed.length,
-  topNames,
-});
+const lede = [
+  countryHubLede({
+    countryCode: cc,
+    spotCount,
+    cityNames: cities.map((city) => city.city),
+    listedCount: listed.length,
+    topNames,
+  }),
+  hubEventsSentence(country.events?.length ?? 0, countryInPhrase(cc)),
+]
+  .filter(Boolean)
+  .join(" ");
+const worldwide = worldwideContext(await loadStats());
 const moreLabel = moreOnMapLabel(spotCount, listed.length);
 const pagePath = aboutCountryPath(cc);
 const jsonLd = buildPlaceJsonLd({
@@ -120,5 +134,13 @@ const jsonLd = buildPlaceJsonLd({
       cityHubKeys={cities.map((city) => cityHubKey(cc, city.citySlug))}
     />
   </section>
+
+  {
+    worldwide && (
+      <p class="muted hub-context">
+        {worldwide} <a href="/">About {SITE_NAME}</a>
+      </p>
+    )
+  }
 
 </BaseLayout>
