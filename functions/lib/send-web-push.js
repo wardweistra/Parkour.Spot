@@ -114,7 +114,7 @@ function buildWebPushMessage({
  * @param {object} options
  * @param {FirebaseFirestore.Firestore} options.db
  * @param {object} options.FieldValue
- * @param {object} options.messaging admin.messaging()
+ * @param {object} options.messaging Firebase Messaging client
  * @param {string} options.uid
  * @param {object[]} options.targets each {id, token, title, body, platform?}
  * @param {string} options.clickLink

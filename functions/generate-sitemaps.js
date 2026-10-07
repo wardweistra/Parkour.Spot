@@ -12,13 +12,14 @@
  * - Includes URLs for country pages, city pages, and individual spot pages
  */
 
-const admin = require("firebase-admin");
+const {getFirestore} = require("firebase-admin/firestore");
+const {getStorage} = require("firebase-admin/storage");
 
 // Import shared utility functions
 const {slugify, escapeXml, formatDateToISO} = require("./utils");
 
-const db = admin.firestore();
-const bucket = admin.storage().bucket();
+const db = getFirestore();
+const bucket = getStorage().bucket();
 const BASE_URL = "https://parkour.spot";
 const MAX_URLS_PER_SITEMAP = 50000; // Google's limit
 const SITEMAP_STORAGE_PATH = "sitemaps"; // Folder in Storage

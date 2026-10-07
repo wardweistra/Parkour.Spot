@@ -21,7 +21,11 @@ const {
   onDocumentDeleted,
   onDocumentWritten,
 } = require("firebase-functions/v2/firestore");
-const admin = require("firebase-admin");
+const {initializeApp} = require("firebase-admin/app");
+const {getAuth} = require("firebase-admin/auth");
+const {getFirestore, FieldValue, Timestamp} = require("firebase-admin/firestore");
+const {getMessaging} = require("firebase-admin/messaging");
+const {getStorage} = require("firebase-admin/storage");
 const sharp = require("sharp");
 const yauzl = require("yauzl");
 const https = require("https");
@@ -30,11 +34,11 @@ const {downloadTextFromUrl} = require("./lib/download-text");
 const {google} = require("googleapis");
 const countries = require("i18n-iso-countries");
 
-// Initialize Firebase Admin
-admin.initializeApp();
-const {FieldValue} = require("firebase-admin/firestore");
-const db = admin.firestore();
-const bucket = admin.storage().bucket();
+// Initialize Firebase Admin. v14 removed the namespaced root API.
+initializeApp();
+const db = getFirestore();
+const bucket = getStorage().bucket();
+const firebaseAuth = getAuth();
 
 // Register English locale for country names
 countries.registerLocale(require("i18n-iso-countries/langs/en.json"));
@@ -6099,7 +6103,7 @@ exports.setUserAdmin = onCall({region: "europe-west1"}, async (request) => {
     }
     let uid = targetUid;
     if (!uid && targetEmail) {
-      const userRecord = await admin.auth().getUserByEmail(targetEmail);
+      const userRecord = await firebaseAuth.getUserByEmail(targetEmail);
       uid = userRecord.uid;
     }
     if (!uid) {
@@ -6113,11 +6117,12 @@ exports.setUserAdmin = onCall({region: "europe-west1"}, async (request) => {
         .set({isAdmin: isAdmin}, {merge: true});
     // Update custom claims for faster checks (best-effort)
     try {
-      const userRecord = await admin.auth().getUser(uid);
+      const userRecord = await firebaseAuth.getUser(uid);
       const existingClaims = userRecord.customClaims || {};
-      await admin
-          .auth()
-          .setCustomUserClaims(uid, {...existingClaims, admin: isAdmin});
+      await firebaseAuth.setCustomUserClaims(uid, {
+        ...existingClaims,
+        admin: isAdmin,
+      });
     } catch (claimErr) {
       console.warn("Failed to set custom claims:", claimErr.message);
     }
@@ -6160,7 +6165,7 @@ exports.syncUserCreatedAtFromAuth = onCall(
         // List all users from Firebase Auth (paginated)
         let nextPageToken;
         do {
-          const listUsersResult = await admin.auth().listUsers(1000, nextPageToken);
+          const listUsersResult = await firebaseAuth.listUsers(1000, nextPageToken);
           nextPageToken = listUsersResult.pageToken;
 
           for (const userRecord of listUsersResult.users) {
@@ -6176,7 +6181,7 @@ exports.syncUserCreatedAtFromAuth = onCall(
               }
 
               // Convert to Firestore Timestamp
-              const createdAtTimestamp = admin.firestore.Timestamp.fromDate(
+              const createdAtTimestamp = Timestamp.fromDate(
                   new Date(authCreatedAt),
               );
 
@@ -6196,10 +6201,10 @@ exports.syncUserCreatedAtFromAuth = onCall(
               // Check if update is needed
               if (currentCreatedAt) {
                 let currentTimestamp;
-                if (currentCreatedAt instanceof admin.firestore.Timestamp) {
+                if (currentCreatedAt instanceof Timestamp) {
                   currentTimestamp = currentCreatedAt;
                 } else {
-                  currentTimestamp = admin.firestore.Timestamp.fromDate(
+                  currentTimestamp = Timestamp.fromDate(
                       currentCreatedAt.toDate(),
                   );
                 }
@@ -6214,7 +6219,7 @@ exports.syncUserCreatedAtFromAuth = onCall(
               const formatTimestamp = (ts) => {
                 if (!ts) return null;
                 let date;
-                if (ts instanceof admin.firestore.Timestamp) {
+                if (ts instanceof Timestamp) {
                   date = ts.toDate();
                 } else {
                   date = ts.toDate();
@@ -9652,11 +9657,11 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
 
     // Store metrics in Firestore
     const metricsData = {
-      date: admin.firestore.Timestamp.fromDate(targetDate),
+      date: Timestamp.fromDate(targetDate),
       dau: dau,
       wau: wau,
       mau: mau,
-      calculatedAt: admin.firestore.Timestamp.fromDate(now),
+      calculatedAt: Timestamp.fromDate(now),
     };
 
     await db.collection("userActivityMetrics").doc(dateString).set(metricsData);
@@ -10446,9 +10451,9 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
     // Store error in Firestore for monitoring
     try {
       await db.collection("userActivityMetrics").doc(dateString).set({
-        date: admin.firestore.Timestamp.fromDate(targetDate),
+        date: Timestamp.fromDate(targetDate),
         error: error.message,
-        errorAt: admin.firestore.Timestamp.fromDate(new Date()),
+        errorAt: Timestamp.fromDate(new Date()),
       }, {merge: true});
     } catch (firestoreError) {
       console.error("Failed to store error in Firestore:", firestoreError);
@@ -11346,7 +11351,7 @@ exports.sendWebPushToUserSubscriptions = onCall(
         const sendResult = await sendWebPushToTargets({
           db,
           FieldValue,
-          messaging: admin.messaging(),
+          messaging: getMessaging(),
           uid: targetUid,
           targets: targets.map((t) => ({
             id: t.id,
