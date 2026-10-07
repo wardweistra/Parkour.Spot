@@ -3,6 +3,7 @@
   "city": "Amsterdam",
   "citySlug": "amsterdam",
   "generatedAt": "2026-10-02T00:00:00.000Z",
+  "spotCount": 5,
   "spots": [
     {
       "id": "spot-dam",

@@ -1,6 +1,5 @@
 ---
 import type {SpotSummary} from "../lib/types";
-import {qualifyingSpots} from "../lib/ratings";
 import {appSpotUrl} from "../lib/urls";
 
 interface Props {
@@ -9,11 +8,9 @@ interface Props {
 }
 
 const {
-  spots: allSpots,
-  emptyLabel = "No spots above the community average in this snapshot yet.",
+  spots,
+  emptyLabel = "No rated spots in this snapshot yet.",
 } = Astro.props;
-
-const spots = qualifyingSpots(allSpots);
 ---
 
 {

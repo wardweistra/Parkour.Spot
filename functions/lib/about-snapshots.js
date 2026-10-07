@@ -6,10 +6,8 @@
 
 const {slugify} = require("../utils");
 const {isEventPast} = require("./event-map-pins");
-const {isAboveAverageRanking} = require("./spot-rating-stats");
 
-const MIN_RATED_SPOTS_PER_CITY = 5;
-const TOP_SPOTS_LIMIT = 20;
+const TOP_SPOTS_LIMIT = 10;
 
 /**
  * @param {string} title
@@ -161,13 +159,67 @@ function toIso(value) {
 }
 
 /**
+ * @param {Object} spot
+ * @return {boolean}
+ */
+function isRatedSpot(spot) {
+  return (Number(spot.ratingCount) || 0) >= 1;
+}
+
+/**
+ * Explore ranking: above-average scores sort first, then below-average.
+ * @param {Object} a
+ * @param {Object} b
+ * @return {number}
+ */
+function byRankingDesc(a, b) {
+  return (Number(b.ranking) || 0) - (Number(a.ranking) || 0);
+}
+
+/**
+ * @param {string} countryCode
+ * @param {string} generatedAt
+ * @return {Object}
+ */
+function emptyCountryDoc(countryCode, generatedAt) {
+  return {
+    countryCode,
+    generatedAt,
+    spotCount: 0,
+    cities: [],
+    spots: [],
+    events: [],
+  };
+}
+
+/**
+ * @param {string} countryCode
+ * @param {string} city
+ * @param {string} citySlug
+ * @param {string} generatedAt
+ * @return {Object}
+ */
+function emptyCityDoc(countryCode, city, citySlug, generatedAt) {
+  return {
+    countryCode,
+    city,
+    citySlug,
+    generatedAt,
+    spotCount: 0,
+    spots: [],
+    events: [],
+  };
+}
+
+/**
  * Group public spots by country/city and build hub payloads.
+ * Every city with a public spot gets a hub. `spots` is the highest-rated
+ * sample; `spotCount` is the full library.
  * @param {Array<Object>} spots - docs with id fields
  * @param {Object} [options]
- * @return {{countries: Map, cities: Map, indexCountries: Array}}
+ * @return {{countryDocs: Map, cityDocs: Map, indexCountries: Array, generatedAt: string}}
  */
 function buildPlaceSnapshots(spots, options = {}) {
-  const minRated = options.minRatedSpotsPerCity ?? MIN_RATED_SPOTS_PER_CITY;
   const topLimit = options.topSpotsLimit ?? TOP_SPOTS_LIMIT;
   const generatedAt = options.generatedAt || new Date().toISOString();
 
@@ -202,25 +254,19 @@ function buildPlaceSnapshots(spots, options = {}) {
 
   for (const [countryCode, citiesMap] of grouped.entries()) {
     const eligibleCities = [];
-    const countrySpotPool = [];
+    /** @type {Array<{spot: Object, citySlug: string}>} */
+    const countryRatedPool = [];
 
     for (const [, entry] of citiesMap.entries()) {
+      if (entry.spots.length === 0) continue;
       const citySlug = slugify(entry.city);
-      // Same cut as Explore: ranking >= 10 means the Wilson score is at or
-      // above wilsonLowerBoundAvg. Below-average spots stay out of "highest
-      // rated" even when they have been rated.
-      const rated = entry.spots.filter((s) =>
-        (Number(s.ratingCount) || 0) >= 1 && isAboveAverageRanking(s.ranking),
-      );
-      if (rated.length < minRated) continue;
-
-      const ranked = [...rated].sort(
-          (a, b) => (Number(b.ranking) || 0) - (Number(a.ranking) || 0),
-      );
-      const top = ranked.slice(0, topLimit).map(
+      const rated = entry.spots.filter(isRatedSpot);
+      const top = [...rated].sort(byRankingDesc).slice(0, topLimit).map(
           (s) => toSpotSummary(s, citySlug, countryCode),
       );
-      countrySpotPool.push(...top);
+      for (const spot of rated) {
+        countryRatedPool.push({spot, citySlug});
+      }
 
       const cityId = `${countryCode}_${citySlug}`;
       cityDocs.set(cityId, {
@@ -228,6 +274,7 @@ function buildPlaceSnapshots(spots, options = {}) {
         city: entry.city,
         citySlug,
         generatedAt,
+        spotCount: entry.spots.length,
         spots: top,
         events: [],
       });
@@ -235,22 +282,27 @@ function buildPlaceSnapshots(spots, options = {}) {
       eligibleCities.push({
         city: entry.city,
         citySlug,
-        ratedSpotCount: rated.length,
+        spotCount: entry.spots.length,
         eventCount: 0,
       });
     }
 
     if (eligibleCities.length === 0) continue;
 
-    eligibleCities.sort((a, b) => b.ratedSpotCount - a.ratedSpotCount);
+    eligibleCities.sort((a, b) => b.spotCount - a.spotCount ||
+      a.city.localeCompare(b.city));
 
-    const countryTop = [...countrySpotPool]
-        .sort((a, b) => b.ranking - a.ranking)
-        .slice(0, topLimit);
+    const countryTop = [...countryRatedPool]
+        .sort((a, b) => byRankingDesc(a.spot, b.spot))
+        .slice(0, topLimit)
+        .map(({spot, citySlug}) => toSpotSummary(spot, citySlug, countryCode));
+    const spotCount = eligibleCities.reduce(
+        (sum, city) => sum + city.spotCount, 0);
 
     countryDocs.set(countryCode, {
       countryCode,
       generatedAt,
+      spotCount,
       cities: eligibleCities,
       spots: countryTop,
       events: [],
@@ -259,7 +311,7 @@ function buildPlaceSnapshots(spots, options = {}) {
     indexCountries.push({
       code: countryCode,
       cityCount: eligibleCities.length,
-      spotCount: countryTop.length,
+      spotCount,
       eventCount: 0,
     });
   }
@@ -294,23 +346,41 @@ function attachEventsAndBuildIndexes(placeState, events, now = new Date()) {
     upcomingSummaries.push(summary);
 
     const cc = summary.countryCode;
-    if (cc && countryDocs.has(cc)) {
-      countryDocs.get(cc).events.push(summary);
-      const indexEntry = indexCountries.find((c) => c.code === cc);
-      if (indexEntry) indexEntry.eventCount += 1;
-    }
+    if (!cc) continue;
 
-    if (cc && summary.citySlug) {
-      const cityId = `${cc}_${summary.citySlug}`;
-      if (cityDocs.has(cityId)) {
-        cityDocs.get(cityId).events.push(summary);
-        const country = countryDocs.get(cc);
-        if (country) {
-          const cityRef = country.cities.find((c) => c.citySlug === summary.citySlug);
-          if (cityRef) cityRef.eventCount += 1;
-        }
-      }
+    if (!countryDocs.has(cc)) {
+      countryDocs.set(cc, emptyCountryDoc(cc, generatedAt));
+      indexCountries.push({
+        code: cc,
+        cityCount: 0,
+        spotCount: 0,
+        eventCount: 0,
+      });
     }
+    const country = countryDocs.get(cc);
+    country.events.push(summary);
+    const indexEntry = indexCountries.find((c) => c.code === cc);
+    if (indexEntry) indexEntry.eventCount += 1;
+
+    if (!summary.citySlug || !summary.city) continue;
+
+    const cityId = `${cc}_${summary.citySlug}`;
+    if (!cityDocs.has(cityId)) {
+      cityDocs.set(
+          cityId,
+          emptyCityDoc(cc, summary.city, summary.citySlug, generatedAt),
+      );
+      country.cities.push({
+        city: summary.city,
+        citySlug: summary.citySlug,
+        spotCount: 0,
+        eventCount: 0,
+      });
+      if (indexEntry) indexEntry.cityCount += 1;
+    }
+    cityDocs.get(cityId).events.push(summary);
+    const cityRef = country.cities.find((c) => c.citySlug === summary.citySlug);
+    if (cityRef) cityRef.eventCount += 1;
   }
 
   const byStart = (a, b) => {
@@ -320,8 +390,11 @@ function attachEventsAndBuildIndexes(placeState, events, now = new Date()) {
   };
 
   for (const doc of countryDocs.values()) {
+    doc.cities.sort((a, b) => b.spotCount - a.spotCount ||
+      a.city.localeCompare(b.city));
     doc.events.sort(byStart);
   }
+  indexCountries.sort((a, b) => a.code.localeCompare(b.code));
   for (const doc of cityDocs.values()) {
     doc.events.sort(byStart);
   }
@@ -342,7 +415,6 @@ function attachEventsAndBuildIndexes(placeState, events, now = new Date()) {
 }
 
 module.exports = {
-  MIN_RATED_SPOTS_PER_CITY,
   TOP_SPOTS_LIMIT,
   eventSlug,
   isPublicEvent,

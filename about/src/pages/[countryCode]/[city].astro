@@ -3,9 +3,22 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import SpotList from "../../components/SpotList.astro";
 import EventList from "../../components/EventList.astro";
 import OpenInApp from "../../components/OpenInApp.astro";
-import {qualifyingSpots} from "../../lib/ratings";
-import {listCityParams, loadCity} from "../../lib/snapshots";
-import {aboutCountryPath, appCityUrl} from "../../lib/urls";
+import {
+  cityHubLede,
+  cityHubTitle,
+  countryName,
+  metaDescription,
+  moreOnMapLabel,
+  resolveSpotCount,
+} from "../../lib/citation";
+import {buildPlaceJsonLd} from "../../lib/schema";
+import {listCityParams, loadCity, loadCountry} from "../../lib/snapshots";
+import {
+  aboutAbsolute,
+  aboutCityPath,
+  aboutCountryPath,
+  appCityUrl,
+} from "../../lib/urls";
 
 export async function getStaticPaths() {
   const cities = await listCityParams();
@@ -24,36 +37,69 @@ if (
 }
 
 const hub = await loadCity(countryCode, citySlug);
-if (!hub || qualifyingSpots(hub.spots).length === 0) {
+if (!hub) {
   return Astro.redirect(`/${countryCode.toLowerCase()}`);
 }
 
 const cc = hub.countryCode.toLowerCase();
-const title = `${hub.city} · ${cc.toUpperCase()}`;
+const listed = hub.spots ?? [];
+const country = await loadCountry(cc);
+const cityRef = country?.cities?.find((city) => city.citySlug === hub.citySlug);
+const spotCount = resolveSpotCount(
+  hub.spotCount ?? cityRef?.spotCount,
+  listed.length,
+);
+const title = cityHubTitle(hub.city);
+const topNames = listed.slice(0, 3).map((spot) => spot.name);
+const lede = cityHubLede({
+  city: hub.city,
+  spotCount,
+  listedCount: listed.length,
+  topNames,
+});
+const moreLabel = moreOnMapLabel(spotCount, listed.length);
+const pagePath = aboutCityPath(cc, hub.citySlug);
+const jsonLd = buildPlaceJsonLd({
+  name: title,
+  pageUrl: aboutAbsolute(pagePath),
+  spots: listed,
+  breadcrumbs: [
+    {name: "ParkourSpot", url: aboutAbsolute("/")},
+    {name: countryName(cc), url: aboutAbsolute(aboutCountryPath(cc))},
+    {name: hub.city, url: aboutAbsolute(pagePath)},
+  ],
+});
 ---
 
 <BaseLayout
   title={title}
-  description={`Best-rated parkour spots and upcoming events in ${hub.city}, ${cc.toUpperCase()}.`}
-  canonicalPath={`/${cc}/${hub.citySlug}`}
+  description={metaDescription(lede ?? title)}
+  canonicalPath={pagePath}
+  jsonLd={jsonLd}
 >
   <p class="muted">
-    <a href={aboutCountryPath(cc)}>{cc.toUpperCase()}</a>
+    <a href={aboutCountryPath(cc)}>{countryName(cc)}</a>
     · {hub.city}
   </p>
-  <h1 class="page-title">{hub.city}</h1>
-  <p class="page-lede">
-    Area hub with the same path as the app — open it there to explore on the
-    map.
-  </p>
+  <h1 class="page-title">{title}</h1>
+  {lede && <p class="page-lede">{lede}</p>}
   <div class="hub-open">
     <OpenInApp href={appCityUrl(cc, hub.citySlug)} />
   </div>
 
-  <section class="section">
-    <h2 class="section__title">Best-rated spots</h2>
-    <SpotList spots={hub.spots} />
-  </section>
+  {
+    listed.length > 0 && (
+      <section class="section">
+        <h2 class="section__title">Best-rated spots</h2>
+        <SpotList spots={listed} />
+        {moreLabel && (
+          <p class="more-link">
+            <a href={appCityUrl(cc, hub.citySlug)}>{moreLabel}</a>
+          </p>
+        )}
+      </section>
+    )
+  }
 
   <section class="section">
     <h2 class="section__title">Upcoming events</h2>

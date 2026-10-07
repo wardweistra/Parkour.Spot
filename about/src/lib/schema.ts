@@ -1,5 +1,6 @@
-import type {EventDetail} from "./types";
-import {ABOUT_ORIGIN, aboutEventPath} from "./urls";
+import {APP_DEFINITION} from "./citation";
+import type {EventDetail, SpotSummary} from "./types";
+import {ABOUT_ORIGIN, APP_ORIGIN, aboutEventPath, appSpotUrl} from "./urls";
 
 export function buildEventJsonLd(event: EventDetail): Record<string, unknown> {
   const url = `${ABOUT_ORIGIN}${aboutEventPath(event.slug)}`;
@@ -57,4 +58,93 @@ export function buildEventJsonLd(event: EventDetail): Record<string, unknown> {
   }
 
   return data;
+}
+
+/** Entity graph for the homepage: the app, the organization, and this site. */
+export function buildSiteGraph(): Record<string, unknown> {
+  const orgId = `${APP_ORIGIN}/#organization`;
+  const appId = `${APP_ORIGIN}/#app`;
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": orgId,
+        name: "ParkourSpot",
+        alternateName: "Parkour·Spot",
+        url: APP_ORIGIN,
+        sameAs: [`${ABOUT_ORIGIN}/`],
+      },
+      {
+        "@type": ["WebApplication", "SoftwareApplication"],
+        "@id": appId,
+        name: "ParkourSpot",
+        alternateName: "Parkour·Spot",
+        url: APP_ORIGIN,
+        applicationCategory: "SportsApplication",
+        operatingSystem: "Web",
+        browserRequirements: "Requires a web browser",
+        isAccessibleForFree: true,
+        description: APP_DEFINITION,
+        featureList: [
+          "Open map without an account",
+          "Community ratings",
+          "Spot photos",
+          "Add a spot",
+          "Parkour events",
+        ],
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "USD",
+        },
+        publisher: {"@id": orgId},
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${ABOUT_ORIGIN}/#website`,
+        name: "ParkourSpot",
+        alternateName: "Parkour·Spot",
+        url: `${ABOUT_ORIGIN}/`,
+        description: APP_DEFINITION,
+        publisher: {"@id": orgId},
+      },
+    ],
+  };
+}
+
+export function buildPlaceJsonLd(input: {
+  name: string;
+  pageUrl: string;
+  spots: SpotSummary[];
+  breadcrumbs: Array<{name: string; url: string}>;
+}): Record<string, unknown> | null {
+  const graph: Record<string, unknown>[] = [];
+  if (input.breadcrumbs.length > 0) {
+    graph.push({
+      "@type": "BreadcrumbList",
+      itemListElement: input.breadcrumbs.map((crumb, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: crumb.name,
+        item: crumb.url,
+      })),
+    });
+  }
+  if (input.spots.length > 0) {
+    graph.push({
+      "@type": "ItemList",
+      name: input.name,
+      url: input.pageUrl,
+      numberOfItems: input.spots.length,
+      itemListElement: input.spots.map((spot, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: spot.name,
+        url: appSpotUrl(spot.countryCode, spot.citySlug, spot.id),
+      })),
+    });
+  }
+  if (graph.length === 0) return null;
+  return {"@context": "https://schema.org", "@graph": graph};
 }

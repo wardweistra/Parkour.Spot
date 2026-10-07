@@ -3,7 +3,7 @@ const {
   isPublicEvent,
   buildPlaceSnapshots,
   attachEventsAndBuildIndexes,
-  MIN_RATED_SPOTS_PER_CITY,
+  TOP_SPOTS_LIMIT,
 } = require("../lib/about-snapshots");
 
 describe("about-snapshots", () => {
@@ -25,46 +25,31 @@ describe("about-snapshots", () => {
   });
 
   describe("buildPlaceSnapshots", () => {
-    it("only includes cities with enough rated spots", () => {
-      const spots = [];
-      for (let i = 0; i < MIN_RATED_SPOTS_PER_CITY; i++) {
-        spots.push({
-          id: `a${i}`,
-          name: `Spot A${i}`,
+    it("includes a city with a single public spot", () => {
+      const spots = [
+        {
+          id: "lonely",
+          name: "Only one",
           countryCode: "NL",
-          city: "Amsterdam",
+          city: "Utrecht",
           hidden: false,
-          duplicateOf: null,
-          ratingCount: 2,
-          averageRating: 4,
-          ranking: 10 + i,
-        });
-      }
-      spots.push({
-        id: "lonely",
-        name: "Only one",
-        countryCode: "NL",
-        city: "Utrecht",
-        hidden: false,
-        ratingCount: 3,
-        ranking: 20,
-      });
+          ratingCount: 3,
+          ranking: 20,
+        },
+      ];
 
       const {cityDocs, countryDocs, indexCountries} = buildPlaceSnapshots(spots);
-      expect(cityDocs.has("nl_amsterdam")).toBe(true);
-      expect(cityDocs.has("nl_utrecht")).toBe(false);
-      expect(countryDocs.has("nl")).toBe(true);
+      expect(cityDocs.has("nl_utrecht")).toBe(true);
+      expect(cityDocs.get("nl_utrecht").spotCount).toBe(1);
+      expect(countryDocs.get("nl").spotCount).toBe(1);
       expect(indexCountries).toEqual([
-        expect.objectContaining({code: "nl", cityCount: 1}),
+        expect.objectContaining({code: "nl", cityCount: 1, spotCount: 1}),
       ]);
-      expect(cityDocs.get("nl_amsterdam").spots).toHaveLength(
-          MIN_RATED_SPOTS_PER_CITY,
-      );
     });
 
-    it("sorts spots by ranking desc and caps at 20", () => {
+    it("sorts rated spots by ranking and caps the sample at 10", () => {
       const spots = [];
-      for (let i = 0; i < 25; i++) {
+      for (let i = 0; i < 15; i++) {
         spots.push({
           id: `s${i}`,
           name: `S${i}`,
@@ -75,49 +60,74 @@ describe("about-snapshots", () => {
         });
       }
       const {cityDocs} = buildPlaceSnapshots(spots);
-      const top = cityDocs.get("fr_paris").spots;
-      expect(top).toHaveLength(20);
-      expect(top[0].id).toBe("s24");
-      expect(top[19].id).toBe("s5");
+      const paris = cityDocs.get("fr_paris");
+      expect(paris.spotCount).toBe(15);
+      expect(paris.spots).toHaveLength(TOP_SPOTS_LIMIT);
+      expect(paris.spots[0].id).toBe("s14");
+      expect(paris.spots[9].id).toBe("s5");
     });
 
-    it("drops spots below the explore Wilson average", () => {
-      const spots = [];
-      for (let i = 0; i < MIN_RATED_SPOTS_PER_CITY; i++) {
-        spots.push({
-          id: `good${i}`,
-          name: `Good${i}`,
+    it("counts unrated spots and keeps below-average rated spots in the sample", () => {
+      const spots = [
+        {
+          id: "good",
+          name: "Good",
           countryCode: "de",
           city: "Berlin",
           ratingCount: 4,
-          ranking: 12 + i,
+          ranking: 14,
+        },
+        {
+          id: "weak",
+          name: "Weak",
+          countryCode: "de",
+          city: "Berlin",
+          ratingCount: 8,
+          averageRating: 2.1,
+          ranking: -4,
+        },
+        {
+          id: "bare",
+          name: "Bare",
+          countryCode: "de",
+          city: "Berlin",
+          ratingCount: 0,
+          ranking: 0.4,
+        },
+      ];
+
+      const {cityDocs} = buildPlaceSnapshots(spots);
+      const berlin = cityDocs.get("de_berlin");
+      expect(berlin.spotCount).toBe(3);
+      expect(berlin.spots.map((s) => s.id)).toEqual(["good", "weak"]);
+    });
+
+    it("picks the country sample from every rated spot, not each city cap", () => {
+      const spots = [];
+      for (let i = 0; i < 12; i++) {
+        spots.push({
+          id: `a${i}`,
+          name: `A${i}`,
+          countryCode: "nl",
+          city: "Amsterdam",
+          ratingCount: 1,
+          ranking: i,
         });
       }
       spots.push({
-        id: "weak",
-        name: "Weak",
-        countryCode: "de",
-        city: "Berlin",
-        ratingCount: 8,
-        averageRating: 2.1,
-        ranking: -4,
+        id: "best",
+        name: "Best",
+        countryCode: "nl",
+        city: "Utrecht",
+        ratingCount: 2,
+        ranking: 40,
       });
-      for (let i = 0; i < MIN_RATED_SPOTS_PER_CITY; i++) {
-        spots.push({
-          id: `bad${i}`,
-          name: `Bad${i}`,
-          countryCode: "de",
-          city: "Hamburg",
-          ratingCount: 3,
-          ranking: -2 - i,
-        });
-      }
 
-      const {cityDocs} = buildPlaceSnapshots(spots);
-      const berlin = cityDocs.get("de_berlin").spots.map((s) => s.id);
-      expect(berlin).not.toContain("weak");
-      expect(berlin).toHaveLength(MIN_RATED_SPOTS_PER_CITY);
-      expect(cityDocs.has("de_hamburg")).toBe(false);
+      const {countryDocs} = buildPlaceSnapshots(spots);
+      const nl = countryDocs.get("nl");
+      expect(nl.spotCount).toBe(13);
+      expect(nl.spots[0].id).toBe("best");
+      expect(nl.spots).toHaveLength(TOP_SPOTS_LIMIT);
     });
   });
 
@@ -164,6 +174,39 @@ describe("about-snapshots", () => {
       expect(result.cityDocs.get("nl_amsterdam").events).toHaveLength(1);
       expect(result.countryDocs.get("nl").events).toHaveLength(1);
       expect(result.aboutIndex.eventCount).toBe(1);
+    });
+
+    it("creates a city page for an event with no spots", () => {
+      const placeState = buildPlaceSnapshots([], {
+        generatedAt: "2026-10-01T00:00:00.000Z",
+      });
+      const now = new Date("2026-10-02T00:00:00.000Z");
+      const events = [
+        {
+          id: "alkmaar01xxxx",
+          title: "Alkmaar jam",
+          startAt: new Date("2026-11-01T10:00:00.000Z"),
+          countryCode: "NL",
+          city: "Alkmaar",
+        },
+        {
+          id: "nocountryxxxx",
+          title: "Somewhere jam",
+          startAt: new Date("2026-11-02T10:00:00.000Z"),
+        },
+      ];
+
+      const result = attachEventsAndBuildIndexes(placeState, events, now);
+      expect(result.eventsIndex.events).toHaveLength(2);
+      expect(result.cityDocs.get("nl_alkmaar").spotCount).toBe(0);
+      expect(result.cityDocs.get("nl_alkmaar").events).toHaveLength(1);
+      expect(result.countryDocs.get("nl").events).toHaveLength(1);
+      expect(result.countryDocs.get("nl").cities).toEqual([
+        expect.objectContaining({citySlug: "alkmaar", spotCount: 0, eventCount: 1}),
+      ]);
+      expect(result.aboutIndex.countries).toEqual([
+        expect.objectContaining({code: "nl", cityCount: 1, spotCount: 0, eventCount: 1}),
+      ]);
     });
   });
 });

@@ -1,7 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import EventList from "../../components/EventList.astro";
-import {SITE_NAME} from "../../lib/brand";
 import {listCityParams, listCountryCodes, loadEventsIndex} from "../../lib/snapshots";
 import {appHomeUrl, cityHubKey} from "../../lib/urls";
 import OpenInApp from "../../components/OpenInApp.astro";
@@ -15,13 +14,13 @@ const countryHubCodes = await listCountryCodes();
 
 <BaseLayout
   title="Events"
-  description={`Upcoming parkour events from the ${SITE_NAME} community, refreshed daily.`}
+  description="Upcoming public parkour events from the ParkourSpot community, refreshed daily."
   canonicalPath="/events"
 >
   <h1 class="page-title">Events</h1>
   <p class="page-lede">
-    A global calendar baked from the same Firestore data as the app. Open any
-    event for details, or jump into the map.
+    Upcoming public parkour events from the ParkourSpot community. Open an
+    event for the time and place, or jump into the map.
   </p>
   <div class="hub-open">
     <OpenInApp href={appHomeUrl()} label="Open the map" />

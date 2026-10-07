@@ -10,5 +10,12 @@ export default defineConfig({
   build: {
     format: "directory",
   },
-  integrations: [sitemap()],
+  integrations: [
+    sitemap({
+      filter: (page) => {
+        const path = new URL(page).pathname;
+        return path !== "/blog" && path !== "/partners";
+      },
+    }),
+  ],
 });

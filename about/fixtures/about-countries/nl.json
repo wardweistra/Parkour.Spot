@@ -1,11 +1,12 @@
 {
   "countryCode": "nl",
   "generatedAt": "2026-10-02T00:00:00.000Z",
+  "spotCount": 5,
   "cities": [
     {
       "city": "Amsterdam",
       "citySlug": "amsterdam",
-      "ratedSpotCount": 5,
+      "spotCount": 5,
       "eventCount": 1
     }
   ],

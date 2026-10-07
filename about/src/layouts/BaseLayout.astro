@@ -1,25 +1,29 @@
 ---
 import "../styles/global.css";
 import {SITE_NAME} from "../lib/brand";
+import {APP_DEFINITION} from "../lib/citation";
 
 interface Props {
   title: string;
   description?: string;
   canonicalPath?: string;
   jsonLd?: Record<string, unknown> | null;
+  noIndex?: boolean;
 }
 
 const {
   title,
-  description = `${SITE_NAME} is a community atlas for discovering and sharing parkour spots worldwide.`,
+  description = APP_DEFINITION,
   canonicalPath = "/",
   jsonLd = null,
+  noIndex = false,
 } = Astro.props;
 
 const canonical = new URL(canonicalPath, Astro.site).toString();
-const pageTitle = title.includes(SITE_NAME)
-  ? title
-  : `${title} · ${SITE_NAME}`;
+const pageTitle =
+  title.includes(SITE_NAME) || title.includes("ParkourSpot")
+    ? title
+    : `${title} · ${SITE_NAME}`;
 ---
 
 <!doctype html>
@@ -29,6 +33,7 @@ const pageTitle = title.includes(SITE_NAME)
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
+    {noIndex && <meta name="robots" content="noindex" />}
     <link rel="canonical" href={canonical} />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={pageTitle} />
@@ -46,7 +51,7 @@ const pageTitle = title.includes(SITE_NAME)
       jsonLd && (
         <script
           type="application/ld+json"
-          set:html={JSON.stringify(jsonLd)}
+          set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")}
         />
       )
     }
@@ -60,10 +65,24 @@ const pageTitle = title.includes(SITE_NAME)
             <span>{SITE_NAME}</span>
           </a>
           <nav class="site-nav" aria-label="Primary">
-            <a href="/">About</a>
-            <a href="/events">Events</a>
-            <a href="/partners">Partners</a>
-            <a href="/blog">Blog</a>
+            <a
+              href="/"
+              aria-current={canonicalPath === "/" ? "page" : undefined}
+            >
+              About
+            </a>
+            <a
+              href="/how-it-works"
+              aria-current={canonicalPath === "/how-it-works" ? "page" : undefined}
+            >
+              How it works
+            </a>
+            <a
+              href="/events"
+              aria-current={canonicalPath.startsWith("/events") ? "page" : undefined}
+            >
+              Events
+            </a>
           </nav>
         </div>
       </header>
@@ -74,6 +93,8 @@ const pageTitle = title.includes(SITE_NAME)
         <div class="site-footer__inner">
           <p>
             By and for the parkour community ·
+            <a href="/how-it-works">How it works</a>
+            ·
             <a href="https://parkour.spot">Open the map</a>
           </p>
           <p class="muted">about.parkour.spot</p>

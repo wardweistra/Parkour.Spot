@@ -36,13 +36,15 @@ export type EventDetail = EventSummary & {
 export type CityRef = {
   city: string;
   citySlug: string;
-  ratedSpotCount: number;
+  /** All public spots. Absent on snapshots written before this field. */
+  spotCount?: number;
   eventCount: number;
 };
 
 export type CountrySnapshot = {
   countryCode: string;
   generatedAt: string;
+  spotCount?: number;
   cities: CityRef[];
   spots: SpotSummary[];
   events: EventSummary[];
@@ -53,6 +55,7 @@ export type CitySnapshot = {
   city: string;
   citySlug: string;
   generatedAt: string;
+  spotCount?: number;
   spots: SpotSummary[];
   events: EventSummary[];
 };

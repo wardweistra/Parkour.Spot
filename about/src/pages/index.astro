@@ -1,29 +1,58 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import OpenInApp from "../components/OpenInApp.astro";
-import {listCityParams, loadAboutIndex} from "../lib/snapshots";
 import {SITE_NAME} from "../lib/brand";
-import {aboutCountryPath, appHomeUrl} from "../lib/urls";
+import {
+  APP_DEFINITION,
+  countryName,
+  coverageSentence,
+} from "../lib/citation";
+import {buildSiteGraph} from "../lib/schema";
+import {loadCoverage} from "../lib/snapshots";
+import {aboutCityPath, aboutCountryPath, appHomeUrl} from "../lib/urls";
 
-const index = await loadAboutIndex();
-const cityCountByCountry = new Map<string, number>();
-for (const city of await listCityParams()) {
-  const code = city.countryCode.toLowerCase();
-  cityCountByCountry.set(code, (cityCountByCountry.get(code) ?? 0) + 1);
-}
+const coverage = await loadCoverage();
+const countryCount = coverage.countries.length;
+const cityCount = coverage.countries.reduce(
+  (sum, country) => sum + country.cities.length,
+  0,
+);
+const spotCount = coverage.countries.reduce(
+  (sum, country) => sum + country.spotCount,
+  0,
+);
+const facts = coverageSentence({
+  spotCount,
+  cityCount,
+  countryCount,
+  generatedAt: coverage.generatedAt,
+});
+
+const netherlands = coverage.countries.find((country) => country.code === "nl");
+const amsterdam = netherlands?.cities.find(
+  (city) => city.citySlug === "amsterdam",
+);
+const exampleCountry = amsterdam && netherlands ? netherlands : coverage.countries[0];
+const exampleCity = amsterdam ?? exampleCountry?.cities[0];
+const examplePath =
+  exampleCountry && exampleCity
+    ? aboutCityPath(exampleCountry.code, exampleCity.citySlug)
+    : null;
+
+const countries = [...coverage.countries].sort((a, b) =>
+  countryName(a.code).localeCompare(countryName(b.code), "en"),
+);
 ---
 
 <BaseLayout
   title={SITE_NAME}
-  description="A community atlas for discovering, rating, and sharing parkour spots worldwide — open to explore, built with the community."
+  description={APP_DEFINITION}
   canonicalPath="/"
+  jsonLd={buildSiteGraph()}
 >
   <section class="hero">
     <h1 class="hero__brand">{SITE_NAME}</h1>
-    <p class="hero__lead">
-      Find trustworthy places to train, understand them quickly, and pass them
-      on. Core discovery stays open — no login wall on the map.
-    </p>
+    <p class="hero__lead">{APP_DEFINITION}</p>
     <div class="hero__actions">
       <OpenInApp href={appHomeUrl()} label="Open the map" />
       <a class="btn btn--outlined" href="/events">Browse events</a>
@@ -31,36 +60,39 @@ for (const city of await listCityParams()) {
   </section>
 
   <section class="section prose">
-    <h2 class="section__title">What this site is for</h2>
+    <h2 class="section__title">The public atlas</h2>
+    {facts && <p>{facts}</p>}
     <p>
-      The main app at parkour.spot is a Flutter web map. This site publishes
-      crawlable pages — explanations, area hubs, and events — so search engines
-      and people landing from the web can read the same community knowledge in
-      plain HTML.
+      Country and city pages use the same paths as the map at{" "}
+      <a href={appHomeUrl()}>parkour.spot</a>.{" "}
+      {
+        examplePath && (
+          <>
+            The same path works on both sites, for example{" "}
+            <a href={examplePath}>{examplePath}</a>.{" "}
+          </>
+        )
+      }
+      <a href="/how-it-works">How ParkourSpot works</a> covers the map, ratings,
+      photos, and events.
     </p>
   </section>
 
   {
-    index.countries.length > 0 && (
+    countries.length > 0 && (
       <section class="section">
-        <h2 class="section__title">Area hubs</h2>
-        <p class="section__hint">
-          Daily snapshots of places with enough rated spots. Paths match the
-          app (for example /nl/amsterdam).
-        </p>
+        <h2 class="section__title">Countries</h2>
         <div class="chip-row">
-          {index.countries.map((c) => {
-            const cityCount = cityCountByCountry.get(c.code.toLowerCase()) ?? 0;
-            return (
-              <a class="chip" href={aboutCountryPath(c.code)}>
-                {c.code.toUpperCase()}
-                <span class="muted">
-                  {" "}
-                  · {cityCount} {cityCount === 1 ? "city" : "cities"}
-                </span>
-              </a>
-            );
-          })}
+          {countries.map((country) => (
+            <a class="chip" href={aboutCountryPath(country.code)}>
+              {countryName(country.code)}
+              <span class="muted">
+                {" "}
+                · {country.cities.length}{" "}
+                {country.cities.length === 1 ? "city" : "cities"}
+              </span>
+            </a>
+          ))}
         </div>
       </section>
     )

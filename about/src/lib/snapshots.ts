@@ -1,6 +1,6 @@
 import {readFile, readdir} from "node:fs/promises";
 import path from "node:path";
-import {qualifyingSpots} from "./ratings";
+import {resolveSpotCount} from "./citation";
 import type {
   AboutIndex,
   CityRef,
@@ -199,6 +199,38 @@ export async function loadEvent(slug: string): Promise<EventDetail | null> {
   return snap.exists ? (snap.data() as EventDetail) : null;
 }
 
+export type CoverageCountry = {
+  code: string;
+  cities: CityRef[];
+  spotCount: number;
+};
+
+/** Countries and cities in this refresh, with full library totals. */
+export async function loadCoverage(): Promise<{
+  generatedAt: string;
+  countries: CoverageCountry[];
+}> {
+  const index = await loadAboutIndex();
+  const countries: CoverageCountry[] = [];
+  for (const entry of index.countries) {
+    if (typeof entry?.code !== "string" || entry.code.length !== 2) continue;
+    const country = await loadCountry(entry.code);
+    if (!country) continue;
+    const cities = await loadCityRefs(country);
+    if (cities.length === 0) continue;
+    const fromCities = cities.reduce(
+      (sum, city) => sum + (city.spotCount ?? 0),
+      0,
+    );
+    countries.push({
+      code: country.countryCode.toLowerCase(),
+      cities,
+      spotCount: resolveSpotCount(country.spotCount, fromCities),
+    });
+  }
+  return {generatedAt: index.generatedAt, countries};
+}
+
 export async function listCountryCodes(): Promise<string[]> {
   const index = await loadAboutIndex();
   return (index.countries ?? [])
@@ -206,16 +238,20 @@ export async function listCountryCodes(): Promise<string[]> {
     .map((c) => c.code.toLowerCase());
 }
 
-/** City chips whose snapshot still has a spot at or above the Wilson average. */
-export async function qualifyingCityRefs(
+/** City hubs that were actually written, including events-only cities. */
+export async function loadCityRefs(
   country: CountrySnapshot,
 ): Promise<CityRef[]> {
   const kept: CityRef[] = [];
   for (const city of country.cities ?? []) {
     if (typeof city?.citySlug !== "string" || !city.citySlug) continue;
     const hub = await loadCity(country.countryCode, city.citySlug);
-    if (!hub || qualifyingSpots(hub.spots).length === 0) continue;
-    kept.push(city);
+    if (!hub) continue;
+    const listed = Array.isArray(hub.spots) ? hub.spots.length : 0;
+    kept.push({
+      ...city,
+      spotCount: resolveSpotCount(hub.spotCount ?? city.spotCount, listed),
+    });
   }
   return kept;
 }
@@ -228,7 +264,7 @@ export async function listCityParams(): Promise<
   for (const code of codes) {
     const country = await loadCountry(code);
     if (!country) continue;
-    const cities = await qualifyingCityRefs(country);
+    const cities = await loadCityRefs(country);
     for (const city of cities) {
       out.push({countryCode: code, city: city.citySlug});
     }

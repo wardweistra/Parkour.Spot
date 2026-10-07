@@ -61,3 +61,9 @@ export function eventAreaHubLink(
 export function aboutEventPath(slug: string): string {
   return `/events/${slug}`;
 }
+
+export function aboutAbsolute(path: string): string {
+  if (path === "/" || path === "") return `${ABOUT_ORIGIN}/`;
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return `${ABOUT_ORIGIN}${normalized}`;
+}

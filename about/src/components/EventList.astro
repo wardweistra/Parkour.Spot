@@ -25,21 +25,92 @@ const countryHubs = new Set(
   countryHubCodes.map((code) => code.toLowerCase()),
 );
 
+type DayGroup = {
+  key: string;
+  label: string;
+  events: EventSummary[];
+};
+
+type MonthGroup = {
+  key: string;
+  label: string;
+  days: DayGroup[];
+};
+
+function eventDate(iso: string | null): Date | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function monthKey(date: Date | null): string {
+  if (!date) return "tba";
+  return `${date.getFullYear()}-${String(date.getMonth()).padStart(2, "0")}`;
+}
+
+function dayKey(date: Date | null): string {
+  if (!date) return "tba";
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+}
+
+const monthFormat = new Intl.DateTimeFormat("en-GB", {
+  month: "long",
+  year: "numeric",
+});
+const weekdayFormat = new Intl.DateTimeFormat("en-GB", {weekday: "long"});
+const dayNumberFormat = new Intl.DateTimeFormat("en-GB", {day: "numeric"});
+const timeFormat = new Intl.DateTimeFormat("en-GB", {timeStyle: "short"});
+
+function groupEvents(items: EventSummary[]): MonthGroup[] {
+  const months: MonthGroup[] = [];
+  for (const event of items) {
+    const date = eventDate(event.startAt);
+    const mKey = monthKey(date);
+    let month = months.find((entry) => entry.key === mKey);
+    if (!month) {
+      month = {
+        key: mKey,
+        label: date ? monthFormat.format(date) : "Date TBA",
+        days: [],
+      };
+      months.push(month);
+    }
+    const dKey = dayKey(date);
+    let day = month.days.find((entry) => entry.key === dKey);
+    if (!day) {
+      day = {
+        key: dKey,
+        label: date
+          ? `${weekdayFormat.format(date)} ${dayNumberFormat.format(date)}`
+          : "Date TBA",
+        events: [],
+      };
+      month.days.push(day);
+    }
+    day.events.push(event);
+  }
+  return months;
+}
+
+const months = groupEvents(events);
+
 function placeLink(event: EventSummary): {href: string; label: string} | null {
   if (!showPlaceLinks) return null;
   return eventAreaHubLink(event, cityHubs, countryHubs);
 }
 
-function formatWhen(iso: string | null): string {
-  if (!iso) return "Date TBA";
-  try {
-    return new Intl.DateTimeFormat("en", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(new Date(iso));
-  } catch {
-    return iso;
-  }
+function whenLabel(event: EventSummary): string | null {
+  const date = eventDate(event.startAt);
+  if (!date || event.isDateOnly) return null;
+  return timeFormat.format(date);
+}
+
+function metaLine(event: EventSummary): string {
+  const place =
+    event.city && event.countryCode
+      ? `${event.city}, ${event.countryCode.toUpperCase()}`
+      : "";
+  return [whenLabel(event), place].filter(Boolean).join(" · ");
 }
 ---
 
@@ -47,45 +118,54 @@ function formatWhen(iso: string | null): string {
   events.length === 0 ? (
     <p class="empty">{emptyLabel}</p>
   ) : (
-    <ul class="stack-list">
-      {events.map((event) => {
-        const hub = placeLink(event);
-        return (
-          <li>
-            {event.imageUrl ? (
-              <img
-                class="stack-list__thumb"
-                src={event.imageUrl}
-                alt=""
-                width="64"
-                height="64"
-                loading="lazy"
-              />
-            ) : (
-              <div class="stack-list__thumb" aria-hidden="true" />
-            )}
+    <div class="calendar">
+      {months.map((month) => (
+        <section>
+          <h3 class="calendar__month">{month.label}</h3>
+          {month.days.map((day) => (
             <div>
-              <p class="stack-list__title">
-                <a href={aboutEventPath(event.slug)}>{event.title}</a>
-              </p>
-              <p class="stack-list__meta">
-                {formatWhen(event.startAt)}
-                {event.city && event.countryCode
-                  ? ` · ${event.city}, ${event.countryCode.toUpperCase()}`
-                  : ""}
-              </p>
-              {hub && (
-                <p class="stack-list__meta">
-                  <a href={hub.href}>{hub.label}</a>
-                </p>
-              )}
+              <h4 class="calendar__day">{day.label}</h4>
+              <ul class="stack-list">
+                {day.events.map((event) => {
+                  const hub = placeLink(event);
+                  return (
+                    <li>
+                      {event.imageUrl ? (
+                        <img
+                          class="stack-list__thumb"
+                          src={event.imageUrl}
+                          alt=""
+                          width="64"
+                          height="64"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div class="stack-list__thumb" aria-hidden="true" />
+                      )}
+                      <div>
+                        <p class="stack-list__title">
+                          <a href={aboutEventPath(event.slug)}>{event.title}</a>
+                        </p>
+                        {metaLine(event) && (
+                          <p class="stack-list__meta">{metaLine(event)}</p>
+                        )}
+                        {hub && (
+                          <p class="stack-list__meta">
+                            <a href={hub.href}>{hub.label}</a>
+                          </p>
+                        )}
+                      </div>
+                      <a class="chip" href={aboutEventPath(event.slug)}>
+                        Details
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
-            <a class="chip" href={aboutEventPath(event.slug)}>
-              Details
-            </a>
-          </li>
-        );
-      })}
-    </ul>
+          ))}
+        </section>
+      ))}
+    </div>
   )
 }
