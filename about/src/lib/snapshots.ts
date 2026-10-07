@@ -1,6 +1,5 @@
 import {readFile, readdir} from "node:fs/promises";
 import path from "node:path";
-import {fileURLToPath} from "node:url";
 import type {
   AboutIndex,
   CitySnapshot,
@@ -9,8 +8,10 @@ import type {
   EventsIndex,
 } from "./types";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const FIXTURES_ROOT = path.resolve(__dirname, "../../fixtures");
+// Astro 7 bundles this module into dist/.prerender/chunks before getStaticPaths
+// runs, so import.meta.url points at that chunk rather than src/lib. CI and
+// the about package scripts run with the working directory set to about/.
+const FIXTURES_ROOT = path.resolve(process.cwd(), "fixtures");
 
 function useFixtures(): boolean {
   return (
@@ -67,21 +68,24 @@ function normalizeEventsIndex(
 let adminDb: any = null;
 
 /**
- * firebase-admin is CommonJS; under Astro/Vite ESM the namespace may land on
- * `.default`. Unwrap that before reading `.apps` / calling `.initializeApp`.
+ * firebase-admin v14 is modular and CommonJS. Under Astro/Vite ESM the
+ * module namespace may land on `.default`, so unwrap before use.
  */
+function unwrapModule<T>(mod: T): T {
+  const withDefault = mod as T & {default?: T};
+  return withDefault.default ?? mod;
+}
+
 async function getDb() {
   if (adminDb) return adminDb;
-  const mod = await import("firebase-admin");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const admin = ((mod as any).default ?? mod) as typeof import("firebase-admin");
-  const apps = admin.apps ?? [];
-  if (apps.length === 0) {
-    admin.initializeApp({
-      credential: admin.credential.applicationDefault(),
+  const appMod = unwrapModule(await import("firebase-admin/app"));
+  const firestoreMod = unwrapModule(await import("firebase-admin/firestore"));
+  if (appMod.getApps().length === 0) {
+    appMod.initializeApp({
+      credential: appMod.applicationDefault(),
     });
   }
-  adminDb = admin.firestore();
+  adminDb = firestoreMod.getFirestore();
   return adminDb;
 }
 

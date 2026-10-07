@@ -4,13 +4,13 @@
  * trigger a GitHub Actions rebuild via repository_dispatch.
  */
 
-const admin = require("firebase-admin");
+const {getFirestore} = require("firebase-admin/firestore");
 const {
   buildPlaceSnapshots,
   attachEventsAndBuildIndexes,
 } = require("./lib/about-snapshots");
 
-const db = admin.firestore();
+const db = getFirestore();
 
 const GITHUB_REPO = process.env.ABOUT_GITHUB_REPO || "wardweistra/Parkour.Spot";
 const GITHUB_DISPATCH_TYPE = "about-rebuild";

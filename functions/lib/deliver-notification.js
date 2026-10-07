@@ -142,8 +142,8 @@ function resolveMessaging(messaging) {
   if (messaging) {
     return messaging;
   }
-  const admin = require("firebase-admin");
-  return admin.messaging();
+  const {getMessaging} = require("firebase-admin/messaging");
+  return getMessaging();
 }
 
 /**

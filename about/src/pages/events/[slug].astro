@@ -21,6 +21,7 @@ if (!event) {
   return Astro.redirect("/events");
 }
 
+const dateOnly = event.isDateOnly;
 const jsonLd = buildEventJsonLd(event);
 const description =
   event.description?.slice(0, 160) ||
@@ -31,7 +32,7 @@ function formatWhen(iso: string | null): string {
   try {
     return new Intl.DateTimeFormat("en", {
       dateStyle: "full",
-      timeStyle: event.isDateOnly ? undefined : "short",
+      timeStyle: dateOnly ? undefined : "short",
     }).format(new Date(iso));
   } catch {
     return iso;
