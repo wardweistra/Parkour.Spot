@@ -1,0 +1,19 @@
+{
+  "slug": "madrid-conditioning-m4dr1d01",
+  "eventId": "m4dr1d01cond",
+  "title": "Madrid conditioning",
+  "startAt": "2026-10-17T07:00:00.000Z",
+  "endAt": "2026-10-17T09:00:00.000Z",
+  "isDateOnly": false,
+  "timeZone": "Europe/Madrid",
+  "city": "Madrid",
+  "citySlug": "madrid",
+  "countryCode": "es",
+  "imageUrl": null,
+  "imageUrls": [],
+  "websiteUrl": null,
+  "description": "Early strength and conditioning before the heat.",
+  "address": null,
+  "latitude": 40.4168,
+  "longitude": -3.7038
+}

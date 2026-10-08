@@ -1,0 +1,19 @@
+{
+  "slug": "antwerp-community-jam-4ntw3rp1",
+  "eventId": "4ntw3rp1jam0",
+  "title": "Antwerp community jam",
+  "startAt": "2026-10-17T00:00:00.000Z",
+  "endAt": "2026-10-17T23:59:59.999Z",
+  "isDateOnly": true,
+  "timeZone": null,
+  "city": "Antwerp",
+  "citySlug": "antwerp",
+  "countryCode": "be",
+  "imageUrl": null,
+  "imageUrls": [],
+  "websiteUrl": null,
+  "description": "An all-day community jam around the city centre. Bring water and friends.",
+  "address": null,
+  "latitude": 51.2194,
+  "longitude": 4.4025
+}

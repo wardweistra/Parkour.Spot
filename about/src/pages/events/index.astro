@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import EventList from "../../components/EventList.astro";
+import EventCalendar from "../../components/EventCalendar.astro";
 import {SITE_NAME} from "../../lib/brand";
 import {upcomingEventsPhrase} from "../../lib/citation";
 import {
@@ -41,8 +41,9 @@ const description = phrase
   <div class="hub-open">
     <OpenInApp href={appHomeUrl()} label="Open the map" />
   </div>
-  <EventList
+  <EventCalendar
     events={index.events}
+    generatedAt={index.generatedAt}
     cityHubKeys={cityHubKeys}
     countryHubCodes={countryHubCodes}
   />

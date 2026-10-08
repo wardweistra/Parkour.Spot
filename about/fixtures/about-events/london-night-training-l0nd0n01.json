@@ -1,0 +1,19 @@
+{
+  "slug": "london-night-training-l0nd0n01",
+  "eventId": "l0nd0n01ngt0",
+  "title": "London night training under the railway arches",
+  "startAt": "2026-10-17T18:30:00.000Z",
+  "endAt": "2026-10-17T21:00:00.000Z",
+  "isDateOnly": false,
+  "timeZone": "Europe/London",
+  "city": "London",
+  "citySlug": "london",
+  "countryCode": "gb",
+  "imageUrl": null,
+  "imageUrls": [],
+  "websiteUrl": null,
+  "description": "Evening training under the arches, all levels welcome.",
+  "address": null,
+  "latitude": 51.5072,
+  "longitude": -0.1276
+}

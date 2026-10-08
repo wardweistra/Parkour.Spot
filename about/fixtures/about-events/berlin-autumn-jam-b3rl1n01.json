@@ -1,0 +1,19 @@
+{
+  "slug": "berlin-autumn-jam-b3rl1n01",
+  "eventId": "b3rl1n01jam0",
+  "title": "Berlin autumn jam",
+  "startAt": "2026-10-22T22:00:00.000Z",
+  "endAt": "2026-10-25T22:59:59.999Z",
+  "isDateOnly": true,
+  "timeZone": "Europe/Berlin",
+  "city": "Berlin",
+  "citySlug": "berlin",
+  "countryCode": "de",
+  "imageUrl": null,
+  "imageUrls": [],
+  "websiteUrl": null,
+  "description": "Three days of training, workshops, and spot tours across Berlin.",
+  "address": null,
+  "latitude": 52.52,
+  "longitude": 13.405
+}

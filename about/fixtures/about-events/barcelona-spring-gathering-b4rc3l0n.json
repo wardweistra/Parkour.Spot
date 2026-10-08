@@ -1,0 +1,19 @@
+{
+  "slug": "barcelona-spring-gathering-b4rc3l0n",
+  "eventId": "b4rc3l0nsprg",
+  "title": "Barcelona spring gathering",
+  "startAt": "2027-03-20T09:00:00.000Z",
+  "endAt": "2027-03-20T17:00:00.000Z",
+  "isDateOnly": false,
+  "timeZone": "Europe/Madrid",
+  "city": "Barcelona",
+  "citySlug": "barcelona",
+  "countryCode": "es",
+  "imageUrl": null,
+  "imageUrls": [],
+  "websiteUrl": null,
+  "description": "A spring gathering for the Spanish parkour community.",
+  "address": null,
+  "latitude": 41.3874,
+  "longitude": 2.1686
+}

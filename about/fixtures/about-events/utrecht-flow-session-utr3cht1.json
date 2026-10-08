@@ -1,0 +1,19 @@
+{
+  "slug": "utrecht-flow-session-utr3cht1",
+  "eventId": "utr3cht1flow",
+  "title": "Utrecht flow session",
+  "startAt": "2026-10-17T08:00:00.000Z",
+  "endAt": "2026-10-17T11:00:00.000Z",
+  "isDateOnly": false,
+  "timeZone": "Europe/Amsterdam",
+  "city": "Utrecht",
+  "citySlug": "utrecht",
+  "countryCode": "nl",
+  "imageUrl": null,
+  "imageUrls": [],
+  "websiteUrl": null,
+  "description": "Relaxed flow training along the canals.",
+  "address": null,
+  "latitude": 52.0907,
+  "longitude": 5.1214
+}

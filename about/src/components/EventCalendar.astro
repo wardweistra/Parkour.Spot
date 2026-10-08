@@ -1,0 +1,645 @@
+---
+import EventList from "./EventList.astro";
+import type {EventSummary} from "../lib/types";
+import {
+  buildMonths,
+  eventsByDay,
+  eventWhenLabel,
+  formatDayLabel,
+  monthKeyAt,
+  type CalendarDay,
+  type DayPlacement,
+} from "../lib/calendar";
+import {aboutEventPath} from "../lib/urls";
+
+interface Props {
+  events: EventSummary[];
+  /** Snapshot time; the month grid starts no earlier than this month. */
+  generatedAt?: string;
+  cityHubKeys?: string[];
+  countryHubCodes?: string[];
+}
+
+const {events, generatedAt, cityHubKeys = [], countryHubCodes = []} =
+  Astro.props;
+
+const VISIBLE_LANES = 3;
+const MAX_DOTS = 3;
+
+const months = buildMonths(events, monthKeyAt(generatedAt) ?? undefined);
+const days = eventsByDay(events);
+const undatedCount = events.filter((event) => !event.startAt).length;
+
+const weekdays = [
+  ["Monday", "Mon", "M"],
+  ["Tuesday", "Tue", "T"],
+  ["Wednesday", "Wed", "W"],
+  ["Thursday", "Thu", "T"],
+  ["Friday", "Fri", "F"],
+  ["Saturday", "Sat", "S"],
+  ["Sunday", "Sun", "S"],
+];
+
+function lanesFor(day: CalendarDay): (DayPlacement | null)[] {
+  const visible = day.placements.filter((p) => p.lane < VISIBLE_LANES);
+  const top = visible.reduce((max, p) => Math.max(max, p.lane), -1);
+  return Array.from(
+    {length: top + 1},
+    (_, lane) => visible.find((p) => p.lane === lane) ?? null,
+  );
+}
+
+function hiddenCount(day: CalendarDay): number {
+  return day.placements.filter((p) => p.lane >= VISIBLE_LANES).length;
+}
+
+function dayAriaLabel(day: CalendarDay): string {
+  const count = day.placements.length;
+  const events =
+    count === 0 ? "no events" : count === 1 ? "1 event" : `${count} events`;
+  return `${formatDayLabel(day.key)}, ${events}`;
+}
+
+function chipClass(p: DayPlacement): string {
+  return [
+    "event-cal__chip",
+    p.isMultiDay || p.event.isDateOnly ? "event-cal__chip--allday" : "",
+    p.isStart ? "" : "event-cal__chip--open-start",
+    p.segmentEndsEvent ? "" : "event-cal__chip--open-end",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function placeLabel(event: EventSummary): string {
+  return event.city && event.countryCode
+    ? `${event.city}, ${event.countryCode.toUpperCase()}`
+    : "";
+}
+
+const initialMonth = months[0];
+---
+
+<div class="event-cal" data-event-cal>
+  {
+    months.length > 0 && (
+      <div class="event-cal__toolbar" data-cal-toolbar hidden>
+        <div class="event-cal__nav" data-cal-nav>
+          <button
+            type="button"
+            class="event-cal__icon-btn"
+            data-cal-prev
+            aria-label="Previous month"
+          >
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+              <path
+                d="M14.5 6 8.5 12l6 6"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.25"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="event-cal__icon-btn"
+            data-cal-next
+            aria-label="Next month"
+          >
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+              <path
+                d="m9.5 6 6 6-6 6"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.25"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <h2 class="event-cal__title" data-cal-title aria-live="polite">
+            {initialMonth?.label}
+          </h2>
+          <button type="button" class="event-cal__today" data-cal-today>
+            Today
+          </button>
+        </div>
+        <div class="event-cal__views" role="group" aria-label="Calendar view">
+          <button type="button" data-cal-view="month" aria-pressed="true">
+            Month
+          </button>
+          <button type="button" data-cal-view="agenda" aria-pressed="false">
+            Agenda
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  {
+    months.length > 0 && (
+      <div class="event-cal__month-view" data-cal-month-view hidden>
+        {months.map((month) => (
+          <section
+            class="event-cal__month"
+            data-month={month.key}
+            data-label={month.label}
+            data-event-count={month.eventCount}
+            hidden
+          >
+            <table class="event-cal__grid">
+              <caption class="visually-hidden">{month.label}</caption>
+              <thead>
+                <tr>
+                  {weekdays.map(([full, short, letter]) => (
+                    <th scope="col">
+                      <abbr title={full}>
+                        <span class="event-cal__wd-short">{short}</span>
+                        <span class="event-cal__wd-letter" aria-hidden="true">
+                          {letter}
+                        </span>
+                      </abbr>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {month.weeks.map((week) => (
+                  <tr>
+                    {week.map((day) => {
+                      const more = hiddenCount(day);
+                      return (
+                        <td
+                          class:list={[
+                            "event-cal__day",
+                            {
+                              "is-outside": !day.inMonth,
+                              "has-events": day.placements.length > 0,
+                            },
+                          ]}
+                          data-day={day.key}
+                        >
+                          <button
+                            type="button"
+                            class="event-cal__date"
+                            data-cal-day={day.key}
+                            aria-label={dayAriaLabel(day)}
+                            aria-pressed="false"
+                            tabindex="-1"
+                          >
+                            {day.day}
+                          </button>
+                          {day.placements.length > 0 && (
+                            <div class="event-cal__lanes">
+                              {lanesFor(day).map((placement) =>
+                                placement && placement.isSegmentStart ? (
+                                  <a
+                                    class={chipClass(placement)}
+                                    style={`--span: ${placement.segmentLength}`}
+                                    href={aboutEventPath(placement.event.slug)}
+                                    title={[
+                                      placement.event.title,
+                                      placeLabel(placement.event),
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" · ")}
+                                  >
+                                    {placement.time &&
+                                      !placement.isMultiDay && (
+                                        <span class="event-cal__chip-time">
+                                          {placement.time}
+                                        </span>
+                                      )}
+                                    <span class="event-cal__chip-title">
+                                      {placement.event.title}
+                                    </span>
+                                  </a>
+                                ) : (
+                                  <span
+                                    class="event-cal__lane-spacer"
+                                    aria-hidden="true"
+                                  />
+                                ),
+                              )}
+                              {more > 0 && (
+                                <button
+                                  type="button"
+                                  class="event-cal__more"
+                                  data-cal-day={day.key}
+                                  tabindex="-1"
+                                >
+                                  +{more} more
+                                </button>
+                              )}
+                            </div>
+                          )}
+                          {day.placements.length > 0 && (
+                            <span class="event-cal__dots" aria-hidden="true">
+                              {day.placements.slice(0, MAX_DOTS).map((p) => (
+                                <span
+                                  class:list={[
+                                    "event-cal__dot",
+                                    {
+                                      "event-cal__dot--allday":
+                                        p.isMultiDay || p.event.isDateOnly,
+                                    },
+                                  ]}
+                                />
+                              ))}
+                            </span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        ))}
+
+        <section
+          class="event-cal__panel"
+          data-cal-panel
+          aria-labelledby="event-cal-panel-title"
+        >
+          <div class="event-cal__panel-head">
+            <h3 class="event-cal__panel-title" id="event-cal-panel-title" data-cal-panel-title />
+            <button
+              type="button"
+              class="event-cal__panel-reset"
+              data-cal-panel-reset
+              hidden
+            >
+              Show whole month
+            </button>
+          </div>
+          {days.map((day) => (
+            <div class="event-cal__panel-day" data-cal-panel-day={day.key} hidden>
+              <h4 class="calendar__day">{day.label}</h4>
+              <ul class="stack-list">
+                {day.events.map((event) => (
+                  <li>
+                    {event.imageUrl ? (
+                      <img
+                        class="stack-list__thumb"
+                        src={event.imageUrl}
+                        alt=""
+                        width="64"
+                        height="64"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div class="stack-list__thumb" aria-hidden="true" />
+                    )}
+                    <div>
+                      <p class="stack-list__title">
+                        <a href={aboutEventPath(event.slug)}>{event.title}</a>
+                      </p>
+                      <p class="stack-list__meta">
+                        {[
+                          eventWhenLabel(event),
+                          placeLabel(event),
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    </div>
+                    <a class="chip" href={aboutEventPath(event.slug)}>
+                      Details
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          <p class="empty" data-cal-panel-empty hidden />
+        </section>
+
+        {undatedCount > 0 && (
+          <p class="event-cal__note muted">
+            {undatedCount === 1
+              ? "1 event without a date is listed in the agenda."
+              : `${undatedCount} events without a date are listed in the agenda.`}
+          </p>
+        )}
+      </div>
+    )
+  }
+
+  <div class="event-cal__agenda" data-cal-agenda>
+    <EventList
+      events={events}
+      cityHubKeys={cityHubKeys}
+      countryHubCodes={countryHubCodes}
+    />
+  </div>
+</div>
+
+<script>
+  const NARROW = window.matchMedia("(max-width: 40rem)");
+
+  function localDayKey(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  function shiftDay(key: string, days: number): string {
+    const [y, m, d] = key.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+  }
+
+  function setup(root: HTMLElement) {
+    const toolbar = root.querySelector<HTMLElement>("[data-cal-toolbar]");
+    const monthView = root.querySelector<HTMLElement>("[data-cal-month-view]");
+    const agenda = root.querySelector<HTMLElement>("[data-cal-agenda]");
+    const nav = root.querySelector<HTMLElement>("[data-cal-nav]");
+    const title = root.querySelector<HTMLElement>("[data-cal-title]");
+    const prev = root.querySelector<HTMLButtonElement>("[data-cal-prev]");
+    const next = root.querySelector<HTMLButtonElement>("[data-cal-next]");
+    const todayBtn = root.querySelector<HTMLButtonElement>("[data-cal-today]");
+    const panel = root.querySelector<HTMLElement>("[data-cal-panel]");
+    const panelTitle = root.querySelector<HTMLElement>("[data-cal-panel-title]");
+    const panelReset = root.querySelector<HTMLButtonElement>(
+      "[data-cal-panel-reset]",
+    );
+    const panelEmpty = root.querySelector<HTMLElement>("[data-cal-panel-empty]");
+    if (
+      !toolbar || !monthView || !agenda || !nav || !title || !prev || !next ||
+      !todayBtn || !panel || !panelTitle || !panelReset || !panelEmpty
+    ) {
+      return;
+    }
+    enhance({
+      root, toolbar, monthView, agenda, nav, title, prev, next, todayBtn,
+      panel, panelTitle, panelReset, panelEmpty,
+    });
+  }
+
+  function enhance({
+    root, toolbar, monthView, agenda, nav, title, prev, next, todayBtn,
+    panel, panelTitle, panelReset, panelEmpty,
+  }: {
+    root: HTMLElement;
+    toolbar: HTMLElement;
+    monthView: HTMLElement;
+    agenda: HTMLElement;
+    nav: HTMLElement;
+    title: HTMLElement;
+    prev: HTMLButtonElement;
+    next: HTMLButtonElement;
+    todayBtn: HTMLButtonElement;
+    panel: HTMLElement;
+    panelTitle: HTMLElement;
+    panelReset: HTMLButtonElement;
+    panelEmpty: HTMLElement;
+  }) {
+
+    const allSections = [
+      ...root.querySelectorAll<HTMLElement>("section[data-month]"),
+    ];
+    const viewButtons = [
+      ...root.querySelectorAll<HTMLButtonElement>("[data-cal-view]"),
+    ];
+    const panelDays = [
+      ...root.querySelectorAll<HTMLElement>("[data-cal-panel-day]"),
+    ];
+
+    const today = localDayKey(new Date());
+    const todayMonth = today.slice(0, 7);
+    const firstAllowed = allSections.findIndex(
+      (s) => (s.dataset.month ?? "") >= todayMonth,
+    );
+    const sections =
+      firstAllowed > 0 ? allSections.slice(firstAllowed) : allSections;
+    for (const s of allSections) {
+      if (!sections.includes(s)) s.remove();
+    }
+
+    let monthIndex = 0;
+    let selected: string | null = null;
+    let view: "month" | "agenda" = "month";
+
+    for (const cell of root.querySelectorAll<HTMLElement>("td[data-day]")) {
+      const key = cell.dataset.day ?? "";
+      if (key < today) cell.classList.add("is-past");
+      if (key === today) {
+        cell.classList.add("is-today");
+        cell
+          .querySelector(".event-cal__date")
+          ?.setAttribute("aria-current", "date");
+      }
+    }
+
+    const currentSection = () => sections[monthIndex];
+    const currentMonth = () => currentSection()?.dataset.month ?? "";
+    const todayIndex = sections.findIndex((s) => s.dataset.month === todayMonth);
+
+    function dayButtons(section: HTMLElement) {
+      return [
+        ...section.querySelectorAll<HTMLButtonElement>(".event-cal__date"),
+      ];
+    }
+
+    function setRovingFocus(key: string | null) {
+      const section = currentSection();
+      if (!section) return;
+      const buttons = dayButtons(section);
+      const month = currentMonth();
+      const target =
+        buttons.find((b) => b.dataset.calDay === key) ??
+        buttons.find((b) => b.dataset.calDay === today) ??
+        buttons.find((b) => b.dataset.calDay?.startsWith(month));
+      for (const b of buttons) b.tabIndex = b === target ? 0 : -1;
+      return target;
+    }
+
+    function renderPanel() {
+      const month = currentMonth();
+      const label = currentSection()?.dataset.label ?? "";
+      const narrow = NARROW.matches;
+      let shown = 0;
+      for (const block of panelDays) {
+        const key = block.dataset.calPanelDay ?? "";
+        const visible = selected
+          ? key === selected
+          : narrow && key.startsWith(month) && key >= today;
+        block.hidden = !visible;
+        block.querySelector("h4")?.toggleAttribute("hidden", Boolean(selected));
+        if (visible) shown += 1;
+      }
+      panelReset.hidden = !selected;
+      if (selected) {
+        const cell = root.querySelector<HTMLElement>(
+          `td[data-day="${selected}"] .event-cal__date`,
+        );
+        const dayLabel = cell?.getAttribute("aria-label")?.split(",")[0] ?? "";
+        panelTitle.textContent = dayLabel;
+        panelEmpty.textContent = "No events on this day.";
+      } else {
+        panelTitle.textContent = `Coming up in ${label.split(" ")[0]}`;
+        panelEmpty.textContent = "Nothing else planned this month yet.";
+      }
+      panelEmpty.hidden = shown > 0;
+      panel.hidden = !selected && !narrow;
+
+      for (const b of root.querySelectorAll<HTMLButtonElement>(
+        ".event-cal__date",
+      )) {
+        const on = b.dataset.calDay === selected;
+        b.setAttribute("aria-pressed", String(on));
+        b.closest("td")?.classList.toggle("is-selected", on);
+      }
+    }
+
+    function showMonth(index: number, opts: {focusKey?: string | null} = {}) {
+      monthIndex = Math.max(0, Math.min(sections.length - 1, index));
+      sections.forEach((s, i) => (s.hidden = i !== monthIndex));
+      title.textContent = currentSection()?.dataset.label ?? "";
+      prev.disabled = monthIndex === 0;
+      next.disabled = monthIndex === sections.length - 1;
+      todayBtn.disabled = todayIndex < 0;
+      if (selected && !selected.startsWith(currentMonth())) selected = null;
+      const target = setRovingFocus(opts.focusKey ?? selected);
+      if (opts.focusKey && target) target.focus();
+      renderPanel();
+      if (view === "month") {
+        history.replaceState(null, "", `${location.pathname}#${currentMonth()}`);
+      }
+    }
+
+    function setView(next: "month" | "agenda", push: boolean) {
+      view = next;
+      monthView.hidden = view !== "month";
+      agenda.hidden = view !== "agenda";
+      nav.hidden = view !== "month";
+      for (const b of viewButtons) {
+        b.setAttribute("aria-pressed", String(b.dataset.calView === view));
+      }
+      const url =
+        view === "agenda"
+          ? `${location.pathname}?view=agenda`
+          : `${location.pathname}#${currentMonth()}`;
+      if (push) history.pushState({view}, "", url);
+      else history.replaceState({view}, "", url);
+    }
+
+    function selectDay(key: string) {
+      selected = selected === key ? null : key;
+      renderPanel();
+      if (selected && NARROW.matches) {
+        panel.scrollIntoView({block: "nearest", behavior: "smooth"});
+      }
+    }
+
+    function moveFocus(from: string, delta: number) {
+      const key = shiftDay(from, delta);
+      const section = currentSection();
+      const inSection = section
+        ?.querySelector<HTMLButtonElement>(
+          `.event-cal__date[data-cal-day="${key}"]`,
+        );
+      if (inSection && key.startsWith(currentMonth())) {
+        setRovingFocus(key);
+        inSection.focus();
+        return;
+      }
+      const index = sections.findIndex((s) => s.dataset.month === key.slice(0, 7));
+      if (index >= 0) showMonth(index, {focusKey: key});
+      else if (inSection) {
+        setRovingFocus(key);
+        inSection.focus();
+      }
+    }
+
+    prev.addEventListener("click", () => showMonth(monthIndex - 1));
+    next.addEventListener("click", () => showMonth(monthIndex + 1));
+    todayBtn.addEventListener("click", () => {
+      if (todayIndex >= 0) showMonth(todayIndex, {focusKey: today});
+    });
+    panelReset.addEventListener("click", () => {
+      selected = null;
+      renderPanel();
+      setRovingFocus(null)?.focus();
+    });
+    for (const b of viewButtons) {
+      b.addEventListener("click", () => {
+        const target = b.dataset.calView === "agenda" ? "agenda" : "month";
+        if (target !== view) setView(target, true);
+      });
+    }
+
+    monthView.addEventListener("click", (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
+        "button[data-cal-day]",
+      );
+      const key = button?.dataset.calDay;
+      if (!key) return;
+      const month = key.slice(0, 7);
+      if (month !== currentMonth()) {
+        const index = sections.findIndex((s) => s.dataset.month === month);
+        if (index >= 0) {
+          selected = key;
+          showMonth(index, {focusKey: key});
+          return;
+        }
+      }
+      selectDay(key);
+    });
+
+    monthView.addEventListener("keydown", (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
+        ".event-cal__date",
+      );
+      const key = button?.dataset.calDay;
+      if (!key) return;
+      const deltas: Record<string, number> = {
+        ArrowLeft: -1,
+        ArrowRight: 1,
+        ArrowUp: -7,
+        ArrowDown: 7,
+      };
+      if (event.key in deltas) {
+        event.preventDefault();
+        moveFocus(key, deltas[event.key]);
+      } else if (event.key === "PageUp" || event.key === "PageDown") {
+        event.preventDefault();
+        showMonth(monthIndex + (event.key === "PageUp" ? -1 : 1), {
+          focusKey: null,
+        });
+        setRovingFocus(null)?.focus();
+      }
+    });
+
+    NARROW.addEventListener("change", renderPanel);
+
+    function applyLocation() {
+      const params = new URLSearchParams(location.search);
+      const hash = location.hash.slice(1);
+      const hashIndex = sections.findIndex((s) => s.dataset.month === hash);
+      const startIndex =
+        hashIndex >= 0
+          ? hashIndex
+          : todayIndex >= 0
+            ? todayIndex
+            : 0;
+      view = params.get("view") === "agenda" ? "agenda" : "month";
+      showMonth(startIndex);
+      setView(view, false);
+    }
+
+    window.addEventListener("popstate", applyLocation);
+
+    toolbar.hidden = false;
+    root.classList.add("is-enhanced");
+    applyLocation();
+  }
+
+  for (const root of document.querySelectorAll<HTMLElement>("[data-event-cal]")) {
+    setup(root);
+  }
+</script>

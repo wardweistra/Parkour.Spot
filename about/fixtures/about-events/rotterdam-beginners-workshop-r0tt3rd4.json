@@ -1,0 +1,19 @@
+{
+  "slug": "rotterdam-beginners-workshop-r0tt3rd4",
+  "eventId": "r0tt3rd4mwrk",
+  "title": "Rotterdam beginners workshop",
+  "startAt": "2026-10-10T12:00:00.000Z",
+  "endAt": "2026-10-10T14:00:00.000Z",
+  "isDateOnly": false,
+  "timeZone": "Europe/Amsterdam",
+  "city": "Rotterdam",
+  "citySlug": "rotterdam",
+  "countryCode": "nl",
+  "imageUrl": null,
+  "imageUrls": [],
+  "websiteUrl": null,
+  "description": "An intro session for first-timers: rolls, landings, and safe vaults.",
+  "address": null,
+  "latitude": 51.9244,
+  "longitude": 4.4777
+}

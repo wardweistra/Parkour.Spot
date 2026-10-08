@@ -158,28 +158,33 @@ export async function loadStats(): Promise<AboutStats> {
   return stats;
 }
 
-export async function loadCountry(
-  countryCode: string,
-): Promise<CountrySnapshot | null> {
-  const cc = countryCode.toLowerCase();
-  if (useFixtures()) {
-    try {
-      return await readFixtureJson<CountrySnapshot>(
-        `about-countries/${cc}.json`,
-      );
-    } catch {
-      return null;
-    }
-  }
+// Firestore caps getAll batches well above this; smaller chunks keep each RPC
+// response modest.
+const GET_ALL_CHUNK = 300;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getAllDocs(refs: any[], fieldMask?: string[]): Promise<any[]> {
+  if (refs.length === 0) return [];
   const db = await getDb();
-  const snap = await db
-    .collection("snapshots")
-    .doc("about")
-    .collection("countries")
-    .doc(cc)
-    .get();
-  if (!snap.exists) return null;
-  const data = snap.data() as CountrySnapshot;
+  const chunks = [];
+  for (let i = 0; i < refs.length; i += GET_ALL_CHUNK) {
+    const slice = refs.slice(i, i + GET_ALL_CHUNK);
+    chunks.push(fieldMask ? db.getAll(...slice, {fieldMask}) : db.getAll(...slice));
+  }
+  return (await Promise.all(chunks)).flat();
+}
+
+async function countryRef(cc: string) {
+  const db = await getDb();
+  return db.collection("snapshots").doc("about").collection("countries").doc(cc);
+}
+
+async function cityRef(id: string) {
+  const db = await getDb();
+  return db.collection("snapshots").doc("about").collection("cities").doc(id);
+}
+
+function normalizeCountry(data: CountrySnapshot): CountrySnapshot {
   return {
     ...data,
     cities: Array.isArray(data.cities) ? data.cities : [],
@@ -188,32 +193,90 @@ export async function loadCountry(
   };
 }
 
-export async function loadCity(
-  countryCode: string,
-  citySlug: string,
-): Promise<CitySnapshot | null> {
-  const id = `${countryCode.toLowerCase()}_${citySlug}`;
-  if (useFixtures()) {
-    try {
-      return await readFixtureJson<CitySnapshot>(`about-cities/${id}.json`);
-    } catch {
-      return null;
-    }
-  }
-  const db = await getDb();
-  const snap = await db
-    .collection("snapshots")
-    .doc("about")
-    .collection("cities")
-    .doc(id)
-    .get();
-  if (!snap.exists) return null;
-  const data = snap.data() as CitySnapshot;
+function normalizeCity(data: CitySnapshot): CitySnapshot {
   return {
     ...data,
     spots: Array.isArray(data.spots) ? data.spots : [],
     events: Array.isArray(data.events) ? data.events : [],
   };
+}
+
+const countryCache = new Map<string, Promise<CountrySnapshot | null>>();
+const cityCache = new Map<string, Promise<CitySnapshot | null>>();
+
+export function loadCountry(
+  countryCode: string,
+): Promise<CountrySnapshot | null> {
+  const cc = countryCode.toLowerCase();
+  let pending = countryCache.get(cc);
+  if (!pending) {
+    pending = fetchCountry(cc);
+    countryCache.set(cc, pending);
+  }
+  return pending;
+}
+
+async function fetchCountry(cc: string): Promise<CountrySnapshot | null> {
+  if (useFixtures()) {
+    try {
+      return normalizeCountry(
+        await readFixtureJson<CountrySnapshot>(`about-countries/${cc}.json`),
+      );
+    } catch {
+      return null;
+    }
+  }
+  const snap = await (await countryRef(cc)).get();
+  return snap.exists ? normalizeCountry(snap.data() as CountrySnapshot) : null;
+}
+
+/** Countries in input order, read in batches and cached for later lookups. */
+async function loadCountries(
+  codes: string[],
+): Promise<Array<CountrySnapshot | null>> {
+  const wanted = codes.map((code) => code.toLowerCase());
+  const missing = [...new Set(wanted)].filter((cc) => !countryCache.has(cc));
+  if (missing.length > 0 && !useFixtures()) {
+    const batch = getAllDocs(await Promise.all(missing.map(countryRef)));
+    missing.forEach((cc, i) => {
+      countryCache.set(
+        cc,
+        batch.then((snaps) =>
+          snaps[i].exists
+            ? normalizeCountry(snaps[i].data() as CountrySnapshot)
+            : null,
+        ),
+      );
+    });
+  }
+  return Promise.all(wanted.map(loadCountry));
+}
+
+export function loadCity(
+  countryCode: string,
+  citySlug: string,
+): Promise<CitySnapshot | null> {
+  const id = `${countryCode.toLowerCase()}_${citySlug}`;
+  let pending = cityCache.get(id);
+  if (!pending) {
+    pending = fetchCity(id);
+    cityCache.set(id, pending);
+  }
+  return pending;
+}
+
+async function fetchCity(id: string): Promise<CitySnapshot | null> {
+  if (useFixtures()) {
+    try {
+      return normalizeCity(
+        await readFixtureJson<CitySnapshot>(`about-cities/${id}.json`),
+      );
+    } catch {
+      return null;
+    }
+  }
+  const snap = await (await cityRef(id)).get();
+  return snap.exists ? normalizeCity(snap.data() as CitySnapshot) : null;
 }
 
 export async function loadEventsIndex(): Promise<EventsIndex> {
@@ -252,18 +315,28 @@ export type CoverageCountry = {
   spotCount: number;
 };
 
+type Coverage = {generatedAt: string; countries: CoverageCountry[]};
+let coveragePromise: Promise<Coverage> | null = null;
+
 /** Countries and cities in this refresh, with full library totals. */
-export async function loadCoverage(): Promise<{
-  generatedAt: string;
-  countries: CoverageCountry[];
-}> {
+export function loadCoverage(): Promise<Coverage> {
+  coveragePromise ??= fetchCoverage();
+  return coveragePromise;
+}
+
+async function fetchCoverage(): Promise<Coverage> {
   const index = await loadAboutIndex();
+  const codes = index.countries
+    .map((entry) => entry?.code)
+    .filter((code): code is string => typeof code === "string" && code.length === 2);
+  const loaded = await loadCountries(codes);
+  const refs = await Promise.all(
+    loaded.map((country) => (country ? loadCityRefs(country) : [])),
+  );
   const countries: CoverageCountry[] = [];
-  for (const entry of index.countries) {
-    if (typeof entry?.code !== "string" || entry.code.length !== 2) continue;
-    const country = await loadCountry(entry.code);
+  for (const [i, country] of loaded.entries()) {
     if (!country) continue;
-    const cities = await loadCityRefs(country);
+    const cities = refs[i];
     if (cities.length === 0) continue;
     const fromCities = cities.reduce(
       (sum, city) => sum + (city.spotCount ?? 0),
@@ -285,38 +358,84 @@ export async function listCountryCodes(): Promise<string[]> {
     .map((c) => c.code.toLowerCase());
 }
 
+const cityRefsCache = new Map<string, Promise<CityRef[]>>();
+
 /** City hubs that were actually written, including events-only cities. */
-export async function loadCityRefs(
-  country: CountrySnapshot,
-): Promise<CityRef[]> {
-  const kept: CityRef[] = [];
-  for (const city of country.cities ?? []) {
-    if (typeof city?.citySlug !== "string" || !city.citySlug) continue;
-    const hub = await loadCity(country.countryCode, city.citySlug);
-    if (!hub) continue;
-    const listed = Array.isArray(hub.spots) ? hub.spots.length : 0;
-    kept.push({
-      ...city,
-      spotCount: resolveSpotCount(hub.spotCount ?? city.spotCount, listed),
-    });
+export function loadCityRefs(country: CountrySnapshot): Promise<CityRef[]> {
+  const cc = country.countryCode.toLowerCase();
+  let pending = cityRefsCache.get(cc);
+  if (!pending) {
+    pending = fetchCityRefs(country);
+    cityRefsCache.set(cc, pending);
   }
-  return kept;
+  return pending;
 }
 
-export async function listCityParams(): Promise<
-  Array<{countryCode: string; city: string}>
-> {
-  const codes = await listCountryCodes();
-  const out: Array<{countryCode: string; city: string}> = [];
-  for (const code of codes) {
-    const country = await loadCountry(code);
-    if (!country) continue;
-    const cities = await loadCityRefs(country);
-    for (const city of cities) {
-      out.push({countryCode: code, city: city.citySlug});
-    }
+async function fetchCityRefs(country: CountrySnapshot): Promise<CityRef[]> {
+  const cc = country.countryCode.toLowerCase();
+  const cities = (country.cities ?? []).filter(
+    (city) => typeof city?.citySlug === "string" && city.citySlug.length > 0,
+  );
+  if (useFixtures()) {
+    const hubs = await Promise.all(
+      cities.map((city) => loadCity(cc, city.citySlug)),
+    );
+    return cities.flatMap((city, i) => {
+      const hub = hubs[i];
+      if (!hub) return [];
+      return [
+        {
+          ...city,
+          spotCount: resolveSpotCount(
+            hub.spotCount ?? city.spotCount,
+            hub.spots.length,
+          ),
+        },
+      ];
+    });
   }
-  return out;
+
+  // Only existence and the stored total are needed here; full hub documents
+  // carry spot lists, so read just `spotCount` and fall back when it is unset.
+  const refs = await Promise.all(
+    cities.map((city) => cityRef(`${cc}_${city.citySlug}`)),
+  );
+  const snaps = await getAllDocs(refs, ["spotCount"]);
+  const kept = await Promise.all(
+    cities.map(async (city, i): Promise<CityRef | null> => {
+      if (!snaps[i].exists) return null;
+      const stored = Number(snaps[i].get("spotCount"));
+      if (Number.isFinite(stored)) {
+        return {...city, spotCount: resolveSpotCount(stored, 0)};
+      }
+      const hub = await loadCity(cc, city.citySlug);
+      if (!hub) return null;
+      return {
+        ...city,
+        spotCount: resolveSpotCount(city.spotCount, hub.spots.length),
+      };
+    }),
+  );
+  return kept.filter((city): city is CityRef => city !== null);
+}
+
+type CityParam = {countryCode: string; city: string};
+let cityParamsPromise: Promise<CityParam[]> | null = null;
+
+export function listCityParams(): Promise<CityParam[]> {
+  cityParamsPromise ??= fetchCityParams();
+  return cityParamsPromise;
+}
+
+async function fetchCityParams(): Promise<CityParam[]> {
+  const codes = await listCountryCodes();
+  const loaded = await loadCountries(codes);
+  const refs = await Promise.all(
+    loaded.map((country) => (country ? loadCityRefs(country) : [])),
+  );
+  return codes.flatMap((code, i) =>
+    refs[i].map((city) => ({countryCode: code, city: city.citySlug})),
+  );
 }
 
 export async function listEventSlugs(): Promise<string[]> {

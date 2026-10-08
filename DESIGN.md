@@ -214,6 +214,14 @@ ParkourSpot is predominantly **tonal, not shadow-driven**. Depth is conveyed by 
 - **Shape:** 12px radius, elevation 2, image carousel with horizontal paging
 - **Actions:** Quick chips and icon buttons aligned to spot detail patterns
 
+### Events calendar (About site, `EventCalendar.astro`)
+
+- **Character:** A personal agenda, not an embedded widget. A Monday-first month grid with a "Month" / "Agenda" segmented toggle; the agenda is the shared `EventList`.
+- **Grid:** Flat table on `surface` with `outlineVariant` lines and a 12px outer radius; `surfaceContainerLow` weekday band and outside-month days. Past dates are muted, and today gets a 2px `primary` ring on the date number. The selected day gets a filled `primary` date and a light `primaryContainer` cell wash.
+- **Event chips:** 24px, 6px radius, up to 3 lanes per day, then "+N more". All-day and multi-day events are solid `primary` bars that span the week row continuously, with square ends where they continue into the next or previous week. Timed events use a `primaryContainer` wash with a tabular time prefix in the event's own time zone.
+- **Mobile (under 40rem):** Chips become up to 3 dots, the whole cell is the tap target, and the panel under the grid lists the rest of the month or the selected day in `stack-list` rows.
+- **Progressive enhancement:** Without JavaScript, only the agenda list renders. The grid, toolbar, URL state (`#YYYY-MM`, `?view=agenda`), and arrow-key day navigation are added on the client.
+
 ## 6. Do's and Don'ts
 
 Concrete guardrails for AI-generated and hand-built UI. Strategic anti-references from PRODUCT.md are enforced here visually.

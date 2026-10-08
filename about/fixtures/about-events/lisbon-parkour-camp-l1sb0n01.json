@@ -1,0 +1,19 @@
+{
+  "slug": "lisbon-parkour-camp-l1sb0n01",
+  "eventId": "l1sb0n01camp",
+  "title": "Lisbon parkour camp",
+  "startAt": "2026-11-27T00:00:00.000Z",
+  "endAt": "2026-12-02T23:59:59.999Z",
+  "isDateOnly": true,
+  "timeZone": "Europe/Lisbon",
+  "city": "Lisbon",
+  "citySlug": "lisbon",
+  "countryCode": "pt",
+  "imageUrl": null,
+  "imageUrls": [],
+  "websiteUrl": null,
+  "description": "A six-day camp with coaching, conditioning, and a closing jam.",
+  "address": null,
+  "latitude": 38.7223,
+  "longitude": -9.1393
+}
