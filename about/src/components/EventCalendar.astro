@@ -18,6 +18,8 @@ interface Props {
   /** Snapshot time; the month grid starts no earlier than this month. */
   generatedAt?: string;
   showPlaceLinks?: boolean;
+  /** Country flags on grid chips; pointless when every event shares a country. */
+  showFlags?: boolean;
   cityHubKeys?: string[];
   countryHubCodes?: string[];
   /** Level of the month title; the day panel headings follow below it. */
@@ -28,6 +30,7 @@ const {
   events,
   generatedAt,
   showPlaceLinks = true,
+  showFlags = false,
   cityHubKeys = [],
   countryHubCodes = [],
   headingLevel = 2,
@@ -220,6 +223,11 @@ const initialMonth = months[0];
                                       .filter(Boolean)
                                       .join(" · ")}
                                   >
+                                    {showFlags && (
+                                      <CountryFlag
+                                        code={placement.event.countryCode}
+                                      />
+                                    )}
                                     {placement.time &&
                                       !placement.isMultiDay && (
                                         <span class="event-cal__chip-time">

@@ -893,6 +893,18 @@ img {
   border-end-end-radius: 0;
 }
 
+.event-cal__chip .flag {
+  flex: none;
+  width: 18px;
+  height: 12px;
+  margin: 0;
+  vertical-align: 0;
+}
+
+.event-cal__chip--allday .flag {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-on-primary) 35%, transparent);
+}
+
 .event-cal__chip-time {
   flex: none;
   font-weight: 600;
