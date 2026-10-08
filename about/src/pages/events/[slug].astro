@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import OpenInApp from "../../components/OpenInApp.astro";
+import CountryFlag from "../../components/CountryFlag.astro";
 import {buildEventJsonLd} from "../../lib/schema";
 import {listEventSlugs, loadCity, loadCountry, loadEvent} from "../../lib/snapshots";
 import {appEventUrl, cityHubKey, eventAreaHubLink} from "../../lib/urls";
@@ -65,6 +66,7 @@ const areaHub = eventAreaHubLink(
         event.city && event.countryCode && (
           <p class="muted">
             {event.address ? `${event.address} · ` : ""}
+            <CountryFlag code={event.countryCode} />
             {event.city}, {event.countryCode.toUpperCase()}
             {areaHub && (
               <>

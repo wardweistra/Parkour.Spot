@@ -39,6 +39,16 @@ export function aboutCityPath(countryCode: string, citySlug: string): string {
   return `/${countryCode.toLowerCase()}/${citySlug}`;
 }
 
+/**
+ * Flagcdn PNG for an ISO 3166-1 alpha-2 code, matching the app's
+ * `CountryFlagBadge`. Subdivision suffixes are ignored (`GB-ENG` → `gb`).
+ */
+export function flagUrl(countryCode: string, width: 40 | 80 = 40): string | null {
+  const cc = countryCode.trim().toLowerCase().split("-")[0];
+  if (!/^[a-z]{2}$/.test(cc)) return null;
+  return `https://flagcdn.com/w${width}/${cc}.png`;
+}
+
 export function cityHubKey(countryCode: string, citySlug: string): string {
   return `${countryCode.toLowerCase()}/${citySlug}`;
 }

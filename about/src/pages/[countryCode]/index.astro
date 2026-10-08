@@ -3,6 +3,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import SpotList from "../../components/SpotList.astro";
 import EventList from "../../components/EventList.astro";
 import OpenInApp from "../../components/OpenInApp.astro";
+import CountryFlag from "../../components/CountryFlag.astro";
 import {
   countryHubLede,
   countryHubTitle,
@@ -45,7 +46,10 @@ if (!country) {
 }
 
 const cc = country.countryCode.toLowerCase();
-const cities = await loadCityRefs(country);
+const cities = [...(await loadCityRefs(country))].sort(
+  (a, b) =>
+    (b.spotCount ?? 0) - (a.spotCount ?? 0) || a.city.localeCompare(b.city, "en"),
+);
 const listed = country.spots ?? [];
 const fromCities = cities.reduce((sum, city) => sum + (city.spotCount ?? 0), 0);
 const spotCount = resolveSpotCount(country.spotCount, fromCities || listed.length);
@@ -82,7 +86,7 @@ const jsonLd = buildPlaceJsonLd({
   canonicalPath={pagePath}
   jsonLd={jsonLd}
 >
-  <h1 class="page-title">{title}</h1>
+  <h1 class="page-title"><CountryFlag code={cc} />{title}</h1>
   <p class="page-lede">{lede}</p>
   <div class="hub-open">
     <OpenInApp href={appCountryUrl(cc)} />

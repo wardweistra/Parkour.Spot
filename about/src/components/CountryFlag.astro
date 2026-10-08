@@ -1,0 +1,26 @@
+---
+import {flagUrl} from "../lib/urls";
+
+interface Props {
+  code: string | null | undefined;
+}
+
+const {code} = Astro.props;
+const src = code ? flagUrl(code) : null;
+const src2x = code ? flagUrl(code, 80) : null;
+---
+
+{
+  src && (
+    <img
+      class="flag"
+      src={src}
+      srcset={`${src2x} 2x`}
+      alt=""
+      width="21"
+      height="14"
+      loading="lazy"
+      decoding="async"
+    />
+  )
+}

@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import CountryFlag from "../components/CountryFlag.astro";
 import OpenInApp from "../components/OpenInApp.astro";
 import Screenshot from "../components/Screenshot.astro";
 import StatGrid from "../components/StatGrid.astro";
@@ -33,8 +34,10 @@ const sourcePhrase =
     ? countNoun(stats.spotSourceCount, "spot list")
     : null;
 
-const countries = [...coverage.countries].sort((a, b) =>
-  countryName(a.code).localeCompare(countryName(b.code), "en"),
+const countries = [...coverage.countries].sort(
+  (a, b) =>
+    b.spotCount - a.spotCount ||
+    countryName(a.code).localeCompare(countryName(b.code), "en"),
 );
 
 const description = headline
@@ -207,6 +210,7 @@ const description = headline
         <div class="chip-row">
           {countries.map((country) => (
             <a class="chip" href={aboutCountryPath(country.code)}>
+              <CountryFlag code={country.code} />
               {countryName(country.code)}
               <span class="muted">
                 {" "}

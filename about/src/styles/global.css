@@ -532,6 +532,18 @@ img {
   font-weight: 600;
 }
 
+.flag {
+  display: inline-block;
+  width: 1.5em;
+  height: 1em;
+  margin-inline-end: 0.4em;
+  vertical-align: -0.125em;
+  object-fit: cover;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-outline) 25%, transparent);
+  background: var(--color-surface-container-highest);
+}
+
 .chip:hover {
   background: var(--color-primary-container);
   color: var(--color-on-primary-container);

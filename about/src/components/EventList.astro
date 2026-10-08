@@ -1,4 +1,5 @@
 ---
+import CountryFlag from "./CountryFlag.astro";
 import type {EventSummary} from "../lib/types";
 import {
   eventWhenLabel,
@@ -80,12 +81,10 @@ function placeLink(event: EventSummary): {href: string; label: string} | null {
   return eventAreaHubLink(event, cityHubs, countryHubs);
 }
 
-function metaLine(event: EventSummary): string {
-  const place =
-    event.city && event.countryCode
-      ? `${event.city}, ${event.countryCode.toUpperCase()}`
-      : "";
-  return [eventWhenLabel(event), place].filter(Boolean).join(" · ");
+function placeLabel(event: EventSummary): string {
+  return event.city && event.countryCode
+    ? `${event.city}, ${event.countryCode.toUpperCase()}`
+    : "";
 }
 ---
 
@@ -103,6 +102,8 @@ function metaLine(event: EventSummary): string {
               <ul class="stack-list">
                 {day.events.map((event) => {
                   const hub = placeLink(event);
+                  const when = eventWhenLabel(event);
+                  const place = placeLabel(event);
                   return (
                     <li>
                       {event.imageUrl ? (
@@ -121,8 +122,17 @@ function metaLine(event: EventSummary): string {
                         <p class="stack-list__title">
                           <a href={aboutEventPath(event.slug)}>{event.title}</a>
                         </p>
-                        {metaLine(event) && (
-                          <p class="stack-list__meta">{metaLine(event)}</p>
+                        {(when || place) && (
+                          <p class="stack-list__meta">
+                            {when}
+                            {when && place && " · "}
+                            {place && (
+                              <>
+                                <CountryFlag code={event.countryCode} />
+                                {place}
+                              </>
+                            )}
+                          </p>
                         )}
                         {hub && (
                           <p class="stack-list__meta">

@@ -1,4 +1,5 @@
 ---
+import CountryFlag from "./CountryFlag.astro";
 import EventList from "./EventList.astro";
 import type {EventSummary} from "../lib/types";
 import {
@@ -299,12 +300,14 @@ const initialMonth = months[0];
                         <a href={aboutEventPath(event.slug)}>{event.title}</a>
                       </p>
                       <p class="stack-list__meta">
-                        {[
-                          eventWhenLabel(event),
-                          placeLabel(event),
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
+                        {eventWhenLabel(event)}
+                        {eventWhenLabel(event) && placeLabel(event) && " · "}
+                        {placeLabel(event) && (
+                          <>
+                            <CountryFlag code={event.countryCode} />
+                            {placeLabel(event)}
+                          </>
+                        )}
                       </p>
                     </div>
                     <a class="chip" href={aboutEventPath(event.slug)}>

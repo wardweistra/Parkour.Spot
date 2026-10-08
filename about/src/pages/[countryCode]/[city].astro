@@ -3,6 +3,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import SpotList from "../../components/SpotList.astro";
 import EventList from "../../components/EventList.astro";
 import OpenInApp from "../../components/OpenInApp.astro";
+import CountryFlag from "../../components/CountryFlag.astro";
 import {
   cityHubLede,
   cityHubTitle,
@@ -89,7 +90,7 @@ const jsonLd = buildPlaceJsonLd({
   jsonLd={jsonLd}
 >
   <p class="muted">
-    <a href={aboutCountryPath(cc)}>{countryName(cc)}</a>
+    <a href={aboutCountryPath(cc)}><CountryFlag code={cc} />{countryName(cc)}</a>
     · {hub.city}
   </p>
   <h1 class="page-title">{title}</h1>
