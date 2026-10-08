@@ -1024,14 +1024,22 @@ img {
     display: inline;
   }
 
+  .event-cal {
+    --cal-pad: 2px;
+    --cal-chip-height: 16px;
+  }
+
   .event-cal__day {
-    height: 3.5rem;
-    padding: 2px;
-    text-align: center;
+    height: 4.75rem;
+    padding: var(--cal-pad);
   }
 
   .event-cal__date {
-    margin: 4px 0 0;
+    display: grid;
+    min-width: 26px;
+    height: 26px;
+    margin: 2px auto 2px;
+    font-size: 0.85rem;
   }
 
   .event-cal__date::after {
@@ -1045,27 +1053,40 @@ img {
   }
 
   .event-cal__lanes {
+    gap: 1px;
+  }
+
+  /* The whole cell opens the day panel; chips here are too small to tap. */
+  .event-cal__chip,
+  .event-cal__more {
+    pointer-events: none;
+  }
+
+  .event-cal__chip {
+    gap: 2px;
+    padding: 0 3px;
+    border-radius: 3px;
+    font-size: 0.625rem;
+    font-weight: 600;
+  }
+
+  .event-cal__chip-time {
     display: none;
   }
 
-  .event-cal__dots {
-    display: flex;
-    justify-content: center;
-    gap: 3px;
+  .event-cal__chip-title {
+    text-overflow: clip;
   }
 
-  .event-cal__dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--color-primary) 55%, transparent);
+  .event-cal__chip .flag {
+    width: 11px;
+    height: 8px;
+    border-radius: 1px;
   }
 
-  .event-cal__dot--allday {
-    background: var(--color-primary);
-  }
-
-  .event-cal__day.is-selected .event-cal__dot {
-    background: var(--color-primary);
+  .event-cal__more {
+    height: 14px;
+    padding: 0 3px;
+    font-size: 0.625rem;
   }
 }
