@@ -61,6 +61,31 @@ LatLngBounds? calculateBoundsForLatLngs(Iterable<LatLng> positions) {
   );
 }
 
+/// Parse a Places API `geometry.viewport` map
+/// (`{northeast: {lat, lng}, southwest: {lat, lng}}`) into [LatLngBounds].
+///
+/// Returns null for missing or malformed input, and for viewports that cross
+/// the antimeridian (southwest lng > northeast lng), which [LatLngBounds]
+/// cannot represent.
+LatLngBounds? latLngBoundsFromPlaceViewport(Object? viewport) {
+  if (viewport is! Map) return null;
+  final ne = viewport['northeast'];
+  final sw = viewport['southwest'];
+  if (ne is! Map || sw is! Map) return null;
+  final neLat = ne['lat'];
+  final neLng = ne['lng'];
+  final swLat = sw['lat'];
+  final swLng = sw['lng'];
+  if (neLat is! num || neLng is! num || swLat is! num || swLng is! num) {
+    return null;
+  }
+  if (swLat > neLat || swLng > neLng) return null;
+  return LatLngBounds(
+    southwest: LatLng(swLat.toDouble(), swLng.toDouble()),
+    northeast: LatLng(neLat.toDouble(), neLng.toDouble()),
+  );
+}
+
 /// Calculate bounds to fit all spots with 5% margin
 /// Returns null if the spots list is empty
 LatLngBounds? calculateBoundsForSpots(List<Spot> spots) {
@@ -69,4 +94,3 @@ LatLngBounds? calculateBoundsForSpots(List<Spot> spots) {
     spots.map((spot) => LatLng(spot.latitude, spot.longitude)),
   );
 }
-

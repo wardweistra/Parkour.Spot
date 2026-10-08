@@ -277,6 +277,13 @@ class SearchScreen extends StatefulWidget {
 class SearchScreenState extends State<SearchScreen>
     with TickerProviderStateMixin {
   GoogleMapController? _mapController;
+  final Completer<void> _mapReady = Completer<void>();
+
+  /// Bumped by every camera intent; a pending async camera move only applies
+  /// if the generation it captured is still current.
+  int _cameraIntentGeneration = 0;
+  bool _isResolvingInitialLocation = false;
+  bool _initialLocationApplied = false;
   bool _isGettingLocation = false;
   bool _isLocationPermissionDenied = false;
   bool _isSatelliteView = false;
@@ -519,6 +526,8 @@ class SearchScreenState extends State<SearchScreen>
         widget.initialLocationQuery!.isNotEmpty) {
       _searchQuery = widget.initialLocationQuery!;
       _searchController.text = widget.initialLocationQuery!;
+      _isResolvingInitialLocation = true;
+      unawaited(_resolveInitialLocation());
     }
     _searchController.addListener(_onSearchChanged);
 
@@ -662,10 +671,14 @@ class SearchScreenState extends State<SearchScreen>
     } catch (_) {}
 
     final listId = listIdFromUrl ?? widget.initialListId;
+    final hasPendingInitialLocation =
+        (widget.initialLocationQuery?.isNotEmpty ?? false) &&
+        !_initialLocationApplied;
     final hasFocusIntent =
         (locateSpotId != null && locateSpotId.isNotEmpty) ||
         (locateEventId != null && locateEventId.isNotEmpty) ||
-        (listId != null && listId.isNotEmpty);
+        (listId != null && listId.isNotEmpty) ||
+        hasPendingInitialLocation;
 
     // Zoom nudge forces tile refresh when map was built off-screen. Skip when
     // we have list/locate - the subsequent camera move will achieve the same.
@@ -853,11 +866,79 @@ class SearchScreenState extends State<SearchScreen>
     return 13.5;
   }
 
+  /// Fetches place details and resets the Places session token, as Google
+  /// requires after a selection.
+  Future<Map<String, dynamic>?> _fetchPlaceDetails(String placeId) async {
+    final geocoding = Provider.of<GeocodingService>(context, listen: false);
+    final details = await geocoding.placeDetails(
+      placeId: placeId,
+      sessionToken: _placesSessionToken,
+    );
+    _placesSessionToken = null;
+    return details;
+  }
+
+  /// Frames a place from [GeocodingService.placeDetails] in a single camera
+  /// update. On web, `newCameraPosition` is applied as a separate zoom and
+  /// `panTo`, which an in-flight map animation can cut short; `fitBounds` is
+  /// one operation.
+  CameraUpdate? _cameraUpdateForPlace(Map<String, dynamic> details) {
+    final bounds = latLngBoundsFromPlaceViewport(details['viewport']);
+    if (bounds != null) {
+      return CameraUpdate.newLatLngBounds(bounds, 32);
+    }
+    final double? lat = (details['latitude'] as num?)?.toDouble();
+    final double? lng = (details['longitude'] as num?)?.toDouble();
+    if (lat == null || lng == null) return null;
+    return CameraUpdate.newCameraPosition(
+      CameraPosition(
+        target: LatLng(lat, lng),
+        zoom: _getZoomLevelForPlace(details),
+      ),
+    );
+  }
+
+  /// Moves the camera to [details] and shows its address in the search field.
+  Future<void> _applyPlaceDetails(
+    Map<String, dynamic> details, {
+    required String fallbackText,
+    bool clearLoadingState = true,
+  }) async {
+    final update = _cameraUpdateForPlace(details);
+    if (update != null && _mapController != null) {
+      await _mapController!.animateCamera(update);
+    }
+    if (!mounted) return;
+
+    final String? formatted =
+        details['formattedAddress'] as String? ??
+        details['formatted_address'] as String?;
+    final newText = formatted ?? fallbackText;
+    setState(() {
+      _searchController.text = newText;
+      _searchController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _searchController.text.length),
+      );
+      _searchQuery = newText; // Keep _searchQuery in sync
+      // Guard against mobile tap-through: ignore map taps briefly after any autocomplete selection
+      _lastAutocompleteSpotSelection = DateTime.now();
+      if (clearLoadingState) {
+        _isSearchingLocation = false;
+      }
+    });
+    // Unfocus the text field to collapse autocomplete suggestions
+    if (_searchFocusNode.hasFocus) {
+      _searchFocusNode.unfocus();
+    }
+    // Trigger a refresh of visible spots for new area
+    _updateVisibleSpots();
+  }
+
   Future<void> _selectPlaceSuggestion(
     Map<String, dynamic> suggestion, {
     bool manageLoadingState = true,
-    bool fromInitialQuery = false,
   }) async {
+    final generation = ++_cameraIntentGeneration;
     if (manageLoadingState) {
       setState(() {
         _isSearchingLocation = true;
@@ -865,9 +946,12 @@ class SearchScreenState extends State<SearchScreen>
     }
 
     try {
-      final geocoding = Provider.of<GeocodingService>(context, listen: false);
       final placeId = suggestion['placeId'] as String?;
-      if (placeId == null) {
+      final details = placeId == null
+          ? null
+          : await _fetchPlaceDetails(placeId);
+      if (!mounted) return;
+      if (details == null || generation != _cameraIntentGeneration) {
         if (manageLoadingState) {
           setState(() {
             _isSearchingLocation = false;
@@ -875,65 +959,76 @@ class SearchScreenState extends State<SearchScreen>
         }
         return;
       }
-      final details = await geocoding.placeDetails(
-        placeId: placeId,
-        sessionToken: _placesSessionToken,
+      await _applyPlaceDetails(
+        details,
+        fallbackText: suggestion['description'] as String? ?? '',
+        clearLoadingState: manageLoadingState,
       );
-      // Reset session token after a selection per Google guidelines
-      _placesSessionToken = null;
-      if (details == null) {
-        if (manageLoadingState) {
-          setState(() {
-            _isSearchingLocation = false;
-          });
-        }
-        return;
-      }
-      final double? lat = (details['latitude'] as num?)?.toDouble();
-      final double? lng = (details['longitude'] as num?)?.toDouble();
-      final String? formatted =
-          details['formattedAddress'] as String? ??
-          details['formatted_address'] as String?;
-
-      if (lat != null && lng != null && _mapController != null) {
-        final zoomLevel = _getZoomLevelForPlace(details);
-        await _mapController!.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(target: LatLng(lat, lng), zoom: zoomLevel),
-          ),
-        );
-      }
-      // Update search field - use autocomplete controller if available, otherwise fall back to _searchController
-      final controllerToUpdate = _searchController;
-      final newText = formatted ?? (suggestion['description'] as String? ?? '');
-      setState(() {
-        controllerToUpdate.text = newText;
-        controllerToUpdate.selection = TextSelection.fromPosition(
-          TextPosition(offset: controllerToUpdate.text.length),
-        );
-        _searchQuery = newText; // Keep _searchQuery in sync
-        // Guard against mobile tap-through: ignore map taps briefly after any autocomplete selection
-        _lastAutocompleteSpotSelection = DateTime.now();
-        // Only clear loading state if we're managing it
-        if (manageLoadingState) {
-          _isSearchingLocation = false;
-        }
-      });
-      // Unfocus the text field to collapse autocomplete suggestions
-      if (_searchFocusNode.hasFocus) {
-        _searchFocusNode.unfocus();
-      }
-      // Trigger a refresh of visible spots for new area
-      _updateVisibleSpots();
     } catch (e) {
       // Log errors for debugging
       debugPrint('Error selecting place: $e');
-      if (manageLoadingState) {
+      if (manageLoadingState && mounted) {
         setState(() {
           _isSearchingLocation = false;
         });
       }
       // No-op: suggestions list is now built live by optionsBuilder
+    }
+  }
+
+  /// Resolves [SearchScreen.initialLocationQuery] (country and city URLs) and
+  /// frames it once the map exists. Any later camera intent supersedes it.
+  Future<void> _resolveInitialLocation() async {
+    final query = widget.initialLocationQuery!.trim();
+    final generation = ++_cameraIntentGeneration;
+    bool isCurrent() =>
+        mounted &&
+        generation == _cameraIntentGeneration &&
+        _searchQuery == widget.initialLocationQuery;
+
+    try {
+      final geocoding = Provider.of<GeocodingService>(context, listen: false);
+      Map<String, dynamic>? details;
+      // A second attempt covers Cloud Function cold starts on fresh page loads.
+      for (var attempt = 0; attempt < 2 && details == null; attempt++) {
+        if (attempt > 0) {
+          await Future<void>.delayed(const Duration(milliseconds: 1500));
+        }
+        if (!isCurrent()) return;
+        _placesSessionToken ??= const Uuid().v4();
+        final results = await geocoding.placesAutocomplete(
+          input: query,
+          sessionToken: _placesSessionToken,
+        );
+        if (!isCurrent()) return;
+        final placeId = results.isEmpty
+            ? null
+            : results.first['placeId'] as String?;
+        if (placeId != null) {
+          details = await _fetchPlaceDetails(placeId);
+        }
+      }
+      if (details == null) {
+        debugPrint('Could not resolve initial location "$query"');
+        return;
+      }
+
+      await _mapReady.future;
+      if (!isCurrent()) return;
+      await _applyPlaceDetails(
+        details,
+        fallbackText: query,
+        clearLoadingState: false,
+      );
+    } catch (e) {
+      debugPrint('Error resolving initial location "$query": $e');
+    } finally {
+      _initialLocationApplied = true;
+      if (mounted) {
+        setState(() {
+          _isResolvingInitialLocation = false;
+        });
+      }
     }
   }
 
@@ -1017,6 +1112,7 @@ class SearchScreenState extends State<SearchScreen>
     final query = _searchQuery.trim();
     if (query.isEmpty) return;
 
+    final generation = ++_cameraIntentGeneration;
     setState(() {
       _isSearchingLocation = true;
     });
@@ -1038,33 +1134,25 @@ class SearchScreenState extends State<SearchScreen>
         radiusMeters: 50000,
       );
 
+      if (!mounted) return;
+
       // If we have results, select the first one
-      if (results.isNotEmpty) {
-        // Check if this search came from an initial location query (country/city route)
-        final fromInitialQuery =
-            widget.initialLocationQuery != null &&
-            widget.initialLocationQuery!.isNotEmpty &&
-            _searchQuery == widget.initialLocationQuery;
+      if (results.isNotEmpty && generation == _cameraIntentGeneration) {
         // Don't let _selectPlaceSuggestion manage loading state since we're managing it here
-        await _selectPlaceSuggestion(
-          results.first,
-          manageLoadingState: false,
-          fromInitialQuery: fromInitialQuery,
-        );
-        // Clear loading state after selection completes
-        setState(() {
-          _isSearchingLocation = false;
-        });
-      } else {
+        await _selectPlaceSuggestion(results.first, manageLoadingState: false);
+      }
+      if (mounted) {
         setState(() {
           _isSearchingLocation = false;
         });
       }
     } catch (e) {
       debugPrint('Error searching and navigating to location: $e');
-      setState(() {
-        _isSearchingLocation = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isSearchingLocation = false;
+        });
+      }
     }
   }
 
@@ -1091,6 +1179,7 @@ class SearchScreenState extends State<SearchScreen>
   }
 
   Future<void> _getCurrentLocation() async {
+    _cameraIntentGeneration++;
     setState(() {
       _isGettingLocation = true;
     });
@@ -2358,6 +2447,7 @@ class SearchScreenState extends State<SearchScreen>
 
   /// Open the spot list preview card for a given list ID
   Future<void> _openSpotListPreview(String listId) async {
+    _cameraIntentGeneration++;
     // Load the list if not already loaded
     if (_selectedListId != listId || _selectedList == null) {
       await _loadSpotList(listId);
@@ -2624,6 +2714,7 @@ class SearchScreenState extends State<SearchScreen>
   }
 
   Future<void> _locateSpot(Spot spot) async {
+    _cameraIntentGeneration++;
     final viewport = MediaQuery.sizeOf(context);
 
     // Collapse bottom sheet if open
@@ -2661,6 +2752,7 @@ class SearchScreenState extends State<SearchScreen>
   }
 
   Future<void> _selectEventPin(EventMapPin pin, {bool focusMap = true}) async {
+    if (focusMap) _cameraIntentGeneration++;
     if (_isBottomSheetOpen) {
       await _bottomSheetAnimationController.reverse();
       if (mounted) {
@@ -3284,17 +3376,7 @@ class SearchScreenState extends State<SearchScreen>
                     onMapCreated: (GoogleMapController controller) {
                       _mapController = controller;
                       _lastKnownZoom = initialCameraPosition.zoom;
-
-                      // Trigger location search if initialLocationQuery is provided
-                      if (widget.initialLocationQuery != null &&
-                          widget.initialLocationQuery!.isNotEmpty) {
-                        // Wait a bit for the map to be fully ready
-                        Future.delayed(const Duration(milliseconds: 500), () {
-                          if (mounted && _mapController != null) {
-                            _searchAndNavigateToLocation();
-                          }
-                        });
-                      }
+                      if (!_mapReady.isCompleted) _mapReady.complete();
 
                       // Open spot list preview if listId came from URL
                       if (widget.initialListId != null &&
@@ -3360,6 +3442,13 @@ class SearchScreenState extends State<SearchScreen>
                         }
                       });
 
+                      // A city/country URL owns the initial camera
+                      // (_resolveInitialLocation); restoring the persisted
+                      // camera or centering on the user would compete with it.
+                      if (widget.initialLocationQuery?.isNotEmpty ?? false) {
+                        return;
+                      }
+
                       // Restore persisted camera after map is ready (in case state loaded late)
                       final state = Provider.of<SearchStateService>(
                         context,
@@ -3380,13 +3469,8 @@ class SearchScreenState extends State<SearchScreen>
                           ),
                         );
                       } else {
-                        // If no persisted camera and no initial location query (city/country URL),
-                        // try to center on user's current location
-                        // Don't auto-center on user location if they came from a city/country URL
-                        if (widget.initialLocationQuery == null ||
-                            widget.initialLocationQuery!.isEmpty) {
-                          _getCurrentLocation();
-                        }
+                        // No persisted camera: try to center on the user's current location
+                        _getCurrentLocation();
                       }
                     },
                     onCameraMove: (CameraPosition position) {
@@ -4456,7 +4540,8 @@ class SearchScreenState extends State<SearchScreen>
                                         suffixIcon: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            if (_isSearchingLocation)
+                                            if (_isSearchingLocation ||
+                                                _isResolvingInitialLocation)
                                               Padding(
                                                 padding: const EdgeInsets.all(
                                                   12,
@@ -4478,6 +4563,7 @@ class SearchScreenState extends State<SearchScreen>
                                                 ),
                                               ),
                                             if (!_isSearchingLocation &&
+                                                !_isResolvingInitialLocation &&
                                                 _searchController
                                                     .text
                                                     .isNotEmpty)
