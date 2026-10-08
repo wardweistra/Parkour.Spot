@@ -63,7 +63,7 @@ export function libraryFacts(stats: AboutStats): StatFact[] {
     facts.push({
       id: "mau",
       value: formatCount(stats.monthlyActiveUsers),
-      label: "monthly active users",
+      label: "monthly active logged-in users",
     });
   }
   const share = photoSharePercent(stats);
@@ -118,7 +118,7 @@ export function statsSentence(stats: AboutStats): string | null {
     line += ` in ${countNoun(stats.countryCount, "country", "countries")}`;
   }
   if (present(stats.spotSourceCount)) {
-    line += `, brought together from ${countNoun(stats.spotSourceCount, "community spot list")}`;
+    line += `, added by people who train there and from ${countNoun(stats.spotSourceCount, "community spot list")}`;
   }
   if (present(stats.upcomingEventCount)) {
     line += `, and ${countNoun(stats.upcomingEventCount, "upcoming event")}`;

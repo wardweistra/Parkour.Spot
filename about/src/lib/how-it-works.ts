@@ -96,7 +96,7 @@ function eventsParagraph(stats: AboutStats): AnswerPart[][] {
 function sourcesParagraph(stats: AboutStats): AnswerPart[][] {
   if (!positive(stats.spotSourceCount)) return [];
   return [[
-    `So far ${countNoun(stats.spotSourceCount, "community spot list")} feed the map, and new spots and lists are added every day.`,
+    `Alongside the spots added in the app, ${countNoun(stats.spotSourceCount, "community spot list")} feed the map so far, and new spots and lists are added every day.`,
   ]];
 }
 
@@ -122,7 +122,9 @@ function activityQuestion(stats: AboutStats): HowItWorksQuestion[] {
   const days = stats.activityWindowDays ?? 30;
   const paragraphs: AnswerPart[][] = [];
   if (mau != null) {
-    paragraphs.push([`${countNoun(mau, "person", "people")} used ${SITE_NAME} in the last ${days} days.`]);
+    paragraphs.push([
+      `${countNoun(mau, "logged-in person", "logged-in people")} used ${SITE_NAME} in the last ${days} days. Many more explore without an account, since finding spots and events doesn't need one.`,
+    ]);
   }
   if (recent.length > 0) {
     const list = recent.map((fact) => `${fact.value} ${fact.label}`);
