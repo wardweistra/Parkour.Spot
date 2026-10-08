@@ -313,6 +313,7 @@ export type CoverageCountry = {
   code: string;
   cities: CityRef[];
   spotCount: number;
+  eventCount: number;
 };
 
 type Coverage = {generatedAt: string; countries: CoverageCountry[]};
@@ -346,6 +347,7 @@ async function fetchCoverage(): Promise<Coverage> {
       code: country.countryCode.toLowerCase(),
       cities,
       spotCount: resolveSpotCount(country.spotCount, fromCities),
+      eventCount: country.events.length,
     });
   }
   return {generatedAt: index.generatedAt, countries};

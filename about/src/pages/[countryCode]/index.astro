@@ -6,9 +6,7 @@ import OpenInApp from "../../components/OpenInApp.astro";
 import {
   countryHubLede,
   countryHubTitle,
-  countryInPhrase,
   countryName,
-  hubEventsSentence,
   metaDescription,
   moreOnMapLabel,
   resolveSpotCount,
@@ -50,20 +48,19 @@ const cities = await loadCityRefs(country);
 const listed = country.spots ?? [];
 const fromCities = cities.reduce((sum, city) => sum + (city.spotCount ?? 0), 0);
 const spotCount = resolveSpotCount(country.spotCount, fromCities || listed.length);
-const title = countryHubTitle(cc);
+const eventCount = country.events.length;
+const title = countryHubTitle(cc, {spotCount, eventCount});
 const topNames = listed.slice(0, 3).map((spot) => spot.name);
-const lede = [
-  countryHubLede({
-    countryCode: cc,
-    spotCount,
-    cityNames: cities.map((city) => city.city),
-    listedCount: listed.length,
-    topNames,
-  }),
-  hubEventsSentence(country.events?.length ?? 0, countryInPhrase(cc)),
-]
-  .filter(Boolean)
-  .join(" ");
+const lede = countryHubLede({
+  countryCode: cc,
+  spotCount,
+  cityNames: cities
+    .filter((city) => (city.spotCount ?? 0) > 0)
+    .map((city) => city.city),
+  listedCount: listed.length,
+  topNames,
+  eventCount,
+});
 const worldwide = worldwideContext(await loadStats());
 const moreLabel = moreOnMapLabel(spotCount, listed.length);
 const pagePath = aboutCountryPath(cc);
@@ -91,6 +88,28 @@ const jsonLd = buildPlaceJsonLd({
   </div>
 
   <section class="section">
+    <h2 class="section__title">Upcoming events</h2>
+    <EventList
+      events={country.events}
+      cityHubKeys={cities.map((city) => cityHubKey(cc, city.citySlug))}
+    />
+  </section>
+
+  {
+    listed.length > 0 && (
+      <section class="section">
+        <h2 class="section__title">Best-rated spots</h2>
+        <SpotList spots={listed} />
+        {moreLabel && (
+          <p class="more-link">
+            <a href={appCountryUrl(cc)}>{moreLabel}</a>
+          </p>
+        )}
+      </section>
+    )
+  }
+
+  <section class="section">
     <h2 class="section__title">Cities</h2>
     {
       cities.length === 0 ? (
@@ -111,28 +130,6 @@ const jsonLd = buildPlaceJsonLd({
         </div>
       )
     }
-  </section>
-
-  {
-    listed.length > 0 && (
-      <section class="section">
-        <h2 class="section__title">Best-rated spots</h2>
-        <SpotList spots={listed} />
-        {moreLabel && (
-          <p class="more-link">
-            <a href={appCountryUrl(cc)}>{moreLabel}</a>
-          </p>
-        )}
-      </section>
-    )
-  }
-
-  <section class="section">
-    <h2 class="section__title">Upcoming events</h2>
-    <EventList
-      events={country.events}
-      cityHubKeys={cities.map((city) => cityHubKey(cc, city.citySlug))}
-    />
   </section>
 
   {

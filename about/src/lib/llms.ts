@@ -23,7 +23,11 @@ function cityLine(countryCode: string, city: CoverageCountry["cities"][number]):
     Number.isFinite(count) && count > 0
       ? `: ${countNoun(count, "parkour spot")}`
       : "";
-  return `  - [${cityHubTitle(city.city)}](${aboutAbsolute(path)})${suffix}`;
+  const title = cityHubTitle(city.city, {
+    spotCount: Number.isFinite(count) ? count : 0,
+    eventCount: Number(city.eventCount) || 0,
+  });
+  return `  - [${title}](${aboutAbsolute(path)})${suffix}`;
 }
 
 function keyFactLines(stats: AboutStats): string[] {
@@ -93,7 +97,7 @@ export function buildLlmsTxt(input: {
           ? `: ${countNoun(country.spotCount, "parkour spot")} in ${countNoun(country.cities.length, "city", "cities")}`
           : `: ${countNoun(country.cities.length, "city", "cities")}`;
       lines.push(
-        `- [${countryHubTitle(country.code)}](${aboutAbsolute(path)})${suffix}`,
+        `- [${countryHubTitle(country.code, country)}](${aboutAbsolute(path)})${suffix}`,
       );
       for (const city of country.cities) {
         lines.push(cityLine(country.code, city));

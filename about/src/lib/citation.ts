@@ -135,13 +135,6 @@ export function worldwideContext(stats: AboutStats): string | null {
   return `${SITE_NAME} has ${countNoun(stats.spotCount, "parkour spot")}${where}.`;
 }
 
-/** Sentence for a hub lede: "There are 3 upcoming events in Utrecht." */
-export function hubEventsSentence(eventCount: number, place: string): string | null {
-  if (!Number.isFinite(eventCount) || eventCount < 1) return null;
-  const verb = eventCount === 1 ? "There is" : "There are";
-  return `${verb} ${countNoun(eventCount, "upcoming event")} in ${place}.`;
-}
-
 /** "58 upcoming events in 21 countries" or null. */
 export function upcomingEventsPhrase(stats: AboutStats): string | null {
   if (!present(stats.upcomingEventCount)) return null;
@@ -196,12 +189,23 @@ export function countryInPhrase(countryCode: string): string {
   return REGION_WITH_ARTICLE.has(code) ? `the ${name}` : name;
 }
 
-export function cityHubTitle(city: string): string {
-  return `Parkour spots in ${city}`;
+export type HubCounts = {spotCount: number; eventCount: number};
+
+/** "Parkour spots", "Parkour events", or "Parkour spots and events". */
+function hubTopic({spotCount, eventCount}: HubCounts): string {
+  const spots = present(spotCount);
+  const events = present(eventCount);
+  if (events && !spots) return "Parkour events";
+  if (events && spots) return "Parkour spots and events";
+  return "Parkour spots";
 }
 
-export function countryHubTitle(countryCode: string): string {
-  return `Parkour spots in ${countryInPhrase(countryCode)}`;
+export function cityHubTitle(city: string, counts: HubCounts): string {
+  return `${hubTopic(counts)} in ${city}`;
+}
+
+export function countryHubTitle(countryCode: string, counts: HubCounts): string {
+  return `${hubTopic(counts)} in ${countryInPhrase(countryCode)}`;
 }
 
 /** Calendar date and UTC time for a snapshot `generatedAt` value. */
@@ -262,15 +266,28 @@ export function moreOnMapLabel(
   return `${formatCount(more)} more on the map`;
 }
 
-function sampleSentence(listedCount: number, topNames: string[]): string {
+function sampleSentence(
+  spotCount: number,
+  listedCount: number,
+  topNames: string[],
+): string | null {
+  if (listedCount < 1) return null;
   const names = joinNames(topNames.slice(0, 3));
-  if (names && listedCount === 1) return ` The highest rated is ${names}.`;
-  if (names) return ` The highest rated are ${names}.`;
-  if (listedCount === 1) return " This is the highest rated.";
-  if (listedCount > 1) {
-    return ` These are the ${formatCount(listedCount)} highest rated.`;
+  if (names && spotCount <= listedCount) {
+    return listedCount === 1
+      ? `The highest rated is ${names}.`
+      : `The highest rated are ${names}.`;
   }
-  return "";
+  return listedCount === 1
+    ? "The highest-rated spot is listed below."
+    : `The ${formatCount(listedCount)} highest-rated spots are listed below.`;
+}
+
+/** "3 upcoming events and 12 parkour spots", or just one of the two. */
+function holdingsPhrase(spots: string | null, eventCount: number): string | null {
+  if (!present(eventCount)) return spots;
+  if (!spots) return countNoun(eventCount, "upcoming parkour event");
+  return `${countNoun(eventCount, "upcoming event")} and ${spots}`;
 }
 
 export function coverageSentence(input: {
@@ -291,19 +308,20 @@ export function cityHubLede(input: {
   spotCount: number;
   listedCount: number;
   topNames: string[];
+  eventCount: number;
 }): string | null {
   const total = Math.max(input.spotCount, input.listedCount);
-  if (total < 1) return null;
-  const lead = `${input.city} has ${countNoun(total, "parkour spot")} on ${SITE_NAME}.`;
-  if (input.listedCount < 1) return lead;
-  if (total > input.listedCount) {
-    const sample =
-      input.listedCount === 1
-        ? "This is the highest rated."
-        : `These are the ${formatCount(input.listedCount)} highest rated.`;
-    return `${lead} ${sample}`;
-  }
-  return `${lead}${sampleSentence(input.listedCount, input.topNames)}`;
+  const holdings = holdingsPhrase(
+    total > 0 ? countNoun(total, "parkour spot") : null,
+    input.eventCount,
+  );
+  if (!holdings) return null;
+  return [
+    `${input.city} has ${holdings} on ${SITE_NAME}.`,
+    sampleSentence(total, input.listedCount, input.topNames),
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 export function countryHubLede(input: {
@@ -312,27 +330,28 @@ export function countryHubLede(input: {
   cityNames: string[];
   listedCount: number;
   topNames: string[];
+  eventCount: number;
 }): string {
   const phrase = countryInPhrase(input.countryCode);
   const place = phrase.charAt(0).toUpperCase() + phrase.slice(1);
   const cities = input.cityNames.map((name) => name.trim()).filter(Boolean);
-  if (cities.length === 0 || input.spotCount < 1) {
-    return `${place} on ${SITE_NAME}.`;
+  const total = Math.max(input.spotCount, input.listedCount);
+  let spots: string | null = null;
+  if (total > 0) {
+    spots = countNoun(total, "parkour spot");
+    if (cities.length === 1) spots += ` in ${cities[0]}`;
+    if (cities.length > 1) {
+      spots += ` across ${countNoun(cities.length, "city", "cities")}`;
+    }
   }
-  const spots = countNoun(input.spotCount, "parkour spot");
-  const base =
-    cities.length === 1
-      ? `${place} has ${spots} in ${cities[0]} on ${SITE_NAME}.`
-      : `${place} has ${spots} across ${countNoun(cities.length, "city", "cities")} on ${SITE_NAME}.`;
-  if (input.listedCount < 1) return base;
-  if (input.spotCount > input.listedCount) {
-    const sample =
-      input.listedCount === 1
-        ? "This is the highest rated."
-        : `These are the ${formatCount(input.listedCount)} highest rated.`;
-    return `${base} ${sample}`;
-  }
-  return `${base}${sampleSentence(input.listedCount, input.topNames)}`;
+  const holdings = holdingsPhrase(spots, input.eventCount);
+  if (!holdings) return `${place} on ${SITE_NAME}.`;
+  return [
+    `${place} has ${holdings} on ${SITE_NAME}.`,
+    sampleSentence(total, input.listedCount, input.topNames),
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 export function metaDescription(text: string, max = 155): string {

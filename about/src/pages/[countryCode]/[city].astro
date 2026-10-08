@@ -7,7 +7,6 @@ import {
   cityHubLede,
   cityHubTitle,
   countryName,
-  hubEventsSentence,
   metaDescription,
   moreOnMapLabel,
   resolveSpotCount,
@@ -57,20 +56,16 @@ const spotCount = resolveSpotCount(
   hub.spotCount ?? cityRef?.spotCount,
   listed.length,
 );
-const title = cityHubTitle(hub.city);
+const eventCount = hub.events.length;
+const title = cityHubTitle(hub.city, {spotCount, eventCount});
 const topNames = listed.slice(0, 3).map((spot) => spot.name);
-const lede =
-  [
-    cityHubLede({
-      city: hub.city,
-      spotCount,
-      listedCount: listed.length,
-      topNames,
-    }),
-    hubEventsSentence(hub.events?.length ?? 0, hub.city),
-  ]
-    .filter(Boolean)
-    .join(" ") || null;
+const lede = cityHubLede({
+  city: hub.city,
+  spotCount,
+  listedCount: listed.length,
+  topNames,
+  eventCount,
+});
 const worldwide = worldwideContext(await loadStats());
 const moreLabel = moreOnMapLabel(spotCount, listed.length);
 const pagePath = aboutCityPath(cc, hub.citySlug);
@@ -102,6 +97,11 @@ const jsonLd = buildPlaceJsonLd({
     <OpenInApp href={appCityUrl(cc, hub.citySlug)} />
   </div>
 
+  <section class="section">
+    <h2 class="section__title">Upcoming events</h2>
+    <EventList events={hub.events} showPlaceLinks={false} />
+  </section>
+
   {
     listed.length > 0 && (
       <section class="section">
@@ -115,11 +115,6 @@ const jsonLd = buildPlaceJsonLd({
       </section>
     )
   }
-
-  <section class="section">
-    <h2 class="section__title">Upcoming events</h2>
-    <EventList events={hub.events} showPlaceLinks={false} />
-  </section>
 
   {
     worldwide && (
