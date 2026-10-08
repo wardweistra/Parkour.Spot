@@ -26,12 +26,10 @@ const {getAuth} = require("firebase-admin/auth");
 const {getFirestore, FieldValue, Timestamp} = require("firebase-admin/firestore");
 const {getMessaging} = require("firebase-admin/messaging");
 const {getStorage} = require("firebase-admin/storage");
-const sharp = require("sharp");
 const yauzl = require("yauzl");
 const https = require("https");
 const path = require("path");
 const {downloadTextFromUrl} = require("./lib/download-text");
-const {google} = require("googleapis");
 const countries = require("i18n-iso-countries");
 
 // Initialize Firebase Admin. v14 removed the namespaced root API.
@@ -6313,6 +6311,7 @@ function isGoogleProfilePictureUrl(url) {
  * @return {Promise<Buffer>} Processed JPEG buffer
  */
 async function optimizeProfileImage(imageBuffer) {
+  const sharp = require("sharp");
   const metadata = await sharp(imageBuffer).metadata();
   const {width, height} = metadata;
   const cropSize = Math.min(width, height);
@@ -9711,6 +9710,9 @@ async function calculateUserActivityMetrics(useYesterdayDate = false) {
     } catch (error) {
       throw new Error(`Failed to parse GOOGLE_SHEETS_SERVICE_ACCOUNT: ${error.message}`);
     }
+
+    // googleapis costs ~115 MiB to load; keep it out of every other function's cold start.
+    const {google} = require("googleapis");
 
     // Authenticate with Google Sheets API
     const auth = new google.auth.GoogleAuth({

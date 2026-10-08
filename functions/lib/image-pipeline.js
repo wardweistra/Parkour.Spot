@@ -7,7 +7,6 @@
 const http = require("http");
 const https = require("https");
 const path = require("path");
-const sharp = require("sharp");
 const {
   isEphemeralImageHost,
   isGoogleUserContentUrl,
@@ -164,6 +163,7 @@ function downloadBinaryWithRedirects(
  * @return {Promise<Buffer|null>}
  */
 async function optimizeImage(imageBuffer) {
+  const sharp = require("sharp");
   let sharpInstance = null;
   try {
     const metadata = await sharp(imageBuffer).metadata();
