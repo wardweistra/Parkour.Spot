@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import SpotList from "../../components/SpotList.astro";
-import EventList from "../../components/EventList.astro";
+import EventCalendar from "../../components/EventCalendar.astro";
 import OpenInApp from "../../components/OpenInApp.astro";
 import CountryFlag from "../../components/CountryFlag.astro";
 import {
@@ -101,7 +101,12 @@ const jsonLd = buildPlaceJsonLd({
 
   <section class="section">
     <h2 class="section__title">Upcoming events</h2>
-    <EventList events={hub.events} showPlaceLinks={false} />
+    <EventCalendar
+      events={hub.events}
+      generatedAt={hub.generatedAt}
+      showPlaceLinks={false}
+      headingLevel={3}
+    />
   </section>
 
   {

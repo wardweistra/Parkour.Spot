@@ -17,12 +17,25 @@ interface Props {
   events: EventSummary[];
   /** Snapshot time; the month grid starts no earlier than this month. */
   generatedAt?: string;
+  showPlaceLinks?: boolean;
   cityHubKeys?: string[];
   countryHubCodes?: string[];
+  /** Level of the month title; the day panel headings follow below it. */
+  headingLevel?: 2 | 3;
 }
 
-const {events, generatedAt, cityHubKeys = [], countryHubCodes = []} =
-  Astro.props;
+const {
+  events,
+  generatedAt,
+  showPlaceLinks = true,
+  cityHubKeys = [],
+  countryHubCodes = [],
+  headingLevel = 2,
+} = Astro.props;
+
+const MonthHeading = headingLevel === 2 ? "h2" : "h3";
+const PanelHeading = headingLevel === 2 ? "h3" : "h4";
+const PanelDayHeading = headingLevel === 2 ? "h4" : "h5";
 
 const VISIBLE_LANES = 3;
 const MAX_DOTS = 3;
@@ -120,9 +133,9 @@ const initialMonth = months[0];
               />
             </svg>
           </button>
-          <h2 class="event-cal__title" data-cal-title aria-live="polite">
+          <MonthHeading class="event-cal__title" data-cal-title aria-live="polite">
             {initialMonth?.label}
-          </h2>
+          </MonthHeading>
           <button type="button" class="event-cal__today" data-cal-today>
             Today
           </button>
@@ -267,7 +280,11 @@ const initialMonth = months[0];
           aria-labelledby="event-cal-panel-title"
         >
           <div class="event-cal__panel-head">
-            <h3 class="event-cal__panel-title" id="event-cal-panel-title" data-cal-panel-title />
+            <PanelHeading
+              class="event-cal__panel-title"
+              id="event-cal-panel-title"
+              data-cal-panel-title
+            />
             <button
               type="button"
               class="event-cal__panel-reset"
@@ -279,7 +296,7 @@ const initialMonth = months[0];
           </div>
           {days.map((day) => (
             <div class="event-cal__panel-day" data-cal-panel-day={day.key} hidden>
-              <h4 class="calendar__day">{day.label}</h4>
+              <PanelDayHeading class="calendar__day">{day.label}</PanelDayHeading>
               <ul class="stack-list">
                 {day.events.map((event) => (
                   <li>
@@ -335,6 +352,7 @@ const initialMonth = months[0];
   <div class="event-cal__agenda" data-cal-agenda>
     <EventList
       events={events}
+      showPlaceLinks={showPlaceLinks}
       cityHubKeys={cityHubKeys}
       countryHubCodes={countryHubCodes}
     />
@@ -472,7 +490,9 @@ const initialMonth = months[0];
           ? key === selected
           : narrow && key.startsWith(month) && key >= today;
         block.hidden = !visible;
-        block.querySelector("h4")?.toggleAttribute("hidden", Boolean(selected));
+        block
+          .querySelector(".calendar__day")
+          ?.toggleAttribute("hidden", Boolean(selected));
         if (visible) shown += 1;
       }
       panelReset.hidden = !selected;
@@ -499,7 +519,10 @@ const initialMonth = months[0];
       }
     }
 
-    function showMonth(index: number, opts: {focusKey?: string | null} = {}) {
+    function showMonth(
+      index: number,
+      opts: {focusKey?: string | null; syncUrl?: boolean} = {},
+    ) {
       monthIndex = Math.max(0, Math.min(sections.length - 1, index));
       sections.forEach((s, i) => (s.hidden = i !== monthIndex));
       title.textContent = currentSection()?.dataset.label ?? "";
@@ -510,12 +533,15 @@ const initialMonth = months[0];
       const target = setRovingFocus(opts.focusKey ?? selected);
       if (opts.focusKey && target) target.focus();
       renderPanel();
-      if (view === "month") {
+      if (view === "month" && opts.syncUrl !== false) {
         history.replaceState(null, "", `${location.pathname}#${currentMonth()}`);
       }
     }
 
-    function setView(next: "month" | "agenda", push: boolean) {
+    function setView(
+      next: "month" | "agenda",
+      history_: "push" | "replace" | "none",
+    ) {
       view = next;
       monthView.hidden = view !== "month";
       agenda.hidden = view !== "agenda";
@@ -527,8 +553,8 @@ const initialMonth = months[0];
         view === "agenda"
           ? `${location.pathname}?view=agenda`
           : `${location.pathname}#${currentMonth()}`;
-      if (push) history.pushState({view}, "", url);
-      else history.replaceState({view}, "", url);
+      if (history_ === "push") history.pushState({view}, "", url);
+      else if (history_ === "replace") history.replaceState({view}, "", url);
     }
 
     function selectDay(key: string) {
@@ -572,7 +598,7 @@ const initialMonth = months[0];
     for (const b of viewButtons) {
       b.addEventListener("click", () => {
         const target = b.dataset.calView === "agenda" ? "agenda" : "month";
-        if (target !== view) setView(target, true);
+        if (target !== view) setView(target, "push");
       });
     }
 
@@ -631,8 +657,8 @@ const initialMonth = months[0];
             ? todayIndex
             : 0;
       view = params.get("view") === "agenda" ? "agenda" : "month";
-      showMonth(startIndex);
-      setView(view, false);
+      showMonth(startIndex, {syncUrl: false});
+      setView(view, "none");
     }
 
     window.addEventListener("popstate", applyLocation);
