@@ -47,7 +47,7 @@ describe("about-snapshots", () => {
       ]);
     });
 
-    it("sorts rated spots by ranking and caps the sample at 10", () => {
+    it("sorts spots by ranking and caps the sample at 10", () => {
       const spots = [];
       for (let i = 0; i < 15; i++) {
         spots.push({
@@ -67,7 +67,7 @@ describe("about-snapshots", () => {
       expect(paris.spots[9].id).toBe("s5");
     });
 
-    it("counts unrated spots and keeps below-average rated spots in the sample", () => {
+    it("lists above-average, then unrated, then below-average spots", () => {
       const spots = [
         {
           id: "good",
@@ -99,10 +99,35 @@ describe("about-snapshots", () => {
       const {cityDocs} = buildPlaceSnapshots(spots);
       const berlin = cityDocs.get("de_berlin");
       expect(berlin.spotCount).toBe(3);
-      expect(berlin.spots.map((s) => s.id)).toEqual(["good", "weak"]);
+      expect(berlin.spots.map((s) => s.id)).toEqual(["good", "bare", "weak"]);
     });
 
-    it("picks the country sample from every rated spot, not each city cap", () => {
+    it("fills the sample with unrated spots before below-average ones", () => {
+      const spots = [
+        {id: "top", countryCode: "be", city: "Gent", ratingCount: 3, ranking: 13},
+        {id: "low", countryCode: "be", city: "Gent", ratingCount: 5, ranking: -8},
+      ];
+      for (let i = 0; i < 10; i++) {
+        spots.push({
+          id: `new${i}`,
+          countryCode: "be",
+          city: "Gent",
+          ratingCount: 0,
+          ranking: i / 10,
+        });
+      }
+
+      const {cityDocs, countryDocs} = buildPlaceSnapshots(spots);
+      const gent = cityDocs.get("be_gent");
+      expect(gent.spotCount).toBe(12);
+      expect(gent.spots).toHaveLength(TOP_SPOTS_LIMIT);
+      expect(gent.spots[0].id).toBe("top");
+      expect(gent.spots.map((s) => s.id)).not.toContain("low");
+      expect(countryDocs.get("be").spots.map((s) => s.id))
+          .toEqual(gent.spots.map((s) => s.id));
+    });
+
+    it("picks the country sample from every spot, not each city cap", () => {
       const spots = [];
       for (let i = 0; i < 12; i++) {
         spots.push({

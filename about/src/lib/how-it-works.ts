@@ -216,7 +216,7 @@ export function howItWorksGroups(stats: AboutStats): HowItWorksGroup[] {
             "Judge a spot by its community rating: the average, how many people rated it, and the photos.",
           ],
           [
-            "City pages list the highest-rated spots in that city, and the map has every public spot.",
+            "City pages list spots in that city with the best rated first, and the map has every public spot.",
           ],
         ],
       },

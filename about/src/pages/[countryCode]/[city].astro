@@ -13,6 +13,7 @@ import {
   worldwideContext,
 } from "../../lib/citation";
 import {SITE_NAME} from "../../lib/brand";
+import {qualifyingSpots} from "../../lib/ratings";
 import {buildPlaceJsonLd} from "../../lib/schema";
 import {
   listCityParams,
@@ -58,7 +59,7 @@ const spotCount = resolveSpotCount(
 );
 const eventCount = hub.events.length;
 const title = cityHubTitle(hub.city, {spotCount, eventCount});
-const topNames = listed.slice(0, 3).map((spot) => spot.name);
+const topNames = qualifyingSpots(listed).slice(0, 3).map((spot) => spot.name);
 const lede = cityHubLede({
   city: hub.city,
   spotCount,
@@ -105,7 +106,7 @@ const jsonLd = buildPlaceJsonLd({
   {
     listed.length > 0 && (
       <section class="section">
-        <h2 class="section__title">Best-rated spots</h2>
+        <h2 class="section__title">Spots</h2>
         <SpotList spots={listed} />
         {moreLabel && (
           <p class="more-link">

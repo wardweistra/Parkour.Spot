@@ -159,15 +159,8 @@ function toIso(value) {
 }
 
 /**
- * @param {Object} spot
- * @return {boolean}
- */
-function isRatedSpot(spot) {
-  return (Number(spot.ratingCount) || 0) >= 1;
-}
-
-/**
- * Explore ranking: above-average scores sort first, then below-average.
+ * Explore ranking: above-average spots first, then unrated spots (random
+ * ranking in [0, 1)), then below-average spots.
  * @param {Object} a
  * @param {Object} b
  * @return {number}
@@ -213,8 +206,8 @@ function emptyCityDoc(countryCode, city, citySlug, generatedAt) {
 
 /**
  * Group public spots by country/city and build hub payloads.
- * Every city with a public spot gets a hub. `spots` is the highest-rated
- * sample; `spotCount` is the full library.
+ * Every city with a public spot gets a hub. `spots` is a sample in Explore
+ * order; `spotCount` is the full library.
  * @param {Array<Object>} spots - docs with id fields
  * @param {Object} [options]
  * @return {{countryDocs: Map, cityDocs: Map, indexCountries: Array, generatedAt: string}}
@@ -255,17 +248,16 @@ function buildPlaceSnapshots(spots, options = {}) {
   for (const [countryCode, citiesMap] of grouped.entries()) {
     const eligibleCities = [];
     /** @type {Array<{spot: Object, citySlug: string}>} */
-    const countryRatedPool = [];
+    const countryPool = [];
 
     for (const [, entry] of citiesMap.entries()) {
       if (entry.spots.length === 0) continue;
       const citySlug = slugify(entry.city);
-      const rated = entry.spots.filter(isRatedSpot);
-      const top = [...rated].sort(byRankingDesc).slice(0, topLimit).map(
+      const top = [...entry.spots].sort(byRankingDesc).slice(0, topLimit).map(
           (s) => toSpotSummary(s, citySlug, countryCode),
       );
-      for (const spot of rated) {
-        countryRatedPool.push({spot, citySlug});
+      for (const spot of entry.spots) {
+        countryPool.push({spot, citySlug});
       }
 
       const cityId = `${countryCode}_${citySlug}`;
@@ -292,7 +284,7 @@ function buildPlaceSnapshots(spots, options = {}) {
     eligibleCities.sort((a, b) => b.spotCount - a.spotCount ||
       a.city.localeCompare(b.city));
 
-    const countryTop = [...countryRatedPool]
+    const countryTop = [...countryPool]
         .sort((a, b) => byRankingDesc(a.spot, b.spot))
         .slice(0, topLimit)
         .map(({spot, citySlug}) => toSpotSummary(spot, citySlug, countryCode));

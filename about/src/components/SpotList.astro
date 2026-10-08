@@ -9,7 +9,7 @@ interface Props {
 
 const {
   spots,
-  emptyLabel = "No rated spots yet.",
+  emptyLabel = "No spots yet.",
 } = Astro.props;
 ---
 
@@ -45,8 +45,14 @@ const {
               </a>
             </p>
             <p class="stack-list__meta">
-              {spot.averageRating.toFixed(1)} average · {spot.ratingCount}{" "}
-              {spot.ratingCount === 1 ? "rating" : "ratings"}
+              {spot.ratingCount > 0 ? (
+                <>
+                  {spot.averageRating.toFixed(1)} average · {spot.ratingCount}{" "}
+                  {spot.ratingCount === 1 ? "rating" : "ratings"}
+                </>
+              ) : (
+                "No ratings yet"
+              )}
             </p>
           </div>
           <a

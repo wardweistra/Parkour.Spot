@@ -3,7 +3,7 @@ import type {AboutStats} from "./types";
 
 /**
  * Quotable facts for about.parkour.spot.
- * Counts are every public spot. Pages show a short highest-rated sample.
+ * Counts are every public spot. Pages show a short sample in Explore order.
  */
 export const APP_DEFINITION =
   `${SITE_NAME} is a free, open source community app for finding the best parkour spots, events, and communities worldwide, whether around the corner or on your next trip. Explore it without an account.`;
@@ -279,8 +279,8 @@ function sampleSentence(
       : `The highest rated are ${names}.`;
   }
   return listedCount === 1
-    ? "The highest-rated spot is listed below."
-    : `The ${formatCount(listedCount)} highest-rated spots are listed below.`;
+    ? "One spot is listed below."
+    : `${formatCount(listedCount)} spots are listed below, best rated first.`;
 }
 
 /** "3 upcoming events and 12 parkour spots", or just one of the two. */
