@@ -6,6 +6,11 @@ const {
   isExpandableListVisibility,
   isSpotEligibleForPin,
   resolveEventMainCoordinates,
+  resolveEventMainLocation,
+  collectLinkedSpotSources,
+  syncEventResolvedLocation,
+  onlyResolvedLocationChanged,
+  spotLocationFieldsChanged,
   MAX_SPOT_PINS_PER_EVENT,
 } = require("../lib/event-map-pins");
 
@@ -240,6 +245,173 @@ describe("event-map-pins helpers", () => {
 
     it("returns null when event data is missing", () => {
       expect(resolveEventMainCoordinates(null, new Map(), new Map())).toBeNull();
+    });
+  });
+
+  describe("resolveEventMainLocation", () => {
+    const spotsById = new Map([
+      ["spot-hidden", {latitude: 1, longitude: 1, hidden: true, city: "X"}],
+      ["spot-dup", {latitude: 1, longitude: 1, duplicateOf: "spot-a", city: "Y"}],
+      ["spot-a", {
+        latitude: 52.0,
+        longitude: 4.3,
+        city: " Delft ",
+        countryCode: "nl",
+        name: "Markt",
+      }],
+      ["spot-b", {latitude: 51.05, longitude: 3.72, city: "Gent", countryCode: "BE", name: "Kouter"}],
+    ]);
+    const listsById = new Map([
+      ["list-1", {visibility: "public", name: "Gent tour", spotIds: ["spot-b"]}],
+    ]);
+
+    it("uses the venue with the event's own city and country", () => {
+      expect(resolveEventMainLocation({
+        latitude: 50,
+        longitude: 4,
+        city: "Brussel",
+        countryCode: "be",
+        spotIds: ["spot-a"],
+      }, spotsById, listsById)).toEqual({
+        source: "venue",
+        latitude: 50,
+        longitude: 4,
+        city: "Brussel",
+        countryCode: "BE",
+      });
+    });
+
+    it("skips hidden and duplicate spots and takes city from the spot", () => {
+      expect(resolveEventMainLocation({
+        spotIds: ["spot-hidden", "spot-dup", "spot-a"],
+        spotListIds: ["list-1"],
+      }, spotsById, listsById)).toEqual({
+        source: "spot",
+        latitude: 52.0,
+        longitude: 4.3,
+        city: "Delft",
+        countryCode: "NL",
+        spotId: "spot-a",
+        spotName: "Markt",
+      });
+    });
+
+    it("marks list-only spots with the list", () => {
+      expect(resolveEventMainLocation({
+        spotListIds: ["list-1"],
+      }, spotsById, listsById)).toEqual({
+        source: "list",
+        latitude: 51.05,
+        longitude: 3.72,
+        city: "Gent",
+        countryCode: "BE",
+        spotId: "spot-b",
+        spotName: "Kouter",
+        spotListId: "list-1",
+        spotListName: "Gent tour",
+      });
+    });
+
+    it("returns null when nothing resolves", () => {
+      expect(resolveEventMainLocation({spotIds: ["spot-hidden"]},
+          spotsById, listsById)).toBeNull();
+    });
+  });
+
+  describe("collectLinkedSpotSources", () => {
+    it("reports the list for list-only spots, not for direct ones", () => {
+      const listsById = new Map([
+        ["list-1", {visibility: "public", spotIds: ["a", "b"]}],
+      ]);
+      expect(collectLinkedSpotSources({
+        spotIds: ["a"],
+        spotListIds: ["list-1"],
+      }, listsById)).toEqual([
+        {spotId: "a", spotListId: null},
+        {spotId: "b", spotListId: "list-1"},
+      ]);
+    });
+  });
+
+  describe("syncEventResolvedLocation", () => {
+    const makeDb = () => {
+      const update = jest.fn().mockResolvedValue();
+      const db = {
+        collection: jest.fn(() => ({doc: jest.fn(() => ({update}))})),
+      };
+      return {db, update};
+    };
+    const inputs = {
+      spotsById: new Map([
+        ["s1", {latitude: 52, longitude: 4, city: "Delft", countryCode: "NL"}],
+      ]),
+      listsById: new Map(),
+    };
+
+    it("writes when the location changed", async () => {
+      const {db, update} = makeDb();
+      const wrote = await syncEventResolvedLocation(db, "e1", {spotIds: ["s1"]}, inputs);
+      expect(wrote).toBe(true);
+      expect(update).toHaveBeenCalledWith({
+        resolvedLocation: expect.objectContaining({source: "spot", spotId: "s1"}),
+      });
+    });
+
+    it("does not write when the stored value matches", async () => {
+      const {db, update} = makeDb();
+      const eventData = {
+        spotIds: ["s1"],
+        resolvedLocation: {
+          spotId: "s1",
+          countryCode: "NL",
+          city: "Delft",
+          longitude: 4,
+          latitude: 52,
+          source: "spot",
+        },
+      };
+      expect(await syncEventResolvedLocation(db, "e1", eventData, inputs)).toBe(false);
+      expect(update).not.toHaveBeenCalled();
+    });
+
+    it("does not write when both stored and resolved are empty", async () => {
+      const {db, update} = makeDb();
+      expect(await syncEventResolvedLocation(db, "e1", {}, inputs)).toBe(false);
+      expect(update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("onlyResolvedLocationChanged", () => {
+    const base = {title: "Jam", startAt: new Date("2026-12-01T10:00:00.000Z")};
+
+    it("is true for our own resolvedLocation write", () => {
+      expect(onlyResolvedLocationChanged(base, {
+        ...base,
+        resolvedLocation: {source: "spot", latitude: 1, longitude: 2},
+      })).toBe(true);
+    });
+
+    it("is false when other fields changed too", () => {
+      expect(onlyResolvedLocationChanged(base, {
+        ...base,
+        title: "Jam 2",
+        resolvedLocation: {source: "spot", latitude: 1, longitude: 2},
+      })).toBe(false);
+    });
+
+    it("is false for creates and unchanged writes", () => {
+      expect(onlyResolvedLocationChanged(null, base)).toBe(false);
+      expect(onlyResolvedLocationChanged(base, {...base})).toBe(false);
+    });
+  });
+
+  describe("spotLocationFieldsChanged", () => {
+    it("detects moves, renames and visibility changes only", () => {
+      const spot = {latitude: 1, longitude: 2, name: "A", ratingCount: 1};
+      expect(spotLocationFieldsChanged(spot, {...spot, ratingCount: 5})).toBe(false);
+      expect(spotLocationFieldsChanged(spot, {...spot, latitude: 1.5})).toBe(true);
+      expect(spotLocationFieldsChanged(spot, {...spot, name: "B"})).toBe(true);
+      expect(spotLocationFieldsChanged(spot, {...spot, hidden: true})).toBe(true);
     });
   });
 });

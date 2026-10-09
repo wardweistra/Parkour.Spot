@@ -217,8 +217,11 @@ const {
 } = require("./lib/jump-events");
 const {
   deleteEventMapPins,
-  materializeEventMapPins,
+  materializeEventLocationAndPins,
   rematerializeEventsForSpotList,
+  rematerializeEventsForSpot,
+  spotLocationFieldsChanged,
+  onlyResolvedLocationChanged,
   isEventPast,
 } = require("./lib/event-map-pins");
 const {buildDuplicateReviewUpdate} = require("./lib/event-duplicate-review");
@@ -1622,6 +1625,17 @@ exports.onSpotUpdated = onDocumentUpdated(
           }
         } else {
           console.log("Removed spot search terms for hidden spot:", {spotId});
+        }
+      }
+
+      if (spotLocationFieldsChanged(beforeData, afterData)) {
+        try {
+          const {eventsProcessed} = await rematerializeEventsForSpot(db, spotId);
+          if (eventsProcessed > 0) {
+            console.log("Rematerialized events for spot:", {spotId, eventsProcessed});
+          }
+        } catch (err) {
+          console.error("onSpotUpdated event rematerialize error", {spotId, err});
         }
       }
 
@@ -5774,6 +5788,7 @@ exports.onEventWritten = onDocumentWritten(
         const beforeData = event.data.before.exists ?
           (event.data.before.data() || {}) :
           null;
+        if (onlyResolvedLocationChanged(beforeData, eventData)) return;
         try {
           await handleEventDuplicateOfChanged(db, eventId, beforeData, eventData);
         } catch (interestErr) {
@@ -5791,7 +5806,7 @@ exports.onEventWritten = onDocumentWritten(
           await db.collection("events").doc(eventId).update(reviewUpdate);
         }
         const termsWritten = await replaceEventSearchTerms(eventId, eventData);
-        await materializeEventMapPins(db, eventId, eventData);
+        await materializeEventLocationAndPins(db, eventId, eventData);
         try {
           await fanOutNearbyNewEventNotifications({
             db,
@@ -5846,24 +5861,30 @@ exports.backfillEventMapPins = onCall(
         let processed = 0;
         let pinsWritten = 0;
         let truncatedCount = 0;
+        let locationsWritten = 0;
 
+        const docs = [];
         if (eventId && eventId.trim().length > 0) {
           const doc = await db.collection("events").doc(eventId.trim()).get();
           if (!doc.exists) {
             throw new Error(`Event ${eventId} not found`);
           }
-          const result = await materializeEventMapPins(db, doc.id, doc.data() || {});
-          processed = 1;
-          pinsWritten = result.pinsWritten;
-          if (result.truncated) truncatedCount = 1;
+          docs.push(doc);
         } else {
           const snapshot = await db.collection("events").get();
-          for (const doc of snapshot.docs) {
-            const result = await materializeEventMapPins(db, doc.id, doc.data() || {});
-            processed += 1;
-            pinsWritten += result.pinsWritten;
-            if (result.truncated) truncatedCount += 1;
-          }
+          docs.push(...snapshot.docs);
+        }
+
+        for (const doc of docs) {
+          const result = await materializeEventLocationAndPins(
+              db,
+              doc.id,
+              doc.data() || {},
+          );
+          processed += 1;
+          pinsWritten += result.pinsWritten;
+          if (result.truncated) truncatedCount += 1;
+          if (result.locationWritten) locationsWritten += 1;
         }
 
         return {
@@ -5871,7 +5892,9 @@ exports.backfillEventMapPins = onCall(
           processed,
           pinsWritten,
           truncatedCount,
-          message: `Materialized map pins for ${processed} event(s)`,
+          locationsWritten,
+          message: `Materialized map pins for ${processed} event(s), ` +
+            `updated ${locationsWritten} resolved location(s)`,
         };
       } catch (error) {
         console.error("backfillEventMapPins error:", error);

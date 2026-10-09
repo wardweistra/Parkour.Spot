@@ -3,6 +3,8 @@ const {
   isPublicEvent,
   buildPlaceSnapshots,
   attachEventsAndBuildIndexes,
+  effectiveEventLocation,
+  withResolvedLocationFallback,
   TOP_SPOTS_LIMIT,
 } = require("../lib/about-snapshots");
 
@@ -232,6 +234,110 @@ describe("about-snapshots", () => {
       expect(result.aboutIndex.countries).toEqual([
         expect.objectContaining({code: "nl", cityCount: 1, spotCount: 0, eventCount: 1}),
       ]);
+    });
+
+    it("places spot-linked events using resolvedLocation", () => {
+      const placeState = buildPlaceSnapshots([
+        {id: "s1", name: "Kouter", countryCode: "BE", city: "Gent", ranking: 1},
+      ], {generatedAt: "2026-10-01T00:00:00.000Z"});
+      const now = new Date("2026-10-02T00:00:00.000Z");
+      const events = [{
+        id: "listonly0xxxx",
+        title: "Gent tour",
+        startAt: new Date("2026-11-01T10:00:00.000Z"),
+        spotListIds: ["list-1"],
+        resolvedLocation: {
+          source: "list",
+          latitude: 51.05,
+          longitude: 3.72,
+          city: "Gent",
+          countryCode: "BE",
+          spotId: "s1",
+          spotName: "Kouter",
+          spotListId: "list-1",
+          spotListName: "Gent tour spots",
+        },
+      }];
+
+      const result = attachEventsAndBuildIndexes(placeState, events, now);
+      expect(result.cityDocs.get("be_gent").events).toHaveLength(1);
+      expect(result.countryDocs.get("be").events).toHaveLength(1);
+      const detail = result.eventDetails.get("gent-tour-listonly");
+      expect(detail).toEqual(expect.objectContaining({
+        city: "Gent",
+        countryCode: "be",
+        latitude: 51.05,
+        longitude: 3.72,
+        placeName: "Gent tour spots",
+        locationSource: "list",
+      }));
+    });
+  });
+
+  describe("effectiveEventLocation", () => {
+    it("prefers the event's own fields over resolvedLocation", () => {
+      expect(effectiveEventLocation({
+        city: "Antwerpen",
+        countryCode: "BE",
+        latitude: 51.2,
+        longitude: 4.4,
+        resolvedLocation: {source: "venue", latitude: 51.2, longitude: 4.4},
+      })).toEqual({
+        city: "Antwerpen",
+        countryCode: "be",
+        latitude: 51.2,
+        longitude: 4.4,
+        placeName: null,
+        locationSource: "venue",
+      });
+    });
+
+    it("uses the spot name for a direct spot source", () => {
+      expect(effectiveEventLocation({
+        resolvedLocation: {
+          source: "spot",
+          latitude: 52,
+          longitude: 4,
+          city: "Delft",
+          countryCode: "NL",
+          spotName: "Markt",
+        },
+      })).toEqual(expect.objectContaining({
+        city: "Delft",
+        countryCode: "nl",
+        placeName: "Markt",
+        locationSource: "spot",
+      }));
+    });
+  });
+
+  describe("withResolvedLocationFallback", () => {
+    const spotsById = new Map([
+      ["s1", {latitude: 52, longitude: 4, city: "Delft", countryCode: "nl", name: "Markt"}],
+    ]);
+
+    it("resolves events without a stored location", () => {
+      const [event] = withResolvedLocationFallback(
+          [{id: "e1", spotIds: ["s1"]}],
+          spotsById,
+          new Map(),
+      );
+      expect(event.resolvedLocation).toEqual(expect.objectContaining({
+        source: "spot",
+        city: "Delft",
+        countryCode: "NL",
+      }));
+    });
+
+    it("keeps stored values and skips venue events", () => {
+      const stored = {source: "spot", latitude: 1, longitude: 2};
+      const events = [
+        {id: "e1", spotIds: ["s1"], resolvedLocation: stored},
+        {id: "e2", spotIds: ["s1"], latitude: 51, longitude: 3},
+      ];
+      const result = withResolvedLocationFallback(events, spotsById, new Map());
+      expect(result[0].resolvedLocation).toBe(stored);
+      expect(result[1].resolvedLocation).toBeUndefined();
     });
   });
 });

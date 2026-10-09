@@ -16,9 +16,11 @@ export function buildEventJsonLd(event: EventDetail): Record<string, unknown> {
     .filter(Boolean)
     .join(", ");
 
+  const placeName = !event.address ? event.placeName?.trim() : "";
   const location: Record<string, unknown> = {
     "@type": "Place",
-    name: locationName || "Location TBA",
+    name:
+      [placeName, locationName].filter(Boolean).join(", ") || "Location TBA",
   };
 
   if (event.address) {

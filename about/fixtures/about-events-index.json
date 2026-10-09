@@ -106,6 +106,19 @@
       "imageUrl": null
     },
     {
+      "slug": "amsterdam-spot-tour-l1st0nly",
+      "eventId": "l1st0nlytour",
+      "title": "Amsterdam spot tour",
+      "startAt": "2026-11-22T11:00:00.000Z",
+      "endAt": "2026-11-22T15:00:00.000Z",
+      "isDateOnly": false,
+      "timeZone": "Europe/Amsterdam",
+      "city": "Amsterdam",
+      "citySlug": "amsterdam",
+      "countryCode": "nl",
+      "imageUrl": null
+    },
+    {
       "slug": "lisbon-parkour-camp-l1sb0n01",
       "eventId": "l1sb0n01camp",
       "title": "Lisbon parkour camp",

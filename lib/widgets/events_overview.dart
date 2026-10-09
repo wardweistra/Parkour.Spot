@@ -485,7 +485,7 @@ class EventsOverviewCard extends StatelessWidget {
   }
 
   List<Widget> _metaItems(String? sourceName) {
-    final city = event.city?.trim();
+    final city = event.effectiveCity;
     final address = event.address?.trim();
     final locationLabel = (city != null && city.isNotEmpty)
         ? city

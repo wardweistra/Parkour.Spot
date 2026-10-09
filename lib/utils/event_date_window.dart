@@ -119,7 +119,9 @@ bool isEventInDuplicateCountry(
   final reference = normalizedEventCountryCode(referenceCountryCode);
   if (reference == null) return true;
 
-  final candidateCountry = normalizedEventCountryCode(candidate.countryCode);
+  final candidateCountry = normalizedEventCountryCode(
+    candidate.effectiveCountryCode,
+  );
   if (candidateCountry == null) return true;
 
   return candidateCountry == reference;

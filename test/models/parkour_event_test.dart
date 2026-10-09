@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:parkour_spot/models/event_resolved_location.dart';
 import 'package:parkour_spot/models/parkour_event.dart';
 
 void main() {
@@ -327,6 +328,63 @@ void main() {
       expect(map.containsKey('externalEventUid'), isFalse);
       expect(map.containsKey('externalEventKey'), isFalse);
       expect(map['createdFromCreateNative'], isTrue);
+    });
+
+    test('reads resolvedLocation and never writes it back', () {
+      final event = ParkourEvent.fromMap({
+        'title': 'Gent tour',
+        'startAt': Timestamp.fromDate(DateTime.utc(2026, 11, 1, 10)),
+        'spotListIds': ['list-1'],
+        'resolvedLocation': {
+          'source': 'list',
+          'latitude': 51.05,
+          'longitude': 3.72,
+          'city': 'Gent',
+          'countryCode': 'be',
+          'spotId': 'spot-b',
+          'spotName': 'Kouter',
+          'spotListId': 'list-1',
+          'spotListName': 'Gent tour spots',
+        },
+      });
+
+      final resolved = event.resolvedLocation!;
+      expect(resolved.source, EventResolvedLocationSource.list);
+      expect(resolved.latitude, 51.05);
+      expect(resolved.spotListName, 'Gent tour spots');
+      expect(event.effectiveCity, 'Gent');
+      expect(event.effectiveCountryCode, 'BE');
+      expect(event.toFirestore().containsKey('resolvedLocation'), isFalse);
+    });
+
+    test('effective city and country prefer the event fields', () {
+      final event = ParkourEvent.fromMap({
+        'title': 'Venue jam',
+        'startAt': Timestamp.fromDate(DateTime.utc(2026, 11, 1, 10)),
+        'city': 'Antwerpen',
+        'countryCode': 'be',
+        'resolvedLocation': {
+          'source': 'venue',
+          'latitude': 51.2,
+          'longitude': 4.4,
+          'city': 'Other',
+          'countryCode': 'NL',
+        },
+      });
+
+      expect(event.effectiveCity, 'Antwerpen');
+      expect(event.effectiveCountryCode, 'BE');
+    });
+
+    test('ignores a resolvedLocation without coordinates', () {
+      final event = ParkourEvent.fromMap({
+        'title': 'Broken',
+        'startAt': Timestamp.fromDate(DateTime.utc(2026, 11, 1, 10)),
+        'resolvedLocation': {'source': 'spot', 'city': 'Gent'},
+      });
+
+      expect(event.resolvedLocation, isNull);
+      expect(event.effectiveCity, isNull);
     });
   });
 }

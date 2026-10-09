@@ -30,6 +30,9 @@ export type EventDetail = EventSummary & {
   address: string | null;
   latitude: number | null;
   longitude: number | null;
+  /** Linked spot or spot list name when the event has no venue of its own. */
+  placeName?: string | null;
+  locationSource?: "venue" | "spot" | "list" | null;
   imageUrls: string[];
 };
 

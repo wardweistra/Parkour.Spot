@@ -106,77 +106,31 @@ bool eventHasDirectLocation({
   return hasCoordinates || hasAddress;
 }
 
-/// First linked spot used to infer city/country when the event has no direct location.
-Spot? pickSourceSpotForCityCountry({
-  required List<Spot> linkedSpots,
-  required List<Spot> linkedSpotListSpots,
-}) {
-  if (linkedSpots.isNotEmpty) return linkedSpots.first;
-  if (linkedSpotListSpots.isNotEmpty) return linkedSpotListSpots.first;
-  return null;
-}
-
-/// Fills missing city/country from [sourceSpot] without overwriting existing values.
-({String? city, String? countryCode}) resolveCityCountryFromSourceSpot({
-  String? city,
-  String? countryCode,
-  Spot? sourceSpot,
-}) {
-  final normalizedCity = city?.trim();
-  final normalizedCountryCode = countryCode?.trim().toUpperCase();
-  final hasCity = normalizedCity != null && normalizedCity.isNotEmpty;
-  final hasCountryCode =
-      normalizedCountryCode != null && normalizedCountryCode.isNotEmpty;
-
-  final spotCity = sourceSpot?.city?.trim();
-  final spotCountryCode = sourceSpot?.countryCode?.trim().toUpperCase();
-
-  return (
-    city: hasCity
-        ? normalizedCity
-        : (spotCity != null && spotCity.isNotEmpty ? spotCity : null),
-    countryCode: hasCountryCode
-        ? normalizedCountryCode
-        : (spotCountryCode != null && spotCountryCode.isNotEmpty
-              ? spotCountryCode
-              : null),
-  );
-}
-
-/// Resolves event city/country, inheriting from linked spots when there is no direct location.
-({String? city, String? countryCode}) resolveEventCityCountryFromLinkedSpots({
+/// City/country to store on the event itself: only for a direct location.
+///
+/// Events located by linked spots or lists get theirs from the server-derived
+/// `resolvedLocation` instead, so it follows list and spot changes.
+({String? city, String? countryCode}) directEventCityCountry({
   required double? latitude,
   required double? longitude,
   required String? address,
   String? city,
   String? countryCode,
-  required List<Spot> linkedSpots,
-  required List<Spot> linkedSpotListSpots,
 }) {
-  final trimmedCity = city?.trim();
-  final trimmedCountryCode = countryCode?.trim().toUpperCase();
-
-  if (eventHasDirectLocation(
+  if (!eventHasDirectLocation(
     latitude: latitude,
     longitude: longitude,
     address: address,
   )) {
-    return (
-      city: trimmedCity?.isNotEmpty == true ? trimmedCity : null,
-      countryCode: trimmedCountryCode?.isNotEmpty == true
-          ? trimmedCountryCode
-          : null,
-    );
+    return (city: null, countryCode: null);
   }
-
-  final sourceSpot = pickSourceSpotForCityCountry(
-    linkedSpots: linkedSpots,
-    linkedSpotListSpots: linkedSpotListSpots,
-  );
-  return resolveCityCountryFromSourceSpot(
-    city: city,
-    countryCode: countryCode,
-    sourceSpot: sourceSpot,
+  final trimmedCity = city?.trim();
+  final trimmedCountryCode = countryCode?.trim().toUpperCase();
+  return (
+    city: trimmedCity?.isNotEmpty == true ? trimmedCity : null,
+    countryCode: trimmedCountryCode?.isNotEmpty == true
+        ? trimmedCountryCode
+        : null,
   );
 }
 

@@ -109,42 +109,55 @@ function isSpotEligibleForPin(spotData) {
 }
 
 /**
- * Collects unique spot ids from event and expandable linked lists.
+ * Unique linked spots in pin order (direct spotIds, then expandable lists),
+ * with the list each list-only spot came from.
  * @param {Object} eventData
  * @param {Map<string, Object>} listsById
- * @return {string[]}
+ * @return {Array<{spotId: string, spotListId: (string|null)}>}
  */
-function collectLinkedSpotIds(eventData, listsById) {
+function collectLinkedSpotSources(eventData, listsById) {
   const seen = new Set();
   const result = [];
 
-  const addId = (spotId) => {
+  const add = (spotId, spotListId) => {
     if (typeof spotId !== "string") return;
     const trimmed = spotId.trim();
     if (trimmed.length === 0 || seen.has(trimmed)) return;
     seen.add(trimmed);
-    result.push(trimmed);
+    result.push({spotId: trimmed, spotListId});
   };
 
   const directSpotIds = Array.isArray(eventData.spotIds) ?
     eventData.spotIds :
     [];
-  for (const spotId of directSpotIds) addId(spotId);
+  for (const spotId of directSpotIds) add(spotId, null);
 
   const spotListIds = Array.isArray(eventData.spotListIds) ?
     eventData.spotListIds :
     [];
   for (const listId of spotListIds) {
     if (typeof listId !== "string" || listId.trim().length === 0) continue;
-    const listData = listsById.get(listId.trim());
+    const trimmedListId = listId.trim();
+    const listData = listsById.get(trimmedListId);
     if (!listData) continue;
     if (!isExpandableListVisibility(listData.visibility)) continue;
     for (const spotId of effectiveSpotIdsFromList(listData)) {
-      addId(spotId);
+      add(spotId, trimmedListId);
     }
   }
 
   return result;
+}
+
+/**
+ * Collects unique spot ids from event and expandable linked lists.
+ * @param {Object} eventData
+ * @param {Map<string, Object>} listsById
+ * @return {string[]}
+ */
+function collectLinkedSpotIds(eventData, listsById) {
+  return collectLinkedSpotSources(eventData, listsById)
+      .map((source) => source.spotId);
 }
 
 /**
@@ -303,37 +316,166 @@ async function deleteEventMapPins(db, eventId) {
 }
 
 /**
- * Representative (lat, lng) for an event: venue coords if present, otherwise
+ * @param {*} value
+ * @return {string|null}
+ */
+function trimmedString(value) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+/**
+ * Copies non-null entries so the result is safe to write to Firestore.
+ * @param {Object} fields
+ * @return {Object}
+ */
+function withoutNulls(fields) {
+  const out = {};
+  for (const [key, value] of Object.entries(fields)) {
+    if (value !== null && value !== undefined) out[key] = value;
+  }
+  return out;
+}
+
+/**
+ * Main location for an event: the venue when it has coordinates, otherwise
  * the first eligible linked spot (direct spotIds, then expandable lists).
+ * @param {Object} eventData
+ * @param {Map<string, Object>} spotsById
+ * @param {Map<string, Object>} listsById
+ * @return {Object|null} `{source, latitude, longitude, city?, countryCode?,
+ *   spotId?, spotName?, spotListId?, spotListName?}`
+ */
+function resolveEventMainLocation(eventData, spotsById, listsById) {
+  if (!eventData || typeof eventData !== "object") {
+    return null;
+  }
+  if (hasValidCoordinates(eventData.latitude, eventData.longitude)) {
+    const countryCode = trimmedString(eventData.countryCode);
+    return withoutNulls({
+      source: "venue",
+      latitude: eventData.latitude,
+      longitude: eventData.longitude,
+      city: trimmedString(eventData.city),
+      countryCode: countryCode ? countryCode.toUpperCase() : null,
+    });
+  }
+  const lists = listsById instanceof Map ? listsById : new Map();
+  const spots = spotsById instanceof Map ? spotsById : new Map();
+  const sources = collectLinkedSpotSources(eventData, lists);
+  for (const {spotId, spotListId} of sources) {
+    const spotData = spots.get(spotId);
+    if (!isSpotEligibleForPin(spotData)) continue;
+    const countryCode = trimmedString(spotData.countryCode);
+    const listData = spotListId ? lists.get(spotListId) : null;
+    return withoutNulls({
+      source: spotListId ? "list" : "spot",
+      latitude: spotData.latitude,
+      longitude: spotData.longitude,
+      city: trimmedString(spotData.city),
+      countryCode: countryCode ? countryCode.toUpperCase() : null,
+      spotId,
+      spotName: trimmedString(spotData.name),
+      spotListId,
+      spotListName: listData ? trimmedString(listData.name) : null,
+    });
+  }
+  return null;
+}
+
+/**
+ * Representative (lat, lng) for an event; see [resolveEventMainLocation].
  * @param {Object} eventData
  * @param {Map<string, Object>} spotsById
  * @param {Map<string, Object>} listsById
  * @return {{latitude: number, longitude: number}|null}
  */
 function resolveEventMainCoordinates(eventData, spotsById, listsById) {
-  if (!eventData || typeof eventData !== "object") {
-    return null;
+  const location = resolveEventMainLocation(eventData, spotsById, listsById);
+  if (!location) return null;
+  return {latitude: location.latitude, longitude: location.longitude};
+}
+
+/**
+ * JSON with object keys sorted, so equal Firestore payloads compare equal.
+ * @param {*} value
+ * @return {string}
+ */
+function stableStringify(value) {
+  if (value === undefined) return "null";
+  if (value && typeof value.toDate === "function") {
+    return JSON.stringify(value.toDate().toISOString());
   }
-  if (hasValidCoordinates(eventData.latitude, eventData.longitude)) {
-    return {
-      latitude: eventData.latitude,
-      longitude: eventData.longitude,
-    };
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(",")}]`;
   }
-  const linkedSpotIds = collectLinkedSpotIds(
+  if (value && typeof value === "object" && !(value instanceof Date)) {
+    const keys = Object.keys(value)
+        .filter((k) => value[k] !== undefined)
+        .sort();
+    return `{${keys.map((k) =>
+      `${JSON.stringify(k)}:${stableStringify(value[k])}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/**
+ * @param {*} a
+ * @param {*} b
+ * @return {boolean}
+ */
+function sameResolvedLocation(a, b) {
+  const left = a && typeof a === "object" ? a : null;
+  const right = b && typeof b === "object" ? b : null;
+  return stableStringify(left) === stableStringify(right);
+}
+
+/**
+ * True when an event write changed nothing except the server-owned
+ * resolvedLocation field (our own sync write).
+ * @param {Object|null} beforeData
+ * @param {Object|null} afterData
+ * @return {boolean}
+ */
+function onlyResolvedLocationChanged(beforeData, afterData) {
+  if (!beforeData || !afterData) return false;
+  const strip = (data) => {
+    const rest = {...data};
+    delete rest.resolvedLocation;
+    return rest;
+  };
+  if (sameResolvedLocation(beforeData.resolvedLocation,
+      afterData.resolvedLocation)) {
+    return false;
+  }
+  return stableStringify(strip(beforeData)) ===
+    stableStringify(strip(afterData));
+}
+
+/**
+ * Writes resolvedLocation on the event only when it changed.
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {string} eventId
+ * @param {Object} eventData
+ * @param {{listsById: Map<string, Object>,
+ *   spotsById: Map<string, Object>}} inputs
+ * @return {Promise<boolean>} whether a write happened
+ */
+async function syncEventResolvedLocation(db, eventId, eventData, inputs) {
+  const location = resolveEventMainLocation(
       eventData,
-      listsById instanceof Map ? listsById : new Map(),
+      inputs.spotsById,
+      inputs.listsById,
   );
-  const spots = spotsById instanceof Map ? spotsById : new Map();
-  for (const spotId of linkedSpotIds) {
-    const spotData = spots.get(spotId);
-    if (!isSpotEligibleForPin(spotData)) continue;
-    return {
-      latitude: spotData.latitude,
-      longitude: spotData.longitude,
-    };
+  if (sameResolvedLocation(eventData.resolvedLocation, location)) {
+    return false;
   }
-  return null;
+  await db.collection("events").doc(eventId).update({
+    resolvedLocation: location ||
+      require("firebase-admin/firestore").FieldValue.delete(),
+  });
+  return true;
 }
 
 /**
@@ -422,8 +564,9 @@ async function materializeEventMapPins(db, eventId, eventData, options = {}) {
       options,
   );
 
+  const inputs = {listsById, spotsById};
   if (pins.length === 0) {
-    return {pinsWritten: 0, truncated};
+    return {pinsWritten: 0, truncated, inputs};
   }
 
   const batch = db.batch();
@@ -439,7 +582,51 @@ async function materializeEventMapPins(db, eventId, eventData, options = {}) {
     });
   }
 
-  return {pinsWritten: pins.length, truncated};
+  return {pinsWritten: pins.length, truncated, inputs};
+}
+
+/**
+ * Rebuilds map pins and syncs resolvedLocation from one set of reads.
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {string} eventId
+ * @param {Object} eventData
+ * @param {Object=} options
+ * @return {Promise<{pinsWritten: number, truncated: boolean,
+ *   locationWritten: boolean}>}
+ */
+async function materializeEventLocationAndPins(
+    db,
+    eventId,
+    eventData,
+    options = {},
+) {
+  const {pinsWritten, truncated, inputs} = await materializeEventMapPins(
+      db,
+      eventId,
+      eventData,
+      options,
+  );
+  const locationWritten = await syncEventResolvedLocation(
+      db,
+      eventId,
+      eventData,
+      inputs,
+  );
+  return {pinsWritten, truncated, locationWritten};
+}
+
+/**
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {FirebaseFirestore.QuerySnapshot} snapshot
+ * @return {Promise<{eventsProcessed: number}>}
+ */
+async function rematerializeEventDocs(db, snapshot) {
+  let eventsProcessed = 0;
+  for (const doc of snapshot.docs) {
+    await materializeEventLocationAndPins(db, doc.id, doc.data() || {});
+    eventsProcessed += 1;
+  }
+  return {eventsProcessed};
 }
 
 /**
@@ -451,13 +638,43 @@ async function rematerializeEventsForSpotList(db, listId) {
   const snapshot = await db.collection("events")
       .where("spotListIds", "array-contains", listId)
       .get();
+  return rematerializeEventDocs(db, snapshot);
+}
 
-  let eventsProcessed = 0;
-  for (const doc of snapshot.docs) {
-    await materializeEventMapPins(db, doc.id, doc.data() || {});
-    eventsProcessed += 1;
-  }
-  return {eventsProcessed};
+/**
+ * Re-runs pins and resolvedLocation for events that link [spotId] directly.
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {string} spotId
+ * @return {Promise<{eventsProcessed: number}>}
+ */
+async function rematerializeEventsForSpot(db, spotId) {
+  const snapshot = await db.collection("events")
+      .where("spotIds", "array-contains", spotId)
+      .get();
+  return rematerializeEventDocs(db, snapshot);
+}
+
+const SPOT_LOCATION_FIELDS = [
+  "latitude",
+  "longitude",
+  "city",
+  "countryCode",
+  "name",
+  "hidden",
+  "duplicateOf",
+];
+
+/**
+ * Whether a spot change can affect linked event pins or resolvedLocation.
+ * @param {Object|null} beforeData
+ * @param {Object|null} afterData
+ * @return {boolean}
+ */
+function spotLocationFieldsChanged(beforeData, afterData) {
+  const before = beforeData || {};
+  const after = afterData || {};
+  return SPOT_LOCATION_FIELDS.some((field) =>
+    stableStringify(before[field]) !== stableStringify(after[field]));
 }
 
 module.exports = {
@@ -468,13 +685,21 @@ module.exports = {
   isExpandableListVisibility,
   effectiveSpotIdsFromList,
   isSpotEligibleForPin,
+  collectLinkedSpotSources,
   collectLinkedSpotIds,
+  resolveEventMainLocation,
   resolveEventMainCoordinates,
+  sameResolvedLocation,
+  onlyResolvedLocationChanged,
+  syncEventResolvedLocation,
   loadEventLinkedLocationInputs,
   loadEventMainCoordinates,
   pickEventCardFields,
   buildEventMapPinWrites,
   deleteEventMapPins,
   materializeEventMapPins,
+  materializeEventLocationAndPins,
   rematerializeEventsForSpotList,
+  rematerializeEventsForSpot,
+  spotLocationFieldsChanged,
 };

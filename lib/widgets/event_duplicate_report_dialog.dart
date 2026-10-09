@@ -17,7 +17,8 @@ class EventDuplicateReportDialog extends StatefulWidget {
       _EventDuplicateReportDialogState();
 }
 
-class _EventDuplicateReportDialogState extends State<EventDuplicateReportDialog> {
+class _EventDuplicateReportDialogState
+    extends State<EventDuplicateReportDialog> {
   late final TextEditingController _detailsController;
   late final TextEditingController _emailController;
   ParkourEvent? _selectedOriginal;
@@ -109,31 +110,33 @@ class _EventDuplicateReportDialogState extends State<EventDuplicateReportDialog>
               : auth.userProfile?.email ?? auth.currentUser?.email ?? '')
         : trimmedEmail;
 
-    final success = await context.read<EventReportService>().submitEventDuplicateSuggestion(
-      targetEventId: eventId,
-      targetEventTitle: widget.event.title,
-      startAt: widget.event.startAt,
-      endAt: widget.event.endAt,
-      isDateOnly: widget.event.isDateOnly,
-      timeZone: widget.event.timeZone,
-      description: widget.event.description,
-      websiteUrl: widget.event.websiteUrl,
-      latitude: widget.event.latitude,
-      longitude: widget.event.longitude,
-      address: widget.event.address,
-      city: widget.event.city,
-      countryCode: widget.event.countryCode,
-      existingSpotIds: widget.event.spotIds,
-      existingSpotListIds: widget.event.spotListIds,
-      duplicateOfEventId: selected.id!,
-      duplicateOfEventTitle: selected.title,
-      details: _detailsController.text.trim().isEmpty
-          ? null
-          : _detailsController.text.trim(),
-      reporterUserId: auth.currentUser?.uid,
-      reporterName: reporterName,
-      reporterEmail: contactEmail.isEmpty ? null : contactEmail,
-    );
+    final success = await context
+        .read<EventReportService>()
+        .submitEventDuplicateSuggestion(
+          targetEventId: eventId,
+          targetEventTitle: widget.event.title,
+          startAt: widget.event.startAt,
+          endAt: widget.event.endAt,
+          isDateOnly: widget.event.isDateOnly,
+          timeZone: widget.event.timeZone,
+          description: widget.event.description,
+          websiteUrl: widget.event.websiteUrl,
+          latitude: widget.event.latitude,
+          longitude: widget.event.longitude,
+          address: widget.event.address,
+          city: widget.event.city,
+          countryCode: widget.event.countryCode,
+          existingSpotIds: widget.event.spotIds,
+          existingSpotListIds: widget.event.spotListIds,
+          duplicateOfEventId: selected.id!,
+          duplicateOfEventTitle: selected.title,
+          details: _detailsController.text.trim().isEmpty
+              ? null
+              : _detailsController.text.trim(),
+          reporterUserId: auth.currentUser?.uid,
+          reporterName: reporterName,
+          reporterEmail: contactEmail.isEmpty ? null : contactEmail,
+        );
 
     if (!mounted) return;
 
@@ -197,7 +200,7 @@ class _EventDuplicateReportDialogState extends State<EventDuplicateReportDialog>
                     currentEventId: eventId,
                     referenceStartAt: widget.event.startAt,
                     referenceEndAt: widget.event.endAt,
-                    referenceCountryCode: widget.event.countryCode,
+                    referenceCountryCode: widget.event.effectiveCountryCode,
                     nativeOnlyOriginals: false,
                     showNativeOnlyHint: false,
                     selectedEvent: _selectedOriginal,

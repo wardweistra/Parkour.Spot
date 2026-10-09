@@ -8,6 +8,8 @@ const {getFirestore} = require("firebase-admin/firestore");
 const {
   buildPlaceSnapshots,
   attachEventsAndBuildIndexes,
+  needsResolvedLocationFallback,
+  withResolvedLocationFallback,
 } = require("./lib/about-snapshots");
 const {activityWindowStart, buildAboutStats} = require("./lib/about-stats");
 
@@ -147,6 +149,30 @@ async function loadActivityCounts(now) {
 }
 
 /**
+ * Spot lists referenced by events that still need an on-the-fly location.
+ * @param {Array<Object>} events
+ * @return {Promise<Map<string, Object>>}
+ */
+async function loadFallbackSpotLists(events) {
+  const listIds = new Set();
+  for (const event of events) {
+    if (!needsResolvedLocationFallback(event)) continue;
+    for (const id of event.spotListIds || []) {
+      if (typeof id === "string" && id.trim()) listIds.add(id.trim());
+    }
+  }
+  const listsById = new Map();
+  if (listIds.size === 0) return listsById;
+  const ids = [...listIds];
+  const refs = ids.map((id) => db.collection("spotLists").doc(id));
+  const snaps = await db.getAll(...refs);
+  snaps.forEach((snap, i) => {
+    if (snap.exists) listsById.set(ids[i], snap.data() || {});
+  });
+  return listsById;
+}
+
+/**
  * Fetch spots + events, build snapshots, write to Firestore.
  * @param {Object} [options]
  * @return {Promise<Object>}
@@ -163,8 +189,14 @@ async function generateAboutSnapshots(options = {}) {
   console.log(`About snapshots: ${spots.length} non-hidden spots`);
 
   const eventsSnap = await db.collection("events").get();
-  const events = eventsSnap.docs.map((doc) => ({id: doc.id, ...doc.data()}));
-  console.log(`About snapshots: ${events.length} events scanned`);
+  const rawEvents = eventsSnap.docs.map((doc) => ({id: doc.id, ...doc.data()}));
+  console.log(`About snapshots: ${rawEvents.length} events scanned`);
+  const spotsById = new Map(spots.map((spot) => [spot.id, spot]));
+  const events = withResolvedLocationFallback(
+      rawEvents,
+      spotsById,
+      await loadFallbackSpotLists(rawEvents),
+  );
 
   const placeState = buildPlaceSnapshots(spots, {
     generatedAt: now.toISOString(),

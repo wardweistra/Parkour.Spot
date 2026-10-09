@@ -39,6 +39,7 @@ function formatWhen(iso: string | null): string {
 const heroImage =
   event.imageUrls?.[0] || event.imageUrl || null;
 
+const placeLabel = event.address?.trim() || event.placeName?.trim() || "";
 const countryCode = event.countryCode?.trim().toLowerCase() ?? "";
 const citySlug = event.citySlug?.trim() ?? "";
 const cityHub =
@@ -65,7 +66,7 @@ const areaHub = eventAreaHubLink(
       {
         event.city && event.countryCode && (
           <p class="muted">
-            {event.address ? `${event.address} · ` : ""}
+            {placeLabel ? `${placeLabel} · ` : ""}
             <CountryFlag code={event.countryCode} />
             {event.city}, {event.countryCode.toUpperCase()}
             {areaHub && (

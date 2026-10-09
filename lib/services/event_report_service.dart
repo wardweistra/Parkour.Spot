@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 import '../models/event_report.dart';
 import '../services/admin_events_service.dart';
 import '../services/audit_log_service.dart';
-import '../utils/event_linked_spot_loader.dart';
+import '../utils/event_location_utils.dart';
 import '../utils/event_suggestion_utils.dart';
 import '../utils/image_preparation.dart';
 import '../utils/ui_yield.dart';
@@ -175,15 +175,12 @@ class EventReportService {
     }
 
     try {
-      final resolvedCityCountry = await resolveEventCityCountryFromFirestore(
-        firestore: _firestore,
+      final resolvedCityCountry = directEventCityCountry(
         latitude: latitude,
         longitude: longitude,
         address: address,
         city: city,
         countryCode: countryCode,
-        spotIds: normalizedSpotIds,
-        spotListIds: normalizedSpotListIds,
       );
 
       final reportData = <String, dynamic>{
@@ -203,8 +200,7 @@ class EventReportService {
           if (address != null && address.trim().isNotEmpty)
             'address': address.trim(),
         },
-        if (resolvedCityCountry.city != null)
-          'city': resolvedCityCountry.city!,
+        if (resolvedCityCountry.city != null) 'city': resolvedCityCountry.city!,
         if (resolvedCityCountry.countryCode != null)
           'countryCode': resolvedCityCountry.countryCode!,
         'spotIds': normalizedSpotIds,
@@ -470,10 +466,9 @@ class EventReportService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      final eventId =
-          report.targetEventId?.trim().isNotEmpty == true
-              ? report.targetEventId!.trim()
-              : (report.approvedEventId?.trim() ?? '');
+      final eventId = report.targetEventId?.trim().isNotEmpty == true
+          ? report.targetEventId!.trim()
+          : (report.approvedEventId?.trim() ?? '');
       await _auditLogService.logEventReportStatusChange(
         reportId: reportId,
         eventId: eventId,
@@ -561,15 +556,12 @@ class EventReportService {
         }
       }
 
-      final resolvedCityCountry = await resolveEventCityCountryFromFirestore(
-        firestore: _firestore,
+      final resolvedCityCountry = directEventCityCountry(
         latitude: report.latitude,
         longitude: report.longitude,
         address: report.address,
         city: report.city,
         countryCode: report.countryCode,
-        spotIds: report.spotIds,
-        spotListIds: report.spotListIds,
       );
 
       final result = await _firestore.runTransaction<String?>((
@@ -828,10 +820,9 @@ class EventReportService {
         'reviewedAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
-      final eventId =
-          report.targetEventId?.trim().isNotEmpty == true
-              ? report.targetEventId!.trim()
-              : '';
+      final eventId = report.targetEventId?.trim().isNotEmpty == true
+          ? report.targetEventId!.trim()
+          : '';
       await _auditLogService.logEventReportStatusChange(
         reportId: reportId,
         eventId: eventId,

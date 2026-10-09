@@ -10,7 +10,6 @@ import '../models/parkour_event.dart';
 import '../utils/event_date_window.dart';
 import '../utils/event_duplicate_merge.dart';
 import '../utils/event_duplicate_review.dart';
-import '../utils/event_linked_spot_loader.dart';
 import '../utils/event_location_utils.dart';
 import '../utils/image_preparation.dart';
 import '../utils/replay_latest_stream.dart';
@@ -319,10 +318,7 @@ class AdminEventsService extends ChangeNotifier {
       final ref = await _firestore
           .collection('events')
           .add(nativeEvent.toFirestore());
-      await _auditLogService.logEventCreate(
-        eventId: ref.id,
-        userId: createdBy,
-      );
+      await _auditLogService.logEventCreate(eventId: ref.id, userId: createdBy);
       notifyListeners();
       return ref.id;
     } catch (e, st) {
@@ -409,15 +405,12 @@ class AdminEventsService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final resolvedCityCountry = await resolveEventCityCountryFromFirestore(
-        firestore: _firestore,
+      final resolvedCityCountry = directEventCityCountry(
         latitude: normalized.latitude,
         longitude: normalized.longitude,
         address: normalized.address,
         city: normalized.city,
         countryCode: normalized.countryCode,
-        spotIds: normalized.spotIds,
-        spotListIds: normalized.spotListIds,
       );
 
       final now = DateTime.now().toUtc();
@@ -792,9 +785,7 @@ class AdminEventsService extends ChangeNotifier {
     try {
       return ParkourEvent.fromFirestore(doc);
     } catch (e) {
-      debugPrint(
-        'AdminEventsService skipping malformed event ${doc.id}: $e',
-      );
+      debugPrint('AdminEventsService skipping malformed event ${doc.id}: $e');
       return null;
     }
   }
@@ -1692,7 +1683,11 @@ class AdminEventsService extends ChangeNotifier {
     track('countryCode', before.countryCode, after.countryCode);
     track('latitude', before.latitude, after.latitude);
     track('longitude', before.longitude, after.longitude);
-    track('startAt', before.startAt.toIso8601String(), after.startAt.toIso8601String());
+    track(
+      'startAt',
+      before.startAt.toIso8601String(),
+      after.startAt.toIso8601String(),
+    );
     track(
       'endAt',
       before.endAt?.toIso8601String(),
@@ -1706,11 +1701,7 @@ class AdminEventsService extends ChangeNotifier {
       before.spotListIds.join(','),
       after.spotListIds.join(','),
     );
-    track(
-      'imageUrls',
-      before.imageUrls.join(','),
-      after.imageUrls.join(','),
-    );
+    track('imageUrls', before.imageUrls.join(','), after.imageUrls.join(','));
     return changes;
   }
 }

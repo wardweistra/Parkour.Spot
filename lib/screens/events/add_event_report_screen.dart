@@ -1331,15 +1331,6 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       final isSpots = collapsed.kind == EventWhereKind.spots;
       final isList = collapsed.kind == EventWhereKind.list;
       final pin = collapsed.pin;
-      final resolvedCityCountry = resolveEventCityCountryFromLinkedSpots(
-        latitude: isPin ? pin?.latitude : null,
-        longitude: isPin ? pin?.longitude : null,
-        address: isPin ? _effectiveAddressForSubmission() : null,
-        city: isPin ? _city : null,
-        countryCode: isPin ? _countryCode : null,
-        linkedSpots: collapsed.spots,
-        linkedSpotListSpots: isList ? _linkedSpotListSpots : const <Spot>[],
-      );
 
       final success = await eventReportService.submitEventReport(
         title: _titleController.text,
@@ -1354,8 +1345,8 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
         latitude: isPin ? pin?.latitude : null,
         longitude: isPin ? pin?.longitude : null,
         address: isPin ? _effectiveAddressForSubmission() : null,
-        city: resolvedCityCountry.city,
-        countryCode: resolvedCityCountry.countryCode,
+        city: isPin ? _city : null,
+        countryCode: isPin ? _countryCode : null,
         spotIds: isSpots
             ? collapsed.spots
                   .map((spot) => spot.id)
@@ -1444,9 +1435,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       linkedSpots: _linkedSpots,
       linkedLists: _linkedLists,
       onRemoveSpot: (spot) {
-        setState(
-          () => _linkedSpots.removeWhere((s) => s.id == spot.id),
-        );
+        setState(() => _linkedSpots.removeWhere((s) => s.id == spot.id));
         _restoreEmptyWhereMapCenter();
       },
       onRemoveList: (list) async {

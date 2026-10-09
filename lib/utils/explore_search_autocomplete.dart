@@ -60,8 +60,8 @@ String formatEventCandidateSubtitle(ParkourEvent event) {
   final parts = <String>[];
   parts.add(DateFormat.yMMMd().add_jm().format(event.startAt.toLocal()));
   final location = formatEventSuggestionLocation({
-    'city': event.city,
-    'countryCode': event.countryCode,
+    'city': event.effectiveCity,
+    'countryCode': event.effectiveCountryCode,
   });
   if (location.isNotEmpty) {
     parts.add(location);

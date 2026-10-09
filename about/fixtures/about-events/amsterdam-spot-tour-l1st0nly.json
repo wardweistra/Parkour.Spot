@@ -1,0 +1,21 @@
+{
+  "slug": "amsterdam-spot-tour-l1st0nly",
+  "eventId": "l1st0nlytour",
+  "title": "Amsterdam spot tour",
+  "startAt": "2026-11-22T11:00:00.000Z",
+  "endAt": "2026-11-22T15:00:00.000Z",
+  "isDateOnly": false,
+  "timeZone": "Europe/Amsterdam",
+  "city": "Amsterdam",
+  "citySlug": "amsterdam",
+  "countryCode": "nl",
+  "imageUrl": null,
+  "imageUrls": [],
+  "websiteUrl": null,
+  "description": "A guided tour along a list of Amsterdam spots, from Dam square to the IJ.",
+  "address": null,
+  "latitude": 52.3731,
+  "longitude": 4.8922,
+  "placeName": "Amsterdam classics",
+  "locationSource": "list"
+}

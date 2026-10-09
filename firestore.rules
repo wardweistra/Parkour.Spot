@@ -110,6 +110,12 @@ service cloud.firestore {
         return data.updatedAt == request.time || data.updatedAt is timestamp;
       }
 
+      // resolvedLocation is written only by Cloud Functions (Admin SDK).
+      function eventResolvedLocationUnchanged() {
+        return !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['resolvedLocation']);
+      }
+
       function eventCreateShape() {
         return request.auth != null &&
           request.resource.data.createdBy is string &&
@@ -117,6 +123,7 @@ service cloud.firestore {
             requestingUserIsStaff()) &&
           request.resource.data.createdAt is timestamp &&
           eventUpdatedAtOk(request.resource.data) &&
+          !('resolvedLocation' in request.resource.data) &&
           eventCommonShape(request.resource.data);
       }
 
@@ -125,6 +132,7 @@ service cloud.firestore {
           request.resource.data.createdBy == resource.data.createdBy &&
           request.resource.data.createdAt == resource.data.createdAt &&
           eventUpdatedAtOk(request.resource.data) &&
+          eventResolvedLocationUnchanged() &&
           eventCommonShape(request.resource.data);
       }
 

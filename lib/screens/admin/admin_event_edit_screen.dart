@@ -1113,46 +1113,6 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
     return auth.isModerator && event.isNativeEvent;
   }
 
-  Future<void> _applyCityCountryFromFirstLinkedSpotIfNeeded() async {
-    if (eventHasDirectLocation(
-      latitude: _pickedLocation?.latitude,
-      longitude: _pickedLocation?.longitude,
-      address: _locationAddressController.text,
-    )) {
-      return;
-    }
-    if (_linkedSpots.isEmpty && _linkedLists.isEmpty) return;
-
-    var linkedSpotListSpots = _linkedListSpots;
-    if (_linkedSpots.isEmpty &&
-        linkedSpotListSpots.isEmpty &&
-        _linkedLists.isNotEmpty) {
-      final spotIds = _linkedLists.first.effectiveSpotIds;
-      if (spotIds.isEmpty) return;
-      final spot = await context.read<SpotService>().getSpotById(spotIds.first);
-      if (!mounted) return;
-      if (spot != null) linkedSpotListSpots = [spot];
-    }
-
-    final resolved = resolveEventCityCountryFromLinkedSpots(
-      latitude: _pickedLocation?.latitude,
-      longitude: _pickedLocation?.longitude,
-      address: _locationAddressController.text,
-      city: _currentCity,
-      countryCode: _currentCountryCode,
-      linkedSpots: _linkedSpots,
-      linkedSpotListSpots: linkedSpotListSpots,
-    );
-    if (resolved.city == null && resolved.countryCode == null) return;
-
-    setState(() {
-      if (resolved.city != null) _currentCity = resolved.city;
-      if (resolved.countryCode != null) {
-        _currentCountryCode = resolved.countryCode;
-      }
-    });
-  }
-
   String? _effectiveAddressForSubmission() {
     final trimmed = _locationAddressController.text.trim();
     if (trimmed.isNotEmpty) return trimmed;
@@ -1204,9 +1164,6 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
       return;
     }
 
-    await _applyCityCountryFromFirstLinkedSpotIfNeeded();
-    if (!mounted) return;
-
     final collapsed = collapseEventWhere(
       pin: _pickedLocation,
       spots: _linkedSpots,
@@ -1256,8 +1213,8 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
       latitude: isPin ? pin?.latitude : null,
       longitude: isPin ? pin?.longitude : null,
       address: isPin ? _effectiveAddressForSubmission() : null,
-      city: _currentCity,
-      countryCode: _currentCountryCode,
+      city: isPin ? _currentCity : null,
+      countryCode: isPin ? _currentCountryCode : null,
       spotIds: isSpots
           ? collapsed.spots.map((s) => s.id!).toList()
           : const <String>[],
@@ -1431,15 +1388,11 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
       linkedSpots: _linkedSpots,
       linkedLists: _linkedLists,
       onRemoveSpot: (spot) {
-        setState(
-          () => _linkedSpots.removeWhere((s) => s.id == spot.id),
-        );
+        setState(() => _linkedSpots.removeWhere((s) => s.id == spot.id));
         _restoreEmptyWhereMapCenter();
       },
       onRemoveList: (list) async {
-        setState(
-          () => _linkedLists.removeWhere((l) => l.id == list.id),
-        );
+        setState(() => _linkedLists.removeWhere((l) => l.id == list.id));
         await _reloadLinkedListSpots();
       },
       addressField: CustomTextField(

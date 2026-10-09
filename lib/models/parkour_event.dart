@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'event_resolved_location.dart';
+
 class ParkourEvent {
   final String? id;
   final String title;
@@ -54,6 +56,9 @@ class ParkourEvent {
   /// was marked as a duplicate.
   final Map<String, dynamic>? duplicateReviewBaseline;
 
+  /// Server-derived main location; never written by clients.
+  final EventResolvedLocation? resolvedLocation;
+
   ParkourEvent({
     this.id,
     required this.title,
@@ -90,7 +95,22 @@ class ParkourEvent {
     this.duplicateHasPendingChanges = false,
     this.duplicateChangedFields = const <String>[],
     this.duplicateReviewBaseline,
+    this.resolvedLocation,
   });
+
+  /// [city], else the city of the server-derived main location.
+  String? get effectiveCity {
+    final own = city?.trim();
+    if (own != null && own.isNotEmpty) return own;
+    return resolvedLocation?.city;
+  }
+
+  /// [countryCode], else the country of the server-derived main location.
+  String? get effectiveCountryCode {
+    final own = countryCode?.trim();
+    if (own != null && own.isNotEmpty) return own.toUpperCase();
+    return resolvedLocation?.countryCode;
+  }
 
   /// Native events are authored on parkour.spot (not imported from an external calendar source).
   bool get isNativeEvent =>
@@ -180,6 +200,7 @@ class ParkourEvent {
       duplicateReviewBaseline: _readDuplicateReviewBaseline(
         data['duplicateReviewBaseline'],
       ),
+      resolvedLocation: EventResolvedLocation.fromMap(data['resolvedLocation']),
     );
   }
 
@@ -246,6 +267,7 @@ class ParkourEvent {
       duplicateReviewBaseline: _readDuplicateReviewBaseline(
         data['duplicateReviewBaseline'],
       ),
+      resolvedLocation: EventResolvedLocation.fromMap(data['resolvedLocation']),
     );
   }
 
@@ -412,6 +434,7 @@ class ParkourEvent {
       duplicateReviewBaseline: identical(duplicateReviewBaseline, _unset)
           ? this.duplicateReviewBaseline
           : duplicateReviewBaseline as Map<String, dynamic>?,
+      resolvedLocation: resolvedLocation,
     );
   }
 

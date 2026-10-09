@@ -5,7 +5,11 @@
  */
 
 const {slugify} = require("../utils");
-const {isEventPast} = require("./event-map-pins");
+const {
+  hasValidCoordinates,
+  isEventPast,
+  resolveEventMainLocation,
+} = require("./event-map-pins");
 
 const TOP_SPOTS_LIMIT = 10;
 
@@ -82,17 +86,82 @@ function toSpotSummary(spot, citySlug, countryCode) {
 }
 
 /**
+ * @param {*} value
+ * @return {string|null}
+ */
+function nonEmpty(value) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+/**
+ * Event location for About pages: the event's own fields first, then the
+ * server-derived resolvedLocation (first eligible linked spot).
+ * @param {Object} event
+ * @return {{city: (string|null), countryCode: (string|null),
+ *   latitude: (number|null), longitude: (number|null),
+ *   placeName: (string|null), locationSource: (string|null)}}
+ */
+function effectiveEventLocation(event) {
+  const resolved = event.resolvedLocation && typeof event.resolvedLocation === "object" ?
+    event.resolvedLocation :
+    {};
+  const hasVenue = hasValidCoordinates(event.latitude, event.longitude);
+  const countryCode = nonEmpty(event.countryCode) || nonEmpty(resolved.countryCode);
+  const fromSpot = !hasVenue && (resolved.source === "spot" || resolved.source === "list");
+  let placeName = null;
+  if (fromSpot) {
+    placeName = resolved.source === "list" ?
+      nonEmpty(resolved.spotListName) || nonEmpty(resolved.spotName) :
+      nonEmpty(resolved.spotName);
+  }
+  const resolvedHasCoords = hasValidCoordinates(resolved.latitude, resolved.longitude);
+  return {
+    city: nonEmpty(event.city) || nonEmpty(resolved.city),
+    countryCode: countryCode ? countryCode.toLowerCase() : null,
+    latitude: hasVenue ? event.latitude : (resolvedHasCoords ? resolved.latitude : null),
+    longitude: hasVenue ? event.longitude : (resolvedHasCoords ? resolved.longitude : null),
+    placeName,
+    locationSource: hasVenue ? "venue" : (fromSpot ? resolved.source : null),
+  };
+}
+
+/**
+ * Fills resolvedLocation for events the trigger has not processed yet
+ * (no direct coordinates, linked spots or lists, no stored value).
+ * @param {Array<Object>} events
+ * @param {Map<string, Object>} spotsById
+ * @param {Map<string, Object>} listsById
+ * @return {Array<Object>}
+ */
+function withResolvedLocationFallback(events, spotsById, listsById) {
+  return events.map((event) => {
+    if (!needsResolvedLocationFallback(event)) return event;
+    const resolvedLocation = resolveEventMainLocation(event, spotsById, listsById);
+    return resolvedLocation ? {...event, resolvedLocation} : event;
+  });
+}
+
+/**
+ * @param {Object} event
+ * @return {boolean}
+ */
+function needsResolvedLocationFallback(event) {
+  if (event.resolvedLocation && typeof event.resolvedLocation === "object") {
+    return false;
+  }
+  if (hasValidCoordinates(event.latitude, event.longitude)) return false;
+  const hasSpots = Array.isArray(event.spotIds) && event.spotIds.length > 0;
+  const hasLists = Array.isArray(event.spotListIds) && event.spotListIds.length > 0;
+  return hasSpots || hasLists;
+}
+
+/**
  * @param {Object} event
  * @param {string} slug
  * @return {Object}
  */
 function toEventSummary(event, slug) {
-  const countryCode = typeof event.countryCode === "string" ?
-    event.countryCode.trim().toLowerCase() :
-    null;
-  const city = typeof event.city === "string" && event.city.trim() ?
-    event.city.trim() :
-    null;
+  const {city, countryCode} = effectiveEventLocation(event);
   const citySlug = city ? slugify(city) : null;
   const imageUrl = firstImageUrl(event);
 
@@ -119,6 +188,7 @@ function toEventSummary(event, slug) {
  */
 function toEventDetail(event, slug) {
   const summary = toEventSummary(event, slug);
+  const location = effectiveEventLocation(event);
   const imageUrls = Array.isArray(event.imageUrls) ?
     event.imageUrls.filter((u) => typeof u === "string" && u.trim()) :
     [];
@@ -126,8 +196,10 @@ function toEventDetail(event, slug) {
     ...summary,
     description: typeof event.description === "string" ? event.description : null,
     address: typeof event.address === "string" ? event.address : null,
-    latitude: typeof event.latitude === "number" ? event.latitude : null,
-    longitude: typeof event.longitude === "number" ? event.longitude : null,
+    latitude: location.latitude,
+    longitude: location.longitude,
+    placeName: location.placeName,
+    locationSource: location.locationSource,
     imageUrls,
   };
 }
@@ -411,6 +483,9 @@ module.exports = {
   eventSlug,
   isPublicEvent,
   toSpotSummary,
+  effectiveEventLocation,
+  needsResolvedLocationFallback,
+  withResolvedLocationFallback,
   toEventSummary,
   toEventDetail,
   buildPlaceSnapshots,

@@ -72,6 +72,17 @@
       "citySlug": "amsterdam",
       "countryCode": "nl",
       "imageUrl": null
+    },
+    {
+      "slug": "amsterdam-spot-tour-l1st0nly",
+      "eventId": "l1st0nlytour",
+      "title": "Amsterdam spot tour",
+      "startAt": "2026-11-22T11:00:00.000Z",
+      "endAt": "2026-11-22T15:00:00.000Z",
+      "city": "Amsterdam",
+      "citySlug": "amsterdam",
+      "countryCode": "nl",
+      "imageUrl": null
     }
   ]
 }
