@@ -468,7 +468,8 @@ img {
   gap: var(--space-sm);
 }
 
-.stack-list li {
+.stack-list li,
+.stack-list__card {
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: var(--space-md);
@@ -478,6 +479,32 @@ img {
   border: 1px solid
     color-mix(in srgb, var(--color-outline) 35%, transparent);
   border-radius: var(--radius-md);
+}
+
+.stack-list__card {
+  position: relative;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.stack-list__card:hover,
+.stack-list__card:focus-within {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--color-primary-container) 28%,
+    var(--color-surface)
+  );
+}
+
+/* Stretch the title link across the whole card (no nested interactive targets). */
+.stack-list__link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 1;
 }
 
 .stack-list__thumb {
@@ -580,13 +607,20 @@ img {
   font-weight: 600;
 }
 
-.stack-list__title a {
+.stack-list__link {
   color: inherit;
   text-decoration: none;
 }
 
-.stack-list__title a:hover {
+.stack-list__card:hover .stack-list__link,
+.stack-list__card:focus-within .stack-list__link {
   color: var(--color-primary);
+}
+
+.stack-list__card:hover .chip,
+.stack-list__card:focus-within .chip {
+  background: var(--color-primary-container);
+  color: var(--color-on-primary-container);
 }
 
 .chip-row {

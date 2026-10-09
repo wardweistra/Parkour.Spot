@@ -348,6 +348,7 @@ const initialMonth = months[0];
               <ul class="stack-list">
                 {day.events.map((event) => (
                   <li
+                    class="stack-list__card"
                     data-country={
                       event.countryCode?.trim().toLowerCase() ?? ""
                     }
@@ -366,7 +367,12 @@ const initialMonth = months[0];
                     )}
                     <div>
                       <p class="stack-list__title">
-                        <a href={aboutEventPath(event.slug)}>{event.title}</a>
+                        <a
+                          class="stack-list__link"
+                          href={aboutEventPath(event.slug)}
+                        >
+                          {event.title}
+                        </a>
                       </p>
                       <p class="stack-list__meta">
                         {eventWhenLabel(event)}
@@ -379,9 +385,7 @@ const initialMonth = months[0];
                         )}
                       </p>
                     </div>
-                    <a class="chip" href={aboutEventPath(event.slug)}>
-                      Details
-                    </a>
+                    <span class="chip" aria-hidden="true">Details</span>
                   </li>
                 ))}
               </ul>

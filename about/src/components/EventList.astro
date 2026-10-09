@@ -85,8 +85,12 @@ function placeLabel(event: EventSummary): string {
                 {day.events.map((event) => {
                   const when = eventWhenLabel(event);
                   const place = placeLabel(event);
+                  const href = aboutEventPath(event.slug);
                   return (
-                    <li data-country={event.countryCode?.toLowerCase() ?? ""}>
+                    <li
+                      class="stack-list__card"
+                      data-country={event.countryCode?.toLowerCase() ?? ""}
+                    >
                       {event.imageUrl ? (
                         <img
                           class="stack-list__thumb"
@@ -101,7 +105,9 @@ function placeLabel(event: EventSummary): string {
                       )}
                       <div>
                         <p class="stack-list__title">
-                          <a href={aboutEventPath(event.slug)}>{event.title}</a>
+                          <a class="stack-list__link" href={href}>
+                            {event.title}
+                          </a>
                         </p>
                         {(when || place) && (
                           <p class="stack-list__meta">
@@ -116,9 +122,7 @@ function placeLabel(event: EventSummary): string {
                           </p>
                         )}
                       </div>
-                      <a class="chip" href={aboutEventPath(event.slug)}>
-                        Details
-                      </a>
+                      <span class="chip" aria-hidden="true">Details</span>
                     </li>
                   );
                 })}

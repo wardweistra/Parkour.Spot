@@ -29,7 +29,7 @@ const {
         const rank = showRanking ? index + 1 : null;
         const place = showCity && spot.city ? spot.city : null;
         return (
-          <li>
+          <li class="stack-list__card">
             {spot.imageUrl ? (
               <img
                 class="stack-list__thumb"
@@ -47,7 +47,9 @@ const {
                 {rank != null && (
                   <span class="stack-list__rank">#{rank}</span>
                 )}
-                <a href={href}>{spot.name}</a>
+                <a class="stack-list__link" href={href}>
+                  {spot.name}
+                </a>
               </p>
               {place && <p class="stack-list__place">{place}</p>}
               <p
@@ -67,9 +69,7 @@ const {
                 )}
               </p>
             </div>
-            <a class="chip" href={href}>
-              View
-            </a>
+            <span class="chip" aria-hidden="true">View</span>
           </li>
         );
       })}
