@@ -168,6 +168,11 @@ const {
   emptySpotStats,
   pruneOldSyncRuns,
 } = require("./lib/sync-runs");
+const {
+  MODE_START,
+  MODE_RESUME,
+  acquireSpotSyncLock,
+} = require("./lib/spot-sync-lock");
 const {createImagePipeline} = require("./lib/image-pipeline");
 const {
   getPublicUrl,
@@ -2388,6 +2393,12 @@ async function processSyncSource(
   let removedSpotSummaries = [];
   let syncIssues = [];
 
+  // Exclusive worker lock (transactional). Outside the failSyncRun catch so a
+  // refused acquire cannot clear another worker's in-progress state.
+  const lockMode =
+    isResuming || trigger === TRIGGER_RESUME ? MODE_RESUME : MODE_START;
+  await acquireSpotSyncLock(db, FieldValue, sourceDocRef, {mode: lockMode});
+
   try {
     if (!isResuming) {
       syncRunId = await createSyncRun(db, FieldValue, {
@@ -2531,6 +2542,9 @@ async function processSyncSource(
         await sourceDocRef.update({
           syncProgress: syncProgressUpdate,
           currentSyncRunId: syncRunId,
+          // Release worker lease so resume/auto-sync can claim immediately;
+          // keep syncInProgress so a fresh start cannot overwrite progress.
+          syncStartedAt: FieldValue.delete(),
         });
 
         const partialStats = buildCumulativeStats();
@@ -3000,6 +3014,8 @@ async function processSyncSource(
         }
         await sourceDocRef.update({
           syncProgress: syncProgressUpdate,
+          // Heartbeat the worker lease so long runs are not treated as stale.
+          syncStartedAt: FieldValue.serverTimestamp(),
         });
         console.log(`Progress update: ${i + 1}/${placemarks.length} spots processed`);
       }
@@ -3047,6 +3063,7 @@ async function processSyncSource(
       syncInProgress: false,
       syncProgress: FieldValue.delete(),
       syncType: FieldValue.delete(),
+      syncStartedAt: FieldValue.delete(),
     };
 
     // Update allFolders if recordFolderName is enabled
