@@ -5,11 +5,17 @@ import {appSpotUrl} from "../lib/urls";
 interface Props {
   spots: SpotSummary[];
   emptyLabel?: string;
+  /** Show city name in meta (country hubs). */
+  showCity?: boolean;
+  /** Show #N in list order (spots are already ranking-sorted). */
+  showRanking?: boolean;
 }
 
 const {
   spots,
   emptyLabel = "No spots yet.",
+  showCity = false,
+  showRanking = false,
 } = Astro.props;
 ---
 
@@ -17,52 +23,56 @@ const {
   spots.length === 0 ? (
     <p class="empty">{emptyLabel}</p>
   ) : (
-    <ul class="stack-list">
-      {spots.map((spot) => (
-        <li>
-          {spot.imageUrl ? (
-            <img
-              class="stack-list__thumb"
-              src={spot.imageUrl}
-              alt=""
-              width="64"
-              height="64"
-              loading="lazy"
-            />
-          ) : (
-            <div class="stack-list__thumb" aria-hidden="true" />
-          )}
-          <div>
-            <p class="stack-list__title">
-              <a
-                href={appSpotUrl(
-                  spot.countryCode,
-                  spot.citySlug,
-                  spot.id,
+    <ul class="stack-list stack-list--spots">
+      {spots.map((spot, index) => {
+        const href = appSpotUrl(spot.countryCode, spot.citySlug, spot.id);
+        const rank = showRanking ? index + 1 : null;
+        const place = showCity && spot.city ? spot.city : null;
+        return (
+          <li>
+            {spot.imageUrl ? (
+              <img
+                class="stack-list__thumb"
+                src={spot.imageUrl}
+                alt=""
+                width="96"
+                height="96"
+                loading="lazy"
+              />
+            ) : (
+              <div class="stack-list__thumb" aria-hidden="true" />
+            )}
+            <div>
+              <p class="stack-list__title">
+                {rank != null && (
+                  <span class="stack-list__rank">#{rank}</span>
                 )}
+                <a href={href}>{spot.name}</a>
+              </p>
+              {place && <p class="stack-list__place">{place}</p>}
+              <p
+                class:list={[
+                  "stack-list__meta",
+                  {"stack-list__meta--quiet": spot.ratingCount <= 0},
+                ]}
               >
-                {spot.name}
-              </a>
-            </p>
-            <p class="stack-list__meta">
-              {spot.ratingCount > 0 ? (
-                <>
-                  {spot.averageRating.toFixed(1)} average · {spot.ratingCount}{" "}
-                  {spot.ratingCount === 1 ? "rating" : "ratings"}
-                </>
-              ) : (
-                "No ratings yet"
-              )}
-            </p>
-          </div>
-          <a
-            class="chip"
-            href={appSpotUrl(spot.countryCode, spot.citySlug, spot.id)}
-          >
-            View
-          </a>
-        </li>
-      ))}
+                {spot.ratingCount > 0 ? (
+                  <>
+                    {spot.averageRating.toFixed(1)} average ·{" "}
+                    {spot.ratingCount}{" "}
+                    {spot.ratingCount === 1 ? "rating" : "ratings"}
+                  </>
+                ) : (
+                  "No ratings yet"
+                )}
+              </p>
+            </div>
+            <a class="chip" href={href}>
+              View
+            </a>
+          </li>
+        );
+      })}
     </ul>
   )
 }

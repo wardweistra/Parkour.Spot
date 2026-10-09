@@ -11,17 +11,17 @@ import {
   type CalendarDay,
   type DayPlacement,
 } from "../lib/calendar";
+import {countryName} from "../lib/citation";
 import {aboutEventPath} from "../lib/urls";
 
 interface Props {
   events: EventSummary[];
   /** Snapshot time; the month grid starts no earlier than this month. */
   generatedAt?: string;
-  showPlaceLinks?: boolean;
   /** Country flags on grid chips; pointless when every event shares a country. */
   showFlags?: boolean;
-  cityHubKeys?: string[];
-  countryHubCodes?: string[];
+  /** Country filter control + `?country=xx` URL sync (events index). */
+  showCountryFilter?: boolean;
   /** Level of the month title; the day panel headings follow below it. */
   headingLevel?: 2 | 3;
 }
@@ -29,12 +29,22 @@ interface Props {
 const {
   events,
   generatedAt,
-  showPlaceLinks = true,
   showFlags = false,
-  cityHubKeys = [],
-  countryHubCodes = [],
+  showCountryFilter = false,
   headingLevel = 2,
 } = Astro.props;
+
+const filterCountries = showCountryFilter
+  ? [
+      ...new Set(
+        events
+          .map((event) => event.countryCode?.trim().toLowerCase() ?? "")
+          .filter((code) => /^[a-z]{2}$/.test(code)),
+      ),
+    ]
+      .sort((a, b) => countryName(a).localeCompare(countryName(b), "en"))
+      .map((code) => ({code, name: countryName(code)}))
+  : [];
 
 const MonthHeading = headingLevel === 2 ? "h2" : "h3";
 const PanelHeading = headingLevel === 2 ? "h3" : "h4";
@@ -97,7 +107,28 @@ function placeLabel(event: EventSummary): string {
 const initialMonth = months[0];
 ---
 
-<div class="event-cal" data-event-cal>
+<div
+  class="event-cal"
+  data-event-cal
+  data-cal-country-filter={showCountryFilter ? "true" : undefined}
+>
+  {
+    filterCountries.length > 0 && (
+      <div class="event-cal__filters" data-cal-filters>
+        <label for="event-cal-country">Country</label>
+        <select
+          id="event-cal-country"
+          class="event-cal__country"
+          data-cal-country
+        >
+          <option value="">All countries</option>
+          {filterCountries.map(({code, name}) => (
+            <option value={code}>{name}</option>
+          ))}
+        </select>
+      </div>
+    )
+  }
   {
     months.length > 0 && (
       <div class="event-cal__toolbar" data-cal-toolbar hidden>
@@ -216,6 +247,11 @@ const initialMonth = months[0];
                                     class={chipClass(placement)}
                                     style={`--span: ${placement.segmentLength}`}
                                     href={aboutEventPath(placement.event.slug)}
+                                    data-country={
+                                      placement.event.countryCode
+                                        ?.trim()
+                                        .toLowerCase() ?? ""
+                                    }
                                     title={[
                                       placement.event.title,
                                       placeLabel(placement.event),
@@ -268,6 +304,10 @@ const initialMonth = months[0];
                                         p.isMultiDay || p.event.isDateOnly,
                                     },
                                   ]}
+                                  data-country={
+                                    p.event.countryCode?.trim().toLowerCase() ??
+                                    ""
+                                  }
                                 />
                               ))}
                             </span>
@@ -307,7 +347,11 @@ const initialMonth = months[0];
               <PanelDayHeading class="calendar__day">{day.label}</PanelDayHeading>
               <ul class="stack-list">
                 {day.events.map((event) => (
-                  <li>
+                  <li
+                    data-country={
+                      event.countryCode?.trim().toLowerCase() ?? ""
+                    }
+                  >
                     {event.imageUrl ? (
                       <img
                         class="stack-list__thumb"
@@ -358,12 +402,7 @@ const initialMonth = months[0];
   }
 
   <div class="event-cal__agenda" data-cal-agenda>
-    <EventList
-      events={events}
-      showPlaceLinks={showPlaceLinks}
-      cityHubKeys={cityHubKeys}
-      countryHubCodes={countryHubCodes}
-    />
+    <EventList events={events} />
   </div>
 </div>
 
@@ -452,6 +491,15 @@ const initialMonth = months[0];
     let monthIndex = 0;
     let selected: string | null = null;
     let view: "month" | "agenda" = "month";
+    let countryFilter: string | null = null;
+    const countrySelect = root.querySelector<HTMLSelectElement>(
+      "[data-cal-country]",
+    );
+    const knownCountries = new Set(
+      [...(countrySelect?.options ?? [])]
+        .map((opt) => opt.value)
+        .filter(Boolean),
+    );
 
     for (const cell of root.querySelectorAll<HTMLElement>("td[data-day]")) {
       const key = cell.dataset.day ?? "";
@@ -487,6 +535,54 @@ const initialMonth = months[0];
       return target;
     }
 
+    function buildCalUrl(nextView: "month" | "agenda"): string {
+      const params = new URLSearchParams();
+      if (nextView === "agenda") params.set("view", "agenda");
+      if (countryFilter) params.set("country", countryFilter);
+      const query = params.toString();
+      const pathQuery = query
+        ? `${location.pathname}?${query}`
+        : location.pathname;
+      if (nextView === "agenda") return pathQuery;
+      const month = currentMonth();
+      return month ? `${pathQuery}#${month}` : pathQuery;
+    }
+
+    function applyCountryFilter() {
+      for (const el of root.querySelectorAll<HTMLElement>("[data-country]")) {
+        const code = el.dataset.country ?? "";
+        el.hidden = Boolean(countryFilter) && code !== countryFilter;
+      }
+      for (const cell of root.querySelectorAll<HTMLElement>("td[data-day]")) {
+        const visible = [
+          ...cell.querySelectorAll<HTMLElement>("[data-country]"),
+        ].some((el) => !el.hidden);
+        cell.classList.toggle("has-events", visible);
+        const more = cell.querySelector<HTMLElement>(".event-cal__more");
+        if (more) more.hidden = Boolean(countryFilter) || !visible;
+      }
+      for (const day of agenda.querySelectorAll<HTMLElement>(
+        ".calendar > section > div",
+      )) {
+        const items = [
+          ...day.querySelectorAll<HTMLElement>("li[data-country]"),
+        ];
+        day.hidden =
+          items.length > 0 && items.every((item) => item.hidden);
+      }
+      for (const section of agenda.querySelectorAll<HTMLElement>(
+        ".calendar > section",
+      )) {
+        const days = [...section.querySelectorAll<HTMLElement>(":scope > div")];
+        section.hidden =
+          days.length > 0 && days.every((day) => day.hidden);
+      }
+      if (countrySelect && countrySelect.value !== (countryFilter ?? "")) {
+        countrySelect.value = countryFilter ?? "";
+      }
+      renderPanel();
+    }
+
     function renderPanel() {
       const month = currentMonth();
       const label = currentSection()?.dataset.label ?? "";
@@ -494,9 +590,14 @@ const initialMonth = months[0];
       let shown = 0;
       for (const block of panelDays) {
         const key = block.dataset.calPanelDay ?? "";
-        const visible = selected
+        const items = [
+          ...block.querySelectorAll<HTMLElement>("li[data-country]"),
+        ];
+        const hasVisible = items.some((item) => !item.hidden);
+        const inScope = selected
           ? key === selected
           : narrow && key.startsWith(month) && key >= today;
+        const visible = inScope && (items.length === 0 || hasVisible);
         block.hidden = !visible;
         block
           .querySelector(".calendar__day")
@@ -542,7 +643,7 @@ const initialMonth = months[0];
       if (opts.focusKey && target) target.focus();
       renderPanel();
       if (view === "month" && opts.syncUrl !== false) {
-        history.replaceState(null, "", `${location.pathname}#${currentMonth()}`);
+        history.replaceState(null, "", buildCalUrl("month"));
       }
     }
 
@@ -557,12 +658,26 @@ const initialMonth = months[0];
       for (const b of viewButtons) {
         b.setAttribute("aria-pressed", String(b.dataset.calView === view));
       }
-      const url =
-        view === "agenda"
-          ? `${location.pathname}?view=agenda`
-          : `${location.pathname}#${currentMonth()}`;
+      const url = buildCalUrl(view);
       if (history_ === "push") history.pushState({view}, "", url);
       else if (history_ === "replace") history.replaceState({view}, "", url);
+    }
+
+    function setCountryFilter(
+      code: string | null,
+      history_: "push" | "replace" | "none",
+    ) {
+      const normalized =
+        code && knownCountries.has(code.toLowerCase())
+          ? code.toLowerCase()
+          : null;
+      countryFilter = normalized;
+      applyCountryFilter();
+      if (history_ !== "none") {
+        const url = buildCalUrl(view);
+        if (history_ === "push") history.pushState({view}, "", url);
+        else history.replaceState({view}, "", url);
+      }
     }
 
     function selectDay(key: string) {
@@ -609,6 +724,10 @@ const initialMonth = months[0];
         if (target !== view) setView(target, "push");
       });
     }
+
+    countrySelect?.addEventListener("change", () => {
+      setCountryFilter(countrySelect.value || null, "push");
+    });
 
     monthView.addEventListener("click", (event) => {
       const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
@@ -665,8 +784,12 @@ const initialMonth = months[0];
             ? todayIndex
             : 0;
       view = params.get("view") === "agenda" ? "agenda" : "month";
+      const rawCountry = params.get("country")?.trim().toLowerCase() ?? "";
+      countryFilter =
+        rawCountry && knownCountries.has(rawCountry) ? rawCountry : null;
       showMonth(startIndex, {syncUrl: false});
       setView(view, "none");
+      applyCountryFilter();
     }
 
     window.addEventListener("popstate", applyLocation);

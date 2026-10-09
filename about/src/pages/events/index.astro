@@ -4,21 +4,12 @@ import EventCalendar from "../../components/EventCalendar.astro";
 import {SITE_NAME} from "../../lib/brand";
 import {upcomingEventsPhrase} from "../../lib/citation";
 import {buildEventsListJsonLd} from "../../lib/schema";
-import {
-  listCityParams,
-  listCountryCodes,
-  loadEventsIndex,
-  loadStats,
-} from "../../lib/snapshots";
-import {appHomeUrl, appPath, cityHubKey} from "../../lib/urls";
+import {loadEventsIndex, loadStats} from "../../lib/snapshots";
+import {appHomeUrl, appPath} from "../../lib/urls";
 import OpenInApp from "../../components/OpenInApp.astro";
 
 const index = await loadEventsIndex();
 const stats = await loadStats();
-const cityHubKeys = (await listCityParams()).map((city) =>
-  cityHubKey(city.countryCode, city.city),
-);
-const countryHubCodes = await listCountryCodes();
 const phrase = upcomingEventsPhrase({
   ...stats,
   upcomingEventCount: stats.upcomingEventCount ?? index.events.length,
@@ -47,7 +38,6 @@ const description = phrase
     events={index.events}
     generatedAt={index.generatedAt}
     showFlags
-    cityHubKeys={cityHubKeys}
-    countryHubCodes={countryHubCodes}
+    showCountryFilter
   />
 </BaseLayout>

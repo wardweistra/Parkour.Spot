@@ -71,11 +71,13 @@ const areaHub = eventAreaHubLink(
           <p class="muted">
             {placeLabel ? `${placeLabel} · ` : ""}
             <CountryFlag code={event.countryCode} />
-            {event.city}, {event.countryCode.toUpperCase()}
-            {areaHub && (
+            {areaHub ? (
+              <a href={areaHub.href}>
+                {event.city}, {event.countryCode.toUpperCase()}
+              </a>
+            ) : (
               <>
-                {" · "}
-                <a href={areaHub.href}>{areaHub.label}</a>
+                {event.city}, {event.countryCode.toUpperCase()}
               </>
             )}
           </p>

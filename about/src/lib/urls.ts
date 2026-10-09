@@ -78,6 +78,13 @@ export function aboutEventPath(slug: string): string {
   return `/events/${slug}`;
 }
 
+/** Site events index, optionally filtered by country (`?country=xx`). */
+export function aboutEventsPath(opts?: {country?: string}): string {
+  const cc = opts?.country?.trim().toLowerCase() ?? "";
+  if (/^[a-z]{2}$/.test(cc)) return `/events?country=${cc}`;
+  return "/events";
+}
+
 export function aboutAbsolute(path: string): string {
   if (path === "/" || path === "") return `${ABOUT_ORIGIN}/`;
   const normalized = path.startsWith("/") ? path : `/${path}`;

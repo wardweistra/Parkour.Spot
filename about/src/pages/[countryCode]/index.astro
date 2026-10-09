@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import SpotList from "../../components/SpotList.astro";
-import EventCalendar from "../../components/EventCalendar.astro";
+import EventList from "../../components/EventList.astro";
 import OpenInApp from "../../components/OpenInApp.astro";
 import CountryFlag from "../../components/CountryFlag.astro";
 import {
@@ -26,8 +26,8 @@ import {
   aboutAbsolute,
   aboutCityPath,
   aboutCountryPath,
+  aboutEventsPath,
   appCountryUrl,
-  cityHubKey,
 } from "../../lib/urls";
 
 export async function getStaticPaths() {
@@ -79,6 +79,10 @@ const jsonLd = buildPlaceJsonLd({
     {name: countryName(cc), url: aboutAbsolute(pagePath)},
   ],
 });
+
+const CITY_PREVIEW = 12;
+const previewCities = cities.slice(0, CITY_PREVIEW);
+const moreCities = cities.slice(CITY_PREVIEW);
 ---
 
 <BaseLayout
@@ -95,21 +99,11 @@ const jsonLd = buildPlaceJsonLd({
     <OpenInApp href={appCountryUrl(cc)} />
   </div>
 
-  <section class="section">
-    <h2 class="section__title">Upcoming events</h2>
-    <EventCalendar
-      events={country.events}
-      generatedAt={country.generatedAt}
-      cityHubKeys={cities.map((city) => cityHubKey(cc, city.citySlug))}
-      headingLevel={3}
-    />
-  </section>
-
   {
     listed.length > 0 && (
       <section class="section">
         <h2 class="section__title">Spots</h2>
-        <SpotList spots={listed} />
+        <SpotList spots={listed} showCity showRanking />
         {moreLabel && (
           <p class="more-link">
             <a href={appCountryUrl(cc)}>{moreLabel}</a>
@@ -120,24 +114,52 @@ const jsonLd = buildPlaceJsonLd({
   }
 
   <section class="section">
+    <h2 class="section__title">Upcoming events</h2>
+    <EventList events={country.events} />
+    <p class="more-link">
+      <a href={aboutEventsPath({country: cc})}>Full calendar</a>
+    </p>
+  </section>
+
+  <section class="section">
     <h2 class="section__title">Cities</h2>
     {
       cities.length === 0 ? (
         <p class="empty">No cities yet.</p>
       ) : (
-        <div class="chip-row">
-          {cities.map((city) => (
-            <a class="chip" href={aboutCityPath(cc, city.citySlug)}>
-              {city.city}
-              {(city.spotCount ?? 0) > 0 && (
-                <span class="muted">
-                  {" "}
-                  · {city.spotCount} {city.spotCount === 1 ? "spot" : "spots"}
-                </span>
-              )}
-            </a>
-          ))}
-        </div>
+        <>
+          <div class="chip-row">
+            {previewCities.map((city) => (
+              <a class="chip" href={aboutCityPath(cc, city.citySlug)}>
+                {city.city}
+                {(city.spotCount ?? 0) > 0 && (
+                  <span class="muted">
+                    {`· ${city.spotCount} ${city.spotCount === 1 ? "spot" : "spots"}`}
+                  </span>
+                )}
+              </a>
+            ))}
+          </div>
+          {moreCities.length > 0 && (
+            <details class="city-more">
+              <summary>
+                Show all cities ({cities.length})
+              </summary>
+              <div class="chip-row">
+                {moreCities.map((city) => (
+                  <a class="chip" href={aboutCityPath(cc, city.citySlug)}>
+                    {city.city}
+                    {(city.spotCount ?? 0) > 0 && (
+                      <span class="muted">
+                        {`· ${city.spotCount} ${city.spotCount === 1 ? "spot" : "spots"}`}
+                      </span>
+                    )}
+                  </a>
+                ))}
+              </div>
+            </details>
+          )}
+        </>
       )
     }
   </section>

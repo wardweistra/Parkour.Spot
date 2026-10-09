@@ -8,30 +8,17 @@ import {
   monthOf,
   zonedDayKey,
 } from "../lib/calendar";
-import {aboutEventPath, eventAreaHubLink} from "../lib/urls";
+import {aboutEventPath} from "../lib/urls";
 
 interface Props {
   events: EventSummary[];
   emptyLabel?: string;
-  showPlaceLinks?: boolean;
-  /** `${countryCode}/${citySlug}` for city pages that were actually generated. */
-  cityHubKeys?: string[];
-  /** Country codes that have a generated hub. Omit to avoid linking a missing city up to a country. */
-  countryHubCodes?: string[];
 }
 
 const {
   events,
   emptyLabel = "No upcoming events.",
-  showPlaceLinks = true,
-  cityHubKeys = [],
-  countryHubCodes = [],
 } = Astro.props;
-
-const cityHubs = new Set(cityHubKeys);
-const countryHubs = new Set(
-  countryHubCodes.map((code) => code.toLowerCase()),
-);
 
 type DayGroup = {
   key: string;
@@ -76,11 +63,6 @@ function groupEvents(items: EventSummary[]): MonthGroup[] {
 
 const months = groupEvents(events);
 
-function placeLink(event: EventSummary): {href: string; label: string} | null {
-  if (!showPlaceLinks) return null;
-  return eventAreaHubLink(event, cityHubs, countryHubs);
-}
-
 function placeLabel(event: EventSummary): string {
   return event.city && event.countryCode
     ? `${event.city}, ${event.countryCode.toUpperCase()}`
@@ -101,11 +83,10 @@ function placeLabel(event: EventSummary): string {
               <h4 class="calendar__day">{day.label}</h4>
               <ul class="stack-list">
                 {day.events.map((event) => {
-                  const hub = placeLink(event);
                   const when = eventWhenLabel(event);
                   const place = placeLabel(event);
                   return (
-                    <li>
+                    <li data-country={event.countryCode?.toLowerCase() ?? ""}>
                       {event.imageUrl ? (
                         <img
                           class="stack-list__thumb"
@@ -132,11 +113,6 @@ function placeLabel(event: EventSummary): string {
                                 {place}
                               </>
                             )}
-                          </p>
-                        )}
-                        {hub && (
-                          <p class="stack-list__meta">
-                            <a href={hub.href}>{hub.label}</a>
                           </p>
                         )}
                       </div>
