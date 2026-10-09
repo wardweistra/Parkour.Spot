@@ -1881,9 +1881,10 @@ function extractWixEventsLocationCoordinates(location) {
 /**
  * @param {Object} event
  * @param {string|null} siteOrigin
+ * @param {string|null} eventDetailsPath
  * @return {string|null}
  */
-function extractWixEventsWebsiteUrl(event, siteOrigin) {
+function extractWixEventsWebsiteUrl(event, siteOrigin, eventDetailsPath) {
   const registration = event.registration &&
       typeof event.registration === "object" ?
     event.registration :
@@ -1909,8 +1910,14 @@ function extractWixEventsWebsiteUrl(event, siteOrigin) {
 
   const slug = toNonEmptyString(event.slug);
   if (!slug || !siteOrigin) return null;
+  const detailsPath = (toNonEmptyString(eventDetailsPath) || "/event-details")
+      .replace(/^\/*/, "/")
+      .replace(/\/+$/, "");
   try {
-    return new URL(`/${slug.replace(/^\/+/, "")}`, siteOrigin).toString();
+    return new URL(
+        `${detailsPath}/${encodeURIComponent(slug.replace(/^\/+/, ""))}`,
+        siteOrigin,
+    ).toString();
   } catch (_) {
     return null;
   }
@@ -1924,6 +1931,8 @@ function extractWixEventsWebsiteUrl(event, siteOrigin) {
  * @param {string} sourceMeta.sourceId
  * @param {string} sourceMeta.sourceName
  * @param {string=} sourceMeta.siteOrigin
+ * @param {string=} sourceMeta.eventDetailsPath Wix event details page path,
+ *   e.g. "/event-details" (the default).
  * @param {string=} sourceMeta.sourceDefaultTimeZone
  * @return {Array<Object>}
  */
@@ -1933,6 +1942,7 @@ function parseExternalEventsFromWixEvents(
       sourceId,
       sourceName,
       siteOrigin = null,
+      eventDetailsPath = null,
       sourceDefaultTimeZone = null,
     },
 ) {
@@ -1996,7 +2006,11 @@ function parseExternalEventsFromWixEvents(
       toNonEmptyString(event.about) ||
       "";
     const description = normalizeImportedEventDescription(rawDescription);
-    const websiteUrl = extractWixEventsWebsiteUrl(event, siteOrigin);
+    const websiteUrl = extractWixEventsWebsiteUrl(
+        event,
+        siteOrigin,
+        eventDetailsPath,
+    );
 
     const location = event.location && typeof event.location === "object" ?
       event.location :

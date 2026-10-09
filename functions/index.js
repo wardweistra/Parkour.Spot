@@ -4893,6 +4893,7 @@ async function syncExternalEventSource(sourceDoc, options = {}) {
         sourceId,
         sourceName,
         siteOrigin: fetched.siteOrigin,
+        eventDetailsPath: fetched.eventDetailsPath,
         sourceDefaultTimeZone,
       });
     } else if (sourceType === EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL) {

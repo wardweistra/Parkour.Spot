@@ -14,6 +14,7 @@ const MAX_EVENTS = 500;
 const MAX_PAGES = 20;
 const PAGE_SIZE = 50;
 const WIX_EVENTS_APP_DEFINITION_ID = "140603ad-af8d-84a5-2c80-a0f60cb47351";
+const WIX_EVENTS_DEFAULT_DETAILS_PATH = "/event-details";
 
 /**
  * @param {*} value
@@ -187,6 +188,59 @@ function extractWixEventsFromWarmupHtml(html) {
 }
 
 /**
+ * Finds the event details page path (e.g. "/event-details-registration")
+ * from rendered event links on the list page. Sites can rename this page, so
+ * the Wix default is only a fallback.
+ * @param {string} html
+ * @param {string} origin
+ * @param {Iterable<string>} slugs
+ * @return {string|null}
+ */
+function extractWixEventsDetailsPathFromHtml(html, origin, slugs) {
+  if (typeof html !== "string" || !html) return null;
+  const slugSet = new Set();
+  for (const slug of slugs) {
+    const value = toNonEmptyString(slug);
+    if (value) slugSet.add(value);
+  }
+  if (slugSet.size === 0) return null;
+
+  const counts = new Map();
+  const re = /href="([^"]+)"/g;
+  let match;
+  while ((match = re.exec(html)) !== null) {
+    let parsed;
+    try {
+      parsed = new URL(match[1].replace(/&amp;/g, "&"), origin);
+    } catch (_) {
+      continue;
+    }
+    if (parsed.origin !== origin) continue;
+    const segments = parsed.pathname.split("/").filter(Boolean);
+    if (segments.length < 2) continue;
+    let last;
+    try {
+      last = decodeURIComponent(segments[segments.length - 1]);
+    } catch (_) {
+      continue;
+    }
+    if (!slugSet.has(last)) continue;
+    const prefix = `/${segments.slice(0, -1).join("/")}`;
+    counts.set(prefix, (counts.get(prefix) || 0) + 1);
+  }
+
+  let best = null;
+  let bestCount = 0;
+  for (const [prefix, count] of counts) {
+    if (count > bestCount) {
+      best = prefix;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
+/**
  * @param {string} pageUrl
  * @param {Object} options
  * @param {function(string, Object=): Promise<string>} options.downloadText
@@ -298,10 +352,17 @@ async function fetchWixEventsCalendarEvents(pageUrl, {downloadText}) {
     );
   }
 
+  const eventDetailsPath = extractWixEventsDetailsPathFromHtml(
+      html,
+      origin,
+      items.map((event) => event.slug),
+  ) || WIX_EVENTS_DEFAULT_DETAILS_PATH;
+
   return {
     items,
     collectionUrl: wixEventsPublicUrl(feedUrl),
     siteOrigin: origin,
+    eventDetailsPath,
   };
 }
 
@@ -310,8 +371,10 @@ module.exports = {
   MAX_PAGES,
   PAGE_SIZE,
   WIX_EVENTS_APP_DEFINITION_ID,
+  WIX_EVENTS_DEFAULT_DETAILS_PATH,
   decodeJwtPayload,
   extractWixEventsCompIdsFromHtml,
+  extractWixEventsDetailsPathFromHtml,
   extractWixEventsFromWarmupHtml,
   extractWixEventsInstanceFromHtml,
   fetchWixEventsCalendarEvents,

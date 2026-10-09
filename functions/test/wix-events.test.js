@@ -7,6 +7,7 @@ const {
   normalizeWixEventsPageUrl,
   wixEventsPublicUrl,
   WIX_EVENTS_APP_DEFINITION_ID,
+  WIX_EVENTS_DEFAULT_DETAILS_PATH,
 } = require("../lib/wix-events");
 
 /**
@@ -165,6 +166,29 @@ describe("wix-events helpers", () => {
       );
       expect(result.items).toHaveLength(1);
       expect(result.items[0].id).toBe("warm-1");
+      expect(result.eventDetailsPath).toBe(WIX_EVENTS_DEFAULT_DETAILS_PATH);
+    });
+
+    it("detects the event details path from rendered links", async () => {
+      const pageHtml = [
+        `"instance":"${eventsInstance}",`,
+        `"widgetcomp-mhka1h9a":{"events":{"events":[`,
+        `{"id":"warm-1","slug":"monthly-community-jam","status":0}`,
+        `]}}`,
+        `<a href="https://www.citilimitsparkour.com/classes">Classes</a>`,
+        `<a data-hook="title" href="https://www.citilimitsparkour.com/`,
+        `event-details-registration/monthly-community-jam">Jam</a>`,
+      ].join("");
+      const downloadText = async (url) => {
+        if (!url.includes("/_api/")) return pageHtml;
+        throw new Error("Failed fetching ICS (HTTP 401)");
+      };
+
+      const result = await fetchWixEventsCalendarEvents(
+          "https://www.citilimitsparkour.com/general-6",
+          {downloadText},
+      );
+      expect(result.eventDetailsPath).toBe("/event-details-registration");
     });
 
     it("throws when no events can be found", async () => {

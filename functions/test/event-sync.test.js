@@ -1335,10 +1335,25 @@ describe("event-sync helpers", () => {
       expect(events[0].longitude).toBeCloseTo(4.7221158);
       expect(events[0].externalImageUrl)
           .toBe("https://static.wixstatic.com/media/a8d822_photo.jpeg");
-      expect(events[0].websiteUrl)
-          .toBe("https://www.springstofparkour.com/hal-5-skill-competition-2026");
+      expect(events[0].websiteUrl).toBe(
+          "https://www.springstofparkour.com/event-details/" +
+          "hal-5-skill-competition-2026",
+      );
       expect(events[0].description)
           .toBe("Save the date! More info to be announced.");
+    });
+
+    it("builds slug URLs under a custom event details page path", () => {
+      const events = parseExternalEventsFromWixEvents(baseItems, {
+        sourceId: "wix-1",
+        sourceName: "Citi Limits",
+        siteOrigin: "https://www.citilimitsparkour.com",
+        eventDetailsPath: "/event-details-registration",
+      });
+      expect(events[0].websiteUrl).toBe(
+          "https://www.citilimitsparkour.com/event-details-registration/" +
+          "hal-5-skill-competition-2026",
+      );
     });
 
     it("prefers external registration URL over slug", () => {
