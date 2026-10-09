@@ -1,8 +1,8 @@
 ---
 import "../styles/global.css";
-import {SITE_NAME} from "../lib/brand";
+import {DEFAULT_OG_IMAGE, GA_MEASUREMENT_ID, SITE_NAME} from "../lib/brand";
 import {APP_DEFINITION, formatUpdatedAt} from "../lib/citation";
-import {loadAboutIndex} from "../lib/snapshots";
+import {loadAboutIndex, useFixtures} from "../lib/snapshots";
 
 interface Props {
   title: string;
@@ -10,6 +10,9 @@ interface Props {
   canonicalPath?: string;
   jsonLd?: Record<string, unknown> | null;
   noIndex?: boolean;
+  /** Absolute URL or site path. Falls back to the default share image. */
+  image?: string | null;
+  imageAlt?: string;
 }
 
 const {
@@ -18,7 +21,15 @@ const {
   canonicalPath = "/",
   jsonLd = null,
   noIndex = false,
+  image = null,
+  imageAlt,
 } = Astro.props;
+
+const usesDefaultImage = !image;
+const ogImage = new URL(image || DEFAULT_OG_IMAGE.path, Astro.site).toString();
+const ogImageAlt = usesDefaultImage
+  ? DEFAULT_OG_IMAGE.alt
+  : imageAlt || title;
 
 const aboutIndex = await loadAboutIndex();
 const updatedLabel = formatUpdatedAt(aboutIndex.generatedAt);
@@ -27,6 +38,7 @@ const pageTitle =
   title.includes(SITE_NAME)
     ? title
     : `${title} · ${SITE_NAME}`;
+const analyticsEnabled = import.meta.env.PROD && !useFixtures();
 ---
 
 <!doctype html>
@@ -34,6 +46,36 @@ const pageTitle =
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {
+      analyticsEnabled && (
+        <>
+          <script
+            is:inline
+            define:vars={{gaId: GA_MEASUREMENT_ID}}
+          >
+            window.dataLayer = window.dataLayer || [];
+            function gtag() {
+              dataLayer.push(arguments);
+            }
+            window.gtag = gtag;
+            gtag("consent", "default", {
+              ad_storage: "denied",
+              analytics_storage: "granted",
+              functionality_storage: "granted",
+              personalization_storage: "denied",
+              security_storage: "granted",
+            });
+            gtag("js", new Date());
+            gtag("config", gaId);
+          </script>
+          <script
+            is:inline
+            async
+            src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          />
+        </>
+      )
+    }
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     {noIndex && <meta name="robots" content="noindex" />}
@@ -43,6 +85,21 @@ const pageTitle =
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:alt" content={ogImageAlt} />
+    {
+      usesDefaultImage && (
+        <>
+          <meta property="og:image:width" content={String(DEFAULT_OG_IMAGE.width)} />
+          <meta property="og:image:height" content={String(DEFAULT_OG_IMAGE.height)} />
+        </>
+      )
+    }
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={ogImageAlt} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

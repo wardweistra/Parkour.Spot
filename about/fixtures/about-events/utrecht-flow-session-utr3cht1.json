@@ -15,5 +15,9 @@
   "description": "Relaxed flow training along the canals.",
   "address": null,
   "latitude": 52.0907,
-  "longitude": 5.1214
+  "longitude": 5.1214,
+  "placeName": "Neude steps",
+  "placeSpotId": "spot-neude",
+  "placeSpotCitySlug": "utrecht",
+  "locationSource": "spot"
 }

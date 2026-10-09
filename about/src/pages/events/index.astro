@@ -3,6 +3,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import EventCalendar from "../../components/EventCalendar.astro";
 import {SITE_NAME} from "../../lib/brand";
 import {upcomingEventsPhrase} from "../../lib/citation";
+import {buildEventsListJsonLd} from "../../lib/schema";
 import {
   listCityParams,
   listCountryCodes,
@@ -31,6 +32,7 @@ const description = phrase
   title="Events"
   description={description}
   canonicalPath="/events"
+  jsonLd={buildEventsListJsonLd(index.events)}
 >
   <h1 class="page-title">Events</h1>
   <p class="page-lede">

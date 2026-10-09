@@ -16,7 +16,7 @@ import type {
 // the about package scripts run with the working directory set to about/.
 const FIXTURES_ROOT = path.resolve(process.cwd(), "fixtures");
 
-function useFixtures(): boolean {
+export function useFixtures(): boolean {
   return (
     process.env.ABOUT_USE_FIXTURES === "1" ||
     process.env.ABOUT_USE_FIXTURES === "true" ||

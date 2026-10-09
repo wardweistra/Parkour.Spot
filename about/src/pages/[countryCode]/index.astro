@@ -69,6 +69,7 @@ const lede = countryHubLede({
 const worldwide = worldwideContext(await loadStats());
 const moreLabel = moreOnMapLabel(spotCount, listed.length);
 const pagePath = aboutCountryPath(cc);
+const shareSpot = listed.find((spot) => spot.imageUrl);
 const jsonLd = buildPlaceJsonLd({
   name: title,
   pageUrl: aboutAbsolute(pagePath),
@@ -85,6 +86,8 @@ const jsonLd = buildPlaceJsonLd({
   description={metaDescription(lede)}
   canonicalPath={pagePath}
   jsonLd={jsonLd}
+  image={shareSpot?.imageUrl}
+  imageAlt={shareSpot ? `${shareSpot.name}, ${shareSpot.city}` : undefined}
 >
   <h1 class="page-title"><CountryFlag code={cc} />{title}</h1>
   <p class="page-lede">{lede}</p>

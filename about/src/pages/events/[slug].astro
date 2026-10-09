@@ -2,6 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import OpenInApp from "../../components/OpenInApp.astro";
 import CountryFlag from "../../components/CountryFlag.astro";
+import {metaDescription} from "../../lib/citation";
 import {buildEventJsonLd} from "../../lib/schema";
 import {listEventSlugs, loadCity, loadCountry, loadEvent} from "../../lib/snapshots";
 import {appEventUrl, cityHubKey, eventAreaHubLink} from "../../lib/urls";
@@ -20,9 +21,9 @@ if (!event) {
 
 const dateOnly = event.isDateOnly;
 const jsonLd = buildEventJsonLd(event);
-const description =
-  event.description?.slice(0, 160) ||
-  `Parkour event: ${event.title}`;
+const description = event.description?.trim()
+  ? metaDescription(event.description)
+  : `Parkour event: ${event.title}`;
 
 function formatWhen(iso: string | null): string {
   if (!iso) return "Date TBA";
@@ -58,6 +59,8 @@ const areaHub = eventAreaHubLink(
   description={description}
   canonicalPath={`/events/${event.slug}`}
   jsonLd={jsonLd}
+  image={heroImage}
+  imageAlt={event.title}
 >
   <article class="event-hero">
     <div>

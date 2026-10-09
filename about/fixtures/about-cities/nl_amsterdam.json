@@ -14,7 +14,10 @@
       "imageUrl": null,
       "city": "Amsterdam",
       "citySlug": "amsterdam",
-      "countryCode": "nl"
+      "countryCode": "nl",
+      "latitude": 52.3731,
+      "longitude": 4.8926,
+      "address": "Dam, 1012 JS Amsterdam"
     },
     {
       "id": "spot-vondel",
@@ -25,7 +28,10 @@
       "imageUrl": null,
       "city": "Amsterdam",
       "citySlug": "amsterdam",
-      "countryCode": "nl"
+      "countryCode": "nl",
+      "latitude": 52.358,
+      "longitude": 4.8686,
+      "address": "Vondelpark, Amsterdam"
     },
     {
       "id": "spot-ndsm",
@@ -36,7 +42,10 @@
       "imageUrl": null,
       "city": "Amsterdam",
       "citySlug": "amsterdam",
-      "countryCode": "nl"
+      "countryCode": "nl",
+      "latitude": 52.4011,
+      "longitude": 4.8917,
+      "address": null
     },
     {
       "id": "spot-java",
@@ -52,7 +61,7 @@
     {
       "id": "spot-ij",
       "name": "IJ pier",
-      "averageRating": 4.0,
+      "averageRating": 4,
       "ratingCount": 5,
       "ranking": 12.5,
       "imageUrl": null,

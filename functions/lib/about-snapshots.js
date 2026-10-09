@@ -82,6 +82,9 @@ function toSpotSummary(spot, citySlug, countryCode) {
     city: typeof spot.city === "string" ? spot.city : "",
     citySlug,
     countryCode,
+    latitude: hasValidCoordinates(spot.latitude, spot.longitude) ? spot.latitude : null,
+    longitude: hasValidCoordinates(spot.latitude, spot.longitude) ? spot.longitude : null,
+    address: nonEmpty(spot.address),
   };
 }
 
@@ -99,7 +102,8 @@ function nonEmpty(value) {
  * @param {Object} event
  * @return {{city: (string|null), countryCode: (string|null),
  *   latitude: (number|null), longitude: (number|null),
- *   placeName: (string|null), locationSource: (string|null)}}
+ *   placeName: (string|null), placeSpotId: (string|null),
+ *   placeSpotCitySlug: (string|null), locationSource: (string|null)}}
  */
 function effectiveEventLocation(event) {
   const resolved = event.resolvedLocation && typeof event.resolvedLocation === "object" ?
@@ -115,12 +119,19 @@ function effectiveEventLocation(event) {
       nonEmpty(resolved.spotName);
   }
   const resolvedHasCoords = hasValidCoordinates(resolved.latitude, resolved.longitude);
+  // A list-sourced place is named after the list, so it has no single spot page.
+  const spotCity = nonEmpty(resolved.city);
+  const placeSpotId = fromSpot && resolved.source === "spot" && spotCity ?
+    nonEmpty(resolved.spotId) :
+    null;
   return {
     city: nonEmpty(event.city) || nonEmpty(resolved.city),
     countryCode: countryCode ? countryCode.toLowerCase() : null,
     latitude: hasVenue ? event.latitude : (resolvedHasCoords ? resolved.latitude : null),
     longitude: hasVenue ? event.longitude : (resolvedHasCoords ? resolved.longitude : null),
     placeName,
+    placeSpotId,
+    placeSpotCitySlug: placeSpotId ? slugify(spotCity) : null,
     locationSource: hasVenue ? "venue" : (fromSpot ? resolved.source : null),
   };
 }
@@ -199,6 +210,8 @@ function toEventDetail(event, slug) {
     latitude: location.latitude,
     longitude: location.longitude,
     placeName: location.placeName,
+    placeSpotId: location.placeSpotId,
+    placeSpotCitySlug: location.placeSpotCitySlug,
     locationSource: location.locationSource,
     imageUrls,
   };

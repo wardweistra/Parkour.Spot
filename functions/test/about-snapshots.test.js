@@ -49,6 +49,45 @@ describe("about-snapshots", () => {
       ]);
     });
 
+    it("carries spot coordinates and address into summaries", () => {
+      const spots = [
+        {
+          id: "located",
+          name: "Located",
+          countryCode: "nl",
+          city: "Utrecht",
+          latitude: 52.09,
+          longitude: 5.12,
+          address: " Neude 1, Utrecht ",
+          ranking: 2,
+        },
+        {
+          id: "unlocated",
+          name: "Unlocated",
+          countryCode: "nl",
+          city: "Utrecht",
+          latitude: "52",
+          ranking: 1,
+        },
+      ];
+
+      const {cityDocs} = buildPlaceSnapshots(spots);
+      expect(cityDocs.get("nl_utrecht").spots).toEqual([
+        expect.objectContaining({
+          id: "located",
+          latitude: 52.09,
+          longitude: 5.12,
+          address: "Neude 1, Utrecht",
+        }),
+        expect.objectContaining({
+          id: "unlocated",
+          latitude: null,
+          longitude: null,
+          address: null,
+        }),
+      ]);
+    });
+
     it("sorts spots by ranking and caps the sample at 10", () => {
       const spots = [];
       for (let i = 0; i < 15; i++) {
@@ -288,25 +327,47 @@ describe("about-snapshots", () => {
         latitude: 51.2,
         longitude: 4.4,
         placeName: null,
+        placeSpotId: null,
+        placeSpotCitySlug: null,
         locationSource: "venue",
       });
     });
 
-    it("uses the spot name for a direct spot source", () => {
+    it("uses the spot name and page for a direct spot source", () => {
       expect(effectiveEventLocation({
         resolvedLocation: {
           source: "spot",
           latitude: 52,
           longitude: 4,
-          city: "Delft",
+          city: "Den Haag",
           countryCode: "NL",
+          spotId: "s1",
           spotName: "Markt",
         },
       })).toEqual(expect.objectContaining({
-        city: "Delft",
+        city: "Den Haag",
         countryCode: "nl",
         placeName: "Markt",
+        placeSpotId: "s1",
+        placeSpotCitySlug: "den-haag",
         locationSource: "spot",
+      }));
+    });
+
+    it("links no single spot page for a list source", () => {
+      expect(effectiveEventLocation({
+        resolvedLocation: {
+          source: "list",
+          latitude: 52,
+          longitude: 4,
+          city: "Delft",
+          spotId: "s1",
+          spotListName: "Delft tour",
+        },
+      })).toEqual(expect.objectContaining({
+        placeName: "Delft tour",
+        placeSpotId: null,
+        placeSpotCitySlug: null,
       }));
     });
   });

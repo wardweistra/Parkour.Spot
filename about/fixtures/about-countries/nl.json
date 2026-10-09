@@ -20,7 +20,10 @@
       "imageUrl": null,
       "city": "Amsterdam",
       "citySlug": "amsterdam",
-      "countryCode": "nl"
+      "countryCode": "nl",
+      "latitude": 52.3731,
+      "longitude": 4.8926,
+      "address": "Dam, 1012 JS Amsterdam"
     },
     {
       "id": "spot-vondel",
@@ -31,7 +34,10 @@
       "imageUrl": null,
       "city": "Amsterdam",
       "citySlug": "amsterdam",
-      "countryCode": "nl"
+      "countryCode": "nl",
+      "latitude": 52.358,
+      "longitude": 4.8686,
+      "address": "Vondelpark, Amsterdam"
     }
   ],
   "events": [

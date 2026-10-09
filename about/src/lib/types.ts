@@ -8,6 +8,10 @@ export type SpotSummary = {
   city: string;
   citySlug: string;
   countryCode: string;
+  /** Absent on snapshots written before these fields. */
+  latitude?: number | null;
+  longitude?: number | null;
+  address?: string | null;
 };
 
 export type EventSummary = {
@@ -32,6 +36,9 @@ export type EventDetail = EventSummary & {
   longitude: number | null;
   /** Linked spot or spot list name when the event has no venue of its own. */
   placeName?: string | null;
+  /** Set when the place is a single linked spot with an app page. */
+  placeSpotId?: string | null;
+  placeSpotCitySlug?: string | null;
   locationSource?: "venue" | "spot" | "list" | null;
   imageUrls: string[];
 };

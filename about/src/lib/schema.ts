@@ -1,14 +1,42 @@
-import {SITE_NAME} from "./brand";
+import {DEFAULT_OG_IMAGE, SITE_NAME} from "./brand";
 import {APP_DEFINITION, MISSION, statsSentence} from "./citation";
 import {answerPlainText, howItWorksQuestions} from "./how-it-works";
-import type {AboutStats, EventDetail, SpotSummary} from "./types";
+import type {
+  AboutStats,
+  EventDetail,
+  EventSummary,
+  SpotSummary,
+} from "./types";
 import {
   ABOUT_ORIGIN,
   APP_ORIGIN,
   OPEN_SOURCE_URL,
+  aboutAbsolute,
   aboutEventPath,
   appSpotUrl,
 } from "./urls";
+
+function geoCoordinates(
+  latitude: number | null | undefined,
+  longitude: number | null | undefined,
+): Record<string, unknown> | null {
+  if (typeof latitude !== "number" || typeof longitude !== "number") {
+    return null;
+  }
+  return {"@type": "GeoCoordinates", latitude, longitude};
+}
+
+function postalAddress(
+  street: string | null | undefined,
+  city: string | null | undefined,
+  countryCode: string | null | undefined,
+): Record<string, unknown> | null {
+  const data: Record<string, unknown> = {"@type": "PostalAddress"};
+  if (street?.trim()) data.streetAddress = street.trim();
+  if (city?.trim()) data.addressLocality = city.trim();
+  if (countryCode?.trim()) data.addressCountry = countryCode.trim().toUpperCase();
+  return Object.keys(data).length > 1 ? data : null;
+}
 
 export function buildEventJsonLd(event: EventDetail): Record<string, unknown> {
   const url = `${ABOUT_ORIGIN}${aboutEventPath(event.slug)}`;
@@ -16,25 +44,23 @@ export function buildEventJsonLd(event: EventDetail): Record<string, unknown> {
     .filter(Boolean)
     .join(", ");
 
-  const placeName = !event.address ? event.placeName?.trim() : "";
+  const address = event.address?.trim() || "";
+  const placeName = !address ? event.placeName?.trim() : "";
   const location: Record<string, unknown> = {
     "@type": "Place",
-    name:
-      [placeName, locationName].filter(Boolean).join(", ") || "Location TBA",
+    name: placeName || address || locationName || "Location TBA",
   };
 
-  if (event.address) {
-    location.address = event.address;
-  }
-  if (
-    typeof event.latitude === "number" &&
-    typeof event.longitude === "number"
-  ) {
-    location.geo = {
-      "@type": "GeoCoordinates",
-      latitude: event.latitude,
-      longitude: event.longitude,
-    };
+  const postal = postalAddress(address, event.city, event.countryCode);
+  if (postal) location.address = postal;
+  const geo = geoCoordinates(event.latitude, event.longitude);
+  if (geo) location.geo = geo;
+  if (placeName && event.placeSpotId && event.placeSpotCitySlug && event.countryCode) {
+    location.url = appSpotUrl(
+      event.countryCode,
+      event.placeSpotCitySlug,
+      event.placeSpotId,
+    );
   }
 
   const data: Record<string, unknown> = {
@@ -57,7 +83,7 @@ export function buildEventJsonLd(event: EventDetail): Record<string, unknown> {
       : event.imageUrl
         ? [event.imageUrl]
         : [];
-  if (images.length > 0) data.image = images;
+  data.image = images.length > 0 ? images : [aboutAbsolute(DEFAULT_OG_IMAGE.path)];
 
   if (event.websiteUrl) {
     data.offers = {
@@ -172,11 +198,43 @@ export function buildPlaceJsonLd(input: {
       itemListElement: input.spots.map((spot, index) => ({
         "@type": "ListItem",
         position: index + 1,
-        name: spot.name,
-        url: appSpotUrl(spot.countryCode, spot.citySlug, spot.id),
+        item: spotPlace(spot),
       })),
     });
   }
   if (graph.length === 0) return null;
   return {"@context": "https://schema.org", "@graph": graph};
+}
+
+function spotPlace(spot: SpotSummary): Record<string, unknown> {
+  const place: Record<string, unknown> = {
+    "@type": "Place",
+    name: spot.name,
+    url: appSpotUrl(spot.countryCode, spot.citySlug, spot.id),
+  };
+  if (spot.imageUrl) place.image = spot.imageUrl;
+  const geo = geoCoordinates(spot.latitude, spot.longitude);
+  if (geo) place.geo = geo;
+  const postal = postalAddress(spot.address, spot.city, spot.countryCode);
+  if (postal) place.address = postal;
+  return place;
+}
+
+/** ItemList for /events, pointing at each About event page. */
+export function buildEventsListJsonLd(
+  events: EventSummary[],
+): Record<string, unknown> | null {
+  if (events.length === 0) return null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Upcoming parkour events",
+    url: aboutAbsolute("/events"),
+    numberOfItems: events.length,
+    itemListElement: events.map((event, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      url: aboutAbsolute(aboutEventPath(event.slug)),
+    })),
+  };
 }
