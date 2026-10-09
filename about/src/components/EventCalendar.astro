@@ -793,10 +793,13 @@ const initialMonth = months[0];
       }
     }
 
-    function selectDay(key: string) {
-      selected = selected === key ? null : key;
+    function selectDay(
+      key: string,
+      opts: {scroll?: boolean; force?: boolean} = {},
+    ) {
+      selected = opts.force ? key : selected === key ? null : key;
       renderPanel();
-      if (selected && NARROW.matches) {
+      if (selected && (opts.scroll || NARROW.matches)) {
         panel.scrollIntoView({block: "nearest", behavior: "smooth"});
       }
     }
@@ -843,6 +846,9 @@ const initialMonth = months[0];
     });
 
     monthView.addEventListener("click", (event) => {
+      const more = (event.target as HTMLElement).closest<HTMLButtonElement>(
+        ".event-cal__more",
+      );
       const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
         "button[data-cal-day]",
       );
@@ -854,8 +860,16 @@ const initialMonth = months[0];
         if (index >= 0) {
           selected = key;
           showMonth(index, {focusKey: key});
+          if (more) {
+            panel.scrollIntoView({block: "nearest", behavior: "smooth"});
+          }
           return;
         }
+      }
+      // "+N more" always opens that day's list and scrolls to it (any viewport).
+      if (more) {
+        selectDay(key, {force: true, scroll: true});
+        return;
       }
       selectDay(key);
     });
