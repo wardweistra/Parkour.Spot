@@ -1,0 +1,9 @@
+---
+description: Use Astro Docs MCP for up-to-date Astro documentation
+globs: about/**
+alwaysApply: false
+---
+
+Whenever you need Astro documentation (APIs, config, routing, content collections, islands, adapters, etc.), use the **Astro docs** MCP server instead of relying on training data.
+
+Prefer its tools over guessing version-specific behavior for the site under `about/`.
