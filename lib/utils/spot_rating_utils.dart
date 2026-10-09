@@ -1,6 +1,21 @@
 import '../models/rating.dart';
 import '../models/spot.dart';
 
+/// Explore stores at-or-above-average spots as wilson + this offset and
+/// below-average spots as wilson - this offset. Wilson itself is 0..5, so a
+/// stored ranking >= this value is the same cut the map uses.
+const int aboveAverageRankingOffset = 10;
+
+/// True when a stored ranking is at or above the Wilson average Explore uses.
+///
+/// Unrated spots use a random ranking in [0, 1), so they fail this check.
+bool isAboveAverageRanking(num? ranking) {
+  if (ranking == null) return false;
+  final value = ranking.toDouble();
+  if (!value.isFinite) return false;
+  return value >= aboveAverageRankingOffset;
+}
+
 String? _trimmedId(String? value) {
   final trimmed = value?.trim();
   if (trimmed == null || trimmed.isEmpty) return null;

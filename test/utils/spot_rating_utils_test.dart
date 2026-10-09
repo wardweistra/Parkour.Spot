@@ -85,6 +85,19 @@ void main() {
     });
   });
 
+  group('isAboveAverageRanking', () {
+    test('matches the explore ranking split', () {
+      expect(isAboveAverageRanking(aboveAverageRankingOffset), isTrue);
+      // Tie: wilson == avg is stored as wilson + offset (2.5 + 10).
+      expect(isAboveAverageRanking(12.5), isTrue);
+      // Below average: wilson 1, avg 2 is stored as wilson - offset.
+      expect(isAboveAverageRanking(-9), isFalse);
+      // Unrated spots use a random ranking in [0, 1).
+      expect(isAboveAverageRanking(0.4), isFalse);
+      expect(isAboveAverageRanking(null), isFalse);
+    });
+  });
+
   group('spotRatingSpotIdsToDelete', () {
     test('clears every cluster listing including the listing', () {
       expect(

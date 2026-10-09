@@ -35,6 +35,7 @@ import '../../widgets/linked_upcoming_event_panel.dart';
 import '../../widgets/source_details_dialog.dart';
 import '../../config/app_config.dart';
 import '../../utils/marker_icon_utils.dart';
+import '../../utils/spot_rating_utils.dart';
 import '../../utils/map_bounds_utils.dart';
 import '../../utils/map_camera_utils.dart';
 import '../../utils/location_permission_utils.dart';
@@ -248,6 +249,17 @@ class ReliableIcon extends StatelessWidget {
 /// Selected explore pins stack above latitude-ordered pins but below overlays.
 const int _exploreSelectedMarkerZBase = 8000;
 
+/// Event artwork replaces the spot pin, including when that spot is selected
+/// and not in the active list.
+bool _exploreSpotDrawnAsEventPin({
+  required bool isSelected,
+  required bool isHighlighted,
+  required bool hasEvent,
+}) {
+  return (hasEvent && !isSelected && !isHighlighted) ||
+      (isSelected && hasEvent && !isHighlighted);
+}
+
 class _PendingExploreMarker {
   const _PendingExploreMarker({
     required this.latitude,
@@ -301,6 +313,7 @@ class SearchScreenState extends State<SearchScreen>
   BitmapDescriptor? _spotSelectedIcon;
   BitmapDescriptor? _spotHighlightedIcon;
   BitmapDescriptor? _spotSelectedHighlightedIcon;
+  BitmapDescriptor? _spotAboveAverageIcon;
   BitmapDescriptor? _addSpotPinIcon;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
@@ -2165,6 +2178,37 @@ class SearchScreenState extends State<SearchScreen>
     );
   }
 
+  BitmapDescriptor _exploreSpotMarkerIcon({
+    required bool aboveAverage,
+    required bool isSelected,
+    required bool isHighlighted,
+    required bool hasEvent,
+  }) {
+    if (_exploreSpotDrawnAsEventPin(
+      isSelected: isSelected,
+      isHighlighted: isHighlighted,
+      hasEvent: hasEvent,
+    )) {
+      return (isSelected ? _eventSelectedIcon : _eventIcon) ??
+          BitmapDescriptor.defaultMarker;
+    }
+    if (isSelected && isHighlighted) {
+      return _spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker;
+    }
+    if (isSelected) {
+      return _spotSelectedIcon ?? BitmapDescriptor.defaultMarker;
+    }
+    if (isHighlighted) {
+      return _spotHighlightedIcon ?? BitmapDescriptor.defaultMarker;
+    }
+    if (aboveAverage) {
+      return _spotAboveAverageIcon ??
+          _spotDefaultIcon ??
+          BitmapDescriptor.defaultMarker;
+    }
+    return _spotDefaultIcon ?? BitmapDescriptor.defaultMarker;
+  }
+
   Set<Marker> _rebuildMarkers() {
     final markers = <Marker>{};
     final visibleSpotIds = _visibleSpots
@@ -2182,21 +2226,13 @@ class SearchScreenState extends State<SearchScreen>
           spot.id != null && _highlightedSpotIds.contains(spot.id);
       final eventPin = spot.id != null ? _eventPinBySpotId[spot.id!] : null;
       final bool hasEvent = eventPin != null;
-
-      BitmapDescriptor icon;
-      if (hasEvent && !isSelected && !isHighlighted) {
-        icon = _eventIcon ?? BitmapDescriptor.defaultMarker;
-      } else if (isSelected && isHighlighted) {
-        icon = _spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker;
-      } else if (isSelected && hasEvent) {
-        icon = _eventSelectedIcon ?? BitmapDescriptor.defaultMarker;
-      } else if (isSelected) {
-        icon = _spotSelectedIcon ?? BitmapDescriptor.defaultMarker;
-      } else if (isHighlighted) {
-        icon = _spotHighlightedIcon ?? BitmapDescriptor.defaultMarker;
-      } else {
-        icon = _spotDefaultIcon ?? BitmapDescriptor.defaultMarker;
-      }
+      final bool aboveAverage = isAboveAverageRanking(spot.ranking);
+      final BitmapDescriptor icon = _exploreSpotMarkerIcon(
+        aboveAverage: aboveAverage,
+        isSelected: isSelected,
+        isHighlighted: isHighlighted,
+        hasEvent: hasEvent,
+      );
 
       if (hasEvent && spot.id != null) {
         upgradedSpotIds.add(spot.id!);
@@ -2354,6 +2390,12 @@ class SearchScreenState extends State<SearchScreen>
             fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
             logicalHeight: browsePinHeight,
           );
+      final BitmapDescriptor aboveAveragePin =
+          await MarkerIconUtils.loadMapPinPng(
+            MarkerIconUtils.mapPinAboveAverageAsset,
+            fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
+            logicalHeight: browsePinHeight,
+          );
       final BitmapDescriptor addPin = await MarkerIconUtils.loadMapPinPng(
         MarkerIconUtils.mapPinAddAsset,
         fallbackFill: MarkerIconUtils.mapPinAddFallbackFill,
@@ -2372,6 +2414,7 @@ class SearchScreenState extends State<SearchScreen>
           _spotSelectedIcon = normalSelectedPin;
           _spotHighlightedIcon = listPin;
           _spotSelectedHighlightedIcon = listSelectedPin;
+          _spotAboveAverageIcon = aboveAveragePin;
           _addSpotPinIcon = addPin;
           _eventIcon = eventPin;
           _eventSelectedIcon = eventSelectedPin;

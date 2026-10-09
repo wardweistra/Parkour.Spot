@@ -10,6 +10,10 @@ class MarkerIconUtils {
   static const String mapPinNormalAsset =
       'assets/images/map/map-icon-normal-64x64.png';
 
+  /// Teardrop PNG (128×160) with a star — above-average Explore spot.
+  static const String mapPinAboveAverageAsset =
+      'assets/images/map/map-icon-normal-above-average64x64.png';
+
   /// Teardrop PNG (128×160), transparent — spot belongs to the active list filter.
   static const String mapPinListAsset =
       'assets/images/map/map-icon-list-64x64.png';
