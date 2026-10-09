@@ -171,6 +171,7 @@ const {
 const {
   MODE_START,
   MODE_RESUME,
+  isSpotSyncLockError,
   acquireSpotSyncLock,
 } = require("./lib/spot-sync-lock");
 const {createImagePipeline} = require("./lib/image-pipeline");
@@ -3001,22 +3002,22 @@ async function processSyncSource(
         console.log(`Processed ${i + 1}/${placemarks.length} spots, forced GC`);
       }
 
-      // Update progress after each batch
+      // Update progress after every spot so full (image) syncs do not sit at 0%
+      // for many minutes, and so the worker lease heartbeats continuously.
+      const syncProgressUpdate = {
+        processedCount: i + 1,
+        totalCount: placemarks.length,
+        lastProcessedIndex: i + 1,
+        runId: syncRunId,
+      };
+      if (source.recordFolderName === true) {
+        syncProgressUpdate.collectedFolders = Array.from(allFolders);
+      }
+      await sourceDocRef.update({
+        syncProgress: syncProgressUpdate,
+        syncStartedAt: FieldValue.serverTimestamp(),
+      });
       if ((i + 1) % BATCH_SIZE === 0 || (i + 1) === placemarks.length) {
-        const syncProgressUpdate = {
-          processedCount: i + 1,
-          totalCount: placemarks.length,
-          lastProcessedIndex: i + 1,
-          runId: syncRunId,
-        };
-        if (source.recordFolderName === true) {
-          syncProgressUpdate.collectedFolders = Array.from(allFolders);
-        }
-        await sourceDocRef.update({
-          syncProgress: syncProgressUpdate,
-          // Heartbeat the worker lease so long runs are not treated as stale.
-          syncStartedAt: FieldValue.serverTimestamp(),
-        });
         console.log(`Progress update: ${i + 1}/${placemarks.length} spots processed`);
       }
     }
@@ -3183,6 +3184,25 @@ async function processSyncSource(
     });
     throw error;
   }
+}
+
+/**
+ * Maps spot-sync lock conflicts to a client-visible callable error.
+ * Plain Error becomes Firebase "internal"; lock races must not.
+ * @param {*} error
+ * @param {string} fallbackMessage
+ */
+function throwSpotSyncCallableError(error, fallbackMessage) {
+  if (error instanceof HttpsError) {
+    throw error;
+  }
+  if (isSpotSyncLockError(error)) {
+    throw new HttpsError("failed-precondition", error.message);
+  }
+  const message = error && error.message ?
+    `${fallbackMessage}: ${error.message}` :
+    fallbackMessage;
+  throw new HttpsError("internal", message);
 }
 
 /**
@@ -3416,13 +3436,14 @@ exports.syncSingleSource = onCall(
           return response;
         } catch (sourceError) {
           console.error(`Error processing source ${source.name}:`, sourceError);
-          throw new Error(
-              `Failed to sync source ${source.name}: ${sourceError.message}`,
+          throwSpotSyncCallableError(
+              sourceError,
+              `Failed to sync source ${source.name}`,
           );
         }
       } catch (error) {
         console.error("Error syncing single source:", error);
-        throw new Error(`Failed to sync single source: ${error.message}`);
+        throwSpotSyncCallableError(error, "Failed to sync single source");
       }
     },
 );
@@ -3491,13 +3512,14 @@ exports.syncSingleSourceFull = onCall(
               `Error processing full sync for source ${source.name}:`,
               sourceError,
           );
-          throw new Error(
-              `Failed to full-sync source ${source.name}: ${sourceError.message}`,
+          throwSpotSyncCallableError(
+              sourceError,
+              `Failed to full-sync source ${source.name}`,
           );
         }
       } catch (error) {
         console.error("Error full-syncing single source:", error);
-        throw new Error(`Failed to full-sync single source: ${error.message}`);
+        throwSpotSyncCallableError(error, "Failed to full-sync single source");
       }
     },
 );
@@ -3578,13 +3600,14 @@ exports.resumeSync = onCall(
           return response;
         } catch (sourceError) {
           console.error(`Error resuming sync for source ${source.name}:`, sourceError);
-          throw new Error(
-              `Failed to resume sync for source ${source.name}: ${sourceError.message}`,
+          throwSpotSyncCallableError(
+              sourceError,
+              `Failed to resume sync for source ${source.name}`,
           );
         }
       } catch (error) {
         console.error("Error resuming sync:", error);
-        throw new Error(`Failed to resume sync: ${error.message}`);
+        throwSpotSyncCallableError(error, "Failed to resume sync");
       }
     },
 );

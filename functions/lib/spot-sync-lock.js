@@ -12,6 +12,20 @@ const MODE_START = "start";
 const MODE_RESUME = "resume";
 
 /**
+ * Thrown when a spot-sync lock cannot be acquired.
+ * Callables should map this to HttpsError failed-precondition.
+ */
+class SpotSyncLockError extends Error {
+  /**
+   * @param {string} message
+   */
+  constructor(message) {
+    super(message);
+    this.name = "SpotSyncLockError";
+  }
+}
+
+/**
  * @param {*} value
  * @return {Date|null}
  */
@@ -71,7 +85,7 @@ async function acquireSpotSyncLock(db, FieldValue, sourceRef, options = {}) {
         // Missing or fresh lease: another run owns the job (active or waiting
         // for resume after a partial). Only a stale lease may be stolen.
         if (!lease.startedAt || lease.held) {
-          throw new Error(
+          throw new SpotSyncLockError(
               "Sync already in progress for this source. " +
               "Wait for it to finish or resume it, then try again.",
           );
@@ -79,10 +93,10 @@ async function acquireSpotSyncLock(db, FieldValue, sourceRef, options = {}) {
       }
     } else {
       if (!inProgress) {
-        throw new Error("No sync in progress for this source");
+        throw new SpotSyncLockError("No sync in progress for this source");
       }
       if (lease.held) {
-        throw new Error(
+        throw new SpotSyncLockError(
             "Another sync worker is already running for this source. " +
             "Wait for it to finish, then try again.",
         );
@@ -96,10 +110,24 @@ async function acquireSpotSyncLock(db, FieldValue, sourceRef, options = {}) {
   });
 }
 
+/**
+ * @param {*} error
+ * @return {boolean}
+ */
+function isSpotSyncLockError(error) {
+  return Boolean(
+      error &&
+      (error instanceof SpotSyncLockError ||
+        error.name === "SpotSyncLockError"),
+  );
+}
+
 module.exports = {
   SPOT_SYNC_LOCK_STALE_MS,
   MODE_START,
   MODE_RESUME,
+  SpotSyncLockError,
+  isSpotSyncLockError,
   inspectLease,
   acquireSpotSyncLock,
 };

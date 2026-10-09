@@ -2,6 +2,8 @@ const {
   SPOT_SYNC_LOCK_STALE_MS,
   MODE_START,
   MODE_RESUME,
+  SpotSyncLockError,
+  isSpotSyncLockError,
   inspectLease,
   acquireSpotSyncLock,
 } = require("../lib/spot-sync-lock");
@@ -121,12 +123,17 @@ describe("spot-sync-lock", () => {
         // Partial return cleared the lease; start must still refuse.
       });
 
-      await expect(
-          acquireSpotSyncLock(db, FieldValue, sourceRef, {
-            mode: MODE_START,
-            nowMs,
-          }),
-      ).rejects.toThrow(/already in progress/i);
+      try {
+        await acquireSpotSyncLock(db, FieldValue, sourceRef, {
+          mode: MODE_START,
+          nowMs,
+        });
+        throw new Error("expected acquire to fail");
+      } catch (error) {
+        expect(error).toBeInstanceOf(SpotSyncLockError);
+        expect(isSpotSyncLockError(error)).toBe(true);
+        expect(error.message).toMatch(/already in progress/i);
+      }
     });
 
     it("refuses start while another worker holds a fresh lease", async () => {
