@@ -113,75 +113,114 @@ const initialMonth = months[0];
   data-cal-country-filter={showCountryFilter ? "true" : undefined}
 >
   {
-    filterCountries.length > 0 && (
-      <div class="event-cal__filters" data-cal-filters>
-        <label for="event-cal-country">Country</label>
-        <select
-          id="event-cal-country"
-          class="event-cal__country"
-          data-cal-country
-        >
-          <option value="">All countries</option>
-          {filterCountries.map(({code, name}) => (
-            <option value={code}>{name}</option>
-          ))}
-        </select>
-      </div>
-    )
-  }
-  {
-    months.length > 0 && (
-      <div class="event-cal__toolbar" data-cal-toolbar hidden>
-        <div class="event-cal__nav" data-cal-nav>
-          <button
-            type="button"
-            class="event-cal__icon-btn"
-            data-cal-prev
-            aria-label="Previous month"
-          >
-            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-              <path
-                d="M14.5 6 8.5 12l6 6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-          <button
-            type="button"
-            class="event-cal__icon-btn"
-            data-cal-next
-            aria-label="Next month"
-          >
-            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-              <path
-                d="m9.5 6 6 6-6 6"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.25"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-          <MonthHeading class="event-cal__title" data-cal-title aria-live="polite">
-            {initialMonth?.label}
-          </MonthHeading>
-          <button type="button" class="event-cal__today" data-cal-today>
-            Today
-          </button>
-        </div>
-        <div class="event-cal__views" role="group" aria-label="Calendar view">
-          <button type="button" data-cal-view="month" aria-pressed="true">
-            Month
-          </button>
-          <button type="button" data-cal-view="agenda" aria-pressed="false">
-            Agenda
-          </button>
-        </div>
+    (months.length > 0 || filterCountries.length > 0) && (
+      <div class="event-cal__toolbar" data-cal-toolbar>
+        {
+          filterCountries.length > 0 && (
+            <div class="event-cal__country-wrap">
+              <label class="visually-hidden" for="event-cal-country">
+                Country
+              </label>
+              <select
+                id="event-cal-country"
+                class="event-cal__country"
+                data-cal-country
+              >
+                <option value="">All countries</option>
+                {filterCountries.map(({code, name}) => (
+                  <option value={code}>{name}</option>
+                ))}
+              </select>
+              <p
+                class="event-cal__filter-status visually-hidden"
+                data-cal-filter-status
+                aria-live="polite"
+              >
+                All countries
+              </p>
+            </div>
+          )
+        }
+        {
+          months.length > 0 && (
+            <>
+              <div class="event-cal__nav" data-cal-nav hidden>
+                <button
+                  type="button"
+                  class="event-cal__icon-btn"
+                  data-cal-prev
+                  aria-label="Previous month"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="22"
+                    height="22"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M14.5 6 8.5 12l6 6"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.25"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  class="event-cal__icon-btn"
+                  data-cal-next
+                  aria-label="Next month"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="22"
+                    height="22"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="m9.5 6 6 6-6 6"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.25"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </button>
+                <MonthHeading
+                  class="event-cal__title"
+                  data-cal-title
+                  aria-live="polite"
+                >
+                  {initialMonth?.label}
+                </MonthHeading>
+                <button type="button" class="event-cal__today" data-cal-today>
+                  Today
+                </button>
+              </div>
+              <div
+                class="event-cal__views"
+                data-cal-views
+                role="group"
+                aria-label="Calendar view"
+                hidden
+              >
+                <button type="button" data-cal-view="month" aria-pressed="true">
+                  Month
+                </button>
+                <button
+                  type="button"
+                  data-cal-view="agenda"
+                  aria-pressed="false"
+                >
+                  Agenda
+                </button>
+              </div>
+            </>
+          )
+        }
       </div>
     )
   }
@@ -426,10 +465,10 @@ const initialMonth = months[0];
   }
 
   function setup(root: HTMLElement) {
-    const toolbar = root.querySelector<HTMLElement>("[data-cal-toolbar]");
     const monthView = root.querySelector<HTMLElement>("[data-cal-month-view]");
     const agenda = root.querySelector<HTMLElement>("[data-cal-agenda]");
     const nav = root.querySelector<HTMLElement>("[data-cal-nav]");
+    const views = root.querySelector<HTMLElement>("[data-cal-views]");
     const title = root.querySelector<HTMLElement>("[data-cal-title]");
     const prev = root.querySelector<HTMLButtonElement>("[data-cal-prev]");
     const next = root.querySelector<HTMLButtonElement>("[data-cal-next]");
@@ -441,26 +480,26 @@ const initialMonth = months[0];
     );
     const panelEmpty = root.querySelector<HTMLElement>("[data-cal-panel-empty]");
     if (
-      !toolbar || !monthView || !agenda || !nav || !title || !prev || !next ||
+      !monthView || !agenda || !nav || !views || !title || !prev || !next ||
       !todayBtn || !panel || !panelTitle || !panelReset || !panelEmpty
     ) {
       return;
     }
     enhance({
-      root, toolbar, monthView, agenda, nav, title, prev, next, todayBtn,
+      root, monthView, agenda, nav, views, title, prev, next, todayBtn,
       panel, panelTitle, panelReset, panelEmpty,
     });
   }
 
   function enhance({
-    root, toolbar, monthView, agenda, nav, title, prev, next, todayBtn,
+    root, monthView, agenda, nav, views, title, prev, next, todayBtn,
     panel, panelTitle, panelReset, panelEmpty,
   }: {
     root: HTMLElement;
-    toolbar: HTMLElement;
     monthView: HTMLElement;
     agenda: HTMLElement;
     nav: HTMLElement;
+    views: HTMLElement;
     title: HTMLElement;
     prev: HTMLButtonElement;
     next: HTMLButtonElement;
@@ -498,6 +537,9 @@ const initialMonth = months[0];
     let countryFilter: string | null = null;
     const countrySelect = root.querySelector<HTMLSelectElement>(
       "[data-cal-country]",
+    );
+    const filterStatus = root.querySelector<HTMLElement>(
+      "[data-cal-filter-status]",
     );
     const knownCountries = new Set(
       [...(countrySelect?.options ?? [])]
@@ -552,7 +594,65 @@ const initialMonth = months[0];
       return month ? `${pathQuery}#${month}` : pathQuery;
     }
 
-    function applyCountryFilter() {
+    function countryLabel(): string {
+      if (!countrySelect) return "All countries";
+      const option = countrySelect.selectedOptions[0];
+      return option?.textContent?.trim() || "All countries";
+    }
+
+    function updateFilterStatus() {
+      if (!filterStatus) return;
+      filterStatus.textContent = countryFilter
+        ? `Showing events in ${countryLabel()}`
+        : "Showing events in all countries";
+    }
+
+    function monthHasVisibleEvents(section: HTMLElement | undefined): boolean {
+      if (!section) return false;
+      return [...section.querySelectorAll<HTMLElement>("[data-country]")].some(
+        (el) => !el.hidden,
+      );
+    }
+
+    function refreshDayAriaLabels() {
+      for (const cell of root.querySelectorAll<HTMLElement>("td[data-day]")) {
+        const button = cell.querySelector<HTMLButtonElement>(".event-cal__date");
+        if (!button) continue;
+        const count = [
+          ...cell.querySelectorAll<HTMLElement>("[data-country]"),
+        ].filter((el) => !el.hidden).length;
+        const eventsText =
+          count === 0
+            ? "no events"
+            : count === 1
+              ? "1 event"
+              : `${count} events`;
+        const dayPart =
+          button.getAttribute("aria-label")?.split(",")[0] ??
+          cell.dataset.day ??
+          "";
+        button.setAttribute("aria-label", `${dayPart}, ${eventsText}`);
+      }
+    }
+
+    function jumpToNearestFilteredMonth() {
+      if (!countryFilter) return;
+      if (monthHasVisibleEvents(currentSection())) return;
+      for (let i = monthIndex; i < sections.length; i++) {
+        if (monthHasVisibleEvents(sections[i])) {
+          showMonth(i, {syncUrl: true});
+          return;
+        }
+      }
+      for (let i = monthIndex - 1; i >= 0; i--) {
+        if (monthHasVisibleEvents(sections[i])) {
+          showMonth(i, {syncUrl: true});
+          return;
+        }
+      }
+    }
+
+    function applyCountryFilter(opts: {jump?: boolean} = {}) {
       for (const el of root.querySelectorAll<HTMLElement>("[data-country]")) {
         const code = el.dataset.country ?? "";
         el.hidden = Boolean(countryFilter) && code !== countryFilter;
@@ -584,6 +684,9 @@ const initialMonth = months[0];
       if (countrySelect && countrySelect.value !== (countryFilter ?? "")) {
         countrySelect.value = countryFilter ?? "";
       }
+      updateFilterStatus();
+      refreshDayAriaLabels();
+      if (opts.jump !== false) jumpToNearestFilteredMonth();
       renderPanel();
     }
 
@@ -591,6 +694,7 @@ const initialMonth = months[0];
       const month = currentMonth();
       const label = currentSection()?.dataset.label ?? "";
       const narrow = NARROW.matches;
+      const filteredName = countryFilter ? countryLabel() : "";
       let shown = 0;
       for (const block of panelDays) {
         const key = block.dataset.calPanelDay ?? "";
@@ -615,10 +719,14 @@ const initialMonth = months[0];
         );
         const dayLabel = cell?.getAttribute("aria-label")?.split(",")[0] ?? "";
         panelTitle.textContent = dayLabel;
-        panelEmpty.textContent = "No events on this day.";
+        panelEmpty.textContent = filteredName
+          ? `No events in ${filteredName} on this day.`
+          : "No events on this day.";
       } else {
         panelTitle.textContent = `Coming up in ${label.split(" ")[0]}`;
-        panelEmpty.textContent = "Nothing else planned this month yet.";
+        panelEmpty.textContent = filteredName
+          ? `No events in ${filteredName} this month.`
+          : "Nothing else planned this month yet.";
       }
       panelEmpty.hidden = shown > 0;
       panel.hidden = !selected && !narrow;
@@ -659,6 +767,7 @@ const initialMonth = months[0];
       monthView.hidden = view !== "month";
       agenda.hidden = view !== "agenda";
       nav.hidden = view !== "month";
+      views.hidden = false;
       for (const b of viewButtons) {
         b.setAttribute("aria-pressed", String(b.dataset.calView === view));
       }
@@ -676,7 +785,7 @@ const initialMonth = months[0];
           ? code.toLowerCase()
           : null;
       countryFilter = normalized;
-      applyCountryFilter();
+      applyCountryFilter({jump: true});
       if (history_ !== "none") {
         const url = buildCalUrl(view);
         if (history_ === "push") history.pushState({view}, "", url);
@@ -793,12 +902,12 @@ const initialMonth = months[0];
         rawCountry && knownCountries.has(rawCountry) ? rawCountry : null;
       showMonth(startIndex, {syncUrl: false});
       setView(view, "none");
-      applyCountryFilter();
+      applyCountryFilter({jump: true});
     }
 
     window.addEventListener("popstate", applyLocation);
 
-    toolbar.hidden = false;
+    views.hidden = false;
     root.classList.add("is-enhanced");
     applyLocation();
   }

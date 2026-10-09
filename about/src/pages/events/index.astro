@@ -6,7 +6,6 @@ import {upcomingEventsPhrase} from "../../lib/citation";
 import {buildEventsListJsonLd} from "../../lib/schema";
 import {loadEventsIndex, loadStats} from "../../lib/snapshots";
 import {appHomeUrl, appPath} from "../../lib/urls";
-import OpenInApp from "../../components/OpenInApp.astro";
 
 const index = await loadEventsIndex();
 const stats = await loadStats();
@@ -27,13 +26,11 @@ const description = phrase
 >
   <h1 class="page-title">Events</h1>
   <p class="page-lede">
-    {description} Open an event for the time and place, or see them all on the
-    map. Organizing one? <a href={appPath("/events/add")}>Add your event</a>, and
-    a moderator will check it before it goes live.
+    {description} Open an event for the time and place, or{" "}
+    <a href={appHomeUrl()}>see them all on the map</a>. Organizing one?{" "}
+    <a href={appPath("/events/add")}>Add your event</a>, and a moderator will
+    check it before it goes live.
   </p>
-  <div class="hub-open">
-    <OpenInApp href={appHomeUrl()} label="Open the map" />
-  </div>
   <EventCalendar
     events={index.events}
     generatedAt={index.generatedAt}

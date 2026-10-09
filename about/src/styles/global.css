@@ -582,26 +582,27 @@ img {
   margin-top: var(--space-xs);
 }
 
-.event-cal__filters {
+.event-cal__country-wrap {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-xs) var(--space-sm);
-  margin: 0 0 var(--space-sm);
-}
-
-.event-cal__filters label {
-  font-weight: 600;
-  font-size: 0.95rem;
+  min-width: 0;
 }
 
 .event-cal__country {
+  min-width: 12rem;
+  max-width: 100%;
   min-height: 40px;
-  padding: 8px 12px;
+  padding: 8px 2.5rem 8px 12px;
   border-radius: var(--radius-md);
   border: 1px solid
     color-mix(in srgb, var(--color-outline) 35%, transparent);
-  background: var(--color-surface);
+  /* Native carets ignore padding; draw our own with room from the edge. */
+  appearance: none;
+  background-color: var(--color-surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1.5 1.75 6 6.25 10.5 1.75' stroke='%23171C1F' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 8px;
   color: var(--color-on-surface);
   font: inherit;
   font-weight: 600;
@@ -765,7 +766,6 @@ img {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-sm) var(--space-md);
   margin-bottom: var(--space-md);
 }
@@ -775,6 +775,7 @@ img {
   align-items: center;
   gap: var(--space-xs);
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .event-cal__title {
@@ -833,6 +834,7 @@ img {
 .event-cal__views {
   display: inline-flex;
   gap: 2px;
+  margin-inline-start: auto;
   padding: 3px;
   border-radius: var(--radius-md);
   background: color-mix(
@@ -1104,13 +1106,29 @@ img {
 
 @media (max-width: 40rem) {
   .event-cal__toolbar {
-    flex-direction: column-reverse;
     align-items: stretch;
+  }
+
+  .event-cal__country-wrap {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .event-cal__country {
+    width: 100%;
+    min-width: 0;
   }
 
   .event-cal__views {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    flex: 0 0 auto;
+    margin-inline-start: auto;
+  }
+
+  .event-cal__nav {
+    flex: 1 1 100%;
+    order: 3;
   }
 
   .event-cal__title {
@@ -1146,11 +1164,11 @@ img {
 
   .event-cal {
     --cal-pad: 2px;
-    --cal-chip-height: 16px;
+    --cal-chip-height: 22px;
   }
 
   .event-cal__day {
-    height: 4.75rem;
+    height: 5.75rem;
     padding: var(--cal-pad);
   }
 
@@ -1173,20 +1191,20 @@ img {
   }
 
   .event-cal__lanes {
-    gap: 1px;
+    gap: 2px;
   }
 
-  /* The whole cell opens the day panel; chips here are too small to tap. */
+  /* Cell opens the day panel; chips are preview-only. */
   .event-cal__chip,
   .event-cal__more {
     pointer-events: none;
   }
 
   .event-cal__chip {
-    gap: 2px;
-    padding: 0 3px;
-    border-radius: 3px;
-    font-size: 0.625rem;
+    gap: 0;
+    padding: 0 4px;
+    border-radius: 4px;
+    font-size: 0.75rem;
     font-weight: 600;
   }
 
@@ -1194,19 +1212,20 @@ img {
     display: none;
   }
 
-  .event-cal__chip-title {
-    text-overflow: clip;
-  }
-
   .event-cal__chip .flag {
-    width: 11px;
-    height: 8px;
+    width: 14px;
+    height: 10px;
+    margin-inline-end: 4px;
     border-radius: 1px;
   }
 
+  .event-cal__chip-title {
+    text-overflow: ellipsis;
+  }
+
   .event-cal__more {
-    height: 14px;
-    padding: 0 3px;
-    font-size: 0.625rem;
+    height: 20px;
+    padding: 0 4px;
+    font-size: 0.75rem;
   }
 }

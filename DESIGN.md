@@ -219,7 +219,7 @@ ParkourSpot is predominantly **tonal, not shadow-driven**. Depth is conveyed by 
 - **Character:** A personal agenda, not an embedded widget. A Monday-first month grid with a "Month" / "Agenda" segmented toggle; the agenda is the shared `EventList`.
 - **Grid:** Flat table on `surface` with `outlineVariant` lines and a 12px outer radius; `surfaceContainerLow` weekday band and outside-month days. Past dates are muted, and today gets a 2px `primary` ring on the date number. The selected day gets a filled `primary` date and a light `primaryContainer` cell wash.
 - **Event chips:** 24px, 6px radius, up to 3 lanes per day, then "+N more". All-day and multi-day events are solid `primary` bars that span the week row continuously, with square ends where they continue into the next or previous week. Timed events use a `primaryContainer` wash with a tabular time prefix in the event's own time zone.
-- **Mobile (under 40rem):** Chips become up to 3 dots, the whole cell is the tap target, and the panel under the grid lists the rest of the month or the selected day in `stack-list` rows.
+- **Mobile (under 40rem):** Compact ellipsized event titles in-cell (not dots); the whole cell is the tap target, and the panel under the grid lists the rest of the month or the selected day in `stack-list` rows. Toolbar keeps Country and Month/Agenda on one band with a stable trailing view switcher.
 - **Progressive enhancement:** Without JavaScript, only the agenda list renders. The grid, toolbar, URL state (`#YYYY-MM`, `?view=agenda`), and arrow-key day navigation are added on the client.
 
 ## 6. Do's and Don'ts
