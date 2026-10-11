@@ -2,6 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import OpenInApp from "../../components/OpenInApp.astro";
 import CountryFlag from "../../components/CountryFlag.astro";
+import {formatEventWhen} from "../../lib/calendar";
 import {metaDescription} from "../../lib/citation";
 import {buildEventJsonLd} from "../../lib/schema";
 import {listEventSlugs, loadCity, loadCountry, loadEvent} from "../../lib/snapshots";
@@ -19,23 +20,11 @@ if (!event) {
   return Astro.redirect("/events");
 }
 
-const dateOnly = event.isDateOnly;
 const jsonLd = buildEventJsonLd(event);
 const description = event.description?.trim()
   ? metaDescription(event.description)
   : `Parkour event: ${event.title}`;
-
-function formatWhen(iso: string | null): string {
-  if (!iso) return "Date TBA";
-  try {
-    return new Intl.DateTimeFormat("en", {
-      dateStyle: "full",
-      timeStyle: dateOnly ? undefined : "short",
-    }).format(new Date(iso));
-  } catch {
-    return iso;
-  }
-}
+const whenLabel = formatEventWhen(event);
 
 const heroImage =
   event.imageUrls?.[0] || event.imageUrl || null;
@@ -65,7 +54,7 @@ const areaHub = eventAreaHubLink(
   <article class="event-hero">
     <div>
       <h1 class="page-title">{event.title}</h1>
-      <p class="page-lede">{formatWhen(event.startAt)}</p>
+      <p class="page-lede">{whenLabel}</p>
       {
         event.city && event.countryCode && (
           <p class="muted">

@@ -141,6 +141,22 @@ export function eventDaySpan(event: EventSummary): DayKey[] {
   return days;
 }
 
+/** Short zone abbr (e.g. "CET") when the event has a known IANA zone. */
+function eventZoneAbbreviation(
+  event: EventSummary,
+  date: Date,
+): string | null {
+  const raw = event.timeZone?.trim();
+  if (!raw) return null;
+  const zone = resolveZone(raw);
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: zone,
+    hour: "numeric",
+    timeZoneName: "short",
+  }).formatToParts(date);
+  return parts.find((part) => part.type === "timeZoneName")?.value ?? null;
+}
+
 /** Start time in the event's zone, or null for date-only or undated events. */
 export function eventTimeLabel(event: EventSummary): string | null {
   const start = parseIso(event.startAt);
@@ -155,6 +171,26 @@ export function eventTimeLabel(event: EventSummary): string | null {
     timeFormatters.set(zone, formatter);
   }
   return formatter.format(start);
+}
+
+/**
+ * Full schedule line in the event's zone (matches the app):
+ * date-only → "Friday, 17 October 2026"
+ * timed → "Friday, 17 October 2026 · 19:30 BST"
+ */
+export function formatEventWhen(event: EventSummary): string {
+  const start = parseIso(event.startAt);
+  if (!start) return "Date TBA";
+  const zone = resolveZone(event.timeZone);
+  const datePart = new Intl.DateTimeFormat("en-GB", {
+    timeZone: zone,
+    dateStyle: "full",
+  }).format(start);
+  if (event.isDateOnly) return datePart;
+  const time = eventTimeLabel(event);
+  if (!time) return datePart;
+  const abbr = eventZoneAbbreviation(event, start);
+  return abbr ? `${datePart} · ${time} ${abbr}` : `${datePart} · ${time}`;
 }
 
 const monthLabelFormat = new Intl.DateTimeFormat("en-GB", {
@@ -218,12 +254,16 @@ export function formatDayRange(first: DayKey, last: DayKey): string {
   return `${shortMonthDayFormat.format(a)} – ${shortMonthDayFormat.format(b)}`;
 }
 
-/** Date range for multi-day events, "All day", or the local start time. */
+/** Date range for multi-day events, "All day", or the local start time (+ zone). */
 export function eventWhenLabel(event: EventSummary): string | null {
   const days = eventDaySpan(event);
   if (days.length > 1) return formatDayRange(days[0], days[days.length - 1]);
   if (event.isDateOnly && days.length === 1) return "All day";
-  return eventTimeLabel(event);
+  const time = eventTimeLabel(event);
+  if (!time) return null;
+  const start = parseIso(event.startAt);
+  const abbr = start ? eventZoneAbbreviation(event, start) : null;
+  return abbr ? `${time} ${abbr}` : time;
 }
 
 /** Events grouped by every day they cover, in date order. */
