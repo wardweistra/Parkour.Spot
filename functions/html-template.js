@@ -50,6 +50,10 @@ function generateHtmlHead(options = {}) {
     name: options.pageName,
     description: options.pageDescription,
     address: options.pageAddress,
+    geo: options.pageGeo,
+    aggregateRating: options.pageAggregateRating,
+    image: options.pageImage || (isDynamic ? image : null),
+    subjectOf: options.pageSubjectOf,
   });
   // Only include Organization JSON-LD on home page (non-dynamic pages)
   const organizationJsonLd = !isDynamic ? generateOrganizationJsonLd({
@@ -140,23 +144,188 @@ function generateHtmlHead(options = {}) {
 }
 
 /**
+ * Render a crawlable spot summary for the initial HTML body.
+ * @param {Object|null|undefined} seoContent - From buildSpotSeoContent
+ * @param {string} [canonicalHost]
+ * @return {string}
+ */
+function renderSeoContentHtml(seoContent, canonicalHost = "parkour.spot") {
+  if (!seoContent || typeof seoContent !== "object" || !seoContent.title) {
+    return "";
+  }
+
+  const parts = [];
+  parts.push(`<article id="seo-content">`);
+
+  if (Array.isArray(seoContent.breadcrumbs) && seoContent.breadcrumbs.length > 0) {
+    const crumbs = seoContent.breadcrumbs.map((crumb, index) => {
+      const name = htmlEscape(crumb.name);
+      const href = crumb.url.startsWith("http") ?
+        htmlEscape(crumb.url) :
+        htmlEscape(`https://${canonicalHost}${crumb.url}`);
+      const sep = index > 0 ? " / " : "";
+      return `${sep}<a href="${href}">${name}</a>`;
+    }).join("");
+    parts.push(`<nav aria-label="Breadcrumb">${crumbs}</nav>`);
+  }
+
+  parts.push(`<h1>${htmlEscape(seoContent.title)}</h1>`);
+
+  if (seoContent.locationLine) {
+    parts.push(`<p>${htmlEscape(seoContent.locationLine)}</p>`);
+  }
+
+  if (seoContent.description) {
+    parts.push(`<p>${htmlEscape(seoContent.description)}</p>`);
+  }
+
+  if (seoContent.address) {
+    parts.push(`<p><strong>Address:</strong> ${htmlEscape(seoContent.address)}</p>`);
+  }
+
+  if (seoContent.mapUrl && seoContent.latitude != null && seoContent.longitude != null) {
+    const coords = `${seoContent.latitude}, ${seoContent.longitude}`;
+    parts.push(
+        `<p><strong>Location:</strong> ` +
+        `<a href="${htmlEscape(seoContent.mapUrl)}">${htmlEscape(coords)}</a></p>`,
+    );
+  }
+
+  if (seoContent.rating) {
+    const ratingText =
+      `${seoContent.rating.value.toFixed(1)} from ${seoContent.rating.count} ratings`;
+    parts.push(`<p><strong>Rating:</strong> ${htmlEscape(ratingText)}</p>`);
+  }
+
+  if (seoContent.access) {
+    parts.push(`<p><strong>Access:</strong> ${htmlEscape(seoContent.access)}</p>`);
+  }
+
+  if (Array.isArray(seoContent.features) && seoContent.features.length > 0) {
+    parts.push("<h2>Features</h2><ul>");
+    for (const feature of seoContent.features) {
+      parts.push(`<li>${htmlEscape(feature)}</li>`);
+    }
+    parts.push("</ul>");
+  }
+
+  if (Array.isArray(seoContent.goodFor) && seoContent.goodFor.length > 0) {
+    parts.push("<h2>Good for</h2><ul>");
+    for (const item of seoContent.goodFor) {
+      parts.push(`<li>${htmlEscape(item)}</li>`);
+    }
+    parts.push("</ul>");
+  }
+
+  if (Array.isArray(seoContent.facilities) && seoContent.facilities.length > 0) {
+    parts.push("<h2>Facilities</h2><ul>");
+    for (const facility of seoContent.facilities) {
+      parts.push(
+          `<li>${htmlEscape(facility.label)}: ${htmlEscape(facility.value)}</li>`,
+      );
+    }
+    parts.push("</ul>");
+  }
+
+  if (Array.isArray(seoContent.youtubeVideos) && seoContent.youtubeVideos.length > 0) {
+    parts.push("<h2>Videos</h2><ul>");
+    for (const video of seoContent.youtubeVideos) {
+      parts.push(
+          `<li><a href="${htmlEscape(video.url)}">${htmlEscape(video.title)}</a></li>`,
+      );
+    }
+    parts.push("</ul>");
+  }
+
+  if (Array.isArray(seoContent.jumpflixVideos) && seoContent.jumpflixVideos.length > 0) {
+    parts.push("<h2>As seen in</h2><ul>");
+    for (const film of seoContent.jumpflixVideos) {
+      const label = `${film.title} — watch on Jumpflix`;
+      parts.push(
+          `<li><a href="${htmlEscape(film.url)}">${htmlEscape(label)}</a></li>`,
+      );
+    }
+    parts.push("</ul>");
+    parts.push(
+        `<p>Film locations provided by ` +
+        `<a href="https://www.jumpflix.tv/">Jumpflix</a>.</p>`,
+    );
+  }
+
+  if (seoContent.sourceName) {
+    parts.push(
+        `<p><strong>Source:</strong> ${htmlEscape(seoContent.sourceName)}</p>`,
+    );
+  }
+
+  parts.push("</article>");
+  return parts.join("\n  ");
+}
+
+/**
+ * Minimal styles + hide #seo-content once Flutter mounts (humans see the app).
+ * Crawlers that do not run JS keep the full article in the first HTML.
+ * @return {string}
+ */
+function seoContentBootScripts() {
+  return `
+  <style>
+    #seo-content {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      max-width: 40rem;
+      margin: 1.5rem auto;
+      padding: 0 1rem 2rem;
+      line-height: 1.5;
+      color: #111;
+    }
+    #seo-content h1 { font-size: 1.5rem; margin: 0.75rem 0; }
+    #seo-content h2 { font-size: 1.125rem; margin: 1.25rem 0 0.5rem; }
+    #seo-content nav { font-size: 0.875rem; margin-bottom: 0.75rem; }
+    #seo-content ul { padding-left: 1.25rem; }
+  </style>
+  <script>
+    (function () {
+      function hideSeoContent() {
+        var el = document.getElementById("seo-content");
+        if (el) el.setAttribute("hidden", "");
+      }
+      var observer = new MutationObserver(function () {
+        if (document.querySelector("flutter-view, flt-glass-pane, flt-scene-host")) {
+          hideSeoContent();
+          observer.disconnect();
+        }
+      });
+      observer.observe(document.documentElement, {childList: true, subtree: true});
+    })();
+  </script>`;
+}
+
+/**
  * Generate the HTML body section
  * @param {Object} options - Configuration options
  * @param {string} options.siteName - Site name (default: "Parkour·Spot")
  * @param {string} options.url - URL for noscript fallback (optional)
+ * @param {Object} [options.seoContent] - Crawlable spot summary
+ * @param {string} [options.canonicalHost]
  * @return {string} HTML body content
  */
 function generateHtmlBody(options = {}) {
   const {
     siteName = "Parkour·Spot",
     url = null,
+    seoContent = null,
+    canonicalHost = "parkour.spot",
   } = options;
 
   const escapedUrl = url ? htmlEscape(url) : null;
+  const seoHtml = renderSeoContentHtml(seoContent, canonicalHost);
+  const seoBoot = seoHtml ? seoContentBootScripts() : "";
 
   // flutter_bootstrap.js is produced by flutter build web: it sets _flutter.buildConfig and calls
   // _flutter.loader.load (do not use flutter.js + manual load — load() requires buildConfig).
   return `
+  ${seoBoot}
+  ${seoHtml}
   ${url ? `
   <noscript>
     <p>Loading ${siteName}… If you are not redirected, open <a href="${escapedUrl}">${escapedUrl}</a>.</p>
@@ -207,6 +376,10 @@ ${JSON.stringify(jsonLd, null, 2)}
  * @param {string} options.name - The page name
  * @param {string} options.description - The page description
  * @param {string} options.address - The address (for SportsActivityLocation)
+ * @param {Object} [options.geo] - {latitude, longitude}
+ * @param {Object} [options.aggregateRating] - {ratingValue, ratingCount}
+ * @param {string} [options.image]
+ * @param {Array<Object>} [options.subjectOf] - Creative works [{name, url, type}]
  * @return {string} JSON-LD script tag or empty string
  */
 function generatePageTypeJsonLd(options = {}) {
@@ -217,6 +390,10 @@ function generatePageTypeJsonLd(options = {}) {
     name = null,
     description = null,
     address = null,
+    geo = null,
+    aggregateRating = null,
+    image = null,
+    subjectOf = null,
   } = options;
 
   if (!pageType || !url) {
@@ -248,6 +425,49 @@ function generatePageTypeJsonLd(options = {}) {
         "@type": "PostalAddress",
         "streetAddress": htmlEscape(addr),
       };
+    }
+  }
+
+  if (pageType === "SportsActivityLocation" && geo &&
+      typeof geo.latitude === "number" && typeof geo.longitude === "number" &&
+      Number.isFinite(geo.latitude) && Number.isFinite(geo.longitude)) {
+    pageData.geo = {
+      "@type": "GeoCoordinates",
+      "latitude": geo.latitude,
+      "longitude": geo.longitude,
+    };
+  }
+
+  if (pageType === "SportsActivityLocation" && aggregateRating &&
+      typeof aggregateRating.ratingValue === "number" &&
+      typeof aggregateRating.ratingCount === "number" &&
+      aggregateRating.ratingCount > 0) {
+    pageData.aggregateRating = {
+      "@type": "AggregateRating",
+      "ratingValue": aggregateRating.ratingValue,
+      "ratingCount": aggregateRating.ratingCount,
+      "bestRating": 5,
+      "worstRating": 1,
+    };
+  }
+
+  if (image && typeof image === "string" && image.trim().startsWith("http")) {
+    pageData.image = htmlEscape(image.trim());
+  }
+
+  if (Array.isArray(subjectOf) && subjectOf.length > 0) {
+    const works = [];
+    for (const item of subjectOf) {
+      if (!item || typeof item.url !== "string" || !item.url.trim()) continue;
+      if (typeof item.name !== "string" || !item.name.trim()) continue;
+      works.push({
+        "@type": item.type || "CreativeWork",
+        "name": htmlEscape(item.name.trim()),
+        "url": item.url.trim(),
+      });
+    }
+    if (works.length > 0) {
+      pageData.subjectOf = works.length === 1 ? works[0] : works;
     }
   }
 
@@ -332,6 +552,7 @@ if (typeof module !== "undefined" && module.exports) {
     generateBreadcrumbJsonLd,
     generatePageTypeJsonLd,
     generateOrganizationJsonLd,
+    renderSeoContentHtml,
     htmlEscape,
     GOOGLE_MAPS_API_KEY,
   };

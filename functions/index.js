@@ -262,6 +262,10 @@ const {writeAuditLog, resolveAuditActor} = require("./lib/audit-log");
 
 // Import shared HTML template
 const {generateHtmlPage} = require("./html-template");
+const {
+  buildSpotSeoContent,
+  parseJumpflixIds,
+} = require("./lib/spot-seo-content");
 
 // Import sitemap generation functions
 const {
@@ -413,14 +417,37 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
 
     let spot = null;
     let locationInfo = null;
+    let jumpflixVideoDocs = [];
 
     if (isSpotUrl) {
       // Handle spot detail URLs
       const spotId = extractSpotIdFromPath(pathname);
       if (spotId) {
-        const snap = await db.collection("spots").doc(spotId).get();
+        const [snap, jumpflixMapSnap] = await Promise.all([
+          db.collection("spots").doc(spotId).get(),
+          db.collection("spotJumpflixVideos").doc(spotId).get(),
+        ]);
         if (snap.exists) {
           spot = {id: snap.id, ...snap.data()};
+        }
+        const jumpflixIds = parseJumpflixIds(
+            jumpflixMapSnap.exists ? jumpflixMapSnap.data() : null,
+        );
+        if (jumpflixIds.length > 0) {
+          const refs = jumpflixIds.map((id) =>
+            db.collection("jumpflixVideos").doc(String(id)),
+          );
+          const videoSnaps = await db.getAll(...refs);
+          jumpflixVideoDocs = videoSnaps
+              .filter((doc) => doc.exists)
+              .map((doc) => {
+                const data = doc.data() || {};
+                return {
+                  id: doc.id,
+                  title: data.title,
+                  url: data.url,
+                };
+              });
         }
       }
     } else if (isLocationUrl) {
@@ -576,6 +603,49 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
     // getResizedImageUrlForApi handles firebasestorage + storage.googleapis.com formats
     imageUrl = getResizedImageUrlForApi(imageUrl);
 
+    const seoContent = spot ? buildSpotSeoContent({
+      spot: spot,
+      breadcrumbs: breadcrumbs,
+      jumpflixVideos: jumpflixVideoDocs,
+      canonicalHost: canonicalHost,
+    }) : null;
+
+    let pageGeo = null;
+    let pageAggregateRating = null;
+    let pageSubjectOf = null;
+    if (seoContent) {
+      if (seoContent.latitude != null && seoContent.longitude != null) {
+        pageGeo = {
+          latitude: seoContent.latitude,
+          longitude: seoContent.longitude,
+        };
+      }
+      if (seoContent.rating) {
+        pageAggregateRating = {
+          ratingValue: seoContent.rating.value,
+          ratingCount: seoContent.rating.count,
+        };
+      }
+      const subjectOf = [];
+      for (const film of seoContent.jumpflixVideos) {
+        subjectOf.push({
+          name: film.title,
+          url: film.url,
+          type: "Movie",
+        });
+      }
+      for (const video of seoContent.youtubeVideos) {
+        subjectOf.push({
+          name: video.title,
+          url: video.url,
+          type: "VideoObject",
+        });
+      }
+      if (subjectOf.length > 0) {
+        pageSubjectOf = subjectOf;
+      }
+    }
+
     // Basic caching for crawlers and share scrapers
     res.set("Cache-Control", "public, max-age=300, s-maxage=600");
     res.set("Content-Type", "text/html; charset=utf-8");
@@ -593,6 +663,11 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
       pageName: pageName,
       pageDescription: pageDescription,
       pageAddress: pageAddress,
+      pageGeo: pageGeo,
+      pageAggregateRating: pageAggregateRating,
+      pageImage: imageUrl,
+      pageSubjectOf: pageSubjectOf,
+      seoContent: seoContent,
     });
 
     res.status(200).send(html);
