@@ -18,7 +18,14 @@ import {
 } from "../lib/citation";
 import {buildSiteGraph} from "../lib/schema";
 import {loadCoverage, loadStats} from "../lib/snapshots";
-import {OPEN_SOURCE_URL, aboutCountryPath, appHomeUrl} from "../lib/urls";
+import {
+  CONTACT_EMAIL,
+  INSTAGRAM_HANDLE,
+  OPEN_SOURCE_URL,
+  aboutCountryPath,
+  appHomeUrl,
+  instagramUrl,
+} from "../lib/urls";
 
 const stats = await loadStats();
 const coverage = await loadCoverage();
@@ -233,6 +240,32 @@ const description = headline
       </section>
     )
   }
+
+  <section class="section" id="contact" aria-labelledby="contact-title">
+    <h2 class="section__title" id="contact-title">Contact</h2>
+    <div class="prose">
+      <p>
+        Questions, spot lists, or anything else about {SITE_NAME} — reach out by
+        email or Instagram.
+      </p>
+    </div>
+    <ul class="contact-list">
+      <li>
+        <span class="contact-list__channel">Email</span>
+        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+      </li>
+      <li>
+        <span class="contact-list__channel">Instagram</span>
+        <a
+          href={instagramUrl(INSTAGRAM_HANDLE)}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          @{INSTAGRAM_HANDLE}
+        </a>
+      </li>
+    </ul>
+  </section>
 
   <section class="section hub-open">
     <div class="hero__actions">

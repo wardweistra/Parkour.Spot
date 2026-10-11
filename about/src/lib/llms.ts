@@ -14,7 +14,12 @@ import {
 import {howItWorksGroups} from "./how-it-works";
 import type {CoverageCountry} from "./snapshots";
 import type {AboutStats} from "./types";
-import {aboutAbsolute, aboutCityPath, aboutCountryPath} from "./urls";
+import {
+  aboutAbsolute,
+  aboutCityPath,
+  aboutContactPath,
+  aboutCountryPath,
+} from "./urls";
 
 function cityLine(countryCode: string, city: CoverageCountry["cities"][number]): string {
   const path = aboutCityPath(countryCode, city.citySlug);
@@ -74,6 +79,7 @@ export function buildLlmsTxt(input: {
     `- [How ${SITE_NAME} works](${aboutAbsolute("/how-it-works")}): How to find spots and events, add them, keep lists, and train with the community.`,
     `- [Community](${aboutAbsolute("/community")}): Spot and event sources, open-source code, people credits, and peer tools.`,
     `- [Events](${aboutAbsolute("/events")}): Upcoming public parkour events.`,
+    `- [Contact](${aboutAbsolute(aboutContactPath())}): Email and Instagram.`,
     "",
     "## Tasks",
     "",

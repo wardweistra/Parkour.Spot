@@ -3,10 +3,17 @@ export const ABOUT_ORIGIN = "https://about.parkour.spot";
 export const OPEN_SOURCE_URL = "https://github.com/wardweistra/Parkour.Spot";
 export const JUMPFLIX_URL = "https://www.jumpflix.tv";
 export const CONTACT_EMAIL = "parkour.spot@wardweistra.nl";
+/** Official Instagram handle (Account tab / About Contact). */
+export const INSTAGRAM_HANDLE = "parkourdotspot";
 
 export function instagramUrl(handle: string): string {
   const trimmed = handle.trim().replace(/^@/, "");
   return `https://www.instagram.com/${trimmed}/`;
+}
+
+/** Homepage Contact section deep link. */
+export function aboutContactPath(): string {
+  return "/#contact";
 }
 
 export function aboutCommunityPath(): string {

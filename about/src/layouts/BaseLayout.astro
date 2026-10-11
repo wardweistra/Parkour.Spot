@@ -8,6 +8,7 @@ import {
 } from "../lib/brand";
 import {APP_DEFINITION, formatUpdatedAt} from "../lib/citation";
 import {loadAboutIndex, useFixtures} from "../lib/snapshots";
+import {aboutContactPath} from "../lib/urls";
 
 interface Props {
   title: string;
@@ -167,6 +168,8 @@ const analyticsEnabled = import.meta.env.PROD && !useFixtures();
             <a href="/how-it-works">How it works</a>
             ·
             <a href="/community">Community</a>
+            ·
+            <a href={aboutContactPath()}>Contact</a>
             ·
             <a href="https://parkour.spot">Open the app</a>
           </p>

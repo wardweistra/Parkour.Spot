@@ -1294,6 +1294,38 @@ img {
   font-weight: 600;
 }
 
+.stat-window {
+  margin: var(--space-md) 0 0;
+}
+
+.stat-window + .stat-grid {
+  margin-top: var(--space-xs);
+}
+
+.contact-list {
+  list-style: none;
+  margin: var(--space-md) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-md);
+  max-width: var(--measure);
+}
+
+.contact-list li {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.contact-list__channel {
+  font-weight: 600;
+  color: var(--color-on-surface);
+}
+
+.contact-list a {
+  font-weight: 600;
+  word-break: break-word;
+}
+
 .source-list__row {
   grid-template-columns: 1fr;
 }

@@ -77,7 +77,7 @@ const sections = [
     {
       recent.length > 0 && (
         <>
-          <p class="muted">In the last {windowDays} days</p>
+          <p class="muted stat-window">In the last {windowDays} days</p>
           <StatGrid
             facts={recent}
             label={`Activity in the last ${windowDays} days`}
@@ -108,15 +108,13 @@ const sections = [
       )
     }
     <p class="section-cta">
-      {
-        spotCount > 0 ? (
-          <a href={aboutSpotSourcesPath()}>
-            Browse all {countNoun(spotCount, "spot source")}
-          </a>
-        ) : (
-          <a href="/how-it-works#add-many-spots">How to share a spot list</a>
-        )
-      }
+      <a href={aboutSpotSourcesPath()}>
+        {
+          spotCount > 0
+            ? `Browse all ${countNoun(spotCount, "spot source")}`
+            : "Browse spot sources"
+        }
+      </a>
     </p>
   </section>
 
@@ -141,15 +139,13 @@ const sections = [
       )
     }
     <p class="section-cta">
-      {
-        eventCount > 0 ? (
-          <a href={aboutEventSourcesPath()}>
-            Browse all {countNoun(eventCount, "event source")}
-          </a>
-        ) : (
-          <a href="/how-it-works#find-events-near-me">How events show up on the map</a>
-        )
-      }
+      <a href={aboutEventSourcesPath()}>
+        {
+          eventCount > 0
+            ? `Browse all ${countNoun(eventCount, "event source")}`
+            : "Browse event sources"
+        }
+      </a>
     </p>
   </section>
 

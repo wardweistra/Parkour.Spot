@@ -5,8 +5,8 @@ import {countNoun, metaDescription} from "../../lib/citation";
 import {SITE_NAME} from "../../lib/brand";
 import {loadCommunitySources} from "../../lib/snapshots";
 import {
-  CONTACT_EMAIL,
   aboutCommunityPath,
+  aboutContactPath,
 } from "../../lib/urls";
 
 const community = await loadCommunitySources();
@@ -42,8 +42,8 @@ const description = metaDescription(
   <SourceList sources={sources} countKey="eventCount" countNounBase="event" />
 
   <p class="section-cta">
-    Run a public parkour calendar? Write to{" "}
-    <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+    Run a public parkour calendar? Get in touch via{" "}
+    <a href={aboutContactPath()}>Contact</a>
     {" "}
     and we can look at connecting it.
   </p>

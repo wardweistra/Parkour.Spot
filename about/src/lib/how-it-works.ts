@@ -8,7 +8,12 @@ import {
 } from "./citation";
 import type {ScreenshotId} from "./screenshots";
 import type {AboutStats} from "./types";
-import {CONTACT_EMAIL, OPEN_SOURCE_URL, appHomeUrl, appPath} from "./urls";
+import {
+  OPEN_SOURCE_URL,
+  aboutContactPath,
+  appHomeUrl,
+  appPath,
+} from "./urls";
 
 /**
  * Shared copy for /how-it-works, its FAQPage schema, and the llms.txt task index.
@@ -281,8 +286,8 @@ export function howItWorksGroups(stats: AboutStats): HowItWorksGroup[] {
           "I have a list of parkour spots I want to add. How do I add them?",
         paragraphs: [
           [
-            "If your spots are in a computer-readable format, such as Google My Maps, OpenStreetMap, or something similar, get in touch at ",
-            {href: `mailto:${CONTACT_EMAIL}`, label: CONTACT_EMAIL},
+            "If your spots are in a computer-readable format, such as Google My Maps, OpenStreetMap, or something similar, get in touch via ",
+            {href: aboutContactPath(), label: "Contact"},
             " and we can work out adding them in bulk.",
           ],
           [
