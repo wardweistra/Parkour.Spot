@@ -1,5 +1,6 @@
 ---
 import CountryFlag from "./CountryFlag.astro";
+import StackListThumb from "./StackListThumb.astro";
 import type {EventSummary} from "../lib/types";
 import {
   eventWhenLabel,
@@ -91,18 +92,7 @@ function placeLabel(event: EventSummary): string {
                       class="stack-list__card"
                       data-country={event.countryCode?.toLowerCase() ?? ""}
                     >
-                      {event.imageUrl ? (
-                        <img
-                          class="stack-list__thumb"
-                          src={event.imageUrl}
-                          alt=""
-                          width="64"
-                          height="64"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div class="stack-list__thumb" aria-hidden="true" />
-                      )}
+                      <StackListThumb src={event.imageUrl} />
                       <div>
                         <p class="stack-list__title">
                           <a class="stack-list__link" href={href}>

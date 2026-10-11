@@ -508,16 +508,47 @@ img {
 }
 
 .stack-list__thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
   width: 64px;
   height: 64px;
+  overflow: hidden;
   border-radius: var(--radius-sm);
-  object-fit: cover;
-  background: var(--color-surface-container-highest);
+  background: color-mix(
+    in srgb,
+    var(--color-primary-container) 42%,
+    var(--color-surface-container-low)
+  );
+  color: color-mix(in srgb, var(--color-on-surface-variant) 72%, transparent);
 }
 
-.stack-list--spots .stack-list__thumb {
+.stack-list__thumb--lg {
   width: 96px;
   height: 96px;
+}
+
+.stack-list__thumb-icon {
+  width: 42%;
+  height: 42%;
+  max-width: 28px;
+  max-height: 28px;
+}
+
+.stack-list__thumb--lg .stack-list__thumb-icon {
+  max-width: 36px;
+  max-height: 36px;
+}
+
+.stack-list__thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  background: var(--color-surface-container-low);
 }
 
 .stack-list__meta {

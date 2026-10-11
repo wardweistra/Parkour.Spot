@@ -1,4 +1,5 @@
 ---
+import StackListThumb from "./StackListThumb.astro";
 import type {SpotSummary} from "../lib/types";
 import {appSpotUrl} from "../lib/urls";
 
@@ -30,18 +31,7 @@ const {
         const place = showCity && spot.city ? spot.city : null;
         return (
           <li class="stack-list__card">
-            {spot.imageUrl ? (
-              <img
-                class="stack-list__thumb"
-                src={spot.imageUrl}
-                alt=""
-                width="96"
-                height="96"
-                loading="lazy"
-              />
-            ) : (
-              <div class="stack-list__thumb" aria-hidden="true" />
-            )}
+            <StackListThumb src={spot.imageUrl} size={96} />
             <div>
               <p class="stack-list__title">
                 {rank != null && (

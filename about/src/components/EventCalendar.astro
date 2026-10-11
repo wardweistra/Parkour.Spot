@@ -1,6 +1,7 @@
 ---
 import CountryFlag from "./CountryFlag.astro";
 import EventList from "./EventList.astro";
+import StackListThumb from "./StackListThumb.astro";
 import type {EventSummary} from "../lib/types";
 import {
   buildMonths,
@@ -428,18 +429,7 @@ const initialMonth = months[0];
                       event.countryCode?.trim().toLowerCase() ?? ""
                     }
                   >
-                    {event.imageUrl ? (
-                      <img
-                        class="stack-list__thumb"
-                        src={event.imageUrl}
-                        alt=""
-                        width="64"
-                        height="64"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div class="stack-list__thumb" aria-hidden="true" />
-                    )}
+                    <StackListThumb src={event.imageUrl} />
                     <div>
                       <p class="stack-list__title">
                         <a
