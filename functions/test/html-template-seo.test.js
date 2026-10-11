@@ -114,7 +114,7 @@ describe("generatePageTypeJsonLd enrichment", () => {
 });
 
 describe("generateHtmlBody with seoContent", () => {
-  it("includes seo article and flutter bootstrap", () => {
+  it("includes seo article, loading cover, and flutter bootstrap", () => {
     const body = generateHtmlBody({
       url: "https://parkour.spot/gb/london/abc",
       seoContent: {
@@ -128,8 +128,11 @@ describe("generateHtmlBody with seoContent", () => {
       },
     });
     expect(body).toContain("id=\"seo-content\"");
+    expect(body).toContain("id=\"app-loading-cover\"");
+    expect(body).toContain("background: #186584");
     expect(body).toContain("flutter_bootstrap.js");
-    expect(body).toContain("hideSeoContent");
+    expect(body).toContain("dismissSeoShell");
+    expect(body).toContain("#app-loading-cover { display: none !important; }");
   });
 });
 

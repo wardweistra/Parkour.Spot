@@ -294,13 +294,26 @@ function renderSeoContentHtml(seoContent, canonicalHost = "parkour.spot") {
 }
 
 /**
- * Minimal styles + hide #seo-content once Flutter mounts (humans see the app).
- * Crawlers that do not run JS keep the full article in the first HTML.
+ * Loading cover + styles for crawlable SEO HTML.
+ * Cover matches Flutter splash primary (#186584 light / #8ECFF2 dark) so humans
+ * do not see the plain article while WASM boots. Noscript users see the article.
+ * Crawlers that do not run JS still get the full article in the first HTML.
  * @return {string}
  */
 function seoContentBootScripts() {
   return `
   <style>
+    #app-loading-cover {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      background: #186584;
+    }
+    @media (prefers-color-scheme: dark) {
+      #app-loading-cover {
+        background: #8ECFF2;
+      }
+    }
     #seo-content {
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       max-width: 40rem;
@@ -314,15 +327,21 @@ function seoContentBootScripts() {
     #seo-content nav { font-size: 0.875rem; margin-bottom: 0.75rem; }
     #seo-content ul { padding-left: 1.25rem; }
   </style>
+  <noscript>
+    <style>#app-loading-cover { display: none !important; }</style>
+  </noscript>
+  <div id="app-loading-cover" aria-hidden="true"></div>
   <script>
     (function () {
-      function hideSeoContent() {
+      function dismissSeoShell() {
+        var cover = document.getElementById("app-loading-cover");
+        if (cover && cover.parentNode) cover.parentNode.removeChild(cover);
         var el = document.getElementById("seo-content");
         if (el) el.setAttribute("hidden", "");
       }
       var observer = new MutationObserver(function () {
         if (document.querySelector("flutter-view, flt-glass-pane, flt-scene-host")) {
-          hideSeoContent();
+          dismissSeoShell();
           observer.disconnect();
         }
       });
