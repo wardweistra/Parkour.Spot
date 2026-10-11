@@ -343,20 +343,38 @@ abstract class AppLocalizations {
   /// Explains the live calendar feed on My events
   ///
   /// In en, this message translates to:
-  /// **'Subscribe with a private link. Your Going and Interested events stay updated in Apple, Google, Outlook, and other calendar apps.'**
+  /// **'Subscribe with a private link. Your Going and Interested events stay updated in your calendar app.'**
   String get myEventsCalendarDescription;
 
-  /// Primary button to copy the iCal subscribe URL
+  /// Subscribe via webcal:// into Apple Calendar on Mac/iPhone
   ///
   /// In en, this message translates to:
-  /// **'Copy calendar link'**
-  String get myEventsCalendarCopyLink;
+  /// **'Add to Mac’s Calendar'**
+  String get myEventsCalendarOpenMac;
 
-  /// Secondary action using webcal:// for Apple-style subscribe
+  /// Subscribe via Google Calendar add-by-URL deep link
   ///
   /// In en, this message translates to:
-  /// **'Open in calendar app'**
-  String get myEventsCalendarOpenSubscribe;
+  /// **'Add to Google Calendar'**
+  String get myEventsCalendarOpenGoogle;
+
+  /// Subscribe via Outlook add-from-web deep link
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Outlook'**
+  String get myEventsCalendarOpenOutlook;
+
+  /// Copy the https iCal subscribe URL to the clipboard
+  ///
+  /// In en, this message translates to:
+  /// **'Copy URL'**
+  String get myEventsCalendarCopyUrl;
+
+  /// Snackbar when Add to Mac’s Calendar is tapped off Apple platforms
+  ///
+  /// In en, this message translates to:
+  /// **'Adding to Apple Calendar works on a Mac or iPhone. Use Google Calendar, Outlook, or Copy URL here.'**
+  String get myEventsCalendarMacUnavailable;
 
   /// Secondary action to rotate the calendar feed token
   ///

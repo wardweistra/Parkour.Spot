@@ -171,17 +171,29 @@
   "@myEventsCalendarTitle": {
     "description": "My events section for secret iCal subscribe URL"
   },
-  "myEventsCalendarDescription": "Subscribe with a private link. Your Going and Interested events stay updated in Apple, Google, Outlook, and other calendar apps.",
+  "myEventsCalendarDescription": "Subscribe with a private link. Your Going and Interested events stay updated in your calendar app.",
   "@myEventsCalendarDescription": {
     "description": "Explains the live calendar feed on My events"
   },
-  "myEventsCalendarCopyLink": "Copy calendar link",
-  "@myEventsCalendarCopyLink": {
-    "description": "Primary button to copy the iCal subscribe URL"
+  "myEventsCalendarOpenMac": "Add to Mac’s Calendar",
+  "@myEventsCalendarOpenMac": {
+    "description": "Subscribe via webcal:// into Apple Calendar on Mac/iPhone"
   },
-  "myEventsCalendarOpenSubscribe": "Open in calendar app",
-  "@myEventsCalendarOpenSubscribe": {
-    "description": "Secondary action using webcal:// for Apple-style subscribe"
+  "myEventsCalendarOpenGoogle": "Add to Google Calendar",
+  "@myEventsCalendarOpenGoogle": {
+    "description": "Subscribe via Google Calendar add-by-URL deep link"
+  },
+  "myEventsCalendarOpenOutlook": "Add to Outlook",
+  "@myEventsCalendarOpenOutlook": {
+    "description": "Subscribe via Outlook add-from-web deep link"
+  },
+  "myEventsCalendarCopyUrl": "Copy URL",
+  "@myEventsCalendarCopyUrl": {
+    "description": "Copy the https iCal subscribe URL to the clipboard"
+  },
+  "myEventsCalendarMacUnavailable": "Adding to Apple Calendar works on a Mac or iPhone. Use Google Calendar, Outlook, or Copy URL here.",
+  "@myEventsCalendarMacUnavailable": {
+    "description": "Snackbar when Add to Mac’s Calendar is tapped off Apple platforms"
   },
   "myEventsCalendarRegenerate": "Regenerate link…",
   "@myEventsCalendarRegenerate": {

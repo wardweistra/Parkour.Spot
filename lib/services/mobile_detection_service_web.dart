@@ -50,6 +50,18 @@ bool isAndroid() {
   }
 }
 
+bool isMac() {
+  try {
+    final userAgent = web.window.navigator.userAgent.toLowerCase();
+    return userAgent.contains('macintosh') ||
+        userAgent.contains('mac os x') ||
+        userAgent.contains('mac os');
+  } catch (e) {
+    debugPrint('Error detecting Mac: $e');
+    return false;
+  }
+}
+
 bool isRunningAsPWA() {
   try {
     final standaloneMatch = web.window.matchMedia('(display-mode: standalone)');

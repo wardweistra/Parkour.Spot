@@ -143,13 +143,23 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get myEventsCalendarDescription =>
-      'Subscreve com um link privado. Os eventos a que vais ou que te interessam mantêm-se atualizados no Apple, Google, Outlook e noutras apps de calendário.';
+      'Subscreve com um link privado. Os eventos a que vais ou que te interessam mantêm-se atualizados na tua app de calendário.';
 
   @override
-  String get myEventsCalendarCopyLink => 'Copiar link do calendário';
+  String get myEventsCalendarOpenMac => 'Adicionar ao calendário do Mac';
 
   @override
-  String get myEventsCalendarOpenSubscribe => 'Abrir na app de calendário';
+  String get myEventsCalendarOpenGoogle => 'Adicionar ao Google Calendar';
+
+  @override
+  String get myEventsCalendarOpenOutlook => 'Adicionar ao Outlook';
+
+  @override
+  String get myEventsCalendarCopyUrl => 'Copiar URL';
+
+  @override
+  String get myEventsCalendarMacUnavailable =>
+      'Adicionar ao calendário Apple funciona num Mac ou iPhone. Usa aqui o Google Calendar, o Outlook ou Copiar URL.';
 
   @override
   String get myEventsCalendarRegenerate => 'Gerar novo link…';

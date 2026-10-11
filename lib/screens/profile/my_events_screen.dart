@@ -9,6 +9,7 @@ import '../../models/event_interest.dart';
 import '../../models/parkour_event.dart';
 import '../../services/auth_service.dart';
 import '../../services/event_interest_service.dart';
+import '../../services/mobile_detection_service.dart';
 import '../../services/user_calendar_feed_service.dart';
 import '../../utils/event_interest_utils.dart';
 import '../../utils/event_schedule_utils.dart';
@@ -82,55 +83,99 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
     }
   }
 
+  void _showCalendarFailed() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(_l10n.myEventsCalendarFailed),
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
+    );
+  }
+
+  Future<String?> _feedUrlOrNull() async {
+    try {
+      return await _calendarFeedService.getOrCreateFeedUrl();
+    } catch (e) {
+      if (mounted) _showCalendarFailed();
+      return null;
+    }
+  }
+
   Future<void> _copyCalendarLink() async {
     if (_calendarBusy) return;
     setState(() => _calendarBusy = true);
     try {
-      final url = await _calendarFeedService.getOrCreateFeedUrl();
+      final url = await _feedUrlOrNull();
+      if (url == null || !mounted) return;
       await Clipboard.setData(ClipboardData(text: url));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_l10n.myEventsCalendarCopied)),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_l10n.myEventsCalendarFailed),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
       );
     } finally {
       if (mounted) setState(() => _calendarBusy = false);
     }
   }
 
-  Future<void> _openCalendarSubscribe() async {
+  Future<void> _launchExternal(String url) async {
+    final uri = Uri.parse(url);
+    final launched = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!launched && mounted) {
+      _showCalendarFailed();
+    }
+  }
+
+  Future<void> _openMacCalendar() async {
+    if (!MobileDetectionService.supportsWebcalSubscribe) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_l10n.myEventsCalendarMacUnavailable)),
+      );
+      return;
+    }
     if (_calendarBusy) return;
     setState(() => _calendarBusy = true);
     try {
-      final url = await _calendarFeedService.getOrCreateFeedUrl();
-      final webcal = UserCalendarFeedService.toWebcalUrl(url);
-      final uri = Uri.parse(webcal);
-      final launched = await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-      if (!launched && mounted) {
-        await Clipboard.setData(ClipboardData(text: url));
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_l10n.myEventsCalendarCopied)),
-        );
-      }
+      final url = await _feedUrlOrNull();
+      if (url == null || !mounted) return;
+      await _launchExternal(UserCalendarFeedService.toWebcalUrl(url));
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_l10n.myEventsCalendarFailed),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
+      if (mounted) _showCalendarFailed();
+    } finally {
+      if (mounted) setState(() => _calendarBusy = false);
+    }
+  }
+
+  Future<void> _openGoogleCalendar() async {
+    if (_calendarBusy) return;
+    setState(() => _calendarBusy = true);
+    try {
+      final url = await _feedUrlOrNull();
+      if (url == null || !mounted) return;
+      await _launchExternal(
+        UserCalendarFeedService.toGoogleCalendarSubscribeUrl(url),
       );
+    } catch (e) {
+      if (mounted) _showCalendarFailed();
+    } finally {
+      if (mounted) setState(() => _calendarBusy = false);
+    }
+  }
+
+  Future<void> _openOutlookCalendar() async {
+    if (_calendarBusy) return;
+    setState(() => _calendarBusy = true);
+    try {
+      final url = await _feedUrlOrNull();
+      if (url == null || !mounted) return;
+      await _launchExternal(
+        UserCalendarFeedService.toOutlookCalendarSubscribeUrl(url),
+      );
+    } catch (e) {
+      if (mounted) _showCalendarFailed();
     } finally {
       if (mounted) setState(() => _calendarBusy = false);
     }
@@ -312,6 +357,42 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
   Widget _calendarSection() {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final preferMac = MobileDetectionService.supportsWebcalSubscribe;
+    final actionStyle = OutlinedButton.styleFrom(
+      minimumSize: const Size(0, 40),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      visualDensity: VisualDensity.compact,
+    );
+    final primaryStyle = FilledButton.styleFrom(
+      minimumSize: const Size(0, 40),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      visualDensity: VisualDensity.compact,
+    );
+    final actions = <({String label, VoidCallback? onPressed, bool primary})>[
+      (
+        label: _l10n.myEventsCalendarOpenMac,
+        onPressed: _calendarBusy ? null : _openMacCalendar,
+        primary: preferMac,
+      ),
+      (
+        label: _l10n.myEventsCalendarOpenGoogle,
+        onPressed: _calendarBusy ? null : _openGoogleCalendar,
+        primary: !preferMac,
+      ),
+      (
+        label: _l10n.myEventsCalendarOpenOutlook,
+        onPressed: _calendarBusy ? null : _openOutlookCalendar,
+        primary: false,
+      ),
+      (
+        label: _l10n.myEventsCalendarCopyUrl,
+        onPressed: _calendarBusy ? null : _copyCalendarLink,
+        primary: false,
+      ),
+    ];
+
     return Padding(
       padding: const EdgeInsets.only(top: 4, bottom: 8),
       child: DecoratedBox(
@@ -320,9 +401,9 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 _l10n.myEventsCalendarTitle,
@@ -330,38 +411,48 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Text(
                 _l10n.myEventsCalendarDescription,
-                style: theme.textTheme.bodyMedium?.copyWith(
+                style: theme.textTheme.bodySmall?.copyWith(
                   color: scheme.onSurface.withValues(alpha: 0.75),
                 ),
               ),
-              const SizedBox(height: 14),
-              FilledButton.icon(
-                onPressed: _calendarBusy ? null : _copyCalendarLink,
-                icon: _calendarBusy
-                    ? SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: scheme.onPrimary,
-                        ),
-                      )
-                    : const Icon(Icons.link),
-                label: Text(_l10n.myEventsCalendarCopyLink),
-              ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
-                runSpacing: 4,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
+                  for (final action in actions)
+                    if (action.primary)
+                      FilledButton(
+                        style: primaryStyle,
+                        onPressed: action.onPressed,
+                        child: _calendarBusy
+                            ? SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: scheme.onPrimary,
+                                ),
+                              )
+                            : Text(action.label),
+                      )
+                    else
+                      OutlinedButton(
+                        style: actionStyle,
+                        onPressed: action.onPressed,
+                        child: Text(action.label),
+                      ),
                   TextButton(
-                    onPressed: _calendarBusy ? null : _openCalendarSubscribe,
-                    child: Text(_l10n.myEventsCalendarOpenSubscribe),
-                  ),
-                  TextButton(
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(0, 40),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      visualDensity: VisualDensity.compact,
+                    ),
                     onPressed: _calendarBusy
                         ? null
                         : _confirmRegenerateCalendarLink,

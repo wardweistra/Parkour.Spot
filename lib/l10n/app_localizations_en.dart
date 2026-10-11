@@ -142,13 +142,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get myEventsCalendarDescription =>
-      'Subscribe with a private link. Your Going and Interested events stay updated in Apple, Google, Outlook, and other calendar apps.';
+      'Subscribe with a private link. Your Going and Interested events stay updated in your calendar app.';
 
   @override
-  String get myEventsCalendarCopyLink => 'Copy calendar link';
+  String get myEventsCalendarOpenMac => 'Add to Mac’s Calendar';
 
   @override
-  String get myEventsCalendarOpenSubscribe => 'Open in calendar app';
+  String get myEventsCalendarOpenGoogle => 'Add to Google Calendar';
+
+  @override
+  String get myEventsCalendarOpenOutlook => 'Add to Outlook';
+
+  @override
+  String get myEventsCalendarCopyUrl => 'Copy URL';
+
+  @override
+  String get myEventsCalendarMacUnavailable =>
+      'Adding to Apple Calendar works on a Mac or iPhone. Use Google Calendar, Outlook, or Copy URL here.';
 
   @override
   String get myEventsCalendarRegenerate => 'Regenerate link…';

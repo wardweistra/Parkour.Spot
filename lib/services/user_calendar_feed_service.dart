@@ -9,6 +9,8 @@ class UserCalendarFeedService {
 
   final FirebaseFunctions _functions;
 
+  static const String defaultCalendarDisplayName = 'ParkourSpot My events';
+
   /// Returns the subscribe URL, creating a feed token if needed.
   Future<String> getOrCreateFeedUrl() async {
     final callable = _functions.httpsCallable('getOrCreateMyCalendarFeed');
@@ -31,6 +33,30 @@ class UserCalendarFeedService {
       return uri.replace(scheme: 'webcal').toString();
     }
     return httpsUrl;
+  }
+
+  /// Google Calendar “add by URL” deep link for an https ICS feed.
+  ///
+  /// Google’s `cid=` handoff often rejects bare `https://` feed URLs with
+  /// “Unable to import calendar” even when Settings → From URL accepts the
+  /// same https link. Passing `webcal://` in `cid` is the reliable form.
+  static String toGoogleCalendarSubscribeUrl(String httpsIcsUrl) {
+    final webcal = toWebcalUrl(httpsIcsUrl);
+    return Uri.https('www.google.com', '/calendar/render', {
+      'cid': webcal,
+    }).toString();
+  }
+
+  /// Outlook.com “add calendar from web” deep link for an https ICS feed.
+  static String toOutlookCalendarSubscribeUrl(
+    String httpsIcsUrl, {
+    String name = defaultCalendarDisplayName,
+  }) {
+    final feed = httpsIcsUrl.trim();
+    return Uri.https('outlook.live.com', '/calendar/0/addfromweb', {
+      'url': feed,
+      'name': name,
+    }).toString();
   }
 
   String _urlFromResult(Object? raw, String op) {

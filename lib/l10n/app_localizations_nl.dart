@@ -143,13 +143,23 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get myEventsCalendarDescription =>
-      'Abonneer met een privélink. Je events waarop je gaat of geïnteresseerd bent blijven bijgewerkt in Apple, Google, Outlook en andere agenda-apps.';
+      'Abonneer met een privélink. Je events waarop je gaat of geïnteresseerd bent blijven bijgewerkt in je agenda-app.';
 
   @override
-  String get myEventsCalendarCopyLink => 'Agendalink kopiëren';
+  String get myEventsCalendarOpenMac => 'Toevoegen aan Mac-agenda';
 
   @override
-  String get myEventsCalendarOpenSubscribe => 'Openen in agenda-app';
+  String get myEventsCalendarOpenGoogle => 'Toevoegen aan Google Agenda';
+
+  @override
+  String get myEventsCalendarOpenOutlook => 'Toevoegen aan Outlook';
+
+  @override
+  String get myEventsCalendarCopyUrl => 'URL kopiëren';
+
+  @override
+  String get myEventsCalendarMacUnavailable =>
+      'Doorsturen naar Apple Agenda werkt op een Mac of iPhone. Gebruik hier Google Agenda, Outlook of URL kopiëren.';
 
   @override
   String get myEventsCalendarRegenerate => 'Link opnieuw genereren…';

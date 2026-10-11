@@ -3,5 +3,6 @@ bool isMobileUserAgent() => false;
 bool isMobileDevice() => false;
 bool isIOS() => false;
 bool isAndroid() => false;
+bool isMac() => false;
 bool isRunningAsPWA() => false;
 Map<String, dynamic> detailedDeviceInfo() => const {'platform': 'stub'};

@@ -39,6 +39,20 @@ class MobileDetectionService {
     return web_impl.isAndroid();
   }
 
+  /// Detects macOS (web user agent or native macOS).
+  static bool get isMac {
+    if (!kIsWeb) {
+      return defaultTargetPlatform == TargetPlatform.macOS;
+    }
+    return web_impl.isMac();
+  }
+
+  /// Whether `webcal://` subscribe handoff is likely to open a calendar app.
+  ///
+  /// Apple Calendar handles this; Android Chrome/PWA typically opens a blank
+  /// tab or in-app white page instead.
+  static bool get supportsWebcalSubscribe => isIOS || isMac;
+
   /// Detects if the app is running as an installed PWA (standalone mode).
   /// Always false on native (native is not a PWA).
   static bool get isRunningAsPWA {
