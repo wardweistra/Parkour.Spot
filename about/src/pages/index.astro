@@ -12,7 +12,6 @@ import {
   countNoun,
   countryName,
   curationFacts,
-  formatUpdatedAt,
   libraryFacts,
   metaDescription,
   statsSentence,
@@ -28,7 +27,6 @@ const library = libraryFacts(stats);
 const recent = activityFacts(stats);
 const curation = curationFacts(stats);
 const windowDays = stats.activityWindowDays ?? 30;
-const snapshotLabel = stats.generatedAt ? formatUpdatedAt(stats.generatedAt) : null;
 const sourcePhrase =
   typeof stats.spotSourceCount === "number" && stats.spotSourceCount > 0
     ? countNoun(stats.spotSourceCount, "spot list")
@@ -39,6 +37,8 @@ const countries = [...coverage.countries].sort(
     b.spotCount - a.spotCount ||
     countryName(a.code).localeCompare(countryName(b.code), "en"),
 );
+const topCountries = countries.slice(0, 12);
+const moreCountries = countries.slice(12);
 
 const description = headline
   ? metaDescription(`${headline} Free, open source, and open to explore without an account.`)
@@ -58,7 +58,6 @@ const description = headline
         Find the best parkour spots, events, and communities, whether it's
         around the corner or on your next trip.
       </p>
-      {headline && <p class="hero__lead">{headline}</p>}
       <div class="hero__actions">
         <OpenInApp href={appHomeUrl()} label="Open the map" />
         <a class="btn btn--outlined" href="/events">Browse events</a>
@@ -157,33 +156,26 @@ const description = headline
     </div>
   </section>
 
-  <section class="section" aria-labelledby="quality-title">
+  <section class="section prose" aria-labelledby="quality-title">
     <h2 class="section__title" id="quality-title">
       Looked after by the people who train there
     </h2>
-    <div class="card-grid">
-      <div class="card">
-        <h3 class="card__title">Ratings</h3>
-        <p>
-          Everyone gets one rating per spot, and the best-rated spots come
-          first in every country and city.
-        </p>
-      </div>
-      <div class="card">
-        <h3 class="card__title">Suggestions and reports</h3>
-        <p>
-          Anyone can suggest a better name, photo, or location, or flag a spot
-          that is closed or unsafe, even without an account.
-        </p>
-      </div>
-      <div class="card">
-        <h3 class="card__title">Moderation</h3>
-        <p>
-          New photos are checked automatically, moderators review
-          contributions, and duplicate spots from different lists are merged.
-        </p>
-      </div>
-    </div>
+    <ul>
+      <li>
+        <strong>Ratings.</strong> Everyone gets one rating per spot, and the
+        best-rated spots come first in every country and city.
+      </li>
+      <li>
+        <strong>Suggestions and reports.</strong> Anyone can suggest a better
+        name, photo, or location, or flag a spot that is closed or unsafe, even
+        without an account.
+      </li>
+      <li>
+        <strong>Moderation.</strong> New photos are checked automatically,
+        moderators review contributions, and duplicate spots from different
+        lists are merged.
+      </li>
+    </ul>
     <StatGrid facts={curation} label="Curation totals" compact />
     <p class="more-link">
       <a href="/how-it-works#about-the-map">How spots are sourced and checked</a>
@@ -208,7 +200,7 @@ const description = headline
       <section class="section">
         <h2 class="section__title">Browse by country</h2>
         <div class="chip-row">
-          {countries.map((country) => (
+          {topCountries.map((country) => (
             <a class="chip" href={aboutCountryPath(country.code)}>
               <CountryFlag code={country.code} />
               {countryName(country.code)}
@@ -220,15 +212,35 @@ const description = headline
             </a>
           ))}
         </div>
+        {moreCountries.length > 0 && (
+          <details class="city-more">
+            <summary>Show all countries ({countries.length})</summary>
+            <div class="chip-row">
+              {moreCountries.map((country) => (
+                <a class="chip" href={aboutCountryPath(country.code)}>
+                  <CountryFlag code={country.code} />
+                  {countryName(country.code)}
+                  <span class="muted">
+                    {" "}
+                    · {country.cities.length}{" "}
+                    {country.cities.length === 1 ? "city" : "cities"}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </details>
+        )}
       </section>
     )
   }
 
-  {
-    snapshotLabel && (
-      <p class="muted snapshot-note">
-        Figures from the nightly snapshot of {snapshotLabel}.
-      </p>
-    )
-  }
+  <section class="section hub-open">
+    <div class="hero__actions">
+      <OpenInApp href={appHomeUrl()} label="Open the map" />
+      <a class="btn btn--outlined" href="/events">Browse events</a>
+    </div>
+    <p class="muted">
+      Free and open source. No account needed to explore.
+    </p>
+  </section>
 </BaseLayout>
