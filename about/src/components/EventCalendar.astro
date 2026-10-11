@@ -67,13 +67,27 @@ const weekdays = [
   ["Sunday", "Sun", "S"],
 ];
 
-function lanesFor(day: CalendarDay): (DayPlacement | null)[] {
-  const visible = day.placements.filter((p) => p.lane < VISIBLE_LANES);
-  const top = visible.reduce((max, p) => Math.max(max, p.lane), -1);
-  return Array.from(
-    {length: top + 1},
-    (_, lane) => visible.find((p) => p.lane === lane) ?? null,
+/**
+ * Every lane that should exist in the DOM. Lanes at or past `VISIBLE_LANES`
+ * are rendered hidden: a country filter packs the remaining events back into
+ * the visible rows. Empty rows above the visible stack are omitted.
+ */
+function laneRows(
+  day: CalendarDay,
+): {placement: DayPlacement | null; lane: number}[] {
+  const top = day.placements.reduce((max, p) => Math.max(max, p.lane), -1);
+  if (top < 0) return [];
+  const visibleTop = day.placements.reduce(
+    (max, p) => (p.lane < VISIBLE_LANES ? Math.max(max, p.lane) : max),
+    -1,
   );
+  const rows: {placement: DayPlacement | null; lane: number}[] = [];
+  for (let lane = 0; lane <= top; lane += 1) {
+    const placement = day.placements.find((p) => p.lane === lane) ?? null;
+    if (!placement && lane > visibleTop) continue;
+    rows.push({placement, lane});
+  }
+  return rows;
 }
 
 function hiddenCount(day: CalendarDay): number {
@@ -110,6 +124,8 @@ const initialMonth = months[0];
 <div
   class="event-cal"
   data-event-cal
+  data-cal-visible-lanes={VISIBLE_LANES}
+  data-cal-max-dots={MAX_DOTS}
   data-cal-country-filter={showCountryFilter ? "true" : undefined}
 >
   {
@@ -267,6 +283,7 @@ const initialMonth = months[0];
                             },
                           ]}
                           data-day={day.key}
+                          data-cal-total={day.placements.length}
                         >
                           <button
                             type="button"
@@ -280,7 +297,7 @@ const initialMonth = months[0];
                           </button>
                           {day.placements.length > 0 && (
                             <div class="event-cal__lanes">
-                              {lanesFor(day).map((placement) =>
+                              {laneRows(day).map(({placement, lane}) =>
                                 placement && placement.isSegmentStart ? (
                                   <a
                                     class={chipClass(placement)}
@@ -291,6 +308,10 @@ const initialMonth = months[0];
                                         ?.trim()
                                         .toLowerCase() ?? ""
                                     }
+                                    data-cal-slug={placement.event.slug}
+                                    data-cal-lane={lane}
+                                    data-cal-priority={placement.priority}
+                                    hidden={lane >= VISIBLE_LANES}
                                     title={[
                                       placement.event.title,
                                       placeLabel(placement.event),
@@ -316,6 +337,17 @@ const initialMonth = months[0];
                                 ) : (
                                   <span
                                     class="event-cal__lane-spacer"
+                                    data-country={
+                                      placement
+                                        ? (placement.event.countryCode
+                                            ?.trim()
+                                            .toLowerCase() ?? "")
+                                        : undefined
+                                    }
+                                    data-cal-slug={placement?.event.slug}
+                                    data-cal-lane={lane}
+                                    data-cal-priority={placement?.priority}
+                                    hidden={lane >= VISIBLE_LANES}
                                     aria-hidden="true"
                                   />
                                 ),
@@ -325,6 +357,7 @@ const initialMonth = months[0];
                                   type="button"
                                   class="event-cal__more"
                                   data-cal-day={day.key}
+                                  data-cal-more-label={`+${more} more`}
                                   tabindex="-1"
                                 >
                                   +{more} more
@@ -334,7 +367,7 @@ const initialMonth = months[0];
                           )}
                           {day.placements.length > 0 && (
                             <span class="event-cal__dots" aria-hidden="true">
-                              {day.placements.slice(0, MAX_DOTS).map((p) => (
+                              {day.placements.map((p, index) => (
                                 <span
                                   class:list={[
                                     "event-cal__dot",
@@ -347,6 +380,9 @@ const initialMonth = months[0];
                                     p.event.countryCode?.trim().toLowerCase() ??
                                     ""
                                   }
+                                  data-cal-slug={p.event.slug}
+                                  data-cal-index={index}
+                                  hidden={index >= MAX_DOTS}
                                 />
                               ))}
                             </span>
@@ -535,6 +571,8 @@ const initialMonth = months[0];
     let selected: string | null = null;
     let view: "month" | "agenda" = "month";
     let countryFilter: string | null = null;
+    const visibleLanes = Number(root.dataset.calVisibleLanes) || 3;
+    const maxDots = Number(root.dataset.calMaxDots) || 3;
     const countrySelect = root.querySelector<HTMLSelectElement>(
       "[data-cal-country]",
     );
@@ -618,9 +656,7 @@ const initialMonth = months[0];
       for (const cell of root.querySelectorAll<HTMLElement>("td[data-day]")) {
         const button = cell.querySelector<HTMLButtonElement>(".event-cal__date");
         if (!button) continue;
-        const count = [
-          ...cell.querySelectorAll<HTMLElement>("[data-country]"),
-        ].filter((el) => !el.hidden).length;
+        const count = Number(cell.dataset.calCount ?? cell.dataset.calTotal ?? "0");
         const eventsText =
           count === 0
             ? "no events"
@@ -632,6 +668,183 @@ const initialMonth = months[0];
           cell.dataset.day ??
           "";
         button.setAttribute("aria-label", `${dayPart}, ${eventsText}`);
+      }
+    }
+
+    /**
+     * Country filtering used to hide chips in place. Events past the third
+     * lane were never drawn, so they stayed missing after the rows above
+     * them were filtered out. Pack the matching events again, in the same
+     * order the month grid used, and keep only `visibleLanes` rows.
+     */
+    function relayoutWeeks() {
+      for (const row of root.querySelectorAll<HTMLTableRowElement>(
+        ".event-cal__grid tbody tr",
+      )) {
+        relayoutWeek(row);
+      }
+    }
+
+    function relayoutWeek(row: HTMLTableRowElement) {
+      for (const el of row.querySelectorAll<HTMLElement>("[data-cal-dyn]")) {
+        el.remove();
+      }
+      const cells = [...row.querySelectorAll<HTMLElement>("td[data-day]")];
+      if (!countryFilter) {
+        for (const cell of cells) restoreCell(cell);
+        return;
+      }
+
+      const bySlug = new Map<
+        string,
+        {
+          slug: string;
+          country: string;
+          priority: number;
+          assigned: number;
+          days: {dayIndex: number; el: HTMLElement}[];
+        }
+      >();
+      cells.forEach((cell, dayIndex) => {
+        const lanes = cell.querySelector(".event-cal__lanes");
+        if (!lanes) return;
+        for (const el of lanes.querySelectorAll<HTMLElement>("[data-cal-slug]")) {
+          const slug = el.dataset.calSlug ?? "";
+          if (!slug) continue;
+          let rec = bySlug.get(slug);
+          if (!rec) {
+            rec = {
+              slug,
+              country: el.dataset.country ?? "",
+              priority: Number(el.dataset.calPriority ?? "0"),
+              assigned: 0,
+              days: [],
+            };
+            bySlug.set(slug, rec);
+          }
+          rec.days.push({dayIndex, el});
+        }
+      });
+
+      const pool = [...bySlug.values()]
+        .filter((event) => event.country === countryFilter)
+        .sort(
+          (a, b) => a.priority - b.priority || a.slug.localeCompare(b.slug),
+        );
+      const occupied: boolean[][] = [];
+      for (const event of pool) {
+        const indexes = event.days.map((day) => day.dayIndex);
+        const from = Math.min(...indexes);
+        const to = Math.max(...indexes);
+        let lane = 0;
+        while (occupied[lane]?.slice(from, to + 1).some(Boolean)) lane += 1;
+        occupied[lane] ??= Array(7).fill(false);
+        for (let i = from; i <= to; i += 1) occupied[lane][i] = true;
+        event.assigned = lane;
+      }
+
+      cells.forEach((cell, dayIndex) => layoutFilteredCell(cell, dayIndex, pool));
+    }
+
+    function layoutFilteredCell(
+      cell: HTMLElement,
+      dayIndex: number,
+      pool: {
+        slug: string;
+        assigned: number;
+        days: {dayIndex: number; el: HTMLElement}[];
+      }[],
+    ) {
+      const onDay = pool.filter((event) =>
+        event.days.some((day) => day.dayIndex === dayIndex),
+      );
+      cell.dataset.calCount = String(onDay.length);
+      cell.classList.toggle("has-events", onDay.length > 0);
+
+      const dots = [...cell.querySelectorAll<HTMLElement>(".event-cal__dot")];
+      const lanes = cell.querySelector<HTMLElement>(".event-cal__lanes");
+      if (!lanes) {
+        for (const dot of dots) dot.hidden = true;
+        return;
+      }
+
+      const gaps = [
+        ...lanes.querySelectorAll<HTMLElement>("[data-cal-lane]:not([data-cal-slug])"),
+      ];
+      for (const gap of gaps) gap.hidden = true;
+      const slugEls = [...lanes.querySelectorAll<HTMLElement>("[data-cal-slug]")];
+      for (const el of slugEls) el.hidden = true;
+
+      const visible = onDay.filter((event) => event.assigned < visibleLanes);
+      const maxLane = visible.reduce(
+        (max, event) => Math.max(max, event.assigned),
+        -1,
+      );
+      for (let lane = 0; lane <= maxLane; lane += 1) {
+        const event = visible.find((item) => item.assigned === lane);
+        const placed = event?.days.find((day) => day.dayIndex === dayIndex);
+        if (placed) {
+          placed.el.hidden = false;
+          lanes.appendChild(placed.el);
+          continue;
+        }
+        const gap = document.createElement("span");
+        gap.className = "event-cal__lane-spacer";
+        gap.dataset.calDyn = "true";
+        gap.setAttribute("aria-hidden", "true");
+        lanes.appendChild(gap);
+      }
+      for (const el of slugEls) {
+        if (el.hidden) lanes.appendChild(el);
+      }
+      for (const gap of gaps) lanes.appendChild(gap);
+
+      const overflow = onDay.length - visible.length;
+      let more = lanes.querySelector<HTMLButtonElement>(".event-cal__more");
+      if (overflow > 0 && !more) {
+        more = document.createElement("button");
+        more.type = "button";
+        more.className = "event-cal__more";
+        more.dataset.calDay = cell.dataset.day ?? "";
+        more.dataset.calSynth = "true";
+        more.tabIndex = -1;
+      }
+      if (more) {
+        more.hidden = overflow === 0;
+        if (overflow > 0) more.textContent = `+${overflow} more`;
+        lanes.appendChild(more);
+      }
+
+      const dotSlugs = new Set(onDay.slice(0, maxDots).map((event) => event.slug));
+      for (const dot of dots) dot.hidden = !dotSlugs.has(dot.dataset.calSlug ?? "");
+    }
+
+    function restoreCell(cell: HTMLElement) {
+      const total = Number(cell.dataset.calTotal ?? "0");
+      cell.dataset.calCount = String(total);
+      cell.classList.toggle("has-events", total > 0);
+
+      const lanes = cell.querySelector<HTMLElement>(".event-cal__lanes");
+      if (lanes) {
+        const items = [...lanes.querySelectorAll<HTMLElement>("[data-cal-lane]")];
+        items.sort(
+          (a, b) => Number(a.dataset.calLane) - Number(b.dataset.calLane),
+        );
+        for (const el of items) {
+          el.hidden = Number(el.dataset.calLane) >= visibleLanes;
+          lanes.appendChild(el);
+        }
+        const more = lanes.querySelector<HTMLButtonElement>(".event-cal__more");
+        if (more?.dataset.calSynth) more.remove();
+        else if (more) {
+          more.hidden = false;
+          if (more.dataset.calMoreLabel) more.textContent = more.dataset.calMoreLabel;
+          lanes.appendChild(more);
+        }
+      }
+
+      for (const dot of cell.querySelectorAll<HTMLElement>(".event-cal__dot")) {
+        dot.hidden = Number(dot.dataset.calIndex) >= maxDots;
       }
     }
 
@@ -654,17 +867,11 @@ const initialMonth = months[0];
 
     function applyCountryFilter(opts: {jump?: boolean} = {}) {
       for (const el of root.querySelectorAll<HTMLElement>("[data-country]")) {
+        if (el.closest(".event-cal__lanes, .event-cal__dots")) continue;
         const code = el.dataset.country ?? "";
         el.hidden = Boolean(countryFilter) && code !== countryFilter;
       }
-      for (const cell of root.querySelectorAll<HTMLElement>("td[data-day]")) {
-        const visible = [
-          ...cell.querySelectorAll<HTMLElement>("[data-country]"),
-        ].some((el) => !el.hidden);
-        cell.classList.toggle("has-events", visible);
-        const more = cell.querySelector<HTMLElement>(".event-cal__more");
-        if (more) more.hidden = Boolean(countryFilter) || !visible;
-      }
+      relayoutWeeks();
       for (const day of agenda.querySelectorAll<HTMLElement>(
         ".calendar > section > div",
       )) {

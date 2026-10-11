@@ -9,6 +9,8 @@ export type DayPlacement = {
   event: EventSummary;
   /** Row inside the week, stable across the days a multi-day event covers. */
   lane: number;
+  /** Pack order in this week. Lower was placed first and wins a free lane. */
+  priority: number;
   isStart: boolean;
   isEnd: boolean;
   /** First cell of this event in the current week row. */
@@ -308,7 +310,8 @@ function buildMonth(
       .sort((a, b) => compareEvents(a.event, b.event));
 
     const lanes: boolean[][] = [];
-    for (const {event, days} of inWeek) {
+    for (let priority = 0; priority < inWeek.length; priority += 1) {
+      const {event, days} = inWeek[priority];
       const covered = days.filter((key) => key >= weekStart && key <= weekEnd);
       const from = weekdayIndex(covered[0]);
       const to = from + covered.length - 1;
@@ -325,6 +328,7 @@ function buildMonth(
         week[from + offset].placements.push({
           event,
           lane,
+          priority,
           isStart: key === days[0],
           isEnd: key === days[days.length - 1],
           isSegmentStart: offset === 0,
