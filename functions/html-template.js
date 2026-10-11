@@ -139,7 +139,20 @@ function generateHtmlHead(options = {}) {
   <!-- Google Maps JavaScript API -->
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&loading=async"></script>
 
-  <meta name="theme-color" content="#000000" />
+  <!-- Match SplashScreen primary until Flutter paints (avoids white flash). -->
+  <meta name="theme-color" content="#186584" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#8ECFF2" media="(prefers-color-scheme: dark)" />
+  <style>
+    html, body {
+      background: #186584;
+      margin: 0;
+    }
+    @media (prefers-color-scheme: dark) {
+      html, body {
+        background: #8ECFF2;
+      }
+    }
+  </style>
   
   <!-- Identity verification: rel="me" links -->
   <link rel="me" href="https://www.instagram.com/parkourdotspot/" />
@@ -303,11 +316,6 @@ function renderSeoContentHtml(seoContent, canonicalHost = "parkour.spot") {
 function seoContentBootScripts() {
   return `
   <style>
-    /* Keep page chrome teal between cover dismiss and first Flutter frame. */
-    html, body {
-      background: #186584;
-      margin: 0;
-    }
     #app-loading-cover {
       position: fixed;
       inset: 0;
@@ -315,9 +323,6 @@ function seoContentBootScripts() {
       background: #186584;
     }
     @media (prefers-color-scheme: dark) {
-      html, body {
-        background: #8ECFF2;
-      }
       #app-loading-cover {
         background: #8ECFF2;
       }

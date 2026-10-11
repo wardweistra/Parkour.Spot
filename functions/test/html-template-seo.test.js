@@ -130,10 +130,23 @@ describe("generateHtmlBody with seoContent", () => {
     expect(body).toContain("id=\"seo-content\"");
     expect(body).toContain("id=\"app-loading-cover\"");
     expect(body).toContain("background: #186584");
-    expect(body).toContain("html, body");
     expect(body).toContain("flutter_bootstrap.js");
     expect(body).toContain("dismissSeoShell");
     expect(body).toContain("#app-loading-cover { display: none !important; }");
+  });
+});
+
+describe("generateHtmlPage root shell", () => {
+  it("sets splash-colored html/body background before Flutter loads", () => {
+    const html = generateHtmlPage({
+      title: "Parkour·Spot",
+      isDynamic: false,
+    });
+    expect(html).toContain("html, body");
+    expect(html).toContain("background: #186584");
+    expect(html).toContain("theme-color\" content=\"#186584\"");
+    expect(html).toContain("flutter_bootstrap.js");
+    expect(html).not.toContain("id=\"app-loading-cover\"");
   });
 });
 

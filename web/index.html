@@ -60,7 +60,20 @@
   <!-- Google Maps JavaScript API -->
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAAhFK9QYxOlbI3ySWTmoFIJKLAl8CL-qo&loading=async"></script>
 
-  <meta name="theme-color" content="#000000" />
+  <!-- Match SplashScreen primary until Flutter paints (avoids white flash). -->
+  <meta name="theme-color" content="#186584" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#8ECFF2" media="(prefers-color-scheme: dark)" />
+  <style>
+    html, body {
+      background: #186584;
+      margin: 0;
+    }
+    @media (prefers-color-scheme: dark) {
+      html, body {
+        background: #8ECFF2;
+      }
+    }
+  </style>
   
   <!-- Identity verification: rel="me" links -->
   <link rel="me" href="https://www.instagram.com/parkourdotspot/" />
@@ -81,6 +94,8 @@
 </head>
 <body>
 
+  
+  
   
   <script src="flutter_bootstrap.js" async></script>
 </body>
