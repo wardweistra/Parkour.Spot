@@ -1,6 +1,7 @@
 const {
   hashApiKey,
   generateApiKey,
+  generateCalendarToken,
   serializeSpotForApi,
 } = require("../lib/api-helpers");
 
@@ -31,6 +32,13 @@ describe("generateApiKey", () => {
       keys.add(generateApiKey());
     }
     expect(keys.size).toBe(10);
+  });
+});
+
+describe("generateCalendarToken", () => {
+  it("returns string with psc_ prefix and 32 hex chars", () => {
+    const token = generateCalendarToken();
+    expect(token).toMatch(/^psc_[a-f0-9]{32}$/);
   });
 });
 

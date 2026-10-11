@@ -139,6 +139,40 @@ class AppLocalizationsFr extends AppLocalizations {
   String get myEventsLoadFailed => 'Impossible de charger vos événements.';
 
   @override
+  String get myEventsCalendarTitle => 'Ajouter à votre calendrier';
+
+  @override
+  String get myEventsCalendarDescription =>
+      'Abonnez-vous avec un lien privé. Vos événements « J’y vais » et « Intéressé » restent à jour dans Apple, Google, Outlook et d’autres apps de calendrier.';
+
+  @override
+  String get myEventsCalendarCopyLink => 'Copier le lien du calendrier';
+
+  @override
+  String get myEventsCalendarOpenSubscribe => 'Ouvrir dans l’app calendrier';
+
+  @override
+  String get myEventsCalendarRegenerate => 'Régénérer le lien…';
+
+  @override
+  String get myEventsCalendarCopied => 'Lien du calendrier copié';
+
+  @override
+  String get myEventsCalendarFailed =>
+      'Impossible d’obtenir votre lien de calendrier. Réessayez.';
+
+  @override
+  String get myEventsCalendarRegenerateTitle =>
+      'Régénérer le lien du calendrier ?';
+
+  @override
+  String get myEventsCalendarRegenerateBody =>
+      'Votre ancien lien de calendrier ne fonctionnera plus. Les calendriers déjà abonnés cesseront de se mettre à jour jusqu’à ce que vous ajoutiez le nouveau lien.';
+
+  @override
+  String get myEventsCalendarRegenerateConfirm => 'Régénérer le lien';
+
+  @override
   String get spotListsHubSignInPrompt =>
       'Connectez-vous pour voir et gérer vos listes';
 

@@ -167,6 +167,46 @@
   "@myEventsLoadFailed": {
     "description": "Error state on My events"
   },
+  "myEventsCalendarTitle": "Add to your calendar",
+  "@myEventsCalendarTitle": {
+    "description": "My events section for secret iCal subscribe URL"
+  },
+  "myEventsCalendarDescription": "Subscribe with a private link. Your Going and Interested events stay updated in Apple, Google, Outlook, and other calendar apps.",
+  "@myEventsCalendarDescription": {
+    "description": "Explains the live calendar feed on My events"
+  },
+  "myEventsCalendarCopyLink": "Copy calendar link",
+  "@myEventsCalendarCopyLink": {
+    "description": "Primary button to copy the iCal subscribe URL"
+  },
+  "myEventsCalendarOpenSubscribe": "Open in calendar app",
+  "@myEventsCalendarOpenSubscribe": {
+    "description": "Secondary action using webcal:// for Apple-style subscribe"
+  },
+  "myEventsCalendarRegenerate": "Regenerate link…",
+  "@myEventsCalendarRegenerate": {
+    "description": "Secondary action to rotate the calendar feed token"
+  },
+  "myEventsCalendarCopied": "Calendar link copied",
+  "@myEventsCalendarCopied": {
+    "description": "SnackBar after copying the calendar subscribe URL"
+  },
+  "myEventsCalendarFailed": "Could not get your calendar link. Try again.",
+  "@myEventsCalendarFailed": {
+    "description": "SnackBar when get/create or regenerate calendar feed fails"
+  },
+  "myEventsCalendarRegenerateTitle": "Regenerate calendar link?",
+  "@myEventsCalendarRegenerateTitle": {
+    "description": "Confirm dialog title before rotating calendar feed token"
+  },
+  "myEventsCalendarRegenerateBody": "Your previous calendar link will stop working. Calendars already subscribed will stop updating until you add the new link.",
+  "@myEventsCalendarRegenerateBody": {
+    "description": "Strong warning that regenerating invalidates the old feed URL"
+  },
+  "myEventsCalendarRegenerateConfirm": "Regenerate link",
+  "@myEventsCalendarRegenerateConfirm": {
+    "description": "Destructive confirm button for regenerating calendar feed"
+  },
   "spotListsHubSignInPrompt": "Sign in to view and manage your lists",
   "@spotListsHubSignInPrompt": {
     "description": "My spots: prompt when signed out"

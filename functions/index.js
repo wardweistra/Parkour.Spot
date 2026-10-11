@@ -248,6 +248,13 @@ const {
   recomputeAllEventInterestAggregates,
 } = require("./lib/event-interest-stats");
 const {
+  getOrCreateCalendarFeed,
+  regenerateCalendarFeed,
+  resolveUserIdFromCalendarToken,
+  extractCalendarTokenFromPath,
+  buildIcsForUser,
+} = require("./lib/user-calendar-feed");
+const {
   computeSpotRatingAggregates,
 } = require("./lib/spot-rating-stats");
 
@@ -11603,6 +11610,117 @@ exports.regenerateApiClientKey = onCall({region: "europe-west1"}, async (request
     throw new Error(`Failed to regenerate API key: ${error.message}`);
   }
 });
+
+/**
+ * Get or create the signed-in user's secret calendar subscription URL.
+ */
+exports.getOrCreateMyCalendarFeed = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      if (!request.auth || !request.auth.uid) {
+        throw new HttpsError(
+            "unauthenticated",
+            "Sign in to get your calendar feed.",
+        );
+      }
+      try {
+        const result = await getOrCreateCalendarFeed(
+            db,
+            FieldValue,
+            request.auth.uid,
+        );
+        return {
+          url: result.url,
+          created: result.created,
+        };
+      } catch (error) {
+        console.error("getOrCreateMyCalendarFeed error:", error);
+        if (error instanceof HttpsError) throw error;
+        throw new HttpsError(
+            "internal",
+            `Failed to get calendar feed: ${error.message}`,
+        );
+      }
+    },
+);
+
+/**
+ * Rotate the signed-in user's calendar feed token (invalidates the previous URL).
+ */
+exports.regenerateMyCalendarFeed = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      if (!request.auth || !request.auth.uid) {
+        throw new HttpsError(
+            "unauthenticated",
+            "Sign in to regenerate your calendar feed.",
+        );
+      }
+      try {
+        const result = await regenerateCalendarFeed(
+            db,
+            FieldValue,
+            request.auth.uid,
+        );
+        return {url: result.url};
+      } catch (error) {
+        console.error("regenerateMyCalendarFeed error:", error);
+        if (error instanceof HttpsError) throw error;
+        throw new HttpsError(
+            "internal",
+            `Failed to regenerate calendar feed: ${error.message}`,
+        );
+      }
+    },
+);
+
+/**
+ * Serve a user's Going/Interested events as a secret iCal feed.
+ * GET /calendar/{token}.ics
+ */
+exports.serveUserCalendarFeed = onRequest(
+    {
+      region: "europe-west1",
+      cors: true,
+    },
+    async (req, res) => {
+      try {
+        if (req.method !== "GET" && req.method !== "HEAD") {
+          res.status(405).set("Allow", "GET, HEAD").send("Method not allowed");
+          return;
+        }
+
+        const path = (req.path || req.url || "/").split("?")[0];
+        const token = extractCalendarTokenFromPath(path);
+        if (!token) {
+          res.status(404).type("text/plain").send("Calendar not found");
+          return;
+        }
+
+        const userId = await resolveUserIdFromCalendarToken(db, token);
+        if (!userId) {
+          res.status(404).type("text/plain").send("Calendar not found");
+          return;
+        }
+
+        const ics = await buildIcsForUser(db, userId);
+        res.status(200)
+            .set({
+              "Content-Type": "text/calendar; charset=utf-8",
+              "Cache-Control": "private, max-age=300",
+              "Content-Disposition": "inline; filename=\"parkourspot-my-events.ics\"",
+            });
+        if (req.method === "HEAD") {
+          res.end();
+          return;
+        }
+        res.send(ics);
+      } catch (error) {
+        console.error("serveUserCalendarFeed error:", error);
+        res.status(500).type("text/plain").send("Failed to build calendar");
+      }
+    },
+);
 
 /**
  * HTTP function to serve sitemaps on-demand

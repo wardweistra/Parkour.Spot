@@ -48,6 +48,10 @@
           "function": "getSpotByApi"
         },
         {
+          "source": "/calendar/**",
+          "function": "serveUserCalendarFeed"
+        },
+        {
           "source": "/spot/**",
           "function": "spotPage"
         },

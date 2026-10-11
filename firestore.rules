@@ -772,6 +772,14 @@ service cloud.firestore {
       }
     }
 
+    // Per-user calendar feed secrets — Admin SDK / callables only
+    match /calendarFeeds/{userId} {
+      allow read, write: if false;
+    }
+    match /calendarFeedByToken/{tokenHash} {
+      allow read, write: if false;
+    }
+
     // SpotJumpflixVideos collection - Jumpflix video IDs linked to spots (nightly import)
     // Public read so app can show "Watch on Jumpflix" for spots; only Cloud Functions write
     match /spotJumpflixVideos/{spotId} {

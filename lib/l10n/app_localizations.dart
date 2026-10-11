@@ -334,6 +334,66 @@ abstract class AppLocalizations {
   /// **'Could not load your events.'**
   String get myEventsLoadFailed;
 
+  /// My events section for secret iCal subscribe URL
+  ///
+  /// In en, this message translates to:
+  /// **'Add to your calendar'**
+  String get myEventsCalendarTitle;
+
+  /// Explains the live calendar feed on My events
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe with a private link. Your Going and Interested events stay updated in Apple, Google, Outlook, and other calendar apps.'**
+  String get myEventsCalendarDescription;
+
+  /// Primary button to copy the iCal subscribe URL
+  ///
+  /// In en, this message translates to:
+  /// **'Copy calendar link'**
+  String get myEventsCalendarCopyLink;
+
+  /// Secondary action using webcal:// for Apple-style subscribe
+  ///
+  /// In en, this message translates to:
+  /// **'Open in calendar app'**
+  String get myEventsCalendarOpenSubscribe;
+
+  /// Secondary action to rotate the calendar feed token
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate link…'**
+  String get myEventsCalendarRegenerate;
+
+  /// SnackBar after copying the calendar subscribe URL
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar link copied'**
+  String get myEventsCalendarCopied;
+
+  /// SnackBar when get/create or regenerate calendar feed fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not get your calendar link. Try again.'**
+  String get myEventsCalendarFailed;
+
+  /// Confirm dialog title before rotating calendar feed token
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate calendar link?'**
+  String get myEventsCalendarRegenerateTitle;
+
+  /// Strong warning that regenerating invalidates the old feed URL
+  ///
+  /// In en, this message translates to:
+  /// **'Your previous calendar link will stop working. Calendars already subscribed will stop updating until you add the new link.'**
+  String get myEventsCalendarRegenerateBody;
+
+  /// Destructive confirm button for regenerating calendar feed
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate link'**
+  String get myEventsCalendarRegenerateConfirm;
+
   /// My spots: prompt when signed out
   ///
   /// In en, this message translates to:

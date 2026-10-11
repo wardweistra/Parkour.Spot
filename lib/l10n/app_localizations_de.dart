@@ -141,6 +141,39 @@ class AppLocalizationsDe extends AppLocalizations {
   String get myEventsLoadFailed => 'Deine Events konnten nicht geladen werden.';
 
   @override
+  String get myEventsCalendarTitle => 'Zu deinem Kalender hinzufügen';
+
+  @override
+  String get myEventsCalendarDescription =>
+      'Abonniere mit einem privaten Link. Deine Events mit Zusagen und Interesse bleiben in Apple, Google, Outlook und anderen Kalender-Apps aktuell.';
+
+  @override
+  String get myEventsCalendarCopyLink => 'Kalenderlink kopieren';
+
+  @override
+  String get myEventsCalendarOpenSubscribe => 'In Kalender-App öffnen';
+
+  @override
+  String get myEventsCalendarRegenerate => 'Link neu erzeugen…';
+
+  @override
+  String get myEventsCalendarCopied => 'Kalenderlink kopiert';
+
+  @override
+  String get myEventsCalendarFailed =>
+      'Kalenderlink konnte nicht geladen werden. Bitte erneut versuchen.';
+
+  @override
+  String get myEventsCalendarRegenerateTitle => 'Kalenderlink neu erzeugen?';
+
+  @override
+  String get myEventsCalendarRegenerateBody =>
+      'Dein bisheriger Kalenderlink funktioniert dann nicht mehr. Bereits abonnierte Kalender werden erst wieder aktualisiert, wenn du den neuen Link hinzufügst.';
+
+  @override
+  String get myEventsCalendarRegenerateConfirm => 'Link neu erzeugen';
+
+  @override
   String get spotListsHubSignInPrompt =>
       'Melde dich an, um deine Listen anzusehen und zu verwalten';
 

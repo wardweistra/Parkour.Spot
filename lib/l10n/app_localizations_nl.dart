@@ -139,6 +139,39 @@ class AppLocalizationsNl extends AppLocalizations {
   String get myEventsLoadFailed => 'Je events konden niet worden geladen.';
 
   @override
+  String get myEventsCalendarTitle => 'Toevoegen aan je agenda';
+
+  @override
+  String get myEventsCalendarDescription =>
+      'Abonneer met een privélink. Je events waarop je gaat of geïnteresseerd bent blijven bijgewerkt in Apple, Google, Outlook en andere agenda-apps.';
+
+  @override
+  String get myEventsCalendarCopyLink => 'Agendalink kopiëren';
+
+  @override
+  String get myEventsCalendarOpenSubscribe => 'Openen in agenda-app';
+
+  @override
+  String get myEventsCalendarRegenerate => 'Link opnieuw genereren…';
+
+  @override
+  String get myEventsCalendarCopied => 'Agendalink gekopieerd';
+
+  @override
+  String get myEventsCalendarFailed =>
+      'Kon je agendalink niet ophalen. Probeer het opnieuw.';
+
+  @override
+  String get myEventsCalendarRegenerateTitle => 'Agendalink opnieuw genereren?';
+
+  @override
+  String get myEventsCalendarRegenerateBody =>
+      'Je vorige agendalink werkt dan niet meer. Agenda\'s die al geabonneerd zijn, worden pas weer bijgewerkt nadat je de nieuwe link toevoegt.';
+
+  @override
+  String get myEventsCalendarRegenerateConfirm => 'Link opnieuw genereren';
+
+  @override
   String get spotListsHubSignInPrompt =>
       'Log in om je lijsten te bekijken en te beheren';
 
