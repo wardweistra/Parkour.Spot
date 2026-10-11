@@ -130,6 +130,7 @@ describe("generateHtmlBody with seoContent", () => {
     expect(body).toContain("id=\"seo-content\"");
     expect(body).toContain("id=\"app-loading-cover\"");
     expect(body).toContain("background: #186584");
+    expect(body).toContain("html, body");
     expect(body).toContain("flutter_bootstrap.js");
     expect(body).toContain("dismissSeoShell");
     expect(body).toContain("#app-loading-cover { display: none !important; }");

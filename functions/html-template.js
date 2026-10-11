@@ -303,6 +303,11 @@ function renderSeoContentHtml(seoContent, canonicalHost = "parkour.spot") {
 function seoContentBootScripts() {
   return `
   <style>
+    /* Keep page chrome teal between cover dismiss and first Flutter frame. */
+    html, body {
+      background: #186584;
+      margin: 0;
+    }
     #app-loading-cover {
       position: fixed;
       inset: 0;
@@ -310,6 +315,9 @@ function seoContentBootScripts() {
       background: #186584;
     }
     @media (prefers-color-scheme: dark) {
+      html, body {
+        background: #8ECFF2;
+      }
       #app-loading-cover {
         background: #8ECFF2;
       }
