@@ -1,6 +1,9 @@
 /** App wordmark. U+00B7 MIDDLE DOT, matching parkour.spot. */
 export const SITE_NAME = "Parkour·Spot";
 
+/** Document title for the About home page and suffix for other About pages. */
+export const ABOUT_SITE_TITLE = `About ${SITE_NAME}`;
+
 /** Same GA4 property and web stream as the app; filter by hostname. */
 export const GA_MEASUREMENT_ID = "G-861J61HFR8";
 

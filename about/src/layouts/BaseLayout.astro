@@ -1,6 +1,11 @@
 ---
 import "../styles/global.css";
-import {DEFAULT_OG_IMAGE, GA_MEASUREMENT_ID, SITE_NAME} from "../lib/brand";
+import {
+  ABOUT_SITE_TITLE,
+  DEFAULT_OG_IMAGE,
+  GA_MEASUREMENT_ID,
+  SITE_NAME,
+} from "../lib/brand";
 import {APP_DEFINITION, formatUpdatedAt} from "../lib/citation";
 import {loadAboutIndex, useFixtures} from "../lib/snapshots";
 
@@ -35,9 +40,9 @@ const aboutIndex = await loadAboutIndex();
 const updatedLabel = formatUpdatedAt(aboutIndex.generatedAt);
 const canonical = new URL(canonicalPath, Astro.site).toString();
 const pageTitle =
-  title.includes(SITE_NAME)
+  title === ABOUT_SITE_TITLE || title.endsWith(` · ${ABOUT_SITE_TITLE}`)
     ? title
-    : `${title} · ${SITE_NAME}`;
+    : `${title} · ${ABOUT_SITE_TITLE}`;
 const analyticsEnabled = import.meta.env.PROD && !useFixtures();
 ---
 

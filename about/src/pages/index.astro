@@ -4,7 +4,7 @@ import CountryFlag from "../components/CountryFlag.astro";
 import OpenInApp from "../components/OpenInApp.astro";
 import Screenshot from "../components/Screenshot.astro";
 import StatGrid from "../components/StatGrid.astro";
-import {SITE_NAME} from "../lib/brand";
+import {ABOUT_SITE_TITLE, SITE_NAME} from "../lib/brand";
 import {
   APP_DEFINITION,
   MISSION,
@@ -46,7 +46,7 @@ const description = headline
 ---
 
 <BaseLayout
-  title={SITE_NAME}
+  title={ABOUT_SITE_TITLE}
   description={description}
   canonicalPath="/"
   jsonLd={buildSiteGraph(stats)}
