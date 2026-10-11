@@ -8,7 +8,7 @@ import {
 } from "./citation";
 import type {ScreenshotId} from "./screenshots";
 import type {AboutStats} from "./types";
-import {OPEN_SOURCE_URL, appHomeUrl, appPath} from "./urls";
+import {CONTACT_EMAIL, OPEN_SOURCE_URL, appHomeUrl, appPath} from "./urls";
 
 /**
  * Shared copy for /how-it-works, its FAQPage schema, and the llms.txt task index.
@@ -142,8 +142,6 @@ function activityQuestion(stats: AboutStats): HowItWorksQuestion[] {
     paragraphs,
   }];
 }
-
-const CONTACT_EMAIL = "parkour.spot@wardweistra.nl";
 
 const explore = appPath("/explore");
 const addSpot = appPath("/spots/add");

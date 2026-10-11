@@ -1,6 +1,25 @@
 export const APP_ORIGIN = "https://parkour.spot";
 export const ABOUT_ORIGIN = "https://about.parkour.spot";
 export const OPEN_SOURCE_URL = "https://github.com/wardweistra/Parkour.Spot";
+export const JUMPFLIX_URL = "https://www.jumpflix.tv";
+export const CONTACT_EMAIL = "parkour.spot@wardweistra.nl";
+
+export function instagramUrl(handle: string): string {
+  const trimmed = handle.trim().replace(/^@/, "");
+  return `https://www.instagram.com/${trimmed}/`;
+}
+
+export function aboutCommunityPath(): string {
+  return "/community";
+}
+
+export function aboutSpotSourcesPath(): string {
+  return "/community/spot-sources";
+}
+
+export function aboutEventSourcesPath(): string {
+  return "/community/event-sources";
+}
 
 export function appHomeUrl(): string {
   return APP_ORIGIN;

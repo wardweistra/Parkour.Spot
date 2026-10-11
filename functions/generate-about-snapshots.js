@@ -12,6 +12,7 @@ const {
   withResolvedLocationFallback,
 } = require("./lib/about-snapshots");
 const {activityWindowStart, buildAboutStats} = require("./lib/about-stats");
+const {buildCommunitySources} = require("./lib/about-community-sources");
 
 const db = getFirestore();
 
@@ -21,7 +22,8 @@ const GITHUB_DISPATCH_TYPE = "about-rebuild";
 /**
  * Write snapshot docs in batches.
  * @param {Object} payload
- * @return {Promise<{countries: number, cities: number, events: number}>}
+ * @return {Promise<{countries: number, cities: number, events: number,
+ *   spotSources: number, eventSources: number}>}
  */
 async function writeAboutSnapshots(payload) {
   const {
@@ -30,10 +32,15 @@ async function writeAboutSnapshots(payload) {
     countryDocs,
     cityDocs,
     eventDetails,
+    communitySources,
   } = payload;
 
   await db.collection("snapshots").doc("about-index").set(aboutIndex);
   await db.collection("snapshots").doc("about-events-index").set(eventsIndex);
+  if (communitySources) {
+    await db.collection("snapshots").doc("about-community-sources")
+        .set(communitySources);
+  }
 
   // Ensure parent doc exists for subcollections
   await db.collection("snapshots").doc("about").set({
@@ -69,6 +76,8 @@ async function writeAboutSnapshots(payload) {
     countries: countryDocs.size,
     cities: cityDocs.size,
     events: eventDetails.size,
+    spotSources: communitySources?.spotSources?.length ?? 0,
+    eventSources: communitySources?.eventSources?.length ?? 0,
   };
 }
 
@@ -251,7 +260,31 @@ async function generateAboutSnapshots(options = {}) {
     now,
   });
   console.log("About stats:", assembled.aboutIndex.stats);
-  const counts = await writeAboutSnapshots(assembled);
+
+  console.log("About snapshots: fetching sync sources...");
+  const [spotSourcesSnap, eventSourcesSnap] = await Promise.all([
+    db.collection("syncSources").get(),
+    db.collection("eventSyncSources").get(),
+  ]);
+  const communitySources = buildCommunitySources({
+    spotSourcesSnap,
+    eventSourcesSnap,
+    spots,
+    events,
+    now,
+  });
+  console.log(
+      "About community sources:",
+      communitySources.spotSources.length,
+      "spot,",
+      communitySources.eventSources.length,
+      "event",
+  );
+
+  const counts = await writeAboutSnapshots({
+    ...assembled,
+    communitySources,
+  });
 
   console.log("About snapshots written:", counts);
   return {

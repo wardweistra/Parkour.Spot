@@ -1,0 +1,80 @@
+---
+import type {CommunitySource} from "../lib/types";
+import {countNoun} from "../lib/citation";
+import {instagramUrl} from "../lib/urls";
+
+interface Props {
+  sources: CommunitySource[];
+  countKey?: "spotCount" | "eventCount";
+  countNounBase?: string;
+}
+
+const {
+  sources,
+  countKey,
+  countNounBase = "spot",
+} = Astro.props;
+
+function countLabel(source: CommunitySource): string | null {
+  if (!countKey) return null;
+  const n = Number(source[countKey]);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return countNoun(n, countNounBase);
+}
+---
+
+{
+  sources.length === 0 ? (
+    <p class="empty">Source list is updating. Check back after the next refresh.</p>
+  ) : (
+    <ul class="stack-list source-list">
+      {sources.map((source) => {
+        const count = countLabel(source);
+        const ig = source.instagramHandle;
+        const href = source.publicUrl;
+        return (
+          <li class:list={["stack-list__card", "source-list__row", {"source-list__row--linked": href}]}>
+            <div class="source-list__body">
+              <h3 class="stack-list__title">
+                {href ? (
+                  <a
+                    class="stack-list__link"
+                    href={href}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    {source.name}
+                  </a>
+                ) : (
+                  source.name
+                )}
+              </h3>
+              {source.description && (
+                <p class="stack-list__place">{source.description}</p>
+              )}
+              {(count || ig) && (
+                <p class="stack-list__meta stack-list__meta--quiet">
+                  {count}
+                  {count && ig && " · "}
+                  {ig && (
+                    href ? (
+                      <span>@{ig}</span>
+                    ) : (
+                      <a
+                        href={instagramUrl(ig)}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        @{ig}
+                      </a>
+                    )
+                  )}
+                </p>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  )
+}

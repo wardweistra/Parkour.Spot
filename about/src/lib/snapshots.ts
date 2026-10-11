@@ -1,11 +1,16 @@
 import {readFile, readdir} from "node:fs/promises";
 import path from "node:path";
 import {resolveSpotCount} from "./citation";
+import {
+  emptyCommunitySources,
+  normalizeCommunitySources,
+} from "./community";
 import type {
   AboutIndex,
   AboutStats,
   CityRef,
   CitySnapshot,
+  CommunitySources,
   CountrySnapshot,
   EventDetail,
   EventsIndex,
@@ -114,11 +119,13 @@ async function getDb() {
  * Live layout under Firestore:
  * - snapshots/about-index
  * - snapshots/about-events-index
+ * - snapshots/about-community-sources
  * - snapshots/about/countries/{cc}
  * - snapshots/about/cities/{cc}_{citySlug}
  * - snapshots/about/events/{slug}
  */
 let aboutIndexPromise: Promise<AboutIndex> | null = null;
+let communitySourcesPromise: Promise<CommunitySources> | null = null;
 
 export function loadAboutIndex(): Promise<AboutIndex> {
   aboutIndexPromise ??= fetchAboutIndex();
@@ -289,6 +296,30 @@ export async function loadEventsIndex(): Promise<EventsIndex> {
   const snap = await db.collection("snapshots").doc("about-events-index").get();
   if (!snap.exists) return emptyEventsIndex();
   return normalizeEventsIndex(snap.data() as Partial<EventsIndex>);
+}
+
+export function loadCommunitySources(): Promise<CommunitySources> {
+  communitySourcesPromise ??= fetchCommunitySources();
+  return communitySourcesPromise;
+}
+
+async function fetchCommunitySources(): Promise<CommunitySources> {
+  if (useFixtures()) {
+    try {
+      return normalizeCommunitySources(
+        await readFixtureJson<CommunitySources>("about-community-sources.json"),
+      );
+    } catch {
+      return emptyCommunitySources();
+    }
+  }
+  const db = await getDb();
+  const snap = await db
+    .collection("snapshots")
+    .doc("about-community-sources")
+    .get();
+  if (!snap.exists) return emptyCommunitySources();
+  return normalizeCommunitySources(snap.data() as Partial<CommunitySources>);
 }
 
 async function withLiveInterestCounts(

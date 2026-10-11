@@ -1,0 +1,50 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import SourceList from "../../components/SourceList.astro";
+import {countNoun, metaDescription} from "../../lib/citation";
+import {SITE_NAME} from "../../lib/brand";
+import {loadCommunitySources} from "../../lib/snapshots";
+import {
+  CONTACT_EMAIL,
+  aboutCommunityPath,
+} from "../../lib/urls";
+
+const community = await loadCommunitySources();
+const sources = community.eventSources;
+
+const pageTitle = "Event sources";
+const description = metaDescription(
+  sources.length > 0
+    ? `${countNoun(sources.length, "public event calendar")} connected to ${SITE_NAME}.`
+    : `Public event calendars connected to ${SITE_NAME}.`,
+);
+---
+
+<BaseLayout
+  title={pageTitle}
+  description={description}
+  canonicalPath="/community/event-sources"
+>
+  <nav class="hub-crumb" aria-label="Breadcrumb">
+    <a href={aboutCommunityPath()}>Community</a>
+    <span class="hub-crumb__sep" aria-hidden="true">/</span>
+    <span>{pageTitle}</span>
+  </nav>
+  <h1 class="page-title">{pageTitle}</h1>
+  <p class="page-lede">
+    {
+      sources.length > 0
+        ? `${countNoun(sources.length, "calendar")} that help keep jams, workshops, and gatherings on the map. Names link out when a public page is known.`
+        : "Calendars that help keep jams, workshops, and gatherings on the map. This catalog refreshes with each nightly snapshot."
+    }
+  </p>
+
+  <SourceList sources={sources} countKey="eventCount" countNounBase="event" />
+
+  <p class="section-cta">
+    Run a public parkour calendar? Write to{" "}
+    <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+    {" "}
+    and we can look at connecting it.
+  </p>
+</BaseLayout>

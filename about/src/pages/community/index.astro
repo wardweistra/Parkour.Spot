@@ -1,0 +1,224 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import OpenInApp from "../../components/OpenInApp.astro";
+import SourceList from "../../components/SourceList.astro";
+import StatGrid from "../../components/StatGrid.astro";
+import {
+  COMMUNITY_PEOPLE,
+  highlightSources,
+} from "../../lib/community";
+import {
+  activityFacts,
+  countNoun,
+  metaDescription,
+} from "../../lib/citation";
+import {SITE_NAME} from "../../lib/brand";
+import {loadCommunitySources, loadStats} from "../../lib/snapshots";
+import {
+  JUMPFLIX_URL,
+  OPEN_SOURCE_URL,
+  aboutEventSourcesPath,
+  aboutSpotSourcesPath,
+  appHomeUrl,
+  instagramUrl,
+} from "../../lib/urls";
+
+const stats = await loadStats();
+const community = await loadCommunitySources();
+const recent = activityFacts(stats);
+const windowDays = stats.activityWindowDays ?? 30;
+
+const spotCount = community.spotSources.length;
+const eventCount = community.eventSources.length;
+const spotHighlights = highlightSources(community.spotSources, 4, "spotCount");
+const eventHighlights = highlightSources(community.eventSources, 3, "eventCount");
+
+const pageTitle = "Community";
+const description = metaDescription(
+  `Who builds ${SITE_NAME}: people who train and contribute, community spot and event sources, open-source code, and peer tools like Jumpflix.`,
+);
+
+const sections = [
+  {id: "direct-contributions", title: "Direct contributions"},
+  {id: "spot-sources", title: "Spot sources"},
+  {id: "event-sources", title: "Event sources"},
+  {id: "code", title: "Code"},
+  {id: "people", title: "People"},
+  {id: "community-tools", title: "Community tools"},
+];
+---
+
+<BaseLayout
+  title={pageTitle}
+  description={description}
+  canonicalPath="/community"
+>
+  <h1 class="page-title">{pageTitle}</h1>
+  <p class="page-lede">
+    {SITE_NAME} is built by and for the parkour community — people who train,
+    share lists, look after the map, and keep the code open.
+  </p>
+  <nav class="chip-row on-this-page" aria-label="On this page">
+    {
+      sections.map((section) => (
+        <a class="chip" href={`#${section.id}`}>{section.title}</a>
+      ))
+    }
+  </nav>
+
+  <section class="section" id="direct-contributions" aria-labelledby="direct-contributions-title">
+    <h2 class="section__title" id="direct-contributions-title">Direct contributions</h2>
+    <div class="prose">
+      <p>
+        Every day, people check in at spots, plan sessions, add places, and rate
+        them so the next person can train with more confidence.
+      </p>
+    </div>
+    {
+      recent.length > 0 && (
+        <>
+          <p class="muted">In the last {windowDays} days</p>
+          <StatGrid
+            facts={recent}
+            label={`Activity in the last ${windowDays} days`}
+            compact
+          />
+        </>
+      )
+    }
+    <p class="section-cta">
+      <a href="/how-it-works#community">How contributing on the map works</a>
+    </p>
+  </section>
+
+  <section class="section" id="spot-sources" aria-labelledby="spot-sources-title">
+    <h2 class="section__title" id="spot-sources-title">Spot sources</h2>
+    <div class="prose">
+      <p>
+        {
+          spotCount > 0
+            ? `${countNoun(spotCount, "community spot list")} feed the map alongside spots people add in the app.`
+            : "Community spot lists feed the map alongside spots people add in the app. The full catalog refreshes with each nightly snapshot."
+        }
+      </p>
+    </div>
+    {
+      spotHighlights.length > 0 && (
+        <SourceList sources={spotHighlights} countKey="spotCount" countNounBase="spot" />
+      )
+    }
+    <p class="section-cta">
+      {
+        spotCount > 0 ? (
+          <a href={aboutSpotSourcesPath()}>
+            Browse all {countNoun(spotCount, "spot source")}
+          </a>
+        ) : (
+          <a href="/how-it-works#add-many-spots">How to share a spot list</a>
+        )
+      }
+    </p>
+  </section>
+
+  <section class="section" id="event-sources" aria-labelledby="event-sources-title">
+    <h2 class="section__title" id="event-sources-title">Event sources</h2>
+    <div class="prose">
+      <p>
+        {
+          eventCount > 0
+            ? `${countNoun(eventCount, "public calendar")} help keep jams, workshops, and gatherings on the map.`
+            : "Public calendars help keep jams, workshops, and gatherings on the map. The full catalog refreshes with each nightly snapshot."
+        }
+      </p>
+    </div>
+    {
+      eventHighlights.length > 0 && (
+        <SourceList
+          sources={eventHighlights}
+          countKey="eventCount"
+          countNounBase="event"
+        />
+      )
+    }
+    <p class="section-cta">
+      {
+        eventCount > 0 ? (
+          <a href={aboutEventSourcesPath()}>
+            Browse all {countNoun(eventCount, "event source")}
+          </a>
+        ) : (
+          <a href="/how-it-works#find-events-near-me">How events show up on the map</a>
+        )
+      }
+    </p>
+  </section>
+
+  <section class="section prose" id="code" aria-labelledby="code-title">
+    <h2 class="section__title" id="code-title">Code</h2>
+    <p>
+      The app is open source so the community’s map knowledge is not locked to one
+      product. Spot data stays free and open too.
+    </p>
+    <p class="section-cta">
+      <a href={OPEN_SOURCE_URL} rel="noopener noreferrer" target="_blank">
+        Contribute on GitHub
+      </a>
+    </p>
+  </section>
+
+  <section class="section prose" id="people" aria-labelledby="people-title">
+    <h2 class="section__title" id="people-title">People</h2>
+    <p>Major contributions by:</p>
+    <ul class="people-list">
+      {
+        COMMUNITY_PEOPLE.map((person) => (
+          <li>
+            <a
+              href={instagramUrl(person.instagramHandle)}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {person.name}
+            </a>
+            {person.role ? ` (${person.role.toLowerCase()})` : ""}
+          </li>
+        ))
+      }
+    </ul>
+    <p>And many others who add spots, photos, ratings, and care.</p>
+  </section>
+
+  <section class="section" id="community-tools" aria-labelledby="community-tools-title">
+    <h2 class="section__title" id="community-tools-title">Community tools</h2>
+    <div class="prose">
+      <p>
+        Peer tools from the parkour world that connect with {SITE_NAME} — not ads,
+        only real relationships.
+      </p>
+    </div>
+    <ul class="stack-list source-list">
+      <li class="stack-list__card source-list__row source-list__row--linked">
+        <div class="source-list__body">
+          <h3 class="stack-list__title">
+            <a
+              class="stack-list__link"
+              href={JUMPFLIX_URL}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Jumpflix
+            </a>
+          </h3>
+          <p class="stack-list__place">
+            Parkour video library. When a spot has been featured there, its page
+            can show those clips under “As seen in Jumpflix.”
+          </p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <div class="hub-open">
+    <OpenInApp href={appHomeUrl()} />
+  </div>
+</BaseLayout>

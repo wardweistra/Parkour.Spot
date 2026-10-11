@@ -14,7 +14,7 @@ export default defineConfig({
     sitemap({
       filter: (page) => {
         const path = new URL(page).pathname;
-        return path !== "/blog" && path !== "/partners";
+        return path !== "/blog";
       },
     }),
   ],

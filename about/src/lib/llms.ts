@@ -72,6 +72,7 @@ export function buildLlmsTxt(input: {
     "",
     `- [${SITE_NAME}](${aboutAbsolute("/")}): What ${SITE_NAME} is, and which countries have place pages.`,
     `- [How ${SITE_NAME} works](${aboutAbsolute("/how-it-works")}): How to find spots and events, add them, keep lists, and train with the community.`,
+    `- [Community](${aboutAbsolute("/community")}): Spot and event sources, open-source code, people credits, and peer tools.`,
     `- [Events](${aboutAbsolute("/events")}): Upcoming public parkour events.`,
     "",
     "## Tasks",

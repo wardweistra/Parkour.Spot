@@ -1287,3 +1287,45 @@ img {
     font-size: 0.75rem;
   }
 }
+
+.section-cta {
+  margin: var(--space-md) 0 0;
+  max-width: var(--measure);
+  font-weight: 600;
+}
+
+.source-list__row {
+  grid-template-columns: 1fr;
+}
+
+.source-list__body {
+  min-width: 0;
+}
+
+.source-az {
+  margin: 0 0 var(--space-md);
+}
+
+.source-letter {
+  margin-block: var(--space-lg) var(--space-md);
+}
+
+.source-letter__mark {
+  margin: 0 0 var(--space-sm);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--color-primary);
+  scroll-margin-top: var(--space-lg);
+}
+
+.people-list {
+  margin: 0 0 var(--space-md);
+  padding-inline-start: 1.25rem;
+  max-width: var(--measure);
+}
+
+.people-list li {
+  margin-block: 0.25rem;
+}

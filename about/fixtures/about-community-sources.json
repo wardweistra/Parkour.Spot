@@ -1,0 +1,103 @@
+{
+  "generatedAt": "2026-10-11T12:00:00.000Z",
+  "spotSources": [
+    {
+      "id": "apex",
+      "name": "Apex Speed Run",
+      "publicUrl": "https://example.com/apex",
+      "description": "Community speed-run map shared with Parkour·Spot.",
+      "instagramHandle": null,
+      "spotCount": 420
+    },
+    {
+      "id": "berlin-crew",
+      "name": "Berlin training spots",
+      "publicUrl": null,
+      "description": null,
+      "instagramHandle": "berlin.parkour",
+      "spotCount": 38
+    },
+    {
+      "id": "czechia",
+      "name": "Czechia national list",
+      "publicUrl": "https://example.com/cz",
+      "description": "National spot list maintained by the local community.",
+      "instagramHandle": null,
+      "spotCount": 210
+    },
+    {
+      "id": "open-street",
+      "name": "OpenStreetMap parkour nodes",
+      "publicUrl": "https://www.openstreetmap.org",
+      "description": null,
+      "instagramHandle": null,
+      "spotCount": 55
+    },
+    {
+      "id": "sweden",
+      "name": "Sweden national list",
+      "publicUrl": null,
+      "description": "Spot list kept by Swedish parkour communities.",
+      "instagramHandle": null,
+      "spotCount": 180
+    },
+    {
+      "id": "urbn",
+      "name": "URBN Jumpers",
+      "publicUrl": "https://example.com/urbn",
+      "description": "Spot data donated by the URBN Jumpers team.",
+      "instagramHandle": null,
+      "spotCount": 95
+    },
+    {
+      "id": "zeta-spots",
+      "name": "Zeta weekend map",
+      "publicUrl": null,
+      "description": null,
+      "instagramHandle": null,
+      "spotCount": 12
+    },
+    {
+      "id": "9th-street",
+      "name": "9th Street spots",
+      "publicUrl": "https://example.com/9th",
+      "description": null,
+      "instagramHandle": null,
+      "spotCount": 7
+    }
+  ],
+  "eventSources": [
+    {
+      "id": "amsterdam-jams",
+      "name": "Amsterdam jam calendar",
+      "publicUrl": "https://example.com/ams-jams",
+      "description": "Public jam dates for the Amsterdam scene.",
+      "instagramHandle": null,
+      "eventCount": 4
+    },
+    {
+      "id": "jump-events",
+      "name": "Jump Events NL",
+      "publicUrl": "https://example.com/jump",
+      "description": null,
+      "instagramHandle": null,
+      "eventCount": 8
+    },
+    {
+      "id": "paris-sessions",
+      "name": "Paris sessions",
+      "publicUrl": null,
+      "description": "Workshops and gatherings in Paris.",
+      "instagramHandle": "paris.parkour",
+      "eventCount": 2
+    },
+    {
+      "id": "quiet-ics",
+      "name": "Quiet ICS feed",
+      "publicUrl": null,
+      "description": null,
+      "instagramHandle": null,
+      "eventCount": 0
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import SourceList from "../../components/SourceList.astro";
+import {groupSourcesByLetter} from "../../lib/community";
+import {countNoun, metaDescription} from "../../lib/citation";
+import {SITE_NAME} from "../../lib/brand";
+import {loadCommunitySources} from "../../lib/snapshots";
+import {
+  CONTACT_EMAIL,
+  aboutCommunityPath,
+} from "../../lib/urls";
+
+const community = await loadCommunitySources();
+const sources = community.spotSources;
+const groups = groupSourcesByLetter(sources);
+const letters = groups.map((group) => group.letter);
+
+const pageTitle = "Spot sources";
+const description = metaDescription(
+  sources.length > 0
+    ? `${countNoun(sources.length, "community spot list")} that feed the ${SITE_NAME} map.`
+    : `Community spot lists that feed the ${SITE_NAME} map.`,
+);
+---
+
+<BaseLayout
+  title={pageTitle}
+  description={description}
+  canonicalPath="/community/spot-sources"
+>
+  <nav class="hub-crumb" aria-label="Breadcrumb">
+    <a href={aboutCommunityPath()}>Community</a>
+    <span class="hub-crumb__sep" aria-hidden="true">/</span>
+    <span>{pageTitle}</span>
+  </nav>
+  <h1 class="page-title">{pageTitle}</h1>
+  <p class="page-lede">
+    {
+      sources.length > 0
+        ? `${countNoun(sources.length, "spot list")} shared by local communities and crews. Names link out when a public page is known.`
+        : "Spot lists shared by local communities and crews. This catalog refreshes with each nightly snapshot."
+    }
+  </p>
+
+  {
+    letters.length > 1 && (
+      <nav class="chip-row source-az" aria-label="Jump to letter">
+        {letters.map((letter) => (
+          <a class="chip" href={`#letter-${letter === "#" ? "other" : letter}`}>
+            {letter}
+          </a>
+        ))}
+      </nav>
+    )
+  }
+
+  {
+    groups.length === 0 ? (
+      <p class="empty">Source list is updating. Check back after the next refresh.</p>
+    ) : (
+      groups.map((group) => (
+        <section
+          class="section source-letter"
+          id={`letter-${group.letter === "#" ? "other" : group.letter}`}
+          aria-labelledby={`letter-title-${group.letter === "#" ? "other" : group.letter}`}
+        >
+          <h2
+            class="source-letter__mark"
+            id={`letter-title-${group.letter === "#" ? "other" : group.letter}`}
+          >
+            {group.letter}
+          </h2>
+          <SourceList
+            sources={group.sources}
+            countKey="spotCount"
+            countNounBase="spot"
+          />
+        </section>
+      ))
+    )
+  }
+
+  <p class="section-cta">
+    Keep a list of spots yourself?{" "}
+    <a href="/how-it-works#add-many-spots">Here is how to add it</a>
+    {" "}
+    (or write to{" "}
+    <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>).
+  </p>
+</BaseLayout>

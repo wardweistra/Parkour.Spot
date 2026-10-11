@@ -110,3 +110,20 @@ export type EventsIndex = {
   generatedAt: string;
   events: EventSummary[];
 };
+
+/** Public sync-source row for Community catalogs (no sync URLs). */
+export type CommunitySource = {
+  id: string;
+  name: string;
+  publicUrl: string | null;
+  description: string | null;
+  instagramHandle: string | null;
+  spotCount?: number;
+  eventCount?: number;
+};
+
+export type CommunitySources = {
+  generatedAt: string;
+  spotSources: CommunitySource[];
+  eventSources: CommunitySource[];
+};

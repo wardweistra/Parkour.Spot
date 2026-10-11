@@ -143,6 +143,12 @@ const analyticsEnabled = import.meta.env.PROD && !useFixtures();
               How it works
             </a>
             <a
+              href="/community"
+              aria-current={canonicalPath.startsWith("/community") ? "page" : undefined}
+            >
+              Community
+            </a>
+            <a
               href="/events"
               aria-current={canonicalPath.startsWith("/events") ? "page" : undefined}
             >
@@ -159,6 +165,8 @@ const analyticsEnabled = import.meta.env.PROD && !useFixtures();
           <p>
             By and for the parkour community ·
             <a href="/how-it-works">How it works</a>
+            ·
+            <a href="/community">Community</a>
             ·
             <a href="https://parkour.spot">Open the app</a>
           </p>
