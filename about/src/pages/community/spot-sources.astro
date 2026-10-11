@@ -5,10 +5,7 @@ import {groupSourcesByLetter} from "../../lib/community";
 import {countNoun, metaDescription} from "../../lib/citation";
 import {SITE_NAME} from "../../lib/brand";
 import {loadCommunitySources} from "../../lib/snapshots";
-import {
-  aboutCommunityPath,
-  aboutContactPath,
-} from "../../lib/urls";
+import {aboutCommunityPath} from "../../lib/urls";
 
 const community = await loadCommunitySources();
 const sources = community.spotSources;
@@ -82,9 +79,6 @@ const description = metaDescription(
 
   <p class="section-cta">
     Keep a list of spots yourself?{" "}
-    <a href="/how-it-works#add-many-spots">Here is how to add it</a>
-    {" "}
-    (or get in touch via{" "}
-    <a href={aboutContactPath()}>Contact</a>).
+    <a href="/how-it-works#add-many-spots">Here is how to add it</a>.
   </p>
 </BaseLayout>

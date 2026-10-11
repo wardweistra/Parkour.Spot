@@ -4,10 +4,7 @@ import SourceList from "../../components/SourceList.astro";
 import {countNoun, metaDescription} from "../../lib/citation";
 import {SITE_NAME} from "../../lib/brand";
 import {loadCommunitySources} from "../../lib/snapshots";
-import {
-  aboutCommunityPath,
-  aboutContactPath,
-} from "../../lib/urls";
+import {aboutCommunityPath} from "../../lib/urls";
 
 const community = await loadCommunitySources();
 const sources = community.eventSources;
@@ -42,9 +39,7 @@ const description = metaDescription(
   <SourceList sources={sources} countKey="eventCount" countNounBase="event" />
 
   <p class="section-cta">
-    Run a public parkour calendar? Get in touch via{" "}
-    <a href={aboutContactPath()}>Contact</a>
-    {" "}
-    and we can look at connecting it.
+    Run a public parkour calendar?{" "}
+    <a href="/how-it-works#add-many-events">Here is how to add it</a>.
   </p>
 </BaseLayout>

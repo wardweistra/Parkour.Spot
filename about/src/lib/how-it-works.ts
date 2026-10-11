@@ -297,6 +297,23 @@ export function howItWorksGroups(stats: AboutStats): HowItWorksGroup[] {
           ],
         ],
       },
+      {
+        id: "add-many-events",
+        question:
+          "I have a parkour event calendar I want to add. How do I add it?",
+        paragraphs: [
+          [
+            "If you publish a public calendar we can follow — for example an ICS feed, or a calendar on Wix or Squarespace — get in touch via ",
+            {href: aboutContactPath(), label: "Contact"},
+            " and we can look at connecting it.",
+          ],
+          [
+            "For a single jam or session, ",
+            {href: addEvent, label: "add the event"},
+            " yourself.",
+          ],
+        ],
+      },
     ],
   },
   {
