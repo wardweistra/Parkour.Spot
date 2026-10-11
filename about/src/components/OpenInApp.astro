@@ -4,7 +4,7 @@ interface Props {
   label?: string;
 }
 
-const {href, label = "Open in app"} = Astro.props;
+const {href, label = "Open the app"} = Astro.props;
 ---
 
 <a class="btn btn--primary" href={href}>{label}</a>
