@@ -177,15 +177,28 @@ export function eventTimeLabel(event: EventSummary): string | null {
  * Full schedule line in the event's zone (matches the app):
  * date-only → "Friday, 17 October 2026"
  * timed → "Friday, 17 October 2026 · 19:30 BST"
+ * multi-day → "Thursday, 8 October 2026 – Monday, 12 October 2026"
+ * multi-day timed → same range, then start time and zone
  */
 export function formatEventWhen(event: EventSummary): string {
   const start = parseIso(event.startAt);
   if (!start) return "Date TBA";
   const zone = resolveZone(event.timeZone);
-  const datePart = new Intl.DateTimeFormat("en-GB", {
+  const days = eventDaySpan(event);
+  const dateFmt = new Intl.DateTimeFormat("en-GB", {
     timeZone: zone,
     dateStyle: "full",
-  }).format(start);
+  });
+  let datePart = dateFmt.format(start);
+  if (days.length > 1) {
+    const dayFmt = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "UTC",
+      dateStyle: "full",
+    });
+    const first = days[0]!;
+    const last = days[days.length - 1]!;
+    datePart = `${dayFmt.format(new Date(keyToUtc(first)))} – ${dayFmt.format(new Date(keyToUtc(last)))}`;
+  }
   if (event.isDateOnly) return datePart;
   const time = eventTimeLabel(event);
   if (!time) return datePart;

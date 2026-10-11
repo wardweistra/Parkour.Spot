@@ -1,12 +1,24 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import OpenInApp from "../../components/OpenInApp.astro";
 import CountryFlag from "../../components/CountryFlag.astro";
+import EventList from "../../components/EventList.astro";
+import OpenInApp from "../../components/OpenInApp.astro";
 import {formatEventWhen} from "../../lib/calendar";
-import {metaDescription} from "../../lib/citation";
+import {
+  countryInPhrase,
+  countryName,
+  eventInterestPushLine,
+  metaDescription,
+} from "../../lib/citation";
 import {buildEventJsonLd} from "../../lib/schema";
 import {listEventSlugs, loadCity, loadCountry, loadEvent} from "../../lib/snapshots";
-import {appEventUrl, cityHubKey, eventAreaHubLink} from "../../lib/urls";
+import {
+  aboutCityPath,
+  aboutCountryPath,
+  aboutEventsPath,
+  appEventUrl,
+  appSpotUrl,
+} from "../../lib/urls";
 
 export async function getStaticPaths() {
   const slugs = await listEventSlugs();
@@ -30,17 +42,51 @@ const heroImage =
   event.imageUrls?.[0] || event.imageUrl || null;
 
 const placeLabel = event.address?.trim() || event.placeName?.trim() || "";
+const placeIsSpot =
+  !event.address?.trim() &&
+  Boolean(
+    event.placeName?.trim() &&
+      event.placeSpotId &&
+      event.placeSpotCitySlug &&
+      event.countryCode,
+  );
+const placeSpotHref = placeIsSpot
+  ? appSpotUrl(
+      event.countryCode!,
+      event.placeSpotCitySlug!,
+      event.placeSpotId!,
+    )
+  : null;
+
 const countryCode = event.countryCode?.trim().toLowerCase() ?? "";
 const citySlug = event.citySlug?.trim() ?? "";
+const countryHub = countryCode ? await loadCountry(countryCode) : null;
 const cityHub =
   countryCode && citySlug ? await loadCity(countryCode, citySlug) : null;
-const countryHub =
-  !cityHub && countryCode ? await loadCountry(countryCode) : null;
-const areaHub = eventAreaHubLink(
-  event,
-  cityHub ? new Set([cityHubKey(countryCode, citySlug)]) : new Set(),
-  countryHub ? new Set([countryCode]) : new Set(),
-);
+
+const spotsHubHref = cityHub
+  ? aboutCityPath(countryCode, citySlug)
+  : countryHub
+    ? aboutCountryPath(countryCode)
+    : null;
+const spotsHubLabel = cityHub
+  ? `Spots in ${cityHub.city}`
+  : countryHub
+    ? `Spots in ${countryInPhrase(countryCode)}`
+    : null;
+
+const relatedSource = cityHub?.events?.length
+  ? cityHub.events
+  : (countryHub?.events ?? []);
+const relatedPlace = cityHub?.city || (countryCode ? countryName(countryCode) : "");
+const related = relatedSource
+  .filter(
+    (item) => item.slug !== event.slug && item.eventId !== event.eventId,
+  )
+  .slice(0, 5);
+
+const aboutBody = event.description?.trim() || "";
+const interestLine = eventInterestPushLine(event);
 ---
 
 <BaseLayout
@@ -52,51 +98,102 @@ const areaHub = eventAreaHubLink(
   imageAlt={event.title}
 >
   <article class="event-hero">
-    <div>
+    {
+      heroImage && (
+        <div class="event-hero__image">
+          <img src={heroImage} alt={event.title} loading="eager" />
+        </div>
+      )
+    }
+    <div class="event-hero__text">
       <h1 class="page-title">{event.title}</h1>
       <p class="page-lede">{whenLabel}</p>
-      {
-        event.city && event.countryCode && (
-          <p class="muted">
-            {placeLabel ? `${placeLabel} · ` : ""}
-            <CountryFlag code={event.countryCode} />
-            {areaHub ? (
-              <a href={areaHub.href}>
-                {event.city}, {event.countryCode.toUpperCase()}
+      <nav class="muted event-trail" aria-label="Events">
+        <a href={aboutEventsPath()}>Events</a>
+        {
+          countryCode && (
+            <>
+              <span aria-hidden="true"> › </span>
+              <a href={aboutEventsPath({country: countryCode})}>
+                {countryName(countryCode)}
               </a>
-            ) : (
-              <>
-                {event.city}, {event.countryCode.toUpperCase()}
-              </>
-            )}
+            </>
+          )
+        }
+      </nav>
+      {
+        (event.city && event.countryCode) || spotsHubHref ? (
+          <p class="muted">
+            {
+              event.city && event.countryCode && (
+                <>
+                  {
+                    placeLabel && (
+                      <>
+                        {
+                          placeSpotHref ? (
+                            <a href={placeSpotHref}>{placeLabel}</a>
+                          ) : (
+                            placeLabel
+                          )
+                        }
+                        {" · "}
+                      </>
+                    )
+                  }
+                  <CountryFlag code={event.countryCode} />
+                  {event.city}, {event.countryCode.toUpperCase()}
+                </>
+              )
+            }
+            {
+              spotsHubHref && spotsHubLabel && (
+                <>
+                  {event.city && event.countryCode ? " · " : ""}
+                  <a href={spotsHubHref}>{spotsHubLabel}</a>
+                </>
+              )
+            }
           </p>
-        )
+        ) : null
       }
-      <div class="hero__actions" style="margin-top: 1.5rem;">
+      <div class="hero__actions event-hero__actions">
         <OpenInApp href={appEventUrl(event.eventId)} />
         {
           event.websiteUrl && (
-            <a class="btn btn--outlined" href={event.websiteUrl} rel="noopener noreferrer">
+            <a
+              class="btn btn--outlined"
+              href={event.websiteUrl}
+              rel="noopener noreferrer"
+            >
               Event website
             </a>
           )
         }
       </div>
       {
-        event.description && (
+        interestLine && (
+          <p class="muted event-interest">{interestLine}</p>
+        )
+      }
+      {
+        aboutBody && (
           <div class="section prose">
             <h2 class="section__title">About this event</h2>
-            <p>{event.description}</p>
+            <p>{aboutBody}</p>
           </div>
         )
       }
+      {
+        related.length > 0 && relatedPlace && (
+          <section class="section" aria-labelledby="related-events-title">
+            <h2 class="section__title" id="related-events-title">
+              More events in {relatedPlace}
+            </h2>
+            <EventList events={related} />
+          </section>
+        )
+      }
     </div>
-    {
-      heroImage && (
-        <div class="event-hero__image">
-          <img src={heroImage} alt="" loading="eager" />
-        </div>
-      )
-    }
   </article>
 </BaseLayout>

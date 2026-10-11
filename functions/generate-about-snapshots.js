@@ -149,6 +149,41 @@ async function loadActivityCounts(now) {
 }
 
 /**
+ * Public Going / Interested totals from `eventInterestStats/{eventId}`.
+ * @param {Array<Object>} events
+ * @return {Promise<Map<string, {goingCount: number, interestedCount: number}>>}
+ */
+async function loadEventInterestStats(events) {
+  const ids = [...new Set(
+      events
+          .map((event) => (typeof event.id === "string" ? event.id.trim() : ""))
+          .filter(Boolean),
+  )];
+  /** @type {Map<string, {goingCount: number, interestedCount: number}>} */
+  const byId = new Map();
+  const CHUNK = 100;
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const slice = ids.slice(i, i + CHUNK);
+    const refs = slice.map((id) => db.collection("eventInterestStats").doc(id));
+    const snaps = await db.getAll(...refs);
+    snaps.forEach((snap, index) => {
+      if (!snap.exists) return;
+      const data = snap.data() || {};
+      const going = Number(data.goingCount);
+      const interested = Number(data.interestedCount);
+      byId.set(slice[index], {
+        goingCount: Number.isFinite(going) && going > 0 ? Math.floor(going) : 0,
+        interestedCount:
+          Number.isFinite(interested) && interested > 0 ?
+            Math.floor(interested) :
+            0,
+      });
+    });
+  }
+  return byId;
+}
+
+/**
  * Spot lists referenced by events that still need an on-the-fly location.
  * @param {Array<Object>} events
  * @return {Promise<Map<string, Object>>}
@@ -197,6 +232,13 @@ async function generateAboutSnapshots(options = {}) {
       spotsById,
       await loadFallbackSpotLists(rawEvents),
   );
+  const interestById = await loadEventInterestStats(events);
+  for (const event of events) {
+    const stats = interestById.get(event.id);
+    if (!stats) continue;
+    event.goingCount = stats.goingCount;
+    event.interestedCount = stats.interestedCount;
+  }
 
   const placeState = buildPlaceSnapshots(spots, {
     generatedAt: now.toISOString(),

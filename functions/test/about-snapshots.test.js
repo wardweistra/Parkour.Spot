@@ -5,6 +5,7 @@ const {
   attachEventsAndBuildIndexes,
   effectiveEventLocation,
   withResolvedLocationFallback,
+  toEventDetail,
   TOP_SPOTS_LIMIT,
 } = require("../lib/about-snapshots");
 
@@ -194,6 +195,38 @@ describe("about-snapshots", () => {
       expect(nl.spotCount).toBe(13);
       expect(nl.spots[0].id).toBe("best");
       expect(nl.spots).toHaveLength(TOP_SPOTS_LIMIT);
+    });
+  });
+
+  describe("toEventDetail", () => {
+    it("carries going and interested totals when present", () => {
+      const detail = toEventDetail(
+          {
+            id: "abcd1234xxxx",
+            title: "Amsterdam jam",
+            startAt: new Date("2026-11-01T10:00:00.000Z"),
+            countryCode: "NL",
+            city: "Amsterdam",
+            goingCount: 12,
+            interestedCount: 34,
+          },
+          "amsterdam-jam-abcd1234",
+      );
+      expect(detail.goingCount).toBe(12);
+      expect(detail.interestedCount).toBe(34);
+    });
+
+    it("defaults missing interest totals to zero", () => {
+      const detail = toEventDetail(
+          {
+            id: "abcd1234xxxx",
+            title: "Amsterdam jam",
+            startAt: new Date("2026-11-01T10:00:00.000Z"),
+          },
+          "amsterdam-jam-abcd1234",
+      );
+      expect(detail.goingCount).toBe(0);
+      expect(detail.interestedCount).toBe(0);
     });
   });
 

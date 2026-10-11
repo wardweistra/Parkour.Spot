@@ -239,6 +239,29 @@ export function countNoun(
   return `${formatCount(n)} ${n === 1 ? singular : plural}`;
 }
 
+/**
+ * Social proof under the event Open-in-app CTA, using app Going / Interested
+ * language. Null when both totals are zero or missing.
+ */
+export function eventInterestPushLine(input: {
+  goingCount?: number | null;
+  interestedCount?: number | null;
+}): string | null {
+  const going =
+    typeof input.goingCount === "number" && input.goingCount > 0
+      ? Math.floor(input.goingCount)
+      : 0;
+  const interested =
+    typeof input.interestedCount === "number" && input.interestedCount > 0
+      ? Math.floor(input.interestedCount)
+      : 0;
+  if (going === 0 && interested === 0) return null;
+  const parts: string[] = [];
+  if (going > 0) parts.push(`${formatCount(going)} going`);
+  if (interested > 0) parts.push(`${formatCount(interested)} interested`);
+  return `${parts.join(" · ")}. Open the app to join in.`;
+}
+
 export function joinNames(names: string[]): string {
   const clean = names.map((name) => name.trim()).filter(Boolean);
   if (clean.length === 0) return "";

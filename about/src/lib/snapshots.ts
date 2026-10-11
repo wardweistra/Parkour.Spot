@@ -291,6 +291,35 @@ export async function loadEventsIndex(): Promise<EventsIndex> {
   return normalizeEventsIndex(snap.data() as Partial<EventsIndex>);
 }
 
+async function withLiveInterestCounts(
+  event: EventDetail,
+): Promise<EventDetail> {
+  const eventId = event.eventId?.trim();
+  if (!eventId) return event;
+  try {
+    const db = await getDb();
+    const statsSnap = await db
+      .collection("eventInterestStats")
+      .doc(eventId)
+      .get();
+    if (!statsSnap.exists) return event;
+    const data = statsSnap.data() ?? {};
+    const going = Number(data.goingCount);
+    const interested = Number(data.interestedCount);
+    return {
+      ...event,
+      goingCount:
+        Number.isFinite(going) && going > 0 ? Math.floor(going) : 0,
+      interestedCount:
+        Number.isFinite(interested) && interested > 0
+          ? Math.floor(interested)
+          : 0,
+    };
+  } catch {
+    return event;
+  }
+}
+
 export async function loadEvent(slug: string): Promise<EventDetail | null> {
   if (useFixtures()) {
     try {
@@ -306,7 +335,8 @@ export async function loadEvent(slug: string): Promise<EventDetail | null> {
     .collection("events")
     .doc(slug)
     .get();
-  return snap.exists ? (snap.data() as EventDetail) : null;
+  if (!snap.exists) return null;
+  return withLiveInterestCounts(snap.data() as EventDetail);
 }
 
 export type CoverageCountry = {

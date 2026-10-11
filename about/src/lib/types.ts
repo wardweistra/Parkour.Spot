@@ -41,6 +41,9 @@ export type EventDetail = EventSummary & {
   placeSpotCitySlug?: string | null;
   locationSource?: "venue" | "spot" | "list" | null;
   imageUrls: string[];
+  /** From `eventInterestStats`; absent on older snapshots. */
+  goingCount?: number | null;
+  interestedCount?: number | null;
 };
 
 export type CityRef = {

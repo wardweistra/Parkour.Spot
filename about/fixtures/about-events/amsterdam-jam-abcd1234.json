@@ -15,5 +15,7 @@
   "description": "A community jam across central Amsterdam spots. All levels welcome.",
   "address": "Dam, Amsterdam",
   "latitude": 52.3731,
-  "longitude": 4.8922
+  "longitude": 4.8922,
+  "goingCount": 12,
+  "interestedCount": 34
 }

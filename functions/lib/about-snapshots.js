@@ -193,6 +193,16 @@ function toEventSummary(event, slug) {
 }
 
 /**
+ * @param {*} value
+ * @return {number}
+ */
+function nonNegativeInt(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.floor(n);
+}
+
+/**
  * @param {Object} event
  * @param {string} slug
  * @return {Object}
@@ -214,6 +224,8 @@ function toEventDetail(event, slug) {
     placeSpotCitySlug: location.placeSpotCitySlug,
     locationSource: location.locationSource,
     imageUrls,
+    goingCount: nonNegativeInt(event.goingCount),
+    interestedCount: nonNegativeInt(event.interestedCount),
   };
 }
 
