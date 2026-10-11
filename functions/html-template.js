@@ -54,6 +54,10 @@ function generateHtmlHead(options = {}) {
     aggregateRating: options.pageAggregateRating,
     image: options.pageImage || (isDynamic ? image : null),
     subjectOf: options.pageSubjectOf,
+    startDate: options.pageStartDate,
+    endDate: options.pageEndDate,
+    eventWebsiteUrl: options.pageEventWebsiteUrl,
+    locationName: options.pageLocationName,
   });
   // Only include Organization JSON-LD on home page (non-dynamic pages)
   const organizationJsonLd = !isDynamic ? generateOrganizationJsonLd({
@@ -175,6 +179,12 @@ function renderSeoContentHtml(seoContent, canonicalHost = "parkour.spot") {
     parts.push(`<p>${htmlEscape(seoContent.locationLine)}</p>`);
   }
 
+  if (seoContent.whenDisplay) {
+    parts.push(
+        `<p><strong>When:</strong> ${htmlEscape(seoContent.whenDisplay)}</p>`,
+    );
+  }
+
   if (seoContent.description) {
     parts.push(`<p>${htmlEscape(seoContent.description)}</p>`);
   }
@@ -252,6 +262,27 @@ function renderSeoContentHtml(seoContent, canonicalHost = "parkour.spot") {
     );
   }
 
+  if (seoContent.websiteUrl) {
+    parts.push(
+        `<p><strong>Website:</strong> ` +
+        `<a href="${htmlEscape(seoContent.websiteUrl)}">` +
+        `${htmlEscape(seoContent.websiteUrl)}</a></p>`,
+    );
+  }
+
+  if (Array.isArray(seoContent.linkedSpots) && seoContent.linkedSpots.length > 0) {
+    parts.push("<h2>Linked spots</h2><ul>");
+    for (const spot of seoContent.linkedSpots) {
+      const href = spot.url.startsWith("http") ?
+        htmlEscape(spot.url) :
+        htmlEscape(`https://${canonicalHost}${spot.url}`);
+      parts.push(
+          `<li><a href="${href}">${htmlEscape(spot.title)}</a></li>`,
+      );
+    }
+    parts.push("</ul>");
+  }
+
   if (seoContent.sourceName) {
     parts.push(
         `<p><strong>Source:</strong> ${htmlEscape(seoContent.sourceName)}</p>`,
@@ -305,7 +336,7 @@ function seoContentBootScripts() {
  * @param {Object} options - Configuration options
  * @param {string} options.siteName - Site name (default: "Parkour·Spot")
  * @param {string} options.url - URL for noscript fallback (optional)
- * @param {Object} [options.seoContent] - Crawlable spot summary
+ * @param {Object} [options.seoContent] - Crawlable spot or event summary
  * @param {string} [options.canonicalHost]
  * @return {string} HTML body content
  */
@@ -380,6 +411,10 @@ ${JSON.stringify(jsonLd, null, 2)}
  * @param {Object} [options.aggregateRating] - {ratingValue, ratingCount}
  * @param {string} [options.image]
  * @param {Array<Object>} [options.subjectOf] - Creative works [{name, url, type}]
+ * @param {string} [options.startDate] - Event startDate (ISO or YYYY-MM-DD)
+ * @param {string} [options.endDate] - Event endDate
+ * @param {string} [options.eventWebsiteUrl] - External event website
+ * @param {string} [options.locationName] - Place name for Event location
  * @return {string} JSON-LD script tag or empty string
  */
 function generatePageTypeJsonLd(options = {}) {
@@ -394,6 +429,10 @@ function generatePageTypeJsonLd(options = {}) {
     aggregateRating = null,
     image = null,
     subjectOf = null,
+    startDate = null,
+    endDate = null,
+    eventWebsiteUrl = null,
+    locationName = null,
   } = options;
 
   if (!pageType || !url) {
@@ -449,6 +488,43 @@ function generatePageTypeJsonLd(options = {}) {
       "bestRating": 5,
       "worstRating": 1,
     };
+  }
+
+  if (pageType === "Event") {
+    pageData.url = pageId;
+    if (typeof startDate === "string" && startDate.trim()) {
+      pageData.startDate = startDate.trim();
+    }
+    if (typeof endDate === "string" && endDate.trim()) {
+      pageData.endDate = endDate.trim();
+    }
+    if (typeof eventWebsiteUrl === "string" &&
+        eventWebsiteUrl.trim().startsWith("http")) {
+      pageData.sameAs = eventWebsiteUrl.trim();
+    }
+
+    const place = {"@type": "Place"};
+    if (typeof locationName === "string" && locationName.trim()) {
+      place.name = htmlEscape(locationName.trim());
+    }
+    if (address && String(address).trim()) {
+      place.address = {
+        "@type": "PostalAddress",
+        "streetAddress": htmlEscape(String(address).trim()),
+      };
+    }
+    if (geo &&
+        typeof geo.latitude === "number" && typeof geo.longitude === "number" &&
+        Number.isFinite(geo.latitude) && Number.isFinite(geo.longitude)) {
+      place.geo = {
+        "@type": "GeoCoordinates",
+        "latitude": geo.latitude,
+        "longitude": geo.longitude,
+      };
+    }
+    if (place.name || place.address || place.geo) {
+      pageData.location = place;
+    }
   }
 
   if (image && typeof image === "string" && image.trim().startsWith("http")) {

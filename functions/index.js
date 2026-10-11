@@ -266,6 +266,10 @@ const {
   buildSpotSeoContent,
   parseJumpflixIds,
 } = require("./lib/spot-seo-content");
+const {
+  buildEventSeoContent,
+  MAX_LINKED_SPOTS,
+} = require("./lib/event-seo-content");
 
 // Import sitemap generation functions
 const {
@@ -710,6 +714,16 @@ exports.userAndListPage = onRequest({region: "europe-west1"}, async (req, res) =
     let description = defaultDescription;
     let imageUrl = defaultImage;
     const breadcrumbs = [{name: "Home", url: "/"}];
+    let seoContent = null;
+    let pageType = null;
+    let pageName = null;
+    let pageDescription = null;
+    let pageAddress = null;
+    let pageGeo = null;
+    let pageStartDate = null;
+    let pageEndDate = null;
+    let pageEventWebsiteUrl = null;
+    let pageLocationName = null;
 
     // /user/:userIdOrUsername
     if (pathSegments[0] === "user" && pathSegments.length >= 2) {
@@ -812,6 +826,45 @@ exports.userAndListPage = onRequest({region: "europe-west1"}, async (req, res) =
         }
 
         breadcrumbs.push({name: eventTitle, url: `/event/${eventId}`});
+
+        const spotIds = Array.isArray(event.spotIds) ?
+          event.spotIds
+              .filter((id) => typeof id === "string" && id.trim())
+              .map((id) => id.trim())
+              .slice(0, MAX_LINKED_SPOTS) :
+          [];
+        let linkedSpotDocs = [];
+        if (spotIds.length > 0) {
+          const refs = spotIds.map((id) => db.collection("spots").doc(id));
+          const spotSnaps = await db.getAll(...refs);
+          linkedSpotDocs = spotSnaps
+              .filter((doc) => doc.exists)
+              .map((doc) => ({id: doc.id, ...doc.data()}));
+        }
+
+        seoContent = buildEventSeoContent({
+          event: event,
+          breadcrumbs: breadcrumbs,
+          linkedSpots: linkedSpotDocs,
+          canonicalHost: canonicalHost,
+        });
+
+        if (seoContent) {
+          pageType = "Event";
+          pageName = seoContent.title;
+          pageDescription = seoContent.description || description;
+          pageAddress = seoContent.address;
+          pageStartDate = seoContent.startDateIso;
+          pageEndDate = seoContent.endDateIso;
+          pageEventWebsiteUrl = seoContent.websiteUrl;
+          pageLocationName = seoContent.locationLine || seoContent.title;
+          if (seoContent.latitude != null && seoContent.longitude != null) {
+            pageGeo = {
+              latitude: seoContent.latitude,
+              longitude: seoContent.longitude,
+            };
+          }
+        }
       }
     }
 
@@ -827,10 +880,17 @@ exports.userAndListPage = onRequest({region: "europe-west1"}, async (req, res) =
       isDynamic: true,
       canonicalHost,
       breadcrumbs,
-      pageType: null,
-      pageName: null,
-      pageDescription: null,
-      pageAddress: null,
+      pageType,
+      pageName,
+      pageDescription,
+      pageAddress,
+      pageGeo,
+      pageImage: imageUrl,
+      pageStartDate,
+      pageEndDate,
+      pageEventWebsiteUrl,
+      pageLocationName,
+      seoContent,
     });
 
     res.status(200).send(html);

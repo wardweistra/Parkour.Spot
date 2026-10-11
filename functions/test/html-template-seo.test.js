@@ -165,3 +165,52 @@ describe("generateHtmlPage spot shell", () => {
     expect(html).toContain("GeoCoordinates");
   });
 });
+
+describe("event SEO HTML / JSON-LD", () => {
+  it("renders when, website, and linked spots", () => {
+    const html = renderSeoContentHtml({
+      kind: "event",
+      title: "Jam at the Castle",
+      whenDisplay: "1 November 2026",
+      description: "Bring shoes",
+      websiteUrl: "https://example.com/jam",
+      linkedSpots: [{title: "Castle Garden", url: "/nl/eindhoven/s1"}],
+      features: [],
+      goodFor: [],
+      facilities: [],
+      youtubeVideos: [],
+      jumpflixVideos: [],
+      breadcrumbs: [{name: "Home", url: "/"}],
+    }, "parkour.spot");
+
+    expect(html).toContain("<strong>When:</strong>");
+    expect(html).toContain("1 November 2026");
+    expect(html).toContain("href=\"https://example.com/jam\"");
+    expect(html).toContain("Linked spots");
+    expect(html).toContain("href=\"https://parkour.spot/nl/eindhoven/s1\"");
+    expect(html).not.toContain("As seen in");
+  });
+
+  it("emits Event JSON-LD with startDate and location", () => {
+    const script = generatePageTypeJsonLd({
+      url: "https://parkour.spot/event/ev1",
+      pageType: "Event",
+      name: "Jam",
+      description: "A jam",
+      address: "Kastelenplein 19",
+      geo: {latitude: 51.4, longitude: 5.4},
+      startDate: "2026-11-01T10:00:00.000Z",
+      endDate: "2026-11-01T14:00:00.000Z",
+      eventWebsiteUrl: "https://example.com/jam",
+      locationName: "Eindhoven, NL",
+      image: "https://example.com/e.jpg",
+    });
+    const json = JSON.parse(script.replace(/<\/?script[^>]*>/g, "").trim());
+    expect(json["@type"]).toBe("Event");
+    expect(json.startDate).toBe("2026-11-01T10:00:00.000Z");
+    expect(json.endDate).toBe("2026-11-01T14:00:00.000Z");
+    expect(json.sameAs).toBe("https://example.com/jam");
+    expect(json.location["@type"]).toBe("Place");
+    expect(json.location.geo.latitude).toBe(51.4);
+  });
+});
