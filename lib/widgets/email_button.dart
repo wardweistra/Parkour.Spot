@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+import '../utils/external_launch.dart';
 
 class EmailButton extends StatelessWidget {
   final String email;
@@ -12,33 +13,36 @@ class EmailButton extends StatelessWidget {
     this.label,
   });
 
-  Future<void> _launchEmail(String email) async {
-    final Uri emailUri = Uri.parse('mailto:$email');
-    if (await canLaunchUrl(emailUri)) {
-      await launchUrl(emailUri, mode: LaunchMode.externalApplication);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final displayLabel = label ?? email;
-    
+
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: () => _launchEmail(email),
-        icon: const FaIcon(
+      child: OutlinedButton.icon(
+        onPressed: () =>
+            launchExternalUri(context, Uri.parse('mailto:$email')),
+        icon: FaIcon(
           FontAwesomeIcons.envelope,
           size: 18,
+          color: scheme.primary,
         ),
-        label: Text(displayLabel),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF4285F4), // Email/Gmail brand color
-          foregroundColor: Colors.white,
+        label: Text(
+          displayLabel,
+          softWrap: true,
+          textAlign: TextAlign.center,
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: scheme.primary,
+          side: BorderSide(color: scheme.primary.withValues(alpha: 0.55)),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          minimumSize: const Size(double.infinity, 48),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       ),
     );
   }
 }
-

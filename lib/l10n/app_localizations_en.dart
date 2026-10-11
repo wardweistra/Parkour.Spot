@@ -599,49 +599,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Parkour·Spot is a community-driven app for discovering and sharing parkour and freerunning spots worldwide. We\'re making it simple to find quality locations—wherever you train.';
 
   @override
-  String get profileReadMore => 'Read more';
+  String get profileAboutSite => 'More about Parkour·Spot';
 
   @override
-  String get profileAboutStoryBeforeName => 'Started by ';
-
-  @override
-  String get profileAboutStoryAfterName =>
-      ' from the Utrecht parkour community, the app brings together local knowledge from existing city and regional maps—whether they lived on Facebook, Instagram, websites, or retired apps—so great spot data doesn\'t get lost.';
-
-  @override
-  String get profileAboutMapMission =>
-      'This is your map. Add new spots, rate existing ones, and enrich listings with details. The more we contribute, the stronger the community\'s shared knowledge becomes.';
-
-  @override
-  String get profileAboutPrinciplesHeader => 'Our principles:';
-
-  @override
-  String get profileAboutPrincipleTransparency =>
-      '• Transparency: you can browse the app without an account, and each spot shows which external sources contributed to it.';
-
-  @override
-  String get profileAboutPrinciplePortability =>
-      '• Portability: we\'re building export tools so spot data can be used beyond the app.';
-
-  @override
-  String get profileAboutPrincipleOpenSource =>
-      '• Open source: the app is community-owned, not dependent on one person.';
-
-  @override
-  String get profileAboutEnjoy =>
-      'Enjoy discovering and sharing spots with Parkour.spot. Questions or ideas? Tap the contact button—we\'d love to hear from you.';
-
-  @override
-  String get profileCreditsBy => 'Major contributions by ';
-
-  @override
-  String get profileCreditsDaphneArt => ' (art), ';
-
-  @override
-  String get profileCreditsComma => ', ';
-
-  @override
-  String get profileCreditsEnd => ' and many others.';
+  String get profileCouldNotOpenLink => 'Could not open link';
 
   @override
   String get profileViewSourceCode => 'View source code';

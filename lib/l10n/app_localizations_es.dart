@@ -606,49 +606,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Parkour·Spot es una aplicación comunitaria para descubrir y compartir spots de parkour y freerunning en todo el mundo. Queremos que sea fácil encontrar buenos lugares para entrenar.';
 
   @override
-  String get profileReadMore => 'Leer más';
+  String get profileAboutSite => 'Más sobre Parkour·Spot';
 
   @override
-  String get profileAboutStoryBeforeName => 'Iniciada por ';
-
-  @override
-  String get profileAboutStoryAfterName =>
-      ' desde la comunidad de parkour de Utrecht, la app reúne conocimiento local de mapas urbanos y regionales existentes—ya estuvieran en Facebook, Instagram, webs o apps retiradas—para que los buenos datos de spots no se pierdan.';
-
-  @override
-  String get profileAboutMapMission =>
-      'Este es tu mapa. Añade nuevos spots, valora los existentes y enriquece las fichas con detalles. Cuanto más contribuimos, más fuerte es el conocimiento compartido de la comunidad.';
-
-  @override
-  String get profileAboutPrinciplesHeader => 'Nuestros principios:';
-
-  @override
-  String get profileAboutPrincipleTransparency =>
-      '• Transparencia: puedes explorar la app sin cuenta, y cada spot muestra qué fuentes externas han contribuido.';
-
-  @override
-  String get profileAboutPrinciplePortability =>
-      '• Portabilidad: estamos creando herramientas de exportación para que los datos de spots se usen más allá de la app.';
-
-  @override
-  String get profileAboutPrincipleOpenSource =>
-      '• Código abierto: la app es de la comunidad, no depende de una sola persona.';
-
-  @override
-  String get profileAboutEnjoy =>
-      'Disfruta descubriendo y compartiendo spots con Parkour.spot. ¿Preguntas o ideas? Toca contacto—nos encantará saber de ti.';
-
-  @override
-  String get profileCreditsBy => 'Grandes contribuciones de ';
-
-  @override
-  String get profileCreditsDaphneArt => ' (arte), ';
-
-  @override
-  String get profileCreditsComma => ', ';
-
-  @override
-  String get profileCreditsEnd => ' y muchas otras personas.';
+  String get profileCouldNotOpenLink => 'No se pudo abrir el enlace';
 
   @override
   String get profileViewSourceCode => 'Ver código fuente';

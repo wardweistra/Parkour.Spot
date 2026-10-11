@@ -7,6 +7,16 @@ import 'mobile_detection_service.dart';
 
 class UrlService {
   static const String _baseUrl = 'https://parkour.spot';
+
+  /// Marketing About site origin (mirrors `ABOUT_ORIGIN` in about/src/lib/urls.ts).
+  static const String aboutOrigin = 'https://about.parkour.spot';
+
+  /// About site home.
+  static String get aboutHomeUrl => '$aboutOrigin/';
+
+  /// About site How it works page.
+  static String get aboutHowItWorksUrl => '$aboutOrigin/how-it-works';
+
   static final RegExp _instagramHandleRegex = RegExp(r'^[a-zA-Z0-9._]{1,30}$');
 
   static const Set<String> _instagramReservedPaths = {

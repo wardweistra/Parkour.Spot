@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'brand_mark_icon.dart';
+import '../utils/external_launch.dart';
 
 class GitHubButton extends StatelessWidget {
   final String url;
@@ -9,25 +9,31 @@ class GitHubButton extends StatelessWidget {
 
   const GitHubButton({super.key, required this.url, required this.label});
 
-  Future<void> _launchUrl(String url) async {
-    final Uri uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: () => _launchUrl(url),
-        icon: const BrandMarkIcon(asset: BrandMarkIcon.github),
-        label: Text(label),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF24292e), // GitHub brand color
-          foregroundColor: Colors.white,
+      child: OutlinedButton.icon(
+        onPressed: () => launchExternalUri(context, Uri.parse(url)),
+        icon: BrandMarkIcon(
+          asset: BrandMarkIcon.github,
+          color: scheme.primary,
+        ),
+        label: Text(
+          label,
+          softWrap: true,
+          textAlign: TextAlign.center,
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: scheme.primary,
+          side: BorderSide(color: scheme.primary.withValues(alpha: 0.55)),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          minimumSize: const Size(double.infinity, 48),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       ),
     );

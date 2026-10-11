@@ -602,49 +602,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Parkour·Spot is een community-app om parkour- en freerunningspots wereldwijd te ontdekken en te delen. We maken het eenvoudig om goede locaties te vinden—waar je ook traint.';
 
   @override
-  String get profileReadMore => 'Meer lezen';
+  String get profileAboutSite => 'Meer over Parkour·Spot';
 
   @override
-  String get profileAboutStoryBeforeName => 'Begonnen door ';
-
-  @override
-  String get profileAboutStoryAfterName =>
-      ' uit de Utrechtse parkourcommunity: de app brengt lokale kennis van bestaande stads- en regionale kaarten samen—of die nu op Facebook, Instagram, websites of in oude apps stonden—zodat goede spotdata niet verloren gaat.';
-
-  @override
-  String get profileAboutMapMission =>
-      'Dit is jouw kaart. Voeg nieuwe spots toe, beoordeel bestaande en verrijk vermeldingen met details. Hoe meer we bijdragen, hoe sterker de gedeelde kennis van de community wordt.';
-
-  @override
-  String get profileAboutPrinciplesHeader => 'Onze principes:';
-
-  @override
-  String get profileAboutPrincipleTransparency =>
-      '• Transparantie: je kunt de app doorbladeren zonder account, en elke spot toont welke externe bronnen hebben bijgedragen.';
-
-  @override
-  String get profileAboutPrinciplePortability =>
-      '• Draagbaarheid: we bouwen exporttools zodat spotdata ook buiten de app bruikbaar is.';
-
-  @override
-  String get profileAboutPrincipleOpenSource =>
-      '• Open source: de app is van de community, niet afhankelijk van één persoon.';
-
-  @override
-  String get profileAboutEnjoy =>
-      'Veel plezier met het ontdekken en delen van spots met Parkour.spot. Vragen of ideeën? Tik op contact—we horen graag van je.';
-
-  @override
-  String get profileCreditsBy => 'Grote bijdragen van ';
-
-  @override
-  String get profileCreditsDaphneArt => ' (illustratie), ';
-
-  @override
-  String get profileCreditsComma => ', ';
-
-  @override
-  String get profileCreditsEnd => ' en vele anderen.';
+  String get profileCouldNotOpenLink => 'Link kon niet worden geopend';
 
   @override
   String get profileViewSourceCode => 'Broncode bekijken';

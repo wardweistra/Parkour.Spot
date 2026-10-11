@@ -604,49 +604,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Parkour·Spot est une appli communautaire pour découvrir et partager des spots de parkour et de freerunning dans le monde entier. Nous simplifions la recherche de bons lieux—où que vous vous entraîniez.';
 
   @override
-  String get profileReadMore => 'Lire la suite';
+  String get profileAboutSite => 'En savoir plus sur Parkour·Spot';
 
   @override
-  String get profileAboutStoryBeforeName => 'Lancée par ';
-
-  @override
-  String get profileAboutStoryAfterName =>
-      ' au sein de la communauté parkour d’Utrecht, l’appli rassemble les connaissances locales des cartes existantes—qu’elles soient sur Facebook, Instagram, des sites ou d’anciennes applis—afin que les bonnes données de spots ne se perdent pas.';
-
-  @override
-  String get profileAboutMapMission =>
-      'C’est votre carte. Ajoutez des spots, notez ceux qui existent et enrichissez les fiches. Plus nous contribuons, plus les connaissances partagées de la communauté se renforcent.';
-
-  @override
-  String get profileAboutPrinciplesHeader => 'Nos principes :';
-
-  @override
-  String get profileAboutPrincipleTransparency =>
-      '• Transparence : vous pouvez parcourir l’appli sans compte, et chaque spot indique quelles sources externes y ont contribué.';
-
-  @override
-  String get profileAboutPrinciplePortability =>
-      '• Portabilité : nous développons des outils d’export pour que les données de spots puissent être utilisées au-delà de l’appli.';
-
-  @override
-  String get profileAboutPrincipleOpenSource =>
-      '• Open source : l’appli appartient à la communauté, pas à une seule personne.';
-
-  @override
-  String get profileAboutEnjoy =>
-      'Bonnes découvertes et partages de spots avec Parkour.spot. Des questions ou des idées ? Touchez contact—nous serons ravis de vous lire.';
-
-  @override
-  String get profileCreditsBy => 'Contributions majeures de ';
-
-  @override
-  String get profileCreditsDaphneArt => ' (illustration), ';
-
-  @override
-  String get profileCreditsComma => ', ';
-
-  @override
-  String get profileCreditsEnd => ' et beaucoup d’autres.';
+  String get profileCouldNotOpenLink => 'Impossible d’ouvrir le lien';
 
   @override
   String get profileViewSourceCode => 'Voir le code source';

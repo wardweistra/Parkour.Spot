@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:lottie/lottie.dart';
 import 'package:parkour_spot/utils/browser_location.dart';
 import '../../services/auth_service.dart';
@@ -11,8 +9,10 @@ import '../../services/admin_events_service.dart';
 import '../../services/event_report_service.dart';
 import '../../services/spot_report_service.dart';
 import '../../services/spot_service.dart';
+import '../../services/url_service.dart';
 import '../../services/user_notification_service.dart';
 import '../../services/mobile_detection_service.dart';
+import '../../widgets/about_site_button.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/instagram_button.dart';
 import '../../widgets/github_button.dart';
@@ -29,7 +29,6 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen>
     with SingleTickerProviderStateMixin {
-  bool _isExpanded = false;
   late AnimationController _lottieController;
   bool _hasAnimatedOnLoad = false;
 
@@ -594,134 +593,38 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildExpandedText(BuildContext context, AppLocalizations l10n) {
-    final textStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
-      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+  /// Primary exit to the marketing About site — after the short intro, not in
+  /// the ops/social action stack.
+  Widget _buildMoreAboutExit(BuildContext context, AppLocalizations l10n) {
+    return AboutSiteButton(
+      url: UrlService.aboutHomeUrl,
+      label: l10n.profileAboutSite,
     );
+  }
 
-    final linkStyle = textStyle?.copyWith(
-      color: Theme.of(context).colorScheme.primary,
-      decoration: TextDecoration.underline,
-    );
-
-    const linkText = 'Ward Weistra';
-
+  Widget _buildAboutActions(BuildContext context, AppLocalizations l10n) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SelectableText.rich(
-          TextSpan(
-            style: textStyle,
-            children: [
-              TextSpan(text: l10n.profileAboutStoryBeforeName),
-              TextSpan(
-                text: linkText,
-                style: linkStyle,
-                recognizer: TapGestureRecognizer()
-                  ..onTap = () async {
-                    final uri = Uri.parse(
-                      'https://www.instagram.com/wardweistra/',
-                    );
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(
-                        uri,
-                        mode: LaunchMode.externalApplication,
-                      );
-                    }
-                  },
-              ),
-              TextSpan(text: l10n.profileAboutStoryAfterName),
-            ],
-          ),
+        InstagramButton(
+          handle: 'parkourdotspot',
+          label: '@parkourdotspot',
+          filled: false,
         ),
-        const SizedBox(height: 16),
-        SelectableText(l10n.profileAboutMapMission, style: textStyle),
-        const SizedBox(height: 16),
-        SelectableText(l10n.profileAboutPrinciplesHeader, style: textStyle),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.only(left: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SelectableText(
-                l10n.profileAboutPrincipleTransparency,
-                style: textStyle,
-              ),
-              const SizedBox(height: 8),
-              SelectableText(
-                l10n.profileAboutPrinciplePortability,
-                style: textStyle,
-              ),
-              const SizedBox(height: 8),
-              SelectableText(
-                l10n.profileAboutPrincipleOpenSource,
-                style: textStyle,
-              ),
-            ],
-          ),
+        const SizedBox(height: 10),
+        EmailButton(
+          email: 'parkour.spot@wardweistra.nl',
+          label: l10n.profileContactUs,
         ),
-        const SizedBox(height: 16),
-        SelectableText(l10n.profileAboutEnjoy, style: textStyle),
-        const SizedBox(height: 16),
-        SelectableText.rich(
-          TextSpan(
-            style: textStyle,
-            children: [
-              TextSpan(text: l10n.profileCreditsBy),
-              TextSpan(
-                text: 'Daphne Fontijn',
-                style: linkStyle,
-                recognizer: TapGestureRecognizer()
-                  ..onTap = () async {
-                    final uri = Uri.parse(
-                      'https://www.instagram.com/daphnefontijn/',
-                    );
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(
-                        uri,
-                        mode: LaunchMode.externalApplication,
-                      );
-                    }
-                  },
-              ),
-              TextSpan(text: l10n.profileCreditsDaphneArt),
-              TextSpan(
-                text: 'Tim Haerkens',
-                style: linkStyle,
-                recognizer: TapGestureRecognizer()
-                  ..onTap = () async {
-                    final uri = Uri.parse(
-                      'https://www.instagram.com/tim.haerkens/',
-                    );
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(
-                        uri,
-                        mode: LaunchMode.externalApplication,
-                      );
-                    }
-                  },
-              ),
-              TextSpan(text: l10n.profileCreditsComma),
-              TextSpan(
-                text: 'Marily Bronkhorst',
-                style: linkStyle,
-                recognizer: TapGestureRecognizer()
-                  ..onTap = () async {
-                    final uri = Uri.parse(
-                      'https://www.instagram.com/marilybronk/',
-                    );
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(
-                        uri,
-                        mode: LaunchMode.externalApplication,
-                      );
-                    }
-                  },
-              ),
-              TextSpan(text: l10n.profileCreditsEnd),
-            ],
-          ),
+        const SizedBox(height: 10),
+        GitHubButton(
+          url: 'https://github.com/wardweistra/Parkour.Spot/',
+          label: l10n.profileViewSourceCode,
+        ),
+        const SizedBox(height: 10),
+        ReportIssueButton(
+          url: 'https://github.com/wardweistra/Parkour.Spot/issues',
+          label: l10n.profileReportIssue,
         ),
       ],
     );
@@ -729,13 +632,23 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildAboutSection(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
     final textStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
-      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+      color: scheme.onSurfaceVariant,
     );
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWideScreen = constraints.maxWidth > 600;
+
+        final aboutProse = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SelectableText(l10n.profileAboutIntro, style: textStyle),
+            const SizedBox(height: 16),
+            _buildMoreAboutExit(context, l10n),
+          ],
+        );
 
         return Center(
           child: ConstrainedBox(
@@ -750,164 +663,52 @@ class _ProfileScreenState extends State<ProfileScreen>
                       width: double.infinity,
                       child: AspectRatio(
                         aspectRatio: 2773 / 646, // From SVG viewBox
-                        child: GestureDetector(
-                          onTap: _handleLottieTap,
-                          child: Lottie.asset(
-                            Theme.of(context).brightness == Brightness.dark
-                                ? 'assets/images/lottie-dark.json'
-                                : 'assets/images/lottie.json',
-                            controller: _lottieController,
-                            fit: BoxFit.contain,
-                            repeat: false,
-                            animate: false,
-                            onLoaded: (composition) {
-                              // Update controller duration based on loaded composition
-                              _lottieController.duration = composition.duration;
-                              // Animate once on first load
-                              if (!_hasAnimatedOnLoad) {
-                                _hasAnimatedOnLoad = true;
-                                _lottieController.forward();
-                              }
-                            },
+                        child: Semantics(
+                          button: true,
+                          label: 'Parkour·Spot',
+                          child: GestureDetector(
+                            onTap: _handleLottieTap,
+                            child: Lottie.asset(
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? 'assets/images/lottie-dark.json'
+                                  : 'assets/images/lottie.json',
+                              controller: _lottieController,
+                              fit: BoxFit.contain,
+                              repeat: false,
+                              animate: false,
+                              onLoaded: (composition) {
+                                _lottieController.duration =
+                                    composition.duration;
+                                if (!_hasAnimatedOnLoad) {
+                                  _hasAnimatedOnLoad = true;
+                                  _lottieController.forward();
+                                }
+                              },
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
                 ),
-                SizedBox(height: isWideScreen ? 32 : 16),
-                isWideScreen
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    SelectableText(
-                                      l10n.profileAboutIntro,
-                                      style: textStyle,
-                                    ),
-                                    if (!_isExpanded) ...[
-                                      const SizedBox(height: 8),
-                                      GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            _isExpanded = true;
-                                          });
-                                        },
-                                        child: Text(
-                                          l10n.profileReadMore,
-                                          style: textStyle?.copyWith(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
-                                            decoration:
-                                                TextDecoration.underline,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 24),
-                              Expanded(
-                                child: Center(
-                                  child: ConstrainedBox(
-                                    constraints: const BoxConstraints(
-                                      maxWidth: 350,
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        InstagramButton(
-                                          handle: 'parkourdotspot',
-                                          label: '@parkourdotspot',
-                                        ),
-                                        const SizedBox(height: 16),
-                                        GitHubButton(
-                                          url:
-                                              'https://github.com/wardweistra/Parkour.Spot/',
-                                          label: l10n.profileViewSourceCode,
-                                        ),
-                                        const SizedBox(height: 16),
-                                        ReportIssueButton(
-                                          url:
-                                              'https://github.com/wardweistra/Parkour.Spot/issues',
-                                          label: l10n.profileReportIssue,
-                                        ),
-                                        const SizedBox(height: 16),
-                                        EmailButton(
-                                          email: 'parkour.spot@wardweistra.nl',
-                                          label: l10n.profileContactUs,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (_isExpanded) ...[
-                            const SizedBox(height: 16),
-                            _buildExpandedText(context, l10n),
-                          ],
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SelectableText(
-                            l10n.profileAboutIntro,
-                            style: textStyle,
-                          ),
-                          if (!_isExpanded) ...[
-                            const SizedBox(height: 8),
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _isExpanded = true;
-                                });
-                              },
-                              child: Text(
-                                l10n.profileReadMore,
-                                style: textStyle?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ),
-                            ),
-                          ],
-                          if (_isExpanded) ...[
-                            const SizedBox(height: 16),
-                            _buildExpandedText(context, l10n),
-                          ],
-                          const SizedBox(height: 16),
-                          InstagramButton(
-                            handle: 'parkourdotspot',
-                            label: '@parkourdotspot',
-                          ),
-                          const SizedBox(height: 16),
-                          GitHubButton(
-                            url: 'https://github.com/wardweistra/Parkour.Spot/',
-                            label: l10n.profileViewSourceCode,
-                          ),
-                          const SizedBox(height: 16),
-                          ReportIssueButton(
-                            url:
-                                'https://github.com/wardweistra/Parkour.Spot/issues',
-                            label: l10n.profileReportIssue,
-                          ),
-                          const SizedBox(height: 16),
-                          EmailButton(
-                            email: 'parkour.spot@wardweistra.nl',
-                            label: l10n.profileContactUs,
-                          ),
-                        ],
+                SizedBox(height: isWideScreen ? 28 : 20),
+                if (isWideScreen)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 3, child: aboutProse),
+                      const SizedBox(width: 28),
+                      Expanded(
+                        flex: 2,
+                        child: _buildAboutActions(context, l10n),
                       ),
+                    ],
+                  )
+                else ...[
+                  aboutProse,
+                  const SizedBox(height: 24),
+                  _buildAboutActions(context, l10n),
+                ],
               ],
             ),
           ),

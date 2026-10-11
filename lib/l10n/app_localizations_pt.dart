@@ -608,49 +608,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Parkour·Spot é uma aplicação comunitária para descobrir e partilhar spots de parkour e freerunning em todo o mundo. Queremos tornar simples encontrar bons locais—onde quer que treines.';
 
   @override
-  String get profileReadMore => 'Ler mais';
+  String get profileAboutSite => 'Mais sobre o Parkour·Spot';
 
   @override
-  String get profileAboutStoryBeforeName => 'Criada por ';
-
-  @override
-  String get profileAboutStoryAfterName =>
-      ' a partir da comunidade de parkour de Utrecht, a app reúne conhecimento local de mapas urbanos e regionais existentes—estejam no Facebook, Instagram, sites ou apps antigas—para que bons dados de spots não se percam.';
-
-  @override
-  String get profileAboutMapMission =>
-      'Este é o teu mapa. Adiciona novos spots, avalia os existentes e enriquece as fichas com detalhes. Quanto mais contribuímos, mais forte fica o conhecimento partilhado da comunidade.';
-
-  @override
-  String get profileAboutPrinciplesHeader => 'Os nossos princípios:';
-
-  @override
-  String get profileAboutPrincipleTransparency =>
-      '• Transparência: podes explorar a app sem conta, e cada spot mostra que fontes externas contribuíram.';
-
-  @override
-  String get profileAboutPrinciplePortability =>
-      '• Portabilidade: estamos a criar ferramentas de exportação para os dados de spots serem usados fora da app.';
-
-  @override
-  String get profileAboutPrincipleOpenSource =>
-      '• Código aberto: a app é da comunidade, não depende de uma só pessoa.';
-
-  @override
-  String get profileAboutEnjoy =>
-      'Boa descoberta e partilha de spots com Parkour.spot. Dúvidas ou ideias? Toca em contacto—adoramos ouvir-te.';
-
-  @override
-  String get profileCreditsBy => 'Grandes contribuições de ';
-
-  @override
-  String get profileCreditsDaphneArt => ' (arte), ';
-
-  @override
-  String get profileCreditsComma => ', ';
-
-  @override
-  String get profileCreditsEnd => ' e muitos outros.';
+  String get profileCouldNotOpenLink => 'Não foi possível abrir o link';
 
   @override
   String get profileViewSourceCode => 'Ver código-fonte';

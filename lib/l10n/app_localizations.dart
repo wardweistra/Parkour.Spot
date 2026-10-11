@@ -1090,83 +1090,17 @@ abstract class AppLocalizations {
   /// **'Parkour·Spot is a community-driven app for discovering and sharing parkour and freerunning spots worldwide. We\'re making it simple to find quality locations—wherever you train.'**
   String get profileAboutIntro;
 
-  /// About section: expand long text
+  /// About section: primary exit to marketing About site
   ///
   /// In en, this message translates to:
-  /// **'Read more'**
-  String get profileReadMore;
+  /// **'More about Parkour·Spot'**
+  String get profileAboutSite;
 
-  /// About expanded: text before founder name link (keep trailing space)
+  /// SnackBar when an external URL or mailto fails to launch
   ///
   /// In en, this message translates to:
-  /// **'Started by '**
-  String get profileAboutStoryBeforeName;
-
-  /// About expanded: story after founder name
-  ///
-  /// In en, this message translates to:
-  /// **' from the Utrecht parkour community, the app brings together local knowledge from existing city and regional maps—whether they lived on Facebook, Instagram, websites, or retired apps—so great spot data doesn\'t get lost.'**
-  String get profileAboutStoryAfterName;
-
-  /// About expanded: community map paragraph
-  ///
-  /// In en, this message translates to:
-  /// **'This is your map. Add new spots, rate existing ones, and enrich listings with details. The more we contribute, the stronger the community\'s shared knowledge becomes.'**
-  String get profileAboutMapMission;
-
-  /// About expanded: principles list heading
-  ///
-  /// In en, this message translates to:
-  /// **'Our principles:'**
-  String get profileAboutPrinciplesHeader;
-
-  /// About expanded: transparency bullet
-  ///
-  /// In en, this message translates to:
-  /// **'• Transparency: you can browse the app without an account, and each spot shows which external sources contributed to it.'**
-  String get profileAboutPrincipleTransparency;
-
-  /// About expanded: portability bullet
-  ///
-  /// In en, this message translates to:
-  /// **'• Portability: we\'re building export tools so spot data can be used beyond the app.'**
-  String get profileAboutPrinciplePortability;
-
-  /// About expanded: open source bullet
-  ///
-  /// In en, this message translates to:
-  /// **'• Open source: the app is community-owned, not dependent on one person.'**
-  String get profileAboutPrincipleOpenSource;
-
-  /// About expanded: closing encouragement
-  ///
-  /// In en, this message translates to:
-  /// **'Enjoy discovering and sharing spots with Parkour.spot. Questions or ideas? Tap the contact button—we\'d love to hear from you.'**
-  String get profileAboutEnjoy;
-
-  /// Credits line before names (keep trailing space)
-  ///
-  /// In en, this message translates to:
-  /// **'Major contributions by '**
-  String get profileCreditsBy;
-
-  /// After Daphne's name: role and separator
-  ///
-  /// In en, this message translates to:
-  /// **' (art), '**
-  String get profileCreditsDaphneArt;
-
-  /// Separator between contributor names
-  ///
-  /// In en, this message translates to:
-  /// **', '**
-  String get profileCreditsComma;
-
-  /// End of credits line
-  ///
-  /// In en, this message translates to:
-  /// **' and many others.'**
-  String get profileCreditsEnd;
+  /// **'Could not open link'**
+  String get profileCouldNotOpenLink;
 
   /// About section: GitHub button
   ///

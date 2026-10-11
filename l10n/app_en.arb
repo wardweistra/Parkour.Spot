@@ -732,57 +732,13 @@
   "@profileAboutIntro": {
     "description": "About section: short intro paragraph"
   },
-  "profileReadMore": "Read more",
-  "@profileReadMore": {
-    "description": "About section: expand long text"
+  "profileAboutSite": "More about Parkour·Spot",
+  "@profileAboutSite": {
+    "description": "About section: primary exit to marketing About site"
   },
-  "profileAboutStoryBeforeName": "Started by ",
-  "@profileAboutStoryBeforeName": {
-    "description": "About expanded: text before founder name link (keep trailing space)"
-  },
-  "profileAboutStoryAfterName": " from the Utrecht parkour community, the app brings together local knowledge from existing city and regional maps—whether they lived on Facebook, Instagram, websites, or retired apps—so great spot data doesn't get lost.",
-  "@profileAboutStoryAfterName": {
-    "description": "About expanded: story after founder name"
-  },
-  "profileAboutMapMission": "This is your map. Add new spots, rate existing ones, and enrich listings with details. The more we contribute, the stronger the community's shared knowledge becomes.",
-  "@profileAboutMapMission": {
-    "description": "About expanded: community map paragraph"
-  },
-  "profileAboutPrinciplesHeader": "Our principles:",
-  "@profileAboutPrinciplesHeader": {
-    "description": "About expanded: principles list heading"
-  },
-  "profileAboutPrincipleTransparency": "• Transparency: you can browse the app without an account, and each spot shows which external sources contributed to it.",
-  "@profileAboutPrincipleTransparency": {
-    "description": "About expanded: transparency bullet"
-  },
-  "profileAboutPrinciplePortability": "• Portability: we're building export tools so spot data can be used beyond the app.",
-  "@profileAboutPrinciplePortability": {
-    "description": "About expanded: portability bullet"
-  },
-  "profileAboutPrincipleOpenSource": "• Open source: the app is community-owned, not dependent on one person.",
-  "@profileAboutPrincipleOpenSource": {
-    "description": "About expanded: open source bullet"
-  },
-  "profileAboutEnjoy": "Enjoy discovering and sharing spots with Parkour.spot. Questions or ideas? Tap the contact button—we'd love to hear from you.",
-  "@profileAboutEnjoy": {
-    "description": "About expanded: closing encouragement"
-  },
-  "profileCreditsBy": "Major contributions by ",
-  "@profileCreditsBy": {
-    "description": "Credits line before names (keep trailing space)"
-  },
-  "profileCreditsDaphneArt": " (art), ",
-  "@profileCreditsDaphneArt": {
-    "description": "After Daphne's name: role and separator"
-  },
-  "profileCreditsComma": ", ",
-  "@profileCreditsComma": {
-    "description": "Separator between contributor names"
-  },
-  "profileCreditsEnd": " and many others.",
-  "@profileCreditsEnd": {
-    "description": "End of credits line"
+  "profileCouldNotOpenLink": "Could not open link",
+  "@profileCouldNotOpenLink": {
+    "description": "SnackBar when an external URL or mailto fails to launch"
   },
   "profileViewSourceCode": "View source code",
   "@profileViewSourceCode": {
@@ -2261,7 +2217,6 @@
   "spotDetailQuickActionShare": "Share",
   "spotDetailQuickActionRate": "Rate",
   "spotDetailRatingTooltip": "Community rating and your stars",
-  "spotDetailQuickActionRate": "Rate",
   "spotDetailPresenceHereNow": "Here now",
   "spotDetailCommunitySectionTitle": "Community",
   "spotDetailCommunitySectionSubtitle": "See who’s training or planning to be here, and share your session.",
@@ -4762,7 +4717,6 @@
   "@locationSuggestionReviewHint": {
     "description": "Hint above the map when moderators review a location edit suggestion"
   },
-
   "editSpotYoutubeSectionTitle": "YouTube links",
   "@editSpotYoutubeSectionTitle": {
     "description": "Moderator edit spot: YouTube links card title"
