@@ -1,6 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:parkour_spot/utils/marker_icon_utils.dart';
 import 'package:parkour_spot/widgets/explore_bottom_sheet_header.dart';
+
+Finder _mapPinImage(String assetPath) {
+  return find.byWidgetPredicate(
+    (widget) =>
+        widget is Image &&
+        widget.image is AssetImage &&
+        (widget.image as AssetImage).assetName == assetPath,
+  );
+}
 
 void main() {
   testWidgets('tapping the spots segment opens a collapsed sheet', (
@@ -64,7 +74,10 @@ void main() {
     await tester.tap(find.text('3 events'));
     await tester.pump();
 
-    expect(find.byIcon(Icons.event), findsOneWidget);
+    expect(
+      _mapPinImage(MarkerIconUtils.mapPinEventSelectedAsset),
+      findsOneWidget,
+    );
     expect(find.byIcon(Icons.expand_more), findsOneWidget);
   });
 }

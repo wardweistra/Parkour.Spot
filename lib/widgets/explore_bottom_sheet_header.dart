@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../utils/marker_icon_utils.dart';
+
 /// Combined Explore bottom-sheet chrome: brand mark, spots/events pill toggle
 /// with live counts, and expand/collapse control.
 class ExploreBottomSheetHeader extends StatelessWidget {
@@ -218,8 +220,8 @@ class _ModePillToggleState extends State<_ModePillToggle> {
                 _ModeSegment(
                   key: _spotsKey,
                   selected: isSpots,
-                  icon: Icons.place_outlined,
-                  selectedIcon: Icons.place,
+                  pinAsset: MarkerIconUtils.mapPinNormalAsset,
+                  selectedPinAsset: MarkerIconUtils.mapPinNormalSelectedAsset,
                   label: widget.spotsLabel,
                   detailSuffix: widget.spotsDetailSuffix,
                   onTap: () =>
@@ -228,8 +230,8 @@ class _ModePillToggleState extends State<_ModePillToggle> {
                 _ModeSegment(
                   key: _eventsKey,
                   selected: !isSpots,
-                  icon: Icons.event_outlined,
-                  selectedIcon: Icons.event,
+                  pinAsset: MarkerIconUtils.mapPinEventAsset,
+                  selectedPinAsset: MarkerIconUtils.mapPinEventSelectedAsset,
                   label: widget.eventsLabel,
                   detailSuffix: widget.eventsDetailSuffix,
                   onTap: () =>
@@ -245,9 +247,11 @@ class _ModePillToggleState extends State<_ModePillToggle> {
 }
 
 class _ModeSegment extends StatelessWidget {
+  static const double _pinLogicalHeight = 16;
+
   final bool selected;
-  final IconData icon;
-  final IconData selectedIcon;
+  final String pinAsset;
+  final String selectedPinAsset;
   final String label;
   final String? detailSuffix;
   final VoidCallback onTap;
@@ -255,8 +259,8 @@ class _ModeSegment extends StatelessWidget {
   const _ModeSegment({
     super.key,
     required this.selected,
-    required this.icon,
-    required this.selectedIcon,
+    required this.pinAsset,
+    required this.selectedPinAsset,
     required this.label,
     this.detailSuffix,
     required this.onTap,
@@ -287,10 +291,16 @@ class _ModeSegment extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Icon(
-                  selected ? selectedIcon : icon,
-                  size: 16,
-                  color: foreground,
+                SizedBox(
+                  height: _pinLogicalHeight,
+                  width: MarkerIconUtils.mapPinLogicalWidthForHeight(
+                    _pinLogicalHeight,
+                  ),
+                  child: Image.asset(
+                    selected ? selectedPinAsset : pinAsset,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.medium,
+                  ),
                 ),
                 const SizedBox(width: 5),
                 Flexible(
