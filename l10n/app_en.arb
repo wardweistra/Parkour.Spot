@@ -219,6 +219,50 @@
   "@myEventsCalendarRegenerateConfirm": {
     "description": "Destructive confirm button for regenerating calendar feed"
   },
+  "myMapFeedTitle": "Add to your map",
+  "@myMapFeedTitle": {
+    "description": "My spots / My sessions section for secret KML subscribe URL"
+  },
+  "myMapFeedDescription": "Subscribe with a private link. Checked-in spots, planned sessions, Want to visit, and Been to stay updated in Google Maps, Apple Maps, or other apps that support KML.",
+  "@myMapFeedDescription": {
+    "description": "Explains the live map feed on My spots and My sessions"
+  },
+  "myMapFeedOpenGoogleMyMaps": "Add in Google My Maps",
+  "@myMapFeedOpenGoogleMyMaps": {
+    "description": "Copy KML URL and open Google My Maps to import by URL"
+  },
+  "myMapFeedCopyUrl": "Copy URL",
+  "@myMapFeedCopyUrl": {
+    "description": "Copy the https KML subscribe URL to the clipboard"
+  },
+  "myMapFeedRegenerate": "Regenerate link…",
+  "@myMapFeedRegenerate": {
+    "description": "Secondary action to rotate the map feed token"
+  },
+  "myMapFeedCopied": "Map link copied",
+  "@myMapFeedCopied": {
+    "description": "SnackBar after copying the map subscribe URL"
+  },
+  "myMapFeedCopiedForImport": "Map link copied — in My Maps choose Import, then paste this URL",
+  "@myMapFeedCopiedForImport": {
+    "description": "SnackBar when opening Google My Maps after copying the KML URL"
+  },
+  "myMapFeedFailed": "Could not get your map link. Try again.",
+  "@myMapFeedFailed": {
+    "description": "Error when map feed callables fail"
+  },
+  "myMapFeedRegenerateTitle": "Regenerate map link?",
+  "@myMapFeedRegenerateTitle": {
+    "description": "Confirm dialog title before rotating map feed token"
+  },
+  "myMapFeedRegenerateBody": "Your previous map link will stop working. Maps already using the old link will not update until you add the new link.",
+  "@myMapFeedRegenerateBody": {
+    "description": "Warning before invalidating the old KML feed URL"
+  },
+  "myMapFeedRegenerateConfirm": "Regenerate link",
+  "@myMapFeedRegenerateConfirm": {
+    "description": "Confirm button to rotate map feed token"
+  },
   "spotListsHubSignInPrompt": "Sign in to view and manage your lists",
   "@spotListsHubSignInPrompt": {
     "description": "My spots: prompt when signed out"

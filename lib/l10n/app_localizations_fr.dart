@@ -183,6 +183,43 @@ class AppLocalizationsFr extends AppLocalizations {
   String get myEventsCalendarRegenerateConfirm => 'Régénérer le lien';
 
   @override
+  String get myMapFeedTitle => 'Ajouter à votre carte';
+
+  @override
+  String get myMapFeedDescription =>
+      'Abonnez-vous avec un lien privé. Spots où vous êtes, séances planifiées, À visiter et Déjà visité restent à jour dans Google Maps, Plans ou d’autres apps compatibles KML.';
+
+  @override
+  String get myMapFeedOpenGoogleMyMaps => 'Ajouter dans Google My Maps';
+
+  @override
+  String get myMapFeedCopyUrl => 'Copier l’URL';
+
+  @override
+  String get myMapFeedRegenerate => 'Régénérer le lien…';
+
+  @override
+  String get myMapFeedCopied => 'Lien de la carte copié';
+
+  @override
+  String get myMapFeedCopiedForImport =>
+      'Lien copié — dans My Maps, choisissez Importer puis collez cette URL';
+
+  @override
+  String get myMapFeedFailed =>
+      'Impossible d’obtenir votre lien de carte. Réessayez.';
+
+  @override
+  String get myMapFeedRegenerateTitle => 'Régénérer le lien de la carte ?';
+
+  @override
+  String get myMapFeedRegenerateBody =>
+      'Votre ancien lien ne fonctionnera plus. Les cartes déjà abonnées ne se mettront à jour qu’après ajout du nouveau lien.';
+
+  @override
+  String get myMapFeedRegenerateConfirm => 'Régénérer le lien';
+
+  @override
   String get spotListsHubSignInPrompt =>
       'Connectez-vous pour voir et gérer vos listes';
 
