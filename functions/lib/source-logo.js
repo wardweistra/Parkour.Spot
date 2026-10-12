@@ -51,10 +51,11 @@ function buildSourceLogoStoragePath(kind, sourceId, ext) {
 }
 
 /**
- * @param {import("@google-cloud/storage").Bucket} bucket
- * @param {string} storagePath
- * @param {Buffer} imageBuffer
- * @param {string} contentType
+ * @param {Object} input
+ * @param {Object} input.bucket GCS bucket
+ * @param {string} input.storagePath
+ * @param {Buffer} input.imageBuffer
+ * @param {string} input.contentType
  * @return {Promise<string>}
  */
 async function savePublicSourceLogo({bucket, storagePath, imageBuffer, contentType}) {
@@ -70,7 +71,7 @@ async function savePublicSourceLogo({bucket, storagePath, imageBuffer, contentTy
 }
 
 /**
- * @param {import("@google-cloud/storage").Bucket} bucket
+ * @param {Object} bucket GCS bucket
  * @param {string|null|undefined} storagePath
  * @return {Promise<void>}
  */
