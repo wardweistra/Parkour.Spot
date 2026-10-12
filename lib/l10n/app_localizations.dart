@@ -343,7 +343,7 @@ abstract class AppLocalizations {
   /// Explains the live calendar feed on My events
   ///
   /// In en, this message translates to:
-  /// **'Subscribe with a private link. Your Going and Interested events stay updated in your calendar app.'**
+  /// **'Subscribe with a private link. Your Going and Interested events, upcoming check-ins, and planned sessions stay updated in your calendar app.'**
   String get myEventsCalendarDescription;
 
   /// Subscribe via webcal:// into Apple Calendar on Mac/iPhone

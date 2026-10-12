@@ -1,6 +1,6 @@
 /* eslint-disable max-len */
 /**
- * Per-user secret iCal feed for Going / Interested RSVPs.
+ * Per-user secret iCal feed for Going / Interested events, check-ins, and plans.
  */
 
 const {hashApiKey, generateCalendarToken} = require("./api-helpers");
@@ -8,8 +8,13 @@ const {hashApiKey, generateCalendarToken} = require("./api-helpers");
 const CALENDAR_FEEDS_COLLECTION = "calendarFeeds";
 const CALENDAR_FEED_BY_TOKEN_COLLECTION = "calendarFeedByToken";
 const PUBLIC_ORIGIN = "https://parkour.spot";
-const CAL_NAME = "ParkourSpot — My events";
+const MY_SESSIONS_URL = `${PUBLIC_ORIGIN}/profile/check-ins`;
+const CAL_NAME = "ParkourSpot — My events & sessions";
 const INTERESTED_PREFIX = "[Interested] ";
+const CHECK_IN_PREFIX = "Check-in: ";
+const PLANNED_SESSION_PREFIX = "Planned session: ";
+const CALENDAR_CHECK_INS_QUERY_LIMIT = 100;
+const CALENDAR_TRAINING_PLANS_QUERY_LIMIT = 100;
 
 /**
  * @param {string} token
@@ -136,6 +141,29 @@ function trimmedId(value) {
  * @param {Object|null|undefined} eventData
  * @return {string|null}
  */
+/**
+ * @param {string} spotId
+ * @return {string}
+ */
+function spotPageUrl(spotId) {
+  return `${PUBLIC_ORIGIN}/spot/${encodeURIComponent(spotId)}`;
+}
+
+/**
+ * @param {Array<string|null|undefined>} parts
+ * @return {string}
+ */
+function joinDescriptionBody(parts) {
+  return parts
+      .map((p) => (typeof p === "string" ? p.trim() : ""))
+      .filter((p) => p.length > 0)
+      .join("\n\n");
+}
+
+/**
+ * @param {Object|null|undefined} eventData
+ * @return {string|null}
+ */
 function eventLocationLine(eventData) {
   if (!eventData) return null;
   const address = trimmedId(eventData.address);
@@ -198,36 +226,17 @@ function selectFeedEntries(interests, eventsById) {
  * @param {{eventId: string, status: string, event: Object}} entry
  * @return {string[]} ICS lines for one VEVENT (unfolded content lines)
  */
-function buildVEventLines(entry) {
-  const event = entry.event || {};
-  const eventId = trimmedId(entry.eventId) || "unknown";
-  const title = typeof event.title === "string" && event.title.trim() ?
-    event.title.trim() :
-    "Untitled event";
-  const summary = entry.status === "interested" ?
-    `${INTERESTED_PREFIX}${title}` :
-    title;
-  const startAt = toJsDate(event.startAt);
-  if (!startAt) return [];
-
-  const endAt = toJsDate(event.endAt);
-  const isDateOnly = event.isDateOnly === true;
-  const url = `${PUBLIC_ORIGIN}/event/${encodeURIComponent(eventId)}`;
-  const location = eventLocationLine(event);
-  const updatedAt = toJsDate(event.updatedAt) || startAt;
-
-  const lines = [
-    "BEGIN:VEVENT",
-    `UID:${eventId}@parkour.spot`,
-    `DTSTAMP:${formatIcsDateTimeUtc(new Date())}`,
-    `LAST-MODIFIED:${formatIcsDateTimeUtc(updatedAt)}`,
-  ];
-
+/**
+ * @param {Date} startAt
+ * @param {Date|null|undefined} endAt
+ * @param {boolean} isDateOnly
+ * @param {string[]} lines
+ */
+function appendVEventDateTimes(startAt, endAt, isDateOnly, lines) {
   if (isDateOnly) {
     const startDate = formatIcsDateOnly(startAt);
     let endDate;
     if (endAt) {
-      // VALUE=DATE DTEND is exclusive; if end is same calendar day, add one day.
       const endExclusive = new Date(Date.UTC(
           endAt.getUTCFullYear(),
           endAt.getUTCMonth(),
@@ -251,14 +260,54 @@ function buildVEventLines(entry) {
       new Date(startAt.getTime() + 60 * 60 * 1000);
     lines.push(`DTEND:${formatIcsDateTimeUtc(effectiveEnd)}`);
   }
+}
+
+/**
+ * @param {{eventId: string, status: string, event: Object}} entry
+ * @return {string[]} ICS lines for one VEVENT (unfolded content lines)
+ */
+function buildVEventLines(entry) {
+  const event = entry.event || {};
+  const eventId = trimmedId(entry.eventId) || "unknown";
+  const title = typeof event.title === "string" && event.title.trim() ?
+    event.title.trim() :
+    "Untitled event";
+  const summary = entry.status === "interested" ?
+    `${INTERESTED_PREFIX}${title}` :
+    title;
+  const startAt = toJsDate(event.startAt);
+  if (!startAt) return [];
+
+  const endAt = toJsDate(event.endAt);
+  const isDateOnly = event.isDateOnly === true;
+  const url = `${PUBLIC_ORIGIN}/event/${encodeURIComponent(eventId)}`;
+  const location = eventLocationLine(event);
+  const updatedAt = toJsDate(event.updatedAt) || startAt;
+  const descriptionText = typeof event.description === "string" ?
+    event.description.trim() :
+    "";
+  const websiteUrl = typeof event.websiteUrl === "string" ?
+    event.websiteUrl.trim() :
+    "";
+
+  const lines = [
+    "BEGIN:VEVENT",
+    `UID:${eventId}@parkour.spot`,
+    `DTSTAMP:${formatIcsDateTimeUtc(new Date())}`,
+    `LAST-MODIFIED:${formatIcsDateTimeUtc(updatedAt)}`,
+  ];
+
+  appendVEventDateTimes(startAt, endAt, isDateOnly, lines);
 
   lines.push(`SUMMARY:${escapeIcsText(summary)}`);
   lines.push(`URL:${url}`);
   const descriptionParts = [
     entry.status === "interested" ? "Status: Interested" : "Status: Going",
+    descriptionText ? descriptionText : null,
+    websiteUrl ? `Website: ${websiteUrl}` : null,
     `Open on ParkourSpot: ${url}`,
   ];
-  lines.push(`DESCRIPTION:${escapeIcsText(descriptionParts.join("\n"))}`);
+  lines.push(`DESCRIPTION:${escapeIcsText(joinDescriptionBody(descriptionParts))}`);
   if (location) {
     lines.push(`LOCATION:${escapeIcsText(location)}`);
   }
@@ -267,10 +316,111 @@ function buildVEventLines(entry) {
 }
 
 /**
- * @param {Array<{eventId: string, status: string, event: Object}>} entries
+ * @param {Object} checkIn Firestore fields + id
+ * @return {string[]}
+ */
+function buildCheckInVEventLines(checkIn) {
+  const checkInId = trimmedId(checkIn.id);
+  const spotId = trimmedId(checkIn.spotId);
+  if (!checkInId || !spotId) return [];
+
+  const startAt = toJsDate(checkIn.checkedInAt);
+  const endAt = toJsDate(checkIn.expectedEndAt);
+  if (!startAt || !endAt || endAt.getTime() <= startAt.getTime()) return [];
+
+  const spotName = trimmedId(checkIn.spotName) || "Parkour spot";
+  const spotUrl = spotPageUrl(spotId);
+  const summary = `${CHECK_IN_PREFIX}${spotName}`;
+  const comment = trimmedId(checkIn.comment);
+  const updatedAt = startAt;
+
+  const lines = [
+    "BEGIN:VEVENT",
+    `UID:checkin-${checkInId}@parkour.spot`,
+    `DTSTAMP:${formatIcsDateTimeUtc(new Date())}`,
+    `LAST-MODIFIED:${formatIcsDateTimeUtc(updatedAt)}`,
+  ];
+  appendVEventDateTimes(startAt, endAt, false, lines);
+  lines.push(`SUMMARY:${escapeIcsText(summary)}`);
+  lines.push(`URL:${spotUrl}`);
+  const descriptionParts = [
+    "Type: Check-in",
+    `Spot: ${spotName}`,
+    comment ? `Note: ${comment}` : null,
+    checkIn.isPrivate === true ? "Visibility: Private" : "Visibility: Public",
+    `Open spot: ${spotUrl}`,
+    `My sessions: ${MY_SESSIONS_URL}`,
+  ];
+  lines.push(`DESCRIPTION:${escapeIcsText(joinDescriptionBody(descriptionParts))}`);
+  lines.push(`LOCATION:${escapeIcsText(spotName)}`);
+  lines.push("END:VEVENT");
+  return lines;
+}
+
+/**
+ * @param {Object} plan Firestore fields + id
+ * @return {string[]}
+ */
+function buildTrainingPlanVEventLines(plan) {
+  const planId = trimmedId(plan.id);
+  const spotId = trimmedId(plan.spotId);
+  if (!planId || !spotId) return [];
+
+  const startAt = toJsDate(plan.plannedStartAt);
+  const endAt = toJsDate(plan.plannedEndAt);
+  if (!startAt || !endAt || endAt.getTime() <= startAt.getTime()) return [];
+
+  const spotName = trimmedId(plan.spotName) || "Parkour spot";
+  const spotUrl = spotPageUrl(spotId);
+  const summary = `${PLANNED_SESSION_PREFIX}${spotName}`;
+  const comment = trimmedId(plan.comment);
+  const updatedAt = toJsDate(plan.createdAt) || startAt;
+
+  const lines = [
+    "BEGIN:VEVENT",
+    `UID:plan-${planId}@parkour.spot`,
+    `DTSTAMP:${formatIcsDateTimeUtc(new Date())}`,
+    `LAST-MODIFIED:${formatIcsDateTimeUtc(updatedAt)}`,
+  ];
+  appendVEventDateTimes(startAt, endAt, false, lines);
+  lines.push(`SUMMARY:${escapeIcsText(summary)}`);
+  lines.push(`URL:${spotUrl}`);
+  const descriptionParts = [
+    "Type: Planned session",
+    `Spot: ${spotName}`,
+    comment ? `Note: ${comment}` : null,
+    plan.isPrivate === true ? "Visibility: Private" : "Visibility: Public",
+    `Open spot: ${spotUrl}`,
+    `My sessions: ${MY_SESSIONS_URL}`,
+  ];
+  lines.push(`DESCRIPTION:${escapeIcsText(joinDescriptionBody(descriptionParts))}`);
+  lines.push(`LOCATION:${escapeIcsText(spotName)}`);
+  lines.push("END:VEVENT");
+  return lines;
+}
+
+/**
+ * @param {{kind: string, startAt: Date, build: Function}} item
+ * @return {string[]}
+ */
+function buildCalendarItemVEventLines(item) {
+  if (item.kind === "event") {
+    return buildVEventLines(item.entry);
+  }
+  if (item.kind === "checkIn") {
+    return buildCheckInVEventLines(item.checkIn);
+  }
+  if (item.kind === "trainingPlan") {
+    return buildTrainingPlanVEventLines(item.plan);
+  }
+  return [];
+}
+
+/**
+ * @param {Array<Object>} items unified calendar feed items
  * @return {string} full ICS document
  */
-function buildIcsCalendar(entries) {
+function buildIcsCalendar(items) {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -279,11 +429,75 @@ function buildIcsCalendar(entries) {
     "METHOD:PUBLISH",
     `X-WR-CALNAME:${escapeIcsText(CAL_NAME)}`,
   ];
-  for (const entry of entries) {
-    lines.push(...buildVEventLines(entry));
+  for (const item of items) {
+    lines.push(...buildCalendarItemVEventLines(item));
   }
   lines.push("END:VCALENDAR");
   return lines.map(foldIcsLine).join("\r\n") + "\r\n";
+}
+
+/**
+ * @param {Array<Object>} items unified feed items with startAt
+ * @return {Array<Object>}
+ */
+function sortCalendarItems(items) {
+  return [...items].sort((a, b) => {
+    const startCmp = a.startAt.getTime() - b.startAt.getTime();
+    if (startCmp !== 0) return startCmp;
+    const aSummary = a.sortLabel || "";
+    const bSummary = b.sortLabel || "";
+    return aSummary.localeCompare(bSummary);
+  });
+}
+
+/**
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {string} userId
+ * @return {Promise<Array<Object>>}
+ */
+async function loadUpcomingCheckInsForUser(db, userId) {
+  const now = new Date();
+  const snap = await db
+      .collection("spotCheckIns")
+      .where("userId", "==", userId)
+      .orderBy("checkedInAt", "desc")
+      .limit(CALENDAR_CHECK_INS_QUERY_LIMIT)
+      .get();
+  const out = [];
+  for (const doc of snap.docs) {
+    const data = doc.data() || {};
+    const endAt = toJsDate(data.expectedEndAt);
+    if (!endAt || endAt.getTime() < now.getTime()) continue;
+    const startAt = toJsDate(data.checkedInAt);
+    if (!startAt) continue;
+    out.push({id: doc.id, ...data});
+  }
+  return out;
+}
+
+/**
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {string} userId
+ * @return {Promise<Array<Object>>}
+ */
+async function loadUpcomingTrainingPlansForUser(db, userId) {
+  const now = new Date();
+  const snap = await db
+      .collection("spotTrainingPlans")
+      .where("userId", "==", userId)
+      .where("plannedEndAt", ">=", now)
+      .orderBy("plannedEndAt", "asc")
+      .limit(CALENDAR_TRAINING_PLANS_QUERY_LIMIT)
+      .get();
+  const out = [];
+  for (const doc of snap.docs) {
+    const data = doc.data() || {};
+    const endAt = toJsDate(data.plannedEndAt);
+    const startAt = toJsDate(data.plannedStartAt);
+    if (!startAt || !endAt || endAt.getTime() < now.getTime()) continue;
+    out.push({id: doc.id, ...data});
+  }
+  return out;
 }
 
 /**
@@ -437,17 +651,76 @@ async function resolveUserIdFromCalendarToken(db, token) {
  * @param {string} userId
  * @return {Promise<string>}
  */
+/**
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {string} userId
+ * @return {Promise<Array<Object>>}
+ */
+async function loadCalendarItemsForUser(db, userId) {
+  const [eventEntries, checkIns, plans] = await Promise.all([
+    loadFeedEntriesForUser(db, userId),
+    loadUpcomingCheckInsForUser(db, userId),
+    loadUpcomingTrainingPlansForUser(db, userId),
+  ]);
+
+  const items = [];
+  for (const entry of eventEntries) {
+    const startAt = toJsDate(entry.event.startAt);
+    if (!startAt) continue;
+    const title = typeof entry.event.title === "string" ?
+      entry.event.title.trim() :
+      "";
+    items.push({
+      kind: "event",
+      entry,
+      startAt,
+      sortLabel: title.toLowerCase(),
+    });
+  }
+  for (const checkIn of checkIns) {
+    const startAt = toJsDate(checkIn.checkedInAt);
+    if (!startAt) continue;
+    const spotName = trimmedId(checkIn.spotName) || "";
+    items.push({
+      kind: "checkIn",
+      checkIn,
+      startAt,
+      sortLabel: spotName.toLowerCase(),
+    });
+  }
+  for (const plan of plans) {
+    const startAt = toJsDate(plan.plannedStartAt);
+    if (!startAt) continue;
+    const spotName = trimmedId(plan.spotName) || "";
+    items.push({
+      kind: "trainingPlan",
+      plan,
+      startAt,
+      sortLabel: spotName.toLowerCase(),
+    });
+  }
+  return sortCalendarItems(items);
+}
+
+/**
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {string} userId
+ * @return {Promise<string>}
+ */
 async function buildIcsForUser(db, userId) {
-  const entries = await loadFeedEntriesForUser(db, userId);
-  return buildIcsCalendar(entries);
+  const items = await loadCalendarItemsForUser(db, userId);
+  return buildIcsCalendar(items);
 }
 
 module.exports = {
   CALENDAR_FEEDS_COLLECTION,
   CALENDAR_FEED_BY_TOKEN_COLLECTION,
   PUBLIC_ORIGIN,
+  MY_SESSIONS_URL,
   CAL_NAME,
   INTERESTED_PREFIX,
+  CHECK_IN_PREFIX,
+  PLANNED_SESSION_PREFIX,
   calendarFeedUrl,
   extractCalendarTokenFromPath,
   escapeIcsText,
@@ -455,10 +728,14 @@ module.exports = {
   formatIcsDateTimeUtc,
   formatIcsDateOnly,
   toJsDate,
+  joinDescriptionBody,
   selectFeedEntries,
   buildVEventLines,
+  buildCheckInVEventLines,
+  buildTrainingPlanVEventLines,
   buildIcsCalendar,
   loadFeedEntriesForUser,
+  loadCalendarItemsForUser,
   getOrCreateCalendarFeed,
   regenerateCalendarFeed,
   resolveUserIdFromCalendarToken,

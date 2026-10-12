@@ -145,7 +145,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get myEventsCalendarDescription =>
-      'Abonniere mit einem privaten Link. Deine Events mit Zusagen und Interesse bleiben in deiner Kalender-App aktuell.';
+      'Abonniere mit einem privaten Link. Deine Events mit Zusagen und Interesse, anstehende Check-ins und geplante Sessions bleiben in deiner Kalender-App aktuell.';
 
   @override
   String get myEventsCalendarOpenMac => 'Zum Mac-Kalender hinzufügen';
