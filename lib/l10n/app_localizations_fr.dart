@@ -146,7 +146,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Abonnez-vous avec un lien privé. Vos événements « J’y vais » et « Intéressé » restent à jour dans votre app de calendrier.';
 
   @override
-  String get myEventsCalendarOpenMac => 'Ajouter au calendrier Mac';
+  String get myEventsCalendarOpenMac => 'Ajouter au calendrier Apple';
 
   @override
   String get myEventsCalendarOpenGoogle => 'Ajouter à Google Agenda';
