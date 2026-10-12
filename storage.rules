@@ -88,6 +88,12 @@ service firebase.storage {
       allow write: if false;
     }
 
+    // Community source logos — public read, Cloud Functions write only
+    match /sourceLogos/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // URBN migration files - authenticated users can read
     match /urbn/{allPaths=**} {
       allow read: if request.auth != null;

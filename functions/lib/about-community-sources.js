@@ -40,6 +40,7 @@ function toPublicSource(doc, countsById, kind) {
     publicUrl: trimOrNull(data.publicUrl),
     description: trimOrNull(data.description),
     instagramHandle: normalizeInstagramHandle(data.instagramHandle),
+    logoUrl: trimOrNull(data.logoUrl),
   };
   if (kind === "spot") {
     entry.spotCount = countsById.get(doc.id) || 0;

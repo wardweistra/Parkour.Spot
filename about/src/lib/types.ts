@@ -118,6 +118,7 @@ export type CommunitySource = {
   publicUrl: string | null;
   description: string | null;
   instagramHandle: string | null;
+  logoUrl?: string | null;
   spotCount?: number;
   eventCount?: number;
 };

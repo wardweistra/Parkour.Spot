@@ -7,6 +7,7 @@ import '../../constants/spot_attributes.dart';
 import '../../services/auth_service.dart';
 import '../../services/sync_source_service.dart';
 import '../../utils/kml_file_picker.dart';
+import '../../widgets/admin/source_logo_editor.dart';
 import '../../widgets/admin/sync_run_report_dialog.dart';
 import '../../widgets/spot_form/attributes_section.dart';
 
@@ -2082,6 +2083,24 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                   helperText:
                       'Instagram username without @ symbol (e.g., parkour_spots)',
                 ),
+              ),
+              const SizedBox(height: 12),
+              SourceLogoEditor(
+                sourceId: widget.source?.id,
+                logoUrl: widget.source?.logoUrl,
+                onUpload: ({
+                  required sourceId,
+                  required imageBytes,
+                  required contentType,
+                }) {
+                  return context.read<SyncSourceService>().uploadSourceLogo(
+                    sourceId: sourceId,
+                    imageBytes: imageBytes,
+                    contentType: contentType,
+                  );
+                },
+                onRemove: (sourceId) =>
+                    context.read<SyncSourceService>().removeSourceLogo(sourceId),
               ),
               const SizedBox(height: 8),
               Align(

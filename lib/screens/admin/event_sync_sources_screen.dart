@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../services/auth_service.dart';
 import '../../services/event_sync_source_service.dart';
 import '../../utils/event_schedule_utils.dart';
+import '../../widgets/admin/source_logo_editor.dart';
 import '../../widgets/admin/sync_run_report_dialog.dart';
 
 const TextStyle _kEventSyncChipLabelText = TextStyle(
@@ -749,6 +750,25 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                   decoration: const InputDecoration(
                     labelText: 'Public URL (optional)',
                   ),
+                ),
+                const SizedBox(height: 12),
+                SourceLogoEditor(
+                  sourceId: widget.source?.id,
+                  logoUrl: widget.source?.logoUrl,
+                  onUpload: ({
+                    required sourceId,
+                    required imageBytes,
+                    required contentType,
+                  }) {
+                    return context.read<EventSyncSourceService>().uploadSourceLogo(
+                      sourceId: sourceId,
+                      imageBytes: imageBytes,
+                      contentType: contentType,
+                    );
+                  },
+                  onRemove: (sourceId) => context
+                      .read<EventSyncSourceService>()
+                      .removeSourceLogo(sourceId),
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(

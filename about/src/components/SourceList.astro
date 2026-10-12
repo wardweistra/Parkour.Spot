@@ -32,8 +32,20 @@ function countLabel(source: CommunitySource): string | null {
         const count = countLabel(source);
         const ig = source.instagramHandle;
         const href = source.publicUrl;
+        const logoUrl = source.logoUrl?.trim() || null;
         return (
           <li class:list={["stack-list__card", "source-list__row", {"source-list__row--linked": href}]}>
+            {logoUrl && (
+              <img
+                class="source-list__logo"
+                src={logoUrl}
+                alt=""
+                width="48"
+                height="48"
+                loading="lazy"
+                decoding="async"
+              />
+            )}
             <div class="source-list__body">
               <h3 class="stack-list__title">
                 {href ? (

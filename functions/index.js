@@ -217,6 +217,12 @@ const {
   wixEventsPublicUrl,
 } = require("./lib/wix-events");
 const {
+  buildSourceLogoStoragePath,
+  savePublicSourceLogo,
+  deleteSourceLogoAtPath,
+  decodeSourceLogoUpload,
+} = require("./lib/source-logo");
+const {
   fetchJumpEventsCalendarEvents,
   normalizeJumpEventsFeedUrl,
   jumpEventsPublicUrl,
@@ -1950,6 +1956,75 @@ async function deleteGoogleEarthImportFiles(sourceData) {
   } catch (error) {
     console.warn(`Failed to delete Google Earth import file ${storagePath}:`, error);
   }
+}
+
+/**
+ * Uploads or replaces the public logo for a spot or event sync source document.
+ * @param {Object} input
+ * @param {string} input.collectionName
+ * @param {"spot"|"event"} input.kind
+ * @param {string} input.sourceId
+ * @param {string} input.imageData
+ * @param {string} [input.contentType]
+ * @return {Promise<{logoUrl: string, logoStoragePath: string}>}
+ */
+async function persistSourceLogoUpload({
+  collectionName,
+  kind,
+  sourceId,
+  imageData,
+  contentType,
+}) {
+  const trimmedSourceId = String(sourceId).trim();
+  const sourceRef = db.collection(collectionName).doc(trimmedSourceId);
+  const sourceDoc = await sourceRef.get();
+  if (!sourceDoc.exists) {
+    throw new Error("Source not found");
+  }
+  const sourceData = sourceDoc.data() || {};
+  const {imageBuffer, contentType: resolvedType, ext} =
+    decodeSourceLogoUpload(imageData, contentType);
+  const storagePath = buildSourceLogoStoragePath(kind, trimmedSourceId, ext);
+  const previousPath = typeof sourceData.logoStoragePath === "string" ?
+    sourceData.logoStoragePath.trim() :
+    "";
+  const logoUrl = await savePublicSourceLogo({
+    bucket,
+    storagePath,
+    imageBuffer,
+    contentType: resolvedType,
+  });
+  if (previousPath && previousPath !== storagePath) {
+    await deleteSourceLogoAtPath(bucket, previousPath);
+  }
+  await sourceRef.update({
+    logoStoragePath: storagePath,
+    logoUrl,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+  return {logoUrl, logoStoragePath: storagePath};
+}
+
+/**
+ * Removes logo fields and deletes the Storage object when present.
+ * @param {string} collectionName
+ * @param {string} sourceId
+ * @return {Promise<void>}
+ */
+async function removeSourceLogoFromDoc(collectionName, sourceId) {
+  const trimmedSourceId = String(sourceId).trim();
+  const sourceRef = db.collection(collectionName).doc(trimmedSourceId);
+  const sourceDoc = await sourceRef.get();
+  if (!sourceDoc.exists) {
+    throw new Error("Source not found");
+  }
+  const sourceData = sourceDoc.data() || {};
+  await deleteSourceLogoAtPath(bucket, sourceData.logoStoragePath);
+  await sourceRef.update({
+    logoStoragePath: FieldValue.delete(),
+    logoUrl: FieldValue.delete(),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
 }
 
 /**
@@ -4303,6 +4378,64 @@ exports.uploadSyncSourceKml = onCall(
     },
 );
 
+// Upload or replace logo for a spot sync source (admin only).
+exports.uploadSyncSourceLogo = onCall(
+    {region: "europe-west1", memory: "256MiB", timeoutSeconds: 60},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {sourceId, imageData, contentType} = request.data || {};
+        if (!sourceId) {
+          throw new Error("sourceId is required");
+        }
+        const result = await persistSourceLogoUpload({
+          collectionName: "syncSources",
+          kind: "spot",
+          sourceId,
+          imageData,
+          contentType,
+        });
+        const actor = await resolveAuditActor(db, request);
+        await writeAuditLog(db, FieldValue, {
+          action: "syncSourceLogoUpload",
+          userId: actor.userId,
+          userName: actor.userName,
+          metadata: {sourceId: String(sourceId).trim()},
+        });
+        return {success: true, ...result};
+      } catch (error) {
+        console.error("Error uploading sync source logo:", error);
+        throw new Error(`Failed to upload sync source logo: ${error.message}`);
+      }
+    },
+);
+
+// Remove logo for a spot sync source (admin only).
+exports.removeSyncSourceLogo = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {sourceId} = request.data || {};
+        if (!sourceId) {
+          throw new Error("sourceId is required");
+        }
+        await removeSourceLogoFromDoc("syncSources", sourceId);
+        const actor = await resolveAuditActor(db, request);
+        await writeAuditLog(db, FieldValue, {
+          action: "syncSourceLogoRemove",
+          userId: actor.userId,
+          userName: actor.userName,
+          metadata: {sourceId: String(sourceId).trim()},
+        });
+        return {success: true, sourceId: String(sourceId).trim()};
+      } catch (error) {
+        console.error("Error removing sync source logo:", error);
+        throw new Error(`Failed to remove sync source logo: ${error.message}`);
+      }
+    },
+);
+
 // Function to delete a sync source (admin only)
 exports.deleteSyncSource = onCall(
     {region: "europe-west1"},
@@ -4321,6 +4454,10 @@ exports.deleteSyncSource = onCall(
         }
         const sourceName = sourceDoc.data().name || null;
         await deleteGoogleEarthImportFiles(sourceDoc.data());
+        await deleteSourceLogoAtPath(
+            bucket,
+            sourceDoc.data().logoStoragePath,
+        );
         await db.collection("syncSources").doc(sourceId).delete();
 
         const actor = await resolveAuditActor(db, request);
@@ -5638,6 +5775,12 @@ exports.deleteEventSyncSource = onCall(
         const sourceName = existing.exists && existing.data() ?
           (existing.data().name || null) :
           null;
+        if (existing.exists && existing.data()) {
+          await deleteSourceLogoAtPath(
+              bucket,
+              existing.data().logoStoragePath,
+          );
+        }
         await db.collection("eventSyncSources").doc(trimmedSourceId).delete();
         const actor = await resolveAuditActor(db, request);
         await writeAuditLog(db, FieldValue, {
@@ -5657,6 +5800,68 @@ exports.deleteEventSyncSource = onCall(
       } catch (error) {
         console.error("Error deleting event sync source:", error);
         throw new Error(`Failed to delete event sync source: ${error.message}`);
+      }
+    },
+);
+
+// Upload or replace logo for an event sync source (admin only).
+exports.uploadEventSyncSourceLogo = onCall(
+    {region: "europe-west1", memory: "256MiB", timeoutSeconds: 60},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {sourceId, imageData, contentType} = request.data || {};
+        if (!sourceId) {
+          throw new Error("sourceId is required");
+        }
+        const result = await persistSourceLogoUpload({
+          collectionName: "eventSyncSources",
+          kind: "event",
+          sourceId,
+          imageData,
+          contentType,
+        });
+        const actor = await resolveAuditActor(db, request);
+        await writeAuditLog(db, FieldValue, {
+          action: "eventSyncSourceLogoUpload",
+          userId: actor.userId,
+          userName: actor.userName,
+          metadata: {sourceId: String(sourceId).trim()},
+        });
+        return {success: true, ...result};
+      } catch (error) {
+        console.error("Error uploading event sync source logo:", error);
+        throw new Error(
+            `Failed to upload event sync source logo: ${error.message}`,
+        );
+      }
+    },
+);
+
+// Remove logo for an event sync source (admin only).
+exports.removeEventSyncSourceLogo = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {sourceId} = request.data || {};
+        if (!sourceId) {
+          throw new Error("sourceId is required");
+        }
+        await removeSourceLogoFromDoc("eventSyncSources", sourceId);
+        const actor = await resolveAuditActor(db, request);
+        await writeAuditLog(db, FieldValue, {
+          action: "eventSyncSourceLogoRemove",
+          userId: actor.userId,
+          userName: actor.userName,
+          metadata: {sourceId: String(sourceId).trim()},
+        });
+        return {success: true, sourceId: String(sourceId).trim()};
+      } catch (error) {
+        console.error("Error removing event sync source logo:", error);
+        throw new Error(
+            `Failed to remove event sync source logo: ${error.message}`,
+        );
       }
     },
 );
@@ -5681,6 +5886,9 @@ exports.getEventSyncSource = onCall({region: "europe-west1"}, async (request) =>
       sourceType: normalizeEventSyncSourceType(data.sourceType),
       description: data.description,
       publicUrl: data.publicUrl,
+      logoUrl: typeof data.logoUrl === "string" && data.logoUrl.trim() ?
+        data.logoUrl.trim() :
+        null,
       isActive: data.isActive,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
