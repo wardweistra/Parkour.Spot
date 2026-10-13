@@ -96,6 +96,7 @@ describe("about-community-sources", () => {
         publicUrl: "https://example.com/apex",
         description: null,
         instagramHandle: null,
+        logoUrl: null,
         spotCount: 2,
       },
       {
@@ -104,6 +105,7 @@ describe("about-community-sources", () => {
         publicUrl: "https://example.com/urbn",
         description: "Donated spot data",
         instagramHandle: "urbn",
+        logoUrl: null,
         spotCount: 1,
       },
     ]);
@@ -114,6 +116,7 @@ describe("about-community-sources", () => {
         publicUrl: "https://example.com/jump",
         description: null,
         instagramHandle: null,
+        logoUrl: null,
         eventCount: 1,
       },
       {
@@ -122,6 +125,7 @@ describe("about-community-sources", () => {
         publicUrl: null,
         description: null,
         instagramHandle: null,
+        logoUrl: null,
         eventCount: 0,
       },
     ]);

@@ -5,6 +5,7 @@ import 'package:pointer_interceptor/pointer_interceptor.dart';
 import '../l10n/app_localizations.dart';
 import '../services/sync_source_service.dart';
 import 'instagram_button.dart';
+import 'source_logo_image.dart';
 
 /// Displays full details for a sync source.
 /// Pass [source] when already loaded (e.g. from spot detail), or [sourceId]
@@ -100,7 +101,13 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
         (source.lastSyncStats?['total'] as num?)?.toInt() ?? 0;
 
     return AlertDialog(
-      title: SelectableText(source.name),
+      title: Row(
+        children: [
+          SourceLogoImage(logoUrl: source.logoUrl, size: 36),
+          const SizedBox(width: 12),
+          Expanded(child: SelectableText(source.name)),
+        ],
+      ),
       content: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

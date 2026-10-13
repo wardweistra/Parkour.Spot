@@ -40,6 +40,17 @@ void main() {
       expect(file.sourceTypeLabel, 'File');
     });
 
+    test('parses optional logo fields', () {
+      final source = SyncSource.fromMap({
+        'id': 'with-logo',
+        'name': 'Community map',
+        'logoUrl': 'https://storage.googleapis.com/bucket/sourceLogos/spot/x/logo.png',
+        'logoStoragePath': 'sourceLogos/spot/x/logo.png',
+      });
+      expect(source.logoUrl, contains('logo.png'));
+      expect(source.logoStoragePath, 'sourceLogos/spot/x/logo.png');
+    });
+
     test('unknown source types fall back to file', () {
       final source = SyncSource.fromMap({
         'id': 'x',
