@@ -3,7 +3,7 @@ const {buildAboutStats} = require("../lib/about-stats");
 describe("about-stats", () => {
   const now = new Date("2026-10-07T00:00:00.000Z");
 
-  it("counts the public library, sources, photos, and recent spots", () => {
+  it("counts the public library, photos, and recent spots", () => {
     const spots = [
       {
         id: "a",
@@ -31,14 +31,19 @@ describe("about-stats", () => {
       {countryCode: null},
     ];
 
-    const stats = buildAboutStats({spots, upcomingEvents, now});
+    const stats = buildAboutStats({
+      spots,
+      upcomingEvents,
+      spotSourceCount: 3,
+      now,
+    });
     expect(stats).toEqual(expect.objectContaining({
       generatedAt: now.toISOString(),
       activityWindowDays: 30,
       spotCount: 3,
       countryCount: 2,
       cityCount: 1,
-      spotSourceCount: 2,
+      spotSourceCount: 3,
       spotsWithPhotosCount: 2,
       spotsAdded30d: 1,
       upcomingEventCount: 4,
