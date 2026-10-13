@@ -27,6 +27,24 @@ String rewriteEmulatorLocalhostUrl(String url) {
     return url;
   }
 }
+
+/// Appends or replaces a `v` query param so replace-in-place Storage objects
+/// (e.g. source logos, avatars) are not stuck on a cached previous image.
+String cacheBustedImageUrl(String url, {Object? version}) {
+  final versionValue = version?.toString().trim();
+  if (versionValue == null || versionValue.isEmpty) {
+    return url;
+  }
+  try {
+    final uri = Uri.parse(url);
+    return uri
+        .replace(queryParameters: {...uri.queryParameters, 'v': versionValue})
+        .toString();
+  } catch (_) {
+    final separator = url.contains('?') ? '&' : '?';
+    return '$url${separator}v=$versionValue';
+  }
+}
 /// Result of parsing a Firebase Storage image URL for resized path checking.
 class ResizedPathInfo {
   const ResizedPathInfo({

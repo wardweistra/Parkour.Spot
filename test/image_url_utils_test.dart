@@ -129,4 +129,33 @@ void main() {
       expect(info.resizedPath, 'events/resized/photo_1200x1200.webp');
     });
   });
+
+  group('cacheBustedImageUrl', () {
+    test('returns original when version is null or empty', () {
+      const url = 'https://storage.googleapis.com/bucket/logo.png';
+      expect(cacheBustedImageUrl(url), url);
+      expect(cacheBustedImageUrl(url, version: ''), url);
+      expect(cacheBustedImageUrl(url, version: '  '), url);
+    });
+
+    test('appends v query param', () {
+      expect(
+        cacheBustedImageUrl(
+          'https://storage.googleapis.com/bucket/logo.png',
+          version: 123,
+        ),
+        'https://storage.googleapis.com/bucket/logo.png?v=123',
+      );
+    });
+
+    test('replaces existing v query param', () {
+      expect(
+        cacheBustedImageUrl(
+          'https://storage.googleapis.com/bucket/logo.png?v=1',
+          version: 2,
+        ),
+        'https://storage.googleapis.com/bucket/logo.png?v=2',
+      );
+    });
+  });
 }

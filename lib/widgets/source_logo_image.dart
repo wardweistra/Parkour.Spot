@@ -9,11 +9,16 @@ class SourceLogoImage extends StatelessWidget {
   final double size;
   final BorderRadius? borderRadius;
 
+  /// Optional cache-busting token (e.g. [SyncSource.updatedAt] millis).
+  /// Prefer storing a `?v=` on [logoUrl] at upload time; this covers older URLs.
+  final Object? cacheVersion;
+
   const SourceLogoImage({
     super.key,
     required this.logoUrl,
     this.size = 40,
     this.borderRadius,
+    this.cacheVersion,
   });
 
   @override
@@ -38,7 +43,9 @@ class SourceLogoImage extends StatelessWidget {
       return fallback;
     }
 
-    final resolvedUrl = rewriteEmulatorLocalhostUrl(url);
+    final resolvedUrl = rewriteEmulatorLocalhostUrl(
+      cacheBustedImageUrl(url, version: cacheVersion),
+    );
     return ClipRRect(
       borderRadius: radius,
       child: CachedNetworkImage(

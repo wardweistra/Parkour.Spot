@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 
@@ -117,6 +118,7 @@ class _SourceLogoEditorState extends State<SourceLogoEditor> {
     setState(() => _isWorking = true);
     try {
       final prepared = await _prepareLogoUpload(preparedList.first.bytes);
+      final previousUrl = _displayLogoUrl;
       final newUrl = await widget.onUpload(
         sourceId: sourceId,
         imageBytes: prepared.bytes,
@@ -124,6 +126,9 @@ class _SourceLogoEditorState extends State<SourceLogoEditor> {
       );
       if (!mounted) return;
       if (newUrl != null && newUrl.isNotEmpty) {
+        if (previousUrl != null && previousUrl.trim().isNotEmpty) {
+          await CachedNetworkImage.evictFromCache(previousUrl.trim());
+        }
         setState(() => _displayLogoUrl = newUrl);
         widget.onLogoChanged?.call();
         ScaffoldMessenger.of(context).showSnackBar(

@@ -106,7 +106,11 @@ class _EventSourceDetailsDialogState extends State<EventSourceDetailsDialog> {
     return AlertDialog(
       title: Row(
         children: [
-          SourceLogoImage(logoUrl: source.logoUrl, size: 36),
+          SourceLogoImage(
+            logoUrl: source.logoUrl,
+            size: 36,
+            cacheVersion: source.updatedAt?.millisecondsSinceEpoch,
+          ),
           const SizedBox(width: 12),
           Expanded(child: SelectableText(source.name)),
         ],

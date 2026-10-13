@@ -63,11 +63,16 @@ async function savePublicSourceLogo({bucket, storagePath, imageBuffer, contentTy
   await file.save(imageBuffer, {
     metadata: {
       contentType,
+      // Logos are replaced in place at a stable path; clients use the
+      // cache-busting query on the returned URL to pick up replacements.
       cacheControl: "public, max-age=31536000",
     },
   });
   await file.makePublic();
-  return `https://storage.googleapis.com/${bucket.name}/${storagePath}`;
+  // Stable object path + long cache: version the public URL so replacements
+  // are not stuck behind CachedNetworkImage / CDN entries for the old bytes.
+  const version = Date.now();
+  return `https://storage.googleapis.com/${bucket.name}/${storagePath}?v=${version}`;
 }
 
 /**

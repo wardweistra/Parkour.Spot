@@ -2,6 +2,7 @@ const {
   buildSourceLogoStoragePath,
   decodeSourceLogoUpload,
   normalizeLogoContentType,
+  savePublicSourceLogo,
 } = require("../lib/source-logo");
 
 describe("source-logo", () => {
@@ -10,6 +11,31 @@ describe("source-logo", () => {
         .toBe("sourceLogos/spot/abc123/logo.png");
     expect(buildSourceLogoStoragePath("event", "evt-1", ".jpg"))
         .toBe("sourceLogos/event/evt-1/logo.jpg");
+  });
+
+  it("returns a cache-busted public URL after save", async () => {
+    const saved = [];
+    const bucket = {
+      name: "test-bucket",
+      file: (storagePath) => ({
+        save: async (buffer, options) => {
+          saved.push({storagePath, buffer, options});
+        },
+        makePublic: async () => {},
+      }),
+    };
+
+    const url = await savePublicSourceLogo({
+      bucket,
+      storagePath: "sourceLogos/spot/abc/logo.png",
+      imageBuffer: Buffer.from("png"),
+      contentType: "image/png",
+    });
+
+    expect(saved).toHaveLength(1);
+    expect(url).toMatch(
+        /^https:\/\/storage\.googleapis\.com\/test-bucket\/sourceLogos\/spot\/abc\/logo\.png\?v=\d+$/,
+    );
   });
 
   it("normalizes supported content types", () => {
