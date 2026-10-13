@@ -351,6 +351,14 @@
       "collectionGroup": "spotTrainingPlans",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "plannedEndAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spotTrainingPlans",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "plannedStartAt", "order": "ASCENDING" },
         { "fieldPath": "plannedEndAt", "order": "ASCENDING" }
       ]

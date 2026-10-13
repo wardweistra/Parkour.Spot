@@ -1,6 +1,8 @@
 /* eslint-disable max-len */
 /**
  * Per-user secret iCal feed for Going / Interested events, check-ins, and plans.
+ * Check-ins and planned sessions include history (newest first, capped).
+ * Plans consumed by a check-in are deleted and therefore omitted.
  */
 
 const {hashApiKey, generateCalendarToken} = require("./api-helpers");
@@ -451,12 +453,12 @@ function sortCalendarItems(items) {
 }
 
 /**
+ * Newest check-ins for the user (historic and not-yet-ended), capped.
  * @param {FirebaseFirestore.Firestore} db
  * @param {string} userId
  * @return {Promise<Array<Object>>}
  */
-async function loadUpcomingCheckInsForUser(db, userId) {
-  const now = new Date();
+async function loadCheckInsForUser(db, userId) {
   const snap = await db
       .collection("spotCheckIns")
       .where("userId", "==", userId)
@@ -466,35 +468,34 @@ async function loadUpcomingCheckInsForUser(db, userId) {
   const out = [];
   for (const doc of snap.docs) {
     const data = doc.data() || {};
-    const endAt = toJsDate(data.expectedEndAt);
-    if (!endAt || endAt.getTime() < now.getTime()) continue;
     const startAt = toJsDate(data.checkedInAt);
-    if (!startAt) continue;
+    const endAt = toJsDate(data.expectedEndAt);
+    if (!startAt || !endAt) continue;
     out.push({id: doc.id, ...data});
   }
   return out;
 }
 
 /**
+ * Newest planned sessions for the user (historic and upcoming), capped.
+ * Consumed plans are deleted on check-in, so they never appear here.
  * @param {FirebaseFirestore.Firestore} db
  * @param {string} userId
  * @return {Promise<Array<Object>>}
  */
-async function loadUpcomingTrainingPlansForUser(db, userId) {
-  const now = new Date();
+async function loadTrainingPlansForUser(db, userId) {
   const snap = await db
       .collection("spotTrainingPlans")
       .where("userId", "==", userId)
-      .where("plannedEndAt", ">=", now)
-      .orderBy("plannedEndAt", "asc")
+      .orderBy("plannedEndAt", "desc")
       .limit(CALENDAR_TRAINING_PLANS_QUERY_LIMIT)
       .get();
   const out = [];
   for (const doc of snap.docs) {
     const data = doc.data() || {};
-    const endAt = toJsDate(data.plannedEndAt);
     const startAt = toJsDate(data.plannedStartAt);
-    if (!startAt || !endAt || endAt.getTime() < now.getTime()) continue;
+    const endAt = toJsDate(data.plannedEndAt);
+    if (!startAt || !endAt) continue;
     out.push({id: doc.id, ...data});
   }
   return out;
@@ -659,8 +660,8 @@ async function resolveUserIdFromCalendarToken(db, token) {
 async function loadCalendarItemsForUser(db, userId) {
   const [eventEntries, checkIns, plans] = await Promise.all([
     loadFeedEntriesForUser(db, userId),
-    loadUpcomingCheckInsForUser(db, userId),
-    loadUpcomingTrainingPlansForUser(db, userId),
+    loadCheckInsForUser(db, userId),
+    loadTrainingPlansForUser(db, userId),
   ]);
 
   const items = [];
@@ -735,6 +736,8 @@ module.exports = {
   buildTrainingPlanVEventLines,
   buildIcsCalendar,
   loadFeedEntriesForUser,
+  loadCheckInsForUser,
+  loadTrainingPlansForUser,
   loadCalendarItemsForUser,
   getOrCreateCalendarFeed,
   regenerateCalendarFeed,

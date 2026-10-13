@@ -171,7 +171,7 @@
   "@myEventsCalendarTitle": {
     "description": "My events section for secret iCal subscribe URL"
   },
-  "myEventsCalendarDescription": "Subscribe with a private link. Your Going and Interested events, upcoming check-ins, and planned sessions stay updated in your calendar app.",
+  "myEventsCalendarDescription": "Subscribe with a private link. Your Going and Interested events, check-ins, and planned sessions stay updated in your calendar app.",
   "@myEventsCalendarDescription": {
     "description": "Explains the live calendar feed on My events"
   },

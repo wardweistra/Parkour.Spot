@@ -16,6 +16,8 @@ const {
   getOrCreateCalendarFeed,
   regenerateCalendarFeed,
   resolveUserIdFromCalendarToken,
+  loadCheckInsForUser,
+  loadTrainingPlansForUser,
 } = require("../lib/user-calendar-feed");
 
 describe("generateCalendarToken", () => {
@@ -258,5 +260,92 @@ describe("calendar feed token storage", () => {
         .toBe("user1");
     expect(await resolveUserIdFromCalendarToken(db, first.token)).toBeNull();
     expect(await resolveUserIdFromCalendarToken(db, next.token)).toBe("user1");
+  });
+});
+
+describe("loadCheckInsForUser / loadTrainingPlansForUser", () => {
+  /**
+   * Minimal query chain mock: records constraints and returns prepared docs.
+   * @param {Array<{id: string, data: Object}>} docs
+   * @return {{db: Object, lastQuery: Object}}
+   */
+  function mockQueryDb(docs) {
+    const lastQuery = {wheres: [], orderBys: [], limit: null};
+    const db = {
+      collection() {
+        const chain = {
+          where(field, op, value) {
+            lastQuery.wheres.push({field, op, value});
+            return chain;
+          },
+          orderBy(field, direction) {
+            lastQuery.orderBys.push({field, direction});
+            return chain;
+          },
+          limit(n) {
+            lastQuery.limit = n;
+            return chain;
+          },
+          async get() {
+            return {
+              docs: docs.map((d) => ({
+                id: d.id,
+                data: () => d.data,
+              })),
+            };
+          },
+        };
+        return chain;
+      },
+    };
+    return {db, lastQuery};
+  }
+
+  it("includes historic check-ins (no end-time filter)", async () => {
+    const pastEnd = new Date("2020-01-01T12:00:00Z");
+    const pastStart = new Date("2020-01-01T10:00:00Z");
+    const {db, lastQuery} = mockQueryDb([
+      {
+        id: "ci-old",
+        data: {
+          checkedInAt: pastStart,
+          expectedEndAt: pastEnd,
+          spotId: "s1",
+        },
+      },
+    ]);
+    const items = await loadCheckInsForUser(db, "user1");
+    expect(lastQuery.wheres).toEqual([
+      {field: "userId", op: "==", value: "user1"},
+    ]);
+    expect(lastQuery.orderBys).toEqual([
+      {field: "checkedInAt", direction: "desc"},
+    ]);
+    expect(items).toHaveLength(1);
+    expect(items[0].id).toBe("ci-old");
+  });
+
+  it("includes historic plans without plannedEndAt >= now", async () => {
+    const pastEnd = new Date("2020-06-01T16:00:00Z");
+    const pastStart = new Date("2020-06-01T14:00:00Z");
+    const {db, lastQuery} = mockQueryDb([
+      {
+        id: "plan-old",
+        data: {
+          plannedStartAt: pastStart,
+          plannedEndAt: pastEnd,
+          spotId: "s2",
+        },
+      },
+    ]);
+    const items = await loadTrainingPlansForUser(db, "user1");
+    expect(lastQuery.wheres).toEqual([
+      {field: "userId", op: "==", value: "user1"},
+    ]);
+    expect(lastQuery.orderBys).toEqual([
+      {field: "plannedEndAt", direction: "desc"},
+    ]);
+    expect(items).toHaveLength(1);
+    expect(items[0].id).toBe("plan-old");
   });
 });
