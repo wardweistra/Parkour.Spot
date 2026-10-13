@@ -175,7 +175,7 @@
   "@myEventsCalendarDescription": {
     "description": "Explains the live calendar feed on My events"
   },
-  "myEventsCalendarOpenMac": "Add to Mac’s Calendar",
+  "myEventsCalendarOpenMac": "Add to Apple Calendar",
   "@myEventsCalendarOpenMac": {
     "description": "Subscribe via webcal:// into Apple Calendar on Mac/iPhone"
   },
@@ -193,7 +193,7 @@
   },
   "myEventsCalendarMacUnavailable": "Adding to Apple Calendar works on a Mac or iPhone. Use Google Calendar, Outlook, or Copy URL here.",
   "@myEventsCalendarMacUnavailable": {
-    "description": "Snackbar when Add to Mac’s Calendar is tapped off Apple platforms"
+    "description": "Snackbar when Add to Apple Calendar is tapped off Apple platforms"
   },
   "myEventsCalendarRegenerate": "Regenerate link…",
   "@myEventsCalendarRegenerate": {

@@ -349,7 +349,7 @@ abstract class AppLocalizations {
   /// Subscribe via webcal:// into Apple Calendar on Mac/iPhone
   ///
   /// In en, this message translates to:
-  /// **'Add to Mac’s Calendar'**
+  /// **'Add to Apple Calendar'**
   String get myEventsCalendarOpenMac;
 
   /// Subscribe via Google Calendar add-by-URL deep link
@@ -370,7 +370,7 @@ abstract class AppLocalizations {
   /// **'Copy URL'**
   String get myEventsCalendarCopyUrl;
 
-  /// Snackbar when Add to Mac’s Calendar is tapped off Apple platforms
+  /// Snackbar when Add to Apple Calendar is tapped off Apple platforms
   ///
   /// In en, this message translates to:
   /// **'Adding to Apple Calendar works on a Mac or iPhone. Use Google Calendar, Outlook, or Copy URL here.'**
