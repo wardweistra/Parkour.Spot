@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
@@ -59,6 +61,8 @@ class EventSyncSource {
   final String sourceType;
   final String? description;
   final String? publicUrl;
+  final String? logoUrl;
+  final String? logoStoragePath;
   final bool isActive;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -79,6 +83,8 @@ class EventSyncSource {
     this.sourceType = sourceTypeIcs,
     this.description,
     this.publicUrl,
+    this.logoUrl,
+    this.logoStoragePath,
     required this.isActive,
     this.createdAt,
     this.updatedAt,
@@ -116,6 +122,8 @@ class EventSyncSource {
       sourceType: sourceType,
       description: data['description'] as String?,
       publicUrl: data['publicUrl'] as String?,
+      logoUrl: data['logoUrl'] as String?,
+      logoStoragePath: data['logoStoragePath'] as String?,
       isActive: data['isActive'] is bool ? data['isActive'] as bool : true,
       createdAt: _parseTimestamp(data['createdAt']),
       updatedAt: _parseTimestamp(data['updatedAt']),
@@ -185,6 +193,54 @@ class EventSyncSourceService extends ChangeNotifier {
       debugPrint('Error fetching event sync source $sourceId: $e');
     }
     return null;
+  }
+
+  Future<String?> uploadSourceLogo({
+    required String sourceId,
+    required List<int> imageBytes,
+    required String contentType,
+  }) async {
+    try {
+      final callable = _functions.httpsCallable('uploadEventSyncSourceLogo');
+      final result = await callable.call({
+        'sourceId': sourceId,
+        'imageData': base64Encode(imageBytes),
+        'contentType': contentType,
+      });
+      final data = _callableMap(result.data);
+      if (data['success'] == true) {
+        final logoUrl = data['logoUrl']?.toString();
+        _sourceDetailsCache.remove(sourceId);
+        await fetchSources(includeInactive: true);
+        return logoUrl;
+      }
+      _error = data['error']?.toString() ?? 'Upload failed';
+      notifyListeners();
+      return null;
+    } catch (e) {
+      _error = 'Failed to upload event source logo: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<bool> removeSourceLogo(String sourceId) async {
+    try {
+      final callable = _functions.httpsCallable('removeEventSyncSourceLogo');
+      final result = await callable.call({'sourceId': sourceId});
+      final success = _callableMap(result.data)['success'] == true;
+      if (success) {
+        _sourceDetailsCache.remove(sourceId);
+        await fetchSources(includeInactive: true);
+      }
+      return success;
+    } catch (e) {
+      _error = 'Failed to remove event source logo: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return false;
+    }
   }
 
   Future<void> fetchSources({bool includeInactive = true}) async {

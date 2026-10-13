@@ -87,6 +87,8 @@ class SyncSource {
   final String? description;
   final String? publicUrl;
   final String? instagramHandle; // Instagram handle for the source owner
+  final String? logoUrl;
+  final String? logoStoragePath;
   final bool isActive;
   final List<String>?
   includeFolders; // Optional whitelist of folders to include
@@ -128,6 +130,8 @@ class SyncSource {
     this.description,
     this.publicUrl,
     this.instagramHandle,
+    this.logoUrl,
+    this.logoStoragePath,
     required this.isActive,
     this.includeFolders,
     this.excludeFolders,
@@ -200,6 +204,8 @@ class SyncSource {
       description: data['description'],
       publicUrl: data['publicUrl'],
       instagramHandle: data['instagramHandle'],
+      logoUrl: data['logoUrl'] as String?,
+      logoStoragePath: data['logoStoragePath'] as String?,
       isActive: data['isActive'] ?? true,
       includeFolders: _stringListFromDynamic(data['includeFolders']),
       excludeFolders: _stringListFromDynamic(data['excludeFolders']),
@@ -455,6 +461,54 @@ class SyncSourceService extends ChangeNotifier {
       debugPrint(_error);
       notifyListeners();
       return null;
+    }
+  }
+
+  Future<String?> uploadSourceLogo({
+    required String sourceId,
+    required List<int> imageBytes,
+    required String contentType,
+  }) async {
+    try {
+      final callable = _functions.httpsCallable('uploadSyncSourceLogo');
+      final result = await callable.call({
+        'sourceId': sourceId,
+        'imageData': base64Encode(imageBytes),
+        'contentType': contentType,
+      });
+      final data = result.data;
+      if (data is Map && data['success'] == true) {
+        final logoUrl = data['logoUrl']?.toString();
+        await fetchSyncSources(includeInactive: true);
+        _sourceDetailsCache.remove(sourceId);
+        return logoUrl;
+      }
+      _error = data is Map ? data['error']?.toString() : 'Upload failed';
+      notifyListeners();
+      return null;
+    } catch (e) {
+      _error = 'Failed to upload source logo: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<bool> removeSourceLogo(String sourceId) async {
+    try {
+      final callable = _functions.httpsCallable('removeSyncSourceLogo');
+      final result = await callable.call({'sourceId': sourceId});
+      final success = result.data['success'] == true;
+      if (success) {
+        await fetchSyncSources(includeInactive: true);
+        _sourceDetailsCache.remove(sourceId);
+      }
+      return success;
+    } catch (e) {
+      _error = 'Failed to remove source logo: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return false;
     }
   }
 

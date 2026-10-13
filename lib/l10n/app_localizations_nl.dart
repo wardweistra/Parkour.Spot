@@ -146,7 +146,7 @@ class AppLocalizationsNl extends AppLocalizations {
       'Abonneer met een privélink. Je events waarop je gaat of geïnteresseerd bent, aankomende check-ins en geplande sessies blijven bijgewerkt in je agenda-app.';
 
   @override
-  String get myEventsCalendarOpenMac => 'Toevoegen aan Mac-agenda';
+  String get myEventsCalendarOpenMac => 'Toevoegen aan Apple Agenda';
 
   @override
   String get myEventsCalendarOpenGoogle => 'Toevoegen aan Google Agenda';

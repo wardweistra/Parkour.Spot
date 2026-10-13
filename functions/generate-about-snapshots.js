@@ -253,13 +253,6 @@ async function generateAboutSnapshots(options = {}) {
     generatedAt: now.toISOString(),
   });
   const assembled = attachEventsAndBuildIndexes(placeState, events, now);
-  assembled.aboutIndex.stats = buildAboutStats({
-    spots,
-    upcomingEvents: assembled.eventsIndex.events,
-    counts: await loadActivityCounts(now),
-    now,
-  });
-  console.log("About stats:", assembled.aboutIndex.stats);
 
   console.log("About snapshots: fetching sync sources...");
   const [spotSourcesSnap, eventSourcesSnap] = await Promise.all([
@@ -280,6 +273,15 @@ async function generateAboutSnapshots(options = {}) {
       communitySources.eventSources.length,
       "event",
   );
+
+  assembled.aboutIndex.stats = buildAboutStats({
+    spots,
+    upcomingEvents: assembled.eventsIndex.events,
+    spotSourceCount: communitySources.spotSources.length,
+    counts: await loadActivityCounts(now),
+    now,
+  });
+  console.log("About stats:", assembled.aboutIndex.stats);
 
   const counts = await writeAboutSnapshots({
     ...assembled,

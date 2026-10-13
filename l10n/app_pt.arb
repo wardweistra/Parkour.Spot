@@ -40,7 +40,7 @@
   "myEventsLoadFailed": "Não foi possível carregar os teus eventos.",
   "myEventsCalendarTitle": "Adicionar ao teu calendário",
   "myEventsCalendarDescription": "Subscreve com um link privado. Os eventos a que vais ou que te interessam, os check-ins próximos e as sessões planeadas mantêm-se atualizados na tua app de calendário.",
-  "myEventsCalendarOpenMac": "Adicionar ao calendário do Mac",
+  "myEventsCalendarOpenMac": "Adicionar ao Apple Calendar",
   "myEventsCalendarOpenGoogle": "Adicionar ao Google Calendar",
   "myEventsCalendarOpenOutlook": "Adicionar ao Outlook",
   "myEventsCalendarCopyUrl": "Copiar URL",

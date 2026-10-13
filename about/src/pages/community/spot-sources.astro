@@ -1,7 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import SourceList from "../../components/SourceList.astro";
-import {groupSourcesByLetter} from "../../lib/community";
 import {countNoun, metaDescription} from "../../lib/citation";
 import {SITE_NAME} from "../../lib/brand";
 import {loadCommunitySources} from "../../lib/snapshots";
@@ -9,8 +8,6 @@ import {aboutCommunityPath} from "../../lib/urls";
 
 const community = await loadCommunitySources();
 const sources = community.spotSources;
-const groups = groupSourcesByLetter(sources);
-const letters = groups.map((group) => group.letter);
 
 const pageTitle = "Spot sources";
 const description = metaDescription(
@@ -39,43 +36,7 @@ const description = metaDescription(
     }
   </p>
 
-  {
-    letters.length > 1 && (
-      <nav class="chip-row source-az" aria-label="Jump to letter">
-        {letters.map((letter) => (
-          <a class="chip" href={`#letter-${letter === "#" ? "other" : letter}`}>
-            {letter}
-          </a>
-        ))}
-      </nav>
-    )
-  }
-
-  {
-    groups.length === 0 ? (
-      <p class="empty">Source list is updating. Check back after the next refresh.</p>
-    ) : (
-      groups.map((group) => (
-        <section
-          class="section source-letter"
-          id={`letter-${group.letter === "#" ? "other" : group.letter}`}
-          aria-labelledby={`letter-title-${group.letter === "#" ? "other" : group.letter}`}
-        >
-          <h2
-            class="source-letter__mark"
-            id={`letter-title-${group.letter === "#" ? "other" : group.letter}`}
-          >
-            {group.letter}
-          </h2>
-          <SourceList
-            sources={group.sources}
-            countKey="spotCount"
-            countNounBase="spot"
-          />
-        </section>
-      ))
-    )
-  }
+  <SourceList sources={sources} countKey="spotCount" countNounBase="spot" />
 
   <p class="section-cta">
     Keep a list of spots yourself?{" "}

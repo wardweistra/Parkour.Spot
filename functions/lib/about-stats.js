@@ -64,15 +64,22 @@ function countOrNull(value) {
  * @param {Object} input
  * @param {Array<Object>} input.spots - non-hidden spot docs
  * @param {Array<Object>} input.upcomingEvents - public upcoming event summaries
+ * @param {number} [input.spotSourceCount] - active community catalog size
+ *   (same as about-community-sources.spotSources.length)
  * @param {Object} [input.counts] - aggregate counts from Firestore
  * @param {Date} [input.now]
  * @return {Object}
  */
-function buildAboutStats({spots, upcomingEvents, counts = {}, now = new Date()}) {
+function buildAboutStats({
+  spots,
+  upcomingEvents,
+  spotSourceCount = 0,
+  counts = {},
+  now = new Date(),
+}) {
   const since = activityWindowStart(now);
   const countries = new Set();
   const cities = new Set();
-  const sources = new Set();
   let spotCount = 0;
   let spotsWithPhotosCount = 0;
   let spotsAdded30d = 0;
@@ -91,9 +98,6 @@ function buildAboutStats({spots, upcomingEvents, counts = {}, now = new Date()})
       if (city) cities.add(`${cc}_${city}`);
     }
 
-    const source = typeof spot.spotSource === "string" ? spot.spotSource.trim() : "";
-    if (source) sources.add(source);
-
     if (hasPhoto(spot)) spotsWithPhotosCount += 1;
 
     const createdAt = toDate(spot.createdAt);
@@ -107,13 +111,15 @@ function buildAboutStats({spots, upcomingEvents, counts = {}, now = new Date()})
     }
   }
 
+  const catalogSourceCount = countOrNull(spotSourceCount) ?? 0;
+
   return {
     generatedAt: now.toISOString(),
     activityWindowDays: ACTIVITY_WINDOW_DAYS,
     spotCount,
     countryCount: countries.size,
     cityCount: cities.size,
-    spotSourceCount: sources.size,
+    spotSourceCount: catalogSourceCount,
     spotsWithPhotosCount,
     spotsAdded30d,
     upcomingEventCount: upcomingEvents.length,

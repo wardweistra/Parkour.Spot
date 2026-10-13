@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../utils/marker_icon_utils.dart';
+
 /// Combined Explore bottom-sheet chrome: brand mark, spots/events pill toggle
 /// with live counts, and expand/collapse control.
 class ExploreBottomSheetHeader extends StatelessWidget {
@@ -218,8 +220,7 @@ class _ModePillToggleState extends State<_ModePillToggle> {
                 _ModeSegment(
                   key: _spotsKey,
                   selected: isSpots,
-                  icon: Icons.place_outlined,
-                  selectedIcon: Icons.place,
+                  pinAsset: MarkerIconUtils.mapPinSpotLegendAsset,
                   label: widget.spotsLabel,
                   detailSuffix: widget.spotsDetailSuffix,
                   onTap: () =>
@@ -228,8 +229,7 @@ class _ModePillToggleState extends State<_ModePillToggle> {
                 _ModeSegment(
                   key: _eventsKey,
                   selected: !isSpots,
-                  icon: Icons.event_outlined,
-                  selectedIcon: Icons.event,
+                  pinAsset: MarkerIconUtils.mapPinEventLegendAsset,
                   label: widget.eventsLabel,
                   detailSuffix: widget.eventsDetailSuffix,
                   onTap: () =>
@@ -245,9 +245,10 @@ class _ModePillToggleState extends State<_ModePillToggle> {
 }
 
 class _ModeSegment extends StatelessWidget {
+  static const double _pinLogicalHeight = 16;
+
   final bool selected;
-  final IconData icon;
-  final IconData selectedIcon;
+  final String pinAsset;
   final String label;
   final String? detailSuffix;
   final VoidCallback onTap;
@@ -255,8 +256,7 @@ class _ModeSegment extends StatelessWidget {
   const _ModeSegment({
     super.key,
     required this.selected,
-    required this.icon,
-    required this.selectedIcon,
+    required this.pinAsset,
     required this.label,
     this.detailSuffix,
     required this.onTap,
@@ -272,6 +272,23 @@ class _ModeSegment extends StatelessWidget {
     final suffixColor = selected
         ? colorScheme.onPrimaryContainer.withValues(alpha: 0.72)
         : colorScheme.onSurfaceVariant.withValues(alpha: 0.72);
+    final hasDetailSuffix =
+        detailSuffix != null && detailSuffix!.isNotEmpty;
+    final labelStyle = theme.textTheme.labelLarge!.copyWith(
+      color: foreground,
+      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+      height: 1.2,
+    );
+    final suffixStyle = theme.textTheme.labelSmall?.copyWith(
+      color: suffixColor,
+      height: 1.2,
+    );
+    // Reserve two text lines so pill height is stable; center when only
+    // the primary label is shown.
+    final labelLineHeight =
+        (labelStyle.fontSize ?? 14) * (labelStyle.height ?? 1.2);
+    final suffixLineHeight =
+        (suffixStyle?.fontSize ?? 11) * (suffixStyle?.height ?? 1.2);
 
     return Semantics(
       button: true,
@@ -287,42 +304,43 @@ class _ModeSegment extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Icon(
-                  selected ? selectedIcon : icon,
-                  size: 16,
-                  color: foreground,
+                SizedBox(
+                  height: _pinLogicalHeight,
+                  width: MarkerIconUtils.mapPinLogicalWidthForHeight(
+                    _pinLogicalHeight,
+                  ),
+                  child: RepaintBoundary(
+                    child: SvgPicture.asset(
+                      pinAsset,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 5),
                 Flexible(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        label,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.labelLarge!.copyWith(
-                          color: foreground,
-                          fontWeight: selected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          height: 1.2,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (detailSuffix != null && detailSuffix!.isNotEmpty)
+                  child: SizedBox(
+                    height: labelLineHeight + suffixLineHeight,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
                         Text(
-                          detailSuffix!,
+                          label,
                           textAlign: TextAlign.center,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: suffixColor,
-                            height: 1.2,
-                          ),
+                          style: labelStyle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                    ],
+                        if (hasDetailSuffix)
+                          Text(
+                            detailSuffix!,
+                            textAlign: TextAlign.center,
+                            style: suffixStyle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ],

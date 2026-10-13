@@ -129,13 +129,6 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
   }
 
   Future<void> _openMacCalendar() async {
-    if (!MobileDetectionService.supportsWebcalSubscribe) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_l10n.myEventsCalendarMacUnavailable)),
-      );
-      return;
-    }
     if (_calendarBusy) return;
     setState(() => _calendarBusy = true);
     try {
@@ -371,11 +364,12 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
       visualDensity: VisualDensity.compact,
     );
     final actions = <({String label, VoidCallback? onPressed, bool primary})>[
-      (
-        label: _l10n.myEventsCalendarOpenMac,
-        onPressed: _calendarBusy ? null : _openMacCalendar,
-        primary: preferMac,
-      ),
+      if (preferMac)
+        (
+          label: _l10n.myEventsCalendarOpenMac,
+          onPressed: _calendarBusy ? null : _openMacCalendar,
+          primary: true,
+        ),
       (
         label: _l10n.myEventsCalendarOpenGoogle,
         onPressed: _calendarBusy ? null : _openGoogleCalendar,

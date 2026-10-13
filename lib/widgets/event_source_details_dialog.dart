@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/event_sync_source_service.dart';
+import 'source_logo_image.dart';
 
 /// Displays public details for an imported event calendar source.
 /// Pass [source] when already loaded, or [sourceId] for lazy loading.
@@ -103,7 +104,17 @@ class _EventSourceDetailsDialogState extends State<EventSourceDetailsDialog> {
         0;
 
     return AlertDialog(
-      title: SelectableText(source.name),
+      title: Row(
+        children: [
+          SourceLogoImage(
+            logoUrl: source.logoUrl,
+            size: 36,
+            cacheVersion: source.updatedAt?.millisecondsSinceEpoch,
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: SelectableText(source.name)),
+        ],
+      ),
       content: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
