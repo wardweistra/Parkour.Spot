@@ -89,29 +89,3 @@ export function highlightSources(
     })
     .slice(0, limit);
 }
-
-export type SourceLetterGroup = {
-  letter: string;
-  sources: CommunitySource[];
-};
-
-/** A–Z groups; non-letter names land under "#". */
-export function groupSourcesByLetter(
-  sources: CommunitySource[],
-): SourceLetterGroup[] {
-  const buckets = new Map<string, CommunitySource[]>();
-  for (const source of sources) {
-    const first = source.name.trim().charAt(0);
-    const letter = /^[A-Za-z]/.test(first) ? first.toUpperCase() : "#";
-    const list = buckets.get(letter);
-    if (list) list.push(source);
-    else buckets.set(letter, [source]);
-  }
-  return [...buckets.entries()]
-    .sort(([a], [b]) => {
-      if (a === "#") return 1;
-      if (b === "#") return -1;
-      return a.localeCompare(b, "en");
-    })
-    .map(([letter, group]) => ({letter, sources: group}));
-}

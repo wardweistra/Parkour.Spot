@@ -1348,24 +1348,6 @@ img {
   min-width: 0;
 }
 
-.source-az {
-  margin: 0 0 var(--space-md);
-}
-
-.source-letter {
-  margin-block: var(--space-lg) var(--space-md);
-}
-
-.source-letter__mark {
-  margin: 0 0 var(--space-sm);
-  font-size: 1.5rem;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-  color: var(--color-primary);
-  scroll-margin-top: var(--space-lg);
-}
-
 .people-list {
   margin: 0 0 var(--space-md);
   padding-inline-start: 1.25rem;
