@@ -9,7 +9,8 @@ class UserCalendarFeedService {
 
   final FirebaseFunctions _functions;
 
-  static const String defaultCalendarDisplayName = 'ParkourSpot My events';
+  static const String defaultCalendarDisplayName =
+      'ParkourSpot My events & sessions';
 
   /// Returns the subscribe URL, creating a feed token if needed.
   Future<String> getOrCreateFeedUrl() async {

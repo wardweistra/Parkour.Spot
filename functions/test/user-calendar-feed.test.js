@@ -6,9 +6,13 @@ const {
   calendarFeedUrl,
   extractCalendarTokenFromPath,
   escapeIcsText,
+  joinDescriptionBody,
   selectFeedEntries,
   buildIcsCalendar,
   INTERESTED_PREFIX,
+  CHECK_IN_PREFIX,
+  PLANNED_SESSION_PREFIX,
+  MY_SESSIONS_URL,
   getOrCreateCalendarFeed,
   regenerateCalendarFeed,
   resolveUserIdFromCalendarToken,
@@ -49,6 +53,13 @@ describe("escapeIcsText", () => {
   });
 });
 
+describe("joinDescriptionBody", () => {
+  it("joins non-empty parts with blank lines", () => {
+    expect(joinDescriptionBody(["Status: Going", "", "Line two", null]))
+        .toBe("Status: Going\n\nLine two");
+  });
+});
+
 describe("selectFeedEntries", () => {
   it("remaps duplicates to native and lets going win", () => {
     const eventsById = {
@@ -82,26 +93,57 @@ describe("buildIcsCalendar", () => {
   it("labels interested titles and includes event URL", () => {
     const ics = buildIcsCalendar([
       {
-        eventId: "evt1",
-        status: "interested",
-        event: {
-          id: "evt1",
-          title: "City Jam",
-          startAt: new Date("2026-07-01T12:00:00Z"),
-          endAt: new Date("2026-07-01T16:00:00Z"),
-          isDateOnly: false,
-          address: "Main Street 1",
-          updatedAt: new Date("2026-06-01T00:00:00Z"),
+        kind: "event",
+        entry: {
+          eventId: "evt1",
+          status: "interested",
+          event: {
+            id: "evt1",
+            title: "City Jam",
+            description: "All levels welcome.",
+            websiteUrl: "https://example.com/jam",
+            startAt: new Date("2026-07-01T12:00:00Z"),
+            endAt: new Date("2026-07-01T16:00:00Z"),
+            isDateOnly: false,
+            address: "Main Street 1",
+            updatedAt: new Date("2026-06-01T00:00:00Z"),
+          },
         },
       },
       {
-        eventId: "evt2",
-        status: "going",
-        event: {
-          id: "evt2",
-          title: "Roof Session",
-          startAt: new Date("2026-08-01T00:00:00Z"),
-          isDateOnly: true,
+        kind: "event",
+        entry: {
+          eventId: "evt2",
+          status: "going",
+          event: {
+            id: "evt2",
+            title: "Roof Session",
+            startAt: new Date("2026-08-01T00:00:00Z"),
+            isDateOnly: true,
+          },
+        },
+      },
+      {
+        kind: "checkIn",
+        checkIn: {
+          id: "ci1",
+          spotId: "spot-a",
+          spotName: "Riverside Wall",
+          checkedInAt: new Date("2026-09-01T08:00:00Z"),
+          expectedEndAt: new Date("2026-09-01T10:00:00Z"),
+          isPrivate: false,
+          comment: "Morning flow",
+        },
+      },
+      {
+        kind: "trainingPlan",
+        plan: {
+          id: "plan1",
+          spotId: "spot-b",
+          spotName: "Station Park",
+          plannedStartAt: new Date("2026-10-01T14:00:00Z"),
+          plannedEndAt: new Date("2026-10-01T16:00:00Z"),
+          isPrivate: true,
         },
       },
     ]);
@@ -116,6 +158,15 @@ describe("buildIcsCalendar", () => {
     expect(ics).toContain("DTSTART;VALUE=DATE:20260801");
     expect(ics).toContain("LOCATION:Main Street 1");
     expect(ics).toContain("UID:evt1@parkour.spot");
+    expect(ics).toContain("DESCRIPTION:Status: Interested\\n\\nAll levels welcome.");
+    const unfolded = ics.replace(/\r\n /g, "");
+    expect(unfolded).toContain("Website: https://example.com/jam");
+    expect(ics).toContain(`SUMMARY:${CHECK_IN_PREFIX}Riverside Wall`);
+    expect(ics).toContain("URL:https://parkour.spot/spot/spot-a");
+    expect(unfolded).toContain(`My sessions: ${MY_SESSIONS_URL}`);
+    expect(ics).toContain("UID:checkin-ci1@parkour.spot");
+    expect(ics).toContain(`SUMMARY:${PLANNED_SESSION_PREFIX}Station Park`);
+    expect(ics).toContain("UID:plan-plan1@parkour.spot");
   });
 });
 

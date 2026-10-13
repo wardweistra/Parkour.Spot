@@ -39,7 +39,7 @@
   "myEventsPastTitle": "Afgelopen",
   "myEventsLoadFailed": "Je events konden niet worden geladen.",
   "myEventsCalendarTitle": "Toevoegen aan je agenda",
-  "myEventsCalendarDescription": "Abonneer met een privélink. Je events waarop je gaat of geïnteresseerd bent blijven bijgewerkt in je agenda-app.",
+  "myEventsCalendarDescription": "Abonneer met een privélink. Je events waarop je gaat of geïnteresseerd bent, aankomende check-ins en geplande sessies blijven bijgewerkt in je agenda-app.",
   "myEventsCalendarOpenMac": "Toevoegen aan Apple Agenda",
   "myEventsCalendarOpenGoogle": "Toevoegen aan Google Agenda",
   "myEventsCalendarOpenOutlook": "Toevoegen aan Outlook",
