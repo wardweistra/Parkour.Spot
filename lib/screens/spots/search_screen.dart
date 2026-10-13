@@ -4192,13 +4192,9 @@ class SearchScreenState extends State<SearchScreen>
                                                     _exploreEventCountForHeader(),
                                                   ),
                                               spotsDetailSuffix:
-                                                  _exploreListMode ==
-                                                      ExploreBottomSheetHeader
-                                                          .modeSpots
-                                                  ? _exploreSpotsSegmentSuffix(
-                                                      l10n,
-                                                    )
-                                                  : null,
+                                                  _exploreSpotsSegmentSuffix(
+                                                    l10n,
+                                                  ),
                                               isSheetOpen: _isBottomSheetOpen,
                                               onModeChanged: (mode) {
                                                 setState(() {
