@@ -38,7 +38,16 @@ class MarkerIconUtils {
   static const String mapPinEventSelectedAsset =
       'assets/images/map/map-icon-event-64x64-selected.png';
 
+  /// Spot pin for UI chrome (Explore mode toggle, legends).
+  static const String mapPinSpotLegendAsset =
+      'assets/images/map/map-icon-spot-legend.svg';
+
+  /// Event pin for UI chrome (Explore mode toggle, legends).
+  static const String mapPinEventLegendAsset =
+      'assets/images/map/map-icon-event-legend.svg';
+
   /// Source PNG dimensions (filenames say 64×64 but assets are 128×160).
+  /// Legend SVGs share the same 4:5 aspect (`viewBox="0 0 64 80"`).
   static const double mapPinAssetWidth = 128;
   static const double mapPinAssetHeight = 160;
 

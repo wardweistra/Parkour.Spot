@@ -214,31 +214,28 @@ class _ModePillToggleState extends State<_ModePillToggle> {
                 ),
               ),
             ),
-            IntrinsicHeight(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _ModeSegment(
-                    key: _spotsKey,
-                    selected: isSpots,
-                    pinAsset: MarkerIconUtils.mapPinNormalAsset,
-                    label: widget.spotsLabel,
-                    detailSuffix: widget.spotsDetailSuffix,
-                    onTap: () => widget
-                        .onSegmentTap(ExploreBottomSheetHeader.modeSpots),
-                  ),
-                  _ModeSegment(
-                    key: _eventsKey,
-                    selected: !isSpots,
-                    pinAsset: MarkerIconUtils.mapPinEventAsset,
-                    label: widget.eventsLabel,
-                    detailSuffix: widget.eventsDetailSuffix,
-                    onTap: () => widget
-                        .onSegmentTap(ExploreBottomSheetHeader.modeEvents),
-                  ),
-                ],
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _ModeSegment(
+                  key: _spotsKey,
+                  selected: isSpots,
+                  pinAsset: MarkerIconUtils.mapPinSpotLegendAsset,
+                  label: widget.spotsLabel,
+                  detailSuffix: widget.spotsDetailSuffix,
+                  onTap: () =>
+                      widget.onSegmentTap(ExploreBottomSheetHeader.modeSpots),
+                ),
+                _ModeSegment(
+                  key: _eventsKey,
+                  selected: !isSpots,
+                  pinAsset: MarkerIconUtils.mapPinEventLegendAsset,
+                  label: widget.eventsLabel,
+                  detailSuffix: widget.eventsDetailSuffix,
+                  onTap: () =>
+                      widget.onSegmentTap(ExploreBottomSheetHeader.modeEvents),
+                ),
+              ],
             ),
           ],
         ),
@@ -312,10 +309,11 @@ class _ModeSegment extends StatelessWidget {
                   width: MarkerIconUtils.mapPinLogicalWidthForHeight(
                     _pinLogicalHeight,
                   ),
-                  child: Image.asset(
-                    pinAsset,
-                    fit: BoxFit.contain,
-                    filterQuality: FilterQuality.medium,
+                  child: RepaintBoundary(
+                    child: SvgPicture.asset(
+                      pinAsset,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 5),

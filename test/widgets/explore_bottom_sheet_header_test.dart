@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parkour_spot/utils/marker_icon_utils.dart';
 import 'package:parkour_spot/widgets/explore_bottom_sheet_header.dart';
 
-Finder _mapPinImage(String assetPath) {
-  return find.byWidgetPredicate(
-    (widget) =>
-        widget is Image &&
-        widget.image is AssetImage &&
-        (widget.image as AssetImage).assetName == assetPath,
-  );
+Finder _legendSvg(String assetPath) {
+  return find.byWidgetPredicate((widget) {
+    if (widget is! SvgPicture) return false;
+    final loader = widget.bytesLoader;
+    return loader is SvgAssetLoader && loader.assetName == assetPath;
+  });
 }
 
 void main() {
@@ -75,12 +75,12 @@ void main() {
     await tester.pump();
 
     expect(
-      _mapPinImage(MarkerIconUtils.mapPinEventAsset),
+      _legendSvg(MarkerIconUtils.mapPinEventLegendAsset),
       findsOneWidget,
     );
     expect(
-      _mapPinImage(MarkerIconUtils.mapPinEventSelectedAsset),
-      findsNothing,
+      _legendSvg(MarkerIconUtils.mapPinSpotLegendAsset),
+      findsOneWidget,
     );
     expect(find.byIcon(Icons.expand_more), findsOneWidget);
   });

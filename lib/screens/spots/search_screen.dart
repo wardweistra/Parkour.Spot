@@ -334,7 +334,9 @@ class SearchScreenState extends State<SearchScreen>
   List<EventMapPin> _visibleEvents = [];
   Map<String, EventMapPin> _eventPinBySpotId = {};
   bool _isLoadingEventsForView = false;
-  String _exploreListMode = 'spots';
+  final ValueNotifier<String> _exploreListMode = ValueNotifier(
+    ExploreBottomSheetHeader.modeSpots,
+  );
   BitmapDescriptor? _eventIcon;
   BitmapDescriptor? _eventSelectedIcon;
   late AnimationController _bottomSheetAnimationController;
@@ -743,6 +745,7 @@ class SearchScreenState extends State<SearchScreen>
     _bottomSheetAnimation.dispose();
     _bottomSheetAnimationController.dispose();
     _imagePageController.dispose();
+    _exploreListMode.dispose();
     // Remove listeners
     _spotServiceRef?.removeListener(_onSpotsChanged);
     _syncSourceServiceRef?.removeListener(_onSyncSourcesChanged);
@@ -4176,120 +4179,123 @@ class SearchScreenState extends State<SearchScreen>
                                           16,
                                           8,
                                         ),
-                                        child: Builder(
-                                          builder: (context) {
-                                            final l10n = AppLocalizations.of(
-                                              context,
-                                            )!;
-                                            return ExploreBottomSheetHeader(
-                                              mode: _exploreListMode,
-                                              spotsLabel: l10n
-                                                  .exploreSpotCountShort(
-                                                    _exploreSpotCountForHeader(),
-                                                  ),
-                                              eventsLabel: l10n
-                                                  .exploreEventCountShort(
-                                                    _exploreEventCountForHeader(),
-                                                  ),
-                                              spotsDetailSuffix:
-                                                  _exploreSpotsSegmentSuffix(
-                                                    l10n,
-                                                  ),
-                                              isSheetOpen: _isBottomSheetOpen,
-                                              onModeChanged: (mode) {
-                                                setState(() {
-                                                  _exploreListMode = mode;
-                                                });
+                                        child: ValueListenableBuilder<String>(
+                                          valueListenable: _exploreListMode,
+                                          builder:
+                                              (context, exploreListMode, _) {
+                                                final l10n =
+                                                    AppLocalizations.of(
+                                                      context,
+                                                    )!;
+                                                return ExploreBottomSheetHeader(
+                                                  mode: exploreListMode,
+                                                  spotsLabel: l10n
+                                                      .exploreSpotCountShort(
+                                                        _exploreSpotCountForHeader(),
+                                                      ),
+                                                  eventsLabel: l10n
+                                                      .exploreEventCountShort(
+                                                        _exploreEventCountForHeader(),
+                                                      ),
+                                                  spotsDetailSuffix:
+                                                      _exploreSpotsSegmentSuffix(
+                                                        l10n,
+                                                      ),
+                                                  isSheetOpen:
+                                                      _isBottomSheetOpen,
+                                                  onModeChanged: (mode) {
+                                                    _exploreListMode.value =
+                                                        mode;
+                                                  },
+                                                  onToggleSheet:
+                                                      _toggleBottomSheet,
+                                                );
                                               },
-                                              onToggleSheet: _toggleBottomSheet,
-                                            );
-                                          },
                                         ),
                                       ),
 
                                       if (_isBottomSheetOpen)
                                         Expanded(
                                           child: RepaintBoundary(
-                                            child: _exploreListMode == 'events'
-                                                ? (_visibleEvents.isEmpty
-                                                      ? _buildExploreEventsEmptyState(
-                                                          context,
-                                                        )
-                                                      : _buildEventsList())
-                                                : (_visibleSpots.isEmpty
-                                                      ? Center(
-                                                          child: Column(
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .center,
-                                                            children: [
-                                                              Icon(
-                                                                _searchQuery
-                                                                        .isNotEmpty
-                                                                    ? Icons
-                                                                          .search_off
-                                                                    : Icons
-                                                                          .location_off,
-                                                                size: 64,
-                                                                color:
-                                                                    Theme.of(
-                                                                          context,
-                                                                        )
-                                                                        .colorScheme
-                                                                        .onSurface
-                                                                        .withValues(
-                                                                          alpha:
-                                                                              0.5,
-                                                                        ),
-                                                              ),
-                                                              const SizedBox(
-                                                                height: 16,
-                                                              ),
-                                                              Text(
-                                                                _searchQuery
-                                                                        .isNotEmpty
-                                                                    ? AppLocalizations.of(
-                                                                        context,
-                                                                      )!.exploreNoSpotsSearch
-                                                                    : AppLocalizations.of(
-                                                                        context,
-                                                                      )!.exploreNoSpotsArea,
-                                                                style: Theme.of(
+                                            child:
+                                                ValueListenableBuilder<String>(
+                                                  valueListenable:
+                                                      _exploreListMode,
+                                                  builder: (context, exploreListMode, _) {
+                                                    return exploreListMode ==
+                                                            ExploreBottomSheetHeader
+                                                                .modeEvents
+                                                        ? (_visibleEvents
+                                                                  .isEmpty
+                                                              ? _buildExploreEventsEmptyState(
                                                                   context,
-                                                                ).textTheme.headlineSmall,
-                                                              ),
-                                                              const SizedBox(
-                                                                height: 8,
-                                                              ),
-                                                              Text(
-                                                                _searchQuery
-                                                                        .isNotEmpty
-                                                                    ? AppLocalizations.of(
-                                                                        context,
-                                                                      )!.exploreNoSpotsSearchHint
-                                                                    : AppLocalizations.of(
-                                                                        context,
-                                                                      )!.exploreNoSpotsMapHint,
-                                                                textAlign:
-                                                                    TextAlign
-                                                                        .center,
-                                                                style: Theme.of(context)
-                                                                    .textTheme
-                                                                    .bodyMedium
-                                                                    ?.copyWith(
-                                                                      color: Theme.of(context)
-                                                                          .colorScheme
-                                                                          .onSurface
-                                                                          .withValues(
-                                                                            alpha:
-                                                                                0.7,
-                                                                          ),
-                                                                    ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        )
-                                                      : _buildSpotsList()),
+                                                                )
+                                                              : _buildEventsList())
+                                                        : (_visibleSpots
+                                                                  .isEmpty
+                                                              ? Center(
+                                                                  child: Column(
+                                                                    mainAxisAlignment:
+                                                                        MainAxisAlignment
+                                                                            .center,
+                                                                    children: [
+                                                                      Icon(
+                                                                        _searchQuery.isNotEmpty
+                                                                            ? Icons.search_off
+                                                                            : Icons.location_off,
+                                                                        size: 64,
+                                                                        color: Theme.of(context)
+                                                                            .colorScheme
+                                                                            .onSurface
+                                                                            .withValues(
+                                                                              alpha: 0.5,
+                                                                            ),
+                                                                      ),
+                                                                      const SizedBox(
+                                                                        height:
+                                                                            16,
+                                                                      ),
+                                                                      Text(
+                                                                        _searchQuery.isNotEmpty
+                                                                            ? AppLocalizations.of(
+                                                                                context,
+                                                                              )!.exploreNoSpotsSearch
+                                                                            : AppLocalizations.of(
+                                                                                context,
+                                                                              )!.exploreNoSpotsArea,
+                                                                        style: Theme.of(
+                                                                          context,
+                                                                        ).textTheme.headlineSmall,
+                                                                      ),
+                                                                      const SizedBox(
+                                                                        height:
+                                                                            8,
+                                                                      ),
+                                                                      Text(
+                                                                        _searchQuery.isNotEmpty
+                                                                            ? AppLocalizations.of(
+                                                                                context,
+                                                                              )!.exploreNoSpotsSearchHint
+                                                                            : AppLocalizations.of(
+                                                                                context,
+                                                                              )!.exploreNoSpotsMapHint,
+                                                                        textAlign:
+                                                                            TextAlign.center,
+                                                                        style: Theme.of(context)
+                                                                            .textTheme
+                                                                            .bodyMedium
+                                                                            ?.copyWith(
+                                                                              color: Theme.of(context).colorScheme.onSurface.withValues(
+                                                                                alpha: 0.7,
+                                                                              ),
+                                                                            ),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                )
+                                                              : _buildSpotsList());
+                                                  },
+                                                ),
                                           ),
                                         ),
                                     ],
