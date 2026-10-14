@@ -1052,6 +1052,12 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get exploreSpotsLoadingLabel => 'Spots';
+
+  @override
+  String get exploreEventsLoadingLabel => 'Events';
+
+  @override
   String get explorePwaBannerInstall => 'Installieren';
 
   @override

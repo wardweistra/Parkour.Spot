@@ -1798,6 +1798,18 @@ abstract class AppLocalizations {
   /// **'{count, plural, one{{count} spot} other{{count} spots}}'**
   String exploreSpotCountShort(int count);
 
+  /// Explore spots toggle label shown before the first spot count for the map view has loaded
+  ///
+  /// In en, this message translates to:
+  /// **'Spots'**
+  String get exploreSpotsLoadingLabel;
+
+  /// Explore events toggle label shown before the first event count for the map view has loaded
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get exploreEventsLoadingLabel;
+
   /// Compact install button on explore PWA banner
   ///
   /// In en, this message translates to:

@@ -1310,6 +1310,14 @@
       }
     }
   },
+  "exploreSpotsLoadingLabel": "Spots",
+  "@exploreSpotsLoadingLabel": {
+    "description": "Explore spots toggle label shown before the first spot count for the map view has loaded"
+  },
+  "exploreEventsLoadingLabel": "Events",
+  "@exploreEventsLoadingLabel": {
+    "description": "Explore events toggle label shown before the first event count for the map view has loaded"
+  },
   "explorePwaBannerInstall": "Install",
   "@explorePwaBannerInstall": {
     "description": "Compact install button on explore PWA banner"
