@@ -45,6 +45,10 @@ function normalizeSource(raw: Partial<CommunitySource> | undefined): CommunitySo
       typeof raw.instagramHandle === "string" && raw.instagramHandle.trim()
         ? raw.instagramHandle.trim().replace(/^@/, "")
         : null,
+    logoUrl:
+      typeof raw.logoUrl === "string" && raw.logoUrl.trim()
+        ? raw.logoUrl.trim()
+        : null,
     spotCount:
       typeof raw.spotCount === "number" && Number.isFinite(raw.spotCount)
         ? Math.max(0, Math.floor(raw.spotCount))

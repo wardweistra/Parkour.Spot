@@ -5,33 +5,64 @@
  */
 interface Props {
   src?: string | null;
-  /** Match SpotList (96) or EventList (64) sizes. */
+  /** Match SpotList (96) or EventList / SourceList (64) sizes. */
   size?: 64 | 96;
+  /** Spot photos crop; source logos keep their full mark. */
+  fit?: "cover" | "contain";
+  /** Empty-state glyph when there is no usable image. */
+  variant?: "photo" | "source";
 }
 
-const {src, size = 64} = Astro.props;
+const {src, size = 64, fit = "cover", variant = "photo"} = Astro.props;
 const url = typeof src === "string" ? src.trim() : "";
 ---
 
 <div
-  class:list={["stack-list__thumb", {"stack-list__thumb--lg": size === 96}]}
+  class:list={[
+    "stack-list__thumb",
+    {"stack-list__thumb--lg": size === 96},
+    {"stack-list__thumb--contain": fit === "contain"},
+  ]}
   aria-hidden="true"
 >
-  <svg
-    class="stack-list__thumb-icon"
-    viewBox="0 0 24 24"
-    width="24"
-    height="24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="1.75"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  >
-    <rect x="3" y="5" width="18" height="14" rx="2"></rect>
-    <circle cx="8.5" cy="10" r="1.5" fill="currentColor" stroke="none"></circle>
-    <path d="M3 16.5 9 12l3.5 3.5L16 12l5 4.5"></path>
-  </svg>
+  {
+    variant === "source" ? (
+      <svg
+        class="stack-list__thumb-icon"
+        viewBox="0 0 24 24"
+        width="24"
+        height="24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M8 6h13"></path>
+        <path d="M8 12h13"></path>
+        <path d="M8 18h13"></path>
+        <path d="M3 6h.01"></path>
+        <path d="M3 12h.01"></path>
+        <path d="M3 18h.01"></path>
+      </svg>
+    ) : (
+      <svg
+        class="stack-list__thumb-icon"
+        viewBox="0 0 24 24"
+        width="24"
+        height="24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+        <circle cx="8.5" cy="10" r="1.5" fill="currentColor" stroke="none"></circle>
+        <path d="M3 16.5 9 12l3.5 3.5L16 12l5 4.5"></path>
+      </svg>
+    )
+  }
   {
     url && (
       <img
@@ -40,6 +71,7 @@ const url = typeof src === "string" ? src.trim() : "";
         width={size}
         height={size}
         loading="lazy"
+        decoding="async"
         onerror="this.remove()"
       />
     )

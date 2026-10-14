@@ -1,4 +1,5 @@
 ---
+import StackListThumb from "./StackListThumb.astro";
 import type {CommunitySource} from "../lib/types";
 import {countNoun} from "../lib/citation";
 import {instagramUrl} from "../lib/urls";
@@ -33,53 +34,44 @@ function countLabel(source: CommunitySource): string | null {
         const ig = source.instagramHandle;
         const href = source.publicUrl;
         const logoUrl = source.logoUrl?.trim() || null;
+        const hasActions = Boolean(href || ig);
         return (
-          <li class:list={["stack-list__card", "source-list__row", {"source-list__row--linked": href}]}>
-            {logoUrl && (
-              <img
-                class="source-list__logo"
-                src={logoUrl}
-                alt=""
-                width="48"
-                height="48"
-                loading="lazy"
-                decoding="async"
-              />
-            )}
+          <li class="stack-list__card source-list__row">
+            <StackListThumb
+              src={logoUrl}
+              size={64}
+              fit="contain"
+              variant="source"
+            />
             <div class="source-list__body">
-              <h3 class="stack-list__title">
-                {href ? (
-                  <a
-                    class="stack-list__link"
-                    href={href}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    {source.name}
-                  </a>
-                ) : (
-                  source.name
-                )}
-              </h3>
+              <h3 class="stack-list__title">{source.name}</h3>
               {source.description && (
                 <p class="stack-list__place">{source.description}</p>
               )}
-              {(count || ig) && (
-                <p class="stack-list__meta stack-list__meta--quiet">
-                  {count}
-                  {count && ig && " · "}
+              {count && (
+                <p class="stack-list__meta stack-list__meta--quiet">{count}</p>
+              )}
+              {hasActions && (
+                <p class="source-list__actions">
                   {ig && (
-                    href ? (
-                      <span>@{ig}</span>
-                    ) : (
-                      <a
-                        href={instagramUrl(ig)}
-                        rel="noopener noreferrer"
-                        target="_blank"
-                      >
-                        @{ig}
-                      </a>
-                    )
+                    <a
+                      class="source-list__action"
+                      href={instagramUrl(ig)}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      @{ig}
+                    </a>
+                  )}
+                  {href && (
+                    <a
+                      class="source-list__action"
+                      href={href}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      Public page
+                    </a>
                   )}
                 </p>
               )}
