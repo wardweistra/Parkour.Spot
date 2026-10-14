@@ -393,11 +393,6 @@ class SearchScreenState extends State<SearchScreen>
   String? _eventIdToLocate; // Event ID to locate from query parameter
   String? _locateSpotInFlight; // Prevents overlapping locate-by-id work
   Timer? _locationPollingTimer; // Timer for polling user location periodically
-
-  /// False while another Explore tab is shown. The state is kept alive, so
-  /// location polling pauses then and resumes in [onMapTabActivated].
-  bool _isMapTabVisible = true;
-  bool _resumeLocationPolling = false;
   // Spot list highlighting
   String? _selectedListId; // Currently selected spot list ID
   String? _selectedListName; // Name of the selected spot list
@@ -697,9 +692,6 @@ class SearchScreenState extends State<SearchScreen>
   void onMapTabActivated() {
     if (!mounted) return;
 
-    _isMapTabVisible = true;
-    if (_resumeLocationPolling) _startLocationPolling();
-
     String? locateSpotId;
     String? locateEventId;
     String? listIdFromUrl;
@@ -761,15 +753,9 @@ class SearchScreenState extends State<SearchScreen>
   }
 
   /// Called when another Explore tab is shown. The kept-alive search field
-  /// would otherwise keep focus (and the keyboard) while hidden, and location
-  /// polling would keep running.
+  /// would otherwise keep focus (and the keyboard) while hidden.
   void onMapTabDeactivated() {
     _searchFocusNode.unfocus();
-    _isMapTabVisible = false;
-    if (_locationPollingTimer != null) {
-      _stopLocationPolling();
-      _resumeLocationPolling = true;
-    }
   }
 
   @override
@@ -1400,12 +1386,6 @@ class SearchScreenState extends State<SearchScreen>
     // Cancel existing timer if any
     _stopLocationPolling();
 
-    // Hidden behind another Explore tab: start once the map is shown again.
-    if (!_isMapTabVisible) {
-      _resumeLocationPolling = true;
-      return;
-    }
-
     // Poll immediately first
     if (mounted) {
       _updateLocationWithoutCentering();
@@ -1425,7 +1405,6 @@ class SearchScreenState extends State<SearchScreen>
   void _stopLocationPolling() {
     _locationPollingTimer?.cancel();
     _locationPollingTimer = null;
-    _resumeLocationPolling = false;
   }
 
   // Load spots and event pins for the current map view.
