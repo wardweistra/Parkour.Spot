@@ -48,6 +48,7 @@ import 'package:parkour_spot/config/app_config.dart';
 import 'package:parkour_spot/analytics/web_analytics.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:parkour_spot/utils/auth_emulator_origin.dart';
 import 'package:parkour_spot/utils/browser_location.dart';
 import 'package:parkour_spot/utils/path_url_strategy.dart';
 
@@ -135,6 +136,14 @@ void main() async {
   // Validate configuration before initializing Firebase
   AppConfig.validateConfiguration();
 
+  const useEmulator = bool.fromEnvironment('USE_EMULATOR', defaultValue: false);
+
+  // Must run before initializeApp so a persisted emulator user survives a new
+  // tab or browser restart (see preconfigureAuthEmulatorOrigin).
+  if (useEmulator) {
+    preconfigureAuthEmulatorOrigin(_emulatorHost(), _authEmulatorPort);
+  }
+
   // Web: options come from dart-defines.
   // Android/iOS: [DEFAULT] is created from google-services.json /
   // GoogleService-Info.plist. Passing dart-define options that differ from the
@@ -150,7 +159,6 @@ void main() async {
   }
 
   // Connect to emulators if USE_EMULATOR is set
-  const useEmulator = bool.fromEnvironment('USE_EMULATOR', defaultValue: false);
   if (useEmulator) {
     await _connectToEmulators();
   }
@@ -166,16 +174,21 @@ void main() async {
   });
 }
 
+const _authEmulatorPort = 9099;
+
+/// Web / desktop / iOS simulator: localhost. Android emulator: host loopback.
+String _emulatorHost() =>
+    (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
+        ? '10.0.2.2'
+        : '127.0.0.1';
+
 /// Connect Firebase services to local emulators
 Future<void> _connectToEmulators() async {
-  // Web / desktop / iOS simulator: localhost. Android emulator: host loopback.
-  final host = (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
-      ? '10.0.2.2'
-      : '127.0.0.1';
+  final host = _emulatorHost();
 
   // Emulator port configuration
   const firestorePort = 8082;
-  const authPort = 9099;
+  const authPort = _authEmulatorPort;
   const storagePort = 9199;
   const functionsPort = 5001;
 
