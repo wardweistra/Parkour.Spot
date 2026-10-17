@@ -4,11 +4,16 @@ const {
 } = require("../lib/api-helpers");
 const {
   mapFeedUrl,
+  mapFeedDataUrl,
+  parseMapFeedPath,
   extractMapTokenFromPath,
   assignCategory,
+  buildNetworkLinkKml,
   buildKmlDocument,
   buildLegendDescriptionHtml,
   CATEGORY,
+  MAP_FEED_KIND,
+  MAP_FEED_REFRESH_INTERVAL_SECONDS,
   getOrCreateMapFeed,
   regenerateMapFeed,
   resolveUserIdFromMapToken,
@@ -24,23 +29,58 @@ describe("generateMapToken", () => {
   });
 });
 
-describe("extractMapTokenFromPath", () => {
-  it("parses /map/{token}.kml", () => {
-    expect(extractMapTokenFromPath("/map/psm_abc.kml")).toBe("psm_abc");
+describe("parseMapFeedPath", () => {
+  it("parses subscription NetworkLink path", () => {
+    expect(parseMapFeedPath("/map/psm_abc.kml")).toEqual({
+      token: "psm_abc",
+      kind: MAP_FEED_KIND.NETWORK_LINK,
+    });
   });
-  it("parses path without .kml suffix", () => {
-    expect(extractMapTokenFromPath("/map/psm_abc")).toBe("psm_abc");
+  it("parses path without .kml suffix as NetworkLink", () => {
+    expect(parseMapFeedPath("/map/psm_abc")).toEqual({
+      token: "psm_abc",
+      kind: MAP_FEED_KIND.NETWORK_LINK,
+    });
+  });
+  it("parses live data path", () => {
+    expect(parseMapFeedPath("/map/psm_abc/data.kml")).toEqual({
+      token: "psm_abc",
+      kind: MAP_FEED_KIND.DATA,
+    });
   });
   it("returns null for unrelated paths", () => {
-    expect(extractMapTokenFromPath("/calendar/psc_x.ics")).toBeNull();
+    expect(parseMapFeedPath("/calendar/psc_x.ics")).toBeNull();
+  });
+});
+
+describe("extractMapTokenFromPath", () => {
+  it("returns token from NetworkLink and data paths", () => {
+    expect(extractMapTokenFromPath("/map/psm_abc.kml")).toBe("psm_abc");
+    expect(extractMapTokenFromPath("/map/psm_abc/data.kml")).toBe("psm_abc");
   });
 });
 
 describe("mapFeedUrl", () => {
-  it("builds parkour.spot map URL", () => {
+  it("builds parkour.spot subscription and data URLs", () => {
     expect(mapFeedUrl("psm_test")).toBe(
         "https://parkour.spot/map/psm_test.kml",
     );
+    expect(mapFeedDataUrl("psm_test")).toBe(
+        "https://parkour.spot/map/psm_test/data.kml",
+    );
+  });
+});
+
+describe("buildNetworkLinkKml", () => {
+  it("points at the data KML with onInterval refresh", () => {
+    const kml = buildNetworkLinkKml("psm_test");
+    expect(kml).toContain("<NetworkLink>");
+    expect(kml).toContain("https://parkour.spot/map/psm_test/data.kml");
+    expect(kml).toContain("<refreshMode>onInterval</refreshMode>");
+    expect(kml).toContain(
+        `<refreshInterval>${MAP_FEED_REFRESH_INTERVAL_SECONDS}</refreshInterval>`,
+    );
+    expect(kml).not.toContain("<Placemark>");
   });
 });
 
@@ -66,6 +106,7 @@ describe("buildLegendDescriptionHtml", () => {
     expect(html).toContain(MY_SESSIONS_URL);
     expect(html).toContain("Now checked in at");
     expect(html).toContain("Been to");
+    expect(html).toContain("network link");
   });
 });
 
