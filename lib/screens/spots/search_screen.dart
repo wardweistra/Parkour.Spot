@@ -334,6 +334,10 @@ class SearchScreenState extends State<SearchScreen>
   List<EventMapPin> _visibleEvents = [];
   Map<String, EventMapPin> _eventPinBySpotId = {};
   bool _isLoadingEventsForView = false;
+
+  /// False until the first map-data load for this screen finishes, so the
+  /// header does not claim "0 spots" before anything has been fetched.
+  bool _hasLoadedMapData = false;
   final ValueNotifier<String> _exploreListMode = ValueNotifier(
     ExploreBottomSheetHeader.modeSpots,
   );
@@ -1471,6 +1475,7 @@ class SearchScreenState extends State<SearchScreen>
         setState(() {
           _isLoadingSpotsForView = false;
           _isLoadingEventsForView = false;
+          _hasLoadedMapData = true;
         });
       }
     }
@@ -4189,14 +4194,24 @@ class SearchScreenState extends State<SearchScreen>
                                                     )!;
                                                 return ExploreBottomSheetHeader(
                                                   mode: exploreListMode,
-                                                  spotsLabel: l10n
-                                                      .exploreSpotCountShort(
-                                                        _exploreSpotCountForHeader(),
-                                                      ),
-                                                  eventsLabel: l10n
-                                                      .exploreEventCountShort(
-                                                        _exploreEventCountForHeader(),
-                                                      ),
+                                                  spotsLabel: _hasLoadedMapData
+                                                      ? l10n.exploreSpotCountShort(
+                                                          _exploreSpotCountForHeader(),
+                                                        )
+                                                      : l10n
+                                                            .exploreSpotsLoadingLabel,
+                                                  eventsLabel: _hasLoadedMapData
+                                                      ? l10n.exploreEventCountShort(
+                                                          _exploreEventCountForHeader(),
+                                                        )
+                                                      : l10n
+                                                            .exploreEventsLoadingLabel,
+                                                  spotsLoading:
+                                                      _isLoadingSpotsForView ||
+                                                      !_hasLoadedMapData,
+                                                  eventsLoading:
+                                                      _isLoadingEventsForView ||
+                                                      !_hasLoadedMapData,
                                                   spotsDetailSuffix:
                                                       _exploreSpotsSegmentSuffix(
                                                         l10n,

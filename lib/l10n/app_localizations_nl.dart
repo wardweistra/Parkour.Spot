@@ -1040,6 +1040,12 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get exploreSpotsLoadingLabel => 'Spots';
+
+  @override
+  String get exploreEventsLoadingLabel => 'Evenementen';
+
+  @override
   String get explorePwaBannerInstall => 'Installeren';
 
   @override

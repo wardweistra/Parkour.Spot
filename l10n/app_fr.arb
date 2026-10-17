@@ -225,6 +225,8 @@
   "exploreDoneFilters": "Terminé",
   "exploreDoneFiltersWithCount": "{count, plural, one{Terminé · 1 spot} other{Terminé · {count} spots}}",
   "exploreSpotCountShort": "{count, plural, one{{count} spot} other{{count} spots}}",
+  "exploreSpotsLoadingLabel": "Spots",
+  "exploreEventsLoadingLabel": "Événements",
   "explorePwaBannerInstall": "Installer",
   "addSpotPickImagesFailed": "Impossible de choisir les images. Réessayez.",
   "addSpotTakePhotoFailed": "Impossible de prendre la photo. Réessayez.",

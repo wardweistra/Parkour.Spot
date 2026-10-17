@@ -20,6 +20,10 @@ class ExploreBottomSheetHeader extends StatelessWidget {
 
   /// Shown inside the events segment when not all pins are listed.
   final String? eventsDetailSuffix;
+
+  /// Swap the segment's pin for a spinner while its data loads.
+  final bool spotsLoading;
+  final bool eventsLoading;
   final bool isSheetOpen;
   final ValueChanged<String> onModeChanged;
   final VoidCallback onToggleSheet;
@@ -31,6 +35,8 @@ class ExploreBottomSheetHeader extends StatelessWidget {
     required this.eventsLabel,
     this.spotsDetailSuffix,
     this.eventsDetailSuffix,
+    this.spotsLoading = false,
+    this.eventsLoading = false,
     required this.isSheetOpen,
     required this.onModeChanged,
     required this.onToggleSheet,
@@ -84,6 +90,8 @@ class ExploreBottomSheetHeader extends StatelessWidget {
               eventsLabel: eventsLabel,
               spotsDetailSuffix: spotsDetailSuffix,
               eventsDetailSuffix: eventsDetailSuffix,
+              spotsLoading: spotsLoading,
+              eventsLoading: eventsLoading,
               onSegmentTap: _onSegmentTap,
             ),
           ),
@@ -107,6 +115,8 @@ class _ModePillToggle extends StatefulWidget {
   final String eventsLabel;
   final String? spotsDetailSuffix;
   final String? eventsDetailSuffix;
+  final bool spotsLoading;
+  final bool eventsLoading;
   final ValueChanged<String> onSegmentTap;
 
   const _ModePillToggle({
@@ -115,6 +125,8 @@ class _ModePillToggle extends StatefulWidget {
     required this.eventsLabel,
     this.spotsDetailSuffix,
     this.eventsDetailSuffix,
+    this.spotsLoading = false,
+    this.eventsLoading = false,
     required this.onSegmentTap,
   });
 
@@ -223,6 +235,7 @@ class _ModePillToggleState extends State<_ModePillToggle> {
                   pinAsset: MarkerIconUtils.mapPinSpotLegendAsset,
                   label: widget.spotsLabel,
                   detailSuffix: widget.spotsDetailSuffix,
+                  isLoading: widget.spotsLoading,
                   onTap: () =>
                       widget.onSegmentTap(ExploreBottomSheetHeader.modeSpots),
                 ),
@@ -232,6 +245,7 @@ class _ModePillToggleState extends State<_ModePillToggle> {
                   pinAsset: MarkerIconUtils.mapPinEventLegendAsset,
                   label: widget.eventsLabel,
                   detailSuffix: widget.eventsDetailSuffix,
+                  isLoading: widget.eventsLoading,
                   onTap: () =>
                       widget.onSegmentTap(ExploreBottomSheetHeader.modeEvents),
                 ),
@@ -251,6 +265,7 @@ class _ModeSegment extends StatelessWidget {
   final String pinAsset;
   final String label;
   final String? detailSuffix;
+  final bool isLoading;
   final VoidCallback onTap;
 
   const _ModeSegment({
@@ -259,6 +274,7 @@ class _ModeSegment extends StatelessWidget {
     required this.pinAsset,
     required this.label,
     this.detailSuffix,
+    this.isLoading = false,
     required this.onTap,
   });
 
@@ -309,12 +325,23 @@ class _ModeSegment extends StatelessWidget {
                   width: MarkerIconUtils.mapPinLogicalWidthForHeight(
                     _pinLogicalHeight,
                   ),
-                  child: RepaintBoundary(
-                    child: SvgPicture.asset(
-                      pinAsset,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
+                  // Same box as the pin so the pill does not shift.
+                  child: isLoading
+                      ? Center(
+                          child: SizedBox.square(
+                            dimension: 12,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 1.5,
+                              color: foreground,
+                            ),
+                          ),
+                        )
+                      : RepaintBoundary(
+                          child: SvgPicture.asset(
+                            pinAsset,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
                 ),
                 const SizedBox(width: 5),
                 Flexible(

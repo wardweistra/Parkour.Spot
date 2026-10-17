@@ -180,4 +180,27 @@ void main() {
       expect(tester.getSize(pillFinder.first).height, heightWithSuffix);
     },
   );
+
+  testWidgets('loading segment swaps its pin for a spinner', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ExploreBottomSheetHeader(
+            mode: ExploreBottomSheetHeader.modeSpots,
+            spotsLabel: 'Spots',
+            eventsLabel: '3 events',
+            spotsLoading: true,
+            isSheetOpen: false,
+            onModeChanged: (_) {},
+            onToggleSheet: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(_legendSvg(MarkerIconUtils.mapPinSpotLegendAsset), findsNothing);
+    expect(_legendSvg(MarkerIconUtils.mapPinEventLegendAsset), findsOneWidget);
+    expect(find.text('Spots'), findsOneWidget);
+  });
 }

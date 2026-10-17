@@ -225,6 +225,8 @@
   "exploreDoneFilters": "Pronto",
   "exploreDoneFiltersWithCount": "{count, plural, one{Pronto · 1 spot} other{Pronto · {count} spots}}",
   "exploreSpotCountShort": "{count, plural, one{{count} spot} other{{count} spots}}",
+  "exploreSpotsLoadingLabel": "Spots",
+  "exploreEventsLoadingLabel": "Eventos",
   "explorePwaBannerInstall": "Instalar",
   "addSpotPickImagesFailed": "Não foi possível escolher as imagens. Tenta novamente.",
   "addSpotTakePhotoFailed": "Não foi possível tirar a foto. Tenta novamente.",

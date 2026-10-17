@@ -62,6 +62,39 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
   Object? _lastUid = _uidUnset;
   String? _cachedSpotId;
 
+  /// True while a check-in or planning flow runs (lookups before its dialog
+  /// opens, then the dialog itself). Shows progress and blocks double taps.
+  bool _checkInBusy = false;
+  bool _planBusy = false;
+
+  Future<void> _runCheckInFlow(Future<void> Function() flow) async {
+    if (_checkInBusy) return;
+    setState(() => _checkInBusy = true);
+    try {
+      await flow();
+    } finally {
+      if (mounted) setState(() => _checkInBusy = false);
+    }
+  }
+
+  Future<void> _runPlanFlow(Future<void> Function() flow) async {
+    if (_planBusy) return;
+    setState(() => _planBusy = true);
+    try {
+      await flow();
+    } finally {
+      if (mounted) setState(() => _planBusy = false);
+    }
+  }
+
+  static Widget _buttonIcon(IconData icon, {required bool busy}) {
+    if (!busy) return Icon(icon, size: 18);
+    return const SizedBox.square(
+      dimension: 18,
+      child: CircularProgressIndicator(strokeWidth: 2),
+    );
+  }
+
   @override
   void didUpdateWidget(covariant SpotDetailCommunitySection oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -404,11 +437,11 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
         return;
       }
       final m = myPlan;
-      if (m != null) {
-        widget.onEditTrainingPlan(m);
-      } else {
-        widget.onNewTrainingPlan();
-      }
+      _runPlanFlow(
+        m != null
+            ? () => widget.onEditTrainingPlan(m)
+            : widget.onNewTrainingPlan,
+      );
     }
 
     final label = !authenticated
@@ -431,8 +464,8 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
       child: SizedBox(
         width: double.infinity,
         child: OutlinedButton.icon(
-          onPressed: onPressed,
-          icon: Icon(planIcon, size: 18),
+          onPressed: _planBusy ? null : onPressed,
+          icon: _buttonIcon(planIcon, busy: _planBusy),
           label: Text(label),
           style: OutlinedButton.styleFrom(
             visualDensity: VisualDensity.compact,
@@ -450,11 +483,9 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
   }) {
     void onCheckInPressed() {
       final m = mine;
-      if (m != null) {
-        widget.onEditCheckIn(m);
-      } else {
-        widget.onNewCheckIn();
-      }
+      _runCheckInFlow(
+        m != null ? () => widget.onEditCheckIn(m) : widget.onNewCheckIn,
+      );
     }
 
     if (!authenticated) {
@@ -483,10 +514,10 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
       child: SizedBox(
         width: double.infinity,
         child: FilledButton.tonalIcon(
-          onPressed: onCheckInPressed,
-          icon: Icon(
+          onPressed: _checkInBusy ? null : onCheckInPressed,
+          icon: _buttonIcon(
             checkedIn ? Icons.edit_location_alt_outlined : Icons.place_outlined,
-            size: 18,
+            busy: _checkInBusy,
           ),
           label: Text(
             checkedIn
@@ -509,26 +540,28 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
     final l10n = AppLocalizations.of(context)!;
     final auth = Provider.of<AuthService>(context);
 
+    final loading = SizedBox(
+      height: 36,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: cs.primary,
+          ),
+        ),
+      ),
+    );
+
     Widget body;
     if (auth.isLoading ||
         _publicStream == null ||
         _myStream == null ||
         _publicPlansStream == null ||
         _myPlanStream == null) {
-      body = SizedBox(
-        height: 36,
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: SizedBox(
-            width: 22,
-            height: 22,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: cs.primary,
-            ),
-          ),
-        ),
-      );
+      body = loading;
     } else {
       body = StreamBuilder<List<SpotCheckIn>>(
         stream: _publicStream,
@@ -542,6 +575,20 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                   return StreamBuilder<SpotTrainingPlan?>(
                     stream: _myPlanStream,
                     builder: (context, myPlanSnap) {
+                      // Until every stream has emitted, the empty state and
+                      // "Check in" would be shown and then jump to the real
+                      // presence row, moving the buttons under the user's tap.
+                      final anyWaiting = [
+                        publicSnap,
+                        mySnap,
+                        plansPublicSnap,
+                        myPlanSnap,
+                      ].any(
+                        (snap) =>
+                            snap.connectionState == ConnectionState.waiting,
+                      );
+                      if (anyWaiting) return loading;
+
                       final entries = buildCheckInAvatarEntries(
                         publicSnap.data ?? [],
                         mySnap.data,
