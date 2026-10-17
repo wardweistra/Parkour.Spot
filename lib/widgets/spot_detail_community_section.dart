@@ -533,6 +533,199 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
     );
   }
 
+  Widget _sectionHeader({
+    required ThemeData theme,
+    required ColorScheme cs,
+    required AppLocalizations l10n,
+    required bool showSubtitle,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.groups_2_outlined,
+          size: 20,
+          color: cs.primary,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.spotDetailCommunitySectionTitle,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (showSubtitle) ...[
+                const SizedBox(height: 2),
+                Text(
+                  l10n.spotDetailCommunitySectionSubtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: cs.onSurface.withValues(alpha: 0.68),
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Placeholder for the presence / empty-status row (same approach as
+  /// Notifications: soft bars and circles, no spinner-only empty panel).
+  Widget _socialStripSkeleton(ColorScheme cs) {
+    final placeholder = cs.surfaceContainerHighest.withValues(alpha: 0.85);
+    const skeletonCount = 3;
+    final stackWidth =
+        (skeletonCount - 1) * _avatarOverlap + _avatarRadius * 2;
+
+    Widget circle() => Container(
+          width: _avatarRadius * 2,
+          height: _avatarRadius * 2,
+          decoration: BoxDecoration(
+            color: placeholder,
+            shape: BoxShape.circle,
+          ),
+        );
+
+    return SizedBox(
+      height: _avatarRadius * 2,
+      child: Row(
+        children: [
+          SizedBox(
+            width: stackWidth,
+            height: _avatarRadius * 2,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                for (var i = 0; i < skeletonCount; i++)
+                  Positioned(
+                    left: i * _avatarOverlap,
+                    child: circle(),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                height: 12,
+                width: double.infinity,
+                constraints: const BoxConstraints(maxWidth: 96),
+                decoration: BoxDecoration(
+                  color: placeholder,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionButtonSkeleton(ColorScheme cs) {
+    final placeholder = cs.surfaceContainerHighest.withValues(alpha: 0.85);
+    return Container(
+      height: 40,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: placeholder,
+        borderRadius: BorderRadius.circular(20),
+      ),
+    );
+  }
+
+  Widget _panelColumn({
+    required ThemeData theme,
+    required ColorScheme cs,
+    required AppLocalizations l10n,
+    required bool showSubtitle,
+    required Widget socialStrip,
+    required Widget checkIn,
+    required Widget planning,
+  }) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        final wide = c.maxWidth > 520;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _sectionHeader(
+              theme: theme,
+              cs: cs,
+              l10n: l10n,
+              showSubtitle: showSubtitle,
+            ),
+            const SizedBox(height: 8),
+            socialStrip,
+            const SizedBox(height: 10),
+            if (wide)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: checkIn),
+                  const SizedBox(width: 10),
+                  Expanded(child: planning),
+                ],
+              )
+            else ...[
+              checkIn,
+              const SizedBox(height: 8),
+              planning,
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  /// Header + skeleton presence row + real actions when auth is known, or
+  /// skeleton actions while auth itself is still resolving.
+  Widget _loadingPanel({
+    required ThemeData theme,
+    required ColorScheme cs,
+    required AppLocalizations l10n,
+    required AuthService auth,
+  }) {
+    final social = _socialStripSkeleton(cs);
+    if (auth.isLoading) {
+      return _panelColumn(
+        theme: theme,
+        cs: cs,
+        l10n: l10n,
+        showSubtitle: false,
+        socialStrip: social,
+        checkIn: _actionButtonSkeleton(cs),
+        planning: _actionButtonSkeleton(cs),
+      );
+    }
+    return _panelColumn(
+      theme: theme,
+      cs: cs,
+      l10n: l10n,
+      showSubtitle: false,
+      socialStrip: social,
+      checkIn: _checkInButton(
+        l10n: l10n,
+        authenticated: auth.isAuthenticated,
+        mine: null,
+      ),
+      planning: _planningControl(
+        theme: theme,
+        l10n: l10n,
+        authenticated: auth.isAuthenticated,
+        myPlan: null,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -540,28 +733,18 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
     final l10n = AppLocalizations.of(context)!;
     final auth = Provider.of<AuthService>(context);
 
-    final loading = SizedBox(
-      height: 36,
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: SizedBox(
-          width: 22,
-          height: 22,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: cs.primary,
-          ),
-        ),
-      ),
-    );
-
     Widget body;
     if (auth.isLoading ||
         _publicStream == null ||
         _myStream == null ||
         _publicPlansStream == null ||
         _myPlanStream == null) {
-      body = loading;
+      body = _loadingPanel(
+        theme: theme,
+        cs: cs,
+        l10n: l10n,
+        auth: auth,
+      );
     } else {
       body = StreamBuilder<List<SpotCheckIn>>(
         stream: _publicStream,
@@ -575,9 +758,8 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                   return StreamBuilder<SpotTrainingPlan?>(
                     stream: _myPlanStream,
                     builder: (context, myPlanSnap) {
-                      // Until every stream has emitted, the empty state and
-                      // "Check in" would be shown and then jump to the real
-                      // presence row, moving the buttons under the user's tap.
+                      // Until every stream has emitted, avoid flashing empty
+                      // presence then jumping to avatars (moves the buttons).
                       final anyWaiting = [
                         publicSnap,
                         mySnap,
@@ -587,7 +769,14 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                         (snap) =>
                             snap.connectionState == ConnectionState.waiting,
                       );
-                      if (anyWaiting) return loading;
+                      if (anyWaiting) {
+                        return _loadingPanel(
+                          theme: theme,
+                          cs: cs,
+                          l10n: l10n,
+                          auth: auth,
+                        );
+                      }
 
                       final entries = buildCheckInAvatarEntries(
                         publicSnap.data ?? [],
@@ -624,7 +813,8 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                                       spotDisplayName: widget.spotDisplayName,
                                       countryCode: widget.countryCode,
                                       city: widget.city,
-                                      onJoinTrainingPlan: widget.onJoinTrainingPlan,
+                                      onJoinTrainingPlan:
+                                          widget.onJoinTrainingPlan,
                                       onLoginRequired: widget.onLoginRequired,
                                     ),
                                     borderRadius: BorderRadius.circular(10),
@@ -710,86 +900,23 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                                   ),
                                 );
 
-                      return LayoutBuilder(
-                        builder: (context, c) {
-                          final wide = c.maxWidth > 520;
-                          final planning = _planningControl(
-                            theme: theme,
-                            l10n: l10n,
-                            authenticated: auth.isAuthenticated,
-                            myPlan: myPlan,
-                          );
-
-                          final checkIn = _checkInButton(
-                            l10n: l10n,
-                            authenticated: auth.isAuthenticated,
-                            mine: mine,
-                          );
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(
-                                    Icons.groups_2_outlined,
-                                    size: 20,
-                                    color: cs.primary,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          l10n.spotDetailCommunitySectionTitle,
-                                          style: theme.textTheme.titleSmall
-                                              ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        if (hasPeople ||
-                                            hasPlanningPresence) ...[
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            l10n
-                                                .spotDetailCommunitySectionSubtitle,
-                                            style: theme.textTheme.bodySmall
-                                                ?.copyWith(
-                                              color: cs.onSurface.withValues(
-                                                alpha: 0.68,
-                                              ),
-                                              height: 1.3,
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              unifiedSocialStrip,
-                              const SizedBox(height: 10),
-                              if (wide)
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(child: checkIn),
-                                    const SizedBox(width: 10),
-                                    Expanded(child: planning),
-                                  ],
-                                )
-                              else ...[
-                                checkIn,
-                                const SizedBox(height: 8),
-                                planning,
-                              ],
-                            ],
-                          );
-                        },
+                      return _panelColumn(
+                        theme: theme,
+                        cs: cs,
+                        l10n: l10n,
+                        showSubtitle: hasPeople || hasPlanningPresence,
+                        socialStrip: unifiedSocialStrip,
+                        checkIn: _checkInButton(
+                          l10n: l10n,
+                          authenticated: auth.isAuthenticated,
+                          mine: mine,
+                        ),
+                        planning: _planningControl(
+                          theme: theme,
+                          l10n: l10n,
+                          authenticated: auth.isAuthenticated,
+                          myPlan: myPlan,
+                        ),
                       );
                     },
                   );
