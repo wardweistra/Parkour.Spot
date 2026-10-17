@@ -287,9 +287,22 @@ class SearchScreen extends StatefulWidget {
 }
 
 class SearchScreenState extends State<SearchScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  /// Keep the map (and its markers, camera and loaded data) alive while the
+  /// user is on another Explore tab, instead of rebuilding it on return.
+  @override
+  bool get wantKeepAlive => true;
+
   GoogleMapController? _mapController;
   final Completer<void> _mapReady = Completer<void>();
+
+  /// True when the map was created while its tab was not yet activated (e.g.
+  /// built during a swipe). The state is kept alive, so a map returning from
+  /// another tab keeps its tiles and needs no refresh.
+  bool _mapCreatedOffScreen = false;
+
+  /// [onMapTabActivated] ran before the map existed, so it is created on-screen.
+  bool _mapTabActivatedBeforeMapCreated = false;
 
   /// Bumped by every camera intent; a pending async camera move only applies
   /// if the generation it captured is still current.
@@ -700,8 +713,13 @@ class SearchScreenState extends State<SearchScreen>
         hasPendingInitialLocation;
 
     // Zoom nudge forces tile refresh when map was built off-screen. Skip when
-    // we have list/locate - the subsequent camera move will achieve the same.
-    if (_mapController != null && !hasFocusIntent) {
+    // we have list/locate - the subsequent camera move will achieve the same -
+    // and when the kept-alive map was already shown (the nudge moves the camera,
+    // which would refetch spots and events for an unchanged view).
+    final mapBuiltOffScreen = _mapCreatedOffScreen;
+    _mapCreatedOffScreen = false;
+    if (_mapController == null) _mapTabActivatedBeforeMapCreated = true;
+    if (_mapController != null && mapBuiltOffScreen && !hasFocusIntent) {
       _mapController!.getZoomLevel().then((zoom) async {
         if (!mounted || _mapController == null) return;
         await _mapController!.animateCamera(CameraUpdate.zoomTo(zoom + 0.01));
@@ -732,6 +750,12 @@ class SearchScreenState extends State<SearchScreen>
         if (mounted) _locateEventById(locateEventId!);
       });
     }
+  }
+
+  /// Called when another Explore tab is shown. The kept-alive search field
+  /// would otherwise keep focus (and the keyboard) while hidden.
+  void onMapTabDeactivated() {
+    _searchFocusNode.unfocus();
   }
 
   @override
@@ -3340,6 +3364,7 @@ class SearchScreenState extends State<SearchScreen>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       // On mobile, don't resize when keyboard opens - the search bar is at top and would be
       // pushed out of view when the bottom sheet is expanded. Let the keyboard overlay instead.
@@ -3426,6 +3451,8 @@ class SearchScreenState extends State<SearchScreen>
                     compassEnabled: false,
                     onMapCreated: (GoogleMapController controller) {
                       _mapController = controller;
+                      _mapCreatedOffScreen = !_mapTabActivatedBeforeMapCreated;
+                      _mapTabActivatedBeforeMapCreated = false;
                       _lastKnownZoom = initialCameraPosition.zoom;
                       if (!_mapReady.isCompleted) _mapReady.complete();
 

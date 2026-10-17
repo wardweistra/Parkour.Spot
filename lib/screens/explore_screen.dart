@@ -446,6 +446,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) _searchKey.currentState?.onMapTabActivated();
             });
+          } else {
+            _searchKey.currentState?.onMapTabDeactivated();
           }
         },
         children: _buildScreens(),
