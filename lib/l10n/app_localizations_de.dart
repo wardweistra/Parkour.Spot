@@ -184,6 +184,43 @@ class AppLocalizationsDe extends AppLocalizations {
   String get myEventsCalendarRegenerateConfirm => 'Link neu erzeugen';
 
   @override
+  String get myMapFeedTitle => 'Zu deiner Karte hinzufügen';
+
+  @override
+  String get myMapFeedDescription =>
+      'Abonniere mit einem privaten Link. Eingecheckte Spots, geplante Sessions, Will-ich-besuchen und Schon-dort bleiben in Google Maps, Apple Karten oder anderen KML-Apps aktuell.';
+
+  @override
+  String get myMapFeedOpenGoogleMyMaps => 'In Google My Maps hinzufügen';
+
+  @override
+  String get myMapFeedCopyUrl => 'URL kopieren';
+
+  @override
+  String get myMapFeedRegenerate => 'Link neu erzeugen…';
+
+  @override
+  String get myMapFeedCopied => 'Kartenlink kopiert';
+
+  @override
+  String get myMapFeedCopiedForImport =>
+      'Kartenlink kopiert — in My Maps Import wählen und diese URL einfügen';
+
+  @override
+  String get myMapFeedFailed =>
+      'Dein Kartenlink konnte nicht geladen werden. Versuche es erneut.';
+
+  @override
+  String get myMapFeedRegenerateTitle => 'Kartenlink neu erzeugen?';
+
+  @override
+  String get myMapFeedRegenerateBody =>
+      'Dein bisheriger Kartenlink funktioniert dann nicht mehr. Bereits eingebundene Karten aktualisieren sich erst wieder, wenn du den neuen Link hinzufügst.';
+
+  @override
+  String get myMapFeedRegenerateConfirm => 'Link neu erzeugen';
+
+  @override
   String get spotListsHubSignInPrompt =>
       'Melde dich an, um deine Listen anzusehen und zu verwalten';
 

@@ -52,6 +52,10 @@
           "function": "serveUserCalendarFeed"
         },
         {
+          "source": "/map/**",
+          "function": "serveUserMapFeed"
+        },
+        {
           "source": "/spot/**",
           "function": "spotPage"
         },

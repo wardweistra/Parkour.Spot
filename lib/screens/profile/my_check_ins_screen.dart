@@ -14,6 +14,7 @@ import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_check_in_dialog.dart';
 import '../../widgets/spot_check_in_presence.dart';
 import '../../widgets/spot_training_plan_dialog.dart';
+import '../../widgets/user_map_feed_section.dart';
 import '../../utils/spot_check_in_flow.dart';
 
 String _formatSessionDuration(Duration d, AppLocalizations l10n) {
@@ -81,6 +82,8 @@ String _formatPlanTimeLineUnderHeader(
 sealed class _CheckInListRow {}
 
 final class _CheckInListIntro extends _CheckInListRow {}
+
+final class _CheckInListMapFeed extends _CheckInListRow {}
 
 final class _CheckInListDateHeader extends _CheckInListRow {
   _CheckInListDateHeader(this.day);
@@ -357,7 +360,10 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
   }
 
   List<_CheckInListRow> _buildCheckInListRows() {
-    final rows = <_CheckInListRow>[_CheckInListIntro()];
+    final rows = <_CheckInListRow>[
+      _CheckInListIntro(),
+      _CheckInListMapFeed(),
+    ];
     if (_checkInsError != null && _items.isEmpty && _plans.isNotEmpty) {
       rows.add(_CheckInListCheckInsErrorBanner());
     }
@@ -409,6 +415,8 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
               padding: const EdgeInsets.only(bottom: 16),
               child: _intro(context),
             );
+          case _CheckInListMapFeed():
+            return const UserMapFeedSection();
           case _CheckInListCheckInsErrorBanner():
             return Padding(
               padding: const EdgeInsets.only(bottom: 16),
@@ -595,6 +603,7 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
                     padding: const EdgeInsets.all(24),
                     children: [
                       _intro(context),
+                      const UserMapFeedSection(),
                       const SizedBox(height: 32),
                       Center(
                         child: Column(

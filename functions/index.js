@@ -261,6 +261,13 @@ const {
   buildIcsForUser,
 } = require("./lib/user-calendar-feed");
 const {
+  getOrCreateMapFeed,
+  regenerateMapFeed,
+  resolveUserIdFromMapToken,
+  extractMapTokenFromPath,
+  buildKmlForUser,
+} = require("./lib/user-map-feed");
+const {
   computeSpotRatingAggregates,
 } = require("./lib/spot-rating-stats");
 
@@ -12061,6 +12068,117 @@ exports.serveUserCalendarFeed = onRequest(
       } catch (error) {
         console.error("serveUserCalendarFeed error:", error);
         res.status(500).type("text/plain").send("Failed to build calendar");
+      }
+    },
+);
+
+/**
+ * Get or create the signed-in user's secret map subscription URL.
+ */
+exports.getOrCreateMyMapFeed = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      if (!request.auth || !request.auth.uid) {
+        throw new HttpsError(
+            "unauthenticated",
+            "Sign in to get your map feed.",
+        );
+      }
+      try {
+        const result = await getOrCreateMapFeed(
+            db,
+            FieldValue,
+            request.auth.uid,
+        );
+        return {
+          url: result.url,
+          created: result.created,
+        };
+      } catch (error) {
+        console.error("getOrCreateMyMapFeed error:", error);
+        if (error instanceof HttpsError) throw error;
+        throw new HttpsError(
+            "internal",
+            `Failed to get map feed: ${error.message}`,
+        );
+      }
+    },
+);
+
+/**
+ * Rotate the signed-in user's map feed token (invalidates the previous URL).
+ */
+exports.regenerateMyMapFeed = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      if (!request.auth || !request.auth.uid) {
+        throw new HttpsError(
+            "unauthenticated",
+            "Sign in to regenerate your map feed.",
+        );
+      }
+      try {
+        const result = await regenerateMapFeed(
+            db,
+            FieldValue,
+            request.auth.uid,
+        );
+        return {url: result.url};
+      } catch (error) {
+        console.error("regenerateMyMapFeed error:", error);
+        if (error instanceof HttpsError) throw error;
+        throw new HttpsError(
+            "internal",
+            `Failed to regenerate map feed: ${error.message}`,
+        );
+      }
+    },
+);
+
+/**
+ * Serve a user's spots and sessions as a secret KML feed.
+ * GET /map/{token}.kml
+ */
+exports.serveUserMapFeed = onRequest(
+    {
+      region: "europe-west1",
+      cors: true,
+    },
+    async (req, res) => {
+      try {
+        if (req.method !== "GET" && req.method !== "HEAD") {
+          res.status(405).set("Allow", "GET, HEAD").send("Method not allowed");
+          return;
+        }
+
+        const path = (req.path || req.url || "/").split("?")[0];
+        const token = extractMapTokenFromPath(path);
+        if (!token) {
+          res.status(404).type("text/plain").send("Map not found");
+          return;
+        }
+
+        const userId = await resolveUserIdFromMapToken(db, token);
+        if (!userId) {
+          res.status(404).type("text/plain").send("Map not found");
+          return;
+        }
+
+        const kml = await buildKmlForUser(db, userId);
+        res.status(200)
+            .set({
+              "Content-Type": "application/vnd.google-earth.kml+xml; charset=utf-8",
+              "Cache-Control": "private, max-age=300",
+              "Content-Disposition": "inline; filename=\"parkourspot-my-spots.kml\"",
+            });
+        if (req.method === "HEAD") {
+          res.end();
+          return;
+        }
+        res.send(kml);
+      } catch (error) {
+        console.error("serveUserMapFeed error:", error);
+        res.status(500).type("text/plain").send("Failed to build map");
       }
     },
 );
