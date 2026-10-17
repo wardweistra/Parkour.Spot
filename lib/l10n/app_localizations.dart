@@ -412,6 +412,72 @@ abstract class AppLocalizations {
   /// **'Regenerate link'**
   String get myEventsCalendarRegenerateConfirm;
 
+  /// My spots / My sessions section for secret KML subscribe URL
+  ///
+  /// In en, this message translates to:
+  /// **'Add to your map'**
+  String get myMapFeedTitle;
+
+  /// Explains the live map feed on My spots and My sessions
+  ///
+  /// In en, this message translates to:
+  /// **'Subscribe with a private link. Checked-in spots, planned sessions, Want to visit, and Been to stay updated in Google Maps, Apple Maps, or other apps that support KML.'**
+  String get myMapFeedDescription;
+
+  /// Copy KML URL and open Google My Maps to import by URL
+  ///
+  /// In en, this message translates to:
+  /// **'Add in Google My Maps'**
+  String get myMapFeedOpenGoogleMyMaps;
+
+  /// Copy the https KML subscribe URL to the clipboard
+  ///
+  /// In en, this message translates to:
+  /// **'Copy URL'**
+  String get myMapFeedCopyUrl;
+
+  /// Secondary action to rotate the map feed token
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate link…'**
+  String get myMapFeedRegenerate;
+
+  /// SnackBar after copying the map subscribe URL
+  ///
+  /// In en, this message translates to:
+  /// **'Map link copied'**
+  String get myMapFeedCopied;
+
+  /// SnackBar when opening Google My Maps after copying the KML URL
+  ///
+  /// In en, this message translates to:
+  /// **'Map link copied — in My Maps choose Import, then paste this URL'**
+  String get myMapFeedCopiedForImport;
+
+  /// Error when map feed callables fail
+  ///
+  /// In en, this message translates to:
+  /// **'Could not get your map link. Try again.'**
+  String get myMapFeedFailed;
+
+  /// Confirm dialog title before rotating map feed token
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate map link?'**
+  String get myMapFeedRegenerateTitle;
+
+  /// Warning before invalidating the old KML feed URL
+  ///
+  /// In en, this message translates to:
+  /// **'Your previous map link will stop working. Maps already using the old link will not update until you add the new link.'**
+  String get myMapFeedRegenerateBody;
+
+  /// Confirm button to rotate map feed token
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate link'**
+  String get myMapFeedRegenerateConfirm;
+
   /// My spots: prompt when signed out
   ///
   /// In en, this message translates to:
