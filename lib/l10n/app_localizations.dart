@@ -1801,13 +1801,13 @@ abstract class AppLocalizations {
   /// Explore spots toggle label shown before the first spot count for the map view has loaded
   ///
   /// In en, this message translates to:
-  /// **'Spots'**
+  /// **'spots'**
   String get exploreSpotsLoadingLabel;
 
   /// Explore events toggle label shown before the first event count for the map view has loaded
   ///
   /// In en, this message translates to:
-  /// **'Events'**
+  /// **'events'**
   String get exploreEventsLoadingLabel;
 
   /// Compact install button on explore PWA banner

@@ -187,7 +187,7 @@ void main() {
         home: Scaffold(
           body: ExploreBottomSheetHeader(
             mode: ExploreBottomSheetHeader.modeSpots,
-            spotsLabel: 'Spots',
+            spotsLabel: 'spots',
             eventsLabel: '3 events',
             spotsLoading: true,
             isSheetOpen: false,
@@ -201,6 +201,6 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     expect(_legendSvg(MarkerIconUtils.mapPinSpotLegendAsset), findsNothing);
     expect(_legendSvg(MarkerIconUtils.mapPinEventLegendAsset), findsOneWidget);
-    expect(find.text('Spots'), findsOneWidget);
+    expect(find.text('spots'), findsOneWidget);
   });
 }
