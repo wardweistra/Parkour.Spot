@@ -33,14 +33,6 @@ function generateCalendarToken() {
 }
 
 /**
- * Generate a map feed token (psm_ prefix + 32 random hex chars).
- * @return {string}
- */
-function generateMapToken() {
-  return "psm_" + crypto.randomBytes(16).toString("hex");
-}
-
-/**
  * Serialize a Firestore document for JSON API response.
  * Converts Firestore Timestamps to ISO 8601 strings.
  * @param {Object} data - Raw document data
@@ -62,6 +54,5 @@ module.exports = {
   hashApiKey,
   generateApiKey,
   generateCalendarToken,
-  generateMapToken,
   serializeSpotForApi,
 };

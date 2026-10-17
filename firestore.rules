@@ -780,14 +780,6 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // Per-user map feed secrets — Admin SDK / callables only
-    match /mapFeeds/{userId} {
-      allow read, write: if false;
-    }
-    match /mapFeedByToken/{tokenHash} {
-      allow read, write: if false;
-    }
-
     // SpotJumpflixVideos collection - Jumpflix video IDs linked to spots (nightly import)
     // Public read so app can show "Watch on Jumpflix" for spots; only Cloud Functions write
     match /spotJumpflixVideos/{spotId} {

@@ -13,7 +13,6 @@ import '../../widgets/create_spot_list_dialog.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_list_summary_tile.dart';
-import '../../widgets/user_map_feed_section.dart';
 
 /// Private atlas: Want to visit, Been to, spots you added, lists you create or save.
 class SpotListsHubScreen extends StatefulWidget {
@@ -120,7 +119,6 @@ class _SpotListsHubScreenState extends State<SpotListsHubScreen> {
           body: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const UserMapFeedSection(),
               _HubTrackingRow(
                 icon: Icons.bookmark_outlined,
                 title: _l10n.spotDetailWantToVisit,

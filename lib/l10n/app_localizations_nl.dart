@@ -182,43 +182,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get myEventsCalendarRegenerateConfirm => 'Link opnieuw genereren';
 
   @override
-  String get myMapFeedTitle => 'Toevoegen aan je kaart';
-
-  @override
-  String get myMapFeedDescription =>
-      'Abonneer met een privélink. Ingecheckte spots, geplande sessies, Wil ik bezoeken en Geweest blijven bijgewerkt in Google Maps, Apple Kaarten of andere apps met KML.';
-
-  @override
-  String get myMapFeedOpenGoogleMyMaps => 'Toevoegen in Google My Maps';
-
-  @override
-  String get myMapFeedCopyUrl => 'URL kopiëren';
-
-  @override
-  String get myMapFeedRegenerate => 'Link opnieuw genereren…';
-
-  @override
-  String get myMapFeedCopied => 'Kaartlink gekopieerd';
-
-  @override
-  String get myMapFeedCopiedForImport =>
-      'Kaartlink gekopieerd — kies in My Maps Importeren en plak deze URL';
-
-  @override
-  String get myMapFeedFailed =>
-      'Kon je kaartlink niet ophalen. Probeer het opnieuw.';
-
-  @override
-  String get myMapFeedRegenerateTitle => 'Kaartlink opnieuw genereren?';
-
-  @override
-  String get myMapFeedRegenerateBody =>
-      'Je vorige kaartlink werkt dan niet meer. Kaarten die al zijn toegevoegd, worden pas weer bijgewerkt nadat je de nieuwe link toevoegt.';
-
-  @override
-  String get myMapFeedRegenerateConfirm => 'Link opnieuw genereren';
-
-  @override
   String get spotListsHubSignInPrompt =>
       'Log in om je lijsten te bekijken en te beheren';
 
