@@ -264,9 +264,7 @@ const {
   getOrCreateMapFeed,
   regenerateMapFeed,
   resolveUserIdFromMapToken,
-  parseMapFeedPath,
-  MAP_FEED_KIND,
-  buildNetworkLinkKml,
+  extractMapTokenFromPath,
   buildKmlForUser,
 } = require("./lib/user-map-feed");
 const {
@@ -12139,8 +12137,7 @@ exports.regenerateMyMapFeed = onCall(
 
 /**
  * Serve a user's spots and sessions as a secret KML feed.
- * GET /map/{token}.kml — NetworkLink wrapper (subscribe URL)
- * GET /map/{token}/data.kml — live placemark document
+ * GET /map/{token}.kml
  */
 exports.serveUserMapFeed = onRequest(
     {
@@ -12155,34 +12152,24 @@ exports.serveUserMapFeed = onRequest(
         }
 
         const path = (req.path || req.url || "/").split("?")[0];
-        const parsed = parseMapFeedPath(path);
-        if (!parsed) {
+        const token = extractMapTokenFromPath(path);
+        if (!token) {
           res.status(404).type("text/plain").send("Map not found");
           return;
         }
 
-        const userId = await resolveUserIdFromMapToken(db, parsed.token);
+        const userId = await resolveUserIdFromMapToken(db, token);
         if (!userId) {
           res.status(404).type("text/plain").send("Map not found");
           return;
         }
 
-        const isData = parsed.kind === MAP_FEED_KIND.DATA;
-        const kml = isData ?
-          await buildKmlForUser(db, userId) :
-          buildNetworkLinkKml(parsed.token);
-        const filename = isData ?
-          "parkourspot-my-spots-data.kml" :
-          "parkourspot-my-spots.kml";
-        // NetworkLink rarely changes; data refreshes on the client's interval.
-        const cacheControl = isData ?
-          "private, max-age=300" :
-          "private, max-age=3600";
+        const kml = await buildKmlForUser(db, userId);
         res.status(200)
             .set({
               "Content-Type": "application/vnd.google-earth.kml+xml; charset=utf-8",
-              "Cache-Control": cacheControl,
-              "Content-Disposition": `inline; filename="${filename}"`,
+              "Cache-Control": "private, max-age=300",
+              "Content-Disposition": "inline; filename=\"parkourspot-my-spots.kml\"",
             });
         if (req.method === "HEAD") {
           res.end();

@@ -48,17 +48,7 @@ const FOLDER_ORDER = [
   CATEGORY.BEEN_TO,
 ];
 
-/** Subscription URL serves a NetworkLink; data URL serves placemarks. */
-const MAP_FEED_KIND = {
-  NETWORK_LINK: "networkLink",
-  DATA: "data",
-};
-
-/** How often clients should refetch the data KML (seconds). */
-const MAP_FEED_REFRESH_INTERVAL_SECONDS = 900;
-
 /**
- * Public subscription URL (NetworkLink KML that points at the data feed).
  * @param {string} token
  * @return {string}
  */
@@ -67,86 +57,19 @@ function mapFeedUrl(token) {
 }
 
 /**
- * Live placemark KML fetched by the NetworkLink.
- * @param {string} token
- * @return {string}
- */
-function mapFeedDataUrl(token) {
-  return `${PUBLIC_ORIGIN}/map/${encodeURIComponent(token)}/data.kml`;
-}
-
-/**
- * @param {string} raw
- * @return {string|null}
- */
-function decodePathSegment(raw) {
-  if (typeof raw !== "string") return null;
-  try {
-    return decodeURIComponent(raw).trim() || null;
-  } catch (e) {
-    return raw.trim() || null;
-  }
-}
-
-/**
- * @param {string} path
- * @return {{token: string, kind: string}|null}
- */
-function parseMapFeedPath(path) {
-  if (typeof path !== "string") return null;
-  const normalized = path.split("?")[0];
-  // Prefer data path so /map/{token}/data.kml is not treated as a token.
-  const dataMatch = normalized.match(
-      /\/map\/([^/]+)\/data(?:\.kml)?\/?$/i,
-  );
-  if (dataMatch) {
-    const token = decodePathSegment(dataMatch[1]);
-    return token ? {token, kind: MAP_FEED_KIND.DATA} : null;
-  }
-  const linkMatch = normalized.match(/\/map\/([^/]+?)(?:\.kml)?\/?$/i);
-  if (linkMatch) {
-    const token = decodePathSegment(linkMatch[1]);
-    return token ? {token, kind: MAP_FEED_KIND.NETWORK_LINK} : null;
-  }
-  return null;
-}
-
-/**
  * @param {string} path
  * @return {string|null}
  */
 function extractMapTokenFromPath(path) {
-  const parsed = parseMapFeedPath(path);
-  return parsed ? parsed.token : null;
-}
-
-/**
- * Small KML that clients subscribe to; refreshes from the data URL.
- * @param {string} token
- * @return {string}
- */
-function buildNetworkLinkKml(token) {
-  const href = escapeXmlText(mapFeedDataUrl(token));
-  const name = escapeXmlText(DOC_NAME);
-  return [
-    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-    "<kml xmlns=\"http://www.opengis.net/kml/2.2\">",
-    "<NetworkLink>",
-    `<name>${name}</name>`,
-    "<visibility>1</visibility>",
-    "<open>1</open>",
-    "<description><![CDATA[" +
-      "Live ParkourSpot map (check-ins, plans, Want to visit, Been to). " +
-      "Apps that support network link KML refresh this feed automatically." +
-      "]]></description>",
-    "<Link>",
-    `<href>${href}</href>`,
-    "<refreshMode>onInterval</refreshMode>",
-    `<refreshInterval>${MAP_FEED_REFRESH_INTERVAL_SECONDS}</refreshInterval>`,
-    "</Link>",
-    "</NetworkLink>",
-    "</kml>",
-  ].join("");
+  if (typeof path !== "string") return null;
+  const normalized = path.split("?")[0];
+  const match = normalized.match(/\/map\/([^/]+?)(?:\.kml)?\/?$/i);
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1]).trim() || null;
+  } catch (e) {
+    return match[1].trim() || null;
+  }
 }
 
 /**
@@ -322,7 +245,7 @@ function buildLegendDescriptionHtml() {
     `<ul>${items}</ul>`,
     `<p><a href="${MY_SPOTS_URL}">My spots</a> · ` +
     `<a href="${MY_SESSIONS_URL}">My sessions</a></p>`,
-    "<p>Updated live when your maps app reloads this network link.</p>",
+    "<p>Re-import or refresh this link in your maps app to pick up changes.</p>",
   ].join("");
 }
 
@@ -656,16 +579,11 @@ module.exports = {
   CATEGORY,
   CATEGORY_PRIORITY,
   CATEGORY_LABEL,
-  MAP_FEED_KIND,
-  MAP_FEED_REFRESH_INTERVAL_SECONDS,
   mapFeedUrl,
-  mapFeedDataUrl,
-  parseMapFeedPath,
   extractMapTokenFromPath,
   escapeXmlText,
   assignCategory,
   sortEntriesForDisplay,
-  buildNetworkLinkKml,
   buildKmlDocument,
   buildLegendDescriptionHtml,
   loadFeedEntriesForUser,
