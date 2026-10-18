@@ -6,10 +6,12 @@ class ImageProcessingBanner extends StatelessWidget {
     super.key,
     required this.message,
     this.progressLabel,
+    this.showSpinner = true,
   });
 
   final String message;
   final String? progressLabel;
+  final bool showSpinner;
 
   @override
   Widget build(BuildContext context) {
@@ -26,15 +28,17 @@ class ImageProcessingBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: colorScheme.primary,
+          if (showSpinner) ...[
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: colorScheme.primary,
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
+            const SizedBox(width: 12),
+          ],
           Expanded(
             child: Text(
               progressLabel == null ? message : '$message $progressLabel',

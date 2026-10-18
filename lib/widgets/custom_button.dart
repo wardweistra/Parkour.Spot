@@ -51,8 +51,7 @@ class CustomButton extends StatelessWidget {
       defaultBackgroundColor,
       textColor,
     );
-    final outlinedForeground =
-        textColor ?? backgroundColor ?? scheme.primary;
+    final outlinedForeground = textColor ?? backgroundColor ?? scheme.primary;
 
     // Filled buttons use M3 defaults that often fail WCAG when disabled on dark
     // themes. Opaque blend keeps text/icons readable while still reading muted.
@@ -64,7 +63,10 @@ class CustomButton extends StatelessWidget {
     );
     final disabledOutline = scheme.outline.withValues(alpha: 0.35);
 
-    final showDisabledChrome = isLoading || onPressed == null;
+    final activeForeground = isOutlined ? outlinedForeground : filledForeground;
+    // Loading must stay visually active: a muted spinner-only control looks
+    // hung, especially on long forms where upload status sits off-screen.
+    final spinnerColor = isLoading ? activeForeground : disabledForeground;
 
     final labelBase = theme.textTheme.labelLarge;
     final buttonLabelStyle = TextStyle(
@@ -85,12 +87,16 @@ class CustomButton extends StatelessWidget {
         style: ButtonStyle(
           backgroundColor: WidgetStateProperty.resolveWith((states) {
             if (isOutlined) return Colors.transparent;
+            if (isLoading) return defaultBackgroundColor;
             if (states.contains(WidgetState.disabled)) return disabledFill;
             return defaultBackgroundColor;
           }),
           foregroundColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.disabled)) return disabledForeground;
-            return isOutlined ? outlinedForeground : filledForeground;
+            if (isLoading) return activeForeground;
+            if (states.contains(WidgetState.disabled)) {
+              return disabledForeground;
+            }
+            return activeForeground;
           }),
           elevation: WidgetStateProperty.all(isOutlined ? 0.0 : 2.0),
           shadowColor: WidgetStateProperty.all(
@@ -98,6 +104,9 @@ class CustomButton extends StatelessWidget {
           ),
           side: WidgetStateProperty.resolveWith((states) {
             if (!isOutlined) return BorderSide.none;
+            if (isLoading) {
+              return BorderSide(color: defaultBackgroundColor, width: 2);
+            }
             final disabled = states.contains(WidgetState.disabled);
             return BorderSide(
               color: disabled ? disabledOutline : defaultBackgroundColor,
@@ -111,17 +120,28 @@ class CustomButton extends StatelessWidget {
           ),
         ),
         child: isLoading
-            ? SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    showDisabledChrome
-                        ? disabledForeground
-                        : (isOutlined
-                            ? outlinedForeground
-                            : filledForeground),
+            ? Semantics(
+                liveRegion: true,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            spinnerColor,
+                          ),
+                        ),
+                      ),
+                      if (text.isNotEmpty) ...[
+                        const SizedBox(width: 12),
+                        Text(text, style: buttonLabelStyle),
+                      ],
+                    ],
                   ),
                 ),
               )
@@ -133,10 +153,7 @@ class CustomButton extends StatelessWidget {
                     Icon(icon, size: 20),
                     const SizedBox(width: 8),
                   ],
-                  Text(
-                    text,
-                    style: buttonLabelStyle,
-                  ),
+                  Text(text, style: buttonLabelStyle),
                 ],
               ),
       ),

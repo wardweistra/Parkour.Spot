@@ -27,8 +27,8 @@ import '../../utils/pointer_interceptor_picker.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
-import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../widgets/form_submit_bar.dart';
 import '../../widgets/event_where_section.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_form/image_section.dart';
@@ -535,7 +535,8 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       _hasValidWebsiteUrl();
 
   String? _submitBlockReason(AppLocalizations l10n) {
-    if (_isPreparingImages || _isUploadingImages) {
+    if (_isSubmitting) return null;
+    if (_isPreparingImages) {
       return l10n.publicProfileProcessingImage;
     }
     if (!_hasLocationOrLink) return l10n.addEventNeedLocationOrLink;
@@ -543,6 +544,10 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     if (!_hasTitle) return l10n.addEventTitleRequired;
     if (!_hasValidWebsiteUrl()) return l10n.addEventWebsiteInvalid;
     return null;
+  }
+
+  String _submitLoadingText(AppLocalizations l10n) {
+    return _imageProcessingMessage ?? l10n.addEventSubmitting;
   }
 
   InputDecoration _outlineFieldDecoration(
@@ -1270,18 +1275,20 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       return;
     }
 
+    final preparedPhotos = _selectedImages.whereType<PreparedImage>().toList(
+      growable: false,
+    );
     setState(() {
       _isSubmitting = true;
-      _isUploadingImages = true;
-      _imageProcessingMessage = l10n.publicProfileUploading;
+      _isUploadingImages = preparedPhotos.isNotEmpty;
+      _imageProcessingMessage = preparedPhotos.isNotEmpty
+          ? l10n.publicProfileUploading
+          : l10n.addEventSubmitting;
     });
     await yieldToUi();
     try {
       final eventReportService = context.read<EventReportService>();
       List<String> suggestedPhotoUrls = const <String>[];
-      final preparedPhotos = _selectedImages.whereType<PreparedImage>().toList(
-        growable: false,
-      );
 
       if (preparedPhotos.isNotEmpty) {
         if (preparedPhotos.length > EventReportService.maxSuggestedPhotos) {
@@ -1320,6 +1327,13 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
           );
           return;
         }
+      }
+
+      if (mounted) {
+        setState(() {
+          _isUploadingImages = false;
+          _imageProcessingMessage = l10n.addEventSubmitting;
+        });
       }
 
       final collapsed = collapseEventWhere(
@@ -1667,27 +1681,17 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
               onReorderSelected: _reorderSelectedImage,
               sectionTitle: l10n.addEventPhotosSectionTitle,
               showRequiredIndicator: false,
-              isProcessingImages: _isPreparingImages || _isUploadingImages,
+              isProcessingImages: _isPreparingImages,
               processingMessage: _imageProcessingMessage,
             ),
             const SizedBox(height: 24),
-            if (submitBlockReason != null) ...[
-              Text(
-                submitBlockReason,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-            CustomButton(
+            FormSubmitBar(
               onPressed: _canSubmit ? _submit : null,
-              text: _isSubmitting
-                  ? l10n.addEventSubmitting
-                  : l10n.addEventSubmitButton,
+              idleText: l10n.addEventSubmitButton,
+              loadingText: _submitLoadingText(l10n),
               isLoading: _isSubmitting,
+              blockReason: submitBlockReason,
               icon: Icons.send_outlined,
-              width: double.infinity,
             ),
           ],
         ),

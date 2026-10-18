@@ -12,7 +12,7 @@ import '../../services/url_service.dart';
 import '../../utils/add_spot_gps_fix_guard.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../widgets/custom_text_field.dart';
-import '../../widgets/custom_button.dart';
+import '../../widgets/form_submit_bar.dart';
 import '../../widgets/spot_form/location_section.dart';
 import '../../widgets/spot_form/image_section.dart';
 import '../../widgets/spot_form/attributes_section.dart';
@@ -657,7 +657,7 @@ class _AddSpotScreenState extends State<AddSpotScreen>
 
   String? _submitBlockReason(AppLocalizations l10n) {
     if (_isLoading) return null;
-    if (_isPreparingImages || _isUploadingImages) {
+    if (_isPreparingImages) {
       return l10n.publicProfileProcessingImage;
     }
     if (_currentPosition == null && _pickedLocation == null) {
@@ -670,10 +670,13 @@ class _AddSpotScreenState extends State<AddSpotScreen>
     return null;
   }
 
+  String _submitLoadingText(AppLocalizations l10n) {
+    return _imageProcessingMessage ?? l10n.addSpotCreating;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
     final submitBlockReason = _submitBlockReason(l10n);
     return PageScaffold(
       title: l10n.exploreAddSpotTitle,
@@ -728,7 +731,7 @@ class _AddSpotScreenState extends State<AddSpotScreen>
               onRemoveSelectedAt: _removeImageAt,
               onRemoveExistingAt: (index) {}, // Not used in add mode
               onReorderSelected: _reorderSelectedImage,
-              isProcessingImages: _isPreparingImages || _isUploadingImages,
+              isProcessingImages: _isPreparingImages,
               processingMessage: _imageProcessingMessage,
             ),
 
@@ -799,23 +802,12 @@ class _AddSpotScreenState extends State<AddSpotScreen>
 
             const SizedBox(height: 24),
 
-            if (submitBlockReason != null) ...[
-              Text(
-                submitBlockReason,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-
-            // Submit Button
-            CustomButton(
+            FormSubmitBar(
               onPressed: _canSubmit ? _submitForm : null,
-              text: _isLoading
-                  ? l10n.addSpotCreating
-                  : l10n.addSpotCreateButton,
+              idleText: l10n.addSpotCreateButton,
+              loadingText: _submitLoadingText(l10n),
               isLoading: _isLoading,
+              blockReason: submitBlockReason,
               icon: Icons.add_location,
             ),
           ],
