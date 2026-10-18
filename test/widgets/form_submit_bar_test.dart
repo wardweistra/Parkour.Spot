@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parkour_spot/widgets/form_submit_bar.dart';
-import 'package:parkour_spot/widgets/image_processing_banner.dart';
 
 void main() {
   testWidgets('idle bar shows the block reason and idle label', (tester) async {
@@ -23,11 +22,10 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Add spot'), findsOneWidget);
-    expect(find.byType(ImageProcessingBanner), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
-  testWidgets('loading bar shows banner and button status next to submit', (
+  testWidgets('loading bar shows status once, on the submit button', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -49,8 +47,7 @@ void main() {
       find.text('Please upload at least one photo of the spot'),
       findsNothing,
     );
-    expect(find.text('Uploading... (1 / 3)'), findsNWidgets(2));
-    expect(find.byType(ImageProcessingBanner), findsOneWidget);
+    expect(find.text('Uploading... (1 / 3)'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 
@@ -86,10 +83,10 @@ void main() {
       ),
     );
 
-    expect(find.text('Uploading...'), findsNWidgets(2));
+    expect(find.text('Uploading...'), findsOneWidget);
     await tester.tap(find.text('advance'));
     await tester.pump();
-    expect(find.text('Uploading... (2 / 3)'), findsNWidgets(2));
+    expect(find.text('Uploading... (2 / 3)'), findsOneWidget);
     expect(find.text('Add spot'), findsNothing);
   });
 }

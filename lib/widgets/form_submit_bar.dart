@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'custom_button.dart';
-import 'image_processing_banner.dart';
 
-/// Submit control that keeps busy status next to the button the user just tapped.
+/// Submit control that keeps busy status on the button the user just tapped.
 class FormSubmitBar extends StatelessWidget {
   const FormSubmitBar({
     super.key,
@@ -28,10 +27,7 @@ class FormSubmitBar extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (isLoading) ...[
-          ImageProcessingBanner(message: loadingText, showSpinner: false),
-          const SizedBox(height: 12),
-        ] else if (blockReason != null) ...[
+        if (!isLoading && blockReason != null) ...[
           Text(
             blockReason!,
             style: theme.textTheme.bodySmall?.copyWith(
