@@ -92,7 +92,10 @@ function placeLabel(event: EventSummary): string {
                       class="stack-list__card"
                       data-country={event.countryCode?.toLowerCase() ?? ""}
                     >
-                      <StackListThumb src={event.imageUrl} />
+                      <StackListThumb
+                        src={event.imageUrl}
+                        alt={`${event.title} event photo`}
+                      />
                       <div>
                         <p class="stack-list__title">
                           <a class="stack-list__link" href={href}>

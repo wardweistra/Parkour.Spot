@@ -429,7 +429,10 @@ const initialMonth = months[0];
                       event.countryCode?.trim().toLowerCase() ?? ""
                     }
                   >
-                    <StackListThumb src={event.imageUrl} />
+                    <StackListThumb
+                      src={event.imageUrl}
+                      alt={`${event.title} event photo`}
+                    />
                     <div>
                       <p class="stack-list__title">
                         <a
