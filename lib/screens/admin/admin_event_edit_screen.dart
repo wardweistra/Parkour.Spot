@@ -26,8 +26,8 @@ import '../../utils/ui_yield.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../utils/map_recentering_mixin.dart';
 import '../../utils/pointer_interceptor_picker.dart';
-import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../widgets/form_submit_bar.dart';
 import '../../widgets/event_where_section.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
@@ -1174,15 +1174,18 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
     final isList = collapsed.kind == EventWhereKind.list;
     final pin = collapsed.pin;
 
-    setState(() {
-      _isSubmitting = true;
-      _formError = null;
-    });
-
     final validNewImageBytes = _selectedImageBytes
         .where((bytes) => bytes != null)
         .cast<Uint8List>()
         .toList();
+
+    setState(() {
+      _isSubmitting = true;
+      _formError = null;
+      _imageProcessingMessage = validNewImageBytes.isNotEmpty
+          ? l10n.publicProfileUploading
+          : l10n.addEventSubmitting;
+    });
 
     List<String> uploadedImageUrls = <String>[];
     try {
@@ -1195,9 +1198,16 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
       if (!mounted) return;
       setState(() {
         _isSubmitting = false;
+        _imageProcessingMessage = null;
         _formError = 'Failed to upload images: $e';
       });
       return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _imageProcessingMessage = l10n.addEventSubmitting;
+      });
     }
 
     final success = await eventsService.updateEvent(
@@ -1222,7 +1232,10 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
     );
 
     if (!mounted) return;
-    setState(() => _isSubmitting = false);
+    setState(() {
+      _isSubmitting = false;
+      _imageProcessingMessage = null;
+    });
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1606,14 +1619,12 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
             ),
           ],
           const SizedBox(height: 24),
-          CustomButton(
+          FormSubmitBar(
             onPressed: _isSubmitting ? null : _save,
-            text: _isSubmitting
-                ? l10n.addEventSubmitting
-                : l10n.adminEventEditSave,
+            idleText: l10n.adminEventEditSave,
+            loadingText: _imageProcessingMessage ?? l10n.addEventSubmitting,
             isLoading: _isSubmitting,
             icon: Icons.save_outlined,
-            width: double.infinity,
           ),
         ],
       ),
