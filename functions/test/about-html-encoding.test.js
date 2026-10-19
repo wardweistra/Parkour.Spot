@@ -1,6 +1,3 @@
-const {describe, it} = require("node:test");
-const assert = require("node:assert/strict");
-
 /** Keep in sync with about/src/lib/html.ts */
 function escapeHtmlAttr(value) {
   const BRAND_SEP = "\u00b7";
@@ -13,15 +10,13 @@ function escapeHtmlAttr(value) {
 
 describe("about html encoding", () => {
   it("uses numeric entities for brand middot in attributes", () => {
-    assert.equal(
-        escapeHtmlAttr("About Parkour·Spot"),
+    expect(escapeHtmlAttr("About Parkour·Spot")).toBe(
         "About Parkour&#183;Spot",
     );
   });
 
   it("escapes quotes and ampersands", () => {
-    assert.equal(
-        escapeHtmlAttr("Tom & Jerry \"wall\""),
+    expect(escapeHtmlAttr("Tom & Jerry \"wall\"")).toBe(
         "Tom &amp; Jerry &quot;wall&quot;",
     );
   });
