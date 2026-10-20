@@ -7,6 +7,7 @@ const {
   addResizedObjectToSets,
   classifyImageUrl,
   needsResizeTrigger,
+  needs1200ResizeTrigger,
   buildClassificationReport,
 } = require("../lib/resized-image-classification");
 
@@ -102,6 +103,24 @@ describe("needsResizeTrigger", () => {
         "https://storage.googleapis.com/bucket/spots/missing.jpg", sets,
     )).toBe(true);
     expect(needsResizeTrigger("https://example.com/x.jpg", sets)).toBe(false);
+  });
+});
+
+describe("needs1200ResizeTrigger", () => {
+  it("is true for none and only630, false for has1200", () => {
+    const sets = emptyResizedBasenameSets();
+    sets.spots1200.add("ok");
+    sets.spots630.add("legacy");
+    expect(needs1200ResizeTrigger(
+        "https://storage.googleapis.com/bucket/spots/ok.jpg", sets,
+    )).toBe(false);
+    expect(needs1200ResizeTrigger(
+        "https://storage.googleapis.com/bucket/spots/legacy.jpg", sets,
+    )).toBe(true);
+    expect(needs1200ResizeTrigger(
+        "https://storage.googleapis.com/bucket/spots/missing.jpg", sets,
+    )).toBe(true);
+    expect(needs1200ResizeTrigger("https://example.com/x.jpg", sets)).toBe(false);
   });
 });
 

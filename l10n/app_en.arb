@@ -2123,7 +2123,7 @@
   "spotDetailMenuDeleteSpot": "Delete spot",
   "spotDetailMenuDeleteSubtitleAdmin": "Admin only",
   "spotDetailMenuTriggerResize": "Trigger image resize",
-  "spotDetailMenuTriggerResizeSubtitle": "Re-create resized versions",
+  "spotDetailMenuTriggerResizeSubtitle": "Create missing 1200×1200 versions",
   "spotDetailMenuImageUrls": "Image URLs overview",
   "@spotDetailMenuImageUrls": {
     "description": "Admin spot/event detail menu: open image URL diagnostics"
@@ -2252,7 +2252,7 @@
   "spotDetailOk": "OK",
   "spotDetailUnableEditNow": "Unable to edit this spot right now.",
   "spotDetailOnlyAdminsDelete": "Only administrators can delete spots.",
-  "spotDetailResizeAllHaveVersions": "All images already have resized versions",
+  "spotDetailResizeAllHaveVersions": "All images already have 1200×1200 versions",
   "spotDetailResizeSummary": "Resize: {triggered} triggered, {verified} verified{failedPart}",
   "@spotDetailResizeSummary": {
     "placeholders": {

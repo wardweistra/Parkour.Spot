@@ -1790,7 +1790,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get spotDetailMenuTriggerResizeSubtitle =>
-      'Re-create resized versions';
+      'Create missing 1200×1200 versions';
 
   @override
   String get spotDetailMenuImageUrls => 'Image URLs overview';
@@ -1990,7 +1990,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get spotDetailResizeAllHaveVersions =>
-      'All images already have resized versions';
+      'All images already have 1200×1200 versions';
 
   @override
   String spotDetailResizeSummary(

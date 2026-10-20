@@ -54,8 +54,8 @@ const {
   buildResizedBasenameSets,
   buildClassificationReport,
   needsResizeTrigger,
+  needs1200ResizeTrigger,
   classifyImageUrl,
-  STATUS_NONE,
 } = require("./lib/resized-image-classification");
 const {
   hashApiKey,
@@ -8693,13 +8693,14 @@ exports.triggerResizeForSpot = onCall(
         const imageUrls = data.imageUrls || [];
         const spotName = data.name || "Unnamed";
 
+        // Per-spot: also re-trigger when only 1200x630 exists (missing 1200x1200).
         const sets = await buildResizedBasenameSets(bucket);
         const toProcess = [];
         const seenPaths = new Set();
         for (const url of imageUrls) {
-          if (!needsResizeTrigger(url, sets)) continue;
+          if (!needs1200ResizeTrigger(url, sets)) continue;
           const classified = classifyImageUrl(url, sets);
-          if (!classified || classified.status !== STATUS_NONE) continue;
+          if (!classified) continue;
           if (seenPaths.has(classified.originalPath)) continue;
           seenPaths.add(classified.originalPath);
           toProcess.push({
@@ -8708,7 +8709,7 @@ exports.triggerResizeForSpot = onCall(
           });
         }
 
-        console.log(`Spot ${spotId}: ${toProcess.length} images missing resized versions`);
+        console.log(`Spot ${spotId}: ${toProcess.length} images missing 1200x1200`);
 
         const results = [];
         const VERIFY_DELAY_MS = 3000;
@@ -8816,9 +8817,10 @@ exports.triggerResizeForMissingImages = onCall(
           const spotName = data.name || "Unnamed";
 
           for (const url of imageUrls) {
+            // Bulk: only status "none" (not the ~53k only630 backlog).
             if (!needsResizeTrigger(url, sets)) continue;
             const classified = classifyImageUrl(url, sets);
-            if (!classified || classified.status !== STATUS_NONE) continue;
+            if (!classified) continue;
             if (seenPaths.has(classified.originalPath)) continue;
             seenPaths.add(classified.originalPath);
 

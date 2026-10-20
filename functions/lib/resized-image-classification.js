@@ -130,7 +130,7 @@ function classifyImageUrl(url, sets) {
 }
 
 /**
- * True when the image has no resized variant at all (needs resize trigger).
+ * True when the image has no resized variant at all (bulk-safe trigger).
  * @param {string} url Image URL
  * @param {Object} sets Basename sets
  * @return {boolean}
@@ -138,6 +138,18 @@ function classifyImageUrl(url, sets) {
 function needsResizeTrigger(url, sets) {
   const classified = classifyImageUrl(url, sets);
   return classified != null && classified.status === STATUS_NONE;
+}
+
+/**
+ * True when the image is missing 1200x1200 (none or only630).
+ * Used for per-spot selective resize triggers.
+ * @param {string} url Image URL
+ * @param {Object} sets Basename sets
+ * @return {boolean}
+ */
+function needs1200ResizeTrigger(url, sets) {
+  const classified = classifyImageUrl(url, sets);
+  return classified != null && classified.status !== STATUS_HAS_1200;
 }
 
 /**
@@ -288,5 +300,6 @@ module.exports = {
   buildResizedBasenameSets,
   classifyImageUrl,
   needsResizeTrigger,
+  needs1200ResizeTrigger,
   buildClassificationReport,
 };

@@ -3050,7 +3050,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotDetailMenuTriggerResizeSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Re-create resized versions'**
+  /// **'Create missing 1200×1200 versions'**
   String get spotDetailMenuTriggerResizeSubtitle;
 
   /// Admin spot/event detail menu: open image URL diagnostics
@@ -3362,7 +3362,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotDetailResizeAllHaveVersions.
   ///
   /// In en, this message translates to:
-  /// **'All images already have resized versions'**
+  /// **'All images already have 1200×1200 versions'**
   String get spotDetailResizeAllHaveVersions;
 
   /// No description provided for @spotDetailResizeSummary.
