@@ -2,9 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/auth_service.dart';
 import '../../services/mobile_detection_service.dart';
-import '../../services/spot_service.dart' show SpotService, SpotWithMissingResizedImages;
+import '../../services/spot_service.dart'
+    show
+        ResizedImageClassificationReport,
+        ResizedImageEntityRow,
+        ResizedImageStatusCounts,
+        SpotService;
 import '../../services/url_service.dart';
 
 class MissingResizedImagesScreen extends StatefulWidget {
@@ -15,53 +21,48 @@ class MissingResizedImagesScreen extends StatefulWidget {
       _MissingResizedImagesScreenState();
 }
 
-class _MissingResizedImagesScreenState extends State<MissingResizedImagesScreen> {
-  List<SpotWithMissingResizedImages> _results = [];
+class _MissingResizedImagesScreenState extends State<MissingResizedImagesScreen>
+    with SingleTickerProviderStateMixin {
+  ResizedImageClassificationReport? _report;
   bool _isLoading = false;
   String? _error;
-  int _imagesChecked = 0;
-  int _totalToCheck = 0;
+  late final TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _runCheck();
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _runCheck() async {
     setState(() {
       _isLoading = true;
       _error = null;
-      _results = [];
-      _imagesChecked = 0;
-      _totalToCheck = 0;
     });
 
     try {
       final spotService = Provider.of<SpotService>(context, listen: false);
-      final results = await spotService.findSpotsWithMissingResizedImages(
-        onProgress: (current, total) {
-          if (mounted) {
-            setState(() {
-              _imagesChecked = current;
-              _totalToCheck = total;
-            });
-          }
-        },
-      );
-
+      final report = await spotService.classifyResizedImages();
       if (mounted) {
         setState(() {
-          _results = results;
+          _report = report;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         setState(() {
-          _error = 'Failed to check: $e';
+          _error = l10n.adminResizedImagesCheckFailed(e.toString());
           _isLoading = false;
         });
       }
@@ -84,48 +85,32 @@ class _MissingResizedImagesScreenState extends State<MissingResizedImagesScreen>
     }
   }
 
+  Future<void> _openEvent(String eventId) async {
+    context.push('/event/$eventId');
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final authService = context.watch<AuthService>();
     if (authService.isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Missing resized images')),
+        appBar: AppBar(title: Text(l10n.adminResizedImagesTitle)),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (!authService.isAdmin) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Missing resized images')),
-        body: const Center(
-          child: Text('Administrator access required'),
-        ),
+        appBar: AppBar(title: Text(l10n.adminResizedImagesTitle)),
+        body: Center(child: Text(l10n.adminResizedImagesAccessDenied)),
       );
     }
 
+    final report = _report;
+
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            const Text('Spots with Missing Resized Images'),
-            if (_results.isNotEmpty) ...[
-              const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.orange,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${_results.length}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
+        title: Text(l10n.adminResizedImagesTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -140,15 +125,34 @@ class _MissingResizedImagesScreenState extends State<MissingResizedImagesScreen>
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _isLoading ? null : _runCheck,
-            tooltip: 'Refresh',
+            tooltip: l10n.adminResizedImagesRefresh,
           ),
         ],
+        bottom: report == null
+            ? null
+            : TabBar(
+                controller: _tabController,
+                tabs: [
+                  Tab(
+                    text:
+                        '${l10n.adminResizedImagesTabNone} (${report.totals.none.entities})',
+                  ),
+                  Tab(
+                    text:
+                        '${l10n.adminResizedImagesTabOnly630} (${report.totals.only630.entities})',
+                  ),
+                  Tab(
+                    text:
+                        '${l10n.adminResizedImagesTabHas1200} (${report.totals.has1200.entities})',
+                  ),
+                ],
+              ),
       ),
-      body: _buildBody(),
+      body: _buildBody(l10n),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(AppLocalizations l10n) {
     if (_error != null) {
       return Center(
         child: Column(
@@ -167,265 +171,416 @@ class _MissingResizedImagesScreenState extends State<MissingResizedImagesScreen>
                 setState(() => _error = null);
                 _runCheck();
               },
-              child: const Text('Retry'),
+              child: Text(l10n.adminResizedImagesRetry),
             ),
           ],
         ),
       );
     }
 
-    if (_isLoading) {
+    if (_isLoading && _report == null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const CircularProgressIndicator(),
             const SizedBox(height: 16),
-            if (_totalToCheck > 0)
-              Text(
-                'Checking images $_imagesChecked / $_totalToCheck...',
-                style: TextStyle(color: Colors.grey[600]),
-              ),
-          ],
-        ),
-      );
-    }
-
-    if (_results.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle, size: 64, color: Colors.green),
-            SizedBox(height: 16),
             Text(
-              'All spot images have resized versions',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+              l10n.adminResizedImagesLoading,
+              style: TextStyle(color: Colors.grey[600]),
             ),
           ],
         ),
       );
     }
 
+    if (_report == null) {
+      return const SizedBox.shrink();
+    }
+
+    final report = _report!;
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          color: Colors.grey[100],
-          child: Row(
+        if (_isLoading) const LinearProgressIndicator(),
+        _SummaryHeader(report: report, l10n: l10n),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Found ${_results.length} spot${_results.length == 1 ? '' : 's'} with images missing resized versions',
-                      style: const TextStyle(
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Total images missing resize: ${_results.fold<int>(0, (s, r) => s + r.missingImageUrls.length)}',
-                      style: TextStyle(
-                        color: Colors.grey[700],
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
+              _EntityListTab(
+                rows: report.none,
+                emptyMessage: l10n.adminResizedImagesEmptyNone,
+                l10n: l10n,
+                accent: Colors.orange,
+                countLabel: (count) => l10n.adminResizedImagesMissingCount(count),
+                showImageUrls: true,
+                onOpenSpot: _openSpot,
+                onOpenEvent: _openEvent,
+              ),
+              _EntityListTab(
+                rows: report.only630,
+                emptyMessage: l10n.adminResizedImagesEmptyOnly630,
+                l10n: l10n,
+                accent: Colors.amber.shade800,
+                countLabel: (count) =>
+                    l10n.adminResizedImagesOnly630Count(count),
+                showImageUrls: false,
+                onOpenSpot: _openSpot,
+                onOpenEvent: _openEvent,
+              ),
+              _OkTab(report: report, l10n: l10n),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SummaryHeader extends StatelessWidget {
+  const _SummaryHeader({required this.report, required this.l10n});
+
+  final ResizedImageClassificationReport report;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final totals = report.totals;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.adminResizedImagesSummaryNone(
+            totals.none.images,
+            totals.none.entities,
+          )),
+          const SizedBox(height: 4),
+          Text(l10n.adminResizedImagesSummaryOnly630(
+            totals.only630.images,
+            totals.only630.entities,
+          )),
+          const SizedBox(height: 4),
+          Text(l10n.adminResizedImagesSummaryHas1200(
+            totals.has1200.images,
+            totals.has1200.entities,
+          )),
+        ],
+      ),
+    );
+  }
+}
+
+class _OkTab extends StatelessWidget {
+  const _OkTab({required this.report, required this.l10n});
+
+  final ResizedImageClassificationReport report;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text(
+          l10n.adminResizedImagesOkTitle,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        Text(l10n.adminResizedImagesOkBody),
+        const SizedBox(height: 24),
+        _StatusBreakdownCard(
+          title: l10n.adminResizedImagesTabHas1200,
+          totals: report.totals.has1200,
+          spots: report.spots.has1200,
+          events: report.events.has1200,
+          l10n: l10n,
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusBreakdownCard extends StatelessWidget {
+  const _StatusBreakdownCard({
+    required this.title,
+    required this.totals,
+    required this.spots,
+    required this.events,
+    required this.l10n,
+  });
+
+  final String title;
+  final ResizedImageStatusCounts totals;
+  final ResizedImageStatusCounts spots;
+  final ResizedImageStatusCounts events;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            Text(
+              l10n.adminResizedImagesSummaryHas1200(
+                totals.images,
+                totals.entities,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.adminResizedImagesBreakdownSpots(
+                spots.images,
+                spots.entities,
+              ),
+            ),
+            Text(
+              l10n.adminResizedImagesBreakdownEvents(
+                events.images,
+                events.entities,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EntityListTab extends StatelessWidget {
+  const _EntityListTab({
+    required this.rows,
+    required this.emptyMessage,
+    required this.l10n,
+    required this.accent,
+    required this.countLabel,
+    required this.showImageUrls,
+    required this.onOpenSpot,
+    required this.onOpenEvent,
+  });
+
+  final List<ResizedImageEntityRow> rows;
+  final String emptyMessage;
+  final AppLocalizations l10n;
+  final Color accent;
+  final String Function(int count) countLabel;
+  final bool showImageUrls;
+  final Future<void> Function(
+    String spotId, {
+    String? countryCode,
+    String? city,
+  }) onOpenSpot;
+  final Future<void> Function(String eventId) onOpenEvent;
+
+  @override
+  Widget build(BuildContext context) {
+    if (rows.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.check_circle, size: 64, color: Colors.green[600]),
+              const SizedBox(height: 16),
+              Text(
+                emptyMessage,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[700], fontSize: 16),
               ),
             ],
           ),
         ),
-        Expanded(
-          child: ListView.builder(
-            itemCount: _results.length,
-            itemBuilder: (context, index) {
-              final item = _results[index];
-              final spot = item.spot;
-              final missingUrls = item.missingImageUrls;
+      );
+    }
 
-              return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                child: InkWell(
-                  onTap: () {
-                    if (spot.id != null) {
-                      _openSpot(
-                        spot.id!,
-                        countryCode: spot.countryCode,
-                        city: spot.city,
-                      );
-                    }
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
+    return ListView.builder(
+      itemCount: rows.length,
+      itemBuilder: (context, index) {
+        final row = rows[index];
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: InkWell(
+            onTap: () {
+              if (row.isSpot) {
+                onOpenSpot(
+                  row.id,
+                  countryCode: row.countryCode,
+                  city: row.city,
+                );
+              } else {
+                onOpenEvent(row.id);
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Chip(
+                        label: Text(
+                          row.isSpot
+                              ? l10n.adminResizedImagesKindSpot
+                              : l10n.adminResizedImagesKindEvent,
+                        ),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          row.name.isEmpty ? row.id : row.name,
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      ),
+                      if (row.isSpot)
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: () => context.push('/spot/${row.id}/edit'),
+                          tooltip: l10n.adminResizedImagesEditSpot,
+                        ),
+                    ],
+                  ),
+                  if (row.city.isNotEmpty || row.countryCode.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      [
+                        if (row.city.isNotEmpty) row.city,
+                        if (row.countryCode.isNotEmpty) row.countryCode,
+                      ].join(', '),
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () {
+                      if (row.isSpot) {
+                        onOpenSpot(
+                          row.id,
+                          countryCode: row.countryCode,
+                          city: row.city,
+                        );
+                      } else {
+                        onOpenEvent(row.id);
+                      }
+                    },
+                    child: Row(
+                      children: [
+                        Icon(Icons.link,
+                            size: 16, color: Theme.of(context).primaryColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          row.isSpot
+                              ? l10n.adminResizedImagesViewSpot
+                              : l10n.adminResizedImagesViewEvent,
+                          style: TextStyle(
+                            color: Theme.of(context).primaryColor,
+                            fontSize: 12,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: accent.withValues(alpha: 0.35)),
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                spot.name,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                            if (spot.id != null)
-                              IconButton(
-                                icon: const Icon(Icons.edit),
-                                onPressed: () {
-                                  context.push('/spot/${spot.id}/edit');
-                                },
-                                tooltip: 'Edit spot',
-                              ),
-                          ],
+                        Text(
+                          countLabel(row.count),
+                          style: TextStyle(color: accent),
                         ),
-                        const SizedBox(height: 8),
-                        if (spot.spotSource != null || spot.spotSourceName != null)
-                          Row(
-                            children: [
-                              Icon(Icons.source, size: 16, color: Colors.grey[600]),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  spot.spotSourceName ?? spot.spotSource ?? 'Unknown source',
-                                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                                ),
-                              ),
-                            ],
-                          ),
-                        if (spot.id != null)
-                          InkWell(
-                            onTap: () => _openSpot(
-                              spot.id!,
-                              countryCode: spot.countryCode,
-                              city: spot.city,
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.link, size: 16, color: Theme.of(context).primaryColor),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'View spot',
-                                    style: TextStyle(
-                                      color: Theme.of(context).primaryColor,
-                                      fontSize: 12,
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                  ),
-                                  if (MobileDetectionService.isRunningInBrowser) ...[
-                                    const SizedBox(width: 6),
-                                    Icon(Icons.open_in_new, size: 14, color: Theme.of(context).primaryColor),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.orange[50],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.orange[200]!),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.image_not_supported, size: 20, color: Colors.orange[700]),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${missingUrls.length} image${missingUrls.length == 1 ? '' : 's'} missing resized version',
-                                    style: TextStyle(
-                                      color: Colors.orange[900],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              ...missingUrls.take(3).map(
-                                    (url) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 4),
-                                      child: Text(
-                                        url,
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: Colors.orange[800],
-                                          fontFamily: 'monospace',
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ),
-                              if (missingUrls.length > 3)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 2),
+                        if (showImageUrls && row.imageUrls.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          ...row.imageUrls.take(3).map(
+                                (url) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 4),
                                   child: Text(
-                                    '... and ${missingUrls.length - 3} more',
+                                    url,
                                     style: TextStyle(
                                       fontSize: 10,
-                                      color: Colors.orange[800],
-                                      fontStyle: FontStyle.italic,
+                                      color: accent,
+                                      fontFamily: 'monospace',
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                            ],
-                          ),
-                        ),
-                        if (missingUrls.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            height: 80,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: missingUrls.length,
-                              itemBuilder: (context, imgIndex) {
-                                final url = missingUrls[imgIndex];
-                                return Container(
-                                  margin: const EdgeInsets.only(right: 8),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(color: Colors.orange, width: 2),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Image.network(
-                                      url,
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Container(
-                                          width: 80,
-                                          height: 80,
-                                          color: Colors.grey[300],
-                                          child: const Icon(Icons.image_not_supported),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                );
-                              },
+                              ),
+                          if (row.imageUrls.length > 3)
+                            Text(
+                              l10n.adminResizedImagesAndMore(
+                                row.imageUrls.length - 3,
+                              ),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: accent,
+                                fontStyle: FontStyle.italic,
+                              ),
                             ),
-                          ),
                         ],
                       ],
                     ),
                   ),
-                ),
-              );
-            },
+                  if (showImageUrls && row.imageUrls.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 80,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: row.imageUrls.length,
+                        itemBuilder: (context, imgIndex) {
+                          final url = row.imageUrls[imgIndex];
+                          return Container(
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: accent, width: 2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                url,
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 80,
+                                    height: 80,
+                                    color: Colors.grey[300],
+                                    child: const Icon(Icons.image_not_supported),
+                                  );
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

@@ -1886,6 +1886,117 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não há API de eventos. A URL API Spots usa a mesma transformação 1200×1200 que imageUrls dos spots.';
 
   @override
+  String get adminResizedImagesTitle => 'Resized images';
+
+  @override
+  String get adminResizedImagesAccessDenied => 'Administrator access required';
+
+  @override
+  String get adminResizedImagesRetry => 'Retry';
+
+  @override
+  String get adminResizedImagesRefresh => 'Refresh';
+
+  @override
+  String get adminResizedImagesLoading => 'Scanning Storage and Firestore…';
+
+  @override
+  String get adminResizedImagesTabNone => 'No resize';
+
+  @override
+  String get adminResizedImagesTabOnly630 => 'Only 1200×630';
+
+  @override
+  String get adminResizedImagesTabHas1200 => 'Has 1200×1200';
+
+  @override
+  String adminResizedImagesSummaryNone(int images, int entities) {
+    return 'No resize: $images images · $entities spots/events';
+  }
+
+  @override
+  String adminResizedImagesSummaryOnly630(int images, int entities) {
+    return 'Only 1200×630: $images images · $entities spots/events';
+  }
+
+  @override
+  String adminResizedImagesSummaryHas1200(int images, int entities) {
+    return 'Has 1200×1200: $images images · $entities spots/events';
+  }
+
+  @override
+  String adminResizedImagesBreakdownSpots(int images, int entities) {
+    return 'Spots: $images images · $entities places';
+  }
+
+  @override
+  String adminResizedImagesBreakdownEvents(int images, int entities) {
+    return 'Events: $images images · $entities events';
+  }
+
+  @override
+  String get adminResizedImagesEmptyNone =>
+      'Every spot and event image has at least one resized version.';
+
+  @override
+  String get adminResizedImagesEmptyOnly630 =>
+      'No images are stuck on 1200×630 only.';
+
+  @override
+  String get adminResizedImagesOkTitle => 'Images with 1200×1200';
+
+  @override
+  String get adminResizedImagesOkBody =>
+      'Counts only — open a spot or event’s image URLs overview to inspect individual files.';
+
+  @override
+  String get adminResizedImagesKindSpot => 'Spot';
+
+  @override
+  String get adminResizedImagesKindEvent => 'Event';
+
+  @override
+  String adminResizedImagesMissingCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count images with no resized version',
+      one: '1 image with no resized version',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String adminResizedImagesOnly630Count(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count images with 1200×630 only',
+      one: '1 image with 1200×630 only',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get adminResizedImagesViewSpot => 'View spot';
+
+  @override
+  String get adminResizedImagesViewEvent => 'View event';
+
+  @override
+  String get adminResizedImagesEditSpot => 'Edit spot';
+
+  @override
+  String adminResizedImagesAndMore(int count) {
+    return '… and $count more';
+  }
+
+  @override
+  String adminResizedImagesCheckFailed(String error) {
+    return 'Failed to check: $error';
+  }
+
+  @override
   String get spotDetailExternalSourceCannotEdit =>
       'Spots de fontes externas não podem ser editados. Cria primeiro um spot nativo com «Marcar como duplicado» → «Criar spot nativo».';
 

@@ -48,9 +48,9 @@ class SpotImagesScreen extends StatelessWidget {
               ),
               AdminToolTile(
                 icon: Icons.image_not_supported,
-                title: 'Missing resized images',
+                title: 'Resized images',
                 subtitle:
-                    'Find spot images that do not have a resized version available',
+                    'Classify spot and event images: no resize, only 1200×630, or has 1200×1200',
                 onTap: () => context.push('/admin/missing-resized-images'),
               ),
               AdminToolTile(

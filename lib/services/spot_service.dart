@@ -10,7 +10,6 @@ import '../models/rating.dart';
 import '../utils/audit_log_changes.dart';
 import '../utils/duplicate_spot_resolution_utils.dart';
 import '../utils/image_preparation.dart';
-import '../utils/image_url_utils.dart';
 import '../utils/replay_latest_stream.dart';
 import '../utils/spot_duplicate_merge.dart';
 import '../utils/spot_duplicate_review.dart';
@@ -2540,88 +2539,44 @@ class SpotService extends ChangeNotifier {
     }
   }
 
-  /// Result for spots whose images lack resized versions.
-  static const String missingResizedImagesErrorCode = 'object-not-found';
-
-  /// Find all spots that have at least one image without a resized version.
-  /// Returns a list of (spot, list of image URLs missing resized versions).
-  Future<List<SpotWithMissingResizedImages>> findSpotsWithMissingResizedImages({
-    void Function(int current, int total)? onProgress,
-  }) async {
+  /// Classify spot/event images via inventory of Storage resized/ prefixes (admin only).
+  Future<ResizedImageClassificationReport> classifyResizedImages() async {
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
 
-      final querySnapshot = await _firestore
-          .collection('spots')
-          .where('imageUrls', isNull: false)
-          .get();
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable(
+        'classifyResizedImages',
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 3)),
+      );
 
-      final results = <SpotWithMissingResizedImages>[];
-      var imagesChecked = 0;
-      var totalToCheck = 0;
-      for (final doc in querySnapshot.docs) {
-        final spot = Spot.fromFirestore(doc);
-        if (spot.imageUrls != null) {
-          for (final url in spot.imageUrls!) {
-            if (getResizedPathInfo(url) != null) totalToCheck++;
-          }
-        }
-      }
-
-      for (final doc in querySnapshot.docs) {
-        final spot = Spot.fromFirestore(doc);
-        if (spot.imageUrls == null || spot.imageUrls!.isEmpty) continue;
-
-        final missingUrls = <String>[];
-        for (final url in spot.imageUrls!) {
-          final info = getResizedPathInfo(url);
-          if (info == null) continue;
-
-          // Consider "has resized" if any candidate exists (1200x1200 or 1200x630)
-          bool hasResized = false;
-          for (final candidatePath in info.resizedPathCandidates) {
-            try {
-              final ref = _storage.ref().child(candidatePath);
-              await ref.getMetadata();
-              hasResized = true;
-              break;
-            } on FirebaseException catch (e) {
-              if (e.code != missingResizedImagesErrorCode) {
-                debugPrint('Storage error checking $candidatePath: ${e.code}');
-              }
-            }
-          }
-          if (!hasResized) {
-            missingUrls.add(url);
-          }
-
-          imagesChecked++;
-          onProgress?.call(imagesChecked, totalToCheck);
-          await Future<void>.delayed(Duration.zero);
-        }
-
-        if (missingUrls.isNotEmpty) {
-          results.add(
-            SpotWithMissingResizedImages(
-              spot: spot,
-              missingImageUrls: missingUrls,
-            ),
-          );
-        }
-      }
+      final result = await callable.call();
+      final data = _asStringKeyedMap(result.data);
 
       _isLoading = false;
       notifyListeners();
-      return results;
+
+      if (data['success'] != true) {
+        throw Exception(data['error'] as String? ?? 'Unknown error');
+      }
+      return ResizedImageClassificationReport.fromMap(data);
     } catch (e) {
-      _error = 'Failed to find spots with missing resized images: $e';
-      debugPrint('Error finding spots with missing resized images: $e');
+      _error = 'Failed to classify resized images: $e';
+      debugPrint('Error classifying resized images: $e');
       _isLoading = false;
       notifyListeners();
-      return [];
+      rethrow;
     }
+  }
+
+  static Map<String, dynamic> _asStringKeyedMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) {
+      return value.map((key, dynamic v) => MapEntry(key.toString(), v));
+    }
+    return <String, dynamic>{};
   }
 
   /// Trigger the storage-resize-images extension for one spot's images (admin only).
@@ -2745,13 +2700,118 @@ class SpotService extends ChangeNotifier {
   }
 }
 
-/// A spot with image URLs that lack resized versions in Firebase Storage.
-class SpotWithMissingResizedImages {
-  const SpotWithMissingResizedImages({
-    required this.spot,
-    required this.missingImageUrls,
+/// Counts for one resize status (images + entities that have at least one such image).
+class ResizedImageStatusCounts {
+  const ResizedImageStatusCounts({
+    required this.images,
+    required this.entities,
   });
 
-  final Spot spot;
-  final List<String> missingImageUrls;
+  factory ResizedImageStatusCounts.fromMap(dynamic raw) {
+    final map = SpotService._asStringKeyedMap(raw);
+    return ResizedImageStatusCounts(
+      images: (map['images'] as num?)?.toInt() ?? 0,
+      entities: (map['entities'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  final int images;
+  final int entities;
+}
+
+/// Per-collection summary from [classifyResizedImages].
+class ResizedImageCollectionSummary {
+  const ResizedImageCollectionSummary({
+    required this.has1200,
+    required this.only630,
+    required this.none,
+  });
+
+  factory ResizedImageCollectionSummary.fromMap(dynamic raw) {
+    final map = SpotService._asStringKeyedMap(raw);
+    return ResizedImageCollectionSummary(
+      has1200: ResizedImageStatusCounts.fromMap(map['has1200']),
+      only630: ResizedImageStatusCounts.fromMap(map['only630']),
+      none: ResizedImageStatusCounts.fromMap(map['none']),
+    );
+  }
+
+  final ResizedImageStatusCounts has1200;
+  final ResizedImageStatusCounts only630;
+  final ResizedImageStatusCounts none;
+}
+
+/// Spot or event row from resize classification.
+class ResizedImageEntityRow {
+  const ResizedImageEntityRow({
+    required this.kind,
+    required this.id,
+    required this.name,
+    required this.city,
+    required this.countryCode,
+    this.imageUrls = const [],
+    this.count = 0,
+  });
+
+  factory ResizedImageEntityRow.fromMap(dynamic raw) {
+    final map = SpotService._asStringKeyedMap(raw);
+    final urlsRaw = map['imageUrls'];
+    final urls = urlsRaw is List
+        ? urlsRaw.map((e) => e.toString()).toList()
+        : <String>[];
+    return ResizedImageEntityRow(
+      kind: map['kind']?.toString() ?? 'spot',
+      id: map['id']?.toString() ?? '',
+      name: map['name']?.toString() ?? '',
+      city: map['city']?.toString() ?? '',
+      countryCode: map['countryCode']?.toString() ?? '',
+      imageUrls: urls,
+      count: (map['count'] as num?)?.toInt() ?? urls.length,
+    );
+  }
+
+  final String kind;
+  final String id;
+  final String name;
+  final String city;
+  final String countryCode;
+  final List<String> imageUrls;
+  final int count;
+
+  bool get isSpot => kind == 'spot';
+  bool get isEvent => kind == 'event';
+}
+
+/// Full report from the classifyResizedImages callable.
+class ResizedImageClassificationReport {
+  const ResizedImageClassificationReport({
+    required this.spots,
+    required this.events,
+    required this.totals,
+    required this.none,
+    required this.only630,
+  });
+
+  factory ResizedImageClassificationReport.fromMap(Map<String, dynamic> data) {
+    final summary = SpotService._asStringKeyedMap(data['summary']);
+    final noneRaw = data['none'];
+    final only630Raw = data['only630'];
+    return ResizedImageClassificationReport(
+      spots: ResizedImageCollectionSummary.fromMap(summary['spots']),
+      events: ResizedImageCollectionSummary.fromMap(summary['events']),
+      totals: ResizedImageCollectionSummary.fromMap(summary['totals']),
+      none: noneRaw is List
+          ? noneRaw.map(ResizedImageEntityRow.fromMap).toList()
+          : const [],
+      only630: only630Raw is List
+          ? only630Raw.map(ResizedImageEntityRow.fromMap).toList()
+          : const [],
+    );
+  }
+
+  final ResizedImageCollectionSummary spots;
+  final ResizedImageCollectionSummary events;
+  final ResizedImageCollectionSummary totals;
+  final List<ResizedImageEntityRow> none;
+  final List<ResizedImageEntityRow> only630;
 }

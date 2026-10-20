@@ -47,10 +47,16 @@ const {
   extractSpotIdFromPath,
   extractFilename,
   getResizedImageUrlForApi,
-  getResizedPathInfo,
   getImageContentTypeForPath,
   isGoogleUserContentUrl,
 } = require("./lib/url-helpers");
+const {
+  buildResizedBasenameSets,
+  buildClassificationReport,
+  needsResizeTrigger,
+  classifyImageUrl,
+  STATUS_NONE,
+} = require("./lib/resized-image-classification");
 const {
   hashApiKey,
   generateApiKey,
@@ -8615,6 +8621,57 @@ exports.uploadEventImage = onCall(
     },
 );
 
+// Inventory-based classification of spot/event images (admin only).
+// Lists resized/ prefixes once; returns none / only630 / has1200 summary.
+exports.classifyResizedImages = onCall(
+    {region: "europe-west1", memory: "1GiB", timeoutSeconds: 180},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+
+        const sets = await buildResizedBasenameSets(bucket);
+
+        const [spotsSnapshot, eventsSnapshot] = await Promise.all([
+          db.collection("spots").select("imageUrls", "name", "city", "countryCode").get(),
+          db.collection("events").select("imageUrls", "title", "name", "city", "countryCode").get(),
+        ]);
+
+        const spotDocs = spotsSnapshot.docs.map((doc) => {
+          const data = doc.data() || {};
+          return {
+            id: doc.id,
+            name: data.name || "",
+            city: data.city || "",
+            countryCode: data.countryCode || "",
+            imageUrls: data.imageUrls || [],
+          };
+        });
+        const eventDocs = eventsSnapshot.docs.map((doc) => {
+          const data = doc.data() || {};
+          return {
+            id: doc.id,
+            name: data.title || data.name || "",
+            city: data.city || "",
+            countryCode: data.countryCode || "",
+            imageUrls: data.imageUrls || [],
+          };
+        });
+
+        const report = buildClassificationReport({sets, spotDocs, eventDocs});
+        return {
+          success: true,
+          ...report,
+        };
+      } catch (error) {
+        console.error("Error classifying resized images:", error);
+        return {
+          success: false,
+          error: error.message,
+        };
+      }
+    },
+);
+
 // Trigger storage-resize-images extension for one spot's images missing resized versions (admin only)
 exports.triggerResizeForSpot = onCall(
     {region: "europe-west1", memory: "512MiB", timeoutSeconds: 120},
@@ -8636,23 +8693,19 @@ exports.triggerResizeForSpot = onCall(
         const imageUrls = data.imageUrls || [];
         const spotName = data.name || "Unnamed";
 
+        const sets = await buildResizedBasenameSets(bucket);
         const toProcess = [];
+        const seenPaths = new Set();
         for (const url of imageUrls) {
-          const info = getResizedPathInfo(url);
-          if (!info) continue;
-
-          // Skip if any resized version exists (1200x1200 or 1200x630)
-          let hasResized = false;
-          for (const candidatePath of info.resizedPathCandidates) {
-            const [exists] = await bucket.file(candidatePath).exists();
-            if (exists) {
-              hasResized = true;
-              break;
-            }
-          }
-          if (hasResized) continue;
-
-          toProcess.push({originalPath: info.originalPath, resizedPath: info.resizedPath});
+          if (!needsResizeTrigger(url, sets)) continue;
+          const classified = classifyImageUrl(url, sets);
+          if (!classified || classified.status !== STATUS_NONE) continue;
+          if (seenPaths.has(classified.originalPath)) continue;
+          seenPaths.add(classified.originalPath);
+          toProcess.push({
+            originalPath: classified.originalPath,
+            resizedPath: classified.resizedPath,
+          });
         }
 
         console.log(`Spot ${spotId}: ${toProcess.length} images missing resized versions`);
@@ -8740,47 +8793,38 @@ exports.triggerResizeForSpot = onCall(
 );
 
 // Trigger storage-resize-images extension for images missing resized versions (admin only)
-// Re-uploads each image to the same path, which fires object.finalize and triggers the extension
+// Re-uploads each image to the same path, which fires object.finalize and triggers the extension.
+// Only status "none" (no 1200 and no 630) — does not bulk-trigger only630 inventory.
 exports.triggerResizeForMissingImages = onCall(
-    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 540},
+    {region: "europe-west1", memory: "1GiB", timeoutSeconds: 540},
     async (request) => {
       try {
         await ensureAdmin(request);
 
-        // 1. Find all spots with imageUrls and collect image URLs that need resized versions
+        const sets = await buildResizedBasenameSets(bucket);
+
         const spotsSnapshot = await db.collection("spots")
-            .where("imageUrls", "!=", null)
+            .select("imageUrls", "name")
             .get();
 
         const toProcess = []; // {originalPath, resizedPath, spotId, spotName}
         const seenPaths = new Set();
 
         for (const doc of spotsSnapshot.docs) {
-          const data = doc.data();
+          const data = doc.data() || {};
           const imageUrls = data.imageUrls || [];
           const spotName = data.name || "Unnamed";
 
           for (const url of imageUrls) {
-            const info = getResizedPathInfo(url);
-            if (!info) continue;
-
-            if (seenPaths.has(info.originalPath)) continue;
-            seenPaths.add(info.originalPath);
-
-            // Skip if any resized version exists (1200x1200 or 1200x630)
-            let hasResized = false;
-            for (const candidatePath of info.resizedPathCandidates) {
-              const [exists] = await bucket.file(candidatePath).exists();
-              if (exists) {
-                hasResized = true;
-                break;
-              }
-            }
-            if (hasResized) continue;
+            if (!needsResizeTrigger(url, sets)) continue;
+            const classified = classifyImageUrl(url, sets);
+            if (!classified || classified.status !== STATUS_NONE) continue;
+            if (seenPaths.has(classified.originalPath)) continue;
+            seenPaths.add(classified.originalPath);
 
             toProcess.push({
-              originalPath: info.originalPath,
-              resizedPath: info.resizedPath,
+              originalPath: classified.originalPath,
+              resizedPath: classified.resizedPath,
               spotId: doc.id,
               spotName,
             });

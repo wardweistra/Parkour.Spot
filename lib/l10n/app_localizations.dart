@@ -3179,6 +3179,162 @@ abstract class AppLocalizations {
   /// **'There is no events API. The Spots API URL row shows the same 1200×1200 transform used for spot imageUrls.'**
   String get adminImageUrlsEventApiFootnote;
 
+  /// Admin screen: classify spot/event resized Storage variants
+  ///
+  /// In en, this message translates to:
+  /// **'Resized images'**
+  String get adminResizedImagesTitle;
+
+  /// No description provided for @adminResizedImagesAccessDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Administrator access required'**
+  String get adminResizedImagesAccessDenied;
+
+  /// No description provided for @adminResizedImagesRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get adminResizedImagesRetry;
+
+  /// No description provided for @adminResizedImagesRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get adminResizedImagesRefresh;
+
+  /// No description provided for @adminResizedImagesLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning Storage and Firestore…'**
+  String get adminResizedImagesLoading;
+
+  /// No description provided for @adminResizedImagesTabNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No resize'**
+  String get adminResizedImagesTabNone;
+
+  /// No description provided for @adminResizedImagesTabOnly630.
+  ///
+  /// In en, this message translates to:
+  /// **'Only 1200×630'**
+  String get adminResizedImagesTabOnly630;
+
+  /// No description provided for @adminResizedImagesTabHas1200.
+  ///
+  /// In en, this message translates to:
+  /// **'Has 1200×1200'**
+  String get adminResizedImagesTabHas1200;
+
+  /// No description provided for @adminResizedImagesSummaryNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No resize: {images} images · {entities} spots/events'**
+  String adminResizedImagesSummaryNone(int images, int entities);
+
+  /// No description provided for @adminResizedImagesSummaryOnly630.
+  ///
+  /// In en, this message translates to:
+  /// **'Only 1200×630: {images} images · {entities} spots/events'**
+  String adminResizedImagesSummaryOnly630(int images, int entities);
+
+  /// No description provided for @adminResizedImagesSummaryHas1200.
+  ///
+  /// In en, this message translates to:
+  /// **'Has 1200×1200: {images} images · {entities} spots/events'**
+  String adminResizedImagesSummaryHas1200(int images, int entities);
+
+  /// No description provided for @adminResizedImagesBreakdownSpots.
+  ///
+  /// In en, this message translates to:
+  /// **'Spots: {images} images · {entities} places'**
+  String adminResizedImagesBreakdownSpots(int images, int entities);
+
+  /// No description provided for @adminResizedImagesBreakdownEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Events: {images} images · {entities} events'**
+  String adminResizedImagesBreakdownEvents(int images, int entities);
+
+  /// No description provided for @adminResizedImagesEmptyNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Every spot and event image has at least one resized version.'**
+  String get adminResizedImagesEmptyNone;
+
+  /// No description provided for @adminResizedImagesEmptyOnly630.
+  ///
+  /// In en, this message translates to:
+  /// **'No images are stuck on 1200×630 only.'**
+  String get adminResizedImagesEmptyOnly630;
+
+  /// No description provided for @adminResizedImagesOkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Images with 1200×1200'**
+  String get adminResizedImagesOkTitle;
+
+  /// No description provided for @adminResizedImagesOkBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Counts only — open a spot or event’s image URLs overview to inspect individual files.'**
+  String get adminResizedImagesOkBody;
+
+  /// No description provided for @adminResizedImagesKindSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Spot'**
+  String get adminResizedImagesKindSpot;
+
+  /// No description provided for @adminResizedImagesKindEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get adminResizedImagesKindEvent;
+
+  /// No description provided for @adminResizedImagesMissingCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 image with no resized version} other{{count} images with no resized version}}'**
+  String adminResizedImagesMissingCount(int count);
+
+  /// No description provided for @adminResizedImagesOnly630Count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 image with 1200×630 only} other{{count} images with 1200×630 only}}'**
+  String adminResizedImagesOnly630Count(int count);
+
+  /// No description provided for @adminResizedImagesViewSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'View spot'**
+  String get adminResizedImagesViewSpot;
+
+  /// No description provided for @adminResizedImagesViewEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'View event'**
+  String get adminResizedImagesViewEvent;
+
+  /// No description provided for @adminResizedImagesEditSpot.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit spot'**
+  String get adminResizedImagesEditSpot;
+
+  /// No description provided for @adminResizedImagesAndMore.
+  ///
+  /// In en, this message translates to:
+  /// **'… and {count} more'**
+  String adminResizedImagesAndMore(int count);
+
+  /// No description provided for @adminResizedImagesCheckFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to check: {error}'**
+  String adminResizedImagesCheckFailed(String error);
+
   /// No description provided for @spotDetailExternalSourceCannotEdit.
   ///
   /// In en, this message translates to:
