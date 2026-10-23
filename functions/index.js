@@ -51,7 +51,8 @@ const {slugify, formatDateToISO, clipForMeta} = require("./utils");
 const {
   extractSpotIdFromPath,
   extractFilename,
-  getResizedImageUrlForApi,
+  resolveApiImageUrl,
+  resolveApiImageUrls,
   getImageContentTypeForPath,
   isGoogleUserContentUrl,
 } = require("./lib/url-helpers");
@@ -624,9 +625,8 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
       spot.imageUrls[0] :
       defaultImage;
 
-    // For social media previews (og:image), use the resized version for better load performance
-    // getResizedImageUrlForApi handles firebasestorage + storage.googleapis.com formats
-    imageUrl = getResizedImageUrlForApi(imageUrl);
+    // For social media previews (og:image), prefer a resized URL that actually exists
+    imageUrl = await resolveApiImageUrl(imageUrl, bucket);
 
     const seoContent = spot ? buildSpotSeoContent({
       spot: spot,
@@ -814,7 +814,7 @@ exports.userAndListPage = onRequest({region: "europe-west1"}, async (req, res) =
               const spotData = firstSpotSnap.data();
               const urls = spotData?.imageUrls;
               if (Array.isArray(urls) && urls.length > 0) {
-                imageUrl = getResizedImageUrlForApi(urls[0]);
+                imageUrl = await resolveApiImageUrl(urls[0], bucket);
               }
             }
           }
@@ -843,7 +843,7 @@ exports.userAndListPage = onRequest({region: "europe-west1"}, async (req, res) =
         if (eventImageUrls.length > 0 &&
             typeof eventImageUrls[0] === "string" &&
             eventImageUrls[0].trim().length > 0) {
-          imageUrl = getResizedImageUrlForApi(eventImageUrls[0].trim());
+          imageUrl = await resolveApiImageUrl(eventImageUrls[0].trim(), bucket);
         }
 
         breadcrumbs.push({name: eventTitle, url: `/event/${eventId}`});
@@ -11455,7 +11455,7 @@ exports.getSpotByApi = onRequest(
             const spots = result.spots || [];
             for (const spot of spots) {
               if (Array.isArray(spot.imageUrls)) {
-                spot.imageUrls = spot.imageUrls.map((url) => getResizedImageUrlForApi(url));
+                spot.imageUrls = await resolveApiImageUrls(spot.imageUrls, bucket);
               }
             }
             await db.runTransaction(async (transaction) => {
@@ -11506,7 +11506,7 @@ exports.getSpotByApi = onRequest(
           if (Array.isArray(spots)) {
             for (const spot of spots) {
               if (Array.isArray(spot.imageUrls)) {
-                spot.imageUrls = spot.imageUrls.map((url) => getResizedImageUrlForApi(url));
+                spot.imageUrls = await resolveApiImageUrls(spot.imageUrls, bucket);
               }
             }
           }
@@ -11567,7 +11567,7 @@ exports.getSpotByApi = onRequest(
         out.duplicateOf = spotData.duplicateOf || null;
 
         if (Array.isArray(out.imageUrls)) {
-          out.imageUrls = out.imageUrls.map((url) => getResizedImageUrlForApi(url));
+          out.imageUrls = await resolveApiImageUrls(out.imageUrls, bucket);
         }
 
         res.set("Content-Type", "application/json; charset=utf-8");

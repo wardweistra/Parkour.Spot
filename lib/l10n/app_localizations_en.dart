@@ -1857,7 +1857,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminImageUrlsApiFootnote =>
-      'The spots API returns the Spots API URL even when the resized file is missing; clients may get a 404 until resize completes.';
+      'The Spots API URL row shows the preferred 1200×1200 transform. At runtime the API falls back to 1200×630 or the original when 1200×1200 is missing.';
 
   @override
   String get adminImageUrlsEventApiFootnote =>

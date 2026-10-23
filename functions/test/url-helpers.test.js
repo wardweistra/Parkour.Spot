@@ -1,7 +1,10 @@
 const {
   extractSpotIdFromPath,
   extractFilename,
+  toResizedImageUrl,
   getResizedImageUrlForApi,
+  resolveApiImageUrl,
+  resolveApiImageUrls,
   getResizedPathInfo,
   getImageContentTypeForPath,
   isEphemeralImageHost,
@@ -9,6 +12,15 @@ const {
   isFirebaseStorageUrl,
   isGoogleUserContentUrl,
 } = require("../lib/url-helpers");
+
+function mockBucket(existingPaths) {
+  const set = existingPaths instanceof Set ? existingPaths : new Set(existingPaths);
+  return {
+    file: (path) => ({
+      exists: async () => [set.has(path)],
+    }),
+  };
+}
 
 describe("extractSpotIdFromPath", () => {
   it("extracts spotId from /cc/city/spotId path", () => {
@@ -44,6 +56,17 @@ describe("extractFilename", () => {
   });
 });
 
+describe("toResizedImageUrl", () => {
+  it("rewrites storage.googleapis spots URL for 1200x630", () => {
+    const url = "https://storage.googleapis.com/bucket/spots/photo.png";
+    expect(toResizedImageUrl(url, "1200x630"))
+        .toContain("/spots/resized/photo_1200x630.webp");
+  });
+  it("returns null for non-Firebase URLs", () => {
+    expect(toResizedImageUrl("https://example.com/a.jpg", "1200x1200")).toBeNull();
+  });
+});
+
 describe("getResizedImageUrlForApi", () => {
   it("returns original for non-Firebase URLs", () => {
     const url = "https://example.com/image.jpg";
@@ -71,6 +94,49 @@ describe("getResizedImageUrlForApi", () => {
   it("converts storage.googleapis events URL to resized", () => {
     const url = "https://storage.googleapis.com/bucket/events/photo.png";
     expect(getResizedImageUrlForApi(url)).toContain("/events/resized/photo_1200x1200.webp");
+  });
+});
+
+describe("resolveApiImageUrl", () => {
+  const original = "https://storage.googleapis.com/bucket/spots/photo.jpg";
+
+  it("returns 1200 when it exists", async () => {
+    const bucket = mockBucket(["spots/resized/photo_1200x1200.webp"]);
+    const resolved = await resolveApiImageUrl(original, bucket);
+    expect(resolved).toContain("photo_1200x1200.webp");
+  });
+
+  it("falls back to 630 when 1200 is missing", async () => {
+    const bucket = mockBucket(["spots/resized/photo_1200x630.webp"]);
+    const resolved = await resolveApiImageUrl(original, bucket);
+    expect(resolved).toContain("photo_1200x630.webp");
+  });
+
+  it("returns original when no resized variant exists", async () => {
+    const bucket = mockBucket([]);
+    expect(await resolveApiImageUrl(original, bucket)).toBe(original);
+  });
+
+  it("returns external URLs unchanged", async () => {
+    const url = "https://example.com/a.jpg";
+    const bucket = mockBucket([]);
+    expect(await resolveApiImageUrl(url, bucket)).toBe(url);
+  });
+});
+
+describe("resolveApiImageUrls", () => {
+  it("dedupes and preserves order", async () => {
+    const a = "https://storage.googleapis.com/bucket/spots/a.jpg";
+    const b = "https://storage.googleapis.com/bucket/spots/b.jpg";
+    const bucket = mockBucket([
+      "spots/resized/a_1200x630.webp",
+      "spots/resized/b_1200x1200.webp",
+    ]);
+    const resolved = await resolveApiImageUrls([a, b, a], bucket);
+    expect(resolved).toHaveLength(3);
+    expect(resolved[0]).toContain("a_1200x630.webp");
+    expect(resolved[1]).toContain("b_1200x1200.webp");
+    expect(resolved[2]).toBe(resolved[0]);
   });
 });
 

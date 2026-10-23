@@ -109,18 +109,22 @@ function extractFilename(url) {
 }
 
 const RESIZABLE_STORAGE_PREFIXES = ["spots", "events"];
+const API_RESIZE_SUFFIXES = ["1200x1200", "1200x630"];
+const API_IMAGE_EXISTS_BATCH_SIZE = 50;
 
 /**
- * Converts a Firebase Storage spot/event image URL to its resized version (1200x1200).
- * storage-resize-images extension creates: {prefix}/resized/baseName_1200x1200.webp
- * @param {string} originalUrl - Original Firebase Storage URL
- * @return {string} Resized URL or original if not convertible
+ * Rewrites a Firebase Storage spot/event original URL to a resized variant URL.
+ * @param {string} originalUrl Original Firebase Storage URL
+ * @param {string} sizeSuffix e.g. 1200x1200 or 1200x630
+ * @return {string|null} Resized URL, or null if not convertible
  */
-function getResizedImageUrlForApi(originalUrl) {
-  if (typeof originalUrl !== "string") return originalUrl;
+function toResizedImageUrl(originalUrl, sizeSuffix) {
+  if (typeof originalUrl !== "string" || typeof sizeSuffix !== "string") {
+    return null;
+  }
   try {
     if (!isFirebaseStorageUrl(originalUrl)) {
-      return originalUrl;
+      return null;
     }
     const isDownloadApi = isFirebaseStorageDownloadApiUrl(originalUrl);
     for (const prefix of RESIZABLE_STORAGE_PREFIXES) {
@@ -134,7 +138,7 @@ function getResizedImageUrlForApi(originalUrl) {
         if (pattern.test(originalUrl)) {
           return originalUrl.replace(
               pattern,
-              `${prefix}%2Fresized%2F$1_1200x1200.webp`,
+              `${prefix}%2Fresized%2F$1_${sizeSuffix}.webp`,
           );
         }
       }
@@ -145,14 +149,98 @@ function getResizedImageUrlForApi(originalUrl) {
         const baseName = match[1];
         return originalUrl.replace(
             `/${prefix}/${baseName}.${match[2]}`,
-            `/${prefix}/resized/${baseName}_1200x1200.webp`,
+            `/${prefix}/resized/${baseName}_${sizeSuffix}.webp`,
         );
       }
     }
-    return originalUrl;
+    return null;
   } catch {
-    return originalUrl;
+    return null;
   }
+}
+
+/**
+ * Blind rewrite to 1200x1200 (no existence check). Prefer resolveApiImageUrl at read time.
+ * @param {string} originalUrl Original Firebase Storage URL
+ * @return {string} Resized URL or original if not convertible
+ */
+function getResizedImageUrlForApi(originalUrl) {
+  if (typeof originalUrl !== "string") return originalUrl;
+  return toResizedImageUrl(originalUrl, "1200x1200") || originalUrl;
+}
+
+/**
+ * @param {Object} bucket Cloud Storage bucket
+ * @param {string} storagePath Object path
+ * @return {Promise<boolean>}
+ */
+async function storageObjectExists(bucket, storagePath) {
+  try {
+    const [exists] = await bucket.file(storagePath).exists();
+    return !!exists;
+  } catch (_) {
+    return false;
+  }
+}
+
+/**
+ * Picks a working image URL: 1200x1200 → 1200x630 → original.
+ * @param {string} originalUrl Firestore image URL
+ * @param {Object} bucket Cloud Storage bucket
+ * @return {Promise<string>}
+ */
+async function resolveApiImageUrl(originalUrl, bucket) {
+  if (typeof originalUrl !== "string") return originalUrl;
+  const info = getResizedPathInfo(originalUrl);
+  if (!info || !bucket) return originalUrl;
+
+  for (let i = 0; i < info.resizedPathCandidates.length; i++) {
+    const path = info.resizedPathCandidates[i];
+    // eslint-disable-next-line no-await-in-loop
+    if (await storageObjectExists(bucket, path)) {
+      const suffix = API_RESIZE_SUFFIXES[i] || "1200x1200";
+      return toResizedImageUrl(originalUrl, suffix) || originalUrl;
+    }
+  }
+  return originalUrl;
+}
+
+/**
+ * Resolves many image URLs with dedupe and parallel exists checks.
+ * @param {Array<string>} urls Image URLs
+ * @param {Object} bucket Cloud Storage bucket
+ * @return {Promise<Array<string>>}
+ */
+async function resolveApiImageUrls(urls, bucket) {
+  if (!Array.isArray(urls)) return urls;
+  if (!bucket) {
+    return urls.map((url) => getResizedImageUrlForApi(url));
+  }
+
+  const unique = [];
+  const seen = new Set();
+  for (const url of urls) {
+    if (typeof url !== "string") continue;
+    if (seen.has(url)) continue;
+    seen.add(url);
+    unique.push(url);
+  }
+
+  const resolvedByOriginal = new Map();
+  for (let i = 0; i < unique.length; i += API_IMAGE_EXISTS_BATCH_SIZE) {
+    const batch = unique.slice(i, i + API_IMAGE_EXISTS_BATCH_SIZE);
+    const resolved = await Promise.all(
+        batch.map((url) => resolveApiImageUrl(url, bucket)),
+    );
+    for (let j = 0; j < batch.length; j++) {
+      resolvedByOriginal.set(batch[j], resolved[j]);
+    }
+  }
+
+  return urls.map((url) => {
+    if (typeof url !== "string") return url;
+    return resolvedByOriginal.get(url) || url;
+  });
 }
 
 /**
@@ -266,7 +354,10 @@ module.exports = {
   isGoogleUserContentUrl,
   extractSpotIdFromPath,
   extractFilename,
+  toResizedImageUrl,
   getResizedImageUrlForApi,
+  resolveApiImageUrl,
+  resolveApiImageUrls,
   getResizedPathInfo,
   getImageContentTypeForPath,
   isEphemeralImageHost,
