@@ -579,8 +579,13 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
 
       if (mounted) {
         if (success) {
+          final warning = spotService.lastUpdateWarning;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Spot updated successfully!')),
+            SnackBar(
+              content: Text(
+                warning ?? 'Spot updated successfully!',
+              ),
+            ),
           );
           final currentPath = GoRouterState.of(context).uri.path;
           final detailPath = _deriveDetailPathFromEditPath(currentPath);

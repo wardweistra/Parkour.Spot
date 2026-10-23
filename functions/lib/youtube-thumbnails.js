@@ -157,6 +157,71 @@ function youtubeIdsNeedingThumbnails(
   return result;
 }
 
+/**
+ * Indices of YouTube CDN thumbnail URLs in [imageUrls].
+ * @param {string[]|*} imageUrls
+ * @return {number[]}
+ */
+function youtubeCdnImageUrlIndices(imageUrls) {
+  if (!Array.isArray(imageUrls)) return [];
+  const indices = [];
+  for (let i = 0; i < imageUrls.length; i++) {
+    if (isYoutubeCdnThumbnailUrl(imageUrls[i])) {
+      indices.push(i);
+    }
+  }
+  return indices;
+}
+
+/**
+ * Rewrites imageUrls/imageHashes using successful rehosts keyed by index.
+ * Only updates hashes when the parallel array length matches imageUrls.
+ *
+ * @param {Object} options
+ * @param {string[]} options.imageUrls
+ * @param {string[]=} options.imageHashes
+ * @param {Object} options.rehosts Map of index -> {url, hash}
+ * @return {Object} `{imageUrls, imageHashes, replacedCount, changed}`
+ */
+function applyYoutubeCdnRehosts({imageUrls, imageHashes, rehosts}) {
+  const urls = Array.isArray(imageUrls) ? [...imageUrls] : [];
+  const hashesAligned =
+    Array.isArray(imageHashes) && imageHashes.length === urls.length;
+  const hashes = hashesAligned ? [...imageHashes] : undefined;
+  let replacedCount = 0;
+
+  if (!rehosts || typeof rehosts !== "object") {
+    return {
+      imageUrls: urls,
+      imageHashes: hashes,
+      replacedCount: 0,
+      changed: false,
+    };
+  }
+
+  for (const [rawIndex, entry] of Object.entries(rehosts)) {
+    const index = Number(rawIndex);
+    if (!Number.isInteger(index) || index < 0 || index >= urls.length) {
+      continue;
+    }
+    if (!isYoutubeCdnThumbnailUrl(urls[index])) continue;
+    const nextUrl = entry && typeof entry.url === "string" ? entry.url : "";
+    if (!nextUrl) continue;
+    urls[index] = nextUrl;
+    if (hashes && typeof entry.hash === "string" && entry.hash) {
+      hashes[index] = entry.hash;
+    }
+    replacedCount += 1;
+  }
+
+  return {
+    imageUrls: urls,
+    imageHashes: hashes,
+    replacedCount,
+    changed: replacedCount > 0,
+  };
+}
+
 module.exports = {
   YOUTUBE_THUMBNAIL_QUALITIES,
   youtubeThumbnailUrl,
@@ -167,4 +232,6 @@ module.exports = {
   checkYoutubeThumbnailAvailable,
   resolveYoutubeThumbnailUrl,
   youtubeIdsNeedingThumbnails,
+  youtubeCdnImageUrlIndices,
+  applyYoutubeCdnRehosts,
 };

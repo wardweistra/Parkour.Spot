@@ -26,12 +26,17 @@ class SpotService extends ChangeNotifier {
 
   bool _isLoading = false;
   String? _error;
+  String? _lastUpdateWarning;
 
   Stream<int>? _duplicatePendingChangesCountStream;
   int _duplicatePendingChangesCount = 0;
 
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+  /// Non-fatal warning from the last successful [updateSpot] (e.g. failed
+  /// YouTube thumbnail cache). Cleared at the start of each update.
+  String? get lastUpdateWarning => _lastUpdateWarning;
 
   /// Count of duplicates with unreviewed field changes.
   int get duplicatePendingChangesCount => _duplicatePendingChangesCount;
@@ -283,6 +288,7 @@ class SpotService extends ChangeNotifier {
   }) async {
     try {
       _isLoading = true;
+      _lastUpdateWarning = null;
       notifyListeners();
 
       Spot? oldSpot;
@@ -318,18 +324,21 @@ class SpotService extends ChangeNotifier {
               existingImageUrls: imageUrls,
             );
       if (newYoutubeIds.isNotEmpty) {
-        final resolvedThumbnails = Map<String, String>.from(
-          await _fetchYoutubeThumbnailUrls(
-            videoIds: newYoutubeIds,
-            spotName: spot.name,
-          ),
+        final resolvedThumbnails = await _fetchYoutubeThumbnailUrls(
+          videoIds: newYoutubeIds,
+          spotName: spot.name,
         );
-        for (final id in newYoutubeIds) {
-          if (resolvedThumbnails.containsKey(id)) continue;
-          final fallbackUrl = await resolveYoutubeThumbnailUrl(id);
-          if (fallbackUrl != null) {
-            resolvedThumbnails[id] = fallbackUrl;
-          }
+        final failedIds = newYoutubeIds
+            .where((id) {
+              final url = resolvedThumbnails[id];
+              return url == null || url.isEmpty;
+            })
+            .toList();
+        if (failedIds.isNotEmpty) {
+          _lastUpdateWarning =
+              'Spot updated, but ${failedIds.length} YouTube '
+              '${failedIds.length == 1 ? 'thumbnail' : 'thumbnails'} '
+              'could not be cached to Storage.';
         }
         imageUrls = appendYoutubeThumbnails(
           imageUrls: imageUrls,
@@ -762,8 +771,7 @@ class SpotService extends ChangeNotifier {
   }
 
   /// Downloads YouTube thumbnails via Cloud Function (same Storage path as import).
-  /// Returns videoId -> public URL for successful downloads; caller falls back
-  /// to YouTube CDN URLs for any IDs missing from the map.
+  /// Returns videoId -> public Storage URL for successful downloads only.
   Future<Map<String, String>> _fetchYoutubeThumbnailUrls({
     required List<String> videoIds,
     required String spotName,

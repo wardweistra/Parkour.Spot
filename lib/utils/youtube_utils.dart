@@ -167,7 +167,10 @@ List<String> youtubeIdsNeedingThumbnails({
   return result;
 }
 
-/// Appends thumbnail URLs for [videoIds], using [resolvedUrls] when present.
+/// Appends Storage-hosted thumbnail URLs for [videoIds].
+///
+/// Only IDs present in [resolvedUrls] with a non-empty URL are appended.
+/// IDs without a resolved Storage URL are skipped (no YouTube CDN fallback).
 List<String> appendYoutubeThumbnails({
   required List<String> imageUrls,
   required List<String> videoIds,
@@ -179,11 +182,8 @@ List<String> appendYoutubeThumbnails({
     if (id.isEmpty) continue;
     if (result.any((url) => imageUrlIsYoutubeThumbnail(url, id))) continue;
     final resolved = resolvedUrls[id];
-    result.add(
-      (resolved != null && resolved.isNotEmpty)
-          ? resolved
-          : youtubeThumbnailUrl(id),
-    );
+    if (resolved == null || resolved.isEmpty) continue;
+    result.add(resolved);
   }
   return result;
 }

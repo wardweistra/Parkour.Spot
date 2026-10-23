@@ -151,20 +151,17 @@ void main() {
   });
 
   group('appendYoutubeThumbnails', () {
-    test('appends CDN URLs when no resolved Storage URLs are provided', () {
+    test('skips IDs without resolved Storage URLs', () {
       expect(
         appendYoutubeThumbnails(
           imageUrls: const ['https://example.com/photo.jpg'],
           videoIds: const ['bbb'],
         ),
-        [
-          'https://example.com/photo.jpg',
-          'https://img.youtube.com/vi/bbb/maxresdefault.jpg',
-        ],
+        ['https://example.com/photo.jpg'],
       );
     });
 
-    test('prefers resolved Storage URLs', () {
+    test('appends resolved Storage URLs', () {
       expect(
         appendYoutubeThumbnails(
           imageUrls: const [],
@@ -177,15 +174,34 @@ void main() {
       );
     });
 
-    test('does not duplicate an existing CDN thumbnail', () {
+    test('skips IDs that already have a CDN thumbnail in imageUrls', () {
       expect(
         appendYoutubeThumbnails(
           imageUrls: const [
             'https://img.youtube.com/vi/bbb/maxresdefault.jpg',
           ],
           videoIds: const ['bbb'],
+          resolvedUrls: const {
+            'bbb': 'https://storage.googleapis.com/bucket/spots/thumb.jpg',
+          },
         ),
         ['https://img.youtube.com/vi/bbb/maxresdefault.jpg'],
+      );
+    });
+
+    test('appends only IDs that resolved successfully', () {
+      expect(
+        appendYoutubeThumbnails(
+          imageUrls: const ['https://example.com/photo.jpg'],
+          videoIds: const ['ok', 'fail'],
+          resolvedUrls: const {
+            'ok': 'https://storage.googleapis.com/bucket/spots/ok.jpg',
+          },
+        ),
+        [
+          'https://example.com/photo.jpg',
+          'https://storage.googleapis.com/bucket/spots/ok.jpg',
+        ],
       );
     });
   });

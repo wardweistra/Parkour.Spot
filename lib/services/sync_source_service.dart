@@ -883,6 +883,104 @@ class SyncSourceService extends ChangeNotifier {
     }
   }
 
+  /// Rehosts YouTube CDN URLs in spot imageUrls into Firebase Storage.
+  /// Loops the resumable callable until [hasMore] is false.
+  Future<Map<String, dynamic>?> rehostYoutubeCdnSpotImages() async {
+    try {
+      final callable = _functions.httpsCallable(
+        'rehostYoutubeCdnSpotImages',
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
+      );
+
+      var spotsScanned = 0;
+      var spotsWithCdn = 0;
+      var spotsUpdated = 0;
+      var imagesRehosted = 0;
+      var imagesFailed = 0;
+      var imagesAttempted = 0;
+      String? lastDocId;
+      var hasMore = true;
+      var batches = 0;
+
+      while (hasMore) {
+        batches += 1;
+        final result = await callable.call({
+          if (lastDocId != null) 'lastDocId': lastDocId,
+        });
+        final data = result.data;
+        if (data == null) return null;
+        final map = _callableResponseAsMap(data);
+        if (map['success'] != true) {
+          _error = map['message']?.toString() ??
+              'Failed to rehost YouTube CDN spot images';
+          notifyListeners();
+          return map;
+        }
+
+        final statsValue = map['stats'];
+        final stats = statsValue is Map
+            ? Map<String, dynamic>.from(statsValue)
+            : const <String, dynamic>{};
+        int asInt(dynamic v) => (v as num?)?.toInt() ?? 0;
+        spotsScanned += asInt(stats['spotsScanned']);
+        spotsWithCdn += asInt(stats['spotsWithCdn']);
+        spotsUpdated += asInt(stats['spotsUpdated']);
+        imagesRehosted += asInt(stats['imagesRehosted']);
+        imagesFailed += asInt(stats['imagesFailed']);
+        imagesAttempted += asInt(stats['imagesAttempted']);
+
+        hasMore = map['hasMore'] == true;
+        final nextCursor = map['lastDocId']?.toString();
+        if (hasMore) {
+          if (nextCursor == null ||
+              nextCursor.isEmpty ||
+              nextCursor == lastDocId) {
+            _error =
+                'YouTube CDN rehost stalled (cursor did not advance)';
+            notifyListeners();
+            return {
+              'success': false,
+              'message': _error,
+              'stats': {
+                'spotsScanned': spotsScanned,
+                'spotsWithCdn': spotsWithCdn,
+                'spotsUpdated': spotsUpdated,
+                'imagesRehosted': imagesRehosted,
+                'imagesFailed': imagesFailed,
+                'imagesAttempted': imagesAttempted,
+                'batches': batches,
+              },
+            };
+          }
+          lastDocId = nextCursor;
+        } else {
+          lastDocId = nextCursor;
+        }
+      }
+
+      return {
+        'success': true,
+        'message': 'YouTube CDN rehost complete',
+        'hasMore': false,
+        'lastDocId': lastDocId,
+        'stats': {
+          'spotsScanned': spotsScanned,
+          'spotsWithCdn': spotsWithCdn,
+          'spotsUpdated': spotsUpdated,
+          'imagesRehosted': imagesRehosted,
+          'imagesFailed': imagesFailed,
+          'imagesAttempted': imagesAttempted,
+          'batches': batches,
+        },
+      };
+    } catch (e) {
+      _error = 'Failed to rehost YouTube CDN spot images: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return null;
+    }
+  }
+
   /// One-time backfill: populates spotSearchTerms for all spots (Explore autocomplete).
   /// Run once after deploying searchSpotsByTitle changes.
   Future<Map<String, dynamic>?> backfillSpotNameLower({

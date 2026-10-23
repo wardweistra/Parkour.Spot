@@ -77,6 +77,16 @@ class SpotImagesScreen extends StatelessWidget {
                 showChevron: false,
                 onTap: () => SpotDataActions.backfillSpotHasImages(context),
               ),
+              AdminToolTile(
+                icon: Icons.cloud_download_outlined,
+                title: 'Rehost YouTube CDN images',
+                subtitle:
+                    'Download YouTube thumbnail URLs from imageUrls into '
+                    'Firebase Storage',
+                showChevron: false,
+                onTap: () =>
+                    SpotDataActions.rehostYoutubeCdnSpotImages(context),
+              ),
             ],
           ),
         ],

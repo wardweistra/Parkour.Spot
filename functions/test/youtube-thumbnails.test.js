@@ -8,6 +8,8 @@ const {
   checkYoutubeThumbnailAvailable,
   resolveYoutubeThumbnailUrl,
   youtubeIdsNeedingThumbnails,
+  youtubeCdnImageUrlIndices,
+  applyYoutubeCdnRehosts,
 } = require("../lib/youtube-thumbnails");
 
 describe("youtubeThumbnailUrl", () => {
@@ -172,5 +174,72 @@ describe("youtubeIdsNeedingThumbnails", () => {
         ["bbb", "ccc", "bbb"],
         [],
     )).toEqual(["bbb", "ccc"]);
+  });
+});
+
+describe("youtubeCdnImageUrlIndices", () => {
+  it("returns indices of YouTube CDN URLs only", () => {
+    expect(youtubeCdnImageUrlIndices([
+      "https://storage.googleapis.com/bucket/spots/a.jpg",
+      "https://img.youtube.com/vi/abc123/maxresdefault.jpg",
+      "https://example.com/x.jpg",
+      "https://i.ytimg.com/vi/xyz789/hqdefault.jpg",
+    ])).toEqual([1, 3]);
+  });
+
+  it("returns empty for non-arrays", () => {
+    expect(youtubeCdnImageUrlIndices(null)).toEqual([]);
+    expect(youtubeCdnImageUrlIndices(undefined)).toEqual([]);
+  });
+});
+
+describe("applyYoutubeCdnRehosts", () => {
+  it("replaces CDN URLs and aligned hashes", () => {
+    const result = applyYoutubeCdnRehosts({
+      imageUrls: [
+        "https://img.youtube.com/vi/abc123xyz/maxresdefault.jpg",
+        "https://storage.googleapis.com/bucket/spots/other.jpg",
+      ],
+      imageHashes: ["oldhash", "keep"],
+      rehosts: {
+        0: {
+          url: "https://storage.googleapis.com/bucket/spots/thumb.jpg",
+          hash: "newhash",
+        },
+      },
+    });
+    expect(result.changed).toBe(true);
+    expect(result.replacedCount).toBe(1);
+    expect(result.imageUrls).toEqual([
+      "https://storage.googleapis.com/bucket/spots/thumb.jpg",
+      "https://storage.googleapis.com/bucket/spots/other.jpg",
+    ]);
+    expect(result.imageHashes).toEqual(["newhash", "keep"]);
+  });
+
+  it("leaves hashes undefined when lengths are misaligned", () => {
+    const result = applyYoutubeCdnRehosts({
+      imageUrls: ["https://img.youtube.com/vi/abc123xyz/maxresdefault.jpg"],
+      imageHashes: ["only", "extra"],
+      rehosts: {
+        0: {
+          url: "https://storage.googleapis.com/bucket/spots/thumb.jpg",
+          hash: "newhash",
+        },
+      },
+    });
+    expect(result.imageHashes).toBeUndefined();
+    expect(result.imageUrls[0]).toContain("storage.googleapis.com");
+  });
+
+  it("ignores rehosts for non-CDN indices", () => {
+    const result = applyYoutubeCdnRehosts({
+      imageUrls: ["https://example.com/a.jpg"],
+      rehosts: {
+        0: {url: "https://storage.googleapis.com/bucket/spots/x.jpg"},
+      },
+    });
+    expect(result.changed).toBe(false);
+    expect(result.imageUrls[0]).toBe("https://example.com/a.jpg");
   });
 });

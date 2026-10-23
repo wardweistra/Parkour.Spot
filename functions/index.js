@@ -23,7 +23,12 @@ const {
 } = require("firebase-functions/v2/firestore");
 const {initializeApp} = require("firebase-admin/app");
 const {getAuth} = require("firebase-admin/auth");
-const {getFirestore, FieldValue, Timestamp} = require("firebase-admin/firestore");
+const {
+  getFirestore,
+  FieldValue,
+  FieldPath,
+  Timestamp,
+} = require("firebase-admin/firestore");
 const {getMessaging} = require("firebase-admin/messaging");
 const {getStorage} = require("firebase-admin/storage");
 const yauzl = require("yauzl");
@@ -118,6 +123,10 @@ const {
 } = require("./lib/text-processing");
 const {
   isPlausibleYoutubeVideoId,
+  extractYoutubeVideoIdFromThumbnailUrl,
+  resolveYoutubeThumbnailUrl,
+  youtubeCdnImageUrlIndices,
+  applyYoutubeCdnRehosts,
 } = require("./lib/youtube-thumbnails");
 const {
   pickSpotIdsForTitleSearch,
@@ -7416,6 +7425,185 @@ exports.backfillSpotHasImages = onCall(
       } catch (error) {
         console.error("Error in backfillSpotHasImages:", error);
         throw new Error(`Failed to backfill spot hasImages: ${error.message}`);
+      }
+    },
+);
+
+/**
+ * Rehosts YouTube CDN URLs in spot imageUrls into Firebase Storage.
+ * Resumable: pass lastDocId from a previous response until hasMore is false.
+ * lastDocId is the last fully processed spot id (next call uses startAfter).
+ * Admin only.
+ */
+exports.rehostYoutubeCdnSpotImages = onCall(
+    {
+      region: "europe-west1",
+      memory: "1GiB",
+      timeoutSeconds: 540,
+    },
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+
+        const SCAN_PAGE_SIZE = 50;
+        const MAX_IMAGES_PER_INVOCATION = 12;
+        const rawLastDocId = request.data && request.data.lastDocId;
+        let lastCompletedDocId =
+          typeof rawLastDocId === "string" && rawLastDocId.trim() ?
+            rawLastDocId.trim() :
+            null;
+
+        let spotsScanned = 0;
+        let spotsWithCdn = 0;
+        let spotsUpdated = 0;
+        let imagesRehosted = 0;
+        let imagesFailed = 0;
+        let imagesAttempted = 0;
+        let hasMore = true;
+        let stopForBudget = false;
+
+        while (hasMore && !stopForBudget) {
+          let query = db.collection("spots")
+              .orderBy(FieldPath.documentId())
+              .limit(SCAN_PAGE_SIZE);
+          if (lastCompletedDocId) {
+            const startDoc = await db.collection("spots")
+                .doc(lastCompletedDocId)
+                .get();
+            if (!startDoc.exists) {
+              throw new Error(`lastDocId not found: ${lastCompletedDocId}`);
+            }
+            query = query.startAfter(startDoc);
+          }
+
+          const snapshot = await query.get();
+          if (snapshot.empty) {
+            hasMore = false;
+            break;
+          }
+
+          for (const doc of snapshot.docs) {
+            spotsScanned += 1;
+            const spotData = doc.data() || {};
+            const imageUrls = Array.isArray(spotData.imageUrls) ?
+              [...spotData.imageUrls] :
+              [];
+            const cdnIndices = youtubeCdnImageUrlIndices(imageUrls);
+
+            if (cdnIndices.length === 0) {
+              lastCompletedDocId = doc.id;
+              continue;
+            }
+
+            spotsWithCdn += 1;
+
+            // Defer this spot when it would exceed the image budget after work
+            // already done this invocation. Always process at least one CDN spot.
+            if (
+              imagesAttempted > 0 &&
+              imagesAttempted + cdnIndices.length > MAX_IMAGES_PER_INVOCATION
+            ) {
+              stopForBudget = true;
+              hasMore = true;
+              break;
+            }
+
+            const rehosts = {};
+            const spotName =
+              typeof spotData.name === "string" && spotData.name.trim() ?
+                spotData.name.trim() :
+                "spot";
+
+            for (const index of cdnIndices) {
+              imagesAttempted += 1;
+              const sourceUrl = imageUrls[index];
+              // Same quality order as import: maxresdefault → sddefault → hqdefault
+              const videoId = extractYoutubeVideoIdFromThumbnailUrl(sourceUrl);
+              const resolvedUrl = videoId ?
+                await resolveYoutubeThumbnailUrl(videoId) :
+                null;
+              if (!resolvedUrl) {
+                console.warn(
+                    `Skipping unavailable YouTube thumbnail for ` +
+                    `${videoId || sourceUrl} (spot: ${spotName})`,
+                );
+                imagesFailed += 1;
+                continue;
+              }
+              const uploaded = await downloadAndUploadImage(
+                  resolvedUrl,
+                  spotName,
+                  index,
+              );
+              if (uploaded && uploaded.url) {
+                rehosts[String(index)] = {
+                  url: uploaded.url,
+                  hash: uploaded.hash,
+                };
+                imagesRehosted += 1;
+              } else {
+                imagesFailed += 1;
+              }
+            }
+
+            if (Object.keys(rehosts).length > 0) {
+              const applied = applyYoutubeCdnRehosts({
+                imageUrls,
+                imageHashes: spotData.imageHashes,
+                rehosts,
+              });
+              if (applied.changed) {
+                const update = {
+                  imageUrls: applied.imageUrls,
+                  hasImages: deriveHasImages(
+                      applied.imageUrls,
+                      spotData.imageUrl,
+                  ),
+                  updatedAt: FieldValue.serverTimestamp(),
+                };
+                if (applied.imageHashes) {
+                  update.imageHashes = applied.imageHashes;
+                }
+                await doc.ref.update(update);
+                spotsUpdated += 1;
+              }
+            }
+
+            lastCompletedDocId = doc.id;
+
+            if (imagesAttempted >= MAX_IMAGES_PER_INVOCATION) {
+              stopForBudget = true;
+              hasMore = true;
+              break;
+            }
+          }
+
+          if (!stopForBudget) {
+            hasMore = snapshot.size === SCAN_PAGE_SIZE;
+          }
+        }
+
+        return {
+          success: true,
+          message: stopForBudget ?
+            "YouTube CDN rehost batch complete; more remain" :
+            "YouTube CDN rehost complete",
+          hasMore: Boolean(stopForBudget || hasMore),
+          lastDocId: lastCompletedDocId,
+          stats: {
+            spotsScanned,
+            spotsWithCdn,
+            spotsUpdated,
+            imagesRehosted,
+            imagesFailed,
+            imagesAttempted,
+          },
+        };
+      } catch (error) {
+        console.error("Error in rehostYoutubeCdnSpotImages:", error);
+        throw new Error(
+            `Failed to rehost YouTube CDN spot images: ${error.message}`,
+        );
       }
     },
 );

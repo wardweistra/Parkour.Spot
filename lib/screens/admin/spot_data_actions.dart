@@ -379,4 +379,91 @@ class SpotDataActions {
       );
     }
   }
+
+  static Future<void> rehostYoutubeCdnSpotImages(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Rehost YouTube CDN images'),
+        content: const Text(
+          'Downloads YouTube thumbnail URLs stored in spot imageUrls and '
+          'uploads them to Firebase Storage (same path as spot-source import). '
+          'Safe to run again; spots without CDN URLs are skipped.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Run'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !context.mounted) return;
+
+    final syncService = context.read<SyncSourceService>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    late NavigatorState navigator;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) {
+        navigator = Navigator.of(c);
+        return const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Expanded(child: Text('Rehosting YouTube CDN images...')),
+            ],
+          ),
+        );
+      },
+    );
+
+    try {
+      final result = await syncService.rehostYoutubeCdnSpotImages();
+      navigator.pop();
+      if (!context.mounted) return;
+
+      if (result != null && result['success'] == true) {
+        final statsValue = result['stats'];
+        final stats = statsValue is Map
+            ? Map<String, dynamic>.from(statsValue)
+            : null;
+        final message = stats == null
+            ? 'Rehost completed'
+            : 'Rehost completed. Scanned: '
+                  '${_formatStatInt(stats['spotsScanned'])}, with CDN: '
+                  '${_formatStatInt(stats['spotsWithCdn'])}, updated: '
+                  '${_formatStatInt(stats['spotsUpdated'])}, rehosted: '
+                  '${_formatStatInt(stats['imagesRehosted'])}, failed: '
+                  '${_formatStatInt(stats['imagesFailed'])}.';
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: Colors.green),
+        );
+      } else {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              syncService.error ?? 'YouTube CDN rehost failed',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      navigator.pop();
+      if (!context.mounted) return;
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('YouTube CDN rehost failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 }
