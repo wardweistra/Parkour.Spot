@@ -1,4 +1,5 @@
 ---
+import {countryName} from "../lib/citation";
 import {flagUrl} from "../lib/urls";
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
 const {code} = Astro.props;
 const src = code ? flagUrl(code) : null;
 const src2x = code ? flagUrl(code, 80) : null;
+const label = code ? countryName(code) : "";
 ---
 
 {
@@ -16,7 +18,7 @@ const src2x = code ? flagUrl(code, 80) : null;
       class="flag"
       src={src}
       srcset={`${src2x} 2x`}
-      alt=""
+      alt={label ? `${label} flag` : ""}
       width="21"
       height="14"
       loading="lazy"

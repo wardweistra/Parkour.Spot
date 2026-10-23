@@ -31,7 +31,11 @@ const {
         const place = showCity && spot.city ? spot.city : null;
         return (
           <li class="stack-list__card">
-            <StackListThumb src={spot.imageUrl} size={96} />
+            <StackListThumb
+              src={spot.imageUrl}
+              size={96}
+              alt={`${spot.name} parkour spot`}
+            />
             <div>
               <p class="stack-list__title">
                 {rank != null && (

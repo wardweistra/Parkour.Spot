@@ -1,5 +1,8 @@
+/** App wordmark separator (U+00B7 MIDDLE DOT), matching parkour.spot. */
+export const BRAND_SEP = "\u00b7";
+
 /** App wordmark. U+00B7 MIDDLE DOT, matching parkour.spot. */
-export const SITE_NAME = "Parkour·Spot";
+export const SITE_NAME = `Parkour${BRAND_SEP}Spot`;
 
 /** Document title for the About home page and suffix for other About pages. */
 export const ABOUT_SITE_TITLE = `About ${SITE_NAME}`;

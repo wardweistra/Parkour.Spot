@@ -11,10 +11,13 @@ interface Props {
   fit?: "cover" | "contain";
   /** Empty-state glyph when there is no usable image. */
   variant?: "photo" | "source";
+  /** Required when `src` is set (list photos and source logos). */
+  alt?: string;
 }
 
-const {src, size = 64, fit = "cover", variant = "photo"} = Astro.props;
+const {src, size = 64, fit = "cover", variant = "photo", alt = ""} = Astro.props;
 const url = typeof src === "string" ? src.trim() : "";
+const imageAlt = url ? alt.trim() : "";
 ---
 
 <div
@@ -23,7 +26,7 @@ const url = typeof src === "string" ? src.trim() : "";
     {"stack-list__thumb--lg": size === 96},
     {"stack-list__thumb--contain": fit === "contain"},
   ]}
-  aria-hidden="true"
+  aria-hidden={imageAlt ? undefined : "true"}
 >
   {
     variant === "source" ? (
@@ -67,7 +70,7 @@ const url = typeof src === "string" ? src.trim() : "";
     url && (
       <img
         src={url}
-        alt=""
+        alt={imageAlt}
         width={size}
         height={size}
         loading="lazy"

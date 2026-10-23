@@ -8,6 +8,7 @@ import {
 } from "../lib/brand";
 import {APP_DEFINITION, formatUpdatedAt} from "../lib/citation";
 import {loadAboutIndex, useFixtures} from "../lib/snapshots";
+import {escapeHtmlAttr} from "../lib/html";
 import {aboutContactPath} from "../lib/urls";
 
 interface Props {
@@ -44,6 +45,10 @@ const pageTitle =
   title === ABOUT_SITE_TITLE || title.endsWith(` · ${ABOUT_SITE_TITLE}`)
     ? title
     : `${title} · ${ABOUT_SITE_TITLE}`;
+const pageTitleAttr = escapeHtmlAttr(pageTitle);
+const descriptionAttr = escapeHtmlAttr(description);
+const siteNameAttr = escapeHtmlAttr(SITE_NAME);
+const ogImageAltAttr = escapeHtmlAttr(ogImageAlt);
 const analyticsEnabled = import.meta.env.PROD && !useFixtures();
 ---
 
@@ -51,6 +56,7 @@ const analyticsEnabled = import.meta.env.PROD && !useFixtures();
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     {
       analyticsEnabled && (
@@ -82,17 +88,19 @@ const analyticsEnabled = import.meta.env.PROD && !useFixtures();
         </>
       )
     }
-    <title>{pageTitle}</title>
-    <meta name="description" content={description} />
+    <title set:html={pageTitleAttr} />
+    <Fragment set:html={`<meta name="description" content="${descriptionAttr}" />`} />
     {noIndex && <meta name="robots" content="noindex" />}
     <link rel="canonical" href={canonical} />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content={pageTitle} />
-    <meta property="og:description" content={description} />
+    <Fragment set:html={`<meta property="og:title" content="${pageTitleAttr}" />`} />
+    <Fragment
+      set:html={`<meta property="og:description" content="${descriptionAttr}" />`}
+    />
     <meta property="og:url" content={canonical} />
-    <meta property="og:site_name" content={SITE_NAME} />
+    <Fragment set:html={`<meta property="og:site_name" content="${siteNameAttr}" />`} />
     <meta property="og:image" content={ogImage} />
-    <meta property="og:image:alt" content={ogImageAlt} />
+    <Fragment set:html={`<meta property="og:image:alt" content="${ogImageAltAttr}" />`} />
     {
       usesDefaultImage && (
         <>
@@ -102,10 +110,14 @@ const analyticsEnabled = import.meta.env.PROD && !useFixtures();
       )
     }
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={pageTitle} />
-    <meta name="twitter:description" content={description} />
+    <Fragment set:html={`<meta name="twitter:title" content="${pageTitleAttr}" />`} />
+    <Fragment
+      set:html={`<meta name="twitter:description" content="${descriptionAttr}" />`}
+    />
     <meta name="twitter:image" content={ogImage} />
-    <meta name="twitter:image:alt" content={ogImageAlt} />
+    <Fragment
+      set:html={`<meta name="twitter:image:alt" content="${ogImageAltAttr}" />`}
+    />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -127,7 +139,7 @@ const analyticsEnabled = import.meta.env.PROD && !useFixtures();
       <header class="site-header">
         <div class="site-header__inner">
           <a class="site-header__brand" href="/">
-            <img src="/logo-square.svg" alt="" width="36" height="36" />
+            <img src="/logo-square.svg" alt={SITE_NAME} width="36" height="36" />
             <span>{SITE_NAME}</span>
           </a>
           <nav class="site-nav" aria-label="Primary">
