@@ -16,27 +16,27 @@ Used while planning at home and on the go—finding where others are, sharing wh
 
 ## Product Purpose
 
-ParkourSpot is a community atlas for discovering, reporting, rating, and sharing parkour spots worldwide. It exists so the parkour community can find and pass on trustworthy places to train without relying on closed or extractive platforms. Success means spots are easy to find and understand, contribution feels welcoming, and core discovery stays useful for people who are not locked into an account wall.
+Parkour·Spot is a community atlas for discovering, reporting, rating, and sharing parkour spots worldwide. It exists so the parkour community can find and pass on trustworthy places to train without relying on closed or extractive platforms. Success means spots are easy to find and understand, contribution feels welcoming, and core discovery stays useful for people who are not locked into an account wall.
 
 ## Positioning
 
-Core spot discovery and community value stay open—no login or paywall on the map itself. Only optional extras might someday be paid; the basic “find and share spots” promise is never gated. Many neighboring apps lock core content behind accounts or payment; ParkourSpot’s claim is open discovery owned by the community.
+Core spot discovery and community value stay open—no login or paywall on the map itself. Only optional extras might someday be paid; the basic “find and share spots” promise is never gated. Many neighboring apps lock core content behind accounts or payment; Parkour·Spot’s claim is open discovery owned by the community.
 
 ## Operating Context
 
-Planning at home (browse, save, share) and on the go (map, photos, ratings outdoors). Trainers may share locations with students; gym owners and jam/event organizers use the map to attract visitors or surface events. Primary surface is a Flutter web PWA installable on desktop and mobile browsers—not a native iOS/Android app.
+Planning at home (browse, save, share) and on the go (map, photos, ratings outdoors). Trainers may share locations with students; gym owners and jam/event organizers use the map to attract visitors or surface events. Production surface is a Flutter web PWA installable on desktop and mobile browsers.
 
 ## Capabilities and Constraints
 
 Confirmed today: authentication and profiles; spot discovery/search; interactive maps; add spots with photos; ratings/reviews; Firebase backend; user / moderator / admin roles; localization for `en`, `de`, `es`, `fr`, `nl`, `pt`; PWA on web. Live production: [https://Parkour.Spot](https://Parkour.Spot).
 
-Undecided / future: in-app light/dark toggle (system preference today); any paid “extra features” remain unspecified and must not gate core discovery.
+Undecided / future: in-app light/dark toggle (system preference today); any paid “extra features” remain unspecified and must not gate core discovery. Native store apps are exploratory only—Android early alpha, iOS not built; neither is in production, and shipping them is not a confirmed commitment.
 
 Technical stack is established in-repo (Flutter web + Firebase); no greenfield stack choice.
 
 ## Brand Commitments
 
-- **Name:** ParkourSpot (Parkour·Spot in some marketing copy)
+- **Name:** Parkour·Spot (canonical). Fall back to Parkour.Spot or ParkourSpot where the middle dot is unsupported (URLs, identifiers, plain-ASCII contexts).
 - **Personality:** Community-minded · Energetic · Trustworthy
 - **Voice:** By and for the parkour community—from love of the sport and culture, not a cold corporate product or money grab. Must feel from the parkour world, not an outside company “about” it.
 - **Emotional goals:** Belonging and trust; clarity navigating maps and forms; warmth and legitimacy as a community tool—not hype, extraction, or artificial scarcity.
