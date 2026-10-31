@@ -905,7 +905,7 @@ class SyncSourceService extends ChangeNotifier {
       while (hasMore) {
         batches += 1;
         final result = await callable.call({
-          if (lastDocId != null) 'lastDocId': lastDocId,
+          'lastDocId': ?lastDocId,
         });
         final data = result.data;
         if (data == null) return null;
