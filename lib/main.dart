@@ -15,6 +15,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:provider/provider.dart';
 import 'package:parkour_spot/services/auth_service.dart';
 import 'package:parkour_spot/services/event_map_service.dart';
+import 'package:parkour_spot/services/community_activity_service.dart';
 import 'package:parkour_spot/services/spot_service.dart';
 import 'package:parkour_spot/services/spot_report_service.dart';
 import 'package:parkour_spot/services/event_report_service.dart';
@@ -297,6 +298,7 @@ class _ParkourSpotAppState extends State<ParkourSpotApp> {
         ChangeNotifierProvider(create: (_) => AdminPushSubscriptionsService()),
         ChangeNotifierProvider(create: (_) => SpotService()),
         ChangeNotifierProvider(create: (_) => EventMapService()),
+        ChangeNotifierProvider(create: (_) => CommunityActivityService()),
         ChangeNotifierProvider(create: (_) => SyncSourceService()),
         ChangeNotifierProvider(create: (_) => ApiClientService()),
         ChangeNotifierProvider(

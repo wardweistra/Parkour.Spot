@@ -258,6 +258,15 @@ const {
 } = require("./lib/spot-duplicate-review");
 const {executeEventsInBoundsQuery} = require("./lib/events-in-bounds");
 const {
+  syncSpotAddedActivity,
+  syncSpotPhotoAddedActivity,
+  syncSpotCheckInActivity,
+  syncSpotTrainingPlanActivity,
+  syncCommunityActivityForSpotChange,
+  executeCommunityActivityInBoundsQuery,
+  backfillCommunityActivity,
+} = require("./lib/community-activity");
+const {
   lookupTimeZoneFromCoordinates,
 } = require("./lib/timezone-lookup");
 const {
@@ -1241,6 +1250,39 @@ exports.getEventsInBounds = onCall(
     },
 );
 
+/**
+ * Explore "Community" stream: recent spot/photo/check-in activity and upcoming
+ * training plans + events within map bounds (see lib/community-activity.js).
+ */
+exports.getCommunityActivityInBounds = onCall(
+    {region: "europe-west1", timeoutSeconds: 60, memory: "512MiB"},
+    async (request) => {
+      try {
+        return await executeCommunityActivityInBoundsQuery(db, request.data || {});
+      } catch (error) {
+        console.error("getCommunityActivityInBounds error", error);
+        return {success: false, error: error.message};
+      }
+    },
+);
+
+// Admin callable to rebuild communityActivity from source collections.
+exports.backfillCommunityActivity = onCall(
+    {region: "europe-west1", timeoutSeconds: 540, memory: "512MiB"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {purge = false} = request.data || {};
+        const result = await backfillCommunityActivity(db, {purge: purge === true});
+        console.log("backfillCommunityActivity:", result);
+        return {success: true, ...result};
+      } catch (error) {
+        console.error("backfillCommunityActivity error:", error);
+        throw new HttpsError("internal", error.message);
+      }
+    },
+);
+
 // ========== Ratings Aggregation Helpers ==========
 /**
  * Helper function to fetch wilsonLowerBoundAvg from settings
@@ -1618,6 +1660,58 @@ exports.onSpotCreated = onDocumentCreated(
       } catch (e) {
         console.error("onSpotCreated nearby notifications error", e);
       }
+      try {
+        await syncSpotAddedActivity(db, spotId, spotData);
+      } catch (e) {
+        console.error("onSpotCreated community activity error", e);
+      }
+    },
+);
+
+// Explore Community stream: mirror public check-ins into communityActivity.
+exports.onSpotCheckInWrittenForCommunityActivity = onDocumentWritten(
+    {document: "spotCheckIns/{checkInId}", region: "europe-west1"},
+    async (event) => {
+      const checkInId = event.params.checkInId;
+      const afterData = event.data && event.data.after.exists ?
+        (event.data.after.data() || {}) :
+        null;
+      try {
+        await syncSpotCheckInActivity(db, checkInId, afterData);
+      } catch (e) {
+        console.error("onSpotCheckInWrittenForCommunityActivity error", {checkInId, e});
+      }
+    },
+);
+
+// Explore Community stream: mirror public training plans into communityActivity.
+exports.onSpotTrainingPlanWrittenForCommunityActivity = onDocumentWritten(
+    {document: "spotTrainingPlans/{planId}", region: "europe-west1"},
+    async (event) => {
+      const planId = event.params.planId;
+      const afterData = event.data && event.data.after.exists ?
+        (event.data.after.data() || {}) :
+        null;
+      try {
+        await syncSpotTrainingPlanActivity(db, planId, afterData);
+      } catch (e) {
+        console.error("onSpotTrainingPlanWrittenForCommunityActivity error", {planId, e});
+      }
+    },
+);
+
+// Explore Community stream: photo additions are recorded in auditLog
+// (approved suggestions and staff edits), not on the spot document itself.
+exports.onAuditLogCreatedForCommunityActivity = onDocumentCreated(
+    {document: "auditLog/{logId}", region: "europe-west1"},
+    async (event) => {
+      const logId = event.params.logId;
+      const logData = event.data ? (event.data.data() || {}) : {};
+      try {
+        await syncSpotPhotoAddedActivity(db, logId, logData);
+      } catch (e) {
+        console.error("onAuditLogCreatedForCommunityActivity error", {logId, e});
+      }
     },
 );
 
@@ -1806,6 +1900,16 @@ exports.onSpotUpdated = onDocumentUpdated(
         } catch (err) {
           console.error("onSpotUpdated event rematerialize error", {spotId, err});
         }
+        try {
+          const activity = await syncCommunityActivityForSpotChange(
+              db, spotId, beforeData, afterData,
+          );
+          if (activity.deleted > 0 || activity.updated > 0) {
+            console.log("Synced community activity for spot:", {spotId, ...activity});
+          }
+        } catch (err) {
+          console.error("onSpotUpdated community activity error", {spotId, err});
+        }
       }
 
       if (nameBefore === nameAfter && cityBefore === cityAfter) return;
@@ -1823,6 +1927,12 @@ exports.onSpotDeleted = onDocumentDeleted(
     {document: "spots/{spotId}", region: "europe-west1"},
     async (event) => {
       const spotId = event.params.spotId;
+      try {
+        const beforeData = event.data ? (event.data.data() || {}) : {};
+        await syncCommunityActivityForSpotChange(db, spotId, beforeData, null);
+      } catch (err) {
+        console.error("onSpotDeleted community activity error", {spotId, err});
+      }
       const termsSnapshot = await db.collection("spotSearchTerms")
           .where("spotId", "==", spotId)
           .get();

@@ -246,6 +246,13 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // Explore Community stream: geo-indexed public activity (new spots, photos,
+    // public check-ins and training plans). Written by Cloud Functions only.
+    match /communityActivity/{activityId} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
     // Spot check-ins (one document per check-in event; query by userId and/or spotId)
     match /spotCheckIns/{checkInId} {
       function spotCheckInCommentOk(data) {

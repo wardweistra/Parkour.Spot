@@ -203,4 +203,119 @@ void main() {
     expect(_legendSvg(MarkerIconUtils.mapPinEventLegendAsset), findsOneWidget);
     expect(find.text('spots'), findsOneWidget);
   });
+
+  testWidgets('community segment is hidden without a label', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ExploreBottomSheetHeader(
+            mode: ExploreBottomSheetHeader.modeSpots,
+            spotsLabel: '12 spots',
+            eventsLabel: '3 events',
+            isSheetOpen: false,
+            onModeChanged: (_) {},
+            onToggleSheet: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byIcon(ExploreBottomSheetHeader.communityIcon), findsNothing);
+  });
+
+  testWidgets('tapping the community segment selects community mode', (
+    tester,
+  ) async {
+    String? selected;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ExploreBottomSheetHeader(
+            mode: ExploreBottomSheetHeader.modeSpots,
+            spotsLabel: '12 spots',
+            eventsLabel: '3 events',
+            communityLabel: '7 updates',
+            isSheetOpen: true,
+            onModeChanged: (next) => selected = next,
+            onToggleSheet: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byIcon(ExploreBottomSheetHeader.communityIcon), findsOneWidget);
+    await tester.tap(find.text('7 updates'));
+    await tester.pump();
+
+    expect(selected, ExploreBottomSheetHeader.modeCommunity);
+  });
+
+  testWidgets('wide pill keeps full labels on every segment', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ExploreBottomSheetHeader(
+            mode: ExploreBottomSheetHeader.modeCommunity,
+            spotsLabel: '12 spots',
+            eventsLabel: '3 events',
+            communityLabel: '7 updates',
+            spotsCompactLabel: '12',
+            eventsCompactLabel: '3',
+            communityCompactLabel: '7',
+            isSheetOpen: true,
+            onModeChanged: (_) {},
+            onToggleSheet: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('12 spots'), findsOneWidget);
+    expect(find.text('3 events'), findsOneWidget);
+    expect(find.text('7 updates'), findsOneWidget);
+    expect(find.text('12'), findsNothing);
+  });
+
+  testWidgets(
+    'narrow pill collapses unselected segments to their compact labels',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                // Logo + chevron leave the pill under the breakpoint
+                // (test fonts are wide, so keep room for the content).
+                width: ExploreBottomSheetHeader.compactPillBreakpoint + 60,
+                child: ExploreBottomSheetHeader(
+                  mode: ExploreBottomSheetHeader.modeEvents,
+                  spotsLabel: '12 spots',
+                  eventsLabel: '3 events',
+                  communityLabel: '7 updates',
+                  spotsCompactLabel: '12',
+                  eventsCompactLabel: '3',
+                  communityCompactLabel: '7',
+                  spotsDetailSuffix: '100 best shown',
+                  isSheetOpen: true,
+                  onModeChanged: (_) {},
+                  onToggleSheet: () {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('3 events'), findsOneWidget);
+      expect(find.text('12'), findsOneWidget);
+      expect(find.text('7'), findsOneWidget);
+      expect(find.text('12 spots'), findsNothing);
+      expect(find.text('7 updates'), findsNothing);
+      // Detail suffix is dropped with the compact label.
+      expect(find.text('100 best shown'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

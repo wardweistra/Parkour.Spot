@@ -56,6 +56,14 @@ class SpotDataScreen extends StatelessWidget {
                 onTap: () => SpotDataActions.backfillSpotNameSearch(context),
               ),
               AdminToolTile(
+                icon: Icons.groups_2_outlined,
+                title: 'Backfill community activity',
+                subtitle:
+                    'Rebuild the geo-indexed communityActivity stream for Explore',
+                showChevron: false,
+                onTap: () => SpotDataActions.backfillCommunityActivity(context),
+              ),
+              AdminToolTile(
                 icon: Icons.star_rate,
                 title: 'Recompute ratings for rated spots',
                 subtitle:

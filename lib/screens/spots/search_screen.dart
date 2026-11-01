@@ -19,6 +19,11 @@ import '../../utils/explore_events_utils.dart';
 import '../../utils/explore_spots_utils.dart';
 import '../../widgets/event_card.dart';
 import '../../widgets/explore_bottom_sheet_header.dart';
+import '../../models/community_activity.dart';
+import '../../services/community_activity_service.dart';
+import '../../widgets/community_activity_stream.dart';
+import '../../widgets/spot_check_in_presence.dart'
+    show navigateToUserProfileForCheckIn;
 import '../../services/sync_source_service.dart';
 import '../../services/search_state_service.dart';
 import '../../services/url_service.dart';
@@ -347,6 +352,12 @@ class SearchScreenState extends State<SearchScreen>
   List<EventMapPin> _visibleEvents = [];
   Map<String, EventMapPin> _eventPinBySpotId = {};
   bool _isLoadingEventsForView = false;
+  CommunityActivityFeed _loadedCommunityFeed = CommunityActivityFeed.empty;
+  bool _isLoadingCommunityForView = false;
+
+  /// True when the last community-stream load for this view failed; spots
+  /// and events still load independently.
+  bool _communityLoadFailed = false;
 
   /// False until the first map-data load for this screen finishes, so the
   /// header does not claim "0 spots" before anything has been fetched.
@@ -1416,6 +1427,7 @@ class SearchScreenState extends State<SearchScreen>
     setState(() {
       _isLoadingSpotsForView = true;
       _isLoadingEventsForView = true;
+      _isLoadingCommunityForView = true;
     });
 
     try {
@@ -1424,6 +1436,10 @@ class SearchScreenState extends State<SearchScreen>
       if (!mounted) return;
       final spotService = Provider.of<SpotService>(context, listen: false);
       final eventMapService = Provider.of<EventMapService>(
+        context,
+        listen: false,
+      );
+      final communityService = Provider.of<CommunityActivityService>(
         context,
         listen: false,
       );
@@ -1474,10 +1490,14 @@ class SearchScreenState extends State<SearchScreen>
           maxLng,
           limit: 100,
         ),
+        _loadCommunityFeed(communityService, minLat, maxLat, minLng, maxLng),
       ]);
 
       final ranked = results[0] as Map<String, dynamic>;
       final eventsResult = results[1] as EventsInBoundsResult;
+      final communityFeed = results[2] as CommunityActivityFeed?;
+      _loadedCommunityFeed = communityFeed ?? CommunityActivityFeed.empty;
+      _communityLoadFailed = communityFeed == null;
 
       _loadedSpots = await _mergeActiveSpotListSpots(
         (ranked['spots'] as List<Spot>?) ?? <Spot>[],
@@ -1499,9 +1519,32 @@ class SearchScreenState extends State<SearchScreen>
         setState(() {
           _isLoadingSpotsForView = false;
           _isLoadingEventsForView = false;
+          _isLoadingCommunityForView = false;
           _hasLoadedMapData = true;
         });
       }
+    }
+  }
+
+  /// Community stream load that never throws, so a failing callable cannot
+  /// take the spots and events lists down with it. `null` means failure.
+  Future<CommunityActivityFeed?> _loadCommunityFeed(
+    CommunityActivityService service,
+    double minLat,
+    double maxLat,
+    double minLng,
+    double maxLng,
+  ) async {
+    try {
+      return await service.getCommunityActivityInBounds(
+        minLat,
+        maxLat,
+        minLng,
+        maxLng,
+      );
+    } catch (e) {
+      debugPrint('Error loading community activity for current view: $e');
+      return null;
     }
   }
 
@@ -3226,7 +3269,82 @@ class SearchScreenState extends State<SearchScreen>
     );
   }
 
+  Widget _buildCommunityStream() {
+    return CommunityActivityStream(
+      feed: _loadedCommunityFeed,
+      onOpenSpot: (item) {
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLng(LatLng(item.latitude, item.longitude)),
+        );
+        context.push(
+          UrlService.generateNavigationUrl(
+            item.spotId,
+            countryCode: item.countryCode,
+            city: item.city,
+          ),
+        );
+      },
+      onOpenEvent: (pin) {
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLng(LatLng(pin.latitude, pin.longitude)),
+        );
+        context.push('/event/${pin.eventId}');
+      },
+      onOpenActor: (userId) => navigateToUserProfileForCheckIn(context, userId),
+    );
+  }
+
+  Widget _buildExploreCommunityEmptyState(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final failed = _communityLoadFailed;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              failed
+                  ? Icons.cloud_off_outlined
+                  : ExploreBottomSheetHeader.communityIcon,
+              size: 64,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              failed
+                  ? l10n.communityStreamLoadFailed
+                  : l10n.exploreNoCommunityArea,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            if (failed)
+              TextButton.icon(
+                onPressed: _isLoadingCommunityForView
+                    ? null
+                    : _loadMapDataForCurrentView,
+                icon: const Icon(Icons.refresh),
+                label: Text(l10n.communityStreamRetry),
+              )
+            else
+              Text(
+                l10n.exploreNoCommunityAreaHint,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   int _exploreSpotCountForHeader() => _totalSpotsInView ?? _visibleSpots.length;
+
+  int _exploreCommunityCountForHeader() => _loadedCommunityFeed.itemCount;
 
   String _exploreFiltersDoneLabel(AppLocalizations l10n) {
     if (_isLoadingMapData) {
@@ -4213,131 +4331,158 @@ class SearchScreenState extends State<SearchScreen>
                                         ),
                                         child: ValueListenableBuilder<String>(
                                           valueListenable: _exploreListMode,
-                                          builder:
-                                              (context, exploreListMode, _) {
-                                                final l10n =
-                                                    AppLocalizations.of(
-                                                      context,
-                                                    )!;
-                                                return ExploreBottomSheetHeader(
-                                                  mode: exploreListMode,
-                                                  spotsLabel: _hasLoadedMapData
-                                                      ? l10n.exploreSpotCountShort(
-                                                          _exploreSpotCountForHeader(),
-                                                        )
-                                                      : l10n
-                                                            .exploreSpotsLoadingLabel,
-                                                  eventsLabel: _hasLoadedMapData
-                                                      ? l10n.exploreEventCountShort(
-                                                          _exploreEventCountForHeader(),
-                                                        )
-                                                      : l10n
-                                                            .exploreEventsLoadingLabel,
-                                                  spotsLoading:
-                                                      _isLoadingSpotsForView ||
-                                                      !_hasLoadedMapData,
-                                                  eventsLoading:
-                                                      _isLoadingEventsForView ||
-                                                      !_hasLoadedMapData,
-                                                  spotsDetailSuffix:
-                                                      _exploreSpotsSegmentSuffix(
-                                                        l10n,
-                                                      ),
-                                                  isSheetOpen:
-                                                      _isBottomSheetOpen,
-                                                  onModeChanged: (mode) {
-                                                    _exploreListMode.value =
-                                                        mode;
-                                                  },
-                                                  onToggleSheet:
-                                                      _toggleBottomSheet,
-                                                );
+                                          builder: (context, exploreListMode, _) {
+                                            final l10n = AppLocalizations.of(
+                                              context,
+                                            )!;
+                                            return ExploreBottomSheetHeader(
+                                              mode: exploreListMode,
+                                              spotsLabel: _hasLoadedMapData
+                                                  ? l10n.exploreSpotCountShort(
+                                                      _exploreSpotCountForHeader(),
+                                                    )
+                                                  : l10n.exploreSpotsLoadingLabel,
+                                              eventsLabel: _hasLoadedMapData
+                                                  ? l10n.exploreEventCountShort(
+                                                      _exploreEventCountForHeader(),
+                                                    )
+                                                  : l10n.exploreEventsLoadingLabel,
+                                              communityLabel: _hasLoadedMapData
+                                                  ? l10n.exploreCommunityCountShort(
+                                                      _exploreCommunityCountForHeader(),
+                                                    )
+                                                  : l10n.exploreCommunityLoadingLabel,
+                                              spotsCompactLabel:
+                                                  _hasLoadedMapData
+                                                  ? '${_exploreSpotCountForHeader()}'
+                                                  : null,
+                                              eventsCompactLabel:
+                                                  _hasLoadedMapData
+                                                  ? '${_exploreEventCountForHeader()}'
+                                                  : null,
+                                              communityCompactLabel:
+                                                  _hasLoadedMapData
+                                                  ? '${_exploreCommunityCountForHeader()}'
+                                                  : null,
+                                              spotsLoading:
+                                                  _isLoadingSpotsForView ||
+                                                  !_hasLoadedMapData,
+                                              eventsLoading:
+                                                  _isLoadingEventsForView ||
+                                                  !_hasLoadedMapData,
+                                              communityLoading:
+                                                  _isLoadingCommunityForView ||
+                                                  !_hasLoadedMapData,
+                                              spotsDetailSuffix:
+                                                  _exploreSpotsSegmentSuffix(
+                                                    l10n,
+                                                  ),
+                                              isSheetOpen: _isBottomSheetOpen,
+                                              onModeChanged: (mode) {
+                                                _exploreListMode.value = mode;
                                               },
+                                              onToggleSheet: _toggleBottomSheet,
+                                            );
+                                          },
                                         ),
                                       ),
 
                                       if (_isBottomSheetOpen)
                                         Expanded(
                                           child: RepaintBoundary(
-                                            child:
-                                                ValueListenableBuilder<String>(
-                                                  valueListenable:
-                                                      _exploreListMode,
-                                                  builder: (context, exploreListMode, _) {
-                                                    return exploreListMode ==
-                                                            ExploreBottomSheetHeader
-                                                                .modeEvents
-                                                        ? (_visibleEvents
-                                                                  .isEmpty
-                                                              ? _buildExploreEventsEmptyState(
-                                                                  context,
-                                                                )
-                                                              : _buildEventsList())
-                                                        : (_visibleSpots
-                                                                  .isEmpty
-                                                              ? Center(
-                                                                  child: Column(
-                                                                    mainAxisAlignment:
-                                                                        MainAxisAlignment
-                                                                            .center,
-                                                                    children: [
-                                                                      Icon(
-                                                                        _searchQuery.isNotEmpty
-                                                                            ? Icons.search_off
-                                                                            : Icons.location_off,
-                                                                        size: 64,
-                                                                        color: Theme.of(context)
-                                                                            .colorScheme
-                                                                            .onSurface
-                                                                            .withValues(
-                                                                              alpha: 0.5,
-                                                                            ),
-                                                                      ),
-                                                                      const SizedBox(
-                                                                        height:
-                                                                            16,
-                                                                      ),
-                                                                      Text(
-                                                                        _searchQuery.isNotEmpty
-                                                                            ? AppLocalizations.of(
-                                                                                context,
-                                                                              )!.exploreNoSpotsSearch
-                                                                            : AppLocalizations.of(
-                                                                                context,
-                                                                              )!.exploreNoSpotsArea,
-                                                                        style: Theme.of(
+                                            child: ValueListenableBuilder<String>(
+                                              valueListenable: _exploreListMode,
+                                              builder: (context, exploreListMode, _) {
+                                                if (exploreListMode ==
+                                                    ExploreBottomSheetHeader
+                                                        .modeCommunity) {
+                                                  return _loadedCommunityFeed
+                                                          .isEmpty
+                                                      ? _buildExploreCommunityEmptyState(
+                                                          context,
+                                                        )
+                                                      : _buildCommunityStream();
+                                                }
+                                                return exploreListMode ==
+                                                        ExploreBottomSheetHeader
+                                                            .modeEvents
+                                                    ? (_visibleEvents.isEmpty
+                                                          ? _buildExploreEventsEmptyState(
+                                                              context,
+                                                            )
+                                                          : _buildEventsList())
+                                                    : (_visibleSpots.isEmpty
+                                                          ? Center(
+                                                              child: Column(
+                                                                mainAxisAlignment:
+                                                                    MainAxisAlignment
+                                                                        .center,
+                                                                children: [
+                                                                  Icon(
+                                                                    _searchQuery
+                                                                            .isNotEmpty
+                                                                        ? Icons
+                                                                              .search_off
+                                                                        : Icons
+                                                                              .location_off,
+                                                                    size: 64,
+                                                                    color:
+                                                                        Theme.of(
                                                                           context,
-                                                                        ).textTheme.headlineSmall,
-                                                                      ),
-                                                                      const SizedBox(
-                                                                        height:
-                                                                            8,
-                                                                      ),
-                                                                      Text(
-                                                                        _searchQuery.isNotEmpty
-                                                                            ? AppLocalizations.of(
+                                                                        ).colorScheme.onSurface.withValues(
+                                                                          alpha:
+                                                                              0.5,
+                                                                        ),
+                                                                  ),
+                                                                  const SizedBox(
+                                                                    height: 16,
+                                                                  ),
+                                                                  Text(
+                                                                    _searchQuery
+                                                                            .isNotEmpty
+                                                                        ? AppLocalizations.of(
+                                                                            context,
+                                                                          )!.exploreNoSpotsSearch
+                                                                        : AppLocalizations.of(
+                                                                            context,
+                                                                          )!.exploreNoSpotsArea,
+                                                                    style: Theme.of(
+                                                                      context,
+                                                                    ).textTheme.headlineSmall,
+                                                                  ),
+                                                                  const SizedBox(
+                                                                    height: 8,
+                                                                  ),
+                                                                  Text(
+                                                                    _searchQuery
+                                                                            .isNotEmpty
+                                                                        ? AppLocalizations.of(
+                                                                            context,
+                                                                          )!.exploreNoSpotsSearchHint
+                                                                        : AppLocalizations.of(
+                                                                            context,
+                                                                          )!.exploreNoSpotsMapHint,
+                                                                    textAlign:
+                                                                        TextAlign
+                                                                            .center,
+                                                                    style: Theme.of(context)
+                                                                        .textTheme
+                                                                        .bodyMedium
+                                                                        ?.copyWith(
+                                                                          color:
+                                                                              Theme.of(
                                                                                 context,
-                                                                              )!.exploreNoSpotsSearchHint
-                                                                            : AppLocalizations.of(
-                                                                                context,
-                                                                              )!.exploreNoSpotsMapHint,
-                                                                        textAlign:
-                                                                            TextAlign.center,
-                                                                        style: Theme.of(context)
-                                                                            .textTheme
-                                                                            .bodyMedium
-                                                                            ?.copyWith(
-                                                                              color: Theme.of(context).colorScheme.onSurface.withValues(
+                                                                              ).colorScheme.onSurface.withValues(
                                                                                 alpha: 0.7,
                                                                               ),
-                                                                            ),
-                                                                      ),
-                                                                    ],
+                                                                        ),
                                                                   ),
-                                                                )
-                                                              : _buildSpotsList());
-                                                  },
-                                                ),
+                                                                ],
+                                                              ),
+                                                            )
+                                                          : _buildSpotsList());
+                                              },
+                                            ),
                                           ),
                                         ),
                                     ],

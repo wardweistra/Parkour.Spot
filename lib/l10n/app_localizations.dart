@@ -1810,6 +1810,138 @@ abstract class AppLocalizations {
   /// **'events'**
   String get exploreEventsLoadingLabel;
 
+  /// Explore community toggle label: number of community activity items in the map view
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 update} other{{count} updates}}'**
+  String exploreCommunityCountShort(int count);
+
+  /// Explore community toggle label shown before the first community activity for the map view has loaded
+  ///
+  /// In en, this message translates to:
+  /// **'community'**
+  String get exploreCommunityLoadingLabel;
+
+  /// Explore community stream: empty state title
+  ///
+  /// In en, this message translates to:
+  /// **'No community activity in this area'**
+  String get exploreNoCommunityArea;
+
+  /// Explore community stream: empty state hint
+  ///
+  /// In en, this message translates to:
+  /// **'Check in, plan a training session or add a spot to get things going'**
+  String get exploreNoCommunityAreaHint;
+
+  /// Explore community stream: error state title
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load community activity'**
+  String get communityStreamLoadFailed;
+
+  /// Explore community stream: retry button in the error state
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get communityStreamRetry;
+
+  /// Explore community stream: button that expands older past activity hidden above the recent items
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Show 1 earlier update} other{Show {count} earlier updates}}'**
+  String communityStreamShowEarlier(int count);
+
+  /// Explore community stream: divider label between past activity and upcoming plans/events
+  ///
+  /// In en, this message translates to:
+  /// **'now'**
+  String get communityStreamNowDivider;
+
+  /// Explore community stream: fallback actor name when the user has no display name
+  ///
+  /// In en, this message translates to:
+  /// **'Someone'**
+  String get communityStreamAnonymousActor;
+
+  /// Explore community stream: fallback spot name when none is stored
+  ///
+  /// In en, this message translates to:
+  /// **'Spot'**
+  String get communityStreamSpotFallback;
+
+  /// Explore community stream: someone created a spot
+  ///
+  /// In en, this message translates to:
+  /// **'{name} has added this new spot'**
+  String communityStreamSpotAdded(String name);
+
+  /// Explore community stream: someone added photo(s) to a spot
+  ///
+  /// In en, this message translates to:
+  /// **'{name} has added {count, plural, one{a new photo} other{{count} new photos}} to this spot'**
+  String communityStreamPhotoAdded(String name, int count);
+
+  /// Explore community stream: someone checked in at a spot
+  ///
+  /// In en, this message translates to:
+  /// **'{name} has checked in to this spot'**
+  String communityStreamCheckedIn(String name);
+
+  /// Explore community stream: check-in still active, with its expected end (e.g. '3:45 PM today')
+  ///
+  /// In en, this message translates to:
+  /// **'Here until {until}'**
+  String communityStreamCheckedInUntil(String until);
+
+  /// Explore community stream: someone has a public training plan at a spot
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is planning to train at this spot'**
+  String communityStreamPlanningToTrain(String name);
+
+  /// Explore community stream: event whose time window includes now
+  ///
+  /// In en, this message translates to:
+  /// **'This event is happening now'**
+  String get communityStreamEventHappeningNow;
+
+  /// Explore community stream: event that starts in the future
+  ///
+  /// In en, this message translates to:
+  /// **'This event is coming up'**
+  String get communityStreamEventUpcoming;
+
+  /// Explore community stream: public count of people who marked Going for an event
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No one has marked they are going yet} one{1 person is going} other{{count} people are going}}'**
+  String communityStreamEventGoing(int count);
+
+  /// Explore community stream: public count of people who marked Interested for an event
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 interested} other{{count} interested}}'**
+  String communityStreamEventInterested(int count);
+
+  /// Explore community stream: relative time for activity less than a minute old
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get communityStreamJustNow;
+
+  /// Explore community stream: relative time in minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 min ago} other{{count} min ago}}'**
+  String communityStreamMinutesAgo(int count);
+
+  /// Explore community stream: relative time in hours
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 hour ago} other{{count} hours ago}}'**
+  String communityStreamHoursAgo(int count);
+
   /// Compact install button on explore PWA banner
   ///
   /// In en, this message translates to:
