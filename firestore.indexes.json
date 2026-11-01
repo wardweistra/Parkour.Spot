@@ -435,6 +435,51 @@
         { "fieldPath": "latitude", "order": "ASCENDING" },
         { "fieldPath": "longitude", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "communityActivity",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "timeline", "order": "ASCENDING" },
+        { "fieldPath": "occurredAt", "order": "DESCENDING" },
+        { "fieldPath": "latitude", "order": "DESCENDING" },
+        { "fieldPath": "longitude", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "communityActivity",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "timeline", "order": "ASCENDING" },
+        { "fieldPath": "startAt", "order": "ASCENDING" },
+        { "fieldPath": "endAt", "order": "ASCENDING" },
+        { "fieldPath": "latitude", "order": "ASCENDING" },
+        { "fieldPath": "longitude", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "auditLog",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "action", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spotCheckIns",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isPrivate", "order": "ASCENDING" },
+        { "fieldPath": "checkedInAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spotTrainingPlans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isPrivate", "order": "ASCENDING" },
+        { "fieldPath": "plannedEndAt", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [
