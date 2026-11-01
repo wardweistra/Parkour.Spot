@@ -261,6 +261,37 @@ const {
   lookupTimeZoneFromCoordinates,
 } = require("./lib/timezone-lookup");
 const {
+  LOCATION_QUERY_CACHE_COLLECTION,
+  buildGeocodeQueryUrl,
+  isCachedLocationUsable,
+  locationQueryCacheId,
+  normalizeLanguage,
+  normalizeLocationQuery,
+  parseGeocodeQueryResponse,
+} = require("./lib/location-query-cache");
+
+/**
+ * Set to true once the app sends App Check tokens (see README), to reject
+ * Places/geocoding callables from clients without a valid token. While false,
+ * requests without a token are only logged as "placesAppCheck.missing", so
+ * you can watch that log drop to zero before switching enforcement on.
+ */
+const ENFORCE_PLACES_APP_CHECK = false;
+
+/**
+ * Checks the App Check token on callables that spend Google Maps quota.
+ * @param {Object} request - Callable request.
+ * @param {string} fn - Function name for logging.
+ */
+function assertPlacesAppCheck(request, fn) {
+  if (request.app) return;
+  if (ENFORCE_PLACES_APP_CHECK) {
+    logger.warn("placesAppCheck.rejected", {fn});
+    throw new HttpsError("failed-precondition", "App Check token required");
+  }
+  logger.info("placesAppCheck.missing", {fn});
+}
+const {
   buildUserContributionStats,
   getUserContributionStats,
 } = require("./lib/user-contribution-stats");
@@ -8127,6 +8158,7 @@ exports.searchEventsByTitle = onCall(
 exports.placesAutocomplete = onCall(
     {region: "europe-west1", secrets: ["GOOGLE_MAPS_API_KEY"]},
     async (request) => {
+      assertPlacesAppCheck(request, "placesAutocomplete");
       try {
         const {
           input,
@@ -8213,6 +8245,7 @@ exports.placesAutocomplete = onCall(
 exports.placeDetails = onCall(
     {region: "europe-west1", secrets: ["GOOGLE_MAPS_API_KEY"]},
     async (request) => {
+      assertPlacesAppCheck(request, "placeDetails");
       try {
         const {placeId, sessionToken, language} = request.data || {};
         if (!placeId) {
@@ -8298,6 +8331,86 @@ exports.placeDetails = onCall(
         };
       } catch (error) {
         console.error("Error in placeDetails:", error);
+        return {success: false, error: error.message};
+      }
+    },
+);
+
+// Resolve a country/city page query (e.g. "Amsterdam, Netherlands") to map
+// coordinates. Each query is geocoded once and then served from Firestore, so
+// crawlers rendering every country/city page cost nothing after the first
+// visit. Returns the same fields as placeDetails.
+exports.resolveLocationQuery = onCall(
+    {region: "europe-west1", secrets: ["GOOGLE_MAPS_API_KEY"]},
+    async (request) => {
+      assertPlacesAppCheck(request, "resolveLocationQuery");
+      try {
+        const {query, language: rawLanguage} = request.data || {};
+        const normalizedQuery = normalizeLocationQuery(query);
+        if (!normalizedQuery) {
+          return {success: false, error: "query is required"};
+        }
+        const language = normalizeLanguage(rawLanguage);
+        const cacheRef = db
+            .collection(LOCATION_QUERY_CACHE_COLLECTION)
+            .doc(locationQueryCacheId(normalizedQuery, language));
+
+        const cached = await cacheRef.get();
+        const nowMs = Date.now();
+        if (cached.exists && isCachedLocationUsable(cached.data(), nowMs)) {
+          const entry = cached.data();
+          if (entry.status === "ok") {
+            return {success: true, cached: true, ...entry.details};
+          }
+          return {success: false, cached: true, error: "Location not found"};
+        }
+
+        const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+          throw new Error("Google Maps API key not configured");
+        }
+
+        const url = buildGeocodeQueryUrl(normalizedQuery, apiKey, language);
+        const response = await new Promise((resolve, reject) => {
+          https
+              .get(url, (res) => {
+                let data = "";
+                res.on("data", (chunk) => (data += chunk));
+                res.on("end", () => {
+                  try {
+                    resolve(JSON.parse(data));
+                  } catch (e) {
+                    reject(e);
+                  }
+                });
+              })
+              .on("error", reject);
+        });
+
+        const parsed = parseGeocodeQueryResponse(response);
+        if (parsed.status === "error") {
+          logger.warn("resolveLocationQuery.geocodeError", {
+            query: normalizedQuery,
+            error: parsed.error,
+          });
+          return {success: false, error: parsed.error};
+        }
+
+        await cacheRef.set({
+          query: normalizedQuery,
+          language,
+          status: parsed.status,
+          details: parsed.details,
+          checkedAtMs: nowMs,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+
+        if (parsed.status === "ok") {
+          return {success: true, cached: false, ...parsed.details};
+        }
+        return {success: false, cached: false, error: "Location not found"};
+      } catch (error) {
+        console.error("Error in resolveLocationQuery:", error);
         return {success: false, error: error.message};
       }
     },

@@ -282,6 +282,30 @@ class GeocodingService extends ChangeNotifier {
     }
   }
 
+  /// Resolves a country/city page query (e.g. "Amsterdam, Netherlands") to
+  /// coordinates via the backend, which caches each query in Firestore so
+  /// page loads (including crawlers) don't call Google Places.
+  /// Returns the same fields as [placeDetails], or null if not found.
+  Future<Map<String, dynamic>?> resolveLocationQuery({
+    required String query,
+    String? language,
+  }) async {
+    try {
+      final callable = _functions.httpsCallable('resolveLocationQuery');
+      final result = await callable.call({
+        'query': query,
+        'language': ?language,
+      });
+      if (result.data['success'] == true) {
+        return Map<String, dynamic>.from(result.data as Map);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error resolving location query: $e');
+      return null;
+    }
+  }
+
   /// Place Details to get coordinates and formatted address (server-key via backend)
   /// Returns map with latitude, longitude, formattedAddress, city, countryCode
   Future<Map<String, dynamic>?> placeDetails({

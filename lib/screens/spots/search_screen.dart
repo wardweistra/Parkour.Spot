@@ -307,6 +307,9 @@ class SearchScreenState extends State<SearchScreen>
   /// Bumped by every camera intent; a pending async camera move only applies
   /// if the generation it captured is still current.
   int _cameraIntentGeneration = 0;
+  // Bumped on each map data load so a slower, older response (e.g. the
+  // default location's spots) can't overwrite a newer view's results.
+  int _mapDataLoadGeneration = 0;
   bool _isResolvingInitialLocation = false;
   bool _initialLocationApplied = false;
   bool _isGettingLocation = false;
@@ -1033,24 +1036,17 @@ class SearchScreenState extends State<SearchScreen>
     try {
       final geocoding = Provider.of<GeocodingService>(context, listen: false);
       Map<String, dynamic>? details;
+      // Country/city pages are crawled heavily, so they use the backend's
+      // cached lookup instead of Places Autocomplete + Place Details (which
+      // billed one Place Details call per page load).
       // A second attempt covers Cloud Function cold starts on fresh page loads.
       for (var attempt = 0; attempt < 2 && details == null; attempt++) {
         if (attempt > 0) {
           await Future<void>.delayed(const Duration(milliseconds: 1500));
         }
         if (!isCurrent()) return;
-        _placesSessionToken ??= const Uuid().v4();
-        final results = await geocoding.placesAutocomplete(
-          input: query,
-          sessionToken: _placesSessionToken,
-        );
+        details = await geocoding.resolveLocationQuery(query: query);
         if (!isCurrent()) return;
-        final placeId = results.isEmpty
-            ? null
-            : results.first['placeId'] as String?;
-        if (placeId != null) {
-          details = await _fetchPlaceDetails(placeId);
-        }
       }
       if (details == null) {
         debugPrint('Could not resolve initial location "$query"');
@@ -1413,6 +1409,9 @@ class SearchScreenState extends State<SearchScreen>
       return;
     }
 
+    final generation = ++_mapDataLoadGeneration;
+    bool isCurrent() => mounted && generation == _mapDataLoadGeneration;
+
     setState(() {
       _isLoadingSpotsForView = true;
       _isLoadingEventsForView = true;
@@ -1476,12 +1475,15 @@ class SearchScreenState extends State<SearchScreen>
         ),
       ]);
 
+      if (!isCurrent()) return;
       final ranked = results[0] as Map<String, dynamic>;
       final eventsResult = results[1] as EventsInBoundsResult;
 
-      _loadedSpots = await _mergeActiveSpotListSpots(
+      final mergedSpots = await _mergeActiveSpotListSpots(
         (ranked['spots'] as List<Spot>?) ?? <Spot>[],
       );
+      if (!isCurrent()) return;
+      _loadedSpots = mergedSpots;
       _totalSpotsInView = ranked['totalCount'] as int?;
       _bestShownCount = ranked['shownCount'] as int?;
 
@@ -1495,7 +1497,9 @@ class SearchScreenState extends State<SearchScreen>
       if (!mounted) return;
       debugPrint('Error loading map data for current view: $e');
     } finally {
-      if (mounted) {
+      // Only the newest load clears the loading state; superseded loads
+      // leave it to the load that replaced them.
+      if (isCurrent()) {
         setState(() {
           _isLoadingSpotsForView = false;
           _isLoadingEventsForView = false;

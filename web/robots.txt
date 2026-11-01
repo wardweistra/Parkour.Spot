@@ -1,0 +1,8 @@
+# robots.txt for parkour.spot (the Flutter app; the about site has its own)
+
+User-agent: *
+Disallow: /admin
+Disallow: /login
+Disallow: /profile
+
+Sitemap: https://parkour.spot/sitemap.xml
