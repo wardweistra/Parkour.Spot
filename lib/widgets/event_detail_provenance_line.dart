@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../constants/spot_detail_ui.dart';
 import '../l10n/app_localizations.dart';
 import '../models/parkour_event.dart';
+import '../services/spot_service.dart';
 import '../services/user_profile_service.dart';
 import '../utils/relative_date_localization.dart';
 import 'event_source_details_dialog.dart';
@@ -310,11 +311,14 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
 
       for (var i = 0; i < filteredContributors.length; i++) {
         final contributor = filteredContributors[i];
-        final userName = contributor['userName']?.trim();
         final userId = contributor['userId']?.trim();
-        final label = userName != null && userName.isNotEmpty
-            ? userName
-            : l10n.spotDetailUnknownUser;
+        final isAnonymous = SpotService.isAnonymousContributorUserId(userId);
+        final userName = contributor['userName']?.trim();
+        final label = isAnonymous
+            ? l10n.communityStreamAnonymousActor
+            : (userName != null && userName.isNotEmpty
+                  ? userName
+                  : l10n.spotDetailUnknownUser);
 
         if (i > 0) {
           spans.add(
@@ -327,7 +331,7 @@ class _EventDetailProvenanceLineState extends State<EventDetailProvenanceLine> {
           );
         }
 
-        if (userId != null && userId.isNotEmpty) {
+        if (!isAnonymous && userId != null && userId.isNotEmpty) {
           spans.add(
             TextSpan(
               text: label,

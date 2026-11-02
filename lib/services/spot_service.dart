@@ -20,6 +20,10 @@ import '../utils/youtube_utils.dart';
 import 'audit_log_service.dart';
 
 class SpotService extends ChangeNotifier {
+  /// Sentinel stored on `spots.contributors` for guest suggestions.
+  /// Localized to "Someone" at display time; never credit the moderator.
+  static const String anonymousContributorUserId = '__anonymous__';
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final AuditLogService _auditLogService = AuditLogService();
@@ -463,20 +467,16 @@ class SpotService extends ChangeNotifier {
       List<Map<String, String>> contributors = List.from(
         updatedSpot.contributors ?? [],
       );
-      final resolvedContributor = resolveSuggestionContributor(
-        reporterUserId: reporterUserId,
-        reporterUserName: reporterUserName,
-        approverUserId: moderatorUserId,
-        approverUserName: moderatorUserName,
-      );
-      if (resolvedContributor != null) {
-        final contributorUserId = resolvedContributor['userId']!;
-        final exists = contributors.any(
-          (c) => c['userId'] == contributorUserId,
-        );
-        if (!exists) {
-          contributors.add(resolvedContributor);
-        }
+      final resolvedContributor =
+          resolveSuggestionContributor(
+            reporterUserId: reporterUserId,
+            reporterUserName: reporterUserName,
+          ) ??
+          anonymousSuggestionContributor();
+      final contributorUserId = resolvedContributor['userId']!;
+      final exists = contributors.any((c) => c['userId'] == contributorUserId);
+      if (!exists) {
+        contributors.add(resolvedContributor);
       }
 
       updatedSpot = updatedSpot.copyWith(
@@ -983,24 +983,22 @@ class SpotService extends ChangeNotifier {
         }
       }
 
-      // Update contributors list (credit suggester first, fallback to approver)
+      // Credit the suggester (or anonymous for guests) — never the moderator.
       List<Map<String, String>> updatedContributors = List.from(
         targetSpot.contributors ?? [],
       );
-      final resolvedContributor = resolveSuggestionContributor(
-        reporterUserId: userId,
-        reporterUserName: userName,
-        approverUserId: approvedByUserId,
-        approverUserName: approvedByUserName,
+      final resolvedContributor =
+          resolveSuggestionContributor(
+            reporterUserId: userId,
+            reporterUserName: userName,
+          ) ??
+          anonymousSuggestionContributor();
+      final contributorUserId = resolvedContributor['userId']!;
+      final contributorExists = updatedContributors.any(
+        (c) => c['userId'] == contributorUserId,
       );
-      if (resolvedContributor != null) {
-        final contributorUserId = resolvedContributor['userId']!;
-        final contributorExists = updatedContributors.any(
-          (c) => c['userId'] == contributorUserId,
-        );
-        if (!contributorExists) {
-          updatedContributors.add(resolvedContributor);
-        }
+      if (!contributorExists) {
+        updatedContributors.add(resolvedContributor);
       }
 
       // Update the spot
@@ -1015,15 +1013,21 @@ class SpotService extends ChangeNotifier {
           .doc(finalSpotId)
           .update(updatedSpot.toFirestore(isUpdate: true));
 
-      // Log audit trail (use approver info if provided, otherwise use contributor info)
+      // Audit actor = approver; community credit = suggester (if logged in).
       final auditUserId = approvedByUserId ?? userId;
       final auditUserName = approvedByUserName ?? userName;
+      final suggester = resolveSuggestionContributor(
+        reporterUserId: userId,
+        reporterUserName: userName,
+      );
       if (auditUserId != null && auditUserName != null) {
         await _auditLogService.logPhotoAdded(
           spotId: finalSpotId,
           photoUrls: finalPhotoUrls,
           userId: auditUserId,
           userName: auditUserName,
+          contributorUserId: suggester?['userId'],
+          contributorUserName: suggester?['userName'],
           reportId: reportId,
           originalPhotoUrls:
               photoUrls, // Keep track of original URLs from suggestions
@@ -1043,38 +1047,41 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  /// Credits the logged-in suggester only. Guests return null — callers should
+  /// fall back to [anonymousSuggestionContributor] so moderators are never
+  /// credited for approving someone else's suggestion.
   @visibleForTesting
   static Map<String, String>? resolveSuggestionContributor({
     String? reporterUserId,
     String? reporterUserName,
-    String? approverUserId,
-    String? approverUserName,
   }) {
     final normalizedReporterUserId = reporterUserId?.trim();
-    final normalizedReporterUserName = reporterUserName?.trim();
-    final normalizedApproverUserId = approverUserId?.trim();
-    final normalizedApproverUserName = approverUserName?.trim();
-
-    final hasReporter =
-        normalizedReporterUserId != null && normalizedReporterUserId.isNotEmpty;
-    final selectedUserId = hasReporter
-        ? normalizedReporterUserId
-        : normalizedApproverUserId;
-
-    if (selectedUserId == null || selectedUserId.isEmpty) {
+    if (normalizedReporterUserId == null || normalizedReporterUserId.isEmpty) {
       return null;
     }
 
-    final selectedUserName = hasReporter
-        ? normalizedReporterUserName
-        : normalizedApproverUserName;
-
+    final normalizedReporterUserName = reporterUserName?.trim();
     return <String, String>{
-      'userId': selectedUserId,
-      'userName': (selectedUserName != null && selectedUserName.isNotEmpty)
-          ? selectedUserName
-          : selectedUserId,
+      'userId': normalizedReporterUserId,
+      'userName':
+          (normalizedReporterUserName != null &&
+              normalizedReporterUserName.isNotEmpty)
+          ? normalizedReporterUserName
+          : normalizedReporterUserId,
     };
+  }
+
+  @visibleForTesting
+  static Map<String, String> anonymousSuggestionContributor() {
+    return <String, String>{
+      'userId': anonymousContributorUserId,
+      'userName': '',
+    };
+  }
+
+  static bool isAnonymousContributorUserId(String? userId) {
+    final trimmed = userId?.trim() ?? '';
+    return trimmed.isEmpty || trimmed == anonymousContributorUserId;
   }
 
   // Move photos from /suggestions/ to /rejected/ path (used when rejecting photo suggestions)

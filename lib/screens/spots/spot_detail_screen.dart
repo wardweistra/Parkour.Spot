@@ -832,11 +832,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         // Add each contributor name as a clickable link
         for (int i = 0; i < filteredContributors.length; i++) {
           final contributor = filteredContributors[i];
+          final userId = contributor['userId']?.toString();
+          final isAnonymous = SpotService.isAnonymousContributorUserId(userId);
           final rawName = contributor['userName'];
-          final userName = rawName == null || rawName.toString().trim().isEmpty
-              ? l10n.spotDetailUnknownUser
-              : rawName.toString().trim();
-          final userId = contributor['userId'];
+          final userName = isAnonymous
+              ? l10n.communityStreamAnonymousActor
+              : (rawName == null || rawName.toString().trim().isEmpty
+                    ? l10n.spotDetailUnknownUser
+                    : rawName.toString().trim());
 
           if (i > 0) {
             if (i == filteredContributors.length - 1) {
@@ -850,8 +853,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
             }
           }
 
-          // Make contributor name clickable if we have a user ID
-          if (userId != null) {
+          // Profile link only for real accounts — not anonymous guests.
+          if (!isAnonymous && userId != null && userId.trim().isNotEmpty) {
             textSpans.add(
               TextSpan(
                 text: userName,

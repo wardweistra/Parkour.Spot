@@ -3,12 +3,10 @@ import 'package:parkour_spot/services/spot_service.dart';
 
 void main() {
   group('SpotService.resolveSuggestionContributor', () {
-    test('prefers reporter attribution when reporter id is present', () {
+    test('credits reporter when reporter id is present', () {
       final contributor = SpotService.resolveSuggestionContributor(
         reporterUserId: ' reporter-uid ',
         reporterUserName: 'Reporter Name',
-        approverUserId: 'moderator-uid',
-        approverUserName: 'Moderator Name',
       );
 
       expect(contributor, isNotNull);
@@ -20,8 +18,6 @@ void main() {
       final contributor = SpotService.resolveSuggestionContributor(
         reporterUserId: 'reporter-uid',
         reporterUserName: '   ',
-        approverUserId: 'moderator-uid',
-        approverUserName: 'Moderator Name',
       );
 
       expect(contributor, isNotNull);
@@ -29,28 +25,42 @@ void main() {
       expect(contributor['userName'], 'reporter-uid');
     });
 
-    test('falls back to approver when reporter id missing', () {
+    test('returns null when reporter id missing (never credits moderator)', () {
       final contributor = SpotService.resolveSuggestionContributor(
         reporterUserId: null,
-        reporterUserName: null,
-        approverUserId: ' moderator-uid ',
-        approverUserName: 'Moderator Name',
-      );
-
-      expect(contributor, isNotNull);
-      expect(contributor!['userId'], 'moderator-uid');
-      expect(contributor['userName'], 'Moderator Name');
-    });
-
-    test('returns null when both reporter and approver ids missing', () {
-      final contributor = SpotService.resolveSuggestionContributor(
-        reporterUserId: '   ',
-        reporterUserName: 'Reporter Name',
-        approverUserId: null,
-        approverUserName: null,
+        reporterUserName: 'Guest Name',
       );
 
       expect(contributor, isNull);
+    });
+
+    test('returns null when reporter id is blank', () {
+      final contributor = SpotService.resolveSuggestionContributor(
+        reporterUserId: '   ',
+        reporterUserName: 'Reporter Name',
+      );
+
+      expect(contributor, isNull);
+    });
+  });
+
+  group('SpotService.anonymousSuggestionContributor', () {
+    test('uses the anonymous sentinel without a display name', () {
+      final contributor = SpotService.anonymousSuggestionContributor();
+
+      expect(contributor['userId'], SpotService.anonymousContributorUserId);
+      expect(contributor['userName'], '');
+      expect(
+        SpotService.isAnonymousContributorUserId(contributor['userId']),
+        isTrue,
+      );
+    });
+
+    test('treats empty user ids as anonymous', () {
+      expect(SpotService.isAnonymousContributorUserId(null), isTrue);
+      expect(SpotService.isAnonymousContributorUserId(''), isTrue);
+      expect(SpotService.isAnonymousContributorUserId('  '), isTrue);
+      expect(SpotService.isAnonymousContributorUserId('real-uid'), isFalse);
     });
   });
 }

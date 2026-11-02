@@ -250,40 +250,93 @@ function addedImageUrlsFromAuditLog(logData) {
   return [];
 }
 
+/** Sentinel matching Flutter `SpotService.anonymousContributorUserId`. */
+const ANONYMOUS_CONTRIBUTOR_USER_ID = "__anonymous__";
+
+/**
+ * True when a userId should not be treated as a real account.
+ * @param {?string} userId
+ * @return {boolean}
+ */
+function isAnonymousContributorUserId(userId) {
+  const trimmed = trimmedString(userId);
+  return !trimmed || trimmed === ANONYMOUS_CONTRIBUTOR_USER_ID;
+}
+
 /**
  * Who should be credited for an auditLog photo addition.
- * `photoAdded` credits the suggester stored in `metadata.contributor`
- * (falls back to the approving moderator); `spotEdit` credits the editor.
+ * `photoAdded` credits the suggester in `metadata.contributor` only — never
+ * the approving moderator. Missing/anonymous contributor → null actor
+ * (client shows "Someone"). `spotEdit` credits the editor.
  * @param {Object} logData
  * @return {{userId: ?string, displayName: ?string}}
  */
 function actorFromAuditLog(logData) {
-  const metadata = logData && logData.metadata && typeof logData.metadata === "object" ?
-    logData.metadata :
-    {};
-  const contributor = metadata.contributor && typeof metadata.contributor === "object" ?
-    metadata.contributor :
-    null;
-  if (trimmedString(logData.action) === "photoAdded" && contributor &&
-      trimmedString(contributor.userId)) {
-    return {
-      userId: trimmedString(contributor.userId),
-      displayName: trimmedString(contributor.userName),
-    };
+  const action = trimmedString(logData && logData.action);
+  if (action === "photoAdded") {
+    const metadata = logData.metadata && typeof logData.metadata === "object" ?
+      logData.metadata :
+      {};
+    const contributor = metadata.contributor && typeof metadata.contributor === "object" ?
+      metadata.contributor :
+      null;
+    const contributorUserId = contributor ?
+      trimmedString(contributor.userId) :
+      null;
+    if (contributorUserId && !isAnonymousContributorUserId(contributorUserId)) {
+      return {
+        userId: contributorUserId,
+        displayName: trimmedString(contributor.userName),
+      };
+    }
+    return {userId: null, displayName: null};
   }
   return {
-    userId: trimmedString(logData.userId),
-    displayName: trimmedString(logData.userName),
+    userId: trimmedString(logData && logData.userId),
+    displayName: trimmedString(logData && logData.userName),
   };
 }
 
 /**
+ * Prefer the linked spot report's reporter over audit metadata so purge+backfill
+ * repairs older logs that wrongly stamped the moderator as contributor.
+ * Guest reports (no reporterUserId) yield an anonymous null actor.
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {Object} logData
+ * @return {Promise<{userId: ?string, displayName: ?string}>}
+ */
+async function resolvePhotoAddedActor(db, logData) {
+  const reportId = trimmedString(logData && logData.reportId);
+  if (reportId) {
+    try {
+      const snap = await db.collection("spotReports").doc(reportId).get();
+      if (snap.exists) {
+        const data = snap.data() || {};
+        const reporterUserId = trimmedString(data.reporterUserId);
+        if (reporterUserId && !isAnonymousContributorUserId(reporterUserId)) {
+          return {
+            userId: reporterUserId,
+            displayName: trimmedString(data.reporterName),
+          };
+        }
+        return {userId: null, displayName: null};
+      }
+    } catch (e) {
+      console.error("resolvePhotoAddedActor report lookup failed", {reportId, e});
+    }
+  }
+  return actorFromAuditLog(logData);
+}
+
+/**
  * "Y added a new photo to this spot".
+ * Missing actor → anonymous "Someone" in the client (no actorUserId).
  * @param {string} auditLogId
  * @param {Object} logData
  * @param {Object|null} spotData
  * @param {Object=} options
  * @param {Date=} options.now
+ * @param {{userId: ?string, displayName: ?string}=} options.actor
  * @param {Object=} options.actorProfile displayName / photoURL
  * @return {{id: string, data: Object}|null}
  */
@@ -294,12 +347,12 @@ function buildSpotPhotoAddedActivity(auditLogId, logData, spotData, options = {}
   if (!isSpotEligibleForCommunityActivity(spotData)) return null;
   const addedUrls = addedImageUrlsFromAuditLog(logData);
   if (addedUrls.length === 0) return null;
-  const actor = actorFromAuditLog(logData);
-  if (!actor.userId) return null;
+  const actor = options.actor || actorFromAuditLog(logData);
 
   const now = options.now || new Date();
   const occurredAt = normalizeDate(logData.timestamp) || now;
   const profile = options.actorProfile || {};
+  const hasRealActor = actor.userId && !isAnonymousContributorUserId(actor.userId);
 
   return {
     id: spotPhotoActivityId(auditLogId),
@@ -311,9 +364,11 @@ function buildSpotPhotoAddedActivity(auditLogId, logData, spotData, options = {}
       expiresAt: new Date(occurredAt.getTime() + PAST_ACTIVITY_RETENTION_MS),
       ...pickSpotFields(spotId, spotData),
       ...pickActorFields({
-        userId: actor.userId,
-        displayName: actor.displayName || profile.displayName,
-        photoURL: profile.photoURL,
+        userId: hasRealActor ? actor.userId : null,
+        displayName: hasRealActor ?
+          (actor.displayName || profile.displayName) :
+          null,
+        photoURL: hasRealActor ? profile.photoURL : null,
       }),
       photoCount: addedUrls.length,
       imageUrls: addedUrls.slice(0, MAX_ACTIVITY_IMAGE_URLS),
@@ -572,10 +627,13 @@ async function syncSpotPhotoAddedActivity(db, auditLogId, logData, options = {})
   }
   const spotData = await loadSpotData(db, logData.spotId);
   if (!isSpotEligibleForCommunityActivity(spotData)) return {written: false};
-  const actor = actorFromAuditLog(logData);
-  const actorProfile = await loadActorProfile(db, actor.userId);
+  const actor = await resolvePhotoAddedActor(db, logData);
+  const actorProfile = actor.userId ?
+    await loadActorProfile(db, actor.userId) :
+    {};
   const activity = buildSpotPhotoAddedActivity(auditLogId, logData, spotData, {
     now: options.now,
+    actor,
     actorProfile,
   });
   if (!activity) return {written: false};
@@ -1011,8 +1069,13 @@ async function backfillCommunityActivity(db, options = {}) {
       if (addedImageUrlsFromAuditLog(data).length === 0) continue;
       const spotData = await spotLoader(data.spotId);
       if (!isSpotEligibleForCommunityActivity(spotData)) continue;
-      const actorProfile = await profileLoader(actorFromAuditLog(data).userId);
-      const activity = buildSpotPhotoAddedActivity(doc.id, data, spotData, {now, actorProfile});
+      const actor = await resolvePhotoAddedActor(db, data);
+      const actorProfile = actor.userId ? await profileLoader(actor.userId) : {};
+      const activity = buildSpotPhotoAddedActivity(doc.id, data, spotData, {
+        now,
+        actor,
+        actorProfile,
+      });
       if (!activity) continue;
       await writeCommunityActivity(db, activity);
       result.photosAdded += 1;
@@ -1068,6 +1131,8 @@ module.exports = {
   isTrainingPlanEligibleForCommunityActivity,
   addedImageUrlsFromAuditLog,
   actorFromAuditLog,
+  resolvePhotoAddedActor,
+  isAnonymousContributorUserId,
   buildSpotAddedActivity,
   buildSpotPhotoAddedActivity,
   buildSpotCheckInActivity,

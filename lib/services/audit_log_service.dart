@@ -374,17 +374,27 @@ class AuditLogService {
     }
   }
 
-  /// Log when photos are added to a spot
+  /// Log when photos are added to a spot.
+  ///
+  /// [userId]/[userName] are the approving moderator (audit actor).
+  /// [contributorUserId]/[contributorUserName] are the suggester credited in
+  /// the community feed; omit for guest suggestions.
   Future<void> logPhotoAdded({
     required String spotId,
     required List<String> photoUrls,
     required String? userId,
     required String? userName,
+    String? contributorUserId,
+    String? contributorUserName,
     String? reportId,
     List<String>? originalPhotoUrls,
     String? notes,
   }) async {
     try {
+      final normalizedContributorUserId = contributorUserId?.trim();
+      final hasContributor =
+          normalizedContributorUserId != null &&
+          normalizedContributorUserId.isNotEmpty;
       await _firestore.collection('auditLog').add({
         'action': AuditLogAction.photoAdded.toString().split('.').last,
         'spotId': spotId,
@@ -395,7 +405,11 @@ class AuditLogService {
         'metadata': {
           'photoUrls': photoUrls,
           'originalPhotoUrls': ?originalPhotoUrls,
-          'contributor': {'userId': userId, 'userName': userName},
+          if (hasContributor)
+            'contributor': {
+              'userId': normalizedContributorUserId,
+              'userName': ?contributorUserName?.trim(),
+            },
           if (notes != null && notes.isNotEmpty) 'notes': notes,
         },
       });

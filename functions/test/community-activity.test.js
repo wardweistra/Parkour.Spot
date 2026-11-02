@@ -8,6 +8,7 @@ const {
   PAST_ACTIVITY_RETENTION_MS,
   addedImageUrlsFromAuditLog,
   actorFromAuditLog,
+  resolvePhotoAddedActor,
   buildSpotAddedActivity,
   buildSpotPhotoAddedActivity,
   buildSpotCheckInActivity,
@@ -121,12 +122,81 @@ describe("actorFromAuditLog", () => {
     })).toEqual({userId: "user-9", displayName: "Sam"});
   });
 
+  it("does not fall back to the approving moderator for photoAdded", () => {
+    expect(actorFromAuditLog({
+      action: "photoAdded",
+      userId: "mod-1",
+      userName: "Mod",
+      metadata: {photoUrls: ["https://img/p1.jpg"]},
+    })).toEqual({userId: null, displayName: null});
+  });
+
+  it("treats anonymous contributor sentinel as no actor", () => {
+    expect(actorFromAuditLog({
+      action: "photoAdded",
+      userId: "mod-1",
+      userName: "Mod",
+      metadata: {contributor: {userId: "__anonymous__", userName: ""}},
+    })).toEqual({userId: null, displayName: null});
+  });
+
   it("credits the editor for spotEdit", () => {
     expect(actorFromAuditLog({
       action: "spotEdit",
       userId: "mod-1",
       userName: "Mod",
     })).toEqual({userId: "mod-1", displayName: "Mod"});
+  });
+});
+
+describe("resolvePhotoAddedActor", () => {
+  it("prefers the spot report reporter over wrongly stamped moderator metadata", async () => {
+    const db = {
+      collection: (name) => {
+        expect(name).toBe("spotReports");
+        return {
+          doc: (id) => {
+            expect(id).toBe("report-1");
+            return {
+              get: async () => ({
+                exists: true,
+                data: () => ({
+                  reporterUserId: "user-9",
+                  reporterName: "Sam",
+                }),
+              }),
+            };
+          },
+        };
+      },
+    };
+    await expect(resolvePhotoAddedActor(db, {
+      action: "photoAdded",
+      reportId: "report-1",
+      userId: "mod-1",
+      userName: "Mod",
+      metadata: {contributor: {userId: "mod-1", userName: "Mod"}},
+    })).resolves.toEqual({userId: "user-9", displayName: "Sam"});
+  });
+
+  it("returns anonymous actor for guest reports", async () => {
+    const db = {
+      collection: () => ({
+        doc: () => ({
+          get: async () => ({
+            exists: true,
+            data: () => ({contactEmail: "guest@example.com"}),
+          }),
+        }),
+      }),
+    };
+    await expect(resolvePhotoAddedActor(db, {
+      action: "photoAdded",
+      reportId: "report-guest",
+      userId: "mod-1",
+      userName: "Mod",
+      metadata: {contributor: {userId: "mod-1", userName: "Mod"}},
+    })).resolves.toEqual({userId: null, displayName: null});
   });
 });
 
@@ -157,6 +227,21 @@ describe("buildSpotPhotoAddedActivity", () => {
       imageUrls: ["https://img/p1.jpg", "https://img/p2.jpg"],
       occurredAt: log.timestamp,
     });
+  });
+
+  it("materializes anonymous photo activity without an actor user id", () => {
+    const guestLog = {
+      ...log,
+      metadata: {photoUrls: ["https://img/p1.jpg"]},
+    };
+    const activity = buildSpotPhotoAddedActivity("log-anon", guestLog, SPOT, {
+      now: NOW,
+      actor: {userId: null, displayName: null},
+    });
+    expect(activity.id).toBe("spot_photo_log-anon");
+    expect(activity.data.actorUserId).toBeUndefined();
+    expect(activity.data.actorDisplayName).toBeUndefined();
+    expect(activity.data.photoCount).toBe(1);
   });
 
   it("returns null without added urls or an eligible spot", () => {
