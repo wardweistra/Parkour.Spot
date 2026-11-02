@@ -295,7 +295,9 @@ const ENFORCE_PLACES_APP_CHECK = false;
  */
 function assertPlacesAppCheck(request, fn) {
   if (request.app) return;
-  if (ENFORCE_PLACES_APP_CHECK) {
+  // The emulator suite never enforces, so local runs keep working.
+  const isEmulator = process.env.FUNCTIONS_EMULATOR === "true";
+  if (ENFORCE_PLACES_APP_CHECK && !isEmulator) {
     logger.warn("placesAppCheck.rejected", {fn});
     throw new HttpsError("failed-precondition", "App Check token required");
   }

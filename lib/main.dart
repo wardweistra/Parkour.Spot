@@ -162,7 +162,8 @@ void main() async {
 
   // App Check (web): lets Cloud Functions that spend Google Maps quota verify
   // that calls come from this app. Skipped against the emulators and when no
-  // RECAPTCHA_SITE_KEY is passed at build time.
+  // RECAPTCHA_SITE_KEY is passed at build time. On localhost, web/index.html
+  // switches the SDK to debug-token mode instead of reCAPTCHA.
   const recaptchaSiteKey = String.fromEnvironment('RECAPTCHA_SITE_KEY');
   if (kIsWeb && !useEmulator && recaptchaSiteKey.isNotEmpty) {
     try {

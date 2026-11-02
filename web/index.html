@@ -58,6 +58,15 @@
   </script>
 
   <!-- Google Maps JavaScript API -->
+  <script>
+    // App Check debug mode for local development only. On localhost the
+    // Firebase SDK uses a per-browser debug token (printed in the console)
+    // instead of reCAPTCHA; register it once under App Check -> Apps ->
+    // web app -> Manage debug tokens. Unregistered tokens are rejected.
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    }
+  </script>
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAAhFK9QYxOlbI3ySWTmoFIJKLAl8CL-qo&loading=async"></script>
 
   <!-- Match SplashScreen primary until Flutter paints (avoids white flash). -->
