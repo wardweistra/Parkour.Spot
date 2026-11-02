@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../services/community_activity_service.dart';
 import '../../services/sync_source_service.dart';
 import '../../utils/search_index_backfill_message.dart';
 import 'missing_images_screen.dart';
@@ -298,6 +299,107 @@ class SpotDataActions {
     }
   }
 
+  static Future<void> backfillCommunityActivity(BuildContext context) async {
+    var purge = false;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (c) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Backfill community activity'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Rebuilds the geo-indexed communityActivity collection behind the '
+                'Explore community stream from recent spot creations, photo '
+                'additions, public check-ins and public training plans. Safe to '
+                'run again; existing entries are overwritten in place.',
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: purge,
+                onChanged: (v) => setState(() => purge = v ?? false),
+                title: const Text('Purge existing entries first'),
+                subtitle: const Text(
+                  'Deletes every communityActivity document before rebuilding.',
+                ),
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Run'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirm != true || !context.mounted) return;
+
+    final communityService = context.read<CommunityActivityService>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    late NavigatorState navigator;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) {
+        navigator = Navigator.of(c);
+        return const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Backfilling community activity...'),
+            ],
+          ),
+        );
+      },
+    );
+    try {
+      final result = await communityService.backfillCommunityActivity(
+        purge: purge,
+      );
+      navigator.pop();
+      if (!context.mounted) return;
+      if (result != null && result['success'] == true) {
+        final purgedCount = _formatStatInt(result['purged']);
+        final message =
+            'Backfill completed. New spots: '
+            '${_formatStatInt(result['spotsAdded'])}, photo additions: '
+            '${_formatStatInt(result['photosAdded'])}, check-ins: '
+            '${_formatStatInt(result['checkIns'])}, training plans: '
+            '${_formatStatInt(result['trainingPlans'])}'
+            '${purge ? ', purged: $purgedCount' : ''}.';
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: Colors.green),
+        );
+      } else {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(communityService.error ?? 'Backfill failed'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      navigator.pop();
+      if (!context.mounted) return;
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Backfill failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   static Future<void> backfillSpotHasImages(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -448,9 +550,7 @@ class SpotDataActions {
       } else {
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text(
-              syncService.error ?? 'YouTube CDN rehost failed',
-            ),
+            content: Text(syncService.error ?? 'YouTube CDN rehost failed'),
             backgroundColor: Colors.red,
           ),
         );

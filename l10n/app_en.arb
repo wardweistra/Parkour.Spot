@@ -1318,6 +1318,152 @@
   "@exploreEventsLoadingLabel": {
     "description": "Explore events toggle label shown before the first event count for the map view has loaded"
   },
+  "exploreCommunityCountShort": "{count, plural, one{1 update} other{{count} updates}}",
+  "@exploreCommunityCountShort": {
+    "description": "Explore community toggle label: number of community activity items in the map view",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "exploreCommunityLoadingLabel": "community",
+  "@exploreCommunityLoadingLabel": {
+    "description": "Explore community toggle label shown before the first community activity for the map view has loaded"
+  },
+  "exploreNoCommunityArea": "No community activity in this area",
+  "@exploreNoCommunityArea": {
+    "description": "Explore community stream: empty state title"
+  },
+  "exploreNoCommunityAreaHint": "Check in, plan a training session or add a spot to get things going",
+  "@exploreNoCommunityAreaHint": {
+    "description": "Explore community stream: empty state hint"
+  },
+  "communityStreamLoadFailed": "Could not load community activity",
+  "@communityStreamLoadFailed": {
+    "description": "Explore community stream: error state title"
+  },
+  "communityStreamRetry": "Try again",
+  "@communityStreamRetry": {
+    "description": "Explore community stream: retry button in the error state"
+  },
+  "communityStreamShowEarlier": "{count, plural, one{Show 1 earlier update} other{Show {count} earlier updates}}",
+  "@communityStreamShowEarlier": {
+    "description": "Explore community stream: button that expands older past activity hidden above the recent items",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "communityStreamNowDivider": "now",
+  "@communityStreamNowDivider": {
+    "description": "Explore community stream: divider label between past activity and upcoming plans/events"
+  },
+  "communityStreamAnonymousActor": "Someone",
+  "@communityStreamAnonymousActor": {
+    "description": "Explore community stream: fallback actor name when the user has no display name"
+  },
+  "communityStreamSpotFallback": "Spot",
+  "@communityStreamSpotFallback": {
+    "description": "Explore community stream: fallback spot name when none is stored"
+  },
+  "communityStreamSpotAdded": "{name} has added this new spot",
+  "@communityStreamSpotAdded": {
+    "description": "Explore community stream: someone created a spot",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "communityStreamPhotoAdded": "{name} has added {count, plural, one{a new photo} other{{count} new photos}} to this spot",
+  "@communityStreamPhotoAdded": {
+    "description": "Explore community stream: someone added photo(s) to a spot",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "communityStreamCheckedIn": "{name} has checked in to this spot",
+  "@communityStreamCheckedIn": {
+    "description": "Explore community stream: someone checked in at a spot",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "communityStreamCheckedInUntil": "Here until {until}",
+  "@communityStreamCheckedInUntil": {
+    "description": "Explore community stream: check-in still active, with its expected end (e.g. '3:45 PM today')",
+    "placeholders": {
+      "until": {
+        "type": "String"
+      }
+    }
+  },
+  "communityStreamPlanningToTrain": "{name} is planning to train at this spot",
+  "@communityStreamPlanningToTrain": {
+    "description": "Explore community stream: someone has a public training plan at a spot",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "communityStreamEventHappeningNow": "This event is happening now",
+  "@communityStreamEventHappeningNow": {
+    "description": "Explore community stream: event whose time window includes now"
+  },
+  "communityStreamEventUpcoming": "This event is coming up",
+  "@communityStreamEventUpcoming": {
+    "description": "Explore community stream: event that starts in the future"
+  },
+  "communityStreamEventGoing": "{count, plural, =0{No one has marked they are going yet} one{1 person is going} other{{count} people are going}}",
+  "@communityStreamEventGoing": {
+    "description": "Explore community stream: public count of people who marked Going for an event",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "communityStreamEventInterested": "{count, plural, one{1 interested} other{{count} interested}}",
+  "@communityStreamEventInterested": {
+    "description": "Explore community stream: public count of people who marked Interested for an event",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "communityStreamJustNow": "just now",
+  "@communityStreamJustNow": {
+    "description": "Explore community stream: relative time for activity less than a minute old"
+  },
+  "communityStreamMinutesAgo": "{count, plural, one{1 min ago} other{{count} min ago}}",
+  "@communityStreamMinutesAgo": {
+    "description": "Explore community stream: relative time in minutes",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "communityStreamHoursAgo": "{count, plural, one{1 hour ago} other{{count} hours ago}}",
+  "@communityStreamHoursAgo": {
+    "description": "Explore community stream: relative time in hours",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "explorePwaBannerInstall": "Install",
   "@explorePwaBannerInstall": {
     "description": "Compact install button on explore PWA banner"

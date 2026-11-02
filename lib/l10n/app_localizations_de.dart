@@ -1058,6 +1058,141 @@ class AppLocalizationsDe extends AppLocalizations {
   String get exploreEventsLoadingLabel => 'Events';
 
   @override
+  String exploreCommunityCountShort(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Updates',
+      one: '1 Update',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get exploreCommunityLoadingLabel => 'Community';
+
+  @override
+  String get exploreNoCommunityArea =>
+      'Keine Community-Aktivität in diesem Gebiet';
+
+  @override
+  String get exploreNoCommunityAreaHint =>
+      'Checke ein, plane ein Training oder füge einen Spot hinzu, um loszulegen';
+
+  @override
+  String get communityStreamLoadFailed =>
+      'Community-Aktivität konnte nicht geladen werden';
+
+  @override
+  String get communityStreamRetry => 'Erneut versuchen';
+
+  @override
+  String communityStreamShowEarlier(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count frühere Aktivitäten anzeigen',
+      one: '1 frühere Aktivität anzeigen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get communityStreamNowDivider => 'jetzt';
+
+  @override
+  String get communityStreamAnonymousActor => 'Jemand';
+
+  @override
+  String get communityStreamSpotFallback => 'Spot';
+
+  @override
+  String communityStreamSpotAdded(String name) {
+    return '$name hat diesen neuen Spot hinzugefügt';
+  }
+
+  @override
+  String communityStreamPhotoAdded(String name, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count neue Fotos',
+      one: 'ein neues Foto',
+    );
+    return '$name hat $_temp0 zu diesem Spot hinzugefügt';
+  }
+
+  @override
+  String communityStreamCheckedIn(String name) {
+    return '$name hat an diesem Spot eingecheckt';
+  }
+
+  @override
+  String communityStreamCheckedInUntil(String until) {
+    return 'Hier bis $until';
+  }
+
+  @override
+  String communityStreamPlanningToTrain(String name) {
+    return '$name plant, an diesem Spot zu trainieren';
+  }
+
+  @override
+  String get communityStreamEventHappeningNow =>
+      'Dieses Event findet gerade statt';
+
+  @override
+  String get communityStreamEventUpcoming => 'Dieses Event steht bevor';
+
+  @override
+  String communityStreamEventGoing(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Personen kommen',
+      one: '1 Person kommt',
+      zero: 'Noch niemand hat Zusage gegeben',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String communityStreamEventInterested(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count interessiert',
+      one: '1 interessiert',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get communityStreamJustNow => 'gerade eben';
+
+  @override
+  String communityStreamMinutesAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'vor $count Min.',
+      one: 'vor 1 Min.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String communityStreamHoursAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'vor $count Stunden',
+      one: 'vor 1 Stunde',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get explorePwaBannerInstall => 'Installieren';
 
   @override
