@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:parkour_spot/l10n/app_localizations.dart';
 import 'package:parkour_spot/utils/web_meta_utils.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -156,6 +157,20 @@ void main() async {
     );
   } else {
     await Firebase.initializeApp();
+  }
+
+  // App Check (web): lets Cloud Functions that spend Google Maps quota verify
+  // that calls come from this app. Skipped against the emulators and when no
+  // RECAPTCHA_SITE_KEY is passed at build time.
+  const recaptchaSiteKey = String.fromEnvironment('RECAPTCHA_SITE_KEY');
+  if (kIsWeb && !useEmulator && recaptchaSiteKey.isNotEmpty) {
+    try {
+      await FirebaseAppCheck.instance.activate(
+        providerWeb: ReCaptchaEnterpriseProvider(recaptchaSiteKey),
+      );
+    } catch (e) {
+      debugPrint('App Check activation failed: $e');
+    }
   }
 
   // Connect to emulators if USE_EMULATOR is set

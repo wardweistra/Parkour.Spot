@@ -22,6 +22,9 @@ for var in "${required_vars[@]}"; do
 done
 
 echo "✅ Environment variables loaded"
+if [ -z "$RECAPTCHA_SITE_KEY" ]; then
+    echo "⚠️  RECAPTCHA_SITE_KEY not set: App Check will be off in this build"
+fi
 
 echo "📝 Generating web/firebase-messaging-sw.js..."
 node scripts/generate-firebase-messaging-sw.js || exit 1
@@ -36,6 +39,7 @@ flutter build web --wasm \
   --dart-define=FIREBASE_AUTH_DOMAIN="$FIREBASE_AUTH_DOMAIN" \
   --dart-define=FIREBASE_STORAGE_BUCKET="$FIREBASE_STORAGE_BUCKET" \
   --dart-define=FIREBASE_MEASUREMENT_ID="$FIREBASE_MEASUREMENT_ID" \
+  --dart-define=RECAPTCHA_SITE_KEY="$RECAPTCHA_SITE_KEY" \
   --dart-define=FIREBASE_WEB_PUSH_VAPID_KEY="$FIREBASE_WEB_PUSH_VAPID_KEY"
 
 echo "🎉 Production build complete!"

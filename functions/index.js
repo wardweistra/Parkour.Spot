@@ -279,7 +279,8 @@ const {
 const ENFORCE_PLACES_APP_CHECK = false;
 
 /**
- * Checks the App Check token on callables that spend Google Maps quota.
+ * Checks the App Check token on callables that spend Google Maps quota
+ * (Places, Geocoding and Time Zone).
  * @param {Object} request - Callable request.
  * @param {string} fn - Function name for logging.
  */
@@ -7786,6 +7787,7 @@ exports.backfillEventSearchTerms = onCall(
 exports.lookupTimeZone = onCall(
     {region: "europe-west1", secrets: ["GOOGLE_MAPS_API_KEY"]},
     async (request) => {
+      assertPlacesAppCheck(request, "lookupTimeZone");
       try {
         const {latitude, longitude} = request.data || {};
 
@@ -7825,6 +7827,7 @@ exports.lookupTimeZone = onCall(
 exports.geocodeCoordinates = onCall(
     {region: "europe-west1", secrets: ["GOOGLE_MAPS_API_KEY"]},
     async (request) => {
+      assertPlacesAppCheck(request, "geocodeCoordinates");
       try {
         const {latitude, longitude} = request.data;
 
@@ -8420,6 +8423,7 @@ exports.resolveLocationQuery = onCall(
 exports.reverseGeocodeAddress = onCall(
     {region: "europe-west1", secrets: ["GOOGLE_MAPS_API_KEY"]},
     async (request) => {
+      assertPlacesAppCheck(request, "reverseGeocodeAddress");
       try {
         const {address} = request.data;
 

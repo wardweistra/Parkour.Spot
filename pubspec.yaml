@@ -69,6 +69,7 @@ dependencies:
   google_sign_in: ^7.2.0
   app_links: ^7.0.0
   share_plus: ^13.3.0
+  firebase_app_check: ^0.4.1+3
 
 dependency_overrides:
   # Direct pins still allow firebase_core_web ^3.3.1 to resolve to 3.11.x.
