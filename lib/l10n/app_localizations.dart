@@ -1828,6 +1828,12 @@ abstract class AppLocalizations {
   /// **'Show more upcoming'**
   String get communityStreamShowMoreUpcoming;
 
+  /// Explore activities stream: shown at the top of past history when older pages are exhausted
+  ///
+  /// In en, this message translates to:
+  /// **'Only activity from the last {days} days is shown'**
+  String communityStreamPastHistoryLimit(int days);
+
   /// Explore community stream: divider label between past activity and upcoming plans/events
   ///
   /// In en, this message translates to:

@@ -92,6 +92,9 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
         : null;
     if (feed.hasMorePast && widget.onLoadMorePast != null) {
       entries.add(_ShowEarlierEntry(remainingPast));
+    } else if (!feed.hasMorePast && feed.loadedPastCount > 0) {
+      // Chronological top of the past half: history ends here (90-day window).
+      entries.add(const _PastHistoryLimitEntry());
     }
 
     // Newest first from the API; timeline reads oldest → newest → now.
@@ -142,6 +145,7 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
                     ? null
                     : widget.onLoadMorePast,
               ),
+              _PastHistoryLimitEntry() => const _PastHistoryLimitCaption(),
               _PastEntry(:final item) => CommunityActivityCard(
                 item: item,
                 now: now,
@@ -202,6 +206,10 @@ sealed class _StreamEntry {
 class _ShowEarlierEntry extends _StreamEntry {
   const _ShowEarlierEntry(this.remainingCount);
   final int? remainingCount;
+}
+
+class _PastHistoryLimitEntry extends _StreamEntry {
+  const _PastHistoryLimitEntry();
 }
 
 class _ShowMoreUpcomingEntry extends _StreamEntry {
@@ -300,6 +308,30 @@ class _ShowMoreUpcomingButton extends StatelessWidget {
               )
             : const Icon(Icons.expand_more, size: 18),
         label: Text(l10n.communityStreamShowMoreUpcoming),
+      ),
+    );
+  }
+}
+
+/// Quiet terminus when the past half has no older pages left.
+class _PastHistoryLimitCaption extends StatelessWidget {
+  const _PastHistoryLimitCaption();
+
+  /// Matches server `PAST_ACTIVITY_RETENTION_MS` (90 days).
+  static const int retentionDays = 90;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Text(
+        l10n.communityStreamPastHistoryLimit(retentionDays),
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }

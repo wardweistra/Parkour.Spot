@@ -287,6 +287,7 @@
   "communityStreamShowEarlier": "{count, plural, one{Toon 1 eerdere activiteit} other{Toon {count} eerdere activiteiten}}",
   "communityStreamShowEarlierGeneric": "Toon eerdere activiteiten",
   "communityStreamShowMoreUpcoming": "Toon meer aankomende",
+  "communityStreamPastHistoryLimit": "Alleen activiteit van de laatste {days} dagen wordt getoond",
   "communityStreamNowDivider": "nu",
   "communityStreamAnonymousActor": "Iemand",
   "communityStreamSpotFallback": "Spot",

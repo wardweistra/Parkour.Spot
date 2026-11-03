@@ -1090,6 +1090,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get communityStreamShowMoreUpcoming => 'Afficher plus à venir';
 
   @override
+  String communityStreamPastHistoryLimit(int days) {
+    return 'Seule l’activité des $days derniers jours est affichée';
+  }
+
+  @override
   String get communityStreamNowDivider => 'maintenant';
 
   @override

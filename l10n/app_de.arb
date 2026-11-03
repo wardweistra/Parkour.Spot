@@ -230,6 +230,7 @@
   "communityStreamShowEarlier": "{count, plural, one{1 frühere Aktivität anzeigen} other{{count} frühere Aktivitäten anzeigen}}",
   "communityStreamShowEarlierGeneric": "Frühere Aktivitäten anzeigen",
   "communityStreamShowMoreUpcoming": "Weitere bevorstehende anzeigen",
+  "communityStreamPastHistoryLimit": "Es wird nur Aktivität der letzten {days} Tage angezeigt",
   "communityStreamNowDivider": "jetzt",
   "communityStreamAnonymousActor": "Jemand",
   "communityStreamSpotFallback": "Spot",

@@ -243,6 +243,55 @@ void main() {
     expect(find.textContaining('Person4 '), findsOneWidget);
   });
 
+  testWidgets('shows 90-day history limit when past paging is exhausted', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      CommunityActivityFeed(
+        past: [
+          _item(
+            'c0',
+            CommunityActivityKind.spotCheckIn,
+            occurredAt: _now.subtract(const Duration(hours: 1)),
+            actor: 'Alex',
+          ),
+        ],
+        pastTotal: 1,
+        hasMorePast: false,
+      ),
+    );
+
+    expect(
+      find.text('Only activity from the last 90 days is shown'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('hides 90-day limit while more past pages remain', (tester) async {
+    await _pump(
+      tester,
+      CommunityActivityFeed(
+        past: [
+          _item(
+            'c0',
+            CommunityActivityKind.spotCheckIn,
+            occurredAt: _now.subtract(const Duration(hours: 1)),
+            actor: 'Alex',
+          ),
+        ],
+        pastTotal: 5,
+        hasMorePast: true,
+      ),
+      onLoadMorePast: () {},
+    );
+
+    expect(
+      find.text('Only activity from the last 90 days is shown'),
+      findsNothing,
+    );
+  });
+
   testWidgets('orders plans and events together by start time', (
     tester,
   ) async {

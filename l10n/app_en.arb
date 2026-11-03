@@ -1340,6 +1340,15 @@
   "@communityStreamShowMoreUpcoming": {
     "description": "Explore activities stream: button that loads further upcoming plans and events"
   },
+  "communityStreamPastHistoryLimit": "Only activity from the last {days} days is shown",
+  "@communityStreamPastHistoryLimit": {
+    "description": "Explore activities stream: shown at the top of past history when older pages are exhausted",
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "communityStreamNowDivider": "now",
   "@communityStreamNowDivider": {
     "description": "Explore community stream: divider label between past activity and upcoming plans/events"
