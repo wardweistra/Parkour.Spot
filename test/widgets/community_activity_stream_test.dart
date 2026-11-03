@@ -66,6 +66,10 @@ Future<void> _pump(
   ValueChanged<CommunityActivityItem>? onOpenSpot,
   ValueChanged<EventMapPin>? onOpenEvent,
   ValueChanged<String>? onOpenActor,
+  VoidCallback? onLoadMorePast,
+  VoidCallback? onLoadMoreUpcoming,
+  bool loadingMorePast = false,
+  bool loadingMoreUpcoming = false,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -78,6 +82,10 @@ Future<void> _pump(
           onOpenSpot: onOpenSpot ?? (_) {},
           onOpenEvent: onOpenEvent ?? (_) {},
           onOpenActor: onOpenActor,
+          onLoadMorePast: onLoadMorePast,
+          onLoadMoreUpcoming: onLoadMoreUpcoming,
+          loadingMorePast: loadingMorePast,
+          loadingMoreUpcoming: loadingMoreUpcoming,
         ),
       ),
     ),
@@ -156,15 +164,17 @@ void main() {
     expect(nowTop, lessThan(_topOf(tester, planning)));
     expect(_topOf(tester, planning), lessThan(_topOf(tester, eventUpcoming)));
 
-    // Nothing to expand when the past fits the preview window.
+    // No server paging affordance when the feed says there is nothing more.
     expect(find.textContaining('earlier activity'), findsNothing);
+    expect(find.text('Show more upcoming'), findsNothing);
   });
 
-  testWidgets('collapses older history behind a "show earlier" button', (
+  testWidgets('shows load-more past when hasMorePast and calls the callback', (
     tester,
   ) async {
+    var loadMorePastCalls = 0;
     final past = List.generate(
-      CommunityActivityStream.recentPastPreviewCount + 4,
+      3,
       (i) => _item(
         'c$i',
         CommunityActivityKind.spotCheckIn,
@@ -172,19 +182,65 @@ void main() {
         actor: 'Person$i',
       ),
     );
-    await _pump(tester, CommunityActivityFeed(past: past));
+    await _pump(
+      tester,
+      CommunityActivityFeed(
+        past: past,
+        pastTotal: 7,
+        hasMorePast: true,
+      ),
+      onLoadMorePast: () => loadMorePastCalls++,
+    );
 
     expect(find.text('Show 4 earlier activities'), findsOneWidget);
-    // Newest three are shown (indices 0..2), older ones hidden.
     expect(find.textContaining('Person0 '), findsOneWidget);
     expect(find.textContaining('Person2 '), findsOneWidget);
-    expect(find.textContaining('Person3 '), findsNothing);
 
     await tester.tap(find.text('Show 4 earlier activities'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    expect(loadMorePastCalls, 1);
+  });
 
-    expect(find.text('Show 4 earlier activities'), findsNothing);
-    expect(find.textContaining('Person6 '), findsOneWidget);
+  testWidgets('shows load-more upcoming when hasMoreUpcoming', (tester) async {
+    var loadMoreUpcomingCalls = 0;
+    await _pump(
+      tester,
+      CommunityActivityFeed(
+        events: [_event('soon', _now.add(const Duration(hours: 2)))],
+        hasMoreUpcoming: true,
+      ),
+      onLoadMoreUpcoming: () => loadMoreUpcomingCalls++,
+    );
+
+    expect(find.text('Show more upcoming'), findsOneWidget);
+    await tester.tap(find.text('Show more upcoming'));
+    await tester.pump();
+    expect(loadMoreUpcomingCalls, 1);
+  });
+
+  testWidgets('hides load-more buttons when paging flags are false', (
+    tester,
+  ) async {
+    final past = List.generate(
+      5,
+      (i) => _item(
+        'c$i',
+        CommunityActivityKind.spotCheckIn,
+        occurredAt: _now.subtract(Duration(hours: i + 1)),
+        actor: 'Person$i',
+      ),
+    );
+    await _pump(
+      tester,
+      CommunityActivityFeed(past: past, pastTotal: 5),
+      onLoadMorePast: () {},
+      onLoadMoreUpcoming: () {},
+    );
+
+    expect(find.textContaining('earlier activity'), findsNothing);
+    expect(find.text('Show more upcoming'), findsNothing);
+    // All loaded past rows are visible (no client-side collapse).
+    expect(find.textContaining('Person4 '), findsOneWidget);
   });
 
   testWidgets('orders plans and events together by start time', (
@@ -271,7 +327,7 @@ void main() {
     expect(nowTop, lessThan(_topOf(tester, upcomingEvent)));
   });
 
-  testWidgets('past events count toward the show-earlier preview', (
+  testWidgets('past events are included in remaining earlier count', (
     tester,
   ) async {
     final past = List.generate(
@@ -284,7 +340,7 @@ void main() {
       ),
     );
     final pastEvents = List.generate(
-      CommunityActivityStream.recentPastPreviewCount + 1,
+      2,
       (i) => _event(
         'pe$i',
         _now.subtract(Duration(days: i + 1)),
@@ -293,10 +349,16 @@ void main() {
     );
     await _pump(
       tester,
-      CommunityActivityFeed(past: past, pastEvents: pastEvents),
+      CommunityActivityFeed(
+        past: past,
+        pastEvents: pastEvents,
+        pastTotal: 7,
+        hasMorePast: true,
+      ),
+      onLoadMorePast: () {},
     );
 
-    // 2 check-ins + 4 past events = 6; preview keeps 3 → show 3 earlier.
+    // 4 loaded, 7 total → show 3 earlier.
     expect(find.text('Show 3 earlier activities'), findsOneWidget);
     expect(find.text('This event has ended'), findsWidgets);
   });

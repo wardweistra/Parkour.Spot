@@ -13,6 +13,10 @@ class CommunityActivityService extends ChangeNotifier {
 
   final FirebaseFunctions _functions;
 
+  static const int pastInitialLimit = 3;
+  static const int pastPageSize = 10;
+  static const int upcomingPageSize = 10;
+
   String? _error;
   String? get error => _error;
 
@@ -21,20 +25,38 @@ class CommunityActivityService extends ChangeNotifier {
     double maxLat,
     double minLng,
     double maxLng, {
-    int pastLimit = 30,
-    int upcomingLimit = 30,
-    int eventLimit = 20,
+    int pastLimit = pastInitialLimit,
+    int upcomingPageSize = CommunityActivityService.upcomingPageSize,
+    bool includeCounts = true,
+    bool fetchPast = true,
+    bool fetchUpcoming = true,
+    CommunityActivityCursor? pastCursor,
+    CommunityActivityCursor? upcomingCursor,
+    CommunityActivityCursor? eventCursor,
   }) async {
     final callable = _functions.httpsCallable('getCommunityActivityInBounds');
-    final result = await callable.call({
+    final payload = <String, dynamic>{
       'minLat': minLat,
       'maxLat': maxLat,
       'minLng': minLng,
       'maxLng': maxLng,
       'pastLimit': pastLimit,
-      'upcomingLimit': upcomingLimit,
-      'eventLimit': eventLimit,
-    });
+      'upcomingPageSize': upcomingPageSize,
+      'includeCounts': includeCounts,
+      'fetchPast': fetchPast,
+      'fetchUpcoming': fetchUpcoming,
+    };
+    if (pastCursor != null) {
+      payload['pastCursor'] = pastCursor.toCallableMap();
+    }
+    if (upcomingCursor != null) {
+      payload['upcomingCursor'] = upcomingCursor.toCallableMap();
+    }
+    if (eventCursor != null) {
+      payload['eventCursor'] = eventCursor.toCallableMap();
+    }
+
+    final result = await callable.call(payload);
 
     final raw = result.data;
     final responseData = raw is Map ? Map<String, dynamic>.from(raw) : null;
@@ -46,6 +68,56 @@ class CommunityActivityService extends ChangeNotifier {
       );
     }
     return CommunityActivityFeed.fromCallableMap(responseData);
+  }
+
+  /// Older past activity after [feed.pastCursor] for the same bounds.
+  Future<CommunityActivityFeed> loadMorePast(
+    CommunityActivityFeed feed,
+    double minLat,
+    double maxLat,
+    double minLng,
+    double maxLng,
+  ) {
+    final cursor = feed.pastCursor;
+    if (!feed.hasMorePast || cursor == null) {
+      return Future.value(const CommunityActivityFeed());
+    }
+    return getCommunityActivityInBounds(
+      minLat,
+      maxLat,
+      minLng,
+      maxLng,
+      pastLimit: pastPageSize,
+      includeCounts: false,
+      fetchPast: true,
+      fetchUpcoming: false,
+      pastCursor: cursor,
+    );
+  }
+
+  /// Further upcoming plans/events after the feed cursors for the same bounds.
+  Future<CommunityActivityFeed> loadMoreUpcoming(
+    CommunityActivityFeed feed,
+    double minLat,
+    double maxLat,
+    double minLng,
+    double maxLng,
+  ) {
+    if (!feed.hasMoreUpcoming) {
+      return Future.value(const CommunityActivityFeed());
+    }
+    return getCommunityActivityInBounds(
+      minLat,
+      maxLat,
+      minLng,
+      maxLng,
+      upcomingPageSize: upcomingPageSize,
+      includeCounts: false,
+      fetchPast: false,
+      fetchUpcoming: true,
+      upcomingCursor: feed.upcomingCursor,
+      eventCursor: feed.eventCursor,
+    );
   }
 
   /// Rebuilds `communityActivity` from source collections (admin callable).

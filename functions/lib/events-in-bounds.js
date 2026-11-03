@@ -424,6 +424,113 @@ async function executeEventsInBoundsQuery(db, params) {
   };
 }
 
+/**
+ * All showable, deduped event pins in bounds, soonest first.
+ * Used by the Explore community stream for paging/merging with training plans.
+ * World-zoom still scans every pin in the viewport (same cost class as
+ * executeEventsInBoundsQuery).
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {Object} params minLat, maxLat, minLng, maxLng
+ * @param {Object=} options
+ * @param {Date=} options.now
+ * @return {Promise<Object[]>}
+ */
+async function listShowableEventPinsInBounds(db, params, options = {}) {
+  const {minLat, maxLat, minLng, maxLng} = params || {};
+  if (
+    typeof minLat !== "number" ||
+    typeof maxLat !== "number" ||
+    typeof minLng !== "number" ||
+    typeof maxLng !== "number"
+  ) {
+    throw new Error("minLat, maxLat, minLng, maxLng are required numbers");
+  }
+
+  const now = options.now || new Date();
+  const bounds = resolveLongitudeBounds({minLng, maxLng});
+  const {
+    normalizedMinLng,
+    normalizedMaxLng,
+    spansEntireGlobe,
+    crossesDateline,
+  } = bounds;
+
+  let allDocs = [];
+  if (spansEntireGlobe) {
+    const snap = await buildEventPinsGeoQuery(
+        db, minLat, maxLat, -180, 180).get();
+    allDocs = snap.docs;
+  } else if (crossesDateline) {
+    const [snap1, snap2] = await Promise.all([
+      buildEventPinsGeoQuery(db, minLat, maxLat, normalizedMinLng, 180).get(),
+      buildEventPinsGeoQuery(db, minLat, maxLat, -180, normalizedMaxLng).get(),
+    ]);
+    allDocs = [...snap1.docs, ...snap2.docs];
+  } else {
+    const snap = await buildEventPinsGeoQuery(
+        db, minLat, maxLat, normalizedMinLng, normalizedMaxLng).get();
+    allDocs = snap.docs;
+  }
+
+  const pins = [];
+  for (const doc of allDocs) {
+    const data = doc.data();
+    if (!isPinShowable(data, now)) continue;
+    const normalized = normalizePin(doc.id, data);
+    if (normalized) pins.push(normalized);
+  }
+  return dedupePinsByEventId(pins);
+}
+
+/**
+ * Page of upcoming event pins after an optional cursor.
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {Object} params minLat, maxLat, minLng, maxLng, limit?,
+ *   afterStartAt?, afterEventId?
+ * @param {Object=} options
+ * @param {Date=} options.now
+ * @param {Function=} options.listPins override for tests
+ * @return {Promise<{pins: Object[], eventTotal: number, hasMore: boolean}>}
+ */
+async function pageEventPinsInBounds(db, params, options = {}) {
+  const limit = Math.max(1, Math.min(200, Number(params.limit) || 10));
+  const listPins = options.listPins ||
+    ((queryParams) => listShowableEventPinsInBounds(db, queryParams, options));
+  const allPins = await listPins({
+    minLat: params.minLat,
+    maxLat: params.maxLat,
+    minLng: params.minLng,
+    maxLng: params.maxLng,
+  });
+  const eventTotal = countDistinctEventIds(allPins);
+
+  const afterStartAt = typeof params.afterStartAt === "string" ?
+    params.afterStartAt :
+    null;
+  const afterEventId = typeof params.afterEventId === "string" ?
+    params.afterEventId :
+    null;
+
+  let filtered = allPins;
+  if (afterStartAt) {
+    const afterMs = new Date(afterStartAt).getTime();
+    filtered = allPins.filter((pin) => {
+      const startMs = new Date(pin.startAt).getTime();
+      if (startMs > afterMs) return true;
+      if (startMs < afterMs) return false;
+      if (!afterEventId) return pin.eventId > "";
+      return pin.eventId > afterEventId;
+    });
+  }
+
+  const hasMore = filtered.length > limit;
+  return {
+    pins: filtered.slice(0, limit),
+    eventTotal,
+    hasMore,
+  };
+}
+
 module.exports = {
   EXACT_EVENT_COUNT_PIN_CAP,
   isPinShowable,
@@ -437,4 +544,6 @@ module.exports = {
   resolveLongitudeBounds,
   buildEventPinsGeoQuery,
   executeEventsInBoundsQuery,
+  listShowableEventPinsInBounds,
+  pageEventPinsInBounds,
 };

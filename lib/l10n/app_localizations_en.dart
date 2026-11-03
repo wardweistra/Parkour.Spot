@@ -1063,6 +1063,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get communityStreamShowEarlierGeneric => 'Show earlier activities';
+
+  @override
+  String get communityStreamShowMoreUpcoming => 'Show more upcoming';
+
+  @override
   String get communityStreamNowDivider => 'now';
 
   @override

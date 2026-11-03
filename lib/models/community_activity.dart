@@ -230,6 +230,22 @@ class CommunityEventItem {
   }
 }
 
+/// Opaque paging cursor returned by `getCommunityActivityInBounds`.
+class CommunityActivityCursor {
+  const CommunityActivityCursor(this.fields);
+
+  final Map<String, dynamic> fields;
+
+  static CommunityActivityCursor? fromCallableMap(Object? raw) {
+    if (raw is! Map) return null;
+    final map = Map<String, dynamic>.from(raw);
+    if (map.isEmpty) return null;
+    return CommunityActivityCursor(map);
+  }
+
+  Map<String, dynamic> toCallableMap() => Map<String, dynamic>.from(fields);
+}
+
 /// Everything the Explore Community stream shows for one viewport.
 class CommunityActivityFeed {
   const CommunityActivityFeed({
@@ -237,6 +253,15 @@ class CommunityActivityFeed {
     this.pastEvents = const [],
     this.upcoming = const [],
     this.events = const [],
+    this.totalCount = 0,
+    this.pastTotal = 0,
+    this.upcomingPlanTotal = 0,
+    this.eventTotal = 0,
+    this.hasMorePast = false,
+    this.hasMoreUpcoming = false,
+    this.pastCursor,
+    this.upcomingCursor,
+    this.eventCursor,
   });
 
   static const CommunityActivityFeed empty = CommunityActivityFeed();
@@ -253,9 +278,88 @@ class CommunityActivityFeed {
   /// Soonest first, deduped by event id.
   final List<CommunityEventItem> events;
 
+  /// True total in bounds (past ≤90 days + upcoming plans + events).
+  final int totalCount;
+
+  final int pastTotal;
+  final int upcomingPlanTotal;
+  final int eventTotal;
+
+  final bool hasMorePast;
+  final bool hasMoreUpcoming;
+
+  final CommunityActivityCursor? pastCursor;
+  final CommunityActivityCursor? upcomingCursor;
+  final CommunityActivityCursor? eventCursor;
+
+  /// Rows currently loaded into the stream (not the area total).
   int get itemCount =>
       past.length + pastEvents.length + upcoming.length + events.length;
+
+  int get loadedPastCount => past.length + pastEvents.length;
+
   bool get isEmpty => itemCount == 0;
+
+  CommunityActivityFeed copyWith({
+    List<CommunityActivityItem>? past,
+    List<CommunityEventItem>? pastEvents,
+    List<CommunityActivityItem>? upcoming,
+    List<CommunityEventItem>? events,
+    int? totalCount,
+    int? pastTotal,
+    int? upcomingPlanTotal,
+    int? eventTotal,
+    bool? hasMorePast,
+    bool? hasMoreUpcoming,
+    CommunityActivityCursor? pastCursor,
+    CommunityActivityCursor? upcomingCursor,
+    CommunityActivityCursor? eventCursor,
+    bool clearPastCursor = false,
+    bool clearUpcomingCursor = false,
+    bool clearEventCursor = false,
+  }) {
+    return CommunityActivityFeed(
+      past: past ?? this.past,
+      pastEvents: pastEvents ?? this.pastEvents,
+      upcoming: upcoming ?? this.upcoming,
+      events: events ?? this.events,
+      totalCount: totalCount ?? this.totalCount,
+      pastTotal: pastTotal ?? this.pastTotal,
+      upcomingPlanTotal: upcomingPlanTotal ?? this.upcomingPlanTotal,
+      eventTotal: eventTotal ?? this.eventTotal,
+      hasMorePast: hasMorePast ?? this.hasMorePast,
+      hasMoreUpcoming: hasMoreUpcoming ?? this.hasMoreUpcoming,
+      pastCursor: clearPastCursor ? null : (pastCursor ?? this.pastCursor),
+      upcomingCursor: clearUpcomingCursor
+          ? null
+          : (upcomingCursor ?? this.upcomingCursor),
+      eventCursor: clearEventCursor ? null : (eventCursor ?? this.eventCursor),
+    );
+  }
+
+  /// Appends an older past page onto this feed (server returns newer→older).
+  CommunityActivityFeed appendingPast(CommunityActivityFeed page) {
+    return copyWith(
+      past: [...past, ...page.past],
+      pastEvents: [...pastEvents, ...page.pastEvents],
+      hasMorePast: page.hasMorePast,
+      pastCursor: page.pastCursor,
+      clearPastCursor: page.pastCursor == null,
+    );
+  }
+
+  /// Appends a further-upcoming page (plans + events).
+  CommunityActivityFeed appendingUpcoming(CommunityActivityFeed page) {
+    return copyWith(
+      upcoming: [...upcoming, ...page.upcoming],
+      events: [...events, ...page.events],
+      hasMoreUpcoming: page.hasMoreUpcoming,
+      upcomingCursor: page.upcomingCursor,
+      eventCursor: page.eventCursor,
+      clearUpcomingCursor: page.upcomingCursor == null,
+      clearEventCursor: page.eventCursor == null,
+    );
+  }
 
   factory CommunityActivityFeed.fromCallableMap(Map<String, dynamic> data) {
     List<Map<String, dynamic>> maps(Object? raw) {
@@ -264,6 +368,11 @@ class CommunityActivityFeed {
           .whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
+    }
+
+    int readCount(Object? raw) {
+      if (raw is num) return raw.toInt();
+      return 0;
     }
 
     final pastMaps = maps(data['past']);
@@ -279,6 +388,13 @@ class CommunityActivityFeed {
       }
     }
 
+    final pastTotal = readCount(data['pastTotal']);
+    final upcomingPlanTotal = readCount(data['upcomingPlanTotal']);
+    final eventTotal = readCount(data['eventTotal']);
+    final totalCount = data['totalCount'] is num
+        ? (data['totalCount'] as num).toInt()
+        : pastTotal + upcomingPlanTotal + eventTotal;
+
     return CommunityActivityFeed(
       past: past,
       pastEvents: pastEvents,
@@ -290,6 +406,17 @@ class CommunityActivityFeed {
           .map(CommunityEventItem.fromCallableMap)
           .whereType<CommunityEventItem>()
           .toList(),
+      totalCount: totalCount,
+      pastTotal: pastTotal,
+      upcomingPlanTotal: upcomingPlanTotal,
+      eventTotal: eventTotal,
+      hasMorePast: data['hasMorePast'] == true,
+      hasMoreUpcoming: data['hasMoreUpcoming'] == true,
+      pastCursor: CommunityActivityCursor.fromCallableMap(data['pastCursor']),
+      upcomingCursor: CommunityActivityCursor.fromCallableMap(
+        data['upcomingCursor'],
+      ),
+      eventCursor: CommunityActivityCursor.fromCallableMap(data['eventCursor']),
     );
   }
 }

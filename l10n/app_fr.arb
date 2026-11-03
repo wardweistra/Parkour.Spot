@@ -228,6 +228,8 @@
   "communityStreamLoadFailed": "Impossible de charger l’activité de la communauté",
   "communityStreamRetry": "Réessayer",
   "communityStreamShowEarlier": "{count, plural, one{Afficher 1 activité précédente} other{Afficher {count} activités précédentes}}",
+  "communityStreamShowEarlierGeneric": "Afficher les activités précédentes",
+  "communityStreamShowMoreUpcoming": "Afficher plus à venir",
   "communityStreamNowDivider": "maintenant",
   "communityStreamAnonymousActor": "Quelqu’un",
   "communityStreamSpotFallback": "Spot",

@@ -355,6 +355,12 @@ class SearchScreenState extends State<SearchScreen>
   bool _isLoadingEventsForView = false;
   CommunityActivityFeed _loadedCommunityFeed = CommunityActivityFeed.empty;
   bool _isLoadingCommunityForView = false;
+  bool _isLoadingMoreCommunityPast = false;
+  bool _isLoadingMoreCommunityUpcoming = false;
+  double? _communityMinLat;
+  double? _communityMaxLat;
+  double? _communityMinLng;
+  double? _communityMaxLng;
 
   /// True when the last community-stream load for this view failed; spots
   /// and events still load independently.
@@ -1496,6 +1502,12 @@ class SearchScreenState extends State<SearchScreen>
       final communityFeed = results[2] as CommunityActivityFeed?;
       _loadedCommunityFeed = communityFeed ?? CommunityActivityFeed.empty;
       _communityLoadFailed = communityFeed == null;
+      _communityMinLat = minLat;
+      _communityMaxLat = maxLat;
+      _communityMinLng = minLng;
+      _communityMaxLng = maxLng;
+      _isLoadingMoreCommunityPast = false;
+      _isLoadingMoreCommunityUpcoming = false;
 
       final mergedSpots = await _mergeActiveSpotListSpots(
         (ranked['spots'] as List<Spot>?) ?? <Spot>[],
@@ -1542,10 +1554,82 @@ class SearchScreenState extends State<SearchScreen>
         maxLat,
         minLng,
         maxLng,
+        pastLimit: CommunityActivityService.pastInitialLimit,
+        upcomingPageSize: CommunityActivityService.upcomingPageSize,
       );
     } catch (e) {
       debugPrint('Error loading community activity for current view: $e');
       return null;
+    }
+  }
+
+  Future<void> _loadMoreCommunityPast() async {
+    if (_isLoadingMoreCommunityPast ||
+        !_loadedCommunityFeed.hasMorePast ||
+        _communityMinLat == null ||
+        _communityMaxLat == null ||
+        _communityMinLng == null ||
+        _communityMaxLng == null) {
+      return;
+    }
+    setState(() => _isLoadingMoreCommunityPast = true);
+    try {
+      final service = Provider.of<CommunityActivityService>(
+        context,
+        listen: false,
+      );
+      final page = await service.loadMorePast(
+        _loadedCommunityFeed,
+        _communityMinLat!,
+        _communityMaxLat!,
+        _communityMinLng!,
+        _communityMaxLng!,
+      );
+      if (!mounted) return;
+      setState(() {
+        _loadedCommunityFeed = _loadedCommunityFeed.appendingPast(page);
+      });
+    } catch (e) {
+      debugPrint('Error loading more past community activity: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingMoreCommunityPast = false);
+      }
+    }
+  }
+
+  Future<void> _loadMoreCommunityUpcoming() async {
+    if (_isLoadingMoreCommunityUpcoming ||
+        !_loadedCommunityFeed.hasMoreUpcoming ||
+        _communityMinLat == null ||
+        _communityMaxLat == null ||
+        _communityMinLng == null ||
+        _communityMaxLng == null) {
+      return;
+    }
+    setState(() => _isLoadingMoreCommunityUpcoming = true);
+    try {
+      final service = Provider.of<CommunityActivityService>(
+        context,
+        listen: false,
+      );
+      final page = await service.loadMoreUpcoming(
+        _loadedCommunityFeed,
+        _communityMinLat!,
+        _communityMaxLat!,
+        _communityMinLng!,
+        _communityMaxLng!,
+      );
+      if (!mounted) return;
+      setState(() {
+        _loadedCommunityFeed = _loadedCommunityFeed.appendingUpcoming(page);
+      });
+    } catch (e) {
+      debugPrint('Error loading more upcoming community activity: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingMoreCommunityUpcoming = false);
+      }
     }
   }
 
@@ -3116,6 +3200,10 @@ class SearchScreenState extends State<SearchScreen>
   Widget _buildCommunityStream() {
     return CommunityActivityStream(
       feed: _loadedCommunityFeed,
+      loadingMorePast: _isLoadingMoreCommunityPast,
+      loadingMoreUpcoming: _isLoadingMoreCommunityUpcoming,
+      onLoadMorePast: _loadMoreCommunityPast,
+      onLoadMoreUpcoming: _loadMoreCommunityUpcoming,
       onOpenSpot: (item) {
         _mapController?.animateCamera(
           CameraUpdate.newLatLng(LatLng(item.latitude, item.longitude)),
@@ -3186,7 +3274,7 @@ class SearchScreenState extends State<SearchScreen>
 
   int _exploreSpotCountForHeader() => _totalSpotsInView ?? _visibleSpots.length;
 
-  int _exploreCommunityCountForHeader() => _loadedCommunityFeed.itemCount;
+  int _exploreCommunityCountForHeader() => _loadedCommunityFeed.totalCount;
 
   String _exploreFiltersDoneLabel(AppLocalizations l10n) {
     if (_isLoadingMapData) {

@@ -1810,11 +1810,23 @@ abstract class AppLocalizations {
   /// **'Try again'**
   String get communityStreamRetry;
 
-  /// Explore activities stream: button that expands older past activity hidden above the recent items
+  /// Explore activities stream: button that loads older past activity from the server
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{Show 1 earlier activity} other{Show {count} earlier activities}}'**
   String communityStreamShowEarlier(int count);
+
+  /// Explore activities stream: load-more past button when remaining count is unknown
+  ///
+  /// In en, this message translates to:
+  /// **'Show earlier activities'**
+  String get communityStreamShowEarlierGeneric;
+
+  /// Explore activities stream: button that loads further upcoming plans and events
+  ///
+  /// In en, this message translates to:
+  /// **'Show more upcoming'**
+  String get communityStreamShowMoreUpcoming;
 
   /// Explore community stream: divider label between past activity and upcoming plans/events
   ///

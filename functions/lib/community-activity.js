@@ -27,7 +27,7 @@ const {
 } = require("./event-map-pins");
 const {
   resolveLongitudeBounds,
-  executeEventsInBoundsQuery,
+  pageEventPinsInBounds,
   dedupePinsByEventId,
 } = require("./events-in-bounds");
 const {
@@ -55,9 +55,13 @@ const UPCOMING_ACTIVITY_GRACE_MS = 24 * 60 * 60 * 1000;
 const MAX_ACTIVITY_IMAGE_URLS = 3;
 const MAX_COMMENT_LENGTH = 200;
 const MAX_BATCH_OPERATIONS = 400;
-const IN_BOUNDS_DEFAULT_LIMIT = 30;
+/** Default first-page past size (newest near "now"). */
+const PAST_INITIAL_DEFAULT = 3;
+/** Default upcoming merged page size (plans + events). */
+const UPCOMING_PAGE_DEFAULT = 10;
+/** Default load-more page size for past history. */
+const PAST_PAGE_DEFAULT = 10;
 const IN_BOUNDS_MAX_LIMIT = 100;
-const EVENTS_DEFAULT_LIMIT = 20;
 const GET_ALL_CHUNK = 10;
 const PAST_PIN_SWEEP_DEFAULT_LIMIT = 200;
 
@@ -1044,48 +1048,123 @@ function clampLimit(value, fallback) {
 }
 
 /**
- * Past activity, newest first. Explicit orderBy on every range field pins the
- * composite index: (timeline, occurredAt DESC, latitude DESC, longitude DESC).
+ * @param {*} value
+ * @param {boolean} fallback
+ * @return {boolean}
+ */
+function clampBool(value, fallback) {
+  if (typeof value === "boolean") return value;
+  return fallback;
+}
+
+/**
+ * Past activity filters (no order/limit).
  * @param {FirebaseFirestore.Firestore} db
  * @param {Object} bounds
- * @param {number} limit
  * @return {FirebaseFirestore.Query}
  */
-function buildPastActivityQuery(db, bounds, limit) {
+function buildPastActivityBaseQuery(db, bounds) {
   return db.collection(COMMUNITY_ACTIVITY_COLLECTION)
       .where("timeline", "==", TIMELINE_PAST)
       .where("latitude", ">=", bounds.minLat)
       .where("latitude", "<=", bounds.maxLat)
       .where("longitude", ">=", bounds.minLng)
-      .where("longitude", "<=", bounds.maxLng)
-      .orderBy("occurredAt", "desc")
-      .orderBy("latitude", "desc")
-      .orderBy("longitude", "desc")
-      .limit(limit);
+      .where("longitude", "<=", bounds.maxLng);
 }
 
 /**
- * Upcoming activity that has not ended, soonest first. Composite index:
- * (timeline, startAt ASC, endAt ASC, latitude ASC, longitude ASC).
+ * Past activity ordered for the existing composite index
+ * (timeline, occurredAt DESC, latitude DESC, longitude DESC). Also used for
+ * count() so aggregates reuse that index instead of a bare lat/lng range.
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {Object} bounds
+ * @return {FirebaseFirestore.Query}
+ */
+function buildPastActivityOrderedQuery(db, bounds) {
+  return buildPastActivityBaseQuery(db, bounds)
+      .orderBy("occurredAt", "desc")
+      .orderBy("latitude", "desc")
+      .orderBy("longitude", "desc");
+}
+
+/**
+ * Past activity, newest first.
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {Object} bounds
+ * @param {number} limit
+ * @param {Object=} cursor {occurredAt, latitude, longitude}
+ * @return {FirebaseFirestore.Query}
+ */
+function buildPastActivityQuery(db, bounds, limit, cursor) {
+  let query = buildPastActivityOrderedQuery(db, bounds);
+  if (cursor && cursor.occurredAt) {
+    const occurredAt = normalizeDate(cursor.occurredAt) || cursor.occurredAt;
+    query = query.startAfter(
+        occurredAt,
+        cursor.latitude,
+        cursor.longitude,
+    );
+  }
+  return query.limit(limit);
+}
+
+/**
+ * Upcoming activity filters (no order/limit).
  * @param {FirebaseFirestore.Firestore} db
  * @param {Object} bounds
  * @param {Date} now
- * @param {number} limit
  * @return {FirebaseFirestore.Query}
  */
-function buildUpcomingActivityQuery(db, bounds, now, limit) {
+function buildUpcomingActivityBaseQuery(db, bounds, now) {
   return db.collection(COMMUNITY_ACTIVITY_COLLECTION)
       .where("timeline", "==", TIMELINE_UPCOMING)
       .where("endAt", ">=", now)
       .where("latitude", ">=", bounds.minLat)
       .where("latitude", "<=", bounds.maxLat)
       .where("longitude", ">=", bounds.minLng)
-      .where("longitude", "<=", bounds.maxLng)
+      .where("longitude", "<=", bounds.maxLng);
+}
+
+/**
+ * Upcoming activity ordered for the existing composite index
+ * (timeline, startAt ASC, endAt ASC, latitude ASC, longitude ASC).
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {Object} bounds
+ * @param {Date} now
+ * @return {FirebaseFirestore.Query}
+ */
+function buildUpcomingActivityOrderedQuery(db, bounds, now) {
+  return buildUpcomingActivityBaseQuery(db, bounds, now)
       .orderBy("startAt", "asc")
       .orderBy("endAt", "asc")
       .orderBy("latitude", "asc")
-      .orderBy("longitude", "asc")
-      .limit(limit);
+      .orderBy("longitude", "asc");
+}
+
+/**
+ * Upcoming activity that has not ended, soonest first.
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {Object} bounds
+ * @param {Date} now
+ * @param {number} limit
+ * @param {Object=} cursor {startAt, endAt, latitude, longitude}
+ * @return {FirebaseFirestore.Query}
+ */
+function buildUpcomingActivityQuery(db, bounds, now, limit, cursor) {
+  let query = buildUpcomingActivityOrderedQuery(db, bounds, now);
+  if (cursor && cursor.startAt) {
+    const startAt = normalizeDate(cursor.startAt) || cursor.startAt;
+    const endAt = cursor.endAt != null ?
+      (normalizeDate(cursor.endAt) || cursor.endAt) :
+      startAt;
+    query = query.startAfter(
+        startAt,
+        endAt,
+        cursor.latitude,
+        cursor.longitude,
+    );
+  }
+  return query.limit(limit);
 }
 
 /**
@@ -1197,13 +1276,215 @@ async function attachPastEventInterestCounts(db, pastItems) {
 }
 
 /**
+ * @param {Array<{docs: Array}>} snaps
+ * @return {Array<Object>}
+ */
+function mapActivitySnaps(snaps) {
+  const items = [];
+  const seen = new Set();
+  for (const snap of snaps) {
+    for (const doc of snap.docs) {
+      if (seen.has(doc.id)) continue;
+      seen.add(doc.id);
+      const normalized = normalizeCommunityActivity(doc.id, doc.data());
+      if (normalized) items.push(normalized);
+    }
+  }
+  return items;
+}
+
+/**
+ * Sum .count() across longitude segments for a base query builder.
+ * @param {Array<{minLng: number, maxLng: number}>} segments
+ * @param {function(Object): FirebaseFirestore.Query} buildQuery
+ * @return {Promise<number>}
+ */
+async function sumSegmentCounts(segments, buildQuery) {
+  const snaps = await Promise.all(segments.map(async (segment) => {
+    const query = buildQuery(segment);
+    const aggregate = await query.count().get();
+    return aggregate.data().count || 0;
+  }));
+  return snaps.reduce((sum, n) => sum + n, 0);
+}
+
+/**
+ * @param {Object} item normalized past activity
+ * @return {Object}
+ */
+function pastCursorFromItem(item) {
+  return {
+    occurredAt: item.occurredAt,
+    latitude: item.latitude,
+    longitude: item.longitude,
+    id: item.id,
+  };
+}
+
+/**
+ * @param {Object} item normalized upcoming plan
+ * @return {Object}
+ */
+function upcomingCursorFromItem(item) {
+  return {
+    startAt: item.startAt,
+    endAt: item.endAt || item.startAt,
+    latitude: item.latitude,
+    longitude: item.longitude,
+    id: item.id,
+  };
+}
+
+/**
+ * @param {Object} pin event pin
+ * @return {Object}
+ */
+function eventCursorFromPin(pin) {
+  return {
+    startAt: pin.startAt,
+    eventId: pin.eventId,
+  };
+}
+
+/**
+ * Fetch a past page across longitude segments (newest first).
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {Object} bounds
+ * @param {Array} segments
+ * @param {number} limit
+ * @param {Object=} cursor
+ * @return {Promise<{items: Array, hasMore: boolean}>}
+ */
+async function fetchPastActivityPage(db, bounds, segments, limit, cursor) {
+  const fetchLimit = limit + 1;
+  const snaps = await Promise.all(segments.map((segment) =>
+    buildPastActivityQuery(db, {
+      minLat: bounds.minLat,
+      maxLat: bounds.maxLat,
+      minLng: segment.minLng,
+      maxLng: segment.maxLng,
+    }, fetchLimit, cursor).get()));
+  const merged = sortByIsoField(mapActivitySnaps(snaps), "occurredAt", "desc");
+  const hasMore = merged.length > limit;
+  return {items: merged.slice(0, limit), hasMore};
+}
+
+/**
+ * Fetch an upcoming plans page across longitude segments (soonest first).
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {Object} bounds
+ * @param {Array} segments
+ * @param {Date} now
+ * @param {number} limit
+ * @param {Object=} cursor
+ * @return {Promise<{items: Array, hasMore: boolean}>}
+ */
+async function fetchUpcomingPlansPage(db, bounds, segments, now, limit, cursor) {
+  const fetchLimit = limit + 1;
+  const snaps = await Promise.all(segments.map((segment) =>
+    buildUpcomingActivityQuery(db, {
+      minLat: bounds.minLat,
+      maxLat: bounds.maxLat,
+      minLng: segment.minLng,
+      maxLng: segment.maxLng,
+    }, now, fetchLimit, cursor).get()));
+  const merged = sortByIsoField(mapActivitySnaps(snaps), "startAt", "asc")
+      .filter((item) => !item.endAt || new Date(item.endAt).getTime() >= now.getTime());
+  const hasMore = merged.length > limit;
+  return {items: merged.slice(0, limit), hasMore};
+}
+
+/**
+ * Merge plans + events into one soonest-first page and advance source cursors.
+ * @param {Array<Object>} plans
+ * @param {boolean} plansHasMore
+ * @param {Array<Object>} events
+ * @param {boolean} eventsHasMore
+ * @param {number} pageSize
+ * @param {Object=} prevUpcomingCursor
+ * @param {Object=} prevEventCursor
+ * @return {Object}
+ */
+function mergeUpcomingPage(
+    plans,
+    plansHasMore,
+    events,
+    eventsHasMore,
+    pageSize,
+    prevUpcomingCursor,
+    prevEventCursor,
+) {
+  const planEntries = plans.map((item) => ({type: "plan", item, startAt: item.startAt, id: item.id}));
+  const eventEntries = events.map((pin) => ({
+    type: "event",
+    item: pin,
+    startAt: pin.startAt,
+    id: pin.eventId,
+  }));
+  const merged = [...planEntries, ...eventEntries].sort((a, b) => {
+    const ta = new Date(a.startAt).getTime();
+    const tb = new Date(b.startAt).getTime();
+    if (ta !== tb) return ta - tb;
+    return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  });
+
+  const page = merged.slice(0, pageSize);
+  const upcoming = [];
+  const pageEvents = [];
+  let upcomingCursor = prevUpcomingCursor || null;
+  let eventCursor = prevEventCursor || null;
+  let consumedPlan = false;
+  let consumedEvent = false;
+
+  for (const entry of page) {
+    if (entry.type === "plan") {
+      upcoming.push(entry.item);
+      upcomingCursor = upcomingCursorFromItem(entry.item);
+      consumedPlan = true;
+    } else {
+      pageEvents.push(entry.item);
+      eventCursor = eventCursorFromPin(entry.item);
+      consumedEvent = true;
+    }
+  }
+
+  const unconsumed = merged.length > page.length;
+  const hasMoreUpcoming = unconsumed ||
+    (consumedPlan && plansHasMore) ||
+    (consumedEvent && eventsHasMore) ||
+    (!consumedPlan && plansHasMore) ||
+    (!consumedEvent && eventsHasMore);
+
+  return {
+    upcoming,
+    events: pageEvents,
+    upcomingCursor: upcoming.length > 0 || consumedPlan ?
+      upcomingCursor :
+      prevUpcomingCursor || null,
+    eventCursor: pageEvents.length > 0 || consumedEvent ?
+      eventCursor :
+      prevEventCursor || null,
+    hasMoreUpcoming,
+  };
+}
+
+/**
  * Community stream for a viewport: past activity (newest first), then
  * upcoming training plans and events (soonest first).
+ *
+ * Supports totals (Firestore count aggregates) and cursor paging:
+ * - Initial: pastLimit default 3, upcoming page default 10, includeCounts true
+ * - Load more past: fetchPast true, pastCursor, pastLimit default 10
+ * - Load more upcoming: fetchUpcoming true, upcoming/event cursors
+ *
  * @param {FirebaseFirestore.Firestore} db
- * @param {Object} params minLat, maxLat, minLng, maxLng, pastLimit?, upcomingLimit?, eventLimit?
+ * @param {Object} params minLat, maxLat, minLng, maxLng, pastLimit?,
+ *   upcomingLimit?, upcomingPageSize?, eventLimit?, includeCounts?,
+ *   fetchPast?, fetchUpcoming?, pastCursor?, upcomingCursor?, eventCursor?
  * @param {Object=} options
  * @param {Date=} options.now
- * @param {Function=} options.eventsInBounds override for tests
+ * @param {Function=} options.eventsInBounds legacy override returning {pins}
+ * @param {Function=} options.pageEvents override for paged event pins
  * @return {Promise<Object>}
  */
 async function executeCommunityActivityInBoundsQuery(db, params, options = {}) {
@@ -1218,61 +1499,157 @@ async function executeCommunityActivityInBoundsQuery(db, params, options = {}) {
   }
 
   const now = options.now || new Date();
-  const pastLimit = clampLimit(params.pastLimit, IN_BOUNDS_DEFAULT_LIMIT);
-  const upcomingLimit = clampLimit(params.upcomingLimit, IN_BOUNDS_DEFAULT_LIMIT);
-  const eventLimit = clampLimit(params.eventLimit, EVENTS_DEFAULT_LIMIT);
+  const bounds = {minLat, maxLat, minLng, maxLng};
   const segments = longitudeSegments(minLng, maxLng);
 
-  const pastSnaps = await Promise.all(segments.map((segment) =>
-    buildPastActivityQuery(db, {
-      minLat,
-      maxLat,
-      minLng: segment.minLng,
-      maxLng: segment.maxLng,
-    }, pastLimit).get()));
-  const upcomingSnaps = await Promise.all(segments.map((segment) =>
-    buildUpcomingActivityQuery(db, {
-      minLat,
-      maxLat,
-      minLng: segment.minLng,
-      maxLng: segment.maxLng,
-    }, now, upcomingLimit).get()));
+  const includeCounts = clampBool(params.includeCounts, true);
+  const fetchPast = clampBool(params.fetchPast, true);
+  const fetchUpcoming = clampBool(params.fetchUpcoming, true);
 
-  const mapDocs = (snaps) => {
-    const items = [];
-    for (const snap of snaps) {
-      for (const doc of snap.docs) {
-        const normalized = normalizeCommunityActivity(doc.id, doc.data());
-        if (normalized) items.push(normalized);
-      }
-    }
-    return items;
-  };
+  const pastLimit = clampLimit(
+      params.pastLimit,
+      params.pastCursor ? PAST_PAGE_DEFAULT : PAST_INITIAL_DEFAULT,
+  );
+  const upcomingPageSize = clampLimit(
+      params.upcomingPageSize ?? params.upcomingLimit ?? params.eventLimit,
+      UPCOMING_PAGE_DEFAULT,
+  );
 
-  const pastRaw = sortByIsoField(mapDocs(pastSnaps), "occurredAt", "desc")
-      .slice(0, pastLimit);
-  const past = await attachPastEventInterestCounts(db, pastRaw);
-  const upcoming = sortByIsoField(mapDocs(upcomingSnaps), "startAt", "asc")
-      .filter((item) => !item.endAt || new Date(item.endAt).getTime() >= now.getTime())
-      .slice(0, upcomingLimit);
+  const pastCursor = params.pastCursor && typeof params.pastCursor === "object" ?
+    params.pastCursor :
+    null;
+  const upcomingCursor = params.upcomingCursor &&
+    typeof params.upcomingCursor === "object" ?
+    params.upcomingCursor :
+    null;
+  const eventCursor = params.eventCursor && typeof params.eventCursor === "object" ?
+    params.eventCursor :
+    null;
 
-  const eventsInBounds = options.eventsInBounds ||
-    ((queryParams) => executeEventsInBoundsQuery(db, queryParams));
-  let events = [];
-  try {
-    const eventsResult = await eventsInBounds({
-      minLat,
-      maxLat,
-      minLng,
-      maxLng,
-      limit: 200,
-    });
-    const pins = Array.isArray(eventsResult && eventsResult.pins) ? eventsResult.pins : [];
-    const deduped = dedupePinsByEventId(pins).slice(0, eventLimit);
-    events = await attachEventInterestCounts(db, deduped);
-  } catch (err) {
-    console.error("communityActivity events merge failed", err);
+  let pastTotal = 0;
+  let upcomingPlanTotal = 0;
+  let eventTotal = 0;
+
+  if (includeCounts) {
+    // count() must use the same orderBy as page queries so Firestore can use
+    // the existing communityActivity composites (not a bare lat/lng index).
+    pastTotal = await sumSegmentCounts(segments, (segment) =>
+      buildPastActivityOrderedQuery(db, {
+        minLat,
+        maxLat,
+        minLng: segment.minLng,
+        maxLng: segment.maxLng,
+      }));
+    upcomingPlanTotal = await sumSegmentCounts(segments, (segment) =>
+      buildUpcomingActivityOrderedQuery(db, {
+        minLat,
+        maxLat,
+        minLng: segment.minLng,
+        maxLng: segment.maxLng,
+      }, now));
   }
+
+  let past = [];
+  let hasMorePast = false;
+  let nextPastCursor = null;
+  if (fetchPast) {
+    const pastPage = await fetchPastActivityPage(
+        db, bounds, segments, pastLimit, pastCursor);
+    past = await attachPastEventInterestCounts(db, pastPage.items);
+    hasMorePast = pastPage.hasMore;
+    if (past.length > 0) {
+      nextPastCursor = pastCursorFromItem(past[past.length - 1]);
+    }
+  }
+
+  let upcoming = [];
+  let events = [];
+  let hasMoreUpcoming = false;
+  let nextUpcomingCursor = upcomingCursor;
+  let nextEventCursor = eventCursor;
+
+  if (fetchUpcoming) {
+    const plansPage = await fetchUpcomingPlansPage(
+        db, bounds, segments, now, upcomingPageSize, upcomingCursor);
+
+    let eventPins = [];
+    let eventsSourceHasMore = false;
+    try {
+      const pageEvents = options.pageEvents ||
+        ((queryParams) => pageEventPinsInBounds(db, queryParams, {
+          now,
+          listPins: options.listEventPins,
+        }));
+      // Legacy test hook: eventsInBounds returns {pins} for the whole viewport.
+      if (options.eventsInBounds && !options.pageEvents) {
+        const eventsResult = await options.eventsInBounds({
+          minLat,
+          maxLat,
+          minLng,
+          maxLng,
+          limit: 200,
+        });
+        const pins = Array.isArray(eventsResult && eventsResult.pins) ?
+          eventsResult.pins :
+          [];
+        let sorted = dedupePinsByEventId(pins);
+        if (includeCounts) {
+          eventTotal = sorted.length;
+        }
+        if (eventCursor && eventCursor.startAt) {
+          const afterMs = new Date(eventCursor.startAt).getTime();
+          const afterId = eventCursor.eventId || "";
+          sorted = sorted.filter((pin) => {
+            const startMs = new Date(pin.startAt).getTime();
+            if (startMs > afterMs) return true;
+            if (startMs < afterMs) return false;
+            return pin.eventId > afterId;
+          });
+        }
+        eventsSourceHasMore = sorted.length > upcomingPageSize;
+        eventPins = sorted.slice(0, upcomingPageSize);
+      } else {
+        const paged = await pageEvents({
+          minLat,
+          maxLat,
+          minLng,
+          maxLng,
+          limit: upcomingPageSize,
+          afterStartAt: eventCursor && eventCursor.startAt,
+          afterEventId: eventCursor && eventCursor.eventId,
+        });
+        eventPins = Array.isArray(paged.pins) ? paged.pins : [];
+        eventsSourceHasMore = paged.hasMore === true;
+        if (includeCounts && typeof paged.eventTotal === "number") {
+          eventTotal = paged.eventTotal;
+        }
+      }
+    } catch (err) {
+      console.error("communityActivity events merge failed", err);
+      eventPins = [];
+      eventsSourceHasMore = false;
+    }
+
+    const enrichedEvents = await attachEventInterestCounts(db, eventPins);
+    const merged = mergeUpcomingPage(
+        plansPage.items,
+        plansPage.hasMore,
+        enrichedEvents,
+        eventsSourceHasMore,
+        upcomingPageSize,
+        upcomingCursor,
+        eventCursor,
+    );
+    upcoming = merged.upcoming;
+    events = merged.events;
+    hasMoreUpcoming = merged.hasMoreUpcoming;
+    nextUpcomingCursor = merged.upcomingCursor;
+    nextEventCursor = merged.eventCursor;
+  }
+
+  const totalCount = includeCounts ?
+    pastTotal + upcomingPlanTotal + eventTotal :
+    null;
 
   return {
     success: true,
@@ -1282,6 +1659,15 @@ async function executeCommunityActivityInBoundsQuery(db, params, options = {}) {
     pastCount: past.length,
     upcomingCount: upcoming.length,
     eventCount: events.length,
+    pastTotal: includeCounts ? pastTotal : null,
+    upcomingPlanTotal: includeCounts ? upcomingPlanTotal : null,
+    eventTotal: includeCounts ? eventTotal : null,
+    totalCount,
+    hasMorePast,
+    hasMoreUpcoming,
+    pastCursor: hasMorePast ? nextPastCursor : null,
+    upcomingCursor: hasMoreUpcoming ? nextUpcomingCursor : null,
+    eventCursor: hasMoreUpcoming ? nextEventCursor : null,
   };
 }
 
@@ -1440,6 +1826,9 @@ module.exports = {
   TIMELINE_PAST,
   TIMELINE_UPCOMING,
   PAST_ACTIVITY_RETENTION_MS,
+  PAST_INITIAL_DEFAULT,
+  PAST_PAGE_DEFAULT,
+  UPCOMING_PAGE_DEFAULT,
   spotAddedActivityId,
   spotPhotoActivityId,
   checkInActivityId,
@@ -1472,6 +1861,8 @@ module.exports = {
   longitudeSegments,
   buildPastActivityQuery,
   buildUpcomingActivityQuery,
+  buildPastActivityBaseQuery,
+  buildUpcomingActivityBaseQuery,
   attachEventInterestCounts,
   attachPastEventInterestCounts,
   executeCommunityActivityInBoundsQuery,

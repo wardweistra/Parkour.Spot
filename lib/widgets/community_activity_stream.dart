@@ -11,8 +11,8 @@ import 'resized_spot_image.dart';
 /// recent activity (oldest at the top, newest just above "now"), a "now"
 /// divider, then training plans and events ordered soonest first.
 ///
-/// Only the most recent [recentPastPreviewCount] past items are shown by
-/// default so "now" stays near the top; older history expands on request.
+/// The first page keeps past short near "now"; [onLoadMorePast] /
+/// [onLoadMoreUpcoming] page the rest from the server.
 class CommunityActivityStream extends StatefulWidget {
   const CommunityActivityStream({
     super.key,
@@ -20,11 +20,13 @@ class CommunityActivityStream extends StatefulWidget {
     required this.onOpenSpot,
     required this.onOpenEvent,
     this.onOpenActor,
+    this.onLoadMorePast,
+    this.onLoadMoreUpcoming,
+    this.loadingMorePast = false,
+    this.loadingMoreUpcoming = false,
     this.now,
     this.padding = const EdgeInsets.fromLTRB(16, 8, 16, 16),
   });
-
-  static const int recentPastPreviewCount = 3;
 
   /// Single column; wider sheets centre the stream instead of stretching cards.
   static const double maxContentWidth = 720;
@@ -33,6 +35,10 @@ class CommunityActivityStream extends StatefulWidget {
   final ValueChanged<CommunityActivityItem> onOpenSpot;
   final ValueChanged<EventMapPin> onOpenEvent;
   final ValueChanged<String>? onOpenActor;
+  final VoidCallback? onLoadMorePast;
+  final VoidCallback? onLoadMoreUpcoming;
+  final bool loadingMorePast;
+  final bool loadingMoreUpcoming;
 
   /// Injectable clock (tests); defaults to [DateTime.now].
   final DateTime? now;
@@ -44,38 +50,58 @@ class CommunityActivityStream extends StatefulWidget {
 }
 
 class _CommunityActivityStreamState extends State<CommunityActivityStream> {
-  bool _showAllPast = false;
+  final GlobalKey _nowDividerKey = GlobalKey();
+  int _lastPastCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _lastPastCount = widget.feed.loadedPastCount;
+  }
 
   @override
   void didUpdateWidget(covariant CommunityActivityStream oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!identical(oldWidget.feed, widget.feed)) {
-      _showAllPast = false;
+    final nextPastCount = widget.feed.loadedPastCount;
+    if (nextPastCount > _lastPastCount) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _anchorToNowDivider();
+      });
     }
+    _lastPastCount = nextPastCount;
+  }
+
+  void _anchorToNowDivider() {
+    final ctx = _nowDividerKey.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(
+      ctx,
+      alignment: 0.35,
+      duration: Duration.zero,
+    );
   }
 
   List<_StreamEntry> _buildEntries() {
     final feed = widget.feed;
     final entries = <_StreamEntry>[];
 
-    // Newest first, matching the API order for spot past items.
+    final remainingPast = feed.hasMorePast
+        ? (feed.pastTotal > feed.loadedPastCount
+              ? feed.pastTotal - feed.loadedPastCount
+              : null)
+        : null;
+    if (feed.hasMorePast && widget.onLoadMorePast != null) {
+      entries.add(_ShowEarlierEntry(remainingPast));
+    }
+
+    // Newest first from the API; timeline reads oldest → newest → now.
     final pastNewestFirst = <_StreamEntry>[
       ...feed.past.map(_PastEntry.new),
       ...feed.pastEvents.map(_PastEventEntry.new),
     ]..sort((a, b) => b.sortTime.compareTo(a.sortTime));
-
-    final previewCount = CommunityActivityStream.recentPastPreviewCount;
-    final hiddenCount = _showAllPast || pastNewestFirst.length <= previewCount
-        ? 0
-        : pastNewestFirst.length - previewCount;
-    if (hiddenCount > 0) {
-      entries.add(_ShowEarlierEntry(hiddenCount));
-    }
-    // Timeline reads oldest → newest → now.
-    final shownPast =
-        pastNewestFirst.take(pastNewestFirst.length - hiddenCount).toList()
-          ..sort((a, b) => a.sortTime.compareTo(b.sortTime));
-    entries.addAll(shownPast);
+    entries.addAll(
+      [...pastNewestFirst]..sort((a, b) => a.sortTime.compareTo(b.sortTime)),
+    );
 
     entries.add(const _NowEntry());
 
@@ -84,6 +110,10 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
       ...feed.events.map(_EventEntry.new),
     ]..sort((a, b) => a.sortTime.compareTo(b.sortTime));
     entries.addAll(upcoming);
+
+    if (feed.hasMoreUpcoming && widget.onLoadMoreUpcoming != null) {
+      entries.add(const _ShowMoreUpcomingEntry());
+    }
 
     return entries;
   }
@@ -105,9 +135,12 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
           itemBuilder: (context, index) {
             final entry = entries[index];
             final child = switch (entry) {
-              _ShowEarlierEntry(:final hiddenCount) => _ShowEarlierButton(
-                hiddenCount: hiddenCount,
-                onPressed: () => setState(() => _showAllPast = true),
+              _ShowEarlierEntry(:final remainingCount) => _ShowEarlierButton(
+                remainingCount: remainingCount,
+                loading: widget.loadingMorePast,
+                onPressed: widget.loadingMorePast
+                    ? null
+                    : widget.onLoadMorePast,
               ),
               _PastEntry(:final item) => CommunityActivityCard(
                 item: item,
@@ -120,7 +153,7 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
                 now: now,
                 onTap: () => widget.onOpenEvent(event.pin),
               ),
-              _NowEntry() => const CommunityNowDivider(),
+              _NowEntry() => CommunityNowDivider(key: _nowDividerKey),
               _PlanEntry(:final item) => CommunityActivityCard(
                 item: item,
                 now: now,
@@ -131,6 +164,12 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
                 event: event,
                 now: now,
                 onTap: () => widget.onOpenEvent(event.pin),
+              ),
+              _ShowMoreUpcomingEntry() => _ShowMoreUpcomingButton(
+                loading: widget.loadingMoreUpcoming,
+                onPressed: widget.loadingMoreUpcoming
+                    ? null
+                    : widget.onLoadMoreUpcoming,
               ),
             };
             return Padding(
@@ -161,8 +200,12 @@ sealed class _StreamEntry {
 }
 
 class _ShowEarlierEntry extends _StreamEntry {
-  const _ShowEarlierEntry(this.hiddenCount);
-  final int hiddenCount;
+  const _ShowEarlierEntry(this.remainingCount);
+  final int? remainingCount;
+}
+
+class _ShowMoreUpcomingEntry extends _StreamEntry {
+  const _ShowMoreUpcomingEntry();
 }
 
 class _PastEntry extends _StreamEntry {
@@ -203,12 +246,45 @@ class _EventEntry extends _StreamEntry {
 
 class _ShowEarlierButton extends StatelessWidget {
   const _ShowEarlierButton({
-    required this.hiddenCount,
+    required this.remainingCount,
+    required this.loading,
     required this.onPressed,
   });
 
-  final int hiddenCount;
-  final VoidCallback onPressed;
+  final int? remainingCount;
+  final bool loading;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final label = remainingCount != null && remainingCount! > 0
+        ? l10n.communityStreamShowEarlier(remainingCount!)
+        : l10n.communityStreamShowEarlierGeneric;
+    return Center(
+      child: TextButton.icon(
+        onPressed: onPressed,
+        icon: loading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.history, size: 18),
+        label: Text(label),
+      ),
+    );
+  }
+}
+
+class _ShowMoreUpcomingButton extends StatelessWidget {
+  const _ShowMoreUpcomingButton({
+    required this.loading,
+    required this.onPressed,
+  });
+
+  final bool loading;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -216,8 +292,14 @@ class _ShowEarlierButton extends StatelessWidget {
     return Center(
       child: TextButton.icon(
         onPressed: onPressed,
-        icon: const Icon(Icons.history, size: 18),
-        label: Text(l10n.communityStreamShowEarlier(hiddenCount)),
+        icon: loading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.expand_more, size: 18),
+        label: Text(l10n.communityStreamShowMoreUpcoming),
       ),
     );
   }

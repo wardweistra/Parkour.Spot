@@ -1325,12 +1325,20 @@
   },
   "communityStreamShowEarlier": "{count, plural, one{Show 1 earlier activity} other{Show {count} earlier activities}}",
   "@communityStreamShowEarlier": {
-    "description": "Explore activities stream: button that expands older past activity hidden above the recent items",
+    "description": "Explore activities stream: button that loads older past activity from the server",
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
+  },
+  "communityStreamShowEarlierGeneric": "Show earlier activities",
+  "@communityStreamShowEarlierGeneric": {
+    "description": "Explore activities stream: load-more past button when remaining count is unknown"
+  },
+  "communityStreamShowMoreUpcoming": "Show more upcoming",
+  "@communityStreamShowMoreUpcoming": {
+    "description": "Explore activities stream: button that loads further upcoming plans and events"
   },
   "communityStreamNowDivider": "now",
   "@communityStreamNowDivider": {

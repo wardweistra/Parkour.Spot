@@ -338,49 +338,90 @@ function fakeDb(seed) {
     if (!store.has(name)) store.set(name, new Map());
     return store.get(name);
   };
+  const toTime = (v) => {
+    if (v instanceof Date) return v.getTime();
+    if (typeof v === "string") {
+      const parsed = Date.parse(v);
+      return Number.isNaN(parsed) ? v : parsed;
+    }
+    return v;
+  };
   const matches = (data, filters) => filters.every(({field, op, value}) => {
     const actual = data[field];
-    const time = (v) => (v instanceof Date ? v.getTime() : v);
     switch (op) {
       case "==": return actual === value;
-      case ">=": return actual != null && time(actual) >= time(value);
-      case "<=": return actual != null && time(actual) <= time(value);
+      case ">=": return actual != null && toTime(actual) >= toTime(value);
+      case "<=": return actual != null && toTime(actual) <= toTime(value);
       default: throw new Error(`unsupported op ${op}`);
     }
   });
-  const makeQuery = (name, filters = [], orders = [], max = null) => ({
-    where: (field, op, value) => makeQuery(name, [...filters, {field, op, value}], orders, max),
-    orderBy: (field, direction = "asc") => makeQuery(name, filters, [...orders, {field, direction}], max),
-    limit: (n) => makeQuery(name, filters, orders, n),
-    get: async () => {
-      let docs = [...colMap(name).entries()]
-          .filter(([, data]) => matches(data, filters))
-          .map(([id, data]) => ({
-            id,
-            data: () => data,
-            exists: true,
-            ref: {
-              delete: async () => colMap(name).delete(id),
-              update: async (fields) => {
-                colMap(name).set(id, {...colMap(name).get(id), ...fields});
-              },
+  const cmpField = (av, bv, direction) => {
+    const at = toTime(av);
+    const bt = toTime(bv);
+    if (at === bt) return 0;
+    const cmp = at < bt ? -1 : 1;
+    return direction === "desc" ? -cmp : cmp;
+  };
+  const isAfterStart = (data, orders, startAfterValues) => {
+    for (let i = 0; i < orders.length; i++) {
+      const {field, direction} = orders[i];
+      const cmp = cmpField(data[field], startAfterValues[i], direction);
+      if (cmp > 0) return true;
+      if (cmp < 0) return false;
+    }
+    return false;
+  };
+  const collectDocs = (name, filters, orders, max, startAfterValues) => {
+    let docs = [...colMap(name).entries()]
+        .filter(([, data]) => matches(data, filters))
+        .map(([id, data]) => ({
+          id,
+          data: () => data,
+          exists: true,
+          ref: {
+            delete: async () => colMap(name).delete(id),
+            update: async (fields) => {
+              colMap(name).set(id, {...colMap(name).get(id), ...fields});
             },
-          }));
-      if (orders.length > 0) {
-        docs.sort((a, b) => {
-          for (const {field, direction} of orders) {
-            const av = a.data()[field];
-            const bv = b.data()[field];
-            const at = av instanceof Date ? av.getTime() : av;
-            const bt = bv instanceof Date ? bv.getTime() : bv;
-            if (at === bt) continue;
-            const cmp = at < bt ? -1 : 1;
-            return direction === "desc" ? -cmp : cmp;
-          }
-          return 0;
-        });
-      }
-      if (max != null) docs = docs.slice(0, max);
+          },
+        }));
+    if (orders.length > 0) {
+      docs.sort((a, b) => {
+        for (const {field, direction} of orders) {
+          const cmp = cmpField(a.data()[field], b.data()[field], direction);
+          if (cmp !== 0) return cmp;
+        }
+        return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+      });
+    }
+    if (startAfterValues && startAfterValues.length > 0 && orders.length > 0) {
+      docs = docs.filter((doc) => isAfterStart(doc.data(), orders, startAfterValues));
+    }
+    const totalMatching = docs.length;
+    if (max != null) docs = docs.slice(0, max);
+    return {docs, totalMatching};
+  };
+  const makeQuery = (
+      name,
+      filters = [],
+      orders = [],
+      max = null,
+      startAfterValues = null,
+  ) => ({
+    where: (field, op, value) =>
+      makeQuery(name, [...filters, {field, op, value}], orders, max, startAfterValues),
+    orderBy: (field, direction = "asc") =>
+      makeQuery(name, filters, [...orders, {field, direction}], max, startAfterValues),
+    limit: (n) => makeQuery(name, filters, orders, n, startAfterValues),
+    startAfter: (...values) => makeQuery(name, filters, orders, max, values),
+    count: () => ({
+      get: async () => {
+        const {totalMatching} = collectDocs(name, filters, orders, null, startAfterValues);
+        return {data: () => ({count: totalMatching})};
+      },
+    }),
+    get: async () => {
+      const {docs} = collectDocs(name, filters, orders, max, startAfterValues);
       return {docs, empty: docs.length === 0, size: docs.length};
     },
   });
@@ -811,5 +852,87 @@ describe("executeCommunityActivityInBoundsQuery", () => {
   it("rejects missing bounds", async () => {
     await expect(executeCommunityActivityInBoundsQuery(fakeDb({}), {minLat: 1}))
         .rejects.toThrow("minLat, maxLat, minLng, maxLng are required numbers");
+  });
+
+  it("returns totalCount across past, plans, and events", async () => {
+    const db = fakeDb(seed);
+    const result = await executeCommunityActivityInBoundsQuery(db, bounds, {
+      now: NOW,
+      eventsInBounds: async () => ({
+        pins: [
+          {id: "p1", eventId: "event-1", startAt: "2026-05-11T10:00:00.000Z", title: "Jam", latitude: 52.3, longitude: 4.9, kind: "venue"},
+          {id: "p2", eventId: "event-2", startAt: "2026-05-20T10:00:00.000Z", title: "Later", latitude: 52.3, longitude: 4.9, kind: "venue"},
+        ],
+      }),
+    });
+    expect(result.pastTotal).toBe(3);
+    expect(result.upcomingPlanTotal).toBe(2);
+    expect(result.eventTotal).toBe(2);
+    expect(result.totalCount).toBe(7);
+  });
+
+  it("pages past activity with cursors", async () => {
+    const db = fakeDb(seed);
+    const first = await executeCommunityActivityInBoundsQuery(
+        db,
+        {...bounds, pastLimit: 2, fetchUpcoming: false},
+        {now: NOW, eventsInBounds: async () => ({pins: []})},
+    );
+    expect(first.past.map((i) => i.id)).toEqual(["check_in_new", "event_ended_past"]);
+    expect(first.hasMorePast).toBe(true);
+    expect(first.pastCursor).toMatchObject({id: "event_ended_past"});
+
+    const second = await executeCommunityActivityInBoundsQuery(
+        db,
+        {
+          ...bounds,
+          pastLimit: 10,
+          fetchPast: true,
+          fetchUpcoming: false,
+          includeCounts: false,
+          pastCursor: first.pastCursor,
+        },
+        {now: NOW, eventsInBounds: async () => ({pins: []})},
+    );
+    expect(second.past.map((i) => i.id)).toEqual(["check_in_old"]);
+    expect(second.hasMorePast).toBe(false);
+    expect(second.pastCursor).toBeNull();
+    expect(second.totalCount).toBeNull();
+  });
+
+  it("merges upcoming plans and events into pages with cursors", async () => {
+    const db = fakeDb(seed);
+    const eventsInBounds = async () => ({
+      pins: [
+        {id: "p1", eventId: "event-1", startAt: "2026-05-11T10:00:00.000Z", title: "Jam", latitude: 52.3, longitude: 4.9, kind: "venue"},
+        {id: "p2", eventId: "event-2", startAt: "2026-05-20T10:00:00.000Z", title: "Later", latitude: 52.3, longitude: 4.9, kind: "venue"},
+      ],
+    });
+    const first = await executeCommunityActivityInBoundsQuery(
+        db,
+        {...bounds, pastLimit: 3, upcomingPageSize: 2, fetchPast: false},
+        {now: NOW, eventsInBounds},
+    );
+    // Soonest two of: plan_soon (10th 14:00), event-1 (11th), plan_later (12th), event-2 (20th).
+    expect(first.upcoming.map((i) => i.id)).toEqual(["plan_soon"]);
+    expect(first.events.map((e) => e.eventId)).toEqual(["event-1"]);
+    expect(first.hasMoreUpcoming).toBe(true);
+
+    const second = await executeCommunityActivityInBoundsQuery(
+        db,
+        {
+          ...bounds,
+          upcomingPageSize: 2,
+          fetchPast: false,
+          fetchUpcoming: true,
+          includeCounts: false,
+          upcomingCursor: first.upcomingCursor,
+          eventCursor: first.eventCursor,
+        },
+        {now: NOW, eventsInBounds},
+    );
+    expect(second.upcoming.map((i) => i.id)).toEqual(["plan_later"]);
+    expect(second.events.map((e) => e.eventId)).toEqual(["event-2"]);
+    expect(second.hasMoreUpcoming).toBe(false);
   });
 });

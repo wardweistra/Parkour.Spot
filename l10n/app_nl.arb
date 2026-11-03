@@ -285,6 +285,8 @@
   "communityStreamLoadFailed": "Community-activiteit kon niet worden geladen",
   "communityStreamRetry": "Opnieuw proberen",
   "communityStreamShowEarlier": "{count, plural, one{Toon 1 eerdere activiteit} other{Toon {count} eerdere activiteiten}}",
+  "communityStreamShowEarlierGeneric": "Toon eerdere activiteiten",
+  "communityStreamShowMoreUpcoming": "Toon meer aankomende",
   "communityStreamNowDivider": "nu",
   "communityStreamAnonymousActor": "Iemand",
   "communityStreamSpotFallback": "Spot",

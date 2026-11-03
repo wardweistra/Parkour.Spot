@@ -1077,6 +1077,13 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get communityStreamShowEarlierGeneric =>
+      'Mostrar actividades anteriores';
+
+  @override
+  String get communityStreamShowMoreUpcoming => 'Mostrar más próximos';
+
+  @override
   String get communityStreamNowDivider => 'ahora';
 
   @override
