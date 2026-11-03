@@ -1353,6 +1353,10 @@
   "@communityStreamNowDivider": {
     "description": "Explore community stream: divider label between past activity and upcoming plans/events"
   },
+  "communityStreamJumpToNow": "Go to now",
+  "@communityStreamJumpToNow": {
+    "description": "Explore community stream: accessibility label for the floating control that scrolls back to the now divider"
+  },
   "communityStreamAnonymousActor": "Someone",
   "@communityStreamAnonymousActor": {
     "description": "Explore community stream: fallback actor name when the user has no display name"

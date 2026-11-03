@@ -1840,6 +1840,12 @@ abstract class AppLocalizations {
   /// **'now'**
   String get communityStreamNowDivider;
 
+  /// Explore community stream: accessibility label for the floating control that scrolls back to the now divider
+  ///
+  /// In en, this message translates to:
+  /// **'Go to now'**
+  String get communityStreamJumpToNow;
+
   /// Explore community stream: fallback actor name when the user has no display name
   ///
   /// In en, this message translates to:

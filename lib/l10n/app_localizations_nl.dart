@@ -1081,6 +1081,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get communityStreamNowDivider => 'nu';
 
   @override
+  String get communityStreamJumpToNow => 'Ga naar nu';
+
+  @override
   String get communityStreamAnonymousActor => 'Iemand';
 
   @override

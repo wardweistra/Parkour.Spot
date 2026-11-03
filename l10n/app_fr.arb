@@ -232,6 +232,7 @@
   "communityStreamShowMoreUpcoming": "Afficher plus à venir",
   "communityStreamPastHistoryLimit": "Seule l’activité des {days} derniers jours est affichée",
   "communityStreamNowDivider": "maintenant",
+  "communityStreamJumpToNow": "Aller à maintenant",
   "communityStreamAnonymousActor": "Quelqu’un",
   "communityStreamSpotFallback": "Spot",
   "communityStreamSpotAdded": "{name} a ajouté ce nouveau spot",

@@ -294,6 +294,119 @@ void main() {
     );
   });
 
+  testWidgets('does not show jump-to-now when now is already visible', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await _pump(
+      tester,
+      CommunityActivityFeed(
+        past: [
+          _item(
+            'past',
+            CommunityActivityKind.spotCheckIn,
+            occurredAt: _now.subtract(const Duration(hours: 1)),
+            actor: 'Past',
+          ),
+        ],
+        upcoming: [
+          _item(
+            'up',
+            CommunityActivityKind.spotTrainingPlan,
+            occurredAt: _now,
+            startAt: _now.add(const Duration(hours: 2)),
+            endAt: _now.add(const Duration(hours: 3)),
+            actor: 'Up',
+          ),
+        ],
+      ),
+    );
+
+    expect(find.byType(CommunityNowDivider), findsOneWidget);
+    expect(find.byKey(CommunityActivityStream.jumpToNowKey), findsNothing);
+  });
+
+  testWidgets('shows a jump-to-now pill when now is scrolled offscreen', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 500);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final past = List.generate(
+      12,
+      (i) => _item(
+        'past$i',
+        CommunityActivityKind.spotCheckIn,
+        occurredAt: _now.subtract(Duration(hours: i + 1)),
+        actor: 'Past$i',
+      ),
+    );
+    final upcoming = List.generate(
+      12,
+      (i) => _item(
+        'up$i',
+        CommunityActivityKind.spotTrainingPlan,
+        occurredAt: _now,
+        startAt: _now.add(Duration(hours: i + 1)),
+        endAt: _now.add(Duration(hours: i + 2)),
+        actor: 'Up$i',
+      ),
+    );
+
+    await _pump(
+      tester,
+      CommunityActivityFeed(past: past, upcoming: upcoming),
+    );
+    // Flush jump-to-now visibility settle frames after the timeline open jump.
+    for (var i = 0; i < 10; i++) {
+      await tester.pump();
+    }
+
+    final jumpFinder = find.byKey(CommunityActivityStream.jumpToNowKey);
+    // Opens at the past end of the timeline, so "now" sits below the viewport.
+    expect(jumpFinder, findsOneWidget);
+    expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+
+    await tester.tap(jumpFinder);
+    await tester.pumpAndSettle();
+
+    expect(jumpFinder, findsNothing);
+    expect(find.byType(CommunityNowDivider), findsOneWidget);
+
+    // Jump-to-now should leave the divider roughly mid-panel, not pinned top.
+    final nowBox =
+        tester.renderObject(find.byType(CommunityNowDivider)) as RenderBox;
+    final scrollBox =
+        tester.renderObject(find.byType(Scrollable)) as RenderBox;
+    final nowCenterY =
+        nowBox.localToGlobal(Offset(0, nowBox.size.height / 2)).dy;
+    final viewCenterY =
+        scrollBox.localToGlobal(Offset(0, scrollBox.size.height / 2)).dy;
+    expect(
+      nowCenterY,
+      closeTo(viewCenterY, scrollBox.size.height * 0.2),
+      reason: 'now should land near the middle of the stream viewport',
+    );
+
+    // Scroll deep into upcoming so "now" leaves above the viewport.
+    final scrollable = find.byType(CustomScrollView);
+    await tester.drag(scrollable, const Offset(0, -2400));
+    await tester.pumpAndSettle();
+
+    expect(jumpFinder, findsOneWidget);
+    expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
+
+    await tester.tap(jumpFinder);
+    await tester.pumpAndSettle();
+    expect(jumpFinder, findsNothing);
+  });
+
   testWidgets('shows load-more upcoming when hasMoreUpcoming', (tester) async {
     var loadMoreUpcomingCalls = 0;
     await _pump(

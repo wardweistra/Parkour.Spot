@@ -34,6 +34,9 @@ class CommunityActivityStream extends StatefulWidget {
   /// Single column; wider sheets centre the stream instead of stretching cards.
   static const double maxContentWidth = 720;
 
+  /// Key on the floating control that scrolls back to the "now" divider.
+  static const Key jumpToNowKey = ValueKey('community-stream-jump-to-now');
+
   final CommunityActivityFeed feed;
   final ValueChanged<CommunityActivityItem> onOpenSpot;
   final ValueChanged<EventMapPin> onOpenEvent;
@@ -52,6 +55,8 @@ class CommunityActivityStream extends StatefulWidget {
       _CommunityActivityStreamState();
 }
 
+enum _JumpToNowDirection { up, down }
+
 class _CommunityActivityStreamState extends State<CommunityActivityStream> {
   final ScrollController _scrollController = ScrollController();
 
@@ -63,6 +68,9 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
   /// inserts while child extents / images finish settling.
   final Map<String, GlobalKey> _entryKeys = {};
 
+  /// Bounds of the scroll viewport for offscreen "now" detection.
+  final GlobalKey _viewportKey = GlobalKey();
+
   String? _anchorId;
   double? _anchorScreenY;
   int _anchorFramesRemaining = 0;
@@ -71,10 +79,29 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
   /// fighting a user who starts scrolling again.
   static const int _anchorCorrectionFrameBudget = 8;
 
+  /// Edge inset before treating "now" as fully offscreen (avoids flicker).
+  static const double _nowVisibilityMargin = 12;
+
   bool _scrolledToTimelineStart = false;
+
+  /// False until initial layout + timeline jump have settled — avoids a false
+  /// "jump down" while the explore sheet is still expanding.
+  bool _nowVisibilityReady = false;
+
+  Size? _lastViewportSize;
+
+  /// Non-null when the inline "now" divider is outside the viewport.
+  _JumpToNowDirection? _jumpToNowDirection;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_scheduleNowVisibilityUpdate);
+  }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_scheduleNowVisibilityUpdate);
     _scrollController.dispose();
     super.dispose();
   }
@@ -187,18 +214,181 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
       return;
     }
     _clearAnchorCorrection();
+    _scheduleNowVisibilityUpdate();
   }
 
   void _ensureScrolledToTimelineStart() {
     if (_scrolledToTimelineStart) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_scrollController.hasClients) return;
+      if (!mounted) return;
+      if (!_scrollController.hasClients) {
+        // Layout hasn't attached the position yet — try again next frame.
+        _ensureScrolledToTimelineStart();
+        return;
+      }
       final position = _scrollController.position;
       if ((position.pixels - position.minScrollExtent).abs() > 0.5) {
         _scrollController.jumpTo(position.minScrollExtent);
       }
       _scrolledToTimelineStart = true;
+      _beginNowVisibilitySettle();
     });
+  }
+
+  void _scheduleNowVisibilityUpdate() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _updateNowVisibility();
+    });
+  }
+
+  /// Hide any premature jump pill, then re-measure after layout settles while
+  /// the bottom sheet / scroll extents finish laying out.
+  void _beginNowVisibilitySettle() {
+    _nowVisibilityReady = false;
+    if (_jumpToNowDirection != null && mounted) {
+      setState(() => _jumpToNowDirection = null);
+    }
+    // Two nested post-frame callbacks: one after the timeline jump applies,
+    // one after the sheet's size for that frame is committed.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _nowVisibilityReady = true;
+        _updateNowVisibility();
+      });
+    });
+  }
+
+  void _onViewportConstraints(BoxConstraints constraints) {
+    if (!constraints.hasBoundedHeight || !constraints.hasBoundedWidth) return;
+    final next = Size(constraints.maxWidth, constraints.maxHeight);
+    if (_lastViewportSize == next) return;
+    _lastViewportSize = next;
+    // Sheet expand / rotate changes the clip without a scroll event.
+    if (_scrolledToTimelineStart) {
+      _scheduleNowVisibilityUpdate();
+    }
+  }
+
+  void _updateNowVisibility() {
+    _JumpToNowDirection? next;
+
+    if (_scrollController.hasClients) {
+      final nowBox =
+          _entryKeys['now']?.currentContext?.findRenderObject() as RenderBox?;
+      final viewportBox =
+          _viewportKey.currentContext?.findRenderObject() as RenderBox?;
+
+      if (nowBox != null &&
+          viewportBox != null &&
+          nowBox.hasSize &&
+          viewportBox.hasSize &&
+          nowBox.attached &&
+          viewportBox.attached) {
+        // Prefer the scrollable's paint clip when available — matches what
+        // the user can actually see inside the sheet.
+        RenderBox boundsBox = viewportBox;
+        final scrollContext =
+            _scrollController.position.context.notificationContext;
+        final scrollBox = scrollContext?.findRenderObject() as RenderBox?;
+        if (scrollBox != null && scrollBox.hasSize && scrollBox.attached) {
+          boundsBox = scrollBox;
+        }
+
+        final nowRect = nowBox.localToGlobal(Offset.zero) & nowBox.size;
+        final viewRect = (boundsBox.localToGlobal(Offset.zero) & boundsBox.size)
+            .deflate(_nowVisibilityMargin);
+
+        if (nowRect.overlaps(viewRect)) {
+          next = null;
+        } else if (nowRect.bottom <= viewRect.top) {
+          next = _JumpToNowDirection.up;
+        } else {
+          next = _JumpToNowDirection.down;
+        }
+      } else {
+        // Far offscreen, "now" may not be laid out (outside cache extent).
+        // With a center-keyed timeline, offset 0 is "now" at the leading edge.
+        final pixels = _scrollController.position.pixels;
+        if (pixels < -_nowVisibilityMargin) {
+          next = _JumpToNowDirection.down;
+        } else if (pixels > _nowVisibilityMargin) {
+          next = _JumpToNowDirection.up;
+        } else {
+          next = null;
+        }
+      }
+    }
+
+    // Until settle completes, keep the floating control hidden even if a
+    // mid-animation measurement thinks "now" is offscreen.
+    if (!_nowVisibilityReady) {
+      next = null;
+    }
+
+    if (next != _jumpToNowDirection) {
+      setState(() => _jumpToNowDirection = next);
+    }
+  }
+
+  /// Scroll offset that puts the center-keyed "now" near mid-viewport.
+  double _nowCenteredScrollOffset() {
+    final position = _scrollController.position;
+    // Offset 0 pins "now" to the leading edge; shift by half the viewport so
+    // it sits roughly in the middle.
+    return (-position.viewportDimension / 2).clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+  }
+
+  Future<void> _animateScrollTo(double offset, {required bool reduceMotion}) async {
+    if (reduceMotion) {
+      _scrollController.jumpTo(offset);
+      return;
+    }
+    await _scrollController.animateTo(
+      offset,
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  Future<void> _scrollToNow() async {
+    if (!_scrollController.hasClients) return;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final duration = reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 320);
+
+    // If "now" is far offscreen it may not be laid out yet — nudge near the
+    // center offset first so ensureVisible can run.
+    var nowContext = _entryKeys['now']?.currentContext;
+    if (nowContext == null) {
+      await _animateScrollTo(
+        _nowCenteredScrollOffset(),
+        reduceMotion: reduceMotion,
+      );
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+      nowContext = _entryKeys['now']?.currentContext;
+    }
+
+    if (nowContext != null && nowContext.mounted) {
+      await Scrollable.ensureVisible(
+        nowContext,
+        alignment: 0.5,
+        duration: duration,
+        curve: Curves.easeOutCubic,
+      );
+    } else if (_scrollController.hasClients) {
+      await _animateScrollTo(
+        _nowCenteredScrollOffset(),
+        reduceMotion: reduceMotion,
+      );
+    }
+    if (mounted) _updateNowVisibility();
   }
 
   List<_StreamEntry> _pastNewestFirst() {
@@ -291,111 +481,155 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
     // Before [center], the first sliver is at the top of the timeline. Past is
     // still newest-first so growth from "Show earlier" expands away from "now"
     // and the viewport stays put.
+    final jumpDirection = _jumpToNowDirection;
+
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(
           maxWidth: CommunityActivityStream.maxContentWidth,
         ),
-        child: NotificationListener<UserScrollNotification>(
-          onNotification: (notification) {
-            // Don't fight the user if they scroll during extent settling.
-            if (_anchorFramesRemaining > 0) {
-              _clearAnchorCorrection();
-            }
-            return false;
-          },
-          child: _CenteredTimelineScrollView(
-            controller: _scrollController,
-            centerKey: _nowCenterKey,
-            slivers: [
-            if (showEarlier || showPastLimit)
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(
-                  padding.left,
-                  padding.top,
-                  padding.right,
-                  10,
-                ),
-                sliver: SliverToBoxAdapter(
-                  child: _buildEntry(
-                    showEarlier
-                        ? _ShowEarlierEntry(remainingPast)
-                        : const _PastHistoryLimitEntry(),
-                    now,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            _onViewportConstraints(constraints);
+            return Stack(
+              key: _viewportKey,
+              children: [
+                NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification is UserScrollNotification &&
+                        _anchorFramesRemaining > 0) {
+                      // Don't fight the user if they scroll during extent settling.
+                      _clearAnchorCorrection();
+                    }
+                    // Metrics fire on sheet resize; updates/ends on user scroll.
+                    if (notification is ScrollMetricsNotification ||
+                        notification is ScrollEndNotification ||
+                        notification is ScrollUpdateNotification) {
+                      _scheduleNowVisibilityUpdate();
+                    }
+                    return false;
+                  },
+                  child: _CenteredTimelineScrollView(
+                controller: _scrollController,
+                centerKey: _nowCenterKey,
+                slivers: [
+                  if (showEarlier || showPastLimit)
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                        padding.left,
+                        padding.top,
+                        padding.right,
+                        10,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: _buildEntry(
+                          showEarlier
+                              ? _ShowEarlierEntry(remainingPast)
+                              : const _PastHistoryLimitEntry(),
+                          now,
+                        ),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: EdgeInsets.only(top: padding.top),
+                      sliver: const SliverToBoxAdapter(
+                        child: SizedBox.shrink(),
+                      ),
+                    ),
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(
+                      padding.left,
+                      0,
+                      padding.right,
+                      0,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final entry = pastNewestFirst[index];
+                          return _padRow(
+                            _buildEntry(entry, now),
+                            isLastInSection: false,
+                          );
+                        },
+                        childCount: pastNewestFirst.length,
+                      ),
+                    ),
                   ),
-                ),
-              )
-            else
-              SliverPadding(
-                padding: EdgeInsets.only(top: padding.top),
-                sliver: const SliverToBoxAdapter(child: SizedBox.shrink()),
-              ),
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(padding.left, 0, padding.right, 0),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final entry = pastNewestFirst[index];
-                    return _padRow(
-                      _buildEntry(entry, now),
-                      isLastInSection: false,
-                    );
-                  },
-                  childCount: pastNewestFirst.length,
-                ),
-              ),
-            ),
-            KeyedSubtree(
-              key: _nowCenterKey,
-              child: SliverPadding(
-                padding: EdgeInsets.fromLTRB(
-                  padding.left,
-                  0,
-                  padding.right,
-                  10,
-                ),
-                sliver: SliverToBoxAdapter(
-                  child: _buildEntry(const _NowEntry(), now),
-                ),
-              ),
-            ),
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                padding.left,
-                0,
-                padding.right,
-                showMoreUpcoming ? 0 : padding.bottom,
-              ),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final entry = upcoming[index];
-                    final isLast =
-                        index == upcoming.length - 1 && !showMoreUpcoming;
-                    return _padRow(
-                      _buildEntry(entry, now),
-                      isLastInSection: isLast,
-                    );
-                  },
-                  childCount: upcoming.length,
-                ),
+                  KeyedSubtree(
+                    key: _nowCenterKey,
+                    child: SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                        padding.left,
+                        0,
+                        padding.right,
+                        10,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: _buildEntry(const _NowEntry(), now),
+                      ),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(
+                      padding.left,
+                      0,
+                      padding.right,
+                      showMoreUpcoming ? 0 : padding.bottom,
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final entry = upcoming[index];
+                          final isLast =
+                              index == upcoming.length - 1 && !showMoreUpcoming;
+                          return _padRow(
+                            _buildEntry(entry, now),
+                            isLastInSection: isLast,
+                          );
+                        },
+                        childCount: upcoming.length,
+                      ),
+                    ),
+                  ),
+                  if (showMoreUpcoming)
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                        padding.left,
+                        10,
+                        padding.right,
+                        padding.bottom,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: _buildEntry(
+                          const _ShowMoreUpcomingEntry(),
+                          now,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
-            if (showMoreUpcoming)
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(
-                  padding.left,
-                  10,
-                  padding.right,
-                  padding.bottom,
-                ),
-                sliver: SliverToBoxAdapter(
-                  child: _buildEntry(const _ShowMoreUpcomingEntry(), now),
-                ),
-              ),
-            ],
-          ),
+                if (jumpDirection != null)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    top: jumpDirection == _JumpToNowDirection.up ? 8 : null,
+                    bottom: jumpDirection == _JumpToNowDirection.down
+                        ? 8
+                        : null,
+                    child: Center(
+                      child: _JumpToNowPill(
+                        direction: jumpDirection,
+                        onPressed: _scrollToNow,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -578,7 +812,6 @@ class CommunityNowDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final line = Expanded(
       child: Divider(color: colorScheme.primary.withValues(alpha: 0.6)),
@@ -588,26 +821,84 @@ class CommunityNowDivider extends StatelessWidget {
       child: Row(
         children: [
           line,
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: colorScheme.primary,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                l10n.communityStreamNowDivider,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: colorScheme.onPrimary,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.4,
-                ),
-              ),
-            ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 10),
+            child: _NowPill(),
           ),
           line,
         ],
+      ),
+    );
+  }
+}
+
+/// Shared filled "now" chip used by the inline divider and the jump control.
+class _NowPill extends StatelessWidget {
+  const _NowPill({this.leading, this.trailing});
+
+  final Widget? leading;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final labelStyle = Theme.of(context).textTheme.labelMedium?.copyWith(
+      color: colorScheme.onPrimary,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.4,
+    );
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: colorScheme.primary,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (leading != null) ...[leading!, const SizedBox(width: 4)],
+          Text(l10n.communityStreamNowDivider, style: labelStyle),
+          if (trailing != null) ...[const SizedBox(width: 4), trailing!],
+        ],
+      ),
+    );
+  }
+}
+
+/// Floating control that scrolls the timeline back to the "now" divider.
+class _JumpToNowPill extends StatelessWidget {
+  const _JumpToNowPill({required this.direction, required this.onPressed});
+
+  final _JumpToNowDirection direction;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final arrow = Icon(
+      direction == _JumpToNowDirection.up
+          ? Icons.keyboard_arrow_up
+          : Icons.keyboard_arrow_down,
+      size: 18,
+      color: colorScheme.onPrimary,
+    );
+    return Semantics(
+      button: true,
+      label: l10n.communityStreamJumpToNow,
+      child: Material(
+        key: CommunityActivityStream.jumpToNowKey,
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(999),
+          child: _NowPill(
+            // Arrow points the way back to "now".
+            leading: direction == _JumpToNowDirection.up ? arrow : null,
+            trailing: direction == _JumpToNowDirection.down ? arrow : null,
+          ),
+        ),
       ),
     );
   }

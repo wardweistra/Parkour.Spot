@@ -1092,6 +1092,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get communityStreamNowDivider => 'agora';
 
   @override
+  String get communityStreamJumpToNow => 'Ir para agora';
+
+  @override
   String get communityStreamAnonymousActor => 'Alguém';
 
   @override
