@@ -19,7 +19,9 @@ import '../../utils/explore_spots_utils.dart';
 import '../../widgets/event_card.dart';
 import '../../widgets/explore_bottom_sheet_header.dart';
 import '../../models/community_activity.dart';
+import '../../models/community_activity_lens.dart';
 import '../../services/community_activity_service.dart';
+import '../../widgets/community_activity_kind_filter.dart';
 import '../../widgets/community_activity_stream.dart';
 import '../../widgets/spot_check_in_presence.dart'
     show navigateToUserProfileForCheckIn;
@@ -372,6 +374,12 @@ class SearchScreenState extends State<SearchScreen>
   final ValueNotifier<String> _exploreListMode = ValueNotifier(
     ExploreBottomSheetHeader.modeSpots,
   );
+
+  /// Kind lens for the activities stream (All / Events / Sessions / Contributions).
+  CommunityActivityLens _communityLens = CommunityActivityLens.all;
+
+  /// Bumped on each community reload so stale lens/map responses are ignored.
+  int _communityLoadGeneration = 0;
   BitmapDescriptor? _eventIcon;
   BitmapDescriptor? _eventSelectedIcon;
   late AnimationController _bottomSheetAnimationController;
@@ -1462,6 +1470,7 @@ class SearchScreenState extends State<SearchScreen>
       final maxLat = bounds.northeast.latitude;
       final minLng = bounds.southwest.longitude;
       final maxLng = bounds.northeast.longitude;
+      final communityGeneration = ++_communityLoadGeneration;
 
       final results = await Future.wait([
         spotService.getTopRankedSpotsInBounds(
@@ -1500,14 +1509,16 @@ class SearchScreenState extends State<SearchScreen>
       final ranked = results[0] as Map<String, dynamic>;
       final eventsResult = results[1] as EventsInBoundsResult;
       final communityFeed = results[2] as CommunityActivityFeed?;
-      _loadedCommunityFeed = communityFeed ?? CommunityActivityFeed.empty;
-      _communityLoadFailed = communityFeed == null;
       _communityMinLat = minLat;
       _communityMaxLat = maxLat;
       _communityMinLng = minLng;
       _communityMaxLng = maxLng;
-      _isLoadingMoreCommunityPast = false;
-      _isLoadingMoreCommunityUpcoming = false;
+      if (communityGeneration == _communityLoadGeneration) {
+        _loadedCommunityFeed = communityFeed ?? CommunityActivityFeed.empty;
+        _communityLoadFailed = communityFeed == null;
+        _isLoadingMoreCommunityPast = false;
+        _isLoadingMoreCommunityUpcoming = false;
+      }
 
       final mergedSpots = await _mergeActiveSpotListSpots(
         (ranked['spots'] as List<Spot>?) ?? <Spot>[],
@@ -1546,8 +1557,10 @@ class SearchScreenState extends State<SearchScreen>
     double minLat,
     double maxLat,
     double minLng,
-    double maxLng,
-  ) async {
+    double maxLng, {
+    CommunityActivityLens? lens,
+  }) async {
+    final activeLens = lens ?? _communityLens;
     try {
       return await service.getCommunityActivityInBounds(
         minLat,
@@ -1556,10 +1569,52 @@ class SearchScreenState extends State<SearchScreen>
         maxLng,
         pastLimit: CommunityActivityService.pastInitialLimit,
         upcomingPageSize: CommunityActivityService.upcomingPageSize,
+        kinds: activeLens.firestoreKinds,
+        includeEvents: activeLens.includeUpcomingEvents,
       );
     } catch (e) {
       debugPrint('Error loading community activity for current view: $e');
       return null;
+    }
+  }
+
+  /// Refetch the stream for the current lens without reloading spots/events.
+  Future<void> _reloadCommunityFeedForLens() async {
+    if (_communityMinLat == null ||
+        _communityMaxLat == null ||
+        _communityMinLng == null ||
+        _communityMaxLng == null) {
+      return;
+    }
+    final generation = ++_communityLoadGeneration;
+    final lens = _communityLens;
+    setState(() {
+      _isLoadingCommunityForView = true;
+      _isLoadingMoreCommunityPast = false;
+      _isLoadingMoreCommunityUpcoming = false;
+    });
+    try {
+      final service = Provider.of<CommunityActivityService>(
+        context,
+        listen: false,
+      );
+      final feed = await _loadCommunityFeed(
+        service,
+        _communityMinLat!,
+        _communityMaxLat!,
+        _communityMinLng!,
+        _communityMaxLng!,
+        lens: lens,
+      );
+      if (!mounted || generation != _communityLoadGeneration) return;
+      setState(() {
+        _loadedCommunityFeed = feed ?? CommunityActivityFeed.empty;
+        _communityLoadFailed = feed == null;
+      });
+    } finally {
+      if (mounted && generation == _communityLoadGeneration) {
+        setState(() => _isLoadingCommunityForView = false);
+      }
     }
   }
 
@@ -1572,6 +1627,8 @@ class SearchScreenState extends State<SearchScreen>
         _communityMaxLng == null) {
       return;
     }
+    final generation = _communityLoadGeneration;
+    final lens = _communityLens;
     setState(() => _isLoadingMoreCommunityPast = true);
     try {
       final service = Provider.of<CommunityActivityService>(
@@ -1584,15 +1641,17 @@ class SearchScreenState extends State<SearchScreen>
         _communityMaxLat!,
         _communityMinLng!,
         _communityMaxLng!,
+        kinds: lens.firestoreKinds,
+        includeEvents: lens.includeUpcomingEvents,
       );
-      if (!mounted) return;
+      if (!mounted || generation != _communityLoadGeneration) return;
       setState(() {
         _loadedCommunityFeed = _loadedCommunityFeed.appendingPast(page);
       });
     } catch (e) {
       debugPrint('Error loading more past community activity: $e');
     } finally {
-      if (mounted) {
+      if (mounted && generation == _communityLoadGeneration) {
         setState(() => _isLoadingMoreCommunityPast = false);
       }
     }
@@ -1607,6 +1666,8 @@ class SearchScreenState extends State<SearchScreen>
         _communityMaxLng == null) {
       return;
     }
+    final generation = _communityLoadGeneration;
+    final lens = _communityLens;
     setState(() => _isLoadingMoreCommunityUpcoming = true);
     try {
       final service = Provider.of<CommunityActivityService>(
@@ -1619,15 +1680,17 @@ class SearchScreenState extends State<SearchScreen>
         _communityMaxLat!,
         _communityMinLng!,
         _communityMaxLng!,
+        kinds: lens.firestoreKinds,
+        includeEvents: lens.includeUpcomingEvents,
       );
-      if (!mounted) return;
+      if (!mounted || generation != _communityLoadGeneration) return;
       setState(() {
         _loadedCommunityFeed = _loadedCommunityFeed.appendingUpcoming(page);
       });
     } catch (e) {
       debugPrint('Error loading more upcoming community activity: $e');
     } finally {
-      if (mounted) {
+      if (mounted && generation == _communityLoadGeneration) {
         setState(() => _isLoadingMoreCommunityUpcoming = false);
       }
     }
@@ -3200,11 +3263,14 @@ class SearchScreenState extends State<SearchScreen>
   Widget _buildCommunityStream() {
     // Key by loaded bounds so a map-move reload remounts the stream and
     // re-centers on "now"; "Show earlier" keeps the same bounds/key.
+    // Include lens so switching filters remounts and re-centers cleanly.
     return CommunityActivityStream(
       key: ValueKey(
         'community-stream_'
         '${_communityMinLat}_${_communityMaxLat}_'
-        '${_communityMinLng}_${_communityMaxLng}',
+        '${_communityMinLng}_${_communityMaxLng}_'
+        '${_communityLens.name}_'
+        '$_communityLoadGeneration',
       ),
       feed: _loadedCommunityFeed,
       loadingMorePast: _isLoadingMoreCommunityPast,
@@ -3231,6 +3297,23 @@ class SearchScreenState extends State<SearchScreen>
       },
       onOpenActor: (userId) => navigateToUserProfileForCheckIn(context, userId),
     );
+  }
+
+  Widget _buildExploreCommunityBody(BuildContext context) {
+    if (_isLoadingCommunityForView && _loadedCommunityFeed.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_loadedCommunityFeed.isEmpty) {
+      // Area totals stay unfiltered; a positive total with an empty page means
+      // this lens has nothing in the viewport (vs no activity at all).
+      if (!_communityLoadFailed &&
+          _communityLens != CommunityActivityLens.all &&
+          _loadedCommunityFeed.totalCount > 0) {
+        return _buildExploreCommunityLensEmptyState(context);
+      }
+      return _buildExploreCommunityEmptyState(context);
+    }
+    return _buildCommunityStream();
   }
 
   Widget _buildExploreCommunityEmptyState(BuildContext context) {
@@ -3273,6 +3356,88 @@ class SearchScreenState extends State<SearchScreen>
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _communityLensEmptyTitle(AppLocalizations l10n) {
+    switch (_communityLens) {
+      case CommunityActivityLens.all:
+        return l10n.exploreNoCommunityArea;
+      case CommunityActivityLens.events:
+        return l10n.communityStreamFilterEmptyEvents;
+      case CommunityActivityLens.sessions:
+        return l10n.communityStreamFilterEmptySessions;
+      case CommunityActivityLens.contributions:
+        return l10n.communityStreamFilterEmptyContributions;
+    }
+  }
+
+  Widget _buildExploreCommunityLensEmptyState(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final feed = _loadedCommunityFeed;
+    final showEarlier = feed.hasMorePast;
+    final showMoreUpcoming = feed.hasMoreUpcoming;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.filter_list_off_outlined,
+              size: 64,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _communityLensEmptyTitle(l10n),
+              textAlign: TextAlign.center,
+              style: theme.textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.communityStreamFilterEmptyHint,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
+            if (showEarlier || showMoreUpcoming) ...[
+              const SizedBox(height: 16),
+              if (showEarlier)
+                TextButton(
+                  onPressed: _isLoadingMoreCommunityPast
+                      ? null
+                      : _loadMoreCommunityPast,
+                  child: Text(
+                    _isLoadingMoreCommunityPast
+                        ? l10n.communityStreamShowEarlierGeneric
+                        : (feed.pastTotal > feed.loadedPastCount
+                              ? l10n.communityStreamShowEarlier(
+                                  feed.pastTotal - feed.loadedPastCount,
+                                )
+                              : l10n.communityStreamShowEarlierGeneric),
+                  ),
+                ),
+              if (showMoreUpcoming)
+                TextButton(
+                  onPressed: _isLoadingMoreCommunityUpcoming
+                      ? null
+                      : _loadMoreCommunityUpcoming,
+                  child: Text(
+                    feed.upcomingTotal > feed.loadedUpcomingCount
+                        ? l10n.communityStreamShowMoreUpcoming(
+                            feed.upcomingTotal - feed.loadedUpcomingCount,
+                          )
+                        : l10n.communityStreamShowMoreUpcomingGeneric,
+                  ),
+                ),
+            ],
           ],
         ),
       ),
@@ -4276,12 +4441,15 @@ class SearchScreenState extends State<SearchScreen>
                                                   ? l10n.exploreSpotCountShort(
                                                       _exploreSpotCountForHeader(),
                                                     )
-                                                  : l10n.exploreSpotsLoadingLabel,
+                                                  : l10n
+                                                        .exploreSpotsLoadingLabel,
                                               communityLabel: _hasLoadedMapData
-                                                  ? l10n.exploreCommunityCountShort(
-                                                      _exploreCommunityCountForHeader(),
-                                                    )
-                                                  : l10n.exploreCommunityLoadingLabel,
+                                                  ? l10n
+                                                        .exploreCommunityCountShort(
+                                                          _exploreCommunityCountForHeader(),
+                                                        )
+                                                  : l10n
+                                                        .exploreCommunityLoadingLabel,
                                               spotsLoading:
                                                   _isLoadingSpotsForView ||
                                                   !_hasLoadedMapData,
@@ -4318,12 +4486,61 @@ class SearchScreenState extends State<SearchScreen>
                                                 if (exploreListMode ==
                                                     ExploreBottomSheetHeader
                                                         .modeCommunity) {
-                                                  return _loadedCommunityFeed
-                                                          .isEmpty
-                                                      ? _buildExploreCommunityEmptyState(
-                                                          context,
-                                                        )
-                                                      : _buildCommunityStream();
+                                                  // Chips live in the expanded
+                                                  // body (not the peek header)
+                                                  // and hide until the sheet is
+                                                  // tall enough mid-animation.
+                                                  return LayoutBuilder(
+                                                    builder: (context, constraints) {
+                                                      final showKindFilter =
+                                                          constraints.maxHeight >=
+                                                          120;
+                                                      return Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .stretch,
+                                                        children: [
+                                                          if (showKindFilter)
+                                                            Padding(
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .fromLTRB(
+                                                                16,
+                                                                0,
+                                                                16,
+                                                                8,
+                                                              ),
+                                                              child:
+                                                                  CommunityActivityKindFilter(
+                                                                value:
+                                                                    _communityLens,
+                                                                onChanged:
+                                                                    (lens) {
+                                                                  if (lens ==
+                                                                      _communityLens) {
+                                                                    return;
+                                                                  }
+                                                                  setState(() {
+                                                                    _communityLens =
+                                                                        lens;
+                                                                    _loadedCommunityFeed =
+                                                                        CommunityActivityFeed
+                                                                            .empty;
+                                                                  });
+                                                                  _reloadCommunityFeedForLens();
+                                                                },
+                                                              ),
+                                                            ),
+                                                          Expanded(
+                                                            child:
+                                                                _buildExploreCommunityBody(
+                                                              context,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      );
+                                                    },
+                                                  );
                                                 }
                                                 return _visibleSpots.isEmpty
                                                     ? Center(

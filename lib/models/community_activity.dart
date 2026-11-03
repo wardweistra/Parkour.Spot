@@ -298,6 +298,12 @@ class CommunityActivityFeed {
 
   int get loadedPastCount => past.length + pastEvents.length;
 
+  /// Upcoming plans + event pins currently loaded below "now".
+  int get loadedUpcomingCount => upcoming.length + events.length;
+
+  /// Lens-scoped upcoming total (plans + events) for remaining-count labels.
+  int get upcomingTotal => upcomingPlanTotal + eventTotal;
+
   bool get isEmpty => itemCount == 0;
 
   CommunityActivityFeed copyWith({

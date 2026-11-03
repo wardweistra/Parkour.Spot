@@ -603,15 +603,29 @@ void main() {
       tester,
       CommunityActivityFeed(
         events: [_event('soon', _now.add(const Duration(hours: 2)))],
+        upcomingPlanTotal: 2,
+        eventTotal: 3,
         hasMoreUpcoming: true,
       ),
       onLoadMoreUpcoming: () => loadMoreUpcomingCalls++,
     );
 
-    expect(find.text('Show more upcoming'), findsOneWidget);
-    await tester.tap(find.text('Show more upcoming'));
+    // upcomingTotal 5 − 1 loaded event = 4 remaining.
+    expect(find.text('Show 4 more upcoming'), findsOneWidget);
+    await tester.tap(find.text('Show 4 more upcoming'));
     await tester.pump();
     expect(loadMoreUpcomingCalls, 1);
+  });
+
+  testWidgets('uses generic upcoming label when remaining count is unknown', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      const CommunityActivityFeed(hasMoreUpcoming: true),
+      onLoadMoreUpcoming: () {},
+    );
+    expect(find.text('Show more upcoming'), findsOneWidget);
   });
 
   testWidgets('hides load-more buttons when paging flags are false', (

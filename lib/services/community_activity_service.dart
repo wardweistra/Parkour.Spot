@@ -33,6 +33,8 @@ class CommunityActivityService extends ChangeNotifier {
     bool includeCounts = true,
     bool fetchPast = true,
     bool fetchUpcoming = true,
+    List<String>? kinds,
+    bool? includeEvents,
     CommunityActivityCursor? pastCursor,
     CommunityActivityCursor? upcomingCursor,
     CommunityActivityCursor? eventCursor,
@@ -49,6 +51,12 @@ class CommunityActivityService extends ChangeNotifier {
       'fetchPast': fetchPast,
       'fetchUpcoming': fetchUpcoming,
     };
+    if (kinds != null && kinds.isNotEmpty) {
+      payload['kinds'] = kinds;
+    }
+    if (includeEvents != null) {
+      payload['includeEvents'] = includeEvents;
+    }
     if (pastCursor != null) {
       payload['pastCursor'] = pastCursor.toCallableMap();
     }
@@ -79,8 +87,10 @@ class CommunityActivityService extends ChangeNotifier {
     double minLat,
     double maxLat,
     double minLng,
-    double maxLng,
-  ) {
+    double maxLng, {
+    List<String>? kinds,
+    bool? includeEvents,
+  }) {
     final cursor = feed.pastCursor;
     if (!feed.hasMorePast || cursor == null) {
       return Future.value(const CommunityActivityFeed());
@@ -94,6 +104,8 @@ class CommunityActivityService extends ChangeNotifier {
       includeCounts: false,
       fetchPast: true,
       fetchUpcoming: false,
+      kinds: kinds,
+      includeEvents: includeEvents,
       pastCursor: cursor,
     );
   }
@@ -104,8 +116,10 @@ class CommunityActivityService extends ChangeNotifier {
     double minLat,
     double maxLat,
     double minLng,
-    double maxLng,
-  ) {
+    double maxLng, {
+    List<String>? kinds,
+    bool? includeEvents,
+  }) {
     if (!feed.hasMoreUpcoming) {
       return Future.value(const CommunityActivityFeed());
     }
@@ -118,6 +132,8 @@ class CommunityActivityService extends ChangeNotifier {
       includeCounts: false,
       fetchPast: false,
       fetchUpcoming: true,
+      kinds: kinds,
+      includeEvents: includeEvents,
       upcomingCursor: feed.upcomingCursor,
       eventCursor: feed.eventCursor,
     );

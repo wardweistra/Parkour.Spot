@@ -1059,6 +1059,33 @@ class AppLocalizationsEs extends AppLocalizations {
       'Haz check-in, planifica un entrenamiento o añade un spot para empezar';
 
   @override
+  String get communityStreamFilterAll => 'Todo';
+
+  @override
+  String get communityStreamFilterEvents => 'Eventos';
+
+  @override
+  String get communityStreamFilterSessions => 'Sesiones';
+
+  @override
+  String get communityStreamFilterContributions => 'Aportaciones';
+
+  @override
+  String get communityStreamFilterEmptyEvents => 'No hay eventos en esta zona';
+
+  @override
+  String get communityStreamFilterEmptySessions =>
+      'No hay sesiones en esta zona';
+
+  @override
+  String get communityStreamFilterEmptyContributions =>
+      'No hay aportaciones en esta zona';
+
+  @override
+  String get communityStreamFilterEmptyHint =>
+      'Prueba otro filtro, mueve el mapa o muestra actividad anterior';
+
+  @override
   String get communityStreamLoadFailed =>
       'No se pudo cargar la actividad de la comunidad';
 
@@ -1081,7 +1108,18 @@ class AppLocalizationsEs extends AppLocalizations {
       'Mostrar actividades anteriores';
 
   @override
-  String get communityStreamShowMoreUpcoming => 'Mostrar más próximos';
+  String communityStreamShowMoreUpcoming(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Mostrar $count más próximos',
+      one: 'Mostrar 1 más próximo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get communityStreamShowMoreUpcomingGeneric => 'Mostrar más próximos';
 
   @override
   String communityStreamPastHistoryLimit(int days) {

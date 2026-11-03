@@ -1798,6 +1798,54 @@ abstract class AppLocalizations {
   /// **'Check in, plan a training session or add a spot to get things going'**
   String get exploreNoCommunityAreaHint;
 
+  /// Explore activities kind lens: show every activity type
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get communityStreamFilterAll;
+
+  /// Explore activities kind lens: events only
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get communityStreamFilterEvents;
+
+  /// Explore activities kind lens: check-ins and training plans
+  ///
+  /// In en, this message translates to:
+  /// **'Sessions'**
+  String get communityStreamFilterSessions;
+
+  /// Explore activities kind lens: new spots and photos
+  ///
+  /// In en, this message translates to:
+  /// **'Contributions'**
+  String get communityStreamFilterContributions;
+
+  /// Explore activities: empty state when Events lens matches nothing loaded
+  ///
+  /// In en, this message translates to:
+  /// **'No events in this area'**
+  String get communityStreamFilterEmptyEvents;
+
+  /// Explore activities: empty state when Sessions lens matches nothing loaded
+  ///
+  /// In en, this message translates to:
+  /// **'No sessions in this area'**
+  String get communityStreamFilterEmptySessions;
+
+  /// Explore activities: empty state when Contributions lens matches nothing loaded
+  ///
+  /// In en, this message translates to:
+  /// **'No contributions in this area'**
+  String get communityStreamFilterEmptyContributions;
+
+  /// Explore activities: hint under a kind-lens empty state
+  ///
+  /// In en, this message translates to:
+  /// **'Try another filter, pan the map, or show earlier activity'**
+  String get communityStreamFilterEmptyHint;
+
   /// Explore community stream: error state title
   ///
   /// In en, this message translates to:
@@ -1822,11 +1870,17 @@ abstract class AppLocalizations {
   /// **'Show earlier activities'**
   String get communityStreamShowEarlierGeneric;
 
-  /// Explore activities stream: button that loads further upcoming plans and events
+  /// Explore activities stream: button that loads further upcoming plans and events with remaining count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Show 1 more upcoming} other{Show {count} more upcoming}}'**
+  String communityStreamShowMoreUpcoming(int count);
+
+  /// Explore activities stream: load-more upcoming button when remaining count is unknown
   ///
   /// In en, this message translates to:
   /// **'Show more upcoming'**
-  String get communityStreamShowMoreUpcoming;
+  String get communityStreamShowMoreUpcomingGeneric;
 
   /// Explore activities stream: shown at the top of past history when older pages are exhausted
   ///

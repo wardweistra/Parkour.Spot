@@ -599,7 +599,8 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
         now: now,
         onTap: () => widget.onOpenEvent(event.pin),
       ),
-      _ShowMoreUpcomingEntry() => _ShowMoreUpcomingButton(
+      _ShowMoreUpcomingEntry(:final remainingCount) => _ShowMoreUpcomingButton(
+        remainingCount: remainingCount,
         loading: widget.loadingMoreUpcoming,
         onPressed: widget.loadingMoreUpcoming
             ? null
@@ -622,6 +623,11 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
     final remainingPast = widget.feed.hasMorePast
         ? (widget.feed.pastTotal > widget.feed.loadedPastCount
               ? widget.feed.pastTotal - widget.feed.loadedPastCount
+              : null)
+        : null;
+    final remainingUpcoming = widget.feed.hasMoreUpcoming
+        ? (widget.feed.upcomingTotal > widget.feed.loadedUpcomingCount
+              ? widget.feed.upcomingTotal - widget.feed.loadedUpcomingCount
               : null)
         : null;
     final showEarlier =
@@ -779,7 +785,7 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
                       ),
                       sliver: SliverToBoxAdapter(
                         child: _buildEntry(
-                          const _ShowMoreUpcomingEntry(),
+                          _ShowMoreUpcomingEntry(remainingUpcoming),
                           now,
                         ),
                       ),
@@ -857,7 +863,8 @@ class _PastHistoryLimitEntry extends _StreamEntry {
 }
 
 class _ShowMoreUpcomingEntry extends _StreamEntry {
-  const _ShowMoreUpcomingEntry();
+  const _ShowMoreUpcomingEntry(this.remainingCount);
+  final int? remainingCount;
 }
 
 class _PastEntry extends _StreamEntry {
@@ -931,16 +938,21 @@ class _ShowEarlierButton extends StatelessWidget {
 
 class _ShowMoreUpcomingButton extends StatelessWidget {
   const _ShowMoreUpcomingButton({
+    required this.remainingCount,
     required this.loading,
     required this.onPressed,
   });
 
+  final int? remainingCount;
   final bool loading;
   final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final label = remainingCount != null && remainingCount! > 0
+        ? l10n.communityStreamShowMoreUpcoming(remainingCount!)
+        : l10n.communityStreamShowMoreUpcomingGeneric;
     return Center(
       child: TextButton.icon(
         onPressed: onPressed,
@@ -951,7 +963,7 @@ class _ShowMoreUpcomingButton extends StatelessWidget {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             : const Icon(Icons.expand_more, size: 18),
-        label: Text(l10n.communityStreamShowMoreUpcoming),
+        label: Text(label),
       ),
     );
   }

@@ -1060,6 +1060,34 @@ class AppLocalizationsDe extends AppLocalizations {
       'Checke ein, plane ein Training oder füge einen Spot hinzu, um loszulegen';
 
   @override
+  String get communityStreamFilterAll => 'Alle';
+
+  @override
+  String get communityStreamFilterEvents => 'Events';
+
+  @override
+  String get communityStreamFilterSessions => 'Sessions';
+
+  @override
+  String get communityStreamFilterContributions => 'Beiträge';
+
+  @override
+  String get communityStreamFilterEmptyEvents =>
+      'Keine Events in diesem Gebiet';
+
+  @override
+  String get communityStreamFilterEmptySessions =>
+      'Keine Sessions in diesem Gebiet';
+
+  @override
+  String get communityStreamFilterEmptyContributions =>
+      'Keine Beiträge in diesem Gebiet';
+
+  @override
+  String get communityStreamFilterEmptyHint =>
+      'Probiere einen anderen Filter, verschiebe die Karte oder zeige frühere Aktivität';
+
+  @override
   String get communityStreamLoadFailed =>
       'Community-Aktivität konnte nicht geladen werden';
 
@@ -1082,7 +1110,18 @@ class AppLocalizationsDe extends AppLocalizations {
       'Frühere Aktivitäten anzeigen';
 
   @override
-  String get communityStreamShowMoreUpcoming =>
+  String communityStreamShowMoreUpcoming(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count weitere bevorstehende anzeigen',
+      one: '1 weiteres bevorstehendes anzeigen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get communityStreamShowMoreUpcomingGeneric =>
       'Weitere bevorstehende anzeigen';
 
   @override

@@ -1315,6 +1315,38 @@
   "@exploreNoCommunityAreaHint": {
     "description": "Explore activities stream: empty state hint"
   },
+  "communityStreamFilterAll": "All",
+  "@communityStreamFilterAll": {
+    "description": "Explore activities kind lens: show every activity type"
+  },
+  "communityStreamFilterEvents": "Events",
+  "@communityStreamFilterEvents": {
+    "description": "Explore activities kind lens: events only"
+  },
+  "communityStreamFilterSessions": "Sessions",
+  "@communityStreamFilterSessions": {
+    "description": "Explore activities kind lens: check-ins and training plans"
+  },
+  "communityStreamFilterContributions": "Contributions",
+  "@communityStreamFilterContributions": {
+    "description": "Explore activities kind lens: new spots and photos"
+  },
+  "communityStreamFilterEmptyEvents": "No events in this area",
+  "@communityStreamFilterEmptyEvents": {
+    "description": "Explore activities: empty state when Events lens matches nothing loaded"
+  },
+  "communityStreamFilterEmptySessions": "No sessions in this area",
+  "@communityStreamFilterEmptySessions": {
+    "description": "Explore activities: empty state when Sessions lens matches nothing loaded"
+  },
+  "communityStreamFilterEmptyContributions": "No contributions in this area",
+  "@communityStreamFilterEmptyContributions": {
+    "description": "Explore activities: empty state when Contributions lens matches nothing loaded"
+  },
+  "communityStreamFilterEmptyHint": "Try another filter, pan the map, or show earlier activity",
+  "@communityStreamFilterEmptyHint": {
+    "description": "Explore activities: hint under a kind-lens empty state"
+  },
   "communityStreamLoadFailed": "Could not load community activity",
   "@communityStreamLoadFailed": {
     "description": "Explore community stream: error state title"
@@ -1336,9 +1368,18 @@
   "@communityStreamShowEarlierGeneric": {
     "description": "Explore activities stream: load-more past button when remaining count is unknown"
   },
-  "communityStreamShowMoreUpcoming": "Show more upcoming",
+  "communityStreamShowMoreUpcoming": "{count, plural, one{Show 1 more upcoming} other{Show {count} more upcoming}}",
   "@communityStreamShowMoreUpcoming": {
-    "description": "Explore activities stream: button that loads further upcoming plans and events"
+    "description": "Explore activities stream: button that loads further upcoming plans and events with remaining count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "communityStreamShowMoreUpcomingGeneric": "Show more upcoming",
+  "@communityStreamShowMoreUpcomingGeneric": {
+    "description": "Explore activities stream: load-more upcoming button when remaining count is unknown"
   },
   "communityStreamPastHistoryLimit": "Only activity from the last {days} days is shown",
   "@communityStreamPastHistoryLimit": {

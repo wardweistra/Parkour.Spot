@@ -350,6 +350,7 @@ function fakeDb(seed) {
     const actual = data[field];
     switch (op) {
       case "==": return actual === value;
+      case "in": return Array.isArray(value) && value.includes(actual);
       case ">=": return actual != null && toTime(actual) >= toTime(value);
       case "<=": return actual != null && toTime(actual) <= toTime(value);
       default: throw new Error(`unsupported op ${op}`);
@@ -934,5 +935,67 @@ describe("executeCommunityActivityInBoundsQuery", () => {
     expect(second.upcoming.map((i) => i.id)).toEqual(["plan_later"]);
     expect(second.events.map((e) => e.eventId)).toEqual(["event-2"]);
     expect(second.hasMoreUpcoming).toBe(false);
+  });
+
+  it("filters pages and page totals by kinds while keeping area totalCount", async () => {
+    const db = fakeDb(seed);
+    const eventsInBounds = async () => ({
+      pins: [
+        {id: "p1", eventId: "event-1", startAt: "2026-05-11T10:00:00.000Z", title: "Jam", latitude: 52.3, longitude: 4.9, kind: "venue"},
+        {id: "p2", eventId: "event-2", startAt: "2026-05-20T10:00:00.000Z", title: "Later", latitude: 52.3, longitude: 4.9, kind: "venue"},
+      ],
+    });
+
+    const sessions = await executeCommunityActivityInBoundsQuery(
+        db,
+        {
+          ...bounds,
+          kinds: [KIND_SPOT_CHECK_IN, KIND_SPOT_TRAINING_PLAN],
+        },
+        {now: NOW, eventsInBounds},
+    );
+    expect(sessions.past.map((i) => i.id)).toEqual([
+      "check_in_new",
+      "check_in_old",
+    ]);
+    expect(sessions.upcoming.map((i) => i.id)).toEqual([
+      "plan_soon",
+      "plan_later",
+    ]);
+    expect(sessions.events).toEqual([]);
+    expect(sessions.pastTotal).toBe(2);
+    expect(sessions.upcomingPlanTotal).toBe(2);
+    expect(sessions.eventTotal).toBe(0);
+    expect(sessions.totalCount).toBe(7);
+
+    const events = await executeCommunityActivityInBoundsQuery(
+        db,
+        {...bounds, kinds: [KIND_EVENT_ENDED]},
+        {now: NOW, eventsInBounds},
+    );
+    expect(events.past.map((i) => i.id)).toEqual(["event_ended_past"]);
+    expect(events.upcoming).toEqual([]);
+    expect(events.events.map((e) => e.eventId)).toEqual(["event-1", "event-2"]);
+    expect(events.pastTotal).toBe(1);
+    expect(events.upcomingPlanTotal).toBe(0);
+    expect(events.eventTotal).toBe(2);
+    expect(events.totalCount).toBe(7);
+
+    const contributions = await executeCommunityActivityInBoundsQuery(
+        db,
+        {
+          ...bounds,
+          kinds: [KIND_SPOT_ADDED, KIND_SPOT_PHOTO_ADDED],
+        },
+        {now: NOW, eventsInBounds},
+    );
+    expect(contributions.past).toEqual([]);
+    expect(contributions.upcoming).toEqual([]);
+    expect(contributions.events).toEqual([]);
+    expect(contributions.pastTotal).toBe(0);
+    expect(contributions.upcomingPlanTotal).toBe(0);
+    expect(contributions.hasMorePast).toBe(false);
+    expect(contributions.hasMoreUpcoming).toBe(false);
+    expect(contributions.totalCount).toBe(7);
   });
 });
