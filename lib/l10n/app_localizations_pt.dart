@@ -27,12 +27,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileSettingsLanguageLabel => 'Idioma';
 
   @override
-  String get profileSettingsLanguageDescription =>
-      'Escolha um idioma ou use o do dispositivo.';
+  String get profileSettingsLanguageDescription => 'Escolha um idioma ou use o do dispositivo.';
 
   @override
-  String get profileLanguageSystemDefault =>
-      'Automático (inglês se não for compatível)';
+  String get profileLanguageSystemDefault => 'Automático (inglês se não for compatível)';
 
   @override
   String get profileLoadErrorDefault => 'Não foi possível carregar o perfil.';
@@ -47,8 +45,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileSignInTitle => 'Inicie sessão para aceder à sua conta';
 
   @override
-  String get profileSignInSubtitle =>
-      'Inicie sessão para gerir os seus spots e avaliar locais.';
+  String get profileSignInSubtitle => 'Inicie sessão para gerir os seus spots e avaliar locais.';
 
   @override
   String get profileSignInButton => 'Iniciar sessão';
@@ -66,8 +63,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileViewEditSubtitle => 'Ver e editar o seu perfil';
 
   @override
-  String get accountSpotListsSubtitle =>
-      'Quero visitar, já visitei, spots que adicionaste e listas que crias ou guardas';
+  String get accountSpotListsSubtitle => 'Quero visitar, já visitei, spots que adicionaste e listas que crias ou guardas';
 
   @override
   String get mySpotsTitle => 'Os meus spots';
@@ -79,8 +75,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get myEventsTitle => 'Os meus eventos';
 
   @override
-  String get accountMyEventsSubtitle =>
-      'Eventos a que vais ou em que tens interesse';
+  String get accountMyEventsSubtitle => 'Eventos a que vais ou em que tens interesse';
 
   @override
   String get eventInterestGoing => 'Vou';
@@ -107,27 +102,22 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get eventInterestDisclaimer =>
-      'Isto não é uma inscrição. Só indica aos outros que podes aparecer.';
+  String get eventInterestDisclaimer => 'Isto não é uma inscrição. Só indica aos outros que podes aparecer.';
 
   @override
-  String get eventInterestDisclaimerPast =>
-      'Isto não é uma inscrição. Só mostra quem marcou que compareceu ou esteve interessado.';
+  String get eventInterestDisclaimerPast => 'Isto não é uma inscrição. Só mostra quem marcou que compareceu ou esteve interessado.';
 
   @override
-  String get eventInterestUpdateFailed =>
-      'Não foi possível atualizar o teu interesse.';
+  String get eventInterestUpdateFailed => 'Não foi possível atualizar o teu interesse.';
 
   @override
-  String get myEventsSignInPrompt =>
-      'Inicia sessão para ver os eventos a que vais ou em que tens interesse';
+  String get myEventsSignInPrompt => 'Inicia sessão para ver os eventos a que vais ou em que tens interesse';
 
   @override
   String get myEventsEmptyTitle => 'Ainda sem eventos';
 
   @override
-  String get myEventsEmptyDescription =>
-      'Abre um evento e toca em Vou ou Interessado. Isto não é uma inscrição — aparece só no evento e nesta lista.';
+  String get myEventsEmptyDescription => 'Abre um evento e toca em Vou ou Interessado. Isto não é uma inscrição — aparece só no evento e nesta lista.';
 
   @override
   String get myEventsUpcomingTitle => 'Próximos';
@@ -142,8 +132,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get myEventsCalendarTitle => 'Adicionar ao teu calendário';
 
   @override
-  String get myEventsCalendarDescription =>
-      'Subscreve com um link privado. Os eventos a que vais ou que te interessam, os check-ins e as sessões planeadas mantêm-se atualizados na tua app de calendário.';
+  String get myEventsCalendarDescription => 'Subscreve com um link privado. Os eventos a que vais ou que te interessam, os check-ins e as sessões planeadas mantêm-se atualizados na tua app de calendário.';
 
   @override
   String get myEventsCalendarOpenMac => 'Adicionar ao Apple Calendar';
@@ -158,8 +147,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get myEventsCalendarCopyUrl => 'Copiar URL';
 
   @override
-  String get myEventsCalendarMacUnavailable =>
-      'Adicionar ao calendário Apple funciona num Mac ou iPhone. Usa aqui o Google Calendar, o Outlook ou Copiar URL.';
+  String get myEventsCalendarMacUnavailable => 'Adicionar ao calendário Apple funciona num Mac ou iPhone. Usa aqui o Google Calendar, o Outlook ou Copiar URL.';
 
   @override
   String get myEventsCalendarRegenerate => 'Gerar novo link…';
@@ -168,27 +156,22 @@ class AppLocalizationsPt extends AppLocalizations {
   String get myEventsCalendarCopied => 'Link do calendário copiado';
 
   @override
-  String get myEventsCalendarFailed =>
-      'Não foi possível obter o teu link do calendário. Tenta novamente.';
+  String get myEventsCalendarFailed => 'Não foi possível obter o teu link do calendário. Tenta novamente.';
 
   @override
-  String get myEventsCalendarRegenerateTitle =>
-      'Gerar novo link do calendário?';
+  String get myEventsCalendarRegenerateTitle => 'Gerar novo link do calendário?';
 
   @override
-  String get myEventsCalendarRegenerateBody =>
-      'O teu link anterior deixa de funcionar. Os calendários já subscritos deixam de atualizar até adicionares o novo link.';
+  String get myEventsCalendarRegenerateBody => 'O teu link anterior deixa de funcionar. Os calendários já subscritos deixam de atualizar até adicionares o novo link.';
 
   @override
   String get myEventsCalendarRegenerateConfirm => 'Gerar novo link';
 
   @override
-  String get spotListsHubSignInPrompt =>
-      'Inicia sessão para ver e gerir as tuas listas';
+  String get spotListsHubSignInPrompt => 'Inicia sessão para ver e gerir as tuas listas';
 
   @override
-  String get spotListsHubCouldNotLoad =>
-      'Não foi possível carregar as listas. Verifica a ligação e tenta novamente.';
+  String get spotListsHubCouldNotLoad => 'Não foi possível carregar as listas. Verifica a ligação e tenta novamente.';
 
   @override
   String get spotListsHubAddedByYou => 'Adicionados por ti';
@@ -205,49 +188,40 @@ class AppLocalizationsPt extends AppLocalizations {
   String get notificationPushOpen => 'Abrir';
 
   @override
-  String get notificationsSubtitle =>
-      'Novos spots por perto, sessões planeadas, check-ins e outras novidades para si';
+  String get notificationsSubtitle => 'Novos spots por perto, sessões planeadas, check-ins e outras novidades para si';
 
   @override
   String get notificationsEmptyTitle => 'Ainda está calmo por aqui';
 
   @override
-  String get notificationsEmptyBody =>
-      'Quando alguém adicionar um spot por perto, planear uma sessão onde treinas ou fizer check-in por perto, verás aqui.';
+  String get notificationsEmptyBody => 'Quando alguém adicionar um spot por perto, planear uma sessão onde treinas ou fizer check-in por perto, verás aqui.';
 
   @override
-  String get notificationsLoadError =>
-      'Não foi possível carregar as tuas notificações. Verifica a ligação e tenta novamente.';
+  String get notificationsLoadError => 'Não foi possível carregar as tuas notificações. Verifica a ligação e tenta novamente.';
 
   @override
   String get notificationsRetry => 'Tentar novamente';
 
   @override
-  String get notificationsOpenFailedSnackbar =>
-      'Não foi possível abrir esta notificação. Tenta mais tarde.';
+  String get notificationsOpenFailedSnackbar => 'Não foi possível abrir esta notificação. Tenta mais tarde.';
 
   @override
   String get notificationsMarkAllRead => 'Marcar todas como lidas';
 
   @override
-  String get notificationsMarkAllReadFailed =>
-      'Não foi possível marcar todas como lidas. Tenta novamente.';
+  String get notificationsMarkAllReadFailed => 'Não foi possível marcar todas como lidas. Tenta novamente.';
 
   @override
-  String get notificationsMarkAsReadFailed =>
-      'Não foi possível marcar como lida. Tenta novamente.';
+  String get notificationsMarkAsReadFailed => 'Não foi possível marcar como lida. Tenta novamente.';
 
   @override
-  String get notificationsMarkAsUnreadFailed =>
-      'Não foi possível marcar como não lida. Tenta novamente.';
+  String get notificationsMarkAsUnreadFailed => 'Não foi possível marcar como não lida. Tenta novamente.';
 
   @override
-  String get notificationsMarkAsUnreadHint =>
-      'Mantém premido para marcar como não lida';
+  String get notificationsMarkAsUnreadHint => 'Mantém premido para marcar como não lida';
 
   @override
-  String get notificationsMarkAsReadHint =>
-      'Mantém premido para marcar como lida';
+  String get notificationsMarkAsReadHint => 'Mantém premido para marcar como lida';
 
   @override
   String get notificationsShowAll => 'Mostrar todas';
@@ -259,24 +233,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get notificationsEmptyFilteredTitle => 'Estás em dia';
 
   @override
-  String get notificationsEmptyFilteredBody =>
-      'Não há notificações por ler neste momento.';
+  String get notificationsEmptyFilteredBody => 'Não há notificações por ler neste momento.';
 
   @override
-  String get notificationsPushPromptEmptyHelper =>
-      'Fica a saber de spots e check-ins por perto mesmo quando não estás na app.';
+  String get notificationsPushPromptEmptyHelper => 'Fica a saber de spots e check-ins por perto mesmo quando não estás na app.';
 
   @override
-  String get notificationsPushPromptListTitle =>
-      'Receber alertas neste navegador';
+  String get notificationsPushPromptListTitle => 'Receber alertas neste navegador';
 
   @override
-  String get notificationsPushPromptListBody =>
-      'Fica a saber da atividade por perto mesmo quando não estás na app.';
+  String get notificationsPushPromptListBody => 'Fica a saber da atividade por perto mesmo quando não estás na app.';
 
   @override
-  String get notificationsPushPromptTurnOnEmpty =>
-      'Ativar alertas neste navegador';
+  String get notificationsPushPromptTurnOnEmpty => 'Ativar alertas neste navegador';
 
   @override
   String get notificationsPushPromptTurnOn => 'Ativar';
@@ -285,16 +254,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get notificationsPushPromptNotNow => 'Agora não';
 
   @override
-  String get notificationsPushPromptBlockedTitle =>
-      'As notificações push estão bloqueadas neste navegador';
+  String get notificationsPushPromptBlockedTitle => 'As notificações push estão bloqueadas neste navegador';
 
   @override
-  String get notificationsPushPromptBlockedBody =>
-      'Permite notificações para o Parkour·Spot nas definições do navegador para receberes alertas quando não estás na app.';
+  String get notificationsPushPromptBlockedBody => 'Permite notificações para o Parkour·Spot nas definições do navegador para receberes alertas quando não estás na app.';
 
   @override
-  String get notificationsPushPromptEnabledSnackbar =>
-      'Os alertas estão ativos neste navegador.';
+  String get notificationsPushPromptEnabledSnackbar => 'Os alertas estão ativos neste navegador.';
 
   @override
   String get notificationsTimeUnknown => 'Recentemente';
@@ -329,20 +295,15 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get notificationNearbyCheckInBody =>
-      'Acabou de fazer check-in neste spot.';
+  String get notificationNearbyCheckInBody => 'Acabou de fazer check-in neste spot.';
 
   @override
-  String notificationNearbyTrainingPlanTitle(
-    String actorName,
-    String spotName,
-  ) {
+  String notificationNearbyTrainingPlanTitle(String actorName, String spotName) {
     return '$actorName planeou uma sessão em $spotName';
   }
 
   @override
-  String get notificationNearbyTrainingPlanBody =>
-      'Partilharam uma sessão planeada pública perto de uma das suas localizações guardadas.';
+  String get notificationNearbyTrainingPlanBody => 'Partilharam uma sessão planeada pública perto de uma das suas localizações guardadas.';
 
   @override
   String notificationTrainingPlanCheckInReminderTitle(String spotName) {
@@ -350,8 +311,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get notificationTrainingPlanCheckInReminderBody =>
-      'O teu treino planeado já começou. Toca para fazer check-in.';
+  String get notificationTrainingPlanCheckInReminderBody => 'O teu treino planeado já começou. Toca para fazer check-in.';
 
   @override
   String notificationNearbyNewEventTitle(String eventName) {
@@ -359,8 +319,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get notificationNearbyNewEventBody =>
-      'Foi adicionado um evento perto de uma das tuas localizações guardadas.';
+  String get notificationNearbyNewEventBody => 'Foi adicionado um evento perto de uma das tuas localizações guardadas.';
 
   @override
   String get profileModeratorSectionTitle => 'Moderador';
@@ -369,8 +328,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileModeratorToolsTitle => 'Ferramentas de moderação';
 
   @override
-  String get profileModeratorToolsSubtitle =>
-      'Rever e resolver relatórios de spots';
+  String get profileModeratorToolsSubtitle => 'Rever e resolver relatórios de spots';
 
   @override
   String get profileAdminSectionTitle => 'Administrador';
@@ -379,15 +337,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileAdminToolsTitle => 'Ferramentas de administração';
 
   @override
-  String get profileAdminToolsSubtitle =>
-      'Gerir fontes e tarefas administrativas';
+  String get profileAdminToolsSubtitle => 'Gerir fontes e tarefas administrativas';
 
   @override
   String get profileSignOut => 'Terminar sessão';
 
   @override
-  String get profileSignOutMessage =>
-      'Tem a certeza de que quer terminar a sessão?';
+  String get profileSignOutMessage => 'Tem a certeza de que quer terminar a sessão?';
 
   @override
   String get profileCancel => 'Cancelar';
@@ -399,82 +355,64 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileNotificationSettingsTitle => 'Definições de notificações';
 
   @override
-  String get profileNotificationSettingsThisDeviceGroupTitle =>
-      'Este dispositivo';
+  String get profileNotificationSettingsThisDeviceGroupTitle => 'Este dispositivo';
 
   @override
-  String get profileNotificationSettingsThisDeviceGroupHelper =>
-      'Os alertas ficam neste navegador. Os outros dispositivos com sessão iniciada mantêm a própria definição.';
+  String get profileNotificationSettingsThisDeviceGroupHelper => 'Os alertas ficam neste navegador. Os outros dispositivos com sessão iniciada mantêm a própria definição.';
 
   @override
-  String get profileNotificationSettingsEveryDeviceGroupTitle =>
-      'Em todos os dispositivos';
+  String get profileNotificationSettingsEveryDeviceGroupTitle => 'Em todos os dispositivos';
 
   @override
-  String get profileNotificationSettingsEveryDeviceGroupHelper =>
-      'Estas aplicam-se onde tiveres sessão iniciada.';
+  String get profileNotificationSettingsEveryDeviceGroupHelper => 'Estas aplicam-se onde tiveres sessão iniciada.';
 
   @override
   String get profilePushNotificationsThisDeviceTitle => 'Notificações push';
 
   @override
-  String get profilePushNotificationsUnsupported =>
-      'As notificações push não são suportadas neste navegador.';
+  String get profilePushNotificationsUnsupported => 'As notificações push não são suportadas neste navegador.';
 
   @override
-  String get profilePushNotificationsLoading =>
-      'A verificar o estado das notificações push neste dispositivo…';
+  String get profilePushNotificationsLoading => 'A verificar o estado das notificações push neste dispositivo…';
 
   @override
-  String get profilePushNotificationsPermissionDenied =>
-      'A permissão push está bloqueada nas definições do navegador para este site.';
+  String get profilePushNotificationsPermissionDenied => 'A permissão push está bloqueada nas definições do navegador para este site.';
 
   @override
-  String get profilePushNotificationsPermissionNotDetermined =>
-      'Ativa isto para pedir permissão e subscrever este navegador.';
+  String get profilePushNotificationsPermissionNotDetermined => 'Ativa isto para pedir permissão e subscrever este navegador.';
 
   @override
-  String get profilePushNotificationsEnabled =>
-      'Este navegador está subscrito e pode receber alertas push.';
+  String get profilePushNotificationsEnabled => 'Este navegador está subscrito e pode receber alertas push.';
 
   @override
-  String get profilePushNotificationsPermissionGrantedButOff =>
-      'A permissão foi concedida, mas este navegador não está subscrito de momento.';
+  String get profilePushNotificationsPermissionGrantedButOff => 'A permissão foi concedida, mas este navegador não está subscrito de momento.';
 
   @override
-  String get profilePushNotificationsUnknown =>
-      'O estado push não está disponível agora. Tenta novamente em breve.';
+  String get profilePushNotificationsUnknown => 'O estado push não está disponível agora. Tenta novamente em breve.';
 
   @override
-  String get profilePushNotificationsError =>
-      'Não foi possível atualizar as notificações push neste navegador. Tenta novamente.';
+  String get profilePushNotificationsError => 'Não foi possível atualizar as notificações push neste navegador. Tenta novamente.';
 
   @override
-  String get profilePushNotificationsDisableTitle =>
-      'Desativar notificações push?';
+  String get profilePushNotificationsDisableTitle => 'Desativar notificações push?';
 
   @override
-  String get profilePushNotificationsDisableMessage =>
-      'Deixas de receber banners neste browser. As notificações na app continuam a aparecer.';
+  String get profilePushNotificationsDisableMessage => 'Deixas de receber banners neste browser. As notificações na app continuam a aparecer.';
 
   @override
   String get profilePushNotificationsDisableConfirm => 'Desativar';
 
   @override
-  String get profileLocationAlertsDescription =>
-      'Controle que locais são usados para alertas nas proximidades, incluindo check-ins, novos spots, sessões planeadas e eventos.';
+  String get profileLocationAlertsDescription => 'Controle que locais são usados para alertas nas proximidades, incluindo check-ins, novos spots, sessões planeadas e eventos.';
 
   @override
-  String get profileLocationAlertsShareLastKnownTitle =>
-      'Última localização conhecida';
+  String get profileLocationAlertsShareLastKnownTitle => 'Última localização conhecida';
 
   @override
-  String get profileLocationAlertsShareLastKnownSubtitle =>
-      'Quando isto está ligado, esta localização é guardada na nuvem para alertas nas proximidades.';
+  String get profileLocationAlertsShareLastKnownSubtitle => 'Quando isto está ligado, esta localização é guardada na nuvem para alertas nas proximidades.';
 
   @override
-  String get profileLocationAlertsShareLastKnownOnSubtitle =>
-      'Desligue para deixar de guardar esta localização.';
+  String get profileLocationAlertsShareLastKnownOnSubtitle => 'Desligue para deixar de guardar esta localização.';
 
   @override
   String profileLocationAlertsLastKnownActiveSubtitle(String details) {
@@ -482,63 +420,49 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get profileLocationAlertsLastKnownLabel =>
-      'Última localização conhecida';
+  String get profileLocationAlertsLastKnownLabel => 'Última localização conhecida';
 
   @override
-  String get profileLocationAlertsNotifyNewSpotsTitle =>
-      'Notificar sobre novos spots nas proximidades';
+  String get profileLocationAlertsNotifyNewSpotsTitle => 'Notificar sobre novos spots nas proximidades';
 
   @override
-  String get profileLocationAlertsNotifyNewSpotsSubtitle =>
-      'Receba uma notificação quando alguém adicionar um spot dentro do raio de alerta de um local guardado ativo ou da sua última localização conhecida.';
+  String get profileLocationAlertsNotifyNewSpotsSubtitle => 'Receba uma notificação quando alguém adicionar um spot dentro do raio de alerta de um local guardado ativo ou da sua última localização conhecida.';
 
   @override
-  String get profileLocationAlertsNotifyNearbyCheckInsTitle =>
-      'Notificar sobre check-ins nas proximidades';
+  String get profileLocationAlertsNotifyNearbyCheckInsTitle => 'Notificar sobre check-ins nas proximidades';
 
   @override
-  String get profileLocationAlertsNotifyNearbyCheckInsSubtitle =>
-      'Receba uma notificação quando alguém fizer check-in num spot dentro do raio de alerta de um local guardado ativo ou da sua última localização conhecida.';
+  String get profileLocationAlertsNotifyNearbyCheckInsSubtitle => 'Receba uma notificação quando alguém fizer check-in num spot dentro do raio de alerta de um local guardado ativo ou da sua última localização conhecida.';
 
   @override
-  String get profileLocationAlertsNotifyTrainingPlansTitle =>
-      'Notificar sobre sessões planeadas por perto';
+  String get profileLocationAlertsNotifyTrainingPlansTitle => 'Notificar sobre sessões planeadas por perto';
 
   @override
-  String get profileLocationAlertsNotifyTrainingPlansSubtitle =>
-      'Receba uma notificação quando alguém partilhar uma sessão planeada pública num spot dentro do raio de alerta de um local guardado ativo ou da sua última localização conhecida.';
+  String get profileLocationAlertsNotifyTrainingPlansSubtitle => 'Receba uma notificação quando alguém partilhar uma sessão planeada pública num spot dentro do raio de alerta de um local guardado ativo ou da sua última localização conhecida.';
 
   @override
-  String get profileLocationAlertsNotifyEventsTitle =>
-      'Notificar sobre eventos nas proximidades';
+  String get profileLocationAlertsNotifyEventsTitle => 'Notificar sobre eventos nas proximidades';
 
   @override
-  String get profileLocationAlertsNotifyEventsSubtitle =>
-      'Receba uma notificação quando um evento for adicionado dentro do raio de alerta de um local guardado ativo ou da sua última localização conhecida.';
+  String get profileLocationAlertsNotifyEventsSubtitle => 'Receba uma notificação quando um evento for adicionado dentro do raio de alerta de um local guardado ativo ou da sua última localização conhecida.';
 
   @override
-  String get profileTrainingPlanCheckInReminderTitle =>
-      'Lembrar-me de fazer check-in nas sessões planeadas';
+  String get profileTrainingPlanCheckInReminderTitle => 'Lembrar-me de fazer check-in nas sessões planeadas';
 
   @override
-  String get profileTrainingPlanCheckInReminderSubtitle =>
-      'Recebe um lembrete quando a tua sessão planeada já começou e ainda não fizeste check-in nesse spot.';
+  String get profileTrainingPlanCheckInReminderSubtitle => 'Recebe um lembrete quando a tua sessão planeada já começou e ainda não fizeste check-in nesse spot.';
 
   @override
-  String get profileLocationAlertsSavedLocationsTitle =>
-      'Os meus locais de interesse';
+  String get profileLocationAlertsSavedLocationsTitle => 'Os meus locais de interesse';
 
   @override
   String get profileLocationAlertsAddLocationButton => 'Adicionar';
 
   @override
-  String get profileLocationAlertsNoLocationsEnabledWarning =>
-      'Não receberá notificações baseadas na localização até ativar a última localização conhecida ou, pelo menos, um local guardado.';
+  String get profileLocationAlertsNoLocationsEnabledWarning => 'Não receberá notificações baseadas na localização até ativar a última localização conhecida ou, pelo menos, um local guardado.';
 
   @override
-  String get profileLocationAlertsEmptyState =>
-      'Ainda não tem locais guardados. Adicione sítios como Casa ou Trabalho.';
+  String get profileLocationAlertsEmptyState => 'Ainda não tem locais guardados. Adicione sítios como Casa ou Trabalho.';
 
   @override
   String get profileLocationAlertsDefaultLabel => 'Local guardado';
@@ -573,8 +497,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileLocationAlertsDialogEditTitle => 'Editar local';
 
   @override
-  String get profileLocationAlertsDialogEditLastKnownTitle =>
-      'Editar última localização conhecida';
+  String get profileLocationAlertsDialogEditLastKnownTitle => 'Editar última localização conhecida';
 
   @override
   String get profileLocationAlertsLabelFieldLabel => 'Nome';
@@ -597,15 +520,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileLocationAlertsLabelRequired => 'Introduza um nome';
 
   @override
-  String get profileLocationAlertsLocationRequired =>
-      'Escolha uma localização no mapa';
+  String get profileLocationAlertsLocationRequired => 'Escolha uma localização no mapa';
 
   @override
   String get profileLocationAlertsSaveButton => 'Guardar';
 
   @override
-  String get profileAboutIntro =>
-      'Parkour·Spot é uma aplicação comunitária para descobrir e partilhar spots de parkour e freerunning em todo o mundo. Queremos tornar simples encontrar bons locais—onde quer que treines.';
+  String get profileAboutIntro => 'Parkour·Spot é uma aplicação comunitária para descobrir e partilhar spots de parkour e freerunning em todo o mundo. Queremos tornar simples encontrar bons locais—onde quer que treines.';
 
   @override
   String get profileAboutSite => 'Mais sobre o Parkour·Spot';
@@ -626,8 +547,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileInstallBannerTitle => 'Instalar a app Parkour·Spot';
 
   @override
-  String get profileInstallBannerSubtitle =>
-      'Experiência completa da aplicação';
+  String get profileInstallBannerSubtitle => 'Experiência completa da aplicação';
 
   @override
   String get profileInstallDialogTitle => 'Instalar Parkour·Spot';
@@ -644,27 +564,22 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileInstallDeviceAndroid => 'dispositivo Android';
 
   @override
-  String get profileInstallIosStep1 =>
-      'Toque no botão Partilhar na parte inferior do ecrã';
+  String get profileInstallIosStep1 => 'Toque no botão Partilhar na parte inferior do ecrã';
 
   @override
-  String get profileInstallIosStep2 =>
-      'Desça e toque em «Adicionar ao ecrã principal»';
+  String get profileInstallIosStep2 => 'Desça e toque em «Adicionar ao ecrã principal»';
 
   @override
-  String get profileInstallIosStep3 =>
-      'Toque em «Adicionar» no canto superior direito';
+  String get profileInstallIosStep3 => 'Toque em «Adicionar» no canto superior direito';
 
   @override
   String get profileInstallIosStep4 => 'A app aparecerá no ecrã principal!';
 
   @override
-  String get profileInstallAndroidStep1 =>
-      'Toque no menu Mais (⋯) no canto superior direito';
+  String get profileInstallAndroidStep1 => 'Toque no menu Mais (⋯) no canto superior direito';
 
   @override
-  String get profileInstallAndroidStep2 =>
-      'Toque em «Adicionar ao ecrã inicial»';
+  String get profileInstallAndroidStep2 => 'Toque em «Adicionar ao ecrã inicial»';
 
   @override
   String get profileInstallAndroidStep3 => 'Toque em «Instalar aplicação»';
@@ -679,8 +594,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get exploreMetaDefaultTitle => 'Parkour·Spot';
 
   @override
-  String get exploreMetaDefaultDescription =>
-      'Descobre, mapeia e partilha os melhores spots de parkour no mundo com fotos da comunidade, avaliações e dicas locais para o teu próximo treino.';
+  String get exploreMetaDefaultDescription => 'Descobre, mapeia e partilha os melhores spots de parkour no mundo com fotos da comunidade, avaliações e dicas locais para o teu próximo treino.';
 
   @override
   String exploreMetaTitleCityCountry(String city, String country) {
@@ -706,16 +620,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get exploreAddSpotTitle => 'Adicionar novo spot';
 
   @override
-  String get exploreAddSpotSubtitle =>
-      'Partilha os teus spots de parkour favoritos com a comunidade';
+  String get exploreAddSpotSubtitle => 'Partilha os teus spots de parkour favoritos com a comunidade';
 
   @override
-  String get exploreSignInToAddSpot =>
-      'Inicia sessão para adicionar spots e eventos';
+  String get exploreSignInToAddSpot => 'Inicia sessão para adicionar spots e eventos';
 
   @override
-  String get exploreSignInToAddSubtitle =>
-      'Contribui com novos spots ou submete propostas de eventos para revisão dos moderadores.';
+  String get exploreSignInToAddSubtitle => 'Contribui com novos spots ou submete propostas de eventos para revisão dos moderadores.';
 
   @override
   String get addHubHeading => 'O que queres adicionar?';
@@ -727,8 +638,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addHubSpotTitle => 'Adicionar novo spot';
 
   @override
-  String get addHubSpotDescription =>
-      'Coloca um pin, adiciona fotos e põe um novo spot de treino no mapa.';
+  String get addHubSpotDescription => 'Coloca um pin, adiciona fotos e põe um novo spot de treino no mapa.';
 
   @override
   String get addHubSpotPublishBadge => 'No mapa de imediato';
@@ -740,8 +650,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addHubEventTitle => 'Adicionar novo evento';
 
   @override
-  String get addHubEventDescription =>
-      'Propõe um jam, encontro ou sessão para outros encontrarem.';
+  String get addHubEventDescription => 'Propõe um jam, encontro ou sessão para outros encontrarem.';
 
   @override
   String get addHubEventModerationBadge => 'Revisto pelos moderadores';
@@ -753,8 +662,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addHubSignInTitle => 'Inicia sessão para contribuir';
 
   @override
-  String get addHubSignInSubtitle =>
-      'Conta gratuita. Adiciona spots ao mapa ou propõe eventos para a comunidade.';
+  String get addHubSignInSubtitle => 'Conta gratuita. Adiciona spots ao mapa ou propõe eventos para a comunidade.';
 
   @override
   String get exploreLoadingProfile => 'A carregar o teu perfil…';
@@ -778,8 +686,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get explorePickerTitleEventWhere => 'Escolher localização ou spots';
 
   @override
-  String get explorePickerSearchHintEvents =>
-      'Pesquisar localização ou evento…';
+  String get explorePickerSearchHintEvents => 'Pesquisar localização ou evento…';
 
   @override
   String get explorePickerSearchHintLocation => 'Pesquisar localização…';
@@ -811,8 +718,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get explorePickerUseLocation => 'Usar localização';
 
   @override
-  String get explorePickerReplaceLocationBody =>
-      'Isto substitui a localização exata.';
+  String get explorePickerReplaceLocationBody => 'Isto substitui a localização exata.';
 
   @override
   String get explorePickerKeepLocation => 'Manter localização';
@@ -821,8 +727,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get explorePickerUseSpotInstead => 'Adicionar spot';
 
   @override
-  String get explorePickerEventWhereHint =>
-      'Escolhe uma localização exata, ou um ou mais spots.';
+  String get explorePickerEventWhereHint => 'Escolhe uma localização exata, ou um ou mais spots.';
 
   @override
   String explorePickerEventWhereReplacesListHint(String name) {
@@ -852,8 +757,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get explorePickerMultiSpotsHint =>
-      'Toca nos spots no mapa para os adicionar. Confirma quando terminares.';
+  String get explorePickerMultiSpotsHint => 'Toca nos spots no mapa para os adicionar. Confirma quando terminares.';
 
   @override
   String explorePickerMultiSpotsSummary(int count, String name) {
@@ -997,8 +901,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get exploreSwitchToSatellite => 'Ver satélite';
 
   @override
-  String get exploreLocationPermissionDenied =>
-      'Permissão de localização recusada';
+  String get exploreLocationPermissionDenied => 'Permissão de localização recusada';
 
   @override
   String get exploreCenterOnMyLocation => 'Centrar na minha localização';
@@ -1055,8 +958,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get exploreNoCommunityArea => 'Sem atividade nesta zona';
 
   @override
-  String get exploreNoCommunityAreaHint =>
-      'Faz check-in, planeia um treino ou adiciona um spot para começar';
+  String get exploreNoCommunityAreaHint => 'Faz check-in, planeia um treino ou adiciona um spot para começar';
 
   @override
   String get communityStreamFilterAll => 'Tudo';
@@ -1071,22 +973,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get communityStreamFilterContributions => 'Contributos';
 
   @override
-  String get communityStreamFilterEmptyEvents => 'Sem eventos nesta zona';
+  String get communityStreamFilterEmptyEvents => 'Sem eventos recentes nesta zona';
 
   @override
-  String get communityStreamFilterEmptySessions => 'Sem sessões nesta zona';
+  String get communityStreamFilterEmptySessions => 'Sem sessões recentes nesta zona';
 
   @override
-  String get communityStreamFilterEmptyContributions =>
-      'Sem contributos nesta zona';
+  String get communityStreamFilterEmptyContributions => 'Sem contributos recentes nesta zona';
 
   @override
-  String get communityStreamFilterEmptyHint =>
-      'Tenta outro filtro, move o mapa ou mostra atividade anterior';
+  String get communityStreamFilterEmptyHint => 'Tenta outro filtro ou move o mapa';
 
   @override
-  String get communityStreamLoadFailed =>
-      'Não foi possível carregar a atividade da comunidade';
+  String get communityStreamLoadFailed => 'Não foi possível carregar a atividade da comunidade';
 
   @override
   String get communityStreamRetry => 'Tentar novamente';
@@ -1103,8 +1002,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get communityStreamShowEarlierGeneric =>
-      'Mostrar atividades anteriores';
+  String get communityStreamShowEarlierGeneric => 'Mostrar atividades anteriores';
 
   @override
   String communityStreamShowMoreUpcoming(int count) {
@@ -1169,8 +1067,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get communityStreamEventHappeningNow =>
-      'Este evento está a acontecer agora';
+  String get communityStreamEventHappeningNow => 'Este evento está a acontecer agora';
 
   @override
   String get communityStreamEventUpcoming => 'Este evento está para breve';
@@ -1253,19 +1150,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get explorePwaBannerInstall => 'Instalar';
 
   @override
-  String get addSpotPickImagesFailed =>
-      'Não foi possível escolher as imagens. Tenta novamente.';
+  String get addSpotPickImagesFailed => 'Não foi possível escolher as imagens. Tenta novamente.';
 
   @override
-  String get addSpotTakePhotoFailed =>
-      'Não foi possível tirar a foto. Tenta novamente.';
+  String get addSpotTakePhotoFailed => 'Não foi possível tirar a foto. Tenta novamente.';
 
   @override
   String get addSpotNeedPhoto => 'Carrega pelo menos uma foto do spot';
 
   @override
-  String get addSpotNeedLocation =>
-      'Espera pela localização ou escolhe um ponto no mapa';
+  String get addSpotNeedLocation => 'Espera pela localização ou escolhe um ponto no mapa';
 
   @override
   String addSpotCreateError(String error) {
@@ -1285,8 +1179,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addSpotDescriptionRequired => 'Introduz uma descrição';
 
   @override
-  String get addSpotDescriptionMinLength =>
-      'A descrição deve ter pelo menos 10 caracteres';
+  String get addSpotDescriptionMinLength => 'A descrição deve ter pelo menos 10 caracteres';
 
   @override
   String get addSpotCreating => 'A adicionar spot…';
@@ -1319,15 +1212,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addSpotGoodForTitle => 'Bom para';
 
   @override
-  String get addSpotGoodForSubtitle =>
-      'Que competências de parkour se podem treinar aqui?';
+  String get addSpotGoodForSubtitle => 'Que competências de parkour se podem treinar aqui?';
 
   @override
   String get addSpotFeaturesTitle => 'Características do spot';
 
   @override
-  String get addSpotFeaturesSubtitle =>
-      'Que características físicas tem este spot?';
+  String get addSpotFeaturesSubtitle => 'Que características físicas tem este spot?';
 
   @override
   String get addSpotAccessTitle => 'Acesso ao spot';
@@ -1342,35 +1233,28 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addSpotFacilitiesSubtitle => 'Que comodidades existem neste spot?';
 
   @override
-  String get addSpotLongPressHintSkill =>
-      'Pressiona longamente numa competência para mais informações';
+  String get addSpotLongPressHintSkill => 'Pressiona longamente numa competência para mais informações';
 
   @override
-  String get addSpotLongPressHintFeature =>
-      'Pressiona longamente numa característica para mais informações';
+  String get addSpotLongPressHintFeature => 'Pressiona longamente numa característica para mais informações';
 
   @override
-  String get addSpotLongPressHintFacility =>
-      'Pressiona longamente numa instalação para mais informações';
+  String get addSpotLongPressHintFacility => 'Pressiona longamente numa instalação para mais informações';
 
   @override
   String get addSpotPickLocationAppBarTitle => 'Escolher localização';
 
   @override
-  String get addSpotTipLongPressMobile =>
-      'Dica: também podes adicionar spots a partir do mapa Explorar com toque longo num local.';
+  String get addSpotTipLongPressMobile => 'Dica: também podes adicionar spots a partir do mapa Explorar com toque longo num local.';
 
   @override
-  String get addSpotTipRightClickDesktop =>
-      'Dica: também podes adicionar spots a partir do mapa Explorar com clique direito num local.';
+  String get addSpotTipRightClickDesktop => 'Dica: também podes adicionar spots a partir do mapa Explorar com clique direito num local.';
 
   @override
-  String get addEventTipLongPressMobile =>
-      'Dica: também podes adicionar eventos a partir do mapa Explorar com toque longo num local.';
+  String get addEventTipLongPressMobile => 'Dica: também podes adicionar eventos a partir do mapa Explorar com toque longo num local.';
 
   @override
-  String get addEventTipRightClickDesktop =>
-      'Dica: também podes adicionar eventos a partir do mapa Explorar com clique direito num local.';
+  String get addEventTipRightClickDesktop => 'Dica: também podes adicionar eventos a partir do mapa Explorar com clique direito num local.';
 
   @override
   String get addSpotUseThisLocation => 'Usar esta localização';
@@ -1454,8 +1338,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addEventWhenSectionTitle => 'Escolher horário do evento';
 
   @override
-  String get addEventAddressNeedsResolve =>
-      'Toca no ícone de pesquisa ao lado da morada para confirmar, ou escolhe uma localização no mapa.';
+  String get addEventAddressNeedsResolve => 'Toca no ícone de pesquisa ao lado da morada para confirmar, ou escolhe uma localização no mapa.';
 
   @override
   String get addEventLinkSpotButton => 'Associar spot';
@@ -1480,8 +1363,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addEventLocationSectionTitle => 'Localização';
 
   @override
-  String get addEventLocationSectionHint =>
-      'Escolhe uma opção: um ou mais spots, uma ou mais listas de spots, ou uma localização no mapa.';
+  String get addEventLocationSectionHint => 'Escolhe uma opção: um ou mais spots, uma ou mais listas de spots, ou uma localização no mapa.';
 
   @override
   String get addEventWhereModeLocation => 'Localização no mapa';
@@ -1520,28 +1402,22 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addEventWhereSwitchConfirm => 'Alterar';
 
   @override
-  String get addEventWhereSwitchClearsSpots =>
-      'Os teus spots associados serão removidos.';
+  String get addEventWhereSwitchClearsSpots => 'Os teus spots associados serão removidos.';
 
   @override
-  String get addEventWhereSwitchClearsLists =>
-      'As tuas listas de spots associadas serão removidas.';
+  String get addEventWhereSwitchClearsLists => 'As tuas listas de spots associadas serão removidas.';
 
   @override
-  String get addEventWhereSwitchClearsLocation =>
-      'A tua localização no mapa será removida.';
+  String get addEventWhereSwitchClearsLocation => 'A tua localização no mapa será removida.';
 
   @override
-  String get addEventWhereReplacedSpots =>
-      'A localização exata substituiu os spots associados.';
+  String get addEventWhereReplacedSpots => 'A localização exata substituiu os spots associados.';
 
   @override
-  String get addEventWhereReplacedLocation =>
-      'Os spots associados substituíram a localização exata.';
+  String get addEventWhereReplacedLocation => 'Os spots associados substituíram a localização exata.';
 
   @override
-  String get addEventWhereReplacedWithList =>
-      'A lista de spots substituiu a localização anterior.';
+  String get addEventWhereReplacedWithList => 'A lista de spots substituiu a localização anterior.';
 
   @override
   String addEventWhereReplacedListWithLocation(String name) {
@@ -1569,12 +1445,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addEventClearAddressTooltip => 'Limpar endereço';
 
   @override
-  String get addEventAddressRequiredToResolve =>
-      'Introduz um endereço para procurar.';
+  String get addEventAddressRequiredToResolve => 'Introduz um endereço para procurar.';
 
   @override
-  String get addEventAddressNotFound =>
-      'Não foi possível encontrar coordenadas para este endereço.';
+  String get addEventAddressNotFound => 'Não foi possível encontrar coordenadas para este endereço.';
 
   @override
   String get addEventPickLocationHint => 'Escolhe uma localização no mapa.';
@@ -1597,12 +1471,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addEventSubmitButton => 'Submeter para revisão';
 
   @override
-  String get addEventWebsiteInvalid =>
-      'O URL do site deve ser um URL http(s) válido.';
+  String get addEventWebsiteInvalid => 'O URL do site deve ser um URL http(s) válido.';
 
   @override
-  String get addEventEndBeforeStart =>
-      'A hora de fim não pode ser anterior à hora de início.';
+  String get addEventEndBeforeStart => 'A hora de fim não pode ser anterior à hora de início.';
 
   @override
   String get addEventNeedLocationOrLink => 'A localização é obrigatória.';
@@ -1613,12 +1485,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get addEventUploadPhotosFailed =>
-      'Não foi possível carregar as fotos. Tenta novamente.';
+  String get addEventUploadPhotosFailed => 'Não foi possível carregar as fotos. Tenta novamente.';
 
   @override
-  String get addEventSubmitFailed =>
-      'Não foi possível submeter a proposta de evento.';
+  String get addEventSubmitFailed => 'Não foi possível submeter a proposta de evento.';
 
   @override
   String get addEventSubmitSuccess => 'Evento submetido à fila de moderação.';
@@ -1636,8 +1506,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotCardRemoveFromListTooltip => 'Remover da lista';
 
   @override
-  String get spotCardCopiedToClipboard =>
-      'Spot copiado para a área de transferência!';
+  String get spotCardCopiedToClipboard => 'Spot copiado para a área de transferência!';
 
   @override
   String spotCardShareFailed(String error) {
@@ -1693,12 +1562,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailRouteGoToExplore => 'Ir para Explorar';
 
   @override
-  String get spotDetailCheckInVerifyFailed =>
-      'Não foi possível verificar os teus check-ins';
+  String get spotDetailCheckInVerifyFailed => 'Não foi possível verificar os teus check-ins';
 
   @override
-  String get spotDetailCheckInEndPreviousFailed =>
-      'Não foi possível terminar o check-in anterior';
+  String get spotDetailCheckInEndPreviousFailed => 'Não foi possível terminar o check-in anterior';
 
   @override
   String get spotDetailCheckInSuccess => 'Fizeste check-in';
@@ -1710,19 +1577,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailCheckInRemoved => 'Check-in removido';
 
   @override
-  String get spotDetailCheckInDeleteFailed =>
-      'Não foi possível eliminar o check-in';
+  String get spotDetailCheckInDeleteFailed => 'Não foi possível eliminar o check-in';
 
   @override
   String get spotDetailCheckInUpdated => 'Check-in atualizado';
 
   @override
-  String get spotDetailCheckInUpdateFailed =>
-      'Não foi possível atualizar o check-in';
+  String get spotDetailCheckInUpdateFailed => 'Não foi possível atualizar o check-in';
 
   @override
-  String get spotDetailCheckInFabTooltipSignIn =>
-      'Inicia sessão para fazer check-in';
+  String get spotDetailCheckInFabTooltipSignIn => 'Inicia sessão para fazer check-in';
 
   @override
   String get spotDetailCheckInFabTooltipEdit => 'Editar check-in';
@@ -1787,21 +1651,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get communityDateTomorrow => 'amanhã';
 
   @override
-  String communityActivityTrainSameDay(
-    String startTime,
-    String endTime,
-    String day,
-  ) {
+  String communityActivityTrainSameDay(String startTime, String endTime, String day) {
     return 'Das $startTime às $endTime $day';
   }
 
   @override
-  String communityActivityTrainSpan(
-    String startTime,
-    String startDay,
-    String endTime,
-    String endDay,
-  ) {
+  String communityActivityTrainSpan(String startTime, String startDay, String endTime, String endDay) {
     return 'De $startTime $startDay a $endTime $endDay';
   }
 
@@ -1814,17 +1669,12 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String communityShareTrainingPlanNarrative(
-    String spotName,
-    String relativeDay,
-    String startTime,
-  ) {
+  String communityShareTrainingPlanNarrative(String spotName, String relativeDay, String startTime) {
     return 'Planeio uma sessão em $spotName $relativeDay a partir das $startTime';
   }
 
   @override
-  String get communityActivityShareCopiedToClipboard =>
-      'Mensagem copiada para a área de transferência!';
+  String get communityActivityShareCopiedToClipboard => 'Mensagem copiada para a área de transferência!';
 
   @override
   String communityActivityShareFailed(String error) {
@@ -1881,8 +1731,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get spotDetailAddressCopiedToClipboard =>
-      'Morada copiada para a área de transferência!';
+  String get spotDetailAddressCopiedToClipboard => 'Morada copiada para a área de transferência!';
 
   @override
   String spotDetailCopyAddressFailed(String error) {
@@ -1907,34 +1756,28 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailMenuFlagDuplicate => 'Marcar como duplicado';
 
   @override
-  String get spotDetailMenuFlagDuplicateSubtitleYes =>
-      'Este spot é um duplicado';
+  String get spotDetailMenuFlagDuplicateSubtitleYes => 'Este spot é um duplicado';
 
   @override
-  String get spotDetailMenuFlagDuplicateSubtitleNo =>
-      'Já marcado como duplicado';
+  String get spotDetailMenuFlagDuplicateSubtitleNo => 'Já marcado como duplicado';
 
   @override
   String get spotDetailMenuSuggestPhoto => 'Sugerir foto';
 
   @override
-  String get spotDetailMenuSuggestPhotoSubtitleYes =>
-      'Enviar fotos para este spot';
+  String get spotDetailMenuSuggestPhotoSubtitleYes => 'Enviar fotos para este spot';
 
   @override
-  String get spotDetailMenuSuggestPhotoSubtitleNo =>
-      'Não é possível sugerir fotos em duplicados';
+  String get spotDetailMenuSuggestPhotoSubtitleNo => 'Não é possível sugerir fotos em duplicados';
 
   @override
   String get spotDetailMenuSuggestEdit => 'Sugerir edição';
 
   @override
-  String get spotDetailMenuSuggestEditSubtitleYes =>
-      'Propor alterações a este spot';
+  String get spotDetailMenuSuggestEditSubtitleYes => 'Propor alterações a este spot';
 
   @override
-  String get spotDetailMenuSuggestEditSubtitleNo =>
-      'Não é possível sugerir edições em duplicados';
+  String get spotDetailMenuSuggestEditSubtitleNo => 'Não é possível sugerir edições em duplicados';
 
   @override
   String get spotDetailMenuReportSpot => 'Reportar spot';
@@ -1946,8 +1789,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailMenuEditSpot => 'Editar spot';
 
   @override
-  String get spotDetailMenuEditSpotSubtitleNative =>
-      'Cria primeiro um spot nativo';
+  String get spotDetailMenuEditSpotSubtitleNative => 'Cria primeiro um spot nativo';
 
   @override
   String get spotDetailMenuEditSpotSubtitleMod => 'Apenas moderadores';
@@ -1956,8 +1798,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailMenuMarkDuplicate => 'Marcar como duplicado';
 
   @override
-  String get spotDetailMenuMarkDuplicateSubtitleDup =>
-      'Já marcado como duplicado';
+  String get spotDetailMenuMarkDuplicateSubtitleDup => 'Já marcado como duplicado';
 
   @override
   String get spotDetailMenuMarkDuplicateSubtitleMod => 'Apenas moderadores';
@@ -1966,8 +1807,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailMenuRemoveDuplicateStatus => 'Remover duplicado';
 
   @override
-  String get spotDetailMenuRemoveDuplicateSubtitle =>
-      'Restaurar listagem original';
+  String get spotDetailMenuRemoveDuplicateSubtitle => 'Restaurar listagem original';
 
   @override
   String get spotDetailMenuCreateNative => 'Criar spot nativo';
@@ -2003,15 +1843,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailMenuTriggerResize => 'Redimensionar imagem';
 
   @override
-  String get spotDetailMenuTriggerResizeSubtitle =>
-      'Recriar versões redimensionadas';
+  String get spotDetailMenuTriggerResizeSubtitle => 'Recriar versões redimensionadas';
 
   @override
   String get spotDetailMenuImageUrls => 'Visão geral de URLs de imagem';
 
   @override
-  String get spotDetailMenuImageUrlsSubtitle =>
-      'Original, redimensionada e URLs da API';
+  String get spotDetailMenuImageUrlsSubtitle => 'Original, redimensionada e URLs da API';
 
   @override
   String adminImageUrlsDialogTitle(String entityLabel) {
@@ -2036,8 +1874,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get adminImageUrlsLabel1200x630 => '1200×630 esperado';
 
   @override
-  String get adminImageUrlsLabelActualDownload =>
-      'URL de download redimensionada';
+  String get adminImageUrlsLabelActualDownload => 'URL de download redimensionada';
 
   @override
   String get adminImageUrlsLabelSpotsApi => 'URL API Spots';
@@ -2049,8 +1886,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get adminImageUrlsStatusMissing => 'Em falta';
 
   @override
-  String get adminImageUrlsStatusNotApplicable =>
-      'Não é uma imagem redimensionável do Firebase Storage.';
+  String get adminImageUrlsStatusNotApplicable => 'Não é uma imagem redimensionável do Firebase Storage.';
 
   @override
   String get adminImageUrlsPreviewOriginal => 'Original';
@@ -2068,16 +1904,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get adminImageUrlsCopyAll => 'Copiar tudo';
 
   @override
-  String get adminImageUrlsCopiedToClipboard =>
-      'Copiado para a área de transferência';
+  String get adminImageUrlsCopiedToClipboard => 'Copiado para a área de transferência';
 
   @override
-  String get adminImageUrlsApiFootnote =>
-      'A API spots devolve a URL da API mesmo sem ficheiro redimensionado; os clientes podem receber 404 até o resize terminar.';
+  String get adminImageUrlsApiFootnote => 'A API spots devolve a URL da API mesmo sem ficheiro redimensionado; os clientes podem receber 404 até o resize terminar.';
 
   @override
-  String get adminImageUrlsEventApiFootnote =>
-      'Não há API de eventos. A URL API Spots usa a mesma transformação 1200×1200 que imageUrls dos spots.';
+  String get adminImageUrlsEventApiFootnote => 'Não há API de eventos. A URL API Spots usa a mesma transformação 1200×1200 que imageUrls dos spots.';
 
   @override
   String get adminResizedImagesTitle => 'Resized images';
@@ -2129,19 +1962,16 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get adminResizedImagesEmptyNone =>
-      'Every spot and event image has at least one resized version.';
+  String get adminResizedImagesEmptyNone => 'Every spot and event image has at least one resized version.';
 
   @override
-  String get adminResizedImagesEmptyOnly630 =>
-      'No images are stuck on 1200×630 only.';
+  String get adminResizedImagesEmptyOnly630 => 'No images are stuck on 1200×630 only.';
 
   @override
   String get adminResizedImagesOkTitle => 'Images with 1200×1200';
 
   @override
-  String get adminResizedImagesOkBody =>
-      'Counts only — open a spot or event’s image URLs overview to inspect individual files.';
+  String get adminResizedImagesOkBody => 'Counts only — open a spot or event’s image URLs overview to inspect individual files.';
 
   @override
   String get adminResizedImagesKindSpot => 'Spot';
@@ -2191,30 +2021,22 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get spotDetailExternalSourceCannotEdit =>
-      'Spots de fontes externas não podem ser editados. Cria primeiro um spot nativo com «Marcar como duplicado» → «Criar spot nativo».';
+  String get spotDetailExternalSourceCannotEdit => 'Spots de fontes externas não podem ser editados. Cria primeiro um spot nativo com «Marcar como duplicado» → «Criar spot nativo».';
 
   @override
   String get spotDetailOk => 'OK';
 
   @override
-  String get spotDetailUnableEditNow =>
-      'Este spot não pode ser editado de momento.';
+  String get spotDetailUnableEditNow => 'Este spot não pode ser editado de momento.';
 
   @override
-  String get spotDetailOnlyAdminsDelete =>
-      'Apenas administradores podem eliminar spots.';
+  String get spotDetailOnlyAdminsDelete => 'Apenas administradores podem eliminar spots.';
 
   @override
-  String get spotDetailResizeAllHaveVersions =>
-      'Todas as imagens já têm versões redimensionadas';
+  String get spotDetailResizeAllHaveVersions => 'Todas as imagens já têm versões redimensionadas';
 
   @override
-  String spotDetailResizeSummary(
-    int triggered,
-    int verified,
-    String failedPart,
-  ) {
+  String spotDetailResizeSummary(int triggered, int verified, String failedPart) {
     return 'Redimensionar: $triggered iniciados, $verified verificados$failedPart';
   }
 
@@ -2229,52 +2051,40 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get spotDetailUnableFlagDuplicate =>
-      'Não é possível marcar este spot como duplicado de momento.';
+  String get spotDetailUnableFlagDuplicate => 'Não é possível marcar este spot como duplicado de momento.';
 
   @override
-  String get spotDetailThanksDuplicateReport =>
-      'Obrigado! O teu relatório de duplicado foi enviado.';
+  String get spotDetailThanksDuplicateReport => 'Obrigado! O teu relatório de duplicado foi enviado.';
 
   @override
-  String get spotDetailUnableSuggestPhotos =>
-      'Não é possível sugerir fotos para este spot de momento.';
+  String get spotDetailUnableSuggestPhotos => 'Não é possível sugerir fotos para este spot de momento.';
 
   @override
-  String get spotDetailCannotSuggestPhotosDuplicate =>
-      'Não é possível sugerir fotos em spots duplicados.';
+  String get spotDetailCannotSuggestPhotosDuplicate => 'Não é possível sugerir fotos em spots duplicados.';
 
   @override
-  String get spotDetailThanksPhotoSuggestion =>
-      'Obrigado! A tua sugestão de fotos foi enviada para revisão.';
+  String get spotDetailThanksPhotoSuggestion => 'Obrigado! A tua sugestão de fotos foi enviada para revisão.';
 
   @override
-  String get spotDetailUnableSuggestEdits =>
-      'Não é possível sugerir edições para este spot de momento.';
+  String get spotDetailUnableSuggestEdits => 'Não é possível sugerir edições para este spot de momento.';
 
   @override
-  String get spotDetailCannotSuggestEditsDuplicate =>
-      'Não é possível sugerir edições em spots duplicados.';
+  String get spotDetailCannotSuggestEditsDuplicate => 'Não é possível sugerir edições em spots duplicados.';
 
   @override
-  String get spotDetailThanksEditSuggestion =>
-      'Obrigado! A tua sugestão de edição foi enviada para revisão.';
+  String get spotDetailThanksEditSuggestion => 'Obrigado! A tua sugestão de edição foi enviada para revisão.';
 
   @override
-  String get spotDetailUnableReportNow =>
-      'Não é possível reportar este spot de momento.';
+  String get spotDetailUnableReportNow => 'Não é possível reportar este spot de momento.';
 
   @override
-  String get spotDetailThanksReportSubmitted =>
-      'Obrigado! O teu relatório foi enviado.';
+  String get spotDetailThanksReportSubmitted => 'Obrigado! O teu relatório foi enviado.';
 
   @override
-  String get spotDetailUnableAddToList =>
-      'Não é possível adicionar este spot a uma lista de momento.';
+  String get spotDetailUnableAddToList => 'Não é possível adicionar este spot a uma lista de momento.';
 
   @override
-  String get spotDetailNoSpotListsAccess =>
-      'Não tens acesso às listas de spots.';
+  String get spotDetailNoSpotListsAccess => 'Não tens acesso às listas de spots.';
 
   @override
   String get spotDetailListCreatedAndAdded => 'Lista criada e spot adicionado!';
@@ -2301,8 +2111,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailQuickActionRate => 'Avaliar';
 
   @override
-  String get spotDetailRatingTooltip =>
-      'Classificação da comunidade e as tuas estrelas';
+  String get spotDetailRatingTooltip => 'Classificação da comunidade e as tuas estrelas';
 
   @override
   String get spotDetailPresenceHereNow => 'Aqui agora';
@@ -2311,23 +2120,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailCommunitySectionTitle => 'Comunidade';
 
   @override
-  String get spotDetailCommunitySectionSubtitle =>
-      'Vê quem está a treinar ou planeia uma sessão aqui, e partilha a tua sessão.';
+  String get spotDetailCommunitySectionSubtitle => 'Vê quem está a treinar ou planeia uma sessão aqui, e partilha a tua sessão.';
 
   @override
-  String get spotDetailCommunityNobodyHere =>
-      'Ainda ninguém fez check-in. Faz check-in para mostrares que estás aqui.';
+  String get spotDetailCommunityNobodyHere => 'Ainda ninguém fez check-in. Faz check-in para mostrares que estás aqui.';
 
   @override
   String get spotDetailCommunityNobodyHereShort => 'Ainda ninguém aqui.';
 
   @override
-  String get spotDetailCommunityNobodySocialShort =>
-      'Ninguém aqui nem com plano ainda.';
+  String get spotDetailCommunityNobodySocialShort => 'Ninguém aqui nem com plano ainda.';
 
   @override
-  String get spotDetailCommunityActivityLoadError =>
-      'Não foi possível carregar a atividade.';
+  String get spotDetailCommunityActivityLoadError => 'Não foi possível carregar a atividade.';
 
   @override
   String get spotDetailCommunityActivityEmpty => 'Nada para mostrar agora.';
@@ -2342,27 +2147,22 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailCommunityEditCheckInButton => 'Editar check-in';
 
   @override
-  String get spotDetailCommunitySignInToCheckInButton =>
-      'Inicia sessão para fazer check-in';
+  String get spotDetailCommunitySignInToCheckInButton => 'Inicia sessão para fazer check-in';
 
   @override
   String get spotDetailCommunityPlanningVisitButton => 'Planear uma sessão';
 
   @override
-  String get spotDetailCommunityPlanningVisitTooltip =>
-      'Define quando vais treinar aqui.';
+  String get spotDetailCommunityPlanningVisitTooltip => 'Define quando vais treinar aqui.';
 
   @override
-  String get spotDetailCommunityCheckInButtonTooltip =>
-      'Mostra a outros que estás aqui agora.';
+  String get spotDetailCommunityCheckInButtonTooltip => 'Mostra a outros que estás aqui agora.';
 
   @override
-  String get spotDetailCommunityEditCheckInButtonTooltip =>
-      'Atualizar o teu check-in.';
+  String get spotDetailCommunityEditCheckInButtonTooltip => 'Atualizar o teu check-in.';
 
   @override
-  String get spotDetailCommunitySignInToCheckInButtonTooltip =>
-      'Inicia sessão para fazer check-in.';
+  String get spotDetailCommunitySignInToCheckInButtonTooltip => 'Inicia sessão para fazer check-in.';
 
   @override
   String get spotDetailCommunityPlanningToTrain => 'Sessões planeadas';
@@ -2371,8 +2171,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailCommunityNobodyPlanningShort => 'Ainda sem planos.';
 
   @override
-  String get spotDetailCommunitySignInToPlanButton =>
-      'Inicia sessão para planear';
+  String get spotDetailCommunitySignInToPlanButton => 'Inicia sessão para planear';
 
   @override
   String get spotDetailCommunityEditTrainingPlanButton => 'Editar plano';
@@ -2384,19 +2183,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotCheckInDialogTitleEdit => 'Editar check-in';
 
   @override
-  String get spotCheckInDialogIntroNew =>
-      'Indica que estás a treinar aqui e mais ou menos até quando. Se partilhares em público, apareces na comunidade deste spot até à hora de fim.';
+  String get spotCheckInDialogIntroNew => 'Indica que estás a treinar aqui e mais ou menos até quando. Se partilhares em público, apareces na comunidade deste spot até à hora de fim.';
 
   @override
-  String get spotCheckInDialogIntroEdit =>
-      'Altera chegada e fim, quem pode ver o check-in e a tua nota.';
+  String get spotCheckInDialogIntroEdit => 'Altera chegada e fim, quem pode ver o check-in e a tua nota.';
 
   @override
   String get spotCheckInDialogSharePublic => 'Partilhar publicamente';
 
   @override
-  String get spotCheckInDialogShareSub =>
-      'Desliga para só tu veres este check-in.';
+  String get spotCheckInDialogShareSub => 'Desliga para só tu veres este check-in.';
 
   @override
   String get spotCheckInDialogLabelArrived => 'Chegada';
@@ -2426,12 +2222,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotCheckInDialogConfirmDeleteTitle => 'Eliminar check-in?';
 
   @override
-  String get spotCheckInDialogConfirmDeleteBody =>
-      'Remove esta visita do teu histórico. Não retira o spot da tua lista de sítios visitados.';
+  String get spotCheckInDialogConfirmDeleteBody => 'Remove esta visita do teu histórico. Não retira o spot da tua lista de sítios visitados.';
 
   @override
-  String get spotCheckInDialogExtendBannerText =>
-      'Tens um check-in recente expirado aqui.';
+  String get spotCheckInDialogExtendBannerText => 'Tens um check-in recente expirado aqui.';
 
   @override
   String get spotCheckInDialogExtendInstead => 'Prolongar esse check-in';
@@ -2442,12 +2236,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get spotCheckInDialogActiveElsewhereUnnamed =>
-      'Estás com check-in noutro spot. Fazer check-in aqui termina esse check-in.';
+  String get spotCheckInDialogActiveElsewhereUnnamed => 'Estás com check-in noutro spot. Fazer check-in aqui termina esse check-in.';
 
   @override
-  String get spotCheckInDialogActiveElsewhereMultiple =>
-      'Tens check-ins ativos noutros spots. Fazer check-in aqui termina esses check-ins.';
+  String get spotCheckInDialogActiveElsewhereMultiple => 'Tens check-ins ativos noutros spots. Fazer check-in aqui termina esses check-ins.';
 
   @override
   String get spotCheckInDialogNudgeEarlier => '15 minutos antes';
@@ -2456,8 +2248,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotCheckInDialogNudgeLater => '15 minutos depois';
 
   @override
-  String get spotCheckInDialogTrainingPlanConversionBanner =>
-      'Ao guardar, o teu plano é substituído por este check-in. A hora de fim planeada fica pré-preenchida abaixo.';
+  String get spotCheckInDialogTrainingPlanConversionBanner => 'Ao guardar, o teu plano é substituído por este check-in. A hora de fim planeada fica pré-preenchida abaixo.';
 
   @override
   String get spotDetailSessionNoteLabel => 'Nota (opcional)';
@@ -2472,26 +2263,22 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotTrainingPlanDialogTitleEdit => 'Editar plano';
 
   @override
-  String get spotTrainingPlanDialogCheckInCtaBody =>
-      'Já estás aqui? Faz check-in para os outros saberem que chegaste.';
+  String get spotTrainingPlanDialogCheckInCtaBody => 'Já estás aqui? Faz check-in para os outros saberem que chegaste.';
 
   @override
-  String get spotTrainingPlanDialogCheckInCtaBodyEarly =>
-      'Já chegaste? Faz check-in para os outros saberem.';
+  String get spotTrainingPlanDialogCheckInCtaBodyEarly => 'Já chegaste? Faz check-in para os outros saberem.';
 
   @override
   String get spotTrainingPlanDialogCheckInCtaButton => 'Check-in';
 
   @override
-  String get spotTrainingPlanDialogBody =>
-      'Define quando começas e terminas. Os planos públicos aparecem na comunidade deste spot junto de outras pessoas que partilham.';
+  String get spotTrainingPlanDialogBody => 'Define quando começas e terminas. Os planos públicos aparecem na comunidade deste spot junto de outras pessoas que partilham.';
 
   @override
   String get spotTrainingPlanDialogSharePublic => 'Partilhar publicamente';
 
   @override
-  String get spotTrainingPlanDialogShareSub =>
-      'Desliga para só tu veres o plano.';
+  String get spotTrainingPlanDialogShareSub => 'Desliga para só tu veres o plano.';
 
   @override
   String get spotTrainingPlanDialogStartLabel => 'Começa';
@@ -2512,12 +2299,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotTrainingPlanDialogDeleteTitle => 'Remover este plano?';
 
   @override
-  String get spotTrainingPlanDialogDeleteBody =>
-      'Podes criar um novo plano a qualquer momento.';
+  String get spotTrainingPlanDialogDeleteBody => 'Podes criar um novo plano a qualquer momento.';
 
   @override
-  String get spotTrainingPlanValidationOrder =>
-      'A hora de fim deve ser depois do início.';
+  String get spotTrainingPlanValidationOrder => 'A hora de fim deve ser depois do início.';
 
   @override
   String get spotTrainingPlanValidationMinDuration => 'Mínimo 15 minutos.';
@@ -2526,16 +2311,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotTrainingPlanValidationMaxDuration => 'No máximo 12 horas.';
 
   @override
-  String get spotTrainingPlanValidationStartTooFar =>
-      'O início não pode ser daqui a mais de 30 dias.';
+  String get spotTrainingPlanValidationStartTooFar => 'O início não pode ser daqui a mais de 30 dias.';
 
   @override
-  String get spotTrainingPlanValidationEndNotFuture =>
-      'A hora de fim deve estar no futuro.';
+  String get spotTrainingPlanValidationEndNotFuture => 'A hora de fim deve estar no futuro.';
 
   @override
-  String get spotTrainingPlanValidationInvalid =>
-      'Intervalo de tempo inválido.';
+  String get spotTrainingPlanValidationInvalid => 'Intervalo de tempo inválido.';
 
   @override
   String get spotDetailTrainingPlanSaved => 'Sessão planeada guardada';
@@ -2544,22 +2326,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailTrainingPlanUpdated => 'Sessão planeada atualizada';
 
   @override
-  String get spotDetailTrainingPlanFailed =>
-      'Não foi possível guardar a sessão planeada';
+  String get spotDetailTrainingPlanFailed => 'Não foi possível guardar a sessão planeada';
 
   @override
   String get spotDetailTrainingPlanRemoved => 'Sessão planeada removida';
 
   @override
-  String get spotDetailTrainingPlanDeleteFailed =>
-      'Não foi possível remover a sessão planeada';
+  String get spotDetailTrainingPlanDeleteFailed => 'Não foi possível remover a sessão planeada';
 
   @override
   String get spotTrainingPlanListDialogTitle => 'Sessões planeadas';
 
   @override
-  String get spotTrainingPlanListDialogSubtitle =>
-      'Pessoas com plano público para este spot.';
+  String get spotTrainingPlanListDialogSubtitle => 'Pessoas com plano público para este spot.';
 
   @override
   String get spotTrainingPlanListDialogClose => 'Fechar';
@@ -2568,8 +2347,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotTrainingPlanListEmpty => 'Ainda sem planos públicos.';
 
   @override
-  String get spotTrainingPlanListLoadError =>
-      'Não foi possível carregar as sessões planeadas';
+  String get spotTrainingPlanListLoadError => 'Não foi possível carregar as sessões planeadas';
 
   @override
   String get spotTrainingPlanEditMine => 'Editar plano';
@@ -2589,8 +2367,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get spotDetailHiddenBanner =>
-      'Este spot está oculto ao público. Provavelmente já não existe ou não cumpre as nossas regras. Não aparecerá nas pesquisas nem no mapa.';
+  String get spotDetailHiddenBanner => 'Este spot está oculto ao público. Provavelmente já não existe ou não cumpre as nossas regras. Não aparecerá nas pesquisas nem no mapa.';
 
   @override
   String spotDetailSourceRemovedBanner(String source) {
@@ -2636,19 +2413,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailHeaderNoRatingsYet => 'Ainda sem avaliações';
 
   @override
-  String get spotDetailCouldNotLoadProfile =>
-      'Não foi possível carregar o teu perfil.';
+  String get spotDetailCouldNotLoadProfile => 'Não foi possível carregar o teu perfil.';
 
   @override
   String get spotDetailRefreshPageToRate => 'Atualiza a página para avaliar.';
 
   @override
-  String get spotDetailSignInToRateTitle =>
-      'Inicia sessão para avaliar este spot';
+  String get spotDetailSignInToRateTitle => 'Inicia sessão para avaliar este spot';
 
   @override
-  String get spotDetailSignInToRateSubtitle =>
-      'Inicia sessão para avaliar este spot e ajudar outros.';
+  String get spotDetailSignInToRateSubtitle => 'Inicia sessão para avaliar este spot e ajudar outros.';
 
   @override
   String get spotDetailSignInButton => 'Iniciar sessão';
@@ -2683,12 +2457,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailSaveMenuTooltip => 'Guardar spot';
 
   @override
-  String get spotDetailSaveMenuSignInTitle =>
-      'Inicia sessão para guardar spots';
+  String get spotDetailSaveMenuSignInTitle => 'Inicia sessão para guardar spots';
 
   @override
-  String get spotDetailSaveMenuSignInBody =>
-      'Adiciona este spot a «Quero visitar», «Já estive» ou às tuas listas. Inicia sessão ou cria uma conta gratuita.';
+  String get spotDetailSaveMenuSignInBody => 'Adiciona este spot a «Quero visitar», «Já estive» ou às tuas listas. Inicia sessão ou cria uma conta gratuita.';
 
   @override
   String get spotDetailSaveMenuLogInOrCreate => 'Iniciar sessão ou criar conta';
@@ -2739,15 +2511,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailListNameEmpty => 'O nome da lista não pode estar vazio';
 
   @override
-  String get spotDetailFailedAddToListGeneric =>
-      'Não foi possível adicionar o spot à lista';
+  String get spotDetailFailedAddToListGeneric => 'Não foi possível adicionar o spot à lista';
 
   @override
   String get spotDetailFailedCreateList => 'Não foi possível criar a lista';
 
   @override
-  String get spotDetailFailedAddToSomeLists =>
-      'Não foi possível adicionar o spot a algumas listas';
+  String get spotDetailFailedAddToSomeLists => 'Não foi possível adicionar o spot a algumas listas';
 
   @override
   String spotDetailAddToListTitle(String name) {
@@ -2784,8 +2554,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailAlreadyInLists => 'Já está nestas listas:';
 
   @override
-  String get spotDetailNoListsYet =>
-      'Ainda não tens listas. Cria uma para começar!';
+  String get spotDetailNoListsYet => 'Ainda não tens listas. Cria uma para começar!';
 
   @override
   String get spotDetailSelectListsPrompt => 'Escolhe uma lista';
@@ -2803,8 +2572,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailListDescriptionLabel => 'Descrição';
 
   @override
-  String get spotDetailListDescriptionHint =>
-      'Adiciona uma descrição para esta lista';
+  String get spotDetailListDescriptionHint => 'Adiciona uma descrição para esta lista';
 
   @override
   String get spotDetailVisibilityLabel => 'Visibilidade';
@@ -2816,8 +2584,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailReportDuplicateTitle => 'Reportar spot duplicado';
 
   @override
-  String get spotDetailReportDuplicateIntro =>
-      'Seleciona o spot do qual este é duplicado.';
+  String get spotDetailReportDuplicateIntro => 'Seleciona o spot do qual este é duplicado.';
 
   @override
   String get spotDetailEmailInvalid => 'Introduz um e-mail válido.';
@@ -2843,29 +2610,25 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailReportCategoryLabel => 'Escolhe uma categoria';
 
   @override
-  String get spotDetailReportCategoryHint =>
-      'Escolhe uma categoria de relatório';
+  String get spotDetailReportCategoryHint => 'Escolhe uma categoria de relatório';
 
   @override
   String get spotDetailReportDescribeIssue => 'Descreve o problema';
 
   @override
-  String get spotDetailReportDescribeIssueHint =>
-      'Diz-nos o que não corresponde à realidade';
+  String get spotDetailReportDescribeIssueHint => 'Diz-nos o que não corresponde à realidade';
 
   @override
   String get spotDetailReportAdditionalDetails => 'Detalhes adicionais';
 
   @override
-  String get spotDetailReportAdditionalDetailsHint =>
-      'Mais alguma coisa que devamos saber?';
+  String get spotDetailReportAdditionalDetailsHint => 'Mais alguma coisa que devamos saber?';
 
   @override
   String get spotDetailReportEmailLabel => 'E-mail';
 
   @override
-  String get spotDetailReportEmailHelper =>
-      'Só te contactamos sobre este relatório.';
+  String get spotDetailReportEmailHelper => 'Só te contactamos sobre este relatório.';
 
   @override
   String spotDetailReportReachOutAt(String email) {
@@ -2873,26 +2636,22 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get spotDetailReportReachOutAccount =>
-      'Se precisarmos de mais informações, usamos o e-mail da tua conta.';
+  String get spotDetailReportReachOutAccount => 'Se precisarmos de mais informações, usamos o e-mail da tua conta.';
 
   @override
-  String get spotDetailReportCategoryOtherDescribe =>
-      'Descreve o problema ao escolheres «Outro».';
+  String get spotDetailReportCategoryOtherDescribe => 'Descreve o problema ao escolheres «Outro».';
 
   @override
   String get spotDetailReportCategoryRequired => 'Escolhe uma categoria.';
 
   @override
-  String get spotDetailReportSendFailed =>
-      'Não foi possível enviar o relatório. Tenta novamente.';
+  String get spotDetailReportSendFailed => 'Não foi possível enviar o relatório. Tenta novamente.';
 
   @override
   String get spotDetailReportCategoryClosed => 'Spot fechado ou removido';
 
   @override
-  String get spotDetailReportCategoryInaccurate =>
-      'Localização ou dados parecem incorretos';
+  String get spotDetailReportCategoryInaccurate => 'Localização ou dados parecem incorretos';
 
   @override
   String get spotDetailReportCategoryUnsafe => 'Condições inseguras';
@@ -2904,35 +2663,28 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailReportCategoryOther => 'Outro';
 
   @override
-  String get spotDetailReportCategoryClosedDesc =>
-      'O spot foi fechado, demolido ou removido de forma permanente e já não é acessível. Dá mais detalhes abaixo.';
+  String get spotDetailReportCategoryClosedDesc => 'O spot foi fechado, demolido ou removido de forma permanente e já não é acessível. Dá mais detalhes abaixo.';
 
   @override
-  String get spotDetailReportCategoryInaccurateDesc =>
-      'Algo neste spot parece errado: o pin, o nome, a descrição ou a morada podem estar incorretos. Usa isto quando não sabes qual é a informação correta. Descreve abaixo o que parece incorreto. Se sabes o que alterar, usa «Sugerir edição» no menu do spot.';
+  String get spotDetailReportCategoryInaccurateDesc => 'Algo neste spot parece errado: o pin, o nome, a descrição ou a morada podem estar incorretos. Usa isto quando não sabes qual é a informação correta. Descreve abaixo o que parece incorreto. Se sabes o que alterar, usa «Sugerir edição» no menu do spot.';
 
   @override
-  String get spotDetailReportCategoryUnsafeDesc =>
-      'O spot tornou-se perigoso (estrutura, ambiente, etc.). Explica abaixo o que é inseguro.';
+  String get spotDetailReportCategoryUnsafeDesc => 'O spot tornou-se perigoso (estrutura, ambiente, etc.). Explica abaixo o que é inseguro.';
 
   @override
-  String get spotDetailReportCategoryNotASpotDesc =>
-      'Apenas para casos objetivos: spam, locais inválidos (ex. mar), residências privadas, cidades inteiras ou entradas claramente inválidas. Para opiniões sobre qualidade, usa a avaliação. Explica por que não é um spot.';
+  String get spotDetailReportCategoryNotASpotDesc => 'Apenas para casos objetivos: spam, locais inválidos (ex. mar), residências privadas, cidades inteiras ou entradas claramente inválidas. Para opiniões sobre qualidade, usa a avaliação. Explica por que não é um spot.';
 
   @override
-  String get spotDetailReportCategoryOtherDesc =>
-      'Qualquer outro problema. Descreve no campo abaixo.';
+  String get spotDetailReportCategoryOtherDesc => 'Qualquer outro problema. Descreve no campo abaixo.';
 
   @override
   String get spotDetailMarkDuplicateTitle => 'Marcar como duplicado';
 
   @override
-  String get spotDetailMarkDuplicateBody =>
-      'Tens a certeza de que queres marcar este spot como duplicado? Podes reverter mais tarde.';
+  String get spotDetailMarkDuplicateBody => 'Tens a certeza de que queres marcar este spot como duplicado? Podes reverter mais tarde.';
 
   @override
-  String get spotDetailMarkDuplicateAddToOriginal =>
-      'Escolhe o que adicionar ao spot original:';
+  String get spotDetailMarkDuplicateAddToOriginal => 'Escolhe o que adicionar ao spot original:';
 
   @override
   String get spotDetailMarkDuplicatePhotos => 'Fotos';
@@ -2941,8 +2693,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailMarkDuplicateYoutube => 'Ligações do YouTube';
 
   @override
-  String get spotDetailMarkDuplicateOverwrite =>
-      'Escolhe o que substituir no spot original (se definido):';
+  String get spotDetailMarkDuplicateOverwrite => 'Escolhe o que substituir no spot original (se definido):';
 
   @override
   String get spotDetailMarkDuplicateName => 'Nome';
@@ -2960,8 +2711,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailConfirm => 'Confirmar';
 
   @override
-  String get spotDetailPickImagesFailed =>
-      'Não foi possível escolher imagens. Tenta novamente.';
+  String get spotDetailPickImagesFailed => 'Não foi possível escolher imagens. Tenta novamente.';
 
   @override
   String get spotDetailSelectAtLeastOnePhoto => 'Seleciona pelo menos uma foto';
@@ -2970,8 +2720,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailSuggestPhotosTitle => 'Sugerir fotos';
 
   @override
-  String get spotDetailSuggestPhotosIntro =>
-      'Envia fotos para adicionar a este spot. Os moderadores revêem antes de publicar.';
+  String get spotDetailSuggestPhotosIntro => 'Envia fotos para adicionar a este spot. Os moderadores revêem antes de publicar.';
 
   @override
   String get spotDetailSelectPhotos => 'Selecionar fotos';
@@ -2980,20 +2729,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailPickPhotos => 'Escolher fotos';
 
   @override
-  String get spotDetailAdditionalDetailsOptional =>
-      'Detalhes adicionais (opcional)';
+  String get spotDetailAdditionalDetailsOptional => 'Detalhes adicionais (opcional)';
 
   @override
-  String get spotDetailAdditionalDetailsHint =>
-      'Mais informação sobre estas fotos…';
+  String get spotDetailAdditionalDetailsHint => 'Mais informação sobre estas fotos…';
 
   @override
-  String get spotDetailSuggestPhotosEmailHelper =>
-      'Só te contactamos sobre esta sugestão.';
+  String get spotDetailSuggestPhotosEmailHelper => 'Só te contactamos sobre esta sugestão.';
 
   @override
-  String get spotDetailSuggestPhotosSubmitFailed =>
-      'Não foi possível enviar a sugestão de fotos. Tenta novamente.';
+  String get spotDetailSuggestPhotosSubmitFailed => 'Não foi possível enviar a sugestão de fotos. Tenta novamente.';
 
   @override
   String spotDetailSuggestPhotosSubmitError(String error) {
@@ -3004,16 +2749,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailSuggestEditTitle => 'Sugerir edição';
 
   @override
-  String get spotDetailSuggestEditIntro =>
-      'Propõe alterações a este spot. Os moderadores revêem as sugestões.';
+  String get spotDetailSuggestEditIntro => 'Propõe alterações a este spot. Os moderadores revêem as sugestões.';
 
   @override
-  String get spotDetailSuggestEditSuggestChange =>
-      'Sugere pelo menos uma alteração.';
+  String get spotDetailSuggestEditSuggestChange => 'Sugere pelo menos uma alteração.';
 
   @override
-  String get spotDetailSuggestEditSubmitFailed =>
-      'Não foi possível enviar a sugestão de edição. Tenta novamente.';
+  String get spotDetailSuggestEditSubmitFailed => 'Não foi possível enviar a sugestão de edição. Tenta novamente.';
 
   @override
   String spotDetailSuggestEditSubmitError(String error) {
@@ -3024,12 +2766,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailGeocoding => 'Geocodificação…';
 
   @override
-  String get spotDetailChangeLocationPicked =>
-      'Alterar localização (escolhida)';
+  String get spotDetailChangeLocationPicked => 'Alterar localização (escolhida)';
 
   @override
-  String get spotDetailPickLocationOnMap =>
-      'Escolher outra localização no mapa';
+  String get spotDetailPickLocationOnMap => 'Escolher outra localização no mapa';
 
   @override
   String get spotDetailFieldTitle => 'Título';
@@ -3047,12 +2787,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailFieldSpotAttributes => 'Atributos do spot';
 
   @override
-  String get spotDetailSuggestEditEmailHelper =>
-      'Só te contactamos sobre esta sugestão.';
+  String get spotDetailSuggestEditEmailHelper => 'Só te contactamos sobre esta sugestão.';
 
   @override
-  String get spotDetailMustBeLoggedInToRate =>
-      'Tens de ter sessão iniciada para avaliar spots';
+  String get spotDetailMustBeLoggedInToRate => 'Tens de ter sessão iniciada para avaliar spots';
 
   @override
   String spotDetailRatingSubmitted(int count) {
@@ -3066,15 +2804,13 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get spotDetailRatingSubmitFailed =>
-      'Não foi possível enviar a avaliação. Tenta novamente.';
+  String get spotDetailRatingSubmitFailed => 'Não foi possível enviar a avaliação. Tenta novamente.';
 
   @override
   String get spotDetailRatingCleared => 'Avaliação removida';
 
   @override
-  String get spotDetailRatingClearFailed =>
-      'Não foi possível remover a avaliação. Tenta novamente.';
+  String get spotDetailRatingClearFailed => 'Não foi possível remover a avaliação. Tenta novamente.';
 
   @override
   String get spotDetailClearRating => 'Remover avaliação';
@@ -3085,38 +2821,31 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get spotDetailNotExternalSource =>
-      'Este spot não vem de uma fonte externa.';
+  String get spotDetailNotExternalSource => 'Este spot não vem de uma fonte externa.';
 
   @override
-  String get spotDetailMustBeLoggedInCreateNative =>
-      'Tens de ter sessão iniciada para criar um spot nativo.';
+  String get spotDetailMustBeLoggedInCreateNative => 'Tens de ter sessão iniciada para criar um spot nativo.';
 
   @override
   String get spotDetailCreateNativeDialogTitle => 'Criar spot nativo';
 
   @override
-  String get spotDetailCreateNativeDialogBody =>
-      'Será criado um spot nativo com base neste e o spot atual será marcado como duplicado. Todos os dados (nome, descrição, localização, fotos, ligações YouTube, atributos) serão copiados.\n\nNota: os administradores podem remover spots e ligações de duplicado se necessário.';
+  String get spotDetailCreateNativeDialogBody => 'Será criado um spot nativo com base neste e o spot atual será marcado como duplicado. Todos os dados (nome, descrição, localização, fotos, ligações YouTube, atributos) serão copiados.\n\nNota: os administradores podem remover spots e ligações de duplicado se necessário.';
 
   @override
   String get spotDetailCreateButton => 'Criar';
 
   @override
-  String get spotDetailUnableCreateNativeNow =>
-      'Não é possível criar um spot nativo de momento.';
+  String get spotDetailUnableCreateNativeNow => 'Não é possível criar um spot nativo de momento.';
 
   @override
-  String get spotDetailFailedCreateNativeSpot =>
-      'Não foi possível criar o spot nativo';
+  String get spotDetailFailedCreateNativeSpot => 'Não foi possível criar o spot nativo';
 
   @override
-  String get spotDetailNativeCreatedDuplicateMarked =>
-      'Spot nativo criado e spot atual marcado como duplicado.';
+  String get spotDetailNativeCreatedDuplicateMarked => 'Spot nativo criado e spot atual marcado como duplicado.';
 
   @override
-  String get spotDetailFailedMarkDuplicateGeneric =>
-      'Não foi possível marcar como duplicado';
+  String get spotDetailFailedMarkDuplicateGeneric => 'Não foi possível marcar como duplicado';
 
   @override
   String spotDetailErrorCreatingNativeSpot(String error) {
@@ -3124,16 +2853,13 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get spotDetailUnableMarkDuplicateNow =>
-      'Não é possível marcar este spot como duplicado de momento.';
+  String get spotDetailUnableMarkDuplicateNow => 'Não é possível marcar este spot como duplicado de momento.';
 
   @override
-  String get spotDetailAlreadyMarkedDuplicate =>
-      'Este spot já está marcado como duplicado.';
+  String get spotDetailAlreadyMarkedDuplicate => 'Este spot já está marcado como duplicado.';
 
   @override
-  String get spotDetailSpotMarkedDuplicateSuccess =>
-      'Spot marcado como duplicado.';
+  String get spotDetailSpotMarkedDuplicateSuccess => 'Spot marcado como duplicado.';
 
   @override
   String spotDetailErrorMarkingDuplicateSpot(String error) {
@@ -3141,8 +2867,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get spotDetailModeratorsOnlyHideUnhide =>
-      'Apenas moderadores podem ocultar ou mostrar spots.';
+  String get spotDetailModeratorsOnlyHideUnhide => 'Apenas moderadores podem ocultar ou mostrar spots.';
 
   @override
   String get spotDetailHideSpotTitle => 'Ocultar spot';
@@ -3151,12 +2876,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailUnhideSpotTitle => 'Mostrar spot';
 
   @override
-  String get spotDetailHideSpotMessage =>
-      'O spot deixa de ser visível ao público. Não aparece nas pesquisas nem no mapa, mas os dados são guardados e podem ser mostrados depois.';
+  String get spotDetailHideSpotMessage => 'O spot deixa de ser visível ao público. Não aparece nas pesquisas nem no mapa, mas os dados são guardados e podem ser mostrados depois.';
 
   @override
-  String get spotDetailUnhideSpotMessage =>
-      'O spot volta a ser público e aparece nas pesquisas e no mapa.';
+  String get spotDetailUnhideSpotMessage => 'O spot volta a ser público e aparece nas pesquisas e no mapa.';
 
   @override
   String get spotDetailActionHide => 'Ocultar';
@@ -3165,8 +2888,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailActionUnhide => 'Mostrar';
 
   @override
-  String get spotDetailUnableHideUnhideNow =>
-      'Não é possível ocultar ou mostrar este spot de momento.';
+  String get spotDetailUnableHideUnhideNow => 'Não é possível ocultar ou mostrar este spot de momento.';
 
   @override
   String get spotDetailSpotHiddenSuccess => 'Spot ocultado.';
@@ -3191,31 +2913,25 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get spotDetailNotMarkedAsDuplicate =>
-      'Este spot não está marcado como duplicado.';
+  String get spotDetailNotMarkedAsDuplicate => 'Este spot não está marcado como duplicado.';
 
   @override
-  String get spotDetailModeratorsOnlyRemoveDuplicateStatus =>
-      'Apenas moderadores podem remover o estado de duplicado.';
+  String get spotDetailModeratorsOnlyRemoveDuplicateStatus => 'Apenas moderadores podem remover o estado de duplicado.';
 
   @override
-  String get spotDetailRemoveDuplicateDialogBody =>
-      'O estado de duplicado será removido; o spot deixa de ser considerado duplicado.\n\nContinuar?';
+  String get spotDetailRemoveDuplicateDialogBody => 'O estado de duplicado será removido; o spot deixa de ser considerado duplicado.\n\nContinuar?';
 
   @override
   String get spotDetailRemoveButton => 'Remover';
 
   @override
-  String get spotDetailUnableRemoveDuplicateStatusNow =>
-      'Não é possível remover o estado de duplicado de momento.';
+  String get spotDetailUnableRemoveDuplicateStatusNow => 'Não é possível remover o estado de duplicado de momento.';
 
   @override
-  String get spotDetailDuplicateStatusRemovedSuccess =>
-      'Estado de duplicado removido.';
+  String get spotDetailDuplicateStatusRemovedSuccess => 'Estado de duplicado removido.';
 
   @override
-  String get spotDetailFailedRemoveDuplicateStatusGeneric =>
-      'Não foi possível remover o estado de duplicado';
+  String get spotDetailFailedRemoveDuplicateStatusGeneric => 'Não foi possível remover o estado de duplicado';
 
   @override
   String spotDetailErrorRemovingDuplicateStatus(String error) {
@@ -3229,8 +2945,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailDeleteSpotDialogTitle => 'Eliminar spot';
 
   @override
-  String get spotDetailDeleteSpotConfirmMessage =>
-      'Tens a certeza de que queres eliminar este spot? Esta ação não pode ser anulada.';
+  String get spotDetailDeleteSpotConfirmMessage => 'Tens a certeza de que queres eliminar este spot? Esta ação não pode ser anulada.';
 
   @override
   String get spotDetailLinkedDataHeading => 'Este spot tem dados ligados:';
@@ -3251,8 +2966,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get spotDetailResolveLinksBeforeDelete =>
-      'Resolve estas ligações antes de eliminar o spot.';
+  String get spotDetailResolveLinksBeforeDelete => 'Resolve estas ligações antes de eliminar o spot.';
 
   @override
   String get spotDetailSpotDeletedSuccess => 'Spot eliminado.';
@@ -3269,22 +2983,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailFlagDuplicateDialogTitle => 'Marcar como duplicado';
 
   @override
-  String get spotDetailFlagDuplicateIntro =>
-      'Este spot parece um duplicado de outro. Seleciona o spot original abaixo.';
+  String get spotDetailFlagDuplicateIntro => 'Este spot parece um duplicado de outro. Seleciona o spot original abaixo.';
 
   @override
   String get spotDetailFlagDuplicateWhichQuestion => 'De que spot é duplicado?';
 
   @override
-  String get spotDetailDuplicateSearchHint =>
-      'Cola o URL do spot ou introduz o ID';
+  String get spotDetailDuplicateSearchHint => 'Cola o URL do spot ou introduz o ID';
 
   @override
   String get spotDetailSearch => 'Pesquisar';
 
   @override
-  String get spotDetailNearbySpotsWithin50m =>
-      'Spots próximos (num raio de ~50 m)';
+  String get spotDetailNearbySpotsWithin50m => 'Spots próximos (num raio de ~50 m)';
 
   @override
   String get spotDetailFoundSpot => 'Spot encontrado';
@@ -3298,8 +3009,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailRemoveSelectionTooltip => 'Remover seleção';
 
   @override
-  String get spotDetailImageFailedToLoad =>
-      'Não foi possível carregar a imagem';
+  String get spotDetailImageFailedToLoad => 'Não foi possível carregar a imagem';
 
   @override
   String get spotDetailClose => 'Fechar';
@@ -3313,8 +3023,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailSubmit => 'Enviar';
 
   @override
-  String get spotDetailDuplicateReportSelectRequired =>
-      'Seleciona o spot do qual este é duplicado.';
+  String get spotDetailDuplicateReportSelectRequired => 'Seleciona o spot do qual este é duplicado.';
 
   @override
   String get spotDetailDuplicateSearchEmpty => 'Introduz um ID ou URL do spot';
@@ -3323,8 +3032,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDetailDuplicateInvalidUrl => 'ID ou URL do spot inválidos';
 
   @override
-  String get spotDetailDuplicateCannotSelectSelf =>
-      'Um spot não pode ser duplicado de si próprio';
+  String get spotDetailDuplicateCannotSelectSelf => 'Um spot não pode ser duplicado de si próprio';
 
   @override
   String get spotDetailDuplicateSpotNotFound => 'Spot não encontrado';
@@ -3395,8 +3103,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get sourceDetailsRelativeJustNow => 'Agora mesmo';
 
   @override
-  String get eventSourceDetailsLoadingSource =>
-      'A carregar fonte de eventos...';
+  String get eventSourceDetailsLoadingSource => 'A carregar fonte de eventos...';
 
   @override
   String get eventSourceDetailsTotalEvents => 'Total de eventos';
@@ -3423,12 +3130,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get spotTrackingAddedEmptyHint =>
-      'Os spots que adicionas ao mapa aparecem aqui';
+  String get spotTrackingAddedEmptyHint => 'Os spots que adicionas ao mapa aparecem aqui';
 
   @override
-  String get spotTrackingAddedVisibilityUpdateFailed =>
-      'Não foi possível atualizar a visibilidade da lista';
+  String get spotTrackingAddedVisibilityUpdateFailed => 'Não foi possível atualizar a visibilidade da lista';
 
   @override
   String get spotListSaveTooltipSaveList => 'Guardar lista';
@@ -3440,8 +3145,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotListSaveSignInTitle => 'Inicia sessão para guardar listas';
 
   @override
-  String get spotListSaveSignInBody =>
-      'Guarda a lista de spots de outra pessoa nas tuas listas para poderes abri-la novamente mais tarde.';
+  String get spotListSaveSignInBody => 'Guarda a lista de spots de outra pessoa nas tuas listas para poderes abri-la novamente mais tarde.';
 
   @override
   String get spotListSaveSavedToProfile => 'Lista guardada nas tuas listas';
@@ -3450,12 +3154,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotListSaveCouldNotSaveList => 'Não foi possível guardar a lista';
 
   @override
-  String get spotListSaveRemovedFromSavedLists =>
-      'Removida das listas guardadas';
+  String get spotListSaveRemovedFromSavedLists => 'Removida das listas guardadas';
 
   @override
-  String get spotListSaveCouldNotRemoveList =>
-      'Não foi possível remover a lista';
+  String get spotListSaveCouldNotRemoveList => 'Não foi possível remover a lista';
 
   @override
   String get spotListSaveActionSaveList => 'Guardar lista';
@@ -3467,8 +3169,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotListSaveActionViewSavedLists => 'Ver listas guardadas';
 
   @override
-  String get spotListDetailListNotFoundOrNotAccessible =>
-      'Lista não encontrada ou sem acesso';
+  String get spotListDetailListNotFoundOrNotAccessible => 'Lista não encontrada ou sem acesso';
 
   @override
   String get spotListDetailDeleteListTitle => 'Eliminar lista';
@@ -3485,8 +3186,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotListDetailListDeleted => 'Lista eliminada';
 
   @override
-  String get spotListDetailFailedToDeleteList =>
-      'Não foi possível eliminar a lista';
+  String get spotListDetailFailedToDeleteList => 'Não foi possível eliminar a lista';
 
   @override
   String get spotListDetailNoSpotsInThisList => 'Sem spots nesta lista';
@@ -3504,12 +3204,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotListDetailMoreInfoLinkHint => 'https://…';
 
   @override
-  String get spotListDetailMoreInfoLinkHelper =>
-      'Uma página na web com mais informação sobre esta lista';
+  String get spotListDetailMoreInfoLinkHelper => 'Uma página na web com mais informação sobre esta lista';
 
   @override
-  String get spotListDetailMoreInfoLinkValidationError =>
-      'A ligação com mais informação tem de ser um URL válido (http ou https), por exemplo example.com ou https://example.com/pagina';
+  String get spotListDetailMoreInfoLinkValidationError => 'A ligação com mais informação tem de ser um URL válido (http ou https), por exemplo example.com ou https://example.com/pagina';
 
   @override
   String get spotListDetailSave => 'Guardar';
@@ -3518,8 +3216,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotListDetailListUpdated => 'Lista atualizada';
 
   @override
-  String get spotListDetailFailedToUpdateList =>
-      'Não foi possível atualizar a lista';
+  String get spotListDetailFailedToUpdateList => 'Não foi possível atualizar a lista';
 
   @override
   String get spotListDetailVisibilityPublicList => 'Lista pública';
@@ -3531,8 +3228,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotListDetailVisibilityPrivateList => 'Lista privada';
 
   @override
-  String get spotListDetailCouldNotOpenProfile =>
-      'Não foi possível abrir o perfil';
+  String get spotListDetailCouldNotOpenProfile => 'Não foi possível abrir o perfil';
 
   @override
   String spotListDetailCreatedPart(String visibility, String date) {
@@ -3559,8 +3255,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get spotListDetailCopiedToClipboard =>
-      'Lista copiada para a área de transferência!';
+  String get spotListDetailCopiedToClipboard => 'Lista copiada para a área de transferência!';
 
   @override
   String spotListDetailCopyFailed(String error) {
@@ -3580,8 +3275,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotListEditDiscardTitle => 'Descartar alterações?';
 
   @override
-  String get spotListEditDiscardMessage =>
-      'As tuas edições desta lista serão perdidas.';
+  String get spotListEditDiscardMessage => 'As tuas edições desta lista serão perdidas.';
 
   @override
   String get spotListEditDiscardAction => 'Descartar';
@@ -3620,8 +3314,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotListEditNoSpotsInSection => 'Nenhum spot nesta secção';
 
   @override
-  String get spotListEditEmptySectionsRemovedOnSave =>
-      'Secções vazias serão removidas ao guardar';
+  String get spotListEditEmptySectionsRemovedOnSave => 'Secções vazias serão removidas ao guardar';
 
   @override
   String get spotListEditRemoveSpotTitle => 'Remover da lista';
@@ -3659,8 +3352,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotListEditDeleteSectionTitle => 'Eliminar secção?';
 
   @override
-  String get spotListEditDeleteSectionMessage =>
-      'Os spots desta secção serão removidos da lista.';
+  String get spotListEditDeleteSectionMessage => 'Os spots desta secção serão removidos da lista.';
 
   @override
   String get spotListEditDragHandleTooltip => 'Arrasta para reordenar';
@@ -3675,12 +3367,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotListEditVisibilityPrivate => 'Privada';
 
   @override
-  String get spotListEditVisibilityPublicHelp =>
-      'Aparece no teu perfil e é visível para toda a gente';
+  String get spotListEditVisibilityPublicHelp => 'Aparece no teu perfil e é visível para toda a gente';
 
   @override
-  String get spotListEditVisibilityUnlistedHelp =>
-      'Visível com um link direto, mas oculta no teu perfil';
+  String get spotListEditVisibilityUnlistedHelp => 'Visível com um link direto, mas oculta no teu perfil';
 
   @override
   String get spotListEditVisibilityPrivateHelp => 'Visível apenas para ti';
@@ -3779,8 +3469,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get publicProfileProfileNotFound => 'Perfil não encontrado';
 
   @override
-  String get publicProfileNotFoundOrPrivate =>
-      'Este perfil não existe ou é privado.';
+  String get publicProfileNotFoundOrPrivate => 'Este perfil não existe ou é privado.';
 
   @override
   String publicProfileMemberSince(String date) {
@@ -3797,19 +3486,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get publicProfileNoSpotsYet => 'Ainda sem spots';
 
   @override
-  String get publicProfileAddSpotsFromSpotDetailPages =>
-      'Adiciona spots a partir das páginas de detalhe do spot';
+  String get publicProfileAddSpotsFromSpotDetailPages => 'Adiciona spots a partir das páginas de detalhe do spot';
 
   @override
   String get publicProfileBeenTo => 'Já visitados';
 
   @override
-  String get publicProfileMyCheckInsSubtitle =>
-      'As tuas sessões planeadas e o teu histórico de check-ins';
+  String get publicProfileMyCheckInsSubtitle => 'As tuas sessões planeadas e o teu histórico de check-ins';
 
   @override
-  String get myCheckInsSignInPrompt =>
-      'Inicia sessão para ver os teus check-ins e sessões planeadas';
+  String get myCheckInsSignInPrompt => 'Inicia sessão para ver os teus check-ins e sessões planeadas';
 
   @override
   String get myCheckInsLoadMore => 'Carregar mais';
@@ -3818,12 +3504,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get myCheckInsEmptyTitle => 'Ainda sem visitas nem planos';
 
   @override
-  String get myCheckInsEmptyDescription =>
-      'Abre um spot para fazer check-in ou planear uma sessão. Até à hora de fim que definires, outras pessoas podem ver-te como «aqui agora» nesse spot, a menos que mantenhas privado.';
+  String get myCheckInsEmptyDescription => 'Abre um spot para fazer check-in ou planear uma sessão. Até à hora de fim que definires, outras pessoas podem ver-te como «aqui agora» nesse spot, a menos que mantenhas privado.';
 
   @override
-  String get myCheckInsIntro =>
-      'As sessões planeadas mostram os horários futuros que planeaste em spots. Um check-in regista uma visita — quando chegaste e até quando esperas ficar. As entradas públicas podem mostrar-te num spot até à hora final; as privadas só tu vês.';
+  String get myCheckInsIntro => 'As sessões planeadas mostram os horários futuros que planeaste em spots. Um check-in regista uma visita — quando chegaste e até quando esperas ficar. As entradas públicas podem mostrar-te num spot até à hora final; as privadas só tu vês.';
 
   @override
   String get myCheckInsUpcomingPlansTitle => 'Próximas sessões';
@@ -3835,8 +3519,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get myCheckInsNoCheckInsYet => 'Ainda sem check-ins registados.';
 
   @override
-  String get myCheckInsCheckInsLoadFailed =>
-      'Não foi possível carregar os check-ins.';
+  String get myCheckInsCheckInsLoadFailed => 'Não foi possível carregar os check-ins.';
 
   @override
   String get myCheckInsSpotFallback => 'Spot';
@@ -3878,12 +3561,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get publicProfileNoSavedListsYet => 'Ainda sem listas guardadas';
 
   @override
-  String get publicProfileSaveListsHint =>
-      'Guarda listas que encontrares nas páginas de listas de outros utilizadores';
+  String get publicProfileSaveListsHint => 'Guarda listas que encontrares nas páginas de listas de outros utilizadores';
 
   @override
-  String get publicProfileSavedListsUnavailable =>
-      'As tuas listas guardadas já não estão disponíveis ou foram removidas.';
+  String get publicProfileSavedListsUnavailable => 'As tuas listas guardadas já não estão disponíveis ou foram removidas.';
 
   @override
   String get publicProfileListCreatedSuccessfully => 'Lista criada com sucesso';
@@ -3926,12 +3607,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get publicProfileUpdatingProfile => 'A atualizar perfil...';
 
   @override
-  String get publicProfileProfilePictureUpdatedSuccessfully =>
-      'Foto de perfil atualizada com sucesso';
+  String get publicProfileProfilePictureUpdatedSuccessfully => 'Foto de perfil atualizada com sucesso';
 
   @override
-  String get publicProfileFailedToUpdateProfilePicture =>
-      'Não foi possível atualizar a foto de perfil';
+  String get publicProfileFailedToUpdateProfilePicture => 'Não foi possível atualizar a foto de perfil';
 
   @override
   String publicProfileErrorUploadingProfilePicture(String error) {
@@ -3942,16 +3621,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get publicProfileRemoveProfilePicture => 'Remover foto de perfil';
 
   @override
-  String get publicProfileRemoveProfilePictureConfirmation =>
-      'Tens a certeza de que queres remover a tua foto de perfil?';
+  String get publicProfileRemoveProfilePictureConfirmation => 'Tens a certeza de que queres remover a tua foto de perfil?';
 
   @override
-  String get publicProfileProfilePictureRemovedSuccessfully =>
-      'Foto de perfil removida com sucesso';
+  String get publicProfileProfilePictureRemovedSuccessfully => 'Foto de perfil removida com sucesso';
 
   @override
-  String get publicProfileFailedToRemoveProfilePicture =>
-      'Não foi possível remover a foto de perfil';
+  String get publicProfileFailedToRemoveProfilePicture => 'Não foi possível remover a foto de perfil';
 
   @override
   String publicProfileErrorRemovingProfilePicture(String error) {
@@ -3959,8 +3635,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get publicProfileProfileCopiedToClipboard =>
-      'Perfil copiado para a área de transferência!';
+  String get publicProfileProfileCopiedToClipboard => 'Perfil copiado para a área de transferência!';
 
   @override
   String publicProfileFailedToCopyProfile(String error) {
@@ -3980,8 +3655,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get publicProfileEmailLabel => 'E-mail';
 
   @override
-  String get publicProfileEmailNotShownHint =>
-      'O teu e-mail não é mostrado publicamente.';
+  String get publicProfileEmailNotShownHint => 'O teu e-mail não é mostrado publicamente.';
 
   @override
   String get publicProfileDisplayNameLabel => 'Nome de exibição';
@@ -4012,8 +3686,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get publicProfileDisplayNameRemoved => 'Nome de exibição removido';
 
   @override
-  String get publicProfileDisplayNameUpdateFailed =>
-      'Não foi possível atualizar o nome de exibição';
+  String get publicProfileDisplayNameUpdateFailed => 'Não foi possível atualizar o nome de exibição';
 
   @override
   String get publicProfileSaveAction => 'Guardar';
@@ -4028,23 +3701,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get publicProfileUsernameHint => 'Introduz um nome de utilizador';
 
   @override
-  String get publicProfileUsernameHelper =>
-      'Único e usado no URL do teu perfil';
+  String get publicProfileUsernameHelper => 'Único e usado no URL do teu perfil';
 
   @override
-  String get publicProfileUsernameEmpty =>
-      'O nome de utilizador não pode estar vazio';
+  String get publicProfileUsernameEmpty => 'O nome de utilizador não pode estar vazio';
 
   @override
-  String get publicProfileUsernameTaken =>
-      'Esse nome de utilizador já está em uso';
+  String get publicProfileUsernameTaken => 'Esse nome de utilizador já está em uso';
 
   @override
   String get publicProfileUsernameUpdated => 'Nome de utilizador atualizado';
 
   @override
-  String get publicProfileUsernameUpdateFailed =>
-      'Não foi possível atualizar o nome de utilizador';
+  String get publicProfileUsernameUpdateFailed => 'Não foi possível atualizar o nome de utilizador';
 
   @override
   String get publicProfileInstagramLabel => 'Instagram';
@@ -4062,12 +3731,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get publicProfileInstagramLinkHint => 'https://instagram.com/teunome';
 
   @override
-  String get publicProfileInstagramLinkHelper =>
-      'URL completo para o teu perfil de Instagram';
+  String get publicProfileInstagramLinkHelper => 'URL completo para o teu perfil de Instagram';
 
   @override
-  String get publicProfileInstagramInvalid =>
-      'Introduz um URL válido de Instagram';
+  String get publicProfileInstagramInvalid => 'Introduz um URL válido de Instagram';
 
   @override
   String get publicProfileInstagramRemoved => 'Ligação do Instagram removida';
@@ -4076,8 +3743,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get publicProfileInstagramUpdated => 'Ligação do Instagram atualizada';
 
   @override
-  String get publicProfileInstagramUpdateFailed =>
-      'Não foi possível atualizar a ligação do Instagram';
+  String get publicProfileInstagramUpdateFailed => 'Não foi possível atualizar a ligação do Instagram';
 
   @override
   String get publicProfilePrivacyTitle => 'Privacidade';
@@ -4089,12 +3755,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get publicProfilePrivacyPrivateLabel => 'Perfil privado';
 
   @override
-  String get publicProfilePrivacyPublicDescription =>
-      'Qualquer pessoa pode ver o teu perfil e listas públicas.';
+  String get publicProfilePrivacyPublicDescription => 'Qualquer pessoa pode ver o teu perfil e listas públicas.';
 
   @override
-  String get publicProfilePrivacyPrivateDescription =>
-      'Só tu podes ver o teu perfil.';
+  String get publicProfilePrivacyPrivateDescription => 'Só tu podes ver o teu perfil.';
 
   @override
   String get publicProfilePrivacyNowPublic => 'O teu perfil é agora público';
@@ -4103,8 +3767,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get publicProfilePrivacyNowPrivate => 'O teu perfil é agora privado';
 
   @override
-  String get publicProfileFailedToUpdateProfilePrivacy =>
-      'Não foi possível atualizar a privacidade do perfil';
+  String get publicProfileFailedToUpdateProfilePrivacy => 'Não foi possível atualizar a privacidade do perfil';
 
   @override
   String get eventDetailRouteErrorLoading => 'Erro ao carregar o evento';
@@ -4140,15 +3803,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDetailLinkedSpotListsLabel => 'Listas de spots ligadas';
 
   @override
-  String get eventDetailNoLinkedSpotLists =>
-      'Nenhuma lista de spots ligada encontrada.';
+  String get eventDetailNoLinkedSpotLists => 'Nenhuma lista de spots ligada encontrada.';
 
   @override
   String get eventDetailEventSpotsLabel => 'Spots deste evento';
 
   @override
-  String get eventDetailNoEventSpots =>
-      'Lista de spots do evento não encontrada.';
+  String get eventDetailNoEventSpots => 'Lista de spots do evento não encontrada.';
 
   @override
   String get eventDetailEventSpotListViewAll => 'Ver lista de spots';
@@ -4165,8 +3826,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDetailEventSpotLocationsLabel => 'Locais do evento';
 
   @override
-  String get eventDetailNoEventSpotLocations =>
-      'Spots do evento não encontrados.';
+  String get eventDetailNoEventSpotLocations => 'Spots do evento não encontrados.';
 
   @override
   String get eventDetailEventSpotViewDetails => 'Ver spot';
@@ -4178,12 +3838,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get adminEventEditSave => 'Guardar alterações';
 
   @override
-  String get adminEventExternalSyncWarningTitle =>
-      'Evento de calendário externo';
+  String get adminEventExternalSyncWarningTitle => 'Evento de calendário externo';
 
   @override
-  String get adminEventExternalSyncWarningBody =>
-      'A próxima sincronização pode substituir título, horário, descrição e local do feed externo. Spots e listas ligados são geridos aqui e não são apagados na sincronização.';
+  String get adminEventExternalSyncWarningBody => 'A próxima sincronização pode substituir título, horário, descrição e local do feed externo. Spots e listas ligados são geridos aqui e não são apagados na sincronização.';
 
   @override
   String get adminEventLinkedSpotListsTitle => 'Listas de spots ligadas';
@@ -4201,8 +3859,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get adminSpotListSelectionInputLabel => 'ID da lista ou URL';
 
   @override
-  String get adminSpotListSelectionInputHint =>
-      'id-lista ou https://parkour.spot/list/…';
+  String get adminSpotListSelectionInputHint => 'id-lista ou https://parkour.spot/list/…';
 
   @override
   String get adminSpotListSelectionLookup => 'Procurar';
@@ -4211,20 +3868,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get adminSpotListSelectionSelect => 'Selecionar';
 
   @override
-  String get adminSpotListSelectionInvalidInput =>
-      'Introduza um ID de lista ou URL /list/…';
+  String get adminSpotListSelectionInvalidInput => 'Introduza um ID de lista ou URL /list/…';
 
   @override
-  String get adminSpotListSelectionNotFound =>
-      'Lista não encontrada ou inacessível';
+  String get adminSpotListSelectionNotFound => 'Lista não encontrada ou inacessível';
 
   @override
-  String get adminSpotListSelectionPrivateList =>
-      'Listas privadas não podem ser ligadas a eventos';
+  String get adminSpotListSelectionPrivateList => 'Listas privadas não podem ser ligadas a eventos';
 
   @override
-  String get adminSpotListSelectionLoadFailed =>
-      'Não foi possível carregar a lista';
+  String get adminSpotListSelectionLoadFailed => 'Não foi possível carregar a lista';
 
   @override
   String adminSpotListSelectionFoundSubtitle(String visibility, int count) {
@@ -4244,15 +3897,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDetailAdminEditEvent => 'Editar evento';
 
   @override
-  String get eventDetailMenuEditEventSubtitleNative =>
-      'Cria primeiro um evento nativo';
+  String get eventDetailMenuEditEventSubtitleNative => 'Cria primeiro um evento nativo';
 
   @override
   String get eventDetailMenuEditEventSubtitleMod => 'Apenas moderador';
 
   @override
-  String get eventDetailExternalSourceCannotEdit =>
-      'Eventos de fontes externas não podem ser editados. Cria primeiro um evento nativo com «Marcar como duplicado» → «Criar evento nativo».';
+  String get eventDetailExternalSourceCannotEdit => 'Eventos de fontes externas não podem ser editados. Cria primeiro um evento nativo com «Marcar como duplicado» → «Criar evento nativo».';
 
   @override
   String get eventDetailSourceLabel => 'Fonte';
@@ -4270,20 +3921,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDetailMenuCreateNativeSubtitle => 'Copiar de fonte externa';
 
   @override
-  String get eventDetailMenuSuggestPhotoSubtitleYes =>
-      'Enviar fotos para este evento';
+  String get eventDetailMenuSuggestPhotoSubtitleYes => 'Enviar fotos para este evento';
 
   @override
-  String get eventDetailMenuSuggestPhotoSubtitleNo =>
-      'Indisponível para duplicados';
+  String get eventDetailMenuSuggestPhotoSubtitleNo => 'Indisponível para duplicados';
 
   @override
-  String get eventDetailMenuSuggestEditSubtitleYes =>
-      'Propor alterações a este evento';
+  String get eventDetailMenuSuggestEditSubtitleYes => 'Propor alterações a este evento';
 
   @override
-  String get eventDetailMenuSuggestEditSubtitleNo =>
-      'Indisponível para duplicados';
+  String get eventDetailMenuSuggestEditSubtitleNo => 'Indisponível para duplicados';
 
   @override
   String get eventDetailMenuSuggestBlockedUnavailable => 'Indisponível agora';
@@ -4292,31 +3939,25 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDetailCreateNativeDialogTitle => 'Criar evento nativo';
 
   @override
-  String get eventDetailCreateNativeDialogBody =>
-      'Isto criará um novo evento nativo com base neste evento e marcará o evento atual como duplicado. Os dados do evento (título, descrição, horário, localização, imagens, site e spots ligados) serão copiados para o novo evento nativo.';
+  String get eventDetailCreateNativeDialogBody => 'Isto criará um novo evento nativo com base neste evento e marcará o evento atual como duplicado. Os dados do evento (título, descrição, horário, localização, imagens, site e spots ligados) serão copiados para o novo evento nativo.';
 
   @override
-  String get eventDetailNotExternalSource =>
-      'Este evento não é de uma fonte externa.';
+  String get eventDetailNotExternalSource => 'Este evento não é de uma fonte externa.';
 
   @override
-  String get eventDetailMustBeLoggedInCreateNative =>
-      'Tem de iniciar sessão para criar um evento nativo.';
+  String get eventDetailMustBeLoggedInCreateNative => 'Tem de iniciar sessão para criar um evento nativo.';
 
   @override
-  String get eventDetailUnableCreateNativeNow =>
-      'Não é possível criar um evento nativo agora.';
+  String get eventDetailUnableCreateNativeNow => 'Não é possível criar um evento nativo agora.';
 
   @override
   String get eventDetailFailedCreateNative => 'Falha ao criar evento nativo';
 
   @override
-  String get eventDetailNativeCreatedDuplicateMarked =>
-      'Evento nativo criado e evento atual marcado como duplicado.';
+  String get eventDetailNativeCreatedDuplicateMarked => 'Evento nativo criado e evento atual marcado como duplicado.';
 
   @override
-  String get eventDetailMarkDuplicateNativeOnlyHint =>
-      'Só eventos nativos podem ser selecionados. Para criar um evento nativo a partir de um evento externo, use \"Criar evento nativo\" no menu do evento.';
+  String get eventDetailMarkDuplicateNativeOnlyHint => 'Só eventos nativos podem ser selecionados. Para criar um evento nativo a partir de um evento externo, use \"Criar evento nativo\" no menu do evento.';
 
   @override
   String eventDetailEventCreatedOnDateBy(String date) {
@@ -4346,15 +3987,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDetailDuplicateBannerTitle => 'Entrada duplicada';
 
   @override
-  String get eventDetailDuplicateBannerBody =>
-      'Esta entrada está marcada como duplicado. Abre o evento principal para ver os detalhes canónicos.';
+  String get eventDetailDuplicateBannerBody => 'Esta entrada está marcada como duplicado. Abre o evento principal para ver os detalhes canónicos.';
 
   @override
   String get eventDetailLinkedDuplicatesHeading => 'Entradas duplicadas';
 
   @override
-  String get eventDetailMarkDuplicateStaffOnly =>
-      'Só a equipa pode gerir duplicados de eventos.';
+  String get eventDetailMarkDuplicateStaffOnly => 'Só a equipa pode gerir duplicados de eventos.';
 
   @override
   String get eventDetailMenuHideEvent => 'Ocultar evento';
@@ -4366,16 +4005,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDetailMenuUnhideEvent => 'Mostrar evento';
 
   @override
-  String get eventDetailMenuUnhideEventSubtitle =>
-      'Voltar a mostrar ao público';
+  String get eventDetailMenuUnhideEventSubtitle => 'Voltar a mostrar ao público';
 
   @override
-  String get eventDetailHiddenBanner =>
-      'Este evento está oculto ao público. Provavelmente já não existe ou não cumpre as nossas regras. Não aparecerá nas pesquisas nem no mapa.';
+  String get eventDetailHiddenBanner => 'Este evento está oculto ao público. Provavelmente já não existe ou não cumpre as nossas regras. Não aparecerá nas pesquisas nem no mapa.';
 
   @override
-  String get eventDetailModeratorsOnlyHideUnhide =>
-      'Só moderadores podem ocultar ou mostrar eventos.';
+  String get eventDetailModeratorsOnlyHideUnhide => 'Só moderadores podem ocultar ou mostrar eventos.';
 
   @override
   String get eventDetailHideEventTitle => 'Ocultar evento';
@@ -4384,16 +4020,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDetailUnhideEventTitle => 'Mostrar evento';
 
   @override
-  String get eventDetailHideEventMessage =>
-      'O evento deixa de ser visível ao público. Não aparece nas pesquisas nem no mapa, mas os dados são guardados e podem ser mostrados depois.';
+  String get eventDetailHideEventMessage => 'O evento deixa de ser visível ao público. Não aparece nas pesquisas nem no mapa, mas os dados são guardados e podem ser mostrados depois.';
 
   @override
-  String get eventDetailUnhideEventMessage =>
-      'O evento volta a ser público e aparece novamente nas pesquisas e no mapa.';
+  String get eventDetailUnhideEventMessage => 'O evento volta a ser público e aparece novamente nas pesquisas e no mapa.';
 
   @override
-  String get eventDetailUnableHideUnhideNow =>
-      'Não é possível ocultar ou mostrar este evento agora.';
+  String get eventDetailUnableHideUnhideNow => 'Não é possível ocultar ou mostrar este evento agora.';
 
   @override
   String get eventDetailEventHiddenSuccess => 'Evento ocultado com sucesso.';
@@ -4408,41 +4041,34 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDetailFailedUnhideEvent => 'Falha ao mostrar evento';
 
   @override
-  String get eventDetailMarkDuplicatePickNativeTitle =>
-      'Marcar como duplicado de evento nativo';
+  String get eventDetailMarkDuplicatePickNativeTitle => 'Marcar como duplicado de evento nativo';
 
   @override
   String get eventDetailMarkDuplicateSearchHint => 'Nome do evento, URL ou ID';
 
   @override
-  String get eventDetailMarkDuplicateNotFoundOrInvalid =>
-      'Escolhe um evento da lista ou introduz um ID válido ou um link /event/….';
+  String get eventDetailMarkDuplicateNotFoundOrInvalid => 'Escolhe um evento da lista ou introduz um ID válido ou um link /event/….';
 
   @override
-  String get eventDetailMarkDuplicateTargetNotNative =>
-      'Esse evento não é um evento nativo parkour.spot. Só eventos nativos podem ser o original.';
+  String get eventDetailMarkDuplicateTargetNotNative => 'Esse evento não é um evento nativo parkour.spot. Só eventos nativos podem ser o original.';
 
   @override
-  String get eventDetailMarkDuplicateTargetIsDuplicate =>
-      'Esse evento já está marcado como duplicado de outro evento.';
+  String get eventDetailMarkDuplicateTargetIsDuplicate => 'Esse evento já está marcado como duplicado de outro evento.';
 
   @override
   String get eventDetailMarkDuplicateUseButton => 'Usar este evento';
 
   @override
-  String get eventDetailMarkDuplicateSuggestionsHeader =>
-      'Eventos próximos nestas datas';
+  String get eventDetailMarkDuplicateSuggestionsHeader => 'Eventos próximos nestas datas';
 
   @override
-  String get eventDetailMarkDuplicateNoSuggestions =>
-      'Nenhum evento próximo encontrado numa semana das datas deste evento.';
+  String get eventDetailMarkDuplicateNoSuggestions => 'Nenhum evento próximo encontrado numa semana das datas deste evento.';
 
   @override
   String get eventDetailDuplicatePickerNativeChip => 'Nativo';
 
   @override
-  String get eventDetailMarkDuplicateSuggestionNotSelectable =>
-      'Não é possível selecionar. Cria primeiro um evento nativo.';
+  String get eventDetailMarkDuplicateSuggestionNotSelectable => 'Não é possível selecionar. Cria primeiro um evento nativo.';
 
   @override
   String eventDetailMarkDuplicateConfirmBody(String title) {
@@ -4458,8 +4084,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get eventDetailMarkDuplicateAddToOriginal =>
-      'Escolhe o que adicionar ao evento original:';
+  String get eventDetailMarkDuplicateAddToOriginal => 'Escolhe o que adicionar ao evento original:';
 
   @override
   String get eventDetailMarkDuplicatePhotos => 'Fotos';
@@ -4468,8 +4093,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDetailMarkDuplicateLinkedSpots => 'Spots ligados';
 
   @override
-  String get eventDetailMarkDuplicateOverwrite =>
-      'Escolhe o que substituir no evento original (se definido):';
+  String get eventDetailMarkDuplicateOverwrite => 'Escolhe o que substituir no evento original (se definido):';
 
   @override
   String get eventDetailMarkDuplicateEventTitle => 'Título';
@@ -4487,8 +4111,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDetailMarkDuplicateWebsite => 'Website';
 
   @override
-  String get eventDetailMarkDuplicateSuccess =>
-      'Evento marcado como duplicado.';
+  String get eventDetailMarkDuplicateSuccess => 'Evento marcado como duplicado.';
 
   @override
   String get eventDuplicateChangesTitle => 'Duplicado atualizado';
@@ -4511,8 +4134,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDuplicateChangesApplySuccess => 'Evento original atualizado.';
 
   @override
-  String get eventDuplicateChangesDismissSuccess =>
-      'Alterações do duplicado ignoradas.';
+  String get eventDuplicateChangesDismissSuccess => 'Alterações do duplicado ignoradas.';
 
   @override
   String get eventDuplicateChangesChip => 'Duplicado atualizado';
@@ -4521,30 +4143,25 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDuplicateChangesQueueTitle => 'Atualizações de duplicados';
 
   @override
-  String get eventDuplicateChangesQueueSubtitle =>
-      'Rever duplicados que mudaram depois de serem ligados';
+  String get eventDuplicateChangesQueueSubtitle => 'Rever duplicados que mudaram depois de serem ligados';
 
   @override
-  String get eventDuplicateChangesQueueEmpty =>
-      'Nenhum evento duplicado com alterações pendentes';
+  String get eventDuplicateChangesQueueEmpty => 'Nenhum evento duplicado com alterações pendentes';
 
   @override
   String get eventDuplicateChangesBannerTitle => 'Duplicado atualizado';
 
   @override
-  String get eventDuplicateChangesBannerBody =>
-      'Os campos mudaram depois de este evento ter sido marcado como duplicado.';
+  String get eventDuplicateChangesBannerBody => 'Os campos mudaram depois de este evento ter sido marcado como duplicado.';
 
   @override
   String get eventDuplicateChangesMenuItem => 'Rever alterações do duplicado';
 
   @override
-  String get eventDuplicateChangesMenuSubtitle =>
-      'Copiar campos selecionados para o original, ou ignorar tudo';
+  String get eventDuplicateChangesMenuSubtitle => 'Copiar campos selecionados para o original, ou ignorar tudo';
 
   @override
-  String get eventDuplicateChangesFailed =>
-      'Falha ao atualizar as alterações do duplicado';
+  String get eventDuplicateChangesFailed => 'Falha ao atualizar as alterações do duplicado';
 
   @override
   String eventDuplicateChangesPhotosValue(int count) {
@@ -4580,8 +4197,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDuplicateChangesApplySuccess => 'Spot original atualizado.';
 
   @override
-  String get spotDuplicateChangesDismissSuccess =>
-      'Alterações do duplicado ignoradas.';
+  String get spotDuplicateChangesDismissSuccess => 'Alterações do duplicado ignoradas.';
 
   @override
   String get spotDuplicateChangesChip => 'Duplicado atualizado';
@@ -4590,30 +4206,25 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDuplicateChangesQueueTitle => 'Atualizações de duplicados';
 
   @override
-  String get spotDuplicateChangesQueueSubtitle =>
-      'Rever duplicados que mudaram depois de serem ligados';
+  String get spotDuplicateChangesQueueSubtitle => 'Rever duplicados que mudaram depois de serem ligados';
 
   @override
-  String get spotDuplicateChangesQueueEmpty =>
-      'Nenhum spot duplicado com alterações pendentes';
+  String get spotDuplicateChangesQueueEmpty => 'Nenhum spot duplicado com alterações pendentes';
 
   @override
   String get spotDuplicateChangesBannerTitle => 'Duplicado atualizado';
 
   @override
-  String get spotDuplicateChangesBannerBody =>
-      'Os campos mudaram depois de este spot ter sido marcado como duplicado.';
+  String get spotDuplicateChangesBannerBody => 'Os campos mudaram depois de este spot ter sido marcado como duplicado.';
 
   @override
   String get spotDuplicateChangesMenuItem => 'Rever alterações do duplicado';
 
   @override
-  String get spotDuplicateChangesMenuSubtitle =>
-      'Copiar campos selecionados para o original, ou ignorar tudo';
+  String get spotDuplicateChangesMenuSubtitle => 'Copiar campos selecionados para o original, ou ignorar tudo';
 
   @override
-  String get spotDuplicateChangesFailed =>
-      'Falha ao atualizar as alterações do duplicado';
+  String get spotDuplicateChangesFailed => 'Falha ao atualizar as alterações do duplicado';
 
   @override
   String spotDuplicateChangesPhotosValue(int count) {
@@ -4641,20 +4252,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get duplicateChangesSameAsPrevious => 'Igual ao anterior no duplicado';
 
   @override
-  String get duplicateChangesDiffersFromPrevious =>
-      'Difere do anterior no duplicado';
+  String get duplicateChangesDiffersFromPrevious => 'Difere do anterior no duplicado';
 
   @override
-  String get duplicateChangesPreviousUnavailable =>
-      'Valor anterior do duplicado indisponível';
+  String get duplicateChangesPreviousUnavailable => 'Valor anterior do duplicado indisponível';
 
   @override
-  String get duplicateChangesNativeSpotUnavailable =>
-      'Spot original indisponível';
+  String get duplicateChangesNativeSpotUnavailable => 'Spot original indisponível';
 
   @override
-  String get duplicateChangesNativeEventUnavailable =>
-      'Evento original indisponível';
+  String get duplicateChangesNativeEventUnavailable => 'Evento original indisponível';
 
   @override
   String get duplicateChangesContentsChanged => 'Conteúdo alterado';
@@ -4708,16 +4315,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotDuplicateChangesOpenSpot => 'Abrir página do spot';
 
   @override
-  String get eventDetailRemoveDuplicateConfirmBody =>
-      'Remover o estado de duplicado deste evento? Deixará de apontar para outro evento como original.';
+  String get eventDetailRemoveDuplicateConfirmBody => 'Remover o estado de duplicado deste evento? Deixará de apontar para outro evento como original.';
 
   @override
-  String get eventDetailRemoveDuplicateSuccess =>
-      'Estado de duplicado removido.';
+  String get eventDetailRemoveDuplicateSuccess => 'Estado de duplicado removido.';
 
   @override
-  String get eventDetailCopiedToClipboard =>
-      'Evento copiado para a área de transferência!';
+  String get eventDetailCopiedToClipboard => 'Evento copiado para a área de transferência!';
 
   @override
   String eventDetailShareFailed(String error) {
@@ -4731,62 +4335,49 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDetailQuickActionSuggestEdit => 'Sugerir edição';
 
   @override
-  String get eventDetailUnableSuggestNow =>
-      'Não é possível sugerir alterações para este evento neste momento.';
+  String get eventDetailUnableSuggestNow => 'Não é possível sugerir alterações para este evento neste momento.';
 
   @override
-  String get eventDetailCannotSuggestForDuplicate =>
-      'Não é possível sugerir alterações para eventos duplicados.';
+  String get eventDetailCannotSuggestForDuplicate => 'Não é possível sugerir alterações para eventos duplicados.';
 
   @override
-  String get eventDetailCannotSuggestForExternal =>
-      'Não é possível sugerir alterações para eventos de fontes externas. Cria primeiro um evento nativo.';
+  String get eventDetailCannotSuggestForExternal => 'Não é possível sugerir alterações para eventos de fontes externas. Cria primeiro um evento nativo.';
 
   @override
-  String get eventDetailThanksPhotoSuggestion =>
-      'Obrigado! A tua sugestão de fotos foi enviada para revisão.';
+  String get eventDetailThanksPhotoSuggestion => 'Obrigado! A tua sugestão de fotos foi enviada para revisão.';
 
   @override
-  String get eventDetailThanksEditSuggestion =>
-      'Obrigado! A tua sugestão de edição foi enviada para revisão.';
+  String get eventDetailThanksEditSuggestion => 'Obrigado! A tua sugestão de edição foi enviada para revisão.';
 
   @override
   String get eventDetailMenuFlagDuplicate => 'Marcar como duplicado';
 
   @override
-  String get eventDetailMenuFlagDuplicateSubtitleYes =>
-      'Este evento é um duplicado';
+  String get eventDetailMenuFlagDuplicateSubtitleYes => 'Este evento é um duplicado';
 
   @override
-  String get eventDetailMenuFlagDuplicateSubtitleNo =>
-      'Já marcado como duplicado';
+  String get eventDetailMenuFlagDuplicateSubtitleNo => 'Já marcado como duplicado';
 
   @override
   String get eventDetailFlagDuplicateDialogTitle => 'Marcar como duplicado';
 
   @override
-  String get eventDetailFlagDuplicateIntro =>
-      'Este evento parece um duplicado de outro. Seleciona o evento original abaixo.';
+  String get eventDetailFlagDuplicateIntro => 'Este evento parece um duplicado de outro. Seleciona o evento original abaixo.';
 
   @override
-  String get eventDetailFlagDuplicateWhichQuestion =>
-      'De que evento é duplicado?';
+  String get eventDetailFlagDuplicateWhichQuestion => 'De que evento é duplicado?';
 
   @override
-  String get eventDetailFlagDuplicateSuggestionsHeader =>
-      'Eventos próximos nestas datas';
+  String get eventDetailFlagDuplicateSuggestionsHeader => 'Eventos próximos nestas datas';
 
   @override
-  String get eventDetailThanksDuplicateSuggestion =>
-      'Obrigado! A tua sugestão de duplicado foi enviada para revisão.';
+  String get eventDetailThanksDuplicateSuggestion => 'Obrigado! A tua sugestão de duplicado foi enviada para revisão.';
 
   @override
-  String get eventDetailUnableFlagDuplicate =>
-      'Não é possível marcar este evento como duplicado de momento.';
+  String get eventDetailUnableFlagDuplicate => 'Não é possível marcar este evento como duplicado de momento.';
 
   @override
-  String get eventDetailDuplicateReportSelectRequired =>
-      'Seleciona o evento original.';
+  String get eventDetailDuplicateReportSelectRequired => 'Seleciona o evento original.';
 
   @override
   String get eventReportQueueDuplicateSuggestion => 'Sugestão de duplicado';
@@ -4795,31 +4386,25 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventReportQueueApproveDuplicate => 'Aprovar ligação de duplicado';
 
   @override
-  String get eventReportQueueOpenOriginalEvent =>
-      'Abrir evento original sugerido';
+  String get eventReportQueueOpenOriginalEvent => 'Abrir evento original sugerido';
 
   @override
-  String get eventDuplicateApprovalExternalOriginalHint =>
-      'O utilizador sugeriu um evento de uma fonte externa. Escolhe o evento nativo parkour.spot como original canónico.';
+  String get eventDuplicateApprovalExternalOriginalHint => 'O utilizador sugeriu um evento de uma fonte externa. Escolhe o evento nativo parkour.spot como original canónico.';
 
   @override
-  String get eventDuplicateApprovalPickNativeTitle =>
-      'Escolhe o evento nativo como original canónico.';
+  String get eventDuplicateApprovalPickNativeTitle => 'Escolhe o evento nativo como original canónico.';
 
   @override
   String get eventDetailSuggestPhotosTitle => 'Sugerir fotos';
 
   @override
-  String get eventDetailSuggestPhotosIntro =>
-      'Carrega fotos para este evento. Os moderadores vão rever a tua sugestão.';
+  String get eventDetailSuggestPhotosIntro => 'Carrega fotos para este evento. Os moderadores vão rever a tua sugestão.';
 
   @override
-  String get eventDetailSuggestPhotosPickRequired =>
-      'Adiciona pelo menos uma foto.';
+  String get eventDetailSuggestPhotosPickRequired => 'Adiciona pelo menos uma foto.';
 
   @override
-  String get eventDetailSuggestPhotosSubmitFailed =>
-      'Não foi possível enviar a sugestão de fotos. Tenta novamente.';
+  String get eventDetailSuggestPhotosSubmitFailed => 'Não foi possível enviar a sugestão de fotos. Tenta novamente.';
 
   @override
   String eventDetailSuggestPhotosSubmitError(String error) {
@@ -4830,16 +4415,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventDetailSuggestEditTitle => 'Sugerir edição';
 
   @override
-  String get eventDetailSuggestEditIntro =>
-      'Propõe atualizações para este evento. Os moderadores vão rever a tua sugestão.';
+  String get eventDetailSuggestEditIntro => 'Propõe atualizações para este evento. Os moderadores vão rever a tua sugestão.';
 
   @override
-  String get eventDetailSuggestEditNoChanges =>
-      'Sugere pelo menos uma alteração.';
+  String get eventDetailSuggestEditNoChanges => 'Sugere pelo menos uma alteração.';
 
   @override
-  String get eventDetailSuggestEditSubmitFailed =>
-      'Não foi possível enviar a sugestão de edição. Tenta novamente.';
+  String get eventDetailSuggestEditSubmitFailed => 'Não foi possível enviar a sugestão de edição. Tenta novamente.';
 
   @override
   String eventDetailSuggestEditSubmitError(String error) {
@@ -4850,8 +4432,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get eventSuggestionApprovalTitle => 'Rever sugestão de evento';
 
   @override
-  String get eventSuggestionCannotApproveExternalTitle =>
-      'Não é possível aprovar a sugestão';
+  String get eventSuggestionCannotApproveExternalTitle => 'Não é possível aprovar a sugestão';
 
   @override
   String eventSuggestionCannotApproveExternalBody(String sourceName) {
@@ -4859,12 +4440,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get eventSuggestionCannotApproveDuplicateTitle =>
-      'Não é possível aprovar a sugestão';
+  String get eventSuggestionCannotApproveDuplicateTitle => 'Não é possível aprovar a sugestão';
 
   @override
-  String get eventSuggestionCannotApproveDuplicateBody =>
-      'O evento selecionado é um duplicado de outro evento. As sugestões só podem ser aprovadas para o evento original nativo.\n\nSeleciona o evento original abaixo.';
+  String get eventSuggestionCannotApproveDuplicateBody => 'O evento selecionado é um duplicado de outro evento. As sugestões só podem ser aprovadas para o evento original nativo.\n\nSeleciona o evento original abaixo.';
 
   @override
   String get eventSuggestionTargetEventLabel => 'Evento alvo';
@@ -4898,22 +4477,19 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get eventSuggestionOriginalEventRecommendedSubtitle =>
-      'O evento original (recomendado)';
+  String get eventSuggestionOriginalEventRecommendedSubtitle => 'O evento original (recomendado)';
 
   @override
   String get eventSuggestionModeratorNotesLabel => 'Comentário (opcional)';
 
   @override
-  String get eventSuggestionModeratorNotesHint =>
-      'Documenta por que motivo aprovaste ou rejeitaste esta sugestão…';
+  String get eventSuggestionModeratorNotesHint => 'Documenta por que motivo aprovaste ou rejeitaste esta sugestão…';
 
   @override
   String get eventSuggestionApproveButton => 'Aprovar sugestão';
 
   @override
-  String get eventSuggestionApprovalFailed =>
-      'Não foi possível aprovar esta sugestão de evento.';
+  String get eventSuggestionApprovalFailed => 'Não foi possível aprovar esta sugestão de evento.';
 
   @override
   String eventSuggestionApprovalSuccess(String eventId) {
@@ -4945,8 +4521,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get locationReviewSuggestedLabel => 'Sugerido';
 
   @override
-  String get locationSuggestionReviewHint =>
-      'Reveja a localização sugerida no mapa abaixo.';
+  String get locationSuggestionReviewHint => 'Reveja a localização sugerida no mapa abaixo.';
 
   @override
   String get editSpotYoutubeSectionTitle => 'Ligações YouTube';
@@ -4955,12 +4530,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get editSpotYoutubeAddTooltip => 'Adicionar ligação YouTube';
 
   @override
-  String get editSpotYoutubeHint =>
-      'Introduz IDs ou URLs de YouTube (p. ex. dQw4w9WgXcQ ou https://www.youtube.com/watch?v=dQw4w9WgXcQ). Arrasta para reordenar.';
+  String get editSpotYoutubeHint => 'Introduz IDs ou URLs de YouTube (p. ex. dQw4w9WgXcQ ou https://www.youtube.com/watch?v=dQw4w9WgXcQ). Arrasta para reordenar.';
 
   @override
-  String get editSpotYoutubeEmpty =>
-      'Sem ligações YouTube. Clica em + para adicionar uma.';
+  String get editSpotYoutubeEmpty => 'Sem ligações YouTube. Clica em + para adicionar uma.';
 
   @override
   String editSpotYoutubeLinkLabel(int index) {

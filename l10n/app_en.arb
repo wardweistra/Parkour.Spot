@@ -1331,19 +1331,19 @@
   "@communityStreamFilterContributions": {
     "description": "Explore activities kind lens: new spots and photos"
   },
-  "communityStreamFilterEmptyEvents": "No events in this area",
+  "communityStreamFilterEmptyEvents": "No recent events in this area",
   "@communityStreamFilterEmptyEvents": {
-    "description": "Explore activities: empty state when Events lens matches nothing loaded"
+    "description": "Explore activities: empty state when Events lens has nothing in the retention window"
   },
-  "communityStreamFilterEmptySessions": "No sessions in this area",
+  "communityStreamFilterEmptySessions": "No recent sessions in this area",
   "@communityStreamFilterEmptySessions": {
-    "description": "Explore activities: empty state when Sessions lens matches nothing loaded"
+    "description": "Explore activities: empty state when Sessions lens has nothing in the retention window"
   },
-  "communityStreamFilterEmptyContributions": "No contributions in this area",
+  "communityStreamFilterEmptyContributions": "No recent contributions in this area",
   "@communityStreamFilterEmptyContributions": {
-    "description": "Explore activities: empty state when Contributions lens matches nothing loaded"
+    "description": "Explore activities: empty state when Contributions lens has nothing in the retention window"
   },
-  "communityStreamFilterEmptyHint": "Try another filter, pan the map, or show earlier activity",
+  "communityStreamFilterEmptyHint": "Try another filter or pan the map",
   "@communityStreamFilterEmptyHint": {
     "description": "Explore activities: hint under a kind-lens empty state"
   },
