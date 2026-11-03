@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
@@ -82,8 +84,18 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
   /// Edge inset before treating "now" as fully offscreen (avoids flicker).
   static const double _nowVisibilityMargin = 12;
 
-  /// True after the first open scroll that centers "now" in the viewport.
+  /// True after at least one open scroll that tried to center "now".
   bool _didApplyInitialScroll = false;
+
+  /// Keep auto-centering "now" while the explore sheet expands (viewport
+  /// grows). Cleared once the user scrolls or the open settle finishes.
+  bool _autoCenterNow = true;
+
+  /// Explore sheet open is ~300ms; wait a beat after the last size/extent
+  /// change before stopping auto-center.
+  static const Duration _autoCenterReleaseDelay = Duration(milliseconds: 400);
+
+  Timer? _autoCenterReleaseTimer;
 
   /// False until initial layout + timeline jump have settled — avoids a false
   /// "jump down" while the explore sheet is still expanding.
@@ -102,22 +114,131 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
 
   @override
   void dispose() {
+    _autoCenterReleaseTimer?.cancel();
     _scrollController.removeListener(_scheduleNowVisibilityUpdate);
     _scrollController.dispose();
     super.dispose();
   }
 
+  void _stopAutoCenterNow() {
+    _autoCenterReleaseTimer?.cancel();
+    _autoCenterReleaseTimer = null;
+    _autoCenterNow = false;
+  }
+
+  /// Final mid-panel refine a moment after the last sheet/extent change.
+  void _scheduleAutoCenterRelease() {
+    _autoCenterReleaseTimer?.cancel();
+    _autoCenterReleaseTimer = Timer(_autoCenterReleaseDelay, () {
+      if (!mounted || !_autoCenterNow) return;
+      _jumpNowToMidPanel();
+      _autoCenterNow = false;
+      _autoCenterReleaseTimer = null;
+      _scheduleNowVisibilityUpdate();
+    });
+  }
+
   @override
   void didUpdateWidget(covariant CommunityActivityStream oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // A cleared/replaced feed (new map bounds) should re-center on "now";
-    // growing past via "Show earlier" must not.
-    if (widget.feed.loadedPastCount < oldWidget.feed.loadedPastCount) {
-      _didApplyInitialScroll = false;
-      _clearAnchorCorrection();
-    } else if (widget.feed.loadedPastCount > oldWidget.feed.loadedPastCount) {
+    if (identical(widget.feed, oldWidget.feed)) return;
+
+    // "Show earlier" prepends older past — pin the viewport, don't re-center.
+    if (_isPastPageAppend(oldWidget.feed, widget.feed)) {
       _schedulePastInsertCorrection(oldWidget.feed);
+      return;
     }
+    // Further upcoming pages grow below "now"; leave scroll alone.
+    if (_isUpcomingPageAppend(oldWidget.feed, widget.feed)) {
+      return;
+    }
+
+    // Full reload (map move, retry, etc.): open again with "now" mid-panel.
+    _didApplyInitialScroll = false;
+    _autoCenterNow = true;
+    _nowVisibilityReady = false;
+    _clearAnchorCorrection();
+    _scheduleAutoCenterRelease();
+  }
+
+  /// Older past page merged into the existing past half (upcoming unchanged).
+  ///
+  /// Uses set containment rather than list prefix so both server order
+  /// (newer→older append) and UI/test prepends still count as paging.
+  static bool _isPastPageAppend(
+    CommunityActivityFeed previous,
+    CommunityActivityFeed next,
+  ) {
+    if (next.loadedPastCount <= previous.loadedPastCount) return false;
+    if (!_idsRetained(
+      previous.past.map((e) => e.id),
+      next.past.map((e) => e.id),
+    )) {
+      return false;
+    }
+    if (!_idsRetained(
+      previous.pastEvents.map((e) => e.pin.eventId),
+      next.pastEvents.map((e) => e.pin.eventId),
+    )) {
+      return false;
+    }
+    // Past paging leaves the upcoming half untouched.
+    return _idsEqual(
+          previous.upcoming.map((e) => e.id),
+          next.upcoming.map((e) => e.id),
+        ) &&
+        _idsEqual(
+          previous.events.map((e) => e.pin.eventId),
+          next.events.map((e) => e.pin.eventId),
+        );
+  }
+
+  /// Further-upcoming page merged into the existing upcoming half.
+  static bool _isUpcomingPageAppend(
+    CommunityActivityFeed previous,
+    CommunityActivityFeed next,
+  ) {
+    final prevUpcoming = previous.upcoming.length + previous.events.length;
+    final nextUpcoming = next.upcoming.length + next.events.length;
+    if (nextUpcoming <= prevUpcoming) return false;
+    if (!_idsEqual(
+      previous.past.map((e) => e.id),
+      next.past.map((e) => e.id),
+    )) {
+      return false;
+    }
+    if (!_idsEqual(
+      previous.pastEvents.map((e) => e.pin.eventId),
+      next.pastEvents.map((e) => e.pin.eventId),
+    )) {
+      return false;
+    }
+    return _idsRetained(
+          previous.upcoming.map((e) => e.id),
+          next.upcoming.map((e) => e.id),
+        ) &&
+        _idsRetained(
+          previous.events.map((e) => e.pin.eventId),
+          next.events.map((e) => e.pin.eventId),
+        );
+  }
+
+  static bool _idsRetained(Iterable<String> previous, Iterable<String> next) {
+    final nextSet = next.toSet();
+    for (final id in previous) {
+      if (!nextSet.contains(id)) return false;
+    }
+    return true;
+  }
+
+  static bool _idsEqual(Iterable<String> a, Iterable<String> b) {
+    final aList = a.toList(growable: false);
+    final bList = b.toList(growable: false);
+    if (aList.length != bList.length) return false;
+    for (var i = 0; i < aList.length; i++) {
+      if (aList[i] != bList[i]) return false;
+    }
+    return true;
   }
 
   GlobalKey _keyFor(String id) => _entryKeys.putIfAbsent(id, GlobalKey.new);
@@ -218,33 +339,46 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
     _scheduleNowVisibilityUpdate();
   }
 
+  /// Jump so the center-keyed "now" divider sits mid-viewport.
+  void _jumpNowToMidPanel() {
+    if (!_scrollController.hasClients) return;
+    final target = _nowCenteredScrollOffset();
+    if ((_scrollController.position.pixels - target).abs() > 0.5) {
+      _scrollController.jumpTo(target);
+    }
+    final nowContext = _entryKeys['now']?.currentContext;
+    if (nowContext != null && nowContext.mounted) {
+      Scrollable.ensureVisible(
+        nowContext,
+        alignment: 0.5,
+        duration: Duration.zero,
+      );
+    }
+  }
+
   void _ensureInitialScrollToNow() {
-    if (_didApplyInitialScroll) return;
+    if (!_autoCenterNow) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted || !_autoCenterNow) return;
       if (!_scrollController.hasClients) {
         // Layout hasn't attached the position yet — try again next frame.
         _ensureInitialScrollToNow();
         return;
       }
-      final target = _nowCenteredScrollOffset();
-      if ((_scrollController.position.pixels - target).abs() > 0.5) {
-        _scrollController.jumpTo(target);
-      }
+      _jumpNowToMidPanel();
+      final wasFirst = !_didApplyInitialScroll;
       _didApplyInitialScroll = true;
-      // Refine once "now" is laid out so it sits mid-panel, not merely at the
-      // approximate center-keyed offset.
+      _scheduleAutoCenterRelease();
+      // Refine once extents / the "now" row are fully laid out.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        final nowContext = _entryKeys['now']?.currentContext;
-        if (nowContext != null && nowContext.mounted) {
-          Scrollable.ensureVisible(
-            nowContext,
-            alignment: 0.5,
-            duration: Duration.zero,
-          );
+        if (!mounted || !_autoCenterNow) return;
+        _jumpNowToMidPanel();
+        _scheduleAutoCenterRelease();
+        if (wasFirst) {
+          _beginNowVisibilitySettle();
+        } else {
+          _scheduleNowVisibilityUpdate();
         }
-        _beginNowVisibilitySettle();
       });
     });
   }
@@ -278,7 +412,14 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
     if (!constraints.hasBoundedHeight || !constraints.hasBoundedWidth) return;
     final next = Size(constraints.maxWidth, constraints.maxHeight);
     if (_lastViewportSize == next) return;
+    final previous = _lastViewportSize;
     _lastViewportSize = next;
+    // Explore sheet open animates height; re-center so "now" stays mid-panel
+    // instead of stuck near the top from the first (short) frame.
+    if (_autoCenterNow && previous != null) {
+      _ensureInitialScrollToNow();
+      return;
+    }
     // Sheet expand / rotate changes the clip without a scroll event.
     if (_didApplyInitialScroll) {
       _scheduleNowVisibilityUpdate();
@@ -511,10 +652,30 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
               children: [
                 NotificationListener<ScrollNotification>(
                   onNotification: (notification) {
-                    if (notification is UserScrollNotification &&
-                        _anchorFramesRemaining > 0) {
-                      // Don't fight the user if they scroll during extent settling.
-                      _clearAnchorCorrection();
+                    if (notification is UserScrollNotification) {
+                      // Hand off: stop auto-centering once the user scrolls.
+                      if (_autoCenterNow) {
+                        _stopAutoCenterNow();
+                      }
+                      if (_anchorFramesRemaining > 0) {
+                        // Don't fight the user if they scroll during extent settling.
+                        _clearAnchorCorrection();
+                      }
+                    }
+                    // Metrics fire on sheet resize / extent settle — re-center
+                    // while still auto-centering so image loads don't leave
+                    // "now" pinned to the leading edge.
+                    if (_autoCenterNow &&
+                        notification is ScrollMetricsNotification &&
+                        _didApplyInitialScroll &&
+                        _scrollController.hasClients) {
+                      final drift =
+                          (_scrollController.position.pixels -
+                                  _nowCenteredScrollOffset())
+                              .abs();
+                      if (drift > 8) {
+                        _ensureInitialScrollToNow();
+                      }
                     }
                     // Metrics fire on sheet resize; updates/ends on user scroll.
                     if (notification is ScrollMetricsNotification ||

@@ -3198,7 +3198,14 @@ class SearchScreenState extends State<SearchScreen>
   }
 
   Widget _buildCommunityStream() {
+    // Key by loaded bounds so a map-move reload remounts the stream and
+    // re-centers on "now"; "Show earlier" keeps the same bounds/key.
     return CommunityActivityStream(
+      key: ValueKey(
+        'community-stream_'
+        '${_communityMinLat}_${_communityMaxLat}_'
+        '${_communityMinLng}_${_communityMaxLng}',
+      ),
       feed: _loadedCommunityFeed,
       loadingMorePast: _isLoadingMoreCommunityPast,
       loadingMoreUpcoming: _isLoadingMoreCommunityUpcoming,

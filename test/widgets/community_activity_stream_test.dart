@@ -348,6 +348,157 @@ void main() {
     expect(find.byKey(CommunityActivityStream.jumpToNowKey), findsNothing);
   });
 
+  testWidgets('re-centers now when the feed is replaced after a map reload', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    CommunityActivityFeed feedFor(String prefix) {
+      return CommunityActivityFeed(
+        past: List.generate(
+          10,
+          (i) => _item(
+            '$prefix-past$i',
+            CommunityActivityKind.spotCheckIn,
+            occurredAt: _now.subtract(Duration(hours: i + 1)),
+            actor: 'Past$i',
+          ),
+        ),
+        upcoming: List.generate(
+          10,
+          (i) => _item(
+            '$prefix-up$i',
+            CommunityActivityKind.spotTrainingPlan,
+            occurredAt: _now,
+            startAt: _now.add(Duration(hours: i + 1)),
+            endAt: _now.add(Duration(hours: i + 2)),
+            actor: 'Up$i',
+          ),
+        ),
+      );
+    }
+
+    Future<void> pumpFeed(CommunityActivityFeed feed) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: CommunityActivityStream(
+              feed: feed,
+              now: _now,
+              onOpenSpot: (_) {},
+              onOpenEvent: (_) {},
+            ),
+          ),
+        ),
+      );
+      for (var i = 0; i < 8; i++) {
+        await tester.pump();
+      }
+    }
+
+    await pumpFeed(feedFor('a'));
+
+    // Scroll into upcoming so "now" leaves the top of the panel.
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -1800));
+    await tester.pumpAndSettle();
+
+    await pumpFeed(feedFor('b'));
+    await tester.pump(const Duration(milliseconds: 450));
+
+    final nowBox =
+        tester.renderObject(find.byType(CommunityNowDivider)) as RenderBox;
+    final scrollBox =
+        tester.renderObject(find.byType(Scrollable)) as RenderBox;
+    expect(
+      nowBox.localToGlobal(Offset(0, nowBox.size.height / 2)).dy,
+      closeTo(
+        scrollBox.localToGlobal(Offset(0, scrollBox.size.height / 2)).dy,
+        scrollBox.size.height * 0.2,
+      ),
+      reason: 'map reload should place now mid-panel again',
+    );
+  });
+
+  testWidgets('keeps now mid-panel when the viewport grows after open', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final past = List.generate(
+      12,
+      (i) => _item(
+        'past$i',
+        CommunityActivityKind.spotCheckIn,
+        occurredAt: _now.subtract(Duration(hours: i + 1)),
+        actor: 'Past$i',
+      ),
+    );
+    final upcoming = List.generate(
+      12,
+      (i) => _item(
+        'up$i',
+        CommunityActivityKind.spotTrainingPlan,
+        occurredAt: _now,
+        startAt: _now.add(Duration(hours: i + 1)),
+        endAt: _now.add(Duration(hours: i + 2)),
+        actor: 'Up$i',
+      ),
+    );
+    final feed = CommunityActivityFeed(past: past, upcoming: upcoming);
+
+    Future<void> pumpAtHeight(double height) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SizedBox(
+              height: height,
+              child: CommunityActivityStream(
+                feed: feed,
+                now: _now,
+                onOpenSpot: (_) {},
+                onOpenEvent: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      // Flush center-on-now frames (sheet-open style growth).
+      for (var i = 0; i < 8; i++) {
+        await tester.pump();
+      }
+    }
+
+    // Short first frame (collapsed / mid-open sheet), then expand.
+    await pumpAtHeight(220);
+    await pumpAtHeight(560);
+    // Release timer (400ms) does a final mid-panel refine.
+    await tester.pump(const Duration(milliseconds: 450));
+
+    final nowBox =
+        tester.renderObject(find.byType(CommunityNowDivider)) as RenderBox;
+    final scrollBox =
+        tester.renderObject(find.byType(Scrollable)) as RenderBox;
+    final nowCenterY =
+        nowBox.localToGlobal(Offset(0, nowBox.size.height / 2)).dy;
+    final viewCenterY =
+        scrollBox.localToGlobal(Offset(0, scrollBox.size.height / 2)).dy;
+    expect(
+      nowCenterY,
+      closeTo(viewCenterY, scrollBox.size.height * 0.2),
+      reason: 'after sheet expand, now should stay near mid-panel',
+    );
+  });
+
   testWidgets('shows a jump-to-now pill when now is scrolled offscreen', (
     tester,
   ) async {
