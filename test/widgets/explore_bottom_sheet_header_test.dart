@@ -27,7 +27,7 @@ void main() {
               return ExploreBottomSheetHeader(
                 mode: mode,
                 spotsLabel: '12 spots',
-                eventsLabel: '3 events',
+                communityLabel: '7 activities',
                 spotsDetailSuffix: 'best shown',
                 isSheetOpen: sheetOpen,
                 onModeChanged: (next) => setState(() => mode = next),
@@ -47,7 +47,7 @@ void main() {
     expect(find.byIcon(Icons.expand_more), findsOneWidget);
   });
 
-  testWidgets('switching to events does not collapse an open sheet', (
+  testWidgets('switching to activities does not collapse an open sheet', (
     tester,
   ) async {
     var mode = ExploreBottomSheetHeader.modeSpots;
@@ -60,7 +60,7 @@ void main() {
               return ExploreBottomSheetHeader(
                 mode: mode,
                 spotsLabel: '12 spots',
-                eventsLabel: '3 events',
+                communityLabel: '7 activities',
                 isSheetOpen: true,
                 onModeChanged: (next) => setState(() => mode = next),
                 onToggleSheet: () {},
@@ -71,7 +71,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('3 events'));
+    await tester.tap(find.text('7 activities'));
     await tester.pump();
 
     expect(
@@ -98,7 +98,7 @@ void main() {
                 return ExploreBottomSheetHeader(
                   mode: mode,
                   spotsLabel: '12 spots',
-                  eventsLabel: '3 events',
+                  communityLabel: '7 activities',
                   spotsDetailSuffix: '100 best shown',
                   isSheetOpen: true,
                   onModeChanged: (next) => setState(() => mode = next),
@@ -111,15 +111,13 @@ void main() {
       );
 
       final spotsHeight = tester.getSize(find.text('12 spots')).height;
-      // Measure the outer Material pill via the spots label's ancestor Material
-      // that paints the toggle track (surfaceContainerHighest).
       final pillFinder = find.ancestor(
         of: find.text('12 spots'),
         matching: find.byType(Material),
       );
       final heightOnSpots = tester.getSize(pillFinder.first).height;
 
-      await tester.tap(find.text('3 events'));
+      await tester.tap(find.text('7 activities'));
       await tester.pumpAndSettle();
 
       expect(find.text('100 best shown'), findsOneWidget);
@@ -128,58 +126,57 @@ void main() {
     },
   );
 
-  testWidgets(
-    'keeps pill height when spots detail suffix is absent',
-    (tester) async {
-      String? spotsDetailSuffix = '100 best shown';
+  testWidgets('keeps pill height when spots detail suffix is absent', (
+    tester,
+  ) async {
+    String? spotsDetailSuffix = '100 best shown';
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: StatefulBuilder(
-              builder: (context, setState) {
-                return ExploreBottomSheetHeader(
-                  mode: ExploreBottomSheetHeader.modeSpots,
-                  spotsLabel: '12 spots',
-                  eventsLabel: '3 events',
-                  spotsDetailSuffix: spotsDetailSuffix,
-                  isSheetOpen: true,
-                  onModeChanged: (_) {},
-                  onToggleSheet: () {},
-                );
-              },
-            ),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) {
+              return ExploreBottomSheetHeader(
+                mode: ExploreBottomSheetHeader.modeSpots,
+                spotsLabel: '12 spots',
+                communityLabel: '7 activities',
+                spotsDetailSuffix: spotsDetailSuffix,
+                isSheetOpen: true,
+                onModeChanged: (_) {},
+                onToggleSheet: () {},
+              );
+            },
           ),
         ),
-      );
+      ),
+    );
 
-      final pillFinder = find.ancestor(
-        of: find.text('12 spots'),
-        matching: find.byType(Material),
-      );
-      final heightWithSuffix = tester.getSize(pillFinder.first).height;
+    final pillFinder = find.ancestor(
+      of: find.text('12 spots'),
+      matching: find.byType(Material),
+    );
+    final heightWithSuffix = tester.getSize(pillFinder.first).height;
 
-      spotsDetailSuffix = null;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: ExploreBottomSheetHeader(
-              mode: ExploreBottomSheetHeader.modeSpots,
-              spotsLabel: '12 spots',
-              eventsLabel: '3 events',
-              isSheetOpen: true,
-              onModeChanged: (_) {},
-              onToggleSheet: () {},
-            ),
+    spotsDetailSuffix = null;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ExploreBottomSheetHeader(
+            mode: ExploreBottomSheetHeader.modeSpots,
+            spotsLabel: '12 spots',
+            communityLabel: '7 activities',
+            isSheetOpen: true,
+            onModeChanged: (_) {},
+            onToggleSheet: () {},
           ),
         ),
-      );
-      await tester.pumpAndSettle();
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      expect(find.text('100 best shown'), findsNothing);
-      expect(tester.getSize(pillFinder.first).height, heightWithSuffix);
-    },
-  );
+    expect(find.text('100 best shown'), findsNothing);
+    expect(tester.getSize(pillFinder.first).height, heightWithSuffix);
+  });
 
   testWidgets('loading segment swaps its pin for a spinner', (tester) async {
     await tester.pumpWidget(
@@ -188,7 +185,7 @@ void main() {
           body: ExploreBottomSheetHeader(
             mode: ExploreBottomSheetHeader.modeSpots,
             spotsLabel: 'spots',
-            eventsLabel: '3 events',
+            communityLabel: '7 activities',
             spotsLoading: true,
             isSheetOpen: false,
             onModeChanged: (_) {},
@@ -204,26 +201,7 @@ void main() {
     expect(find.text('spots'), findsOneWidget);
   });
 
-  testWidgets('community segment is hidden without a label', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: ExploreBottomSheetHeader(
-            mode: ExploreBottomSheetHeader.modeSpots,
-            spotsLabel: '12 spots',
-            eventsLabel: '3 events',
-            isSheetOpen: false,
-            onModeChanged: (_) {},
-            onToggleSheet: () {},
-          ),
-        ),
-      ),
-    );
-
-    expect(find.byIcon(ExploreBottomSheetHeader.communityIcon), findsNothing);
-  });
-
-  testWidgets('tapping the community segment selects community mode', (
+  testWidgets('tapping the activities segment selects community mode', (
     tester,
   ) async {
     String? selected;
@@ -234,8 +212,7 @@ void main() {
           body: ExploreBottomSheetHeader(
             mode: ExploreBottomSheetHeader.modeSpots,
             spotsLabel: '12 spots',
-            eventsLabel: '3 events',
-            communityLabel: '7 updates',
+            communityLabel: '7 activities',
             isSheetOpen: true,
             onModeChanged: (next) => selected = next,
             onToggleSheet: () {},
@@ -244,25 +221,24 @@ void main() {
       ),
     );
 
-    expect(find.byIcon(ExploreBottomSheetHeader.communityIcon), findsOneWidget);
-    await tester.tap(find.text('7 updates'));
+    expect(
+      _legendSvg(MarkerIconUtils.mapPinEventLegendAsset),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('7 activities'));
     await tester.pump();
 
     expect(selected, ExploreBottomSheetHeader.modeCommunity);
   });
 
-  testWidgets('wide pill keeps full labels on every segment', (tester) async {
+  testWidgets('pill keeps full labels on every segment', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
           body: ExploreBottomSheetHeader(
             mode: ExploreBottomSheetHeader.modeCommunity,
             spotsLabel: '12 spots',
-            eventsLabel: '3 events',
-            communityLabel: '7 updates',
-            spotsCompactLabel: '12',
-            eventsCompactLabel: '3',
-            communityCompactLabel: '7',
+            communityLabel: '7 activities',
             isSheetOpen: true,
             onModeChanged: (_) {},
             onToggleSheet: () {},
@@ -272,50 +248,6 @@ void main() {
     );
 
     expect(find.text('12 spots'), findsOneWidget);
-    expect(find.text('3 events'), findsOneWidget);
-    expect(find.text('7 updates'), findsOneWidget);
-    expect(find.text('12'), findsNothing);
+    expect(find.text('7 activities'), findsOneWidget);
   });
-
-  testWidgets(
-    'narrow pill collapses unselected segments to their compact labels',
-    (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: SizedBox(
-                // Logo + chevron leave the pill under the breakpoint
-                // (test fonts are wide, so keep room for the content).
-                width: ExploreBottomSheetHeader.compactPillBreakpoint + 60,
-                child: ExploreBottomSheetHeader(
-                  mode: ExploreBottomSheetHeader.modeEvents,
-                  spotsLabel: '12 spots',
-                  eventsLabel: '3 events',
-                  communityLabel: '7 updates',
-                  spotsCompactLabel: '12',
-                  eventsCompactLabel: '3',
-                  communityCompactLabel: '7',
-                  spotsDetailSuffix: '100 best shown',
-                  isSheetOpen: true,
-                  onModeChanged: (_) {},
-                  onToggleSheet: () {},
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('3 events'), findsOneWidget);
-      expect(find.text('12'), findsOneWidget);
-      expect(find.text('7'), findsOneWidget);
-      expect(find.text('12 spots'), findsNothing);
-      expect(find.text('7 updates'), findsNothing);
-      // Detail suffix is dropped with the compact label.
-      expect(find.text('100 best shown'), findsNothing);
-      expect(tester.takeException(), isNull);
-    },
-  );
 }

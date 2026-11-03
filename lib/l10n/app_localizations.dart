@@ -1678,41 +1678,11 @@ abstract class AppLocalizations {
   /// **' ({count} best shown)'**
   String exploreMapBestShownParenthetical(int count);
 
-  /// Explore bottom sheet segmented control: spots list
-  ///
-  /// In en, this message translates to:
-  /// **'Spots'**
-  String get exploreMapListModeSpots;
-
-  /// Explore bottom sheet segmented control: events list
-  ///
-  /// In en, this message translates to:
-  /// **'Events'**
-  String get exploreMapListModeEvents;
-
-  /// Empty state when map area has no upcoming events
-  ///
-  /// In en, this message translates to:
-  /// **'No events in this area'**
-  String get exploreNoEventsArea;
-
-  /// Empty state hint when no events in viewport
-  ///
-  /// In en, this message translates to:
-  /// **'Pan the map to another area or check back later'**
-  String get exploreNoEventsAreaHint;
-
   /// Short badge on spot cards when an upcoming event is linked
   ///
   /// In en, this message translates to:
   /// **'Event'**
   String get spotCardUpcomingEventBadge;
-
-  /// Button to center map on an event pin
-  ///
-  /// In en, this message translates to:
-  /// **'Locate'**
-  String get exploreEventLocate;
 
   /// Empty state when search has no results
   ///
@@ -1804,31 +1774,25 @@ abstract class AppLocalizations {
   /// **'spots'**
   String get exploreSpotsLoadingLabel;
 
-  /// Explore events toggle label shown before the first event count for the map view has loaded
+  /// Explore activities toggle label: number of activity items in the map view
   ///
   /// In en, this message translates to:
-  /// **'events'**
-  String get exploreEventsLoadingLabel;
-
-  /// Explore community toggle label: number of community activity items in the map view
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{1 update} other{{count} updates}}'**
+  /// **'{count, plural, one{1 activity} other{{count} activities}}'**
   String exploreCommunityCountShort(int count);
 
-  /// Explore community toggle label shown before the first community activity for the map view has loaded
+  /// Explore activities toggle label shown before the first activity for the map view has loaded
   ///
   /// In en, this message translates to:
-  /// **'community'**
+  /// **'activities'**
   String get exploreCommunityLoadingLabel;
 
-  /// Explore community stream: empty state title
+  /// Explore activities stream: empty state title
   ///
   /// In en, this message translates to:
-  /// **'No community activity in this area'**
+  /// **'No activity in this area'**
   String get exploreNoCommunityArea;
 
-  /// Explore community stream: empty state hint
+  /// Explore activities stream: empty state hint
   ///
   /// In en, this message translates to:
   /// **'Check in, plan a training session or add a spot to get things going'**
@@ -1846,10 +1810,10 @@ abstract class AppLocalizations {
   /// **'Try again'**
   String get communityStreamRetry;
 
-  /// Explore community stream: button that expands older past activity hidden above the recent items
+  /// Explore activities stream: button that expands older past activity hidden above the recent items
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{Show 1 earlier update} other{Show {count} earlier updates}}'**
+  /// **'{count, plural, one{Show 1 earlier activity} other{Show {count} earlier activities}}'**
   String communityStreamShowEarlier(int count);
 
   /// Explore community stream: divider label between past activity and upcoming plans/events

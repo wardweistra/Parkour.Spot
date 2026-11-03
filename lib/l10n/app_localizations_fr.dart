@@ -976,23 +976,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get exploreMapListModeSpots => 'Spots';
-
-  @override
-  String get exploreMapListModeEvents => 'Événements';
-
-  @override
-  String get exploreNoEventsArea => 'Aucun événement dans cette zone';
-
-  @override
-  String get exploreNoEventsAreaHint =>
-      'Déplacez la carte ou revenez plus tard';
-
-  @override
   String get spotCardUpcomingEventBadge => 'Événement';
-
-  @override
-  String get exploreEventLocate => 'Localiser';
 
   @override
   String get exploreNoSpotsSearch => 'Aucun spot trouvé';
@@ -1060,25 +1044,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get exploreSpotsLoadingLabel => 'spots';
 
   @override
-  String get exploreEventsLoadingLabel => 'événements';
-
-  @override
   String exploreCommunityCountShort(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count nouveautés',
-      one: '1 nouveauté',
+      other: '$count activités',
+      one: '1 activité',
     );
     return '$_temp0';
   }
 
   @override
-  String get exploreCommunityLoadingLabel => 'communauté';
+  String get exploreCommunityLoadingLabel => 'activités';
 
   @override
-  String get exploreNoCommunityArea =>
-      'Aucune activité de la communauté dans cette zone';
+  String get exploreNoCommunityArea => 'Aucune activité dans cette zone';
 
   @override
   String get exploreNoCommunityAreaHint =>
@@ -1096,8 +1076,8 @@ class AppLocalizationsFr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Afficher $count nouveautés précédentes',
-      one: 'Afficher 1 nouveauté précédente',
+      other: 'Afficher $count activités précédentes',
+      one: 'Afficher 1 activité précédente',
     );
     return '$_temp0';
   }

@@ -963,22 +963,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get exploreMapListModeSpots => 'Spots';
-
-  @override
-  String get exploreMapListModeEvents => 'Evenementen';
-
-  @override
-  String get exploreNoEventsArea => 'Geen evenementen in dit gebied';
-
-  @override
-  String get exploreNoEventsAreaHint => 'Verschuif de kaart of kom later terug';
-
-  @override
   String get spotCardUpcomingEventBadge => 'Evenement';
-
-  @override
-  String get exploreEventLocate => 'Lokaliseren';
 
   @override
   String get exploreNoSpotsSearch => 'Geen spots gevonden';
@@ -1043,25 +1028,21 @@ class AppLocalizationsNl extends AppLocalizations {
   String get exploreSpotsLoadingLabel => 'spots';
 
   @override
-  String get exploreEventsLoadingLabel => 'evenementen';
-
-  @override
   String exploreCommunityCountShort(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count updates',
-      one: '1 update',
+      other: '$count activiteiten',
+      one: '1 activiteit',
     );
     return '$_temp0';
   }
 
   @override
-  String get exploreCommunityLoadingLabel => 'community';
+  String get exploreCommunityLoadingLabel => 'activiteiten';
 
   @override
-  String get exploreNoCommunityArea =>
-      'Geen community-activiteit in dit gebied';
+  String get exploreNoCommunityArea => 'Geen activiteit in dit gebied';
 
   @override
   String get exploreNoCommunityAreaHint =>
@@ -1079,8 +1060,8 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Toon $count eerdere updates',
-      one: 'Toon 1 eerdere update',
+      other: 'Toon $count eerdere activiteiten',
+      one: 'Toon 1 eerdere activiteit',
     );
     return '$_temp0';
   }

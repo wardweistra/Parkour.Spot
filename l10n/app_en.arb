@@ -1220,29 +1220,9 @@
       }
     }
   },
-  "exploreMapListModeSpots": "Spots",
-  "@exploreMapListModeSpots": {
-    "description": "Explore bottom sheet segmented control: spots list"
-  },
-  "exploreMapListModeEvents": "Events",
-  "@exploreMapListModeEvents": {
-    "description": "Explore bottom sheet segmented control: events list"
-  },
-  "exploreNoEventsArea": "No events in this area",
-  "@exploreNoEventsArea": {
-    "description": "Empty state when map area has no upcoming events"
-  },
-  "exploreNoEventsAreaHint": "Pan the map to another area or check back later",
-  "@exploreNoEventsAreaHint": {
-    "description": "Empty state hint when no events in viewport"
-  },
   "spotCardUpcomingEventBadge": "Event",
   "@spotCardUpcomingEventBadge": {
     "description": "Short badge on spot cards when an upcoming event is linked"
-  },
-  "exploreEventLocate": "Locate",
-  "@exploreEventLocate": {
-    "description": "Button to center map on an event pin"
   },
   "exploreNoSpotsSearch": "No spots found",
   "@exploreNoSpotsSearch": {
@@ -1314,30 +1294,26 @@
   "@exploreSpotsLoadingLabel": {
     "description": "Explore spots toggle label shown before the first spot count for the map view has loaded"
   },
-  "exploreEventsLoadingLabel": "events",
-  "@exploreEventsLoadingLabel": {
-    "description": "Explore events toggle label shown before the first event count for the map view has loaded"
-  },
-  "exploreCommunityCountShort": "{count, plural, one{1 update} other{{count} updates}}",
+  "exploreCommunityCountShort": "{count, plural, one{1 activity} other{{count} activities}}",
   "@exploreCommunityCountShort": {
-    "description": "Explore community toggle label: number of community activity items in the map view",
+    "description": "Explore activities toggle label: number of activity items in the map view",
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "exploreCommunityLoadingLabel": "community",
+  "exploreCommunityLoadingLabel": "activities",
   "@exploreCommunityLoadingLabel": {
-    "description": "Explore community toggle label shown before the first community activity for the map view has loaded"
+    "description": "Explore activities toggle label shown before the first activity for the map view has loaded"
   },
-  "exploreNoCommunityArea": "No community activity in this area",
+  "exploreNoCommunityArea": "No activity in this area",
   "@exploreNoCommunityArea": {
-    "description": "Explore community stream: empty state title"
+    "description": "Explore activities stream: empty state title"
   },
   "exploreNoCommunityAreaHint": "Check in, plan a training session or add a spot to get things going",
   "@exploreNoCommunityAreaHint": {
-    "description": "Explore community stream: empty state hint"
+    "description": "Explore activities stream: empty state hint"
   },
   "communityStreamLoadFailed": "Could not load community activity",
   "@communityStreamLoadFailed": {
@@ -1347,9 +1323,9 @@
   "@communityStreamRetry": {
     "description": "Explore community stream: retry button in the error state"
   },
-  "communityStreamShowEarlier": "{count, plural, one{Show 1 earlier update} other{Show {count} earlier updates}}",
+  "communityStreamShowEarlier": "{count, plural, one{Show 1 earlier activity} other{Show {count} earlier activities}}",
   "@communityStreamShowEarlier": {
-    "description": "Explore community stream: button that expands older past activity hidden above the recent items",
+    "description": "Explore activities stream: button that expands older past activity hidden above the recent items",
     "placeholders": {
       "count": {
         "type": "int"

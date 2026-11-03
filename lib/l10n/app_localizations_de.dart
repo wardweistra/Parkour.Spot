@@ -973,23 +973,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get exploreMapListModeSpots => 'Spots';
-
-  @override
-  String get exploreMapListModeEvents => 'Events';
-
-  @override
-  String get exploreNoEventsArea => 'Keine Events in diesem Gebiet';
-
-  @override
-  String get exploreNoEventsAreaHint =>
-      'Karte verschieben oder später erneut prüfen';
-
-  @override
   String get spotCardUpcomingEventBadge => 'Event';
-
-  @override
-  String get exploreEventLocate => 'Orten';
 
   @override
   String get exploreNoSpotsSearch => 'Keine Spots gefunden';
@@ -1055,25 +1039,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get exploreSpotsLoadingLabel => 'Spots';
 
   @override
-  String get exploreEventsLoadingLabel => 'Events';
-
-  @override
   String exploreCommunityCountShort(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count Updates',
-      one: '1 Update',
+      other: '$count Aktivitäten',
+      one: '1 Aktivität',
     );
     return '$_temp0';
   }
 
   @override
-  String get exploreCommunityLoadingLabel => 'Community';
+  String get exploreCommunityLoadingLabel => 'Aktivitäten';
 
   @override
-  String get exploreNoCommunityArea =>
-      'Keine Community-Aktivität in diesem Gebiet';
+  String get exploreNoCommunityArea => 'Keine Aktivität in diesem Gebiet';
 
   @override
   String get exploreNoCommunityAreaHint =>

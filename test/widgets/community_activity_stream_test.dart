@@ -147,7 +147,7 @@ void main() {
     expect(_topOf(tester, planning), lessThan(_topOf(tester, eventUpcoming)));
 
     // Nothing to expand when the past fits the preview window.
-    expect(find.textContaining('earlier update'), findsNothing);
+    expect(find.textContaining('earlier activity'), findsNothing);
   });
 
   testWidgets('collapses older history behind a "show earlier" button', (
@@ -164,16 +164,16 @@ void main() {
     );
     await _pump(tester, CommunityActivityFeed(past: past));
 
-    expect(find.text('Show 4 earlier updates'), findsOneWidget);
+    expect(find.text('Show 4 earlier activities'), findsOneWidget);
     // Newest three are shown (indices 0..2), older ones hidden.
     expect(find.textContaining('Person0 '), findsOneWidget);
     expect(find.textContaining('Person2 '), findsOneWidget);
     expect(find.textContaining('Person3 '), findsNothing);
 
-    await tester.tap(find.text('Show 4 earlier updates'));
+    await tester.tap(find.text('Show 4 earlier activities'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Show 4 earlier updates'), findsNothing);
+    expect(find.text('Show 4 earlier activities'), findsNothing);
     expect(find.textContaining('Person6 '), findsOneWidget);
   });
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart' show toBeginningOfSentenceCase;
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -352,7 +351,6 @@ class SearchScreenState extends State<SearchScreen>
   int? _totalSpotsInView; // Total unfiltered spots in current bounds
   int? _bestShownCount; // Number of ranked spots returned (up to 100)
   List<EventMapPin> _loadedEventPins = [];
-  List<EventMapPin> _visibleEvents = [];
   Map<String, EventMapPin> _eventPinBySpotId = {};
   bool _isLoadingEventsForView = false;
   CommunityActivityFeed _loadedCommunityFeed = CommunityActivityFeed.empty;
@@ -1509,7 +1507,6 @@ class SearchScreenState extends State<SearchScreen>
 
       _loadedEventPins = eventsResult.pins;
       _eventPinBySpotId = eventPinsBySpotId(_loadedEventPins);
-      _visibleEvents = dedupePinsByEventId(_loadedEventPins);
 
       if (!mounted) return;
       _updateVisibleSpots();
@@ -3094,25 +3091,6 @@ class SearchScreenState extends State<SearchScreen>
     return _eventPinBySpotId[id];
   }
 
-  Future<void> _locateEvent(EventMapPin pin) async {
-    final admin = Provider.of<AdminEventsService>(context, listen: false);
-    final event = await admin.getEventById(pin.eventId);
-    if (event == null || !mounted) return;
-
-    final target = await Provider.of<EventMapService>(
-      context,
-      listen: false,
-    ).resolveLocateTargetForEvent(event);
-    if (target == null || !mounted) return;
-
-    if (target.isSpotList) {
-      await _locateSpotListById(target.spotListId!);
-      return;
-    }
-
-    await _selectEventPin(target.pin ?? pin, focusMap: true);
-  }
-
   Widget _buildEventOverlayCard({required double maxWidth}) {
     final pin = _selectedEventPin!;
     return EventCard(
@@ -3132,144 +3110,6 @@ class SearchScreenState extends State<SearchScreen>
           _markers = _rebuildMarkers();
         });
       },
-    );
-  }
-
-  Widget _buildEventCard(EventMapPin pin) {
-    return EventCard(
-      pin: pin,
-      onTapWithImageIndex: (imageIndex) {
-        _mapController?.animateCamera(
-          CameraUpdate.newLatLng(LatLng(pin.latitude, pin.longitude)),
-        );
-        final path = '/event/${pin.eventId}';
-        final navigationUrl = imageIndex > 0
-            ? '$path?imageIndex=$imageIndex'
-            : path;
-        context.push(navigationUrl);
-      },
-      onLocate: () => _locateEvent(pin),
-    );
-  }
-
-  Widget _buildEventsList() {
-    final groups = groupExploreEventsByMonth(_visibleEvents);
-    final screenWidth = MediaQuery.of(context).size.width;
-    final useGrid = screenWidth >= 600;
-
-    if (useGrid) {
-      const maxCrossAxisExtent = 480.0;
-      const mainAxisExtent = 440.0;
-
-      return CustomScrollView(
-        slivers: [
-          for (var i = 0; i < groups.length; i++) ...[
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(16, i == 0 ? 16 : 0, 16, 0),
-                child: _ExploreEventMonthHeader(
-                  monthStart: groups[i].monthStart,
-                  isFirst: i == 0,
-                ),
-              ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: maxCrossAxisExtent,
-                  mainAxisExtent: mainAxisExtent,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) => _buildEventCard(groups[i].events[index]),
-                  childCount: groups[i].events.length,
-                ),
-              ),
-            ),
-          ],
-          const SliverToBoxAdapter(child: SizedBox(height: 16)),
-        ],
-      );
-    }
-
-    final entries =
-        <
-          ({
-            bool isHeader,
-            DateTime? monthStart,
-            bool isFirst,
-            EventMapPin? pin,
-          })
-        >[];
-    for (var i = 0; i < groups.length; i++) {
-      final group = groups[i];
-      entries.add((
-        isHeader: true,
-        monthStart: group.monthStart,
-        isFirst: i == 0,
-        pin: null,
-      ));
-      for (final pin in group.events) {
-        entries.add((
-          isHeader: false,
-          monthStart: null,
-          isFirst: false,
-          pin: pin,
-        ));
-      }
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: entries.length,
-      itemBuilder: (context, index) {
-        final entry = entries[index];
-        if (entry.isHeader) {
-          return _ExploreEventMonthHeader(
-            monthStart: entry.monthStart!,
-            isFirst: entry.isFirst,
-          );
-        }
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _buildEventCard(entry.pin!),
-        );
-      },
-    );
-  }
-
-  Widget _buildExploreEventsEmptyState(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.event_busy,
-            size: 64,
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            l10n.exploreNoEventsArea,
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.exploreNoEventsAreaHint,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.7),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -3309,9 +3149,7 @@ class SearchScreenState extends State<SearchScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              failed
-                  ? Icons.cloud_off_outlined
-                  : ExploreBottomSheetHeader.communityIcon,
+              failed ? Icons.cloud_off_outlined : Icons.timeline_outlined,
               size: 64,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
             ),
@@ -3363,8 +3201,6 @@ class SearchScreenState extends State<SearchScreen>
       _showFiltersDialog = false;
     });
   }
-
-  int _exploreEventCountForHeader() => _visibleEvents.length;
 
   String? _exploreSpotsSegmentSuffix(AppLocalizations l10n) {
     if (_totalSpotsInView != null &&
@@ -4346,33 +4182,13 @@ class SearchScreenState extends State<SearchScreen>
                                                       _exploreSpotCountForHeader(),
                                                     )
                                                   : l10n.exploreSpotsLoadingLabel,
-                                              eventsLabel: _hasLoadedMapData
-                                                  ? l10n.exploreEventCountShort(
-                                                      _exploreEventCountForHeader(),
-                                                    )
-                                                  : l10n.exploreEventsLoadingLabel,
                                               communityLabel: _hasLoadedMapData
                                                   ? l10n.exploreCommunityCountShort(
                                                       _exploreCommunityCountForHeader(),
                                                     )
                                                   : l10n.exploreCommunityLoadingLabel,
-                                              spotsCompactLabel:
-                                                  _hasLoadedMapData
-                                                  ? '${_exploreSpotCountForHeader()}'
-                                                  : null,
-                                              eventsCompactLabel:
-                                                  _hasLoadedMapData
-                                                  ? '${_exploreEventCountForHeader()}'
-                                                  : null,
-                                              communityCompactLabel:
-                                                  _hasLoadedMapData
-                                                  ? '${_exploreCommunityCountForHeader()}'
-                                                  : null,
                                               spotsLoading:
                                                   _isLoadingSpotsForView ||
-                                                  !_hasLoadedMapData,
-                                              eventsLoading:
-                                                  _isLoadingEventsForView ||
                                                   !_hasLoadedMapData,
                                               communityLoading:
                                                   _isLoadingCommunityForView ||
@@ -4383,7 +4199,14 @@ class SearchScreenState extends State<SearchScreen>
                                                   ),
                                               isSheetOpen: _isBottomSheetOpen,
                                               onModeChanged: (mode) {
-                                                _exploreListMode.value = mode;
+                                                _exploreListMode.value =
+                                                    mode ==
+                                                        ExploreBottomSheetHeader
+                                                            .modeCommunity
+                                                    ? ExploreBottomSheetHeader
+                                                          .modeCommunity
+                                                    : ExploreBottomSheetHeader
+                                                          .modeSpots;
                                               },
                                               onToggleSheet: _toggleBottomSheet,
                                             );
@@ -4407,84 +4230,73 @@ class SearchScreenState extends State<SearchScreen>
                                                         )
                                                       : _buildCommunityStream();
                                                 }
-                                                return exploreListMode ==
-                                                        ExploreBottomSheetHeader
-                                                            .modeEvents
-                                                    ? (_visibleEvents.isEmpty
-                                                          ? _buildExploreEventsEmptyState(
-                                                              context,
-                                                            )
-                                                          : _buildEventsList())
-                                                    : (_visibleSpots.isEmpty
-                                                          ? Center(
-                                                              child: Column(
-                                                                mainAxisAlignment:
-                                                                    MainAxisAlignment
-                                                                        .center,
-                                                                children: [
-                                                                  Icon(
-                                                                    _searchQuery
-                                                                            .isNotEmpty
-                                                                        ? Icons
-                                                                              .search_off
-                                                                        : Icons
-                                                                              .location_off,
-                                                                    size: 64,
-                                                                    color:
-                                                                        Theme.of(
-                                                                          context,
-                                                                        ).colorScheme.onSurface.withValues(
-                                                                          alpha:
-                                                                              0.5,
-                                                                        ),
-                                                                  ),
-                                                                  const SizedBox(
-                                                                    height: 16,
-                                                                  ),
-                                                                  Text(
-                                                                    _searchQuery
-                                                                            .isNotEmpty
-                                                                        ? AppLocalizations.of(
-                                                                            context,
-                                                                          )!.exploreNoSpotsSearch
-                                                                        : AppLocalizations.of(
-                                                                            context,
-                                                                          )!.exploreNoSpotsArea,
-                                                                    style: Theme.of(
-                                                                      context,
-                                                                    ).textTheme.headlineSmall,
-                                                                  ),
-                                                                  const SizedBox(
-                                                                    height: 8,
-                                                                  ),
-                                                                  Text(
-                                                                    _searchQuery
-                                                                            .isNotEmpty
-                                                                        ? AppLocalizations.of(
-                                                                            context,
-                                                                          )!.exploreNoSpotsSearchHint
-                                                                        : AppLocalizations.of(
-                                                                            context,
-                                                                          )!.exploreNoSpotsMapHint,
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .center,
-                                                                    style: Theme.of(context)
-                                                                        .textTheme
-                                                                        .bodyMedium
-                                                                        ?.copyWith(
-                                                                          color:
-                                                                              Theme.of(
-                                                                                context,
-                                                                              ).colorScheme.onSurface.withValues(
-                                                                                alpha: 0.7,
-                                                                              ),
-                                                                        ),
-                                                                  ),
-                                                                ],
+                                                return _visibleSpots.isEmpty
+                                                    ? Center(
+                                                        child: Column(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .center,
+                                                          children: [
+                                                            Icon(
+                                                              _searchQuery
+                                                                      .isNotEmpty
+                                                                  ? Icons
+                                                                        .search_off
+                                                                  : Icons
+                                                                        .location_off,
+                                                              size: 64,
+                                                              color: Theme.of(
+                                                                context,
+                                                              ).colorScheme.onSurface.withValues(
+                                                                alpha: 0.5,
                                                               ),
-                                                            )
-                                                          : _buildSpotsList());
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 16,
+                                                            ),
+                                                            Text(
+                                                              _searchQuery
+                                                                      .isNotEmpty
+                                                                  ? AppLocalizations.of(
+                                                                      context,
+                                                                    )!.exploreNoSpotsSearch
+                                                                  : AppLocalizations.of(
+                                                                      context,
+                                                                    )!.exploreNoSpotsArea,
+                                                              style: Theme.of(
+                                                                context,
+                                                              ).textTheme.headlineSmall,
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 8,
+                                                            ),
+                                                            Text(
+                                                              _searchQuery
+                                                                      .isNotEmpty
+                                                                  ? AppLocalizations.of(
+                                                                      context,
+                                                                    )!.exploreNoSpotsSearchHint
+                                                                  : AppLocalizations.of(
+                                                                      context,
+                                                                    )!.exploreNoSpotsMapHint,
+                                                              textAlign:
+                                                                  TextAlign
+                                                                      .center,
+                                                              style: Theme.of(context)
+                                                                  .textTheme
+                                                                  .bodyMedium
+                                                                  ?.copyWith(
+                                                                    color: Theme.of(
+                                                                      context,
+                                                                    ).colorScheme.onSurface.withValues(
+                                                                      alpha: 0.7,
+                                                                    ),
+                                                                  ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      )
+                                                    : _buildSpotsList();
                                               },
                                             ),
                                           ),
@@ -5016,34 +4828,6 @@ class SearchScreenState extends State<SearchScreen>
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ExploreEventMonthHeader extends StatelessWidget {
-  const _ExploreEventMonthHeader({
-    required this.monthStart,
-    required this.isFirst,
-  });
-
-  final DateTime monthStart;
-  final bool isFirst;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final localeName = Localizations.localeOf(context).toLanguageTag();
-    final raw = MaterialLocalizations.of(context).formatMonthYear(monthStart);
-    final label = toBeginningOfSentenceCase(raw, localeName);
-    return Padding(
-      padding: EdgeInsets.only(top: isFirst ? 0 : 20, bottom: 8),
-      child: Text(
-        label,
-        style: theme.textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
         ),
       ),
     );
