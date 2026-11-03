@@ -201,6 +201,99 @@ void main() {
     expect(loadMorePastCalls, 1);
   });
 
+  testWidgets('keeps the viewport on existing past cards after Show earlier', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final initialPast = List.generate(
+      4,
+      (i) => _item(
+        'keep$i',
+        CommunityActivityKind.spotCheckIn,
+        occurredAt: _now.subtract(Duration(hours: i + 1)),
+        actor: 'Keep$i',
+      ),
+    );
+    var feed = CommunityActivityFeed(
+      past: initialPast,
+      pastTotal: 12,
+      hasMorePast: true,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) {
+              return CommunityActivityStream(
+                feed: feed,
+                now: _now,
+                onOpenSpot: (_) {},
+                onOpenEvent: (_) {},
+                onLoadMorePast: () {
+                  setState(() {
+                    final older = List.generate(
+                      3,
+                      (i) => _item(
+                        'older$i',
+                        CommunityActivityKind.spotCheckIn,
+                        // Older than the initial page so they prepend above.
+                        occurredAt: _now.subtract(Duration(hours: 10 + i)),
+                        actor: 'Older$i',
+                      ),
+                    );
+                    feed = CommunityActivityFeed(
+                      past: [...older, ...initialPast],
+                      pastTotal: 12,
+                      hasMorePast: true,
+                    );
+                  });
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final keepFinder = find.textContaining('Keep0 ');
+    expect(keepFinder, findsOneWidget);
+    final beforeTop = _topOf(tester, keepFinder);
+    expect(find.text('Show 8 earlier activities'), findsOneWidget);
+
+    await tester.tap(find.text('Show 8 earlier activities'));
+    await tester.pumpAndSettle();
+
+    // Prepended rows grow above the viewport (center-keyed scroll), so they
+    // and the updated Show earlier control may not be built; visible cards
+    // must stay put.
+    expect(keepFinder, findsOneWidget);
+    expect(feed.loadedPastCount, 7);
+    expect(
+      _topOf(tester, keepFinder),
+      closeTo(beforeTop, 1),
+      reason: 'Show earlier should pin existing cards, not drift them down',
+    );
+
+    // Multi-frame anchor correction must keep the pin across later pumps
+    // (image / extent settling), not only the first post-insert frame.
+    for (var i = 0; i < 8; i++) {
+      await tester.pump();
+    }
+    expect(
+      _topOf(tester, keepFinder),
+      closeTo(beforeTop, 1),
+      reason: 'viewport must stay pinned across settling frames',
+    );
+  });
+
   testWidgets('shows load-more upcoming when hasMoreUpcoming', (tester) async {
     var loadMoreUpcomingCalls = 0;
     await _pump(

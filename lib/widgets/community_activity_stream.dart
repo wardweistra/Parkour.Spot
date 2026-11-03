@@ -13,6 +13,9 @@ import 'resized_spot_image.dart';
 ///
 /// The first page keeps past short near "now"; [onLoadMorePast] /
 /// [onLoadMoreUpcoming] page the rest from the server.
+///
+/// Past pages prepend above "now" via a [CustomScrollView] center key so older
+/// rows grow upward and the viewport does not drift when "Show earlier" loads.
 class CommunityActivityStream extends StatefulWidget {
   const CommunityActivityStream({
     super.key,
@@ -50,139 +53,349 @@ class CommunityActivityStream extends StatefulWidget {
 }
 
 class _CommunityActivityStreamState extends State<CommunityActivityStream> {
-  final GlobalKey _nowDividerKey = GlobalKey();
-  int _lastPastCount = 0;
+  final ScrollController _scrollController = ScrollController();
+
+  /// Marks the "now" divider as the scroll center so slivers above it (past
+  /// activity) grow upward when earlier pages are prepended.
+  final Key _nowCenterKey = const ValueKey('community-stream-now');
+
+  /// Stable keys for mounted rows so we can pin screen Y across "Show earlier"
+  /// inserts while child extents / images finish settling.
+  final Map<String, GlobalKey> _entryKeys = {};
+
+  String? _anchorId;
+  double? _anchorScreenY;
+  int _anchorFramesRemaining = 0;
+
+  /// Enough frames for async card media / sliver extent correction without
+  /// fighting a user who starts scrolling again.
+  static const int _anchorCorrectionFrameBudget = 8;
+
+  bool _scrolledToTimelineStart = false;
 
   @override
-  void initState() {
-    super.initState();
-    _lastPastCount = widget.feed.loadedPastCount;
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
   void didUpdateWidget(covariant CommunityActivityStream oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final nextPastCount = widget.feed.loadedPastCount;
-    if (nextPastCount > _lastPastCount) {
+    // A cleared/replaced feed (new map bounds) should open at the timeline
+    // start again; growing past via "Show earlier" must not.
+    if (widget.feed.loadedPastCount < oldWidget.feed.loadedPastCount) {
+      _scrolledToTimelineStart = false;
+      _clearAnchorCorrection();
+    } else if (widget.feed.loadedPastCount > oldWidget.feed.loadedPastCount) {
+      _schedulePastInsertCorrection(oldWidget.feed);
+    }
+  }
+
+  GlobalKey _keyFor(String id) => _entryKeys.putIfAbsent(id, GlobalKey.new);
+
+  static String _activityAnchorId(CommunityActivityItem item) => 'a:${item.id}';
+
+  static String _eventAnchorId(CommunityEventItem event) =>
+      'e:${event.pin.eventId}';
+
+  static String? _entryAnchorId(_StreamEntry entry) => switch (entry) {
+    _PastEntry(:final item) => _activityAnchorId(item),
+    _PastEventEntry(:final event) => _eventAnchorId(event),
+    _PlanEntry(:final item) => _activityAnchorId(item),
+    _EventEntry(:final event) => _eventAnchorId(event),
+    _NowEntry() => 'now',
+    _ => null,
+  };
+
+  double? _screenYForKey(GlobalKey? key) {
+    final ctx = key?.currentContext;
+    if (ctx == null) return null;
+    final box = ctx.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize || !box.attached) return null;
+    return box.localToGlobal(Offset.zero).dy;
+  }
+
+  /// Prefer an already-mounted past card; fall back to the "now" divider.
+  ({String id, double screenY})? _pickInsertAnchor(CommunityActivityFeed oldFeed) {
+    final priorIds = <String>[
+      for (final item in oldFeed.past) _activityAnchorId(item),
+      for (final event in oldFeed.pastEvents) _eventAnchorId(event),
+      'now',
+    ];
+    String? bestId;
+    double? bestY;
+    for (final id in priorIds) {
+      final y = _screenYForKey(_entryKeys[id]);
+      if (y == null) continue;
+      // Topmost visible prior row — the one the eye is least willing to lose.
+      if (bestY == null || y < bestY) {
+        bestY = y;
+        bestId = id;
+      }
+    }
+    if (bestId == null || bestY == null) return null;
+    return (id: bestId, screenY: bestY);
+  }
+
+  void _clearAnchorCorrection() {
+    _anchorId = null;
+    _anchorScreenY = null;
+    _anchorFramesRemaining = 0;
+  }
+
+  void _schedulePastInsertCorrection(CommunityActivityFeed oldFeed) {
+    final anchor = _pickInsertAnchor(oldFeed);
+    if (anchor == null) return;
+    _anchorId = anchor.id;
+    _anchorScreenY = anchor.screenY;
+    _anchorFramesRemaining = _anchorCorrectionFrameBudget;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _runPastInsertCorrection();
+    });
+  }
+
+  void _runPastInsertCorrection() {
+    if (!mounted || !_scrollController.hasClients) {
+      _clearAnchorCorrection();
+      return;
+    }
+
+    final anchorId = _anchorId;
+    final targetY = _anchorScreenY;
+    if (anchorId != null && targetY != null) {
+      final currentY = _screenYForKey(_entryKeys[anchorId]);
+      if (currentY != null) {
+        final drift = currentY - targetY;
+        if (drift.abs() > 0.5) {
+          final position = _scrollController.position;
+          _scrollController.jumpTo(
+            (position.pixels + drift).clamp(
+              position.minScrollExtent,
+              position.maxScrollExtent,
+            ),
+          );
+        }
+      }
+    }
+
+    if (_anchorFramesRemaining > 1) {
+      _anchorFramesRemaining--;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _anchorToNowDivider();
+        _runPastInsertCorrection();
       });
+      return;
     }
-    _lastPastCount = nextPastCount;
+    _clearAnchorCorrection();
   }
 
-  void _anchorToNowDivider() {
-    final ctx = _nowDividerKey.currentContext;
-    if (ctx == null) return;
-    Scrollable.ensureVisible(
-      ctx,
-      alignment: 0.35,
-      duration: Duration.zero,
-    );
+  void _ensureScrolledToTimelineStart() {
+    if (_scrolledToTimelineStart) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final position = _scrollController.position;
+      if ((position.pixels - position.minScrollExtent).abs() > 0.5) {
+        _scrollController.jumpTo(position.minScrollExtent);
+      }
+      _scrolledToTimelineStart = true;
+    });
   }
 
-  List<_StreamEntry> _buildEntries() {
-    final feed = widget.feed;
-    final entries = <_StreamEntry>[];
-
-    final remainingPast = feed.hasMorePast
-        ? (feed.pastTotal > feed.loadedPastCount
-              ? feed.pastTotal - feed.loadedPastCount
-              : null)
-        : null;
-    if (feed.hasMorePast && widget.onLoadMorePast != null) {
-      entries.add(_ShowEarlierEntry(remainingPast));
-    } else if (!feed.hasMorePast && feed.loadedPastCount > 0) {
-      // Chronological top of the past half: history ends here (90-day window).
-      entries.add(const _PastHistoryLimitEntry());
-    }
-
-    // Newest first from the API; timeline reads oldest → newest → now.
-    final pastNewestFirst = <_StreamEntry>[
-      ...feed.past.map(_PastEntry.new),
-      ...feed.pastEvents.map(_PastEventEntry.new),
+  List<_StreamEntry> _pastNewestFirst() {
+    return <_StreamEntry>[
+      ...widget.feed.past.map(_PastEntry.new),
+      ...widget.feed.pastEvents.map(_PastEventEntry.new),
     ]..sort((a, b) => b.sortTime.compareTo(a.sortTime));
-    entries.addAll(
-      [...pastNewestFirst]..sort((a, b) => a.sortTime.compareTo(b.sortTime)),
-    );
+  }
 
-    entries.add(const _NowEntry());
-
-    final upcoming = <_StreamEntry>[
-      ...feed.upcoming.map(_PlanEntry.new),
-      ...feed.events.map(_EventEntry.new),
+  List<_StreamEntry> _upcomingSoonestFirst() {
+    return <_StreamEntry>[
+      ...widget.feed.upcoming.map(_PlanEntry.new),
+      ...widget.feed.events.map(_EventEntry.new),
     ]..sort((a, b) => a.sortTime.compareTo(b.sortTime));
-    entries.addAll(upcoming);
+  }
 
-    if (feed.hasMoreUpcoming && widget.onLoadMoreUpcoming != null) {
-      entries.add(const _ShowMoreUpcomingEntry());
-    }
+  Widget _padRow(Widget child, {required bool isLastInSection}) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLastInSection ? 0 : 10),
+      child: child,
+    );
+  }
 
-    return entries;
+  Widget _buildEntry(_StreamEntry entry, DateTime now) {
+    final anchorId = _entryAnchorId(entry);
+    final child = switch (entry) {
+      _ShowEarlierEntry(:final remainingCount) => _ShowEarlierButton(
+        remainingCount: remainingCount,
+        loading: widget.loadingMorePast,
+        onPressed: widget.loadingMorePast ? null : widget.onLoadMorePast,
+      ),
+      _PastHistoryLimitEntry() => const _PastHistoryLimitCaption(),
+      _PastEntry(:final item) => CommunityActivityCard(
+        item: item,
+        now: now,
+        onOpenSpot: () => widget.onOpenSpot(item),
+        onOpenActor: _actorCallback(item),
+      ),
+      _PastEventEntry(:final event) => CommunityEventActivityCard(
+        event: event,
+        now: now,
+        onTap: () => widget.onOpenEvent(event.pin),
+      ),
+      _NowEntry() => const CommunityNowDivider(),
+      _PlanEntry(:final item) => CommunityActivityCard(
+        item: item,
+        now: now,
+        onOpenSpot: () => widget.onOpenSpot(item),
+        onOpenActor: _actorCallback(item),
+      ),
+      _EventEntry(:final event) => CommunityEventActivityCard(
+        event: event,
+        now: now,
+        onTap: () => widget.onOpenEvent(event.pin),
+      ),
+      _ShowMoreUpcomingEntry() => _ShowMoreUpcomingButton(
+        loading: widget.loadingMoreUpcoming,
+        onPressed: widget.loadingMoreUpcoming
+            ? null
+            : widget.onLoadMoreUpcoming,
+      ),
+    };
+    if (anchorId == null) return child;
+    // GlobalKey keeps list identity stable and supplies screen-Y for
+    // post-insert drift correction while extents settle.
+    return KeyedSubtree(key: _keyFor(anchorId), child: child);
   }
 
   @override
   Widget build(BuildContext context) {
-    final entries = _buildEntries();
     final now = widget.now ?? DateTime.now().toUtc();
+    final padding = widget.padding;
+    final pastNewestFirst = _pastNewestFirst();
+    final upcoming = _upcomingSoonestFirst();
 
+    final remainingPast = widget.feed.hasMorePast
+        ? (widget.feed.pastTotal > widget.feed.loadedPastCount
+              ? widget.feed.pastTotal - widget.feed.loadedPastCount
+              : null)
+        : null;
+    final showEarlier =
+        widget.feed.hasMorePast && widget.onLoadMorePast != null;
+    final showPastLimit =
+        !widget.feed.hasMorePast && widget.feed.loadedPastCount > 0;
+    final showMoreUpcoming =
+        widget.feed.hasMoreUpcoming && widget.onLoadMoreUpcoming != null;
+
+    _ensureScrolledToTimelineStart();
+
+    // Before [center], the first sliver is at the top of the timeline. Past is
+    // still newest-first so growth from "Show earlier" expands away from "now"
+    // and the viewport stays put.
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: const BoxConstraints(
           maxWidth: CommunityActivityStream.maxContentWidth,
         ),
-        child: ListView.builder(
-          padding: widget.padding,
-          itemCount: entries.length,
-          itemBuilder: (context, index) {
-            final entry = entries[index];
-            final child = switch (entry) {
-              _ShowEarlierEntry(:final remainingCount) => _ShowEarlierButton(
-                remainingCount: remainingCount,
-                loading: widget.loadingMorePast,
-                onPressed: widget.loadingMorePast
-                    ? null
-                    : widget.onLoadMorePast,
-              ),
-              _PastHistoryLimitEntry() => const _PastHistoryLimitCaption(),
-              _PastEntry(:final item) => CommunityActivityCard(
-                item: item,
-                now: now,
-                onOpenSpot: () => widget.onOpenSpot(item),
-                onOpenActor: _actorCallback(item),
-              ),
-              _PastEventEntry(:final event) => CommunityEventActivityCard(
-                event: event,
-                now: now,
-                onTap: () => widget.onOpenEvent(event.pin),
-              ),
-              _NowEntry() => CommunityNowDivider(key: _nowDividerKey),
-              _PlanEntry(:final item) => CommunityActivityCard(
-                item: item,
-                now: now,
-                onOpenSpot: () => widget.onOpenSpot(item),
-                onOpenActor: _actorCallback(item),
-              ),
-              _EventEntry(:final event) => CommunityEventActivityCard(
-                event: event,
-                now: now,
-                onTap: () => widget.onOpenEvent(event.pin),
-              ),
-              _ShowMoreUpcomingEntry() => _ShowMoreUpcomingButton(
-                loading: widget.loadingMoreUpcoming,
-                onPressed: widget.loadingMoreUpcoming
-                    ? null
-                    : widget.onLoadMoreUpcoming,
-              ),
-            };
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: index == entries.length - 1 ? 0 : 10,
-              ),
-              child: child,
-            );
+        child: NotificationListener<UserScrollNotification>(
+          onNotification: (notification) {
+            // Don't fight the user if they scroll during extent settling.
+            if (_anchorFramesRemaining > 0) {
+              _clearAnchorCorrection();
+            }
+            return false;
           },
+          child: _CenteredTimelineScrollView(
+            controller: _scrollController,
+            centerKey: _nowCenterKey,
+            slivers: [
+            if (showEarlier || showPastLimit)
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  padding.left,
+                  padding.top,
+                  padding.right,
+                  10,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: _buildEntry(
+                    showEarlier
+                        ? _ShowEarlierEntry(remainingPast)
+                        : const _PastHistoryLimitEntry(),
+                    now,
+                  ),
+                ),
+              )
+            else
+              SliverPadding(
+                padding: EdgeInsets.only(top: padding.top),
+                sliver: const SliverToBoxAdapter(child: SizedBox.shrink()),
+              ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(padding.left, 0, padding.right, 0),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final entry = pastNewestFirst[index];
+                    return _padRow(
+                      _buildEntry(entry, now),
+                      isLastInSection: false,
+                    );
+                  },
+                  childCount: pastNewestFirst.length,
+                ),
+              ),
+            ),
+            KeyedSubtree(
+              key: _nowCenterKey,
+              child: SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  padding.left,
+                  0,
+                  padding.right,
+                  10,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: _buildEntry(const _NowEntry(), now),
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                padding.left,
+                0,
+                padding.right,
+                showMoreUpcoming ? 0 : padding.bottom,
+              ),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final entry = upcoming[index];
+                    final isLast =
+                        index == upcoming.length - 1 && !showMoreUpcoming;
+                    return _padRow(
+                      _buildEntry(entry, now),
+                      isLastInSection: isLast,
+                    );
+                  },
+                  childCount: upcoming.length,
+                ),
+              ),
+            ),
+            if (showMoreUpcoming)
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  padding.left,
+                  10,
+                  padding.right,
+                  padding.bottom,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: _buildEntry(const _ShowMoreUpcomingEntry(), now),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -193,6 +406,28 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
     final userId = item.actorUserId;
     if (onOpenActor == null || userId == null || userId.isEmpty) return null;
     return () => onOpenActor(userId);
+  }
+}
+
+/// Local wrapper so DevTools can confirm the center-keyed timeline is mounted.
+class _CenteredTimelineScrollView extends StatelessWidget {
+  const _CenteredTimelineScrollView({
+    required this.controller,
+    required this.centerKey,
+    required this.slivers,
+  });
+
+  final ScrollController controller;
+  final Key centerKey;
+  final List<Widget> slivers;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      controller: controller,
+      center: centerKey,
+      slivers: slivers,
+    );
   }
 }
 
