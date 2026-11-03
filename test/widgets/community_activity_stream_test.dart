@@ -728,7 +728,40 @@ void main() {
       ),
     );
     expect(find.text('This event is happening now'), findsOneWidget);
-    expect(find.text('No one has marked they are going yet'), findsOneWidget);
+    expect(find.text('No one has marked they are going yet'), findsNothing);
+  });
+
+  testWidgets('hides zero Going and Interested RSVP counts on events', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      CommunityActivityFeed(
+        events: [
+          _event(
+            'soon',
+            _now.add(const Duration(days: 1)),
+            interested: 1,
+          ),
+        ],
+        pastEvents: [
+          _event(
+            'ended',
+            _now.subtract(const Duration(days: 2)),
+            endAt: _now
+                .subtract(const Duration(days: 2))
+                .add(const Duration(hours: 3)),
+            going: 0,
+            interested: 0,
+            isPast: true,
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text('1 interested'), findsOneWidget);
+    expect(find.text('No one has marked they are going yet'), findsNothing);
+    expect(find.text('No one marked they attended'), findsNothing);
   });
 
   testWidgets('past events sit above now with past-tense RSVP copy', (

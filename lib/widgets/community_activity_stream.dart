@@ -1453,24 +1453,27 @@ class CommunityEventActivityCard extends StatelessWidget {
                         ],
                       ),
                     ],
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 2,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        _CountChip(
-                          icon: Icons.check_circle_outline,
-                          label: goingLabel,
-                          emphasized: event.goingCount > 0,
-                        ),
-                        if (event.interestedCount > 0)
-                          _CountChip(
-                            icon: Icons.star_outline,
-                            label: interestedLabel,
-                          ),
-                      ],
-                    ),
+                    if (event.goingCount > 0 || event.interestedCount > 0) ...[
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 2,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          if (event.goingCount > 0)
+                            _CountChip(
+                              icon: Icons.check_circle_outline,
+                              label: goingLabel,
+                              emphasized: true,
+                            ),
+                          if (event.interestedCount > 0)
+                            _CountChip(
+                              icon: Icons.star_outline,
+                              label: interestedLabel,
+                            ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
