@@ -621,9 +621,20 @@ async function materializeEventLocationAndPins(
  * @return {Promise<{eventsProcessed: number}>}
  */
 async function rematerializeEventDocs(db, snapshot) {
+  // Lazy require avoids a load-time cycle with community-activity.js.
+  const {syncEventEndedActivity} = require("./community-activity");
   let eventsProcessed = 0;
   for (const doc of snapshot.docs) {
-    await materializeEventLocationAndPins(db, doc.id, doc.data() || {});
+    const eventData = doc.data() || {};
+    await materializeEventLocationAndPins(db, doc.id, eventData);
+    try {
+      await syncEventEndedActivity(db, doc.id, eventData);
+    } catch (err) {
+      console.error("rematerializeEventDocs ended activity error", {
+        eventId: doc.id,
+        err,
+      });
+    }
     eventsProcessed += 1;
   }
   return {eventsProcessed};

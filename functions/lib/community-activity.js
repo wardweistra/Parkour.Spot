@@ -3,15 +3,16 @@
  * Region-scoped community activity for the Explore "Community" stream.
  *
  * Source documents (spots, spotCheckIns, spotTrainingPlans, auditLog photo
- * entries) are not queryable by map bounds together, so Cloud Functions
- * materialize one flat document per activity in `communityActivity` with the
- * spot's latitude/longitude denormalized. The Explore sheet then runs the same
+ * entries, ended events) are not queryable by map bounds together, so Cloud
+ * Functions materialize one flat document per activity in `communityActivity`
+ * with latitude/longitude denormalized. The Explore sheet then runs the same
  * latitude/longitude range queries it already uses for spots and eventMapPins.
  *
  * Documents are written by Cloud Functions only (see firestore.rules).
  *
  * Upcoming events are not duplicated here: they are read from `eventMapPins`
  * (already geo-indexed) and merged in by `executeCommunityActivityInBoundsQuery`.
+ * Ended events are materialized as `event_ended` past items for 90 days.
  */
 
 const {
@@ -19,6 +20,10 @@ const {
   hasValidCoordinates,
   isSpotEligibleForPin,
   spotLocationFieldsChanged,
+  isEventPast,
+  resolveEventMainLocation,
+  loadEventLinkedLocationInputs,
+  deleteEventMapPins,
 } = require("./event-map-pins");
 const {
   resolveLongitudeBounds,
@@ -35,6 +40,7 @@ const KIND_SPOT_ADDED = "spot_added";
 const KIND_SPOT_PHOTO_ADDED = "spot_photo_added";
 const KIND_SPOT_CHECK_IN = "spot_check_in";
 const KIND_SPOT_TRAINING_PLAN = "spot_training_plan";
+const KIND_EVENT_ENDED = "event_ended";
 
 /** Items before the "now" divider (sorted by occurredAt). */
 const TIMELINE_PAST = "past";
@@ -53,6 +59,7 @@ const IN_BOUNDS_DEFAULT_LIMIT = 30;
 const IN_BOUNDS_MAX_LIMIT = 100;
 const EVENTS_DEFAULT_LIMIT = 20;
 const GET_ALL_CHUNK = 10;
+const PAST_PIN_SWEEP_DEFAULT_LIMIT = 200;
 
 /**
  * @param {*} value
@@ -125,6 +132,14 @@ function checkInActivityId(checkInId) {
  */
 function trainingPlanActivityId(planId) {
   return `training_plan_${planId}`;
+}
+
+/**
+ * @param {string} eventId
+ * @return {string}
+ */
+function eventEndedActivityId(eventId) {
+  return `event_ended_${eventId}`;
 }
 
 /**
@@ -478,6 +493,217 @@ function buildSpotTrainingPlanActivity(planId, planData, spotData, options = {})
 }
 
 /**
+ * Main location for an ended-event activity: prefer server-owned
+ * resolvedLocation, then venue coordinates on the event.
+ * @param {Object} eventData
+ * @return {Object|null}
+ */
+function locationFromEventResolvedOrVenue(eventData) {
+  if (!eventData || typeof eventData !== "object") return null;
+  const resolved = eventData.resolvedLocation;
+  if (
+    resolved &&
+    typeof resolved === "object" &&
+    hasValidCoordinates(resolved.latitude, resolved.longitude)
+  ) {
+    const countryCode = trimmedString(resolved.countryCode);
+    return withoutNulls({
+      source: trimmedString(resolved.source) || "spot",
+      latitude: resolved.latitude,
+      longitude: resolved.longitude,
+      city: trimmedString(resolved.city),
+      countryCode: countryCode ? countryCode.toUpperCase() : null,
+      spotId: trimmedString(resolved.spotId),
+      spotName: trimmedString(resolved.spotName),
+    });
+  }
+  if (hasValidCoordinates(eventData.latitude, eventData.longitude)) {
+    const countryCode = trimmedString(eventData.countryCode);
+    return withoutNulls({
+      source: "venue",
+      latitude: eventData.latitude,
+      longitude: eventData.longitude,
+      city: trimmedString(eventData.city),
+      countryCode: countryCode ? countryCode.toUpperCase() : null,
+    });
+  }
+  return null;
+}
+
+/**
+ * @param {Object|null|undefined} eventData
+ * @param {Date=} now
+ * @return {boolean}
+ */
+function isEventEligibleForEndedActivity(eventData, now = new Date()) {
+  if (!eventData || typeof eventData !== "object") return false;
+  if (eventData.hidden === true) return false;
+  const duplicateOf = eventData.duplicateOf;
+  if (typeof duplicateOf === "string" && duplicateOf.trim().length > 0) {
+    return false;
+  }
+  if (!isEventPast(eventData, now)) return false;
+  const occurredAt = normalizeDate(eventData.endAt) ||
+    normalizeDate(eventData.startAt);
+  if (!occurredAt) return false;
+  return occurredAt.getTime() >= now.getTime() - PAST_ACTIVITY_RETENTION_MS;
+}
+
+/**
+ * "This event has ended" — one past activity at the event's main location.
+ * @param {string} eventId
+ * @param {Object} eventData
+ * @param {Object|null} location from resolveEventMainLocation / resolvedLocation
+ * @param {Object=} options
+ * @param {Date=} options.now
+ * @return {{id: string, data: Object}|null}
+ */
+function buildEventEndedActivity(eventId, eventData, location, options = {}) {
+  const now = options.now || new Date();
+  const trimmedEventId = trimmedString(eventId);
+  if (!trimmedEventId) return null;
+  if (!isEventEligibleForEndedActivity(eventData, now)) return null;
+  if (
+    !location ||
+    !hasValidCoordinates(location.latitude, location.longitude)
+  ) {
+    return null;
+  }
+
+  const startAt = normalizeDate(eventData.startAt);
+  if (!startAt) return null;
+  const endAt = normalizeDate(eventData.endAt);
+  const occurredAt = endAt || startAt;
+  if (occurredAt.getTime() < now.getTime() - PAST_ACTIVITY_RETENTION_MS) {
+    return null;
+  }
+
+  const title = trimmedString(eventData.title) || "Event";
+  const countryCode = trimmedString(location.countryCode);
+  const pinKind = location.source === "venue" ? "venue" : "spot";
+  const imageUrls = normalizeUrlList(eventData.imageUrls);
+  const timeZone = trimmedString(eventData.timeZone);
+  const description = trimmedString(eventData.description);
+
+  return {
+    id: eventEndedActivityId(trimmedEventId),
+    data: withoutNulls({
+      kind: KIND_EVENT_ENDED,
+      timeline: TIMELINE_PAST,
+      sourceId: trimmedEventId,
+      eventId: trimmedEventId,
+      title,
+      pinKind,
+      occurredAt,
+      startAt,
+      endAt,
+      expiresAt: new Date(occurredAt.getTime() + PAST_ACTIVITY_RETENTION_MS),
+      latitude: location.latitude,
+      longitude: location.longitude,
+      city: trimmedString(location.city),
+      countryCode: countryCode ? countryCode.toUpperCase() : null,
+      spotId: trimmedString(location.spotId),
+      spotName: trimmedString(location.spotName),
+      isDateOnly: eventData.isDateOnly === true ? true : null,
+      timeZone,
+      description: description ?
+        (description.length > 500 ? description.slice(0, 500) : description) :
+        null,
+      imageUrls: imageUrls.length > 0 ? imageUrls : null,
+    }),
+  };
+}
+
+/**
+ * Upserts or clears the past activity for an ended event.
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {string} eventId
+ * @param {Object|null} eventData null when deleted
+ * @param {Object=} options
+ * @param {Date=} options.now
+ * @param {{listsById: Map, spotsById: Map}=} options.inputs
+ * @param {Object|null=} options.location
+ * @return {Promise<{written: boolean, deleted: boolean}>}
+ */
+async function syncEventEndedActivity(db, eventId, eventData, options = {}) {
+  const now = options.now || new Date();
+  const activityId = eventEndedActivityId(eventId);
+  if (!isEventEligibleForEndedActivity(eventData, now)) {
+    await deleteCommunityActivity(db, activityId);
+    return {written: false, deleted: true};
+  }
+
+  let location = options.location || locationFromEventResolvedOrVenue(eventData);
+  if (!location) {
+    const inputs = options.inputs ||
+      await loadEventLinkedLocationInputs(db, eventData);
+    location = resolveEventMainLocation(
+        eventData,
+        inputs.spotsById,
+        inputs.listsById,
+    );
+  }
+
+  const activity = buildEventEndedActivity(eventId, eventData, location, {now});
+  if (!activity) {
+    await deleteCommunityActivity(db, activityId);
+    return {written: false, deleted: true};
+  }
+  await writeCommunityActivity(db, activity);
+  return {written: true, deleted: false};
+}
+
+/**
+ * Hourly sweep: past eventMapPins that aged out without an event write.
+ * Upserts event_ended community activity, then deletes those pins.
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {Object=} options
+ * @param {Date=} options.now
+ * @param {number=} options.limit
+ * @return {Promise<{scanned: number, eventsProcessed: number, pinsDeleted: number}>}
+ */
+async function sweepPastEventMapPinsForCommunityActivity(db, options = {}) {
+  const now = options.now || new Date();
+  const limit = Number.isFinite(options.limit) && options.limit > 0 ?
+    Math.floor(options.limit) :
+    PAST_PIN_SWEEP_DEFAULT_LIMIT;
+
+  const snap = await db.collection("eventMapPins")
+      .where("startAt", "<", now)
+      .orderBy("startAt", "asc")
+      .limit(limit)
+      .get();
+
+  const pinDocsByEventId = new Map();
+  for (const doc of snap.docs) {
+    const data = doc.data() || {};
+    if (!isEventPast(data, now)) continue;
+    const eventId = trimmedString(data.eventId);
+    if (!eventId) continue;
+    if (!pinDocsByEventId.has(eventId)) pinDocsByEventId.set(eventId, []);
+    pinDocsByEventId.get(eventId).push(doc);
+  }
+
+  let eventsProcessed = 0;
+  let pinsDeleted = 0;
+  for (const [eventId, pinDocs] of pinDocsByEventId) {
+    const eventSnap = await db.collection("events").doc(eventId).get();
+    const eventData = eventSnap.exists ? (eventSnap.data() || {}) : null;
+    await syncEventEndedActivity(db, eventId, eventData, {now});
+    eventsProcessed += 1;
+    // Prefer full pin delete by eventId so concurrent rematerialize stays clean.
+    await deleteEventMapPins(db, eventId);
+    pinsDeleted += pinDocs.length;
+  }
+
+  return {
+    scanned: snap.size,
+    eventsProcessed,
+    pinsDeleted,
+  };
+}
+
+/**
  * Public profile fields for actors whose source document does not carry an
  * avatar (spot creators, photo contributors).
  * @param {FirebaseFirestore.Firestore} db
@@ -740,13 +966,49 @@ function normalizeCommunityActivity(docId, data) {
   const occurredAt = toIso(data.occurredAt);
   if (!kind || !timeline || !occurredAt) return null;
   if (!hasValidCoordinates(data.latitude, data.longitude)) return null;
-  const spotId = trimmedString(data.spotId);
-  if (!spotId) return null;
 
   const imageUrls = normalizeUrlList(data.imageUrls);
   const photoCount = typeof data.photoCount === "number" && data.photoCount > 0 ?
     Math.floor(data.photoCount) :
     null;
+
+  if (kind === KIND_EVENT_ENDED) {
+    const eventId = trimmedString(data.eventId);
+    const title = trimmedString(data.title);
+    const startAt = toIso(data.startAt);
+    if (!eventId || !title || !startAt) return null;
+    const pinKind = data.pinKind === "spot" ? "spot" : "venue";
+    return withoutNulls({
+      id: docId,
+      kind,
+      timeline,
+      eventId,
+      title,
+      pinKind,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      occurredAt,
+      startAt,
+      endAt: toIso(data.endAt),
+      isDateOnly: data.isDateOnly === true ? true : null,
+      timeZone: trimmedString(data.timeZone),
+      description: trimmedString(data.description),
+      spotId: trimmedString(data.spotId),
+      spotName: trimmedString(data.spotName),
+      city: trimmedString(data.city),
+      countryCode: trimmedString(data.countryCode),
+      imageUrls: imageUrls.length > 0 ? imageUrls : null,
+      goingCount: typeof data.goingCount === "number" ?
+        Math.max(0, Math.floor(data.goingCount)) :
+        null,
+      interestedCount: typeof data.interestedCount === "number" ?
+        Math.max(0, Math.floor(data.interestedCount)) :
+        null,
+    });
+  }
+
+  const spotId = trimmedString(data.spotId);
+  if (!spotId) return null;
 
   return withoutNulls({
     id: docId,
@@ -866,17 +1128,20 @@ function sortByIsoField(items, field, direction) {
 }
 
 /**
- * Public Going / Interested totals for event pins.
+ * Loads Going / Interested totals for the given event ids.
  * @param {FirebaseFirestore.Firestore} db
- * @param {Array<Object>} pins deduped event pins
- * @return {Promise<Array<Object>>}
+ * @param {string[]} eventIds
+ * @return {Promise<Map<string, {goingCount: number, interestedCount: number}>>}
  */
-async function attachEventInterestCounts(db, pins) {
-  if (!Array.isArray(pins) || pins.length === 0) return [];
+async function loadEventInterestStatsById(db, eventIds) {
   const statsByEventId = new Map();
-  for (let i = 0; i < pins.length; i += GET_ALL_CHUNK) {
-    const chunk = pins.slice(i, i + GET_ALL_CHUNK);
-    const refs = chunk.map((pin) => db.collection("eventInterestStats").doc(pin.eventId));
+  const uniqueIds = [...new Set(
+      eventIds.filter((id) => typeof id === "string" && id.length > 0),
+  )];
+  for (let i = 0; i < uniqueIds.length; i += GET_ALL_CHUNK) {
+    const chunk = uniqueIds.slice(i, i + GET_ALL_CHUNK);
+    const refs = chunk.map((eventId) =>
+      db.collection("eventInterestStats").doc(eventId));
     const snaps = await db.getAll(...refs);
     for (const snap of snaps) {
       if (!snap.exists) continue;
@@ -887,9 +1152,47 @@ async function attachEventInterestCounts(db, pins) {
       });
     }
   }
+  return statsByEventId;
+}
+
+/**
+ * Public Going / Interested totals for event pins.
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {Array<Object>} pins deduped event pins
+ * @return {Promise<Array<Object>>}
+ */
+async function attachEventInterestCounts(db, pins) {
+  if (!Array.isArray(pins) || pins.length === 0) return [];
+  const statsByEventId = await loadEventInterestStatsById(
+      db,
+      pins.map((pin) => pin.eventId),
+  );
   return pins.map((pin) => {
-    const stats = statsByEventId.get(pin.eventId) || {goingCount: 0, interestedCount: 0};
+    const stats = statsByEventId.get(pin.eventId) ||
+      {goingCount: 0, interestedCount: 0};
     return {...pin, ...stats};
+  });
+}
+
+/**
+ * Attach interest totals onto past `event_ended` activity rows.
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {Array<Object>} pastItems
+ * @return {Promise<Array<Object>>}
+ */
+async function attachPastEventInterestCounts(db, pastItems) {
+  if (!Array.isArray(pastItems) || pastItems.length === 0) return pastItems;
+  const ended = pastItems.filter((item) => item.kind === KIND_EVENT_ENDED);
+  if (ended.length === 0) return pastItems;
+  const statsByEventId = await loadEventInterestStatsById(
+      db,
+      ended.map((item) => item.eventId),
+  );
+  return pastItems.map((item) => {
+    if (item.kind !== KIND_EVENT_ENDED) return item;
+    const stats = statsByEventId.get(item.eventId) ||
+      {goingCount: 0, interestedCount: 0};
+    return {...item, ...stats};
   });
 }
 
@@ -946,8 +1249,9 @@ async function executeCommunityActivityInBoundsQuery(db, params, options = {}) {
     return items;
   };
 
-  const past = sortByIsoField(mapDocs(pastSnaps), "occurredAt", "desc")
+  const pastRaw = sortByIsoField(mapDocs(pastSnaps), "occurredAt", "desc")
       .slice(0, pastLimit);
+  const past = await attachPastEventInterestCounts(db, pastRaw);
   const upcoming = sortByIsoField(mapDocs(upcomingSnaps), "startAt", "asc")
       .filter((item) => !item.endAt || new Date(item.endAt).getTime() >= now.getTime())
       .slice(0, upcomingLimit);
@@ -1017,7 +1321,8 @@ async function backfillCommunityActivity(db, options = {}) {
     photosAdded: 0,
     checkIns: 0,
     trainingPlans: 0,
-    scanned: {spots: 0, auditLogs: 0, checkIns: 0, trainingPlans: 0},
+    eventsEnded: 0,
+    scanned: {spots: 0, auditLogs: 0, checkIns: 0, trainingPlans: 0, events: 0},
   };
 
   if (options.purge === true) {
@@ -1110,6 +1415,18 @@ async function backfillCommunityActivity(db, options = {}) {
     result.trainingPlans += 1;
   }
 
+  // Events that started within the retention window (covers ended events with
+  // or without endAt). Filter to past + eligible in memory.
+  const eventsSnap = await db.collection("events")
+      .where("startAt", ">=", since)
+      .get();
+  for (const doc of eventsSnap.docs) {
+    result.scanned.events += 1;
+    const data = doc.data() || {};
+    const syncResult = await syncEventEndedActivity(db, doc.id, data, {now});
+    if (syncResult.written) result.eventsEnded += 1;
+  }
+
   return result;
 }
 
@@ -1119,6 +1436,7 @@ module.exports = {
   KIND_SPOT_PHOTO_ADDED,
   KIND_SPOT_CHECK_IN,
   KIND_SPOT_TRAINING_PLAN,
+  KIND_EVENT_ENDED,
   TIMELINE_PAST,
   TIMELINE_UPCOMING,
   PAST_ACTIVITY_RETENTION_MS,
@@ -1126,9 +1444,12 @@ module.exports = {
   spotPhotoActivityId,
   checkInActivityId,
   trainingPlanActivityId,
+  eventEndedActivityId,
   isSpotEligibleForCommunityActivity,
   isCheckInEligibleForCommunityActivity,
   isTrainingPlanEligibleForCommunityActivity,
+  isEventEligibleForEndedActivity,
+  locationFromEventResolvedOrVenue,
   addedImageUrlsFromAuditLog,
   actorFromAuditLog,
   resolvePhotoAddedActor,
@@ -1137,18 +1458,22 @@ module.exports = {
   buildSpotPhotoAddedActivity,
   buildSpotCheckInActivity,
   buildSpotTrainingPlanActivity,
+  buildEventEndedActivity,
   loadActorProfile,
   syncSpotAddedActivity,
   syncSpotPhotoAddedActivity,
   syncSpotCheckInActivity,
   syncSpotTrainingPlanActivity,
+  syncEventEndedActivity,
   syncCommunityActivityForSpotChange,
+  sweepPastEventMapPinsForCommunityActivity,
   deleteCommunityActivityForSpot,
   normalizeCommunityActivity,
   longitudeSegments,
   buildPastActivityQuery,
   buildUpcomingActivityQuery,
   attachEventInterestCounts,
+  attachPastEventInterestCounts,
   executeCommunityActivityInBoundsQuery,
   backfillCommunityActivity,
 };

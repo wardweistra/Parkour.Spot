@@ -1400,6 +1400,10 @@
   "@communityStreamEventUpcoming": {
     "description": "Explore community stream: event that starts in the future"
   },
+  "communityStreamEventPast": "This event has ended",
+  "@communityStreamEventPast": {
+    "description": "Explore community stream: event whose end (or start) is in the past"
+  },
   "communityStreamEventGoing": "{count, plural, =0{No one has marked they are going yet} one{1 person is going} other{{count} people are going}}",
   "@communityStreamEventGoing": {
     "description": "Explore community stream: public count of people who marked Going for an event",
@@ -1409,9 +1413,27 @@
       }
     }
   },
+  "communityStreamEventAttended": "{count, plural, =0{No one marked they attended} one{1 person attended} other{{count} people attended}}",
+  "@communityStreamEventAttended": {
+    "description": "Explore community stream: past-tense public count of people who marked Going for an ended event",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "communityStreamEventInterested": "{count, plural, one{1 interested} other{{count} interested}}",
   "@communityStreamEventInterested": {
     "description": "Explore community stream: public count of people who marked Interested for an event",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "communityStreamEventWereInterested": "{count, plural, one{1 was interested} other{{count} were interested}}",
+  "@communityStreamEventWereInterested": {
+    "description": "Explore community stream: past-tense public count of people who marked Interested for an ended event",
     "placeholders": {
       "count": {
         "type": "int"

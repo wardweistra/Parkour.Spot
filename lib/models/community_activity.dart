@@ -7,6 +7,7 @@ enum CommunityActivityKind {
   spotPhotoAdded,
   spotCheckIn,
   spotTrainingPlan,
+  eventEnded,
 }
 
 CommunityActivityKind? parseCommunityActivityKind(Object? raw) {
@@ -19,6 +20,8 @@ CommunityActivityKind? parseCommunityActivityKind(Object? raw) {
       return CommunityActivityKind.spotCheckIn;
     case 'spot_training_plan':
       return CommunityActivityKind.spotTrainingPlan;
+    case 'event_ended':
+      return CommunityActivityKind.eventEnded;
     default:
       return null;
   }
@@ -87,13 +90,15 @@ class CommunityActivityItem {
 
   static CommunityActivityItem? fromCallableMap(Map<String, dynamic> data) {
     final kind = parseCommunityActivityKind(data['kind']);
+    if (kind == null || kind == CommunityActivityKind.eventEnded) {
+      return null;
+    }
     final id = data['id'];
     final spotId = data['spotId'];
     final lat = data['latitude'];
     final lng = data['longitude'];
     final occurredAt = _parseDate(data['occurredAt']);
-    if (kind == null ||
-        id is! String ||
+    if (id is! String ||
         spotId is! String ||
         lat is! num ||
         lng is! num ||
@@ -131,17 +136,25 @@ class CommunityActivityItem {
   }
 }
 
-/// An upcoming event in the viewport with public Going / Interested totals.
+/// An upcoming or past event in the viewport with public Going / Interested
+/// totals.
 class CommunityEventItem {
   const CommunityEventItem({
     required this.pin,
     this.goingCount = 0,
     this.interestedCount = 0,
+    this.isPast = false,
   });
 
   final EventMapPin pin;
   final int goingCount;
   final int interestedCount;
+
+  /// True when this row came from a past `event_ended` activity document.
+  final bool isPast;
+
+  /// Sort key for the past half of the stream (newest first from the API).
+  DateTime get occurredAt => pin.endAt ?? pin.startAt;
 
   static CommunityEventItem? fromCallableMap(Map<String, dynamic> data) {
     try {
@@ -154,6 +167,58 @@ class CommunityEventItem {
     } catch (_) {
       return null;
     }
+  }
+
+  /// Builds a past event card from a normalized `event_ended` activity map.
+  static CommunityEventItem? fromEndedActivityMap(Map<String, dynamic> data) {
+    if (parseCommunityActivityKind(data['kind']) !=
+        CommunityActivityKind.eventEnded) {
+      return null;
+    }
+    final id = data['id'];
+    final eventId = data['eventId'];
+    final title = data['title'];
+    final lat = data['latitude'];
+    final lng = data['longitude'];
+    final startAt = CommunityActivityItem._parseDate(data['startAt']);
+    if (id is! String ||
+        eventId is! String ||
+        title is! String ||
+        lat is! num ||
+        lng is! num ||
+        startAt == null) {
+      return null;
+    }
+    final pinKindRaw = data['pinKind'] as String?;
+    final kind = pinKindRaw == 'spot'
+        ? EventMapPinKind.spot
+        : EventMapPinKind.venue;
+    return CommunityEventItem(
+      pin: EventMapPin(
+        id: id,
+        eventId: eventId,
+        kind: kind,
+        latitude: lat.toDouble(),
+        longitude: lng.toDouble(),
+        title: title,
+        startAt: startAt,
+        endAt: CommunityActivityItem._parseDate(data['endAt']),
+        isDateOnly: data['isDateOnly'] == true,
+        timeZone: data['timeZone'] as String?,
+        spotId: data['spotId'] as String?,
+        description: data['description'] as String?,
+        imageUrls: data['imageUrls'] is List
+            ? List<String>.from(
+                (data['imageUrls'] as List).whereType<String>(),
+              )
+            : const [],
+        city: data['city'] as String?,
+        countryCode: data['countryCode'] as String?,
+      ),
+      goingCount: _nonNegativeInt(data['goingCount']),
+      interestedCount: _nonNegativeInt(data['interestedCount']),
+      isPast: true,
+    );
   }
 
   static int _nonNegativeInt(Object? value) {
@@ -169,6 +234,7 @@ class CommunityEventItem {
 class CommunityActivityFeed {
   const CommunityActivityFeed({
     this.past = const [],
+    this.pastEvents = const [],
     this.upcoming = const [],
     this.events = const [],
   });
@@ -178,13 +244,17 @@ class CommunityActivityFeed {
   /// Newest first (closest to "now" is at the bottom of this list).
   final List<CommunityActivityItem> past;
 
+  /// Newest first; ended events mixed into the past half of the stream.
+  final List<CommunityEventItem> pastEvents;
+
   /// Soonest first.
   final List<CommunityActivityItem> upcoming;
 
   /// Soonest first, deduped by event id.
   final List<CommunityEventItem> events;
 
-  int get itemCount => past.length + upcoming.length + events.length;
+  int get itemCount =>
+      past.length + pastEvents.length + upcoming.length + events.length;
   bool get isEmpty => itemCount == 0;
 
   factory CommunityActivityFeed.fromCallableMap(Map<String, dynamic> data) {
@@ -196,11 +266,22 @@ class CommunityActivityFeed {
           .toList();
     }
 
+    final pastMaps = maps(data['past']);
+    final past = <CommunityActivityItem>[];
+    final pastEvents = <CommunityEventItem>[];
+    for (final map in pastMaps) {
+      if (map['kind'] == 'event_ended') {
+        final event = CommunityEventItem.fromEndedActivityMap(map);
+        if (event != null) pastEvents.add(event);
+      } else {
+        final item = CommunityActivityItem.fromCallableMap(map);
+        if (item != null) past.add(item);
+      }
+    }
+
     return CommunityActivityFeed(
-      past: maps(data['past'])
-          .map(CommunityActivityItem.fromCallableMap)
-          .whereType<CommunityActivityItem>()
-          .toList(),
+      past: past,
+      pastEvents: pastEvents,
       upcoming: maps(data['upcoming'])
           .map(CommunityActivityItem.fromCallableMap)
           .whereType<CommunityActivityItem>()

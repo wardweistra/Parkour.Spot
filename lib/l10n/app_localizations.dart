@@ -1876,17 +1876,35 @@ abstract class AppLocalizations {
   /// **'This event is coming up'**
   String get communityStreamEventUpcoming;
 
+  /// Explore community stream: event whose end (or start) is in the past
+  ///
+  /// In en, this message translates to:
+  /// **'This event has ended'**
+  String get communityStreamEventPast;
+
   /// Explore community stream: public count of people who marked Going for an event
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =0{No one has marked they are going yet} one{1 person is going} other{{count} people are going}}'**
   String communityStreamEventGoing(int count);
 
+  /// Explore community stream: past-tense public count of people who marked Going for an ended event
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No one marked they attended} one{1 person attended} other{{count} people attended}}'**
+  String communityStreamEventAttended(int count);
+
   /// Explore community stream: public count of people who marked Interested for an event
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{1 interested} other{{count} interested}}'**
   String communityStreamEventInterested(int count);
+
+  /// Explore community stream: past-tense public count of people who marked Interested for an ended event
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 was interested} other{{count} were interested}}'**
+  String communityStreamEventWereInterested(int count);
 
   /// Explore community stream: relative time for activity less than a minute old
   ///

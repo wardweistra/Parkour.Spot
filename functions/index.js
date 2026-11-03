@@ -262,7 +262,9 @@ const {
   syncSpotPhotoAddedActivity,
   syncSpotCheckInActivity,
   syncSpotTrainingPlanActivity,
+  syncEventEndedActivity,
   syncCommunityActivityForSpotChange,
+  sweepPastEventMapPinsForCommunityActivity,
   executeCommunityActivityInBoundsQuery,
   backfillCommunityActivity,
 } = require("./lib/community-activity");
@@ -1833,6 +1835,25 @@ exports.runTrainingPlanCheckInRemindersScheduled = onSchedule(
  * Daily prune of finished syncRuns older than 30 days.
  * Keeps runs still referenced by source last/current pointers.
  */
+// Explore Community stream: promote aged-out eventMapPins into past activity.
+exports.sweepPastEventMapPinsForCommunityActivityScheduled = onSchedule(
+    {
+      schedule: "every 1 hours",
+      timeZone: "UTC",
+      region: "europe-west1",
+      memory: "512MiB",
+      timeoutSeconds: 300,
+    },
+    async () => {
+      try {
+        const result = await sweepPastEventMapPinsForCommunityActivity(db);
+        console.log("sweepPastEventMapPinsForCommunityActivity:", result);
+      } catch (e) {
+        console.error("sweepPastEventMapPinsForCommunityActivity error", e);
+      }
+    },
+);
+
 exports.pruneOldSyncRunsScheduled = onSchedule(
     {
       schedule: "every 24 hours",
@@ -6331,6 +6352,14 @@ exports.onEventWritten = onDocumentWritten(
           }
           const removedCount = await removeEventSearchTerms(eventId);
           await deleteEventMapPins(db, eventId);
+          try {
+            await syncEventEndedActivity(db, eventId, null);
+          } catch (activityErr) {
+            console.error("onEventWritten ended activity delete error", {
+              eventId,
+              err: activityErr,
+            });
+          }
           console.log("Removed event search terms:", {eventId, count: removedCount});
           return;
         }
@@ -6357,6 +6386,14 @@ exports.onEventWritten = onDocumentWritten(
         }
         const termsWritten = await replaceEventSearchTerms(eventId, eventData);
         await materializeEventLocationAndPins(db, eventId, eventData);
+        try {
+          await syncEventEndedActivity(db, eventId, eventData);
+        } catch (activityErr) {
+          console.error("onEventWritten ended activity error", {
+            eventId,
+            err: activityErr,
+          });
+        }
         try {
           await fanOutNearbyNewEventNotifications({
             db,
@@ -6426,11 +6463,20 @@ exports.backfillEventMapPins = onCall(
         }
 
         for (const doc of docs) {
+          const eventData = doc.data() || {};
           const result = await materializeEventLocationAndPins(
               db,
               doc.id,
-              doc.data() || {},
+              eventData,
           );
+          try {
+            await syncEventEndedActivity(db, doc.id, eventData);
+          } catch (activityErr) {
+            console.error("backfillEventMapPins ended activity error", {
+              eventId: doc.id,
+              err: activityErr,
+            });
+          }
           processed += 1;
           pinsWritten += result.pinsWritten;
           if (result.truncated) truncatedCount += 1;

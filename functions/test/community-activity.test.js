@@ -3,6 +3,7 @@ const {
   KIND_SPOT_PHOTO_ADDED,
   KIND_SPOT_CHECK_IN,
   KIND_SPOT_TRAINING_PLAN,
+  KIND_EVENT_ENDED,
   TIMELINE_PAST,
   TIMELINE_UPCOMING,
   PAST_ACTIVITY_RETENTION_MS,
@@ -13,8 +14,10 @@ const {
   buildSpotPhotoAddedActivity,
   buildSpotCheckInActivity,
   buildSpotTrainingPlanActivity,
+  buildEventEndedActivity,
   syncSpotCheckInActivity,
   syncSpotTrainingPlanActivity,
+  syncEventEndedActivity,
   syncCommunityActivityForSpotChange,
   normalizeCommunityActivity,
   longitudeSegments,
@@ -518,6 +521,113 @@ describe("syncCommunityActivityForSpotChange", () => {
   });
 });
 
+describe("buildEventEndedActivity", () => {
+  const pastEvent = {
+    title: " Friday jam ",
+    startAt: new Date("2026-05-01T10:00:00.000Z"),
+    endAt: new Date("2026-05-01T13:00:00.000Z"),
+    imageUrls: ["https://img/e1.jpg", "https://img/e2.jpg", "https://img/e3.jpg", "https://img/e4.jpg"],
+    timeZone: "Europe/Amsterdam",
+    isDateOnly: false,
+  };
+  const venueLocation = {
+    source: "venue",
+    latitude: 52.37,
+    longitude: 4.89,
+    city: "Amsterdam",
+    countryCode: "nl",
+  };
+
+  it("materializes a past event at its main location", () => {
+    const activity = buildEventEndedActivity("event-1", pastEvent, venueLocation, {now: NOW});
+    expect(activity.id).toBe("event_ended_event-1");
+    expect(activity.data).toMatchObject({
+      kind: KIND_EVENT_ENDED,
+      timeline: TIMELINE_PAST,
+      eventId: "event-1",
+      title: "Friday jam",
+      pinKind: "venue",
+      latitude: 52.37,
+      longitude: 4.89,
+      city: "Amsterdam",
+      countryCode: "NL",
+      startAt: pastEvent.startAt,
+      endAt: pastEvent.endAt,
+      occurredAt: pastEvent.endAt,
+      timeZone: "Europe/Amsterdam",
+    });
+    expect(activity.data.imageUrls).toEqual([
+      "https://img/e1.jpg",
+      "https://img/e2.jpg",
+      "https://img/e3.jpg",
+    ]);
+    expect(activity.data.expiresAt.getTime()).toBe(
+        pastEvent.endAt.getTime() + PAST_ACTIVITY_RETENTION_MS,
+    );
+  });
+
+  it("uses spot pinKind and spotId when the main location is a spot", () => {
+    const activity = buildEventEndedActivity("event-1", pastEvent, {
+      source: "spot",
+      latitude: 52.36,
+      longitude: 4.88,
+      spotId: "spot-1",
+      spotName: "Museumplein",
+      city: "Amsterdam",
+      countryCode: "NL",
+    }, {now: NOW});
+    expect(activity.data).toMatchObject({
+      pinKind: "spot",
+      spotId: "spot-1",
+      spotName: "Museumplein",
+    });
+  });
+
+  it("skips upcoming, hidden, duplicate, too-old, or coordinate-less events", () => {
+    expect(buildEventEndedActivity("e", {
+      ...pastEvent,
+      startAt: new Date("2026-05-20T10:00:00.000Z"),
+      endAt: new Date("2026-05-20T13:00:00.000Z"),
+    }, venueLocation, {now: NOW})).toBeNull();
+    expect(buildEventEndedActivity("e", {...pastEvent, hidden: true}, venueLocation, {now: NOW}))
+        .toBeNull();
+    expect(buildEventEndedActivity("e", {...pastEvent, duplicateOf: "other"}, venueLocation, {now: NOW}))
+        .toBeNull();
+    expect(buildEventEndedActivity("e", {
+      ...pastEvent,
+      startAt: new Date("2025-01-01T10:00:00.000Z"),
+      endAt: new Date("2025-01-01T13:00:00.000Z"),
+    }, venueLocation, {now: NOW})).toBeNull();
+    expect(buildEventEndedActivity("e", pastEvent, null, {now: NOW})).toBeNull();
+  });
+});
+
+describe("syncEventEndedActivity", () => {
+  const pastEvent = {
+    title: "Jam",
+    startAt: new Date("2026-05-01T10:00:00.000Z"),
+    endAt: new Date("2026-05-01T13:00:00.000Z"),
+    latitude: 52.37,
+    longitude: 4.89,
+    city: "Amsterdam",
+    countryCode: "nl",
+  };
+
+  it("writes when past and deletes when no longer eligible", async () => {
+    const db = fakeDb({});
+    const written = await syncEventEndedActivity(db, "event-1", pastEvent, {now: NOW});
+    expect(written).toEqual({written: true, deleted: false});
+    expect(db._store.get("communityActivity").has("event_ended_event-1")).toBe(true);
+
+    await syncEventEndedActivity(db, "event-1", {...pastEvent, hidden: true}, {now: NOW});
+    expect(db._store.get("communityActivity").has("event_ended_event-1")).toBe(false);
+
+    await syncEventEndedActivity(db, "event-1", pastEvent, {now: NOW});
+    await syncEventEndedActivity(db, "event-1", null, {now: NOW});
+    expect(db._store.get("communityActivity").has("event_ended_event-1")).toBe(false);
+  });
+});
+
 describe("normalizeCommunityActivity", () => {
   it("serializes dates and drops invalid docs", () => {
     const normalized = normalizeCommunityActivity("id-1", {
@@ -546,6 +656,35 @@ describe("normalizeCommunityActivity", () => {
     expect(normalizeCommunityActivity("x", {
       kind: "k", timeline: "past", spotId: "s", occurredAt: new Date(), latitude: 200, longitude: 0,
     })).toBeNull();
+  });
+
+  it("serializes event_ended without requiring spotId", () => {
+    const normalized = normalizeCommunityActivity("event_ended_e1", {
+      kind: KIND_EVENT_ENDED,
+      timeline: TIMELINE_PAST,
+      eventId: "e1",
+      title: "Jam",
+      pinKind: "venue",
+      latitude: 52.3,
+      longitude: 4.9,
+      occurredAt: new Date("2026-05-01T13:00:00.000Z"),
+      startAt: new Date("2026-05-01T10:00:00.000Z"),
+      endAt: new Date("2026-05-01T13:00:00.000Z"),
+      goingCount: 4,
+      interestedCount: 2,
+    });
+    expect(normalized).toMatchObject({
+      id: "event_ended_e1",
+      kind: KIND_EVENT_ENDED,
+      eventId: "e1",
+      title: "Jam",
+      pinKind: "venue",
+      goingCount: 4,
+      interestedCount: 2,
+      startAt: "2026-05-01T10:00:00.000Z",
+      endAt: "2026-05-01T13:00:00.000Z",
+    });
+    expect(normalized.spotId).toBeUndefined();
   });
 });
 
@@ -579,6 +718,13 @@ describe("executeCommunityActivityInBoundsQuery", () => {
         kind: KIND_SPOT_CHECK_IN, timeline: TIMELINE_PAST, spotId: "s1", ...inBounds,
         occurredAt: new Date("2026-05-10T10:00:00.000Z"),
       },
+      "event_ended_past": {
+        kind: KIND_EVENT_ENDED, timeline: TIMELINE_PAST, eventId: "past-event",
+        title: "Yesterday jam", pinKind: "venue", ...inBounds,
+        occurredAt: new Date("2026-05-09T18:00:00.000Z"),
+        startAt: new Date("2026-05-09T15:00:00.000Z"),
+        endAt: new Date("2026-05-09T18:00:00.000Z"),
+      },
       "spot_added_far": {
         kind: KIND_SPOT_ADDED, timeline: TIMELINE_PAST, spotId: "s9", ...outside,
         occurredAt: new Date("2026-05-10T11:00:00.000Z"),
@@ -604,6 +750,7 @@ describe("executeCommunityActivityInBoundsQuery", () => {
     },
     eventInterestStats: {
       "event-1": {goingCount: 3, interestedCount: 5},
+      "past-event": {goingCount: 7, interestedCount: 2},
     },
   };
   const bounds = {minLat: 52, maxLat: 53, minLng: 4, maxLng: 5};
@@ -624,8 +771,19 @@ describe("executeCommunityActivityInBoundsQuery", () => {
     });
 
     expect(result.success).toBe(true);
-    expect(result.past.map((i) => i.id)).toEqual(["check_in_new", "check_in_old"]);
+    expect(result.past.map((i) => i.id)).toEqual([
+      "check_in_new",
+      "event_ended_past",
+      "check_in_old",
+    ]);
     expect(result.past[0].occurredAt).toBe("2026-05-10T10:00:00.000Z");
+    expect(result.past[1]).toMatchObject({
+      kind: KIND_EVENT_ENDED,
+      eventId: "past-event",
+      title: "Yesterday jam",
+      goingCount: 7,
+      interestedCount: 2,
+    });
     expect(result.upcoming.map((i) => i.id)).toEqual(["plan_soon", "plan_later"]);
     expect(result.events.map((e) => e.eventId)).toEqual(["event-1", "event-2"]);
     expect(result.events[0]).toMatchObject({goingCount: 3, interestedCount: 5});

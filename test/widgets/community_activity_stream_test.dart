@@ -34,7 +34,15 @@ CommunityActivityItem _item(
   );
 }
 
-CommunityEventItem _event(String id, DateTime startAt, {int going = 0}) {
+CommunityEventItem _event(
+  String id,
+  DateTime startAt, {
+  int going = 0,
+  int interested = 0,
+  bool isPast = false,
+  DateTime? endAt,
+}) {
+  final resolvedEnd = endAt ?? startAt.add(const Duration(hours: 3));
   return CommunityEventItem(
     pin: EventMapPin(
       id: 'pin-$id',
@@ -44,9 +52,11 @@ CommunityEventItem _event(String id, DateTime startAt, {int going = 0}) {
       longitude: 4.9,
       title: 'Jam $id',
       startAt: startAt,
-      endAt: startAt.add(const Duration(hours: 3)),
+      endAt: resolvedEnd,
     ),
     goingCount: going,
+    interestedCount: interested,
+    isPast: isPast,
   );
 }
 
@@ -216,6 +226,79 @@ void main() {
     );
     expect(find.text('This event is happening now'), findsOneWidget);
     expect(find.text('No one has marked they are going yet'), findsOneWidget);
+  });
+
+  testWidgets('past events sit above now with past-tense RSVP copy', (
+    tester,
+  ) async {
+    final feed = CommunityActivityFeed(
+      past: [
+        _item(
+          'checkin',
+          CommunityActivityKind.spotCheckIn,
+          occurredAt: _now.subtract(const Duration(hours: 1)),
+          actor: 'Zoë',
+        ),
+      ],
+      pastEvents: [
+        _event(
+          'ended',
+          _now.subtract(const Duration(days: 2)),
+          endAt: _now
+              .subtract(const Duration(days: 2))
+              .add(const Duration(hours: 3)),
+          going: 4,
+          interested: 2,
+          isPast: true,
+        ),
+      ],
+      events: [_event('soon', _now.add(const Duration(days: 1)), going: 1)],
+    );
+    await _pump(tester, feed);
+
+    final pastEvent = find.text('This event has ended');
+    final upcomingEvent = find.text('This event is coming up');
+    final nowDivider = find.byType(CommunityNowDivider);
+
+    expect(pastEvent, findsOneWidget);
+    expect(upcomingEvent, findsOneWidget);
+    expect(find.text('4 people attended'), findsOneWidget);
+    expect(find.text('2 were interested'), findsOneWidget);
+    expect(find.text('1 person is going'), findsOneWidget);
+
+    final nowTop = _topOf(tester, nowDivider);
+    expect(_topOf(tester, pastEvent), lessThan(nowTop));
+    expect(nowTop, lessThan(_topOf(tester, upcomingEvent)));
+  });
+
+  testWidgets('past events count toward the show-earlier preview', (
+    tester,
+  ) async {
+    final past = List.generate(
+      2,
+      (i) => _item(
+        'c$i',
+        CommunityActivityKind.spotCheckIn,
+        occurredAt: _now.subtract(Duration(hours: i + 1)),
+        actor: 'Person$i',
+      ),
+    );
+    final pastEvents = List.generate(
+      CommunityActivityStream.recentPastPreviewCount + 1,
+      (i) => _event(
+        'pe$i',
+        _now.subtract(Duration(days: i + 1)),
+        isPast: true,
+      ),
+    );
+    await _pump(
+      tester,
+      CommunityActivityFeed(past: past, pastEvents: pastEvents),
+    );
+
+    // 2 check-ins + 4 past events = 6; preview keeps 3 → show 3 earlier.
+    expect(find.text('Show 3 earlier activities'), findsOneWidget);
+    expect(find.text('This event has ended'), findsWidgets);
   });
 
   testWidgets('taps open the spot, the event and the actor profile', (

@@ -1124,6 +1124,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get communityStreamEventUpcoming => 'Este evento se acerca';
 
   @override
+  String get communityStreamEventPast => 'Este evento ha terminado';
+
+  @override
   String communityStreamEventGoing(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1136,12 +1139,35 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String communityStreamEventAttended(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personas asistieron',
+      one: '1 persona asistió',
+      zero: 'Nadie marcó que asistió',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String communityStreamEventInterested(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
       other: '$count interesados',
       one: '1 interesado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String communityStreamEventWereInterested(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count estuvieron interesados',
+      one: '1 estuvo interesado',
     );
     return '$_temp0';
   }

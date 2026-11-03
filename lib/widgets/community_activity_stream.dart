@@ -58,17 +58,24 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
     final feed = widget.feed;
     final entries = <_StreamEntry>[];
 
-    final past = feed.past;
+    // Newest first, matching the API order for spot past items.
+    final pastNewestFirst = <_StreamEntry>[
+      ...feed.past.map(_PastEntry.new),
+      ...feed.pastEvents.map(_PastEventEntry.new),
+    ]..sort((a, b) => b.sortTime.compareTo(a.sortTime));
+
     final previewCount = CommunityActivityStream.recentPastPreviewCount;
-    final hiddenCount = _showAllPast || past.length <= previewCount
+    final hiddenCount = _showAllPast || pastNewestFirst.length <= previewCount
         ? 0
-        : past.length - previewCount;
+        : pastNewestFirst.length - previewCount;
     if (hiddenCount > 0) {
       entries.add(_ShowEarlierEntry(hiddenCount));
     }
-    // `past` is newest first; the timeline reads oldest → newest → now.
-    final shownPast = past.take(past.length - hiddenCount).toList().reversed;
-    entries.addAll(shownPast.map(_PastEntry.new));
+    // Timeline reads oldest → newest → now.
+    final shownPast =
+        pastNewestFirst.take(pastNewestFirst.length - hiddenCount).toList()
+          ..sort((a, b) => a.sortTime.compareTo(b.sortTime));
+    entries.addAll(shownPast);
 
     entries.add(const _NowEntry());
 
@@ -108,6 +115,11 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
                 onOpenSpot: () => widget.onOpenSpot(item),
                 onOpenActor: _actorCallback(item),
               ),
+              _PastEventEntry(:final event) => CommunityEventActivityCard(
+                event: event,
+                now: now,
+                onTap: () => widget.onOpenEvent(event.pin),
+              ),
               _NowEntry() => const CommunityNowDivider(),
               _PlanEntry(:final item) => CommunityActivityCard(
                 item: item,
@@ -144,7 +156,7 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
 sealed class _StreamEntry {
   const _StreamEntry();
 
-  /// Only meaningful for upcoming entries (plans and events).
+  /// Sort key for past (occurred) and upcoming (start) ordering.
   DateTime get sortTime => DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
 }
 
@@ -156,6 +168,17 @@ class _ShowEarlierEntry extends _StreamEntry {
 class _PastEntry extends _StreamEntry {
   const _PastEntry(this.item);
   final CommunityActivityItem item;
+
+  @override
+  DateTime get sortTime => item.occurredAt;
+}
+
+class _PastEventEntry extends _StreamEntry {
+  const _PastEventEntry(this.event);
+  final CommunityEventItem event;
+
+  @override
+  DateTime get sortTime => event.occurredAt;
 }
 
 class _NowEntry extends _StreamEntry {
@@ -264,6 +287,8 @@ class CommunityActivityCard extends StatelessWidget {
     CommunityActivityKind.spotPhotoAdded => Icons.add_a_photo_outlined,
     CommunityActivityKind.spotCheckIn => Icons.where_to_vote_outlined,
     CommunityActivityKind.spotTrainingPlan => Icons.fitness_center,
+    // Past events use [CommunityEventActivityCard], not this card.
+    CommunityActivityKind.eventEnded => Icons.event,
   };
 
   String _sentence(AppLocalizations l10n, String actor) => switch (item.kind) {
@@ -275,6 +300,7 @@ class CommunityActivityCard extends StatelessWidget {
     CommunityActivityKind.spotCheckIn => l10n.communityStreamCheckedIn(actor),
     CommunityActivityKind.spotTrainingPlan =>
       l10n.communityStreamPlanningToTrain(actor),
+    CommunityActivityKind.eventEnded => actor,
   };
 
   /// Trailing time for past kinds; training plans show their window inline.
@@ -305,6 +331,7 @@ class CommunityActivityCard extends StatelessWidget {
         return null;
       case CommunityActivityKind.spotAdded:
       case CommunityActivityKind.spotPhotoAdded:
+      case CommunityActivityKind.eventEnded:
         return null;
     }
   }
@@ -504,9 +531,18 @@ class CommunityEventActivityCard extends StatelessWidget {
       now: now,
     );
     final city = pin.city?.trim() ?? '';
-    final headline = _isHappeningNow
+    final isPast = event.isPast;
+    final headline = isPast
+        ? l10n.communityStreamEventPast
+        : _isHappeningNow
         ? l10n.communityStreamEventHappeningNow
         : l10n.communityStreamEventUpcoming;
+    final goingLabel = isPast
+        ? l10n.communityStreamEventAttended(event.goingCount)
+        : l10n.communityStreamEventGoing(event.goingCount);
+    final interestedLabel = isPast
+        ? l10n.communityStreamEventWereInterested(event.interestedCount)
+        : l10n.communityStreamEventInterested(event.interestedCount);
 
     return Card(
       elevation: 1,
@@ -610,17 +646,13 @@ class CommunityEventActivityCard extends StatelessWidget {
                       children: [
                         _CountChip(
                           icon: Icons.check_circle_outline,
-                          label: l10n.communityStreamEventGoing(
-                            event.goingCount,
-                          ),
+                          label: goingLabel,
                           emphasized: event.goingCount > 0,
                         ),
                         if (event.interestedCount > 0)
                           _CountChip(
                             icon: Icons.star_outline,
-                            label: l10n.communityStreamEventInterested(
-                              event.interestedCount,
-                            ),
+                            label: interestedLabel,
                           ),
                       ],
                     ),
