@@ -13,8 +13,11 @@ class CommunityActivityService extends ChangeNotifier {
 
   final FirebaseFunctions _functions;
 
-  static const int pastInitialLimit = 3;
   static const int pastPageSize = 10;
+
+  /// First past page matches [pastPageSize] so the stream opens with a full
+  /// page of history around "now", not a short preview.
+  static const int pastInitialLimit = pastPageSize;
   static const int upcomingPageSize = 10;
 
   String? _error;

@@ -11,7 +11,7 @@ import 'resized_spot_image.dart';
 /// recent activity (oldest at the top, newest just above "now"), a "now"
 /// divider, then training plans and events ordered soonest first.
 ///
-/// The first page keeps past short near "now"; [onLoadMorePast] /
+/// The first page loads a full past page near "now"; [onLoadMorePast] /
 /// [onLoadMoreUpcoming] page the rest from the server.
 ///
 /// Past pages prepend above "now" via a [CustomScrollView] center key so older
@@ -82,7 +82,8 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
   /// Edge inset before treating "now" as fully offscreen (avoids flicker).
   static const double _nowVisibilityMargin = 12;
 
-  bool _scrolledToTimelineStart = false;
+  /// True after the first open scroll that centers "now" in the viewport.
+  bool _didApplyInitialScroll = false;
 
   /// False until initial layout + timeline jump have settled — avoids a false
   /// "jump down" while the explore sheet is still expanding.
@@ -109,10 +110,10 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
   @override
   void didUpdateWidget(covariant CommunityActivityStream oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // A cleared/replaced feed (new map bounds) should open at the timeline
-    // start again; growing past via "Show earlier" must not.
+    // A cleared/replaced feed (new map bounds) should re-center on "now";
+    // growing past via "Show earlier" must not.
     if (widget.feed.loadedPastCount < oldWidget.feed.loadedPastCount) {
-      _scrolledToTimelineStart = false;
+      _didApplyInitialScroll = false;
       _clearAnchorCorrection();
     } else if (widget.feed.loadedPastCount > oldWidget.feed.loadedPastCount) {
       _schedulePastInsertCorrection(oldWidget.feed);
@@ -217,21 +218,34 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
     _scheduleNowVisibilityUpdate();
   }
 
-  void _ensureScrolledToTimelineStart() {
-    if (_scrolledToTimelineStart) return;
+  void _ensureInitialScrollToNow() {
+    if (_didApplyInitialScroll) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (!_scrollController.hasClients) {
         // Layout hasn't attached the position yet — try again next frame.
-        _ensureScrolledToTimelineStart();
+        _ensureInitialScrollToNow();
         return;
       }
-      final position = _scrollController.position;
-      if ((position.pixels - position.minScrollExtent).abs() > 0.5) {
-        _scrollController.jumpTo(position.minScrollExtent);
+      final target = _nowCenteredScrollOffset();
+      if ((_scrollController.position.pixels - target).abs() > 0.5) {
+        _scrollController.jumpTo(target);
       }
-      _scrolledToTimelineStart = true;
-      _beginNowVisibilitySettle();
+      _didApplyInitialScroll = true;
+      // Refine once "now" is laid out so it sits mid-panel, not merely at the
+      // approximate center-keyed offset.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final nowContext = _entryKeys['now']?.currentContext;
+        if (nowContext != null && nowContext.mounted) {
+          Scrollable.ensureVisible(
+            nowContext,
+            alignment: 0.5,
+            duration: Duration.zero,
+          );
+        }
+        _beginNowVisibilitySettle();
+      });
     });
   }
 
@@ -266,7 +280,7 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
     if (_lastViewportSize == next) return;
     _lastViewportSize = next;
     // Sheet expand / rotate changes the clip without a scroll event.
-    if (_scrolledToTimelineStart) {
+    if (_didApplyInitialScroll) {
       _scheduleNowVisibilityUpdate();
     }
   }
@@ -476,7 +490,7 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
     final showMoreUpcoming =
         widget.feed.hasMoreUpcoming && widget.onLoadMoreUpcoming != null;
 
-    _ensureScrolledToTimelineStart();
+    _ensureInitialScrollToNow();
 
     // Before [center], the first sliver is at the top of the timeline. Past is
     // still newest-first so growth from "Show earlier" expands away from "now"

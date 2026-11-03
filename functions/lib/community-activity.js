@@ -55,12 +55,12 @@ const UPCOMING_ACTIVITY_GRACE_MS = 24 * 60 * 60 * 1000;
 const MAX_ACTIVITY_IMAGE_URLS = 3;
 const MAX_COMMENT_LENGTH = 200;
 const MAX_BATCH_OPERATIONS = 400;
-/** Default first-page past size (newest near "now"). */
-const PAST_INITIAL_DEFAULT = 3;
 /** Default upcoming merged page size (plans + events). */
 const UPCOMING_PAGE_DEFAULT = 10;
-/** Default load-more page size for past history. */
+/** Default past page size (initial load and load-more). */
 const PAST_PAGE_DEFAULT = 10;
+/** Default first-page past size — same as a normal past page. */
+const PAST_INITIAL_DEFAULT = PAST_PAGE_DEFAULT;
 const IN_BOUNDS_MAX_LIMIT = 100;
 const GET_ALL_CHUNK = 10;
 const PAST_PIN_SWEEP_DEFAULT_LIMIT = 200;
@@ -1473,7 +1473,7 @@ function mergeUpcomingPage(
  * upcoming training plans and events (soonest first).
  *
  * Supports totals (Firestore count aggregates) and cursor paging:
- * - Initial: pastLimit default 3, upcoming page default 10, includeCounts true
+ * - Initial: pastLimit default 10, upcoming page default 10, includeCounts true
  * - Load more past: fetchPast true, pastCursor, pastLimit default 10
  * - Load more upcoming: fetchUpcoming true, upcoming/event cursors
  *

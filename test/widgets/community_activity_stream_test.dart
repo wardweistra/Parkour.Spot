@@ -96,6 +96,19 @@ Future<void> _pump(
 double _topOf(WidgetTester tester, Finder finder) =>
     tester.getTopLeft(finder).dy;
 
+/// Scroll toward older past until [target] is built (Show earlier lives above
+/// the centered "now" open position).
+Future<void> _scrollTowardPastUntilVisible(
+  WidgetTester tester,
+  Finder target,
+) async {
+  final scrollable = find.byType(CustomScrollView);
+  for (var i = 0; i < 24 && target.evaluate().isEmpty; i++) {
+    await tester.drag(scrollable, const Offset(0, 500));
+    await tester.pumpAndSettle();
+  }
+}
+
 void main() {
   testWidgets('renders past → now → upcoming with the expected copy', (
     tester,
@@ -192,11 +205,13 @@ void main() {
       onLoadMorePast: () => loadMorePastCalls++,
     );
 
-    expect(find.text('Show 4 earlier activities'), findsOneWidget);
+    final showEarlier = find.text('Show 4 earlier activities');
+    await _scrollTowardPastUntilVisible(tester, showEarlier);
+    expect(showEarlier, findsOneWidget);
     expect(find.textContaining('Person0 '), findsOneWidget);
     expect(find.textContaining('Person2 '), findsOneWidget);
 
-    await tester.tap(find.text('Show 4 earlier activities'));
+    await tester.tap(showEarlier);
     await tester.pump();
     expect(loadMorePastCalls, 1);
   });
@@ -263,12 +278,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    final showEarlier = find.text('Show 8 earlier activities');
+    await _scrollTowardPastUntilVisible(tester, showEarlier);
+
     final keepFinder = find.textContaining('Keep0 ');
     expect(keepFinder, findsOneWidget);
     final beforeTop = _topOf(tester, keepFinder);
-    expect(find.text('Show 8 earlier activities'), findsOneWidget);
+    expect(showEarlier, findsOneWidget);
 
-    await tester.tap(find.text('Show 8 earlier activities'));
+    await tester.tap(showEarlier);
     await tester.pumpAndSettle();
 
     // Prepended rows grow above the viewport (center-keyed scroll), so they
@@ -363,23 +381,17 @@ void main() {
       tester,
       CommunityActivityFeed(past: past, upcoming: upcoming),
     );
-    // Flush jump-to-now visibility settle frames after the timeline open jump.
+    // Flush initial center-on-now + visibility settle.
     for (var i = 0; i < 10; i++) {
       await tester.pump();
     }
 
     final jumpFinder = find.byKey(CommunityActivityStream.jumpToNowKey);
-    // Opens at the past end of the timeline, so "now" sits below the viewport.
-    expect(jumpFinder, findsOneWidget);
-    expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
-
-    await tester.tap(jumpFinder);
-    await tester.pumpAndSettle();
-
+    // Opens with "now" mid-panel, so the jump control stays hidden.
     expect(jumpFinder, findsNothing);
     expect(find.byType(CommunityNowDivider), findsOneWidget);
 
-    // Jump-to-now should leave the divider roughly mid-panel, not pinned top.
+    final scrollable = find.byType(CustomScrollView);
     final nowBox =
         tester.renderObject(find.byType(CommunityNowDivider)) as RenderBox;
     final scrollBox =
@@ -391,11 +403,38 @@ void main() {
     expect(
       nowCenterY,
       closeTo(viewCenterY, scrollBox.size.height * 0.2),
-      reason: 'now should land near the middle of the stream viewport',
+      reason: 'initial open should place now near mid-panel',
+    );
+
+    // Scroll deep into past so "now" leaves below the viewport.
+    await tester.drag(scrollable, const Offset(0, 2400));
+    await tester.pumpAndSettle();
+
+    expect(jumpFinder, findsOneWidget);
+    expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
+
+    await tester.tap(jumpFinder);
+    await tester.pumpAndSettle();
+
+    expect(jumpFinder, findsNothing);
+    final recenteredNow =
+        tester.renderObject(find.byType(CommunityNowDivider)) as RenderBox;
+    final recenteredScroll =
+        tester.renderObject(find.byType(Scrollable)) as RenderBox;
+    expect(
+      recenteredNow
+          .localToGlobal(Offset(0, recenteredNow.size.height / 2))
+          .dy,
+      closeTo(
+        recenteredScroll
+            .localToGlobal(Offset(0, recenteredScroll.size.height / 2))
+            .dy,
+        recenteredScroll.size.height * 0.2,
+      ),
+      reason: 'jump-to-now should re-center the divider',
     );
 
     // Scroll deep into upcoming so "now" leaves above the viewport.
-    final scrollable = find.byType(CustomScrollView);
     await tester.drag(scrollable, const Offset(0, -2400));
     await tester.pumpAndSettle();
 
@@ -445,8 +484,10 @@ void main() {
 
     expect(find.textContaining('earlier activity'), findsNothing);
     expect(find.text('Show more upcoming'), findsNothing);
-    // All loaded past rows are visible (no client-side collapse).
-    expect(find.textContaining('Person4 '), findsOneWidget);
+    // Oldest loaded past row is above the centered "now"; scroll to confirm.
+    final oldest = find.textContaining('Person4 ');
+    await _scrollTowardPastUntilVisible(tester, oldest);
+    expect(oldest, findsOneWidget);
   });
 
   testWidgets('shows 90-day history limit when past paging is exhausted', (
@@ -613,8 +654,10 @@ void main() {
       onLoadMorePast: () {},
     );
 
-    // 4 loaded, 7 total → show 3 earlier.
-    expect(find.text('Show 3 earlier activities'), findsOneWidget);
+    // 4 loaded, 7 total → show 3 earlier (above the centered "now").
+    final showEarlier = find.text('Show 3 earlier activities');
+    await _scrollTowardPastUntilVisible(tester, showEarlier);
+    expect(showEarlier, findsOneWidget);
     expect(find.text('This event has ended'), findsWidgets);
   });
 
