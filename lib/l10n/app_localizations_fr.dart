@@ -3172,6 +3172,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get spotDetailClearRating => 'Supprimer la note';
 
   @override
+  String get spotDetailCurrentRatings => 'Notes actuelles';
+
+  @override
   String spotDetailRatingSubmitError(String error) {
     return 'Erreur lors de l’envoi de la note : $error';
   }

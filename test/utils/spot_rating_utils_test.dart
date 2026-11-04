@@ -85,6 +85,37 @@ void main() {
     });
   });
 
+  group('uniqueRatingsByUser', () {
+    test('keeps one rating per user, newest first', () {
+      final list = uniqueRatingsByUser([
+        Rating(
+          id: 'a',
+          spotId: 'native',
+          userId: 'user-1',
+          rating: 5,
+          updatedAt: DateTime.utc(2026, 1, 1),
+        ),
+        Rating(
+          id: 'b',
+          spotId: 'dup',
+          userId: 'user-1',
+          rating: 2,
+          updatedAt: DateTime.utc(2026, 6, 1),
+        ),
+        Rating(
+          id: 'c',
+          spotId: 'native',
+          userId: 'user-2',
+          rating: 4,
+          updatedAt: DateTime.utc(2026, 3, 1),
+        ),
+      ]);
+      expect(list.map((r) => r.userId).toList(), ['user-1', 'user-2']);
+      expect(list.first.rating, 2);
+      expect(list.first.id, 'b');
+    });
+  });
+
   group('isAboveAverageRanking', () {
     test('matches the explore ranking split', () {
       expect(isAboveAverageRanking(aboveAverageRankingOffset), isTrue);

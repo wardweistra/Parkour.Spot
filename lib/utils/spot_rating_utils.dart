@@ -66,6 +66,23 @@ Rating? uniqueUserRating(Iterable<Rating> ratings) {
   return best;
 }
 
+/// One rating per user (latest wins), newest first.
+List<Rating> uniqueRatingsByUser(Iterable<Rating> ratings) {
+  final byUser = <String, Rating>{};
+  for (final rating in ratings) {
+    final userId = rating.userId.trim();
+    if (userId.isEmpty) continue;
+    final existing = byUser[userId];
+    if (existing == null ||
+        _ratingRecency(rating).isAfter(_ratingRecency(existing))) {
+      byUser[userId] = rating;
+    }
+  }
+  final list = byUser.values.toList();
+  list.sort((a, b) => _ratingRecency(b).compareTo(_ratingRecency(a)));
+  return list;
+}
+
 /// Listing spot ids whose ratings should be deleted for this user.
 ///
 /// Clearing removes every cluster listing. Setting a rating keeps the listing

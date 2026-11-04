@@ -3140,6 +3140,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get spotDetailClearRating => 'Beoordeling wissen';
 
   @override
+  String get spotDetailCurrentRatings => 'Huidige beoordelingen';
+
+  @override
   String spotDetailRatingSubmitError(String error) {
     return 'Fout bij beoordeling: $error';
   }

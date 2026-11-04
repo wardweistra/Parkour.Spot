@@ -3171,6 +3171,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get spotDetailClearRating => 'Bewertung entfernen';
 
   @override
+  String get spotDetailCurrentRatings => 'Aktuelle Bewertungen';
+
+  @override
   String spotDetailRatingSubmitError(String error) {
     return 'Fehler bei der Bewertung: $error';
   }

@@ -757,6 +757,7 @@
   "spotDetailRatingClearFailed": "No se pudo eliminar la valoración. Inténtalo de nuevo.",
   "spotDetailRatingPublicDisclosure": "Tu valoración es pública y puede aparecer en la actividad de la comunidad cercana.",
   "spotDetailClearRating": "Eliminar valoración",
+  "spotDetailCurrentRatings": "Valoraciones actuales",
   "spotDetailRatingSubmitError": "Error al enviar la valoración: {error}",
   "spotDetailNotExternalSource": "Este spot no proviene de una fuente externa.",
   "spotDetailMustBeLoggedInCreateNative": "Debes iniciar sesión para crear un spot nativo.",

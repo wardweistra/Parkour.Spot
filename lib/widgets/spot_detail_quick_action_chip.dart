@@ -15,6 +15,9 @@ class SpotDetailQuickActionChip extends StatelessWidget {
   /// When false, only the icon (or [showSpinner]) is shown; [label] is still used for semantics.
   final bool showLabel;
 
+  /// Optional trailing content after the label (e.g. avatar stack).
+  final Widget? trailing;
+
   const SpotDetailQuickActionChip({
     super.key,
     required this.icon,
@@ -23,6 +26,7 @@ class SpotDetailQuickActionChip extends StatelessWidget {
     this.labelWidget,
     this.showSpinner = false,
     this.showLabel = true,
+    this.trailing,
   });
 
   @override
@@ -59,6 +63,10 @@ class SpotDetailQuickActionChip extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+        ],
+        if (trailing != null) ...[
+          const SizedBox(width: 8),
+          trailing!,
         ],
       ],
     );

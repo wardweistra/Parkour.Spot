@@ -8,6 +8,12 @@ class Rating {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  /// Denormalized from the rater's profile for public "who rated" UI.
+  final String? displayName;
+
+  /// Null when the profile is private or has no photo.
+  final String? photoURL;
+
   Rating({
     this.id,
     required this.spotId,
@@ -15,6 +21,8 @@ class Rating {
     required this.rating,
     this.createdAt,
     this.updatedAt,
+    this.displayName,
+    this.photoURL,
   });
 
   factory Rating.fromFirestore(DocumentSnapshot doc) {
@@ -26,6 +34,8 @@ class Rating {
       rating: (data['rating'] ?? 0.0).toDouble(),
       createdAt: data['createdAt']?.toDate(),
       updatedAt: data['updatedAt']?.toDate(),
+      displayName: data['displayName'] as String?,
+      photoURL: data['photoURL'] as String?,
     );
   }
 
@@ -36,6 +46,8 @@ class Rating {
       'rating': rating,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      if (displayName != null) 'displayName': displayName,
+      if (photoURL != null) 'photoURL': photoURL,
     };
   }
 
@@ -46,6 +58,8 @@ class Rating {
     double? rating,
     DateTime? createdAt,
     DateTime? updatedAt,
+    Object? displayName = _omit,
+    Object? photoURL = _omit,
   }) {
     return Rating(
       id: id ?? this.id,
@@ -54,6 +68,10 @@ class Rating {
       rating: rating ?? this.rating,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      displayName: displayName == _omit
+          ? this.displayName
+          : displayName as String?,
+      photoURL: photoURL == _omit ? this.photoURL : photoURL as String?,
     );
   }
 
@@ -62,3 +80,5 @@ class Rating {
     return 'Rating(id: $id, spotId: $spotId, userId: $userId, rating: $rating)';
   }
 }
+
+const Object _omit = Object();

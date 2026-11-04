@@ -1033,6 +1033,36 @@ async function syncSpotRatedActivity(db, ratingId, afterData, options = {}) {
 }
 
 /**
+ * Denormalize actor displayName / photoURL onto the rating doc for the spot
+ * "who rated" UI. Private profiles keep displayName and clear photoURL
+ * (same rules as [loadActorProfile]).
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {string} ratingId
+ * @param {Object|null} afterData null when deleted
+ * @return {Promise<{updated: boolean}>}
+ */
+async function syncRatingActorPreview(db, ratingId, afterData) {
+  if (!afterData) return {updated: false};
+  const userId = trimmedString(afterData.userId);
+  if (!userId || !trimmedString(ratingId)) return {updated: false};
+
+  const actorProfile = await loadActorProfile(db, userId);
+  const displayName = trimmedString(actorProfile.displayName) || null;
+  const photoURL = trimmedString(actorProfile.photoURL) || null;
+  const currentName = trimmedString(afterData.displayName) || null;
+  const currentPhoto = trimmedString(afterData.photoURL) || null;
+  if (currentName === displayName && currentPhoto === photoURL) {
+    return {updated: false};
+  }
+
+  await db.collection("ratings").doc(ratingId).update({
+    displayName,
+    photoURL,
+  });
+  return {updated: true};
+}
+
+/**
  * onWrite(spotTrainingPlans/{planId}). Plans are deleted when converted into a
  * check-in, which removes the upcoming item; the check-in trigger adds the
  * past one.
@@ -2146,6 +2176,7 @@ module.exports = {
   syncSpotPhotoAddedActivity,
   syncSpotCheckInActivity,
   syncSpotRatedActivity,
+  syncRatingActorPreview,
   syncSpotTrainingPlanActivity,
   syncEventEndedActivity,
   syncCommunityActivityForSpotChange,

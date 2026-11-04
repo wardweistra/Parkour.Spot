@@ -1,10 +1,12 @@
-import 'package:flutter/foundation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cloud_functions/cloud_functions.dart';
-import 'package:http/http.dart' as http;
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import '../models/spot.dart';
 import '../models/rating.dart';
 import '../utils/audit_log_changes.dart';
@@ -1227,6 +1229,8 @@ class SpotService extends ChangeNotifier {
     double rating,
     String userId, {
     Iterable<String>? clusterSpotIds,
+    String? displayName,
+    String? photoURL,
   }) async {
     try {
       if (userId.isEmpty) {
@@ -1260,11 +1264,20 @@ class SpotService extends ChangeNotifier {
           )
           .toList();
 
+      final trimmedName = displayName?.trim();
+      final actorFields = <String, dynamic>{
+        'displayName': (trimmedName != null && trimmedName.isNotEmpty)
+            ? trimmedName
+            : null,
+        'photoURL': photoURL?.trim().isNotEmpty == true ? photoURL!.trim() : null,
+      };
+
       final batch = _firestore.batch();
       if (listingDocs.isNotEmpty) {
         batch.update(listingDocs.first.reference, {
           'rating': rating,
           'updatedAt': FieldValue.serverTimestamp(),
+          ...actorFields,
         });
         for (final extra in listingDocs.skip(1)) {
           batch.delete(extra.reference);
@@ -1276,6 +1289,7 @@ class SpotService extends ChangeNotifier {
           'rating': rating,
           'createdAt': FieldValue.serverTimestamp(),
           'updatedAt': FieldValue.serverTimestamp(),
+          ...actorFields,
         });
       }
       for (final sibling in siblingDocs) {
@@ -1329,6 +1343,147 @@ class SpotService extends ChangeNotifier {
       debugPrint('Error getting spot ratings: $e');
       return [];
     }
+  }
+
+  /// Unique-by-user ratings for a listing's duplicate cluster, newest first.
+  ///
+  /// Prefers denormalized [Rating.displayName] / [Rating.photoURL]; legacy docs
+  /// without those fields are enriched from publicly readable user profiles.
+  Future<List<Rating>> getSpotRaterPreviews(
+    String spotId, {
+    Iterable<String>? clusterSpotIds,
+  }) async {
+    try {
+      final listingId = spotId.trim();
+      if (listingId.isEmpty) return const [];
+
+      final cluster = await getRatingClusterIds(
+        listingId,
+        extraIds: clusterSpotIds ?? const <String>[],
+      );
+      final ratings = <Rating>[];
+      for (final id in cluster) {
+        final snap = await _firestore
+            .collection('ratings')
+            .where('spotId', isEqualTo: id)
+            .get();
+        ratings.addAll(snap.docs.map(Rating.fromFirestore));
+      }
+
+      final unique = uniqueRatingsByUser(ratings);
+      return await _enrichMissingRaterProfiles(unique);
+    } catch (e) {
+      debugPrint('Error getting spot rater previews: $e');
+      return const [];
+    }
+  }
+
+  /// Live unique-by-user rater list for the rating cluster (newest first).
+  Stream<List<Rating>> watchSpotRaterPreviews(
+    String spotId, {
+    Iterable<String>? clusterSpotIds,
+  }) {
+    return Stream<List<Rating>>.multi((controller) async {
+      final listingId = spotId.trim();
+      if (listingId.isEmpty) {
+        controller.add(const []);
+        return;
+      }
+
+      Set<String> cluster;
+      try {
+        cluster = await getRatingClusterIds(
+          listingId,
+          extraIds: clusterSpotIds ?? const <String>[],
+        );
+      } catch (e) {
+        controller.addError(e);
+        return;
+      }
+      if (cluster.isEmpty) {
+        controller.add(const []);
+        return;
+      }
+
+      final latestBySpot = <String, List<Rating>>{
+        for (final id in cluster) id: const [],
+      };
+      final subscriptions = <StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>[];
+
+      Future<void> emit() async {
+        final merged = <Rating>[
+          for (final list in latestBySpot.values) ...list,
+        ];
+        try {
+          final unique = uniqueRatingsByUser(merged);
+          final enriched = await _enrichMissingRaterProfiles(unique);
+          if (!controller.isClosed) controller.add(enriched);
+        } catch (e, st) {
+          if (!controller.isClosed) controller.addError(e, st);
+        }
+      }
+
+      for (final id in cluster) {
+        final sub = _firestore
+            .collection('ratings')
+            .where('spotId', isEqualTo: id)
+            .snapshots()
+            .listen(
+              (snap) {
+                latestBySpot[id] =
+                    snap.docs.map(Rating.fromFirestore).toList(growable: false);
+                unawaited(emit());
+              },
+              onError: controller.addError,
+            );
+        subscriptions.add(sub);
+      }
+
+      controller.onCancel = () {
+        for (final sub in subscriptions) {
+          sub.cancel();
+        }
+      };
+    });
+  }
+
+  Future<List<Rating>> _enrichMissingRaterProfiles(List<Rating> ratings) async {
+    final missingIndexes = <int>[];
+    for (var i = 0; i < ratings.length; i++) {
+      final name = ratings[i].displayName?.trim();
+      if (name == null || name.isEmpty) missingIndexes.add(i);
+    }
+    if (missingIndexes.isEmpty) return ratings;
+
+    final enriched = List<Rating>.from(ratings);
+    await Future.wait(
+      missingIndexes.map((index) async {
+        final rating = enriched[index];
+        final userId = rating.userId.trim();
+        if (userId.isEmpty) return;
+        try {
+          final doc = await _firestore.collection('users').doc(userId).get();
+          if (!doc.exists) return;
+          final data = doc.data();
+          if (data == null) return;
+          final isPublic = data['isPublicProfile'] != false;
+          final displayName = (data['displayName'] as String?)?.trim();
+          final photoURL = isPublic
+              ? (data['photoURL'] as String?)?.trim()
+              : null;
+          enriched[index] = rating.copyWith(
+            displayName: (displayName != null && displayName.isNotEmpty)
+                ? displayName
+                : null,
+            photoURL: (photoURL != null && photoURL.isNotEmpty) ? photoURL : null,
+          );
+        } catch (e) {
+          // Private profiles are not readable by other clients; leave placeholder.
+          debugPrint('Could not enrich rater profile for $userId: $e');
+        }
+      }),
+    );
+    return enriched;
   }
 
   // Remove the current user's rating for a spot and sibling cluster listings.

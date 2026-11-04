@@ -3155,6 +3155,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get spotDetailClearRating => 'Eliminar valoración';
 
   @override
+  String get spotDetailCurrentRatings => 'Valoraciones actuales';
+
+  @override
   String spotDetailRatingSubmitError(String error) {
     return 'Error al enviar la valoración: $error';
   }

@@ -2942,6 +2942,10 @@
     "description": "Rate-this-spot sheet: informs that ratings are public and may appear in Explore activities"
   },
   "spotDetailClearRating": "Clear rating",
+  "spotDetailCurrentRatings": "Current ratings",
+  "@spotDetailCurrentRatings": {
+    "description": "Rate-this-spot sheet: heading above the list of people who rated"
+  },
   "spotDetailRatingSubmitError": "Error submitting rating: {error}",
   "@spotDetailRatingSubmitError": {
     "placeholders": {

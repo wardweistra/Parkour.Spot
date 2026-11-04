@@ -19,6 +19,7 @@ const {
   buildEventEndedActivity,
   syncSpotCheckInActivity,
   syncSpotRatedActivity,
+  syncRatingActorPreview,
   syncSpotTrainingPlanActivity,
   syncEventEndedActivity,
   syncCommunityActivityForSpotChange,
@@ -541,6 +542,75 @@ describe("syncSpotCheckInActivity", () => {
     const result = await syncSpotCheckInActivity(db, "ci-1", checkIn);
     expect(result.written).toBe(false);
     expect(db._store.get("communityActivity").size).toBe(0);
+  });
+});
+
+describe("syncRatingActorPreview", () => {
+  it("writes displayName and photoURL from the public profile", async () => {
+    const db = fakeDb({
+      users: {"user-4": {displayName: "Sam", photoURL: "https://img/sam.png"}},
+      ratings: {"r-1": {userId: "user-4", spotId: "spot-1", rating: 4}},
+    });
+    const result = await syncRatingActorPreview(
+        db,
+        "r-1",
+        {userId: "user-4", spotId: "spot-1", rating: 4},
+    );
+    expect(result).toEqual({updated: true});
+    expect(db._store.get("ratings").get("r-1")).toMatchObject({
+      displayName: "Sam",
+      photoURL: "https://img/sam.png",
+    });
+  });
+
+  it("strips photoURL for private profiles and no-ops when already synced", async () => {
+    const db = fakeDb({
+      users: {
+        "user-4": {
+          displayName: "Sam",
+          photoURL: "https://img/sam.png",
+          isPublicProfile: false,
+        },
+      },
+      ratings: {
+        "r-1": {
+          userId: "user-4",
+          spotId: "spot-1",
+          rating: 4,
+          displayName: "Sam",
+          photoURL: null,
+        },
+      },
+    });
+    const first = await syncRatingActorPreview(
+        db,
+        "r-1",
+        {
+          userId: "user-4",
+          spotId: "spot-1",
+          rating: 4,
+          displayName: "Old",
+          photoURL: "https://img/old.png",
+        },
+    );
+    expect(first).toEqual({updated: true});
+    expect(db._store.get("ratings").get("r-1")).toMatchObject({
+      displayName: "Sam",
+      photoURL: null,
+    });
+
+    const second = await syncRatingActorPreview(
+        db,
+        "r-1",
+        {
+          userId: "user-4",
+          spotId: "spot-1",
+          rating: 4,
+          displayName: "Sam",
+          photoURL: null,
+        },
+    );
+    expect(second).toEqual({updated: false});
   });
 });
 

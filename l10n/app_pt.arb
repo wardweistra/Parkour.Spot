@@ -757,6 +757,7 @@
   "spotDetailRatingClearFailed": "Não foi possível remover a avaliação. Tenta novamente.",
   "spotDetailRatingPublicDisclosure": "A tua avaliação é pública e pode aparecer na atividade da comunidade perto daqui.",
   "spotDetailClearRating": "Remover avaliação",
+  "spotDetailCurrentRatings": "Avaliações atuais",
   "spotDetailRatingSubmitError": "Erro ao enviar avaliação: {error}",
   "spotDetailNotExternalSource": "Este spot não vem de uma fonte externa.",
   "spotDetailMustBeLoggedInCreateNative": "Tens de ter sessão iniciada para criar um spot nativo.",

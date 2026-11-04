@@ -5103,6 +5103,12 @@ abstract class AppLocalizations {
   /// **'Clear rating'**
   String get spotDetailClearRating;
 
+  /// Rate-this-spot sheet: heading above the list of people who rated
+  ///
+  /// In en, this message translates to:
+  /// **'Current ratings'**
+  String get spotDetailCurrentRatings;
+
   /// No description provided for @spotDetailRatingSubmitError.
   ///
   /// In en, this message translates to:

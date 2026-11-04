@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
+import '../../models/rating.dart';
 import '../../models/spot.dart';
 import '../../models/spot_check_in.dart';
 import '../../models/spot_training_plan.dart';
@@ -14,6 +15,8 @@ import '../../widgets/spot_check_in_dialog.dart';
 import '../../widgets/add_to_spot_list_dialog.dart';
 import '../../widgets/spot_training_plan_dialog.dart';
 import '../../widgets/spot_duplicate_changes_dialog.dart';
+import '../../widgets/spot_rater_list.dart';
+import '../../widgets/stacked_user_avatars.dart';
 import '../../utils/spot_duplicate_review.dart';
 import '../../utils/spot_rating_utils.dart';
 import '../../utils/spot_check_in_flow.dart';
@@ -197,6 +200,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   Map<String, dynamic>? _cachedRatingStats;
   bool _isLoadingRatingStats = false;
   StreamSubscription<Map<String, dynamic>>? _ratingStatsSubscription;
+  StreamSubscription<List<Rating>>? _raterPreviewsSubscription;
+  List<Rating> _raterPreviews = const [];
+  bool _raterPreviewsLoaded = false;
 
   // Track expanded sections for chip overflow
   final Map<String, bool> _expandedSections = {};
@@ -481,7 +487,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         : 0;
     _seedRatingStatsFromSpot();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _loadRatingStatsSubscription();
+      if (mounted) {
+        _loadRatingStatsSubscription();
+        _loadRaterPreviewsSubscription();
+      }
     });
     // Note: User rating will be loaded when auth state is restored via FutureBuilder
 
@@ -546,12 +555,19 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       _hasRated = false;
       _cachedRatingStats = null;
       _isLoadingRatingStats = false;
+      _raterPreviews = const [];
+      _raterPreviewsLoaded = false;
       _ratingStatsSubscription?.cancel();
       _ratingStatsSubscription = null;
+      _raterPreviewsSubscription?.cancel();
+      _raterPreviewsSubscription = null;
       _seedRatingStatsFromSpot();
       if (widget.spot.id != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _loadRatingStatsSubscription();
+          if (mounted) {
+            _loadRatingStatsSubscription();
+            _loadRaterPreviewsSubscription();
+          }
         });
         _jumpflixVideosFuture = Provider.of<JumpflixService>(
           context,
@@ -620,6 +636,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     _isSatelliteViewNotifier.dispose();
     _searchStateServiceRef?.removeListener(_onSearchStateChanged);
     _ratingStatsSubscription?.cancel();
+    _raterPreviewsSubscription?.cancel();
     super.dispose();
   }
 
@@ -1053,165 +1070,224 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       isScrollControlled: true,
       builder: (sheetContext) {
         final bottomInset = MediaQuery.viewInsetsOf(sheetContext).bottom;
+        final maxHeight = MediaQuery.sizeOf(sheetContext).height * 0.85;
         return SafeArea(
           child: Padding(
             padding: EdgeInsets.fromLTRB(24, 8, 24, 24 + bottomInset),
-            child: Consumer<AuthService>(
-              builder: (context, auth, _) {
-                if (auth.isLoading) {
-                  return const SizedBox(
-                    height: 160,
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                if (!auth.isAuthenticated) {
-                  return SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxHeight),
+              child: Consumer<AuthService>(
+                builder: (context, auth, _) {
+                  if (auth.isLoading) {
+                    return const SizedBox(
+                      height: 160,
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  if (!auth.isAuthenticated) {
+                    return SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _l10n.spotDetailRateThisSpot,
+                            style: theme.textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _ratingSheetCommunitySummaryString(),
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: cs.onSurface.withValues(alpha: 0.85),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            _l10n.spotDetailSignInToRateSubtitle,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: cs.onSurface.withValues(alpha: 0.75),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          FilledButton(
+                            onPressed: () {
+                              Navigator.pop(sheetContext);
+                              context.go(
+                                '/login?redirectTo=${Uri.encodeComponent(redirectUrl)}',
+                              );
+                            },
+                            child: Text(_l10n.spotDetailSignInButton),
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton(
+                            onPressed: () {
+                              Navigator.pop(sheetContext);
+                              context.go(
+                                '/login?mode=signup&redirectTo=${Uri.encodeComponent(redirectUrl)}',
+                              );
+                            },
+                            child: Text(_l10n.spotDetailCreateAccountButton),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _l10n.spotDetailRatingPublicDisclosure,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: cs.onSurface.withValues(alpha: 0.65),
+                            ),
+                          ),
+                          ..._ratingSheetCurrentRatingsSlivers(
+                            sheetContext,
+                            theme,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  if (auth.userProfile == null) {
+                    return Column(
                       mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          _l10n.spotDetailRateThisSpot,
-                          style: theme.textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          _ratingSheetCommunitySummaryString(),
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: cs.onSurface.withValues(alpha: 0.85),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          _l10n.spotDetailSignInToRateSubtitle,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: cs.onSurface.withValues(alpha: 0.75),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        FilledButton(
-                          onPressed: () {
-                            Navigator.pop(sheetContext);
-                            context.go(
-                              '/login?redirectTo=${Uri.encodeComponent(redirectUrl)}',
-                            );
-                          },
-                          child: Text(_l10n.spotDetailSignInButton),
+                          _l10n.spotDetailCouldNotLoadProfile,
+                          style: theme.textTheme.bodyLarge,
                         ),
                         const SizedBox(height: 8),
-                        OutlinedButton(
-                          onPressed: () {
-                            Navigator.pop(sheetContext);
-                            context.go(
-                              '/login?mode=signup&redirectTo=${Uri.encodeComponent(redirectUrl)}',
-                            );
-                          },
-                          child: Text(_l10n.spotDetailCreateAccountButton),
-                        ),
-                        const SizedBox(height: 16),
                         Text(
-                          _l10n.spotDetailRatingPublicDisclosure,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: cs.onSurface.withValues(alpha: 0.65),
+                          _l10n.spotDetailRefreshPageToRate,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: cs.onSurface.withValues(alpha: 0.7),
                           ),
                         ),
                       ],
-                    ),
-                  );
-                }
-                if (auth.userProfile == null) {
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        _l10n.spotDetailCouldNotLoadProfile,
-                        style: theme.textTheme.bodyLarge,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _l10n.spotDetailRefreshPageToRate,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: cs.onSurface.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  );
-                }
-                return _SpotRatingUserRatingLoader(
-                  loadUserRating: _loadUserRatingFuture,
-                  builder: (ctx) {
-                    return StatefulBuilder(
-                      builder: (context, setModalState) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _l10n.spotDetailRateThisSpot,
-                              style: theme.textTheme.titleLarge,
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              _ratingSheetCommunitySummaryString(),
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                color: cs.onSurface.withValues(alpha: 0.85),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: List.generate(5, (index) {
-                                final filled = index < _userRating;
-                                return IconButton(
-                                  onPressed: () {
-                                    _submitRatingDirectly(
-                                      index + 1.0,
-                                      refreshModal: () => setModalState(() {}),
-                                    );
-                                  },
-                                  icon: Icon(
-                                    filled ? Icons.star : Icons.star_border,
-                                    color: Colors.amber,
-                                    size: 40,
-                                  ),
-                                  tooltip: '${index + 1}',
-                                );
-                              }),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              _l10n.spotDetailRatingPublicDisclosure,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: cs.onSurface.withValues(alpha: 0.65),
-                              ),
-                            ),
-                            if (_hasRated) ...[
-                              const SizedBox(height: 8),
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: TextButton(
-                                  onPressed: () {
-                                    _clearRatingDirectly(
-                                      refreshModal: () => setModalState(() {}),
-                                    );
-                                  },
-                                  child: Text(_l10n.spotDetailClearRating),
-                                ),
-                              ),
-                            ],
-                          ],
-                        );
-                      },
                     );
-                  },
-                );
-              },
+                  }
+                  return _SpotRatingUserRatingLoader(
+                    loadUserRating: _loadUserRatingFuture,
+                    builder: (ctx) {
+                      return StatefulBuilder(
+                        builder: (context, setModalState) {
+                          return SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _l10n.spotDetailRateThisSpot,
+                                  style: theme.textTheme.titleLarge,
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  _ratingSheetCommunitySummaryString(),
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    color: cs.onSurface.withValues(alpha: 0.85),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: List.generate(5, (index) {
+                                    final filled = index < _userRating;
+                                    return IconButton(
+                                      onPressed: () {
+                                        _submitRatingDirectly(
+                                          index + 1.0,
+                                          refreshModal: () =>
+                                              setModalState(() {}),
+                                        );
+                                      },
+                                      icon: Icon(
+                                        filled
+                                            ? Icons.star
+                                            : Icons.star_border,
+                                        color: Colors.amber,
+                                        size: 40,
+                                      ),
+                                      tooltip: '${index + 1}',
+                                    );
+                                  }),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  _l10n.spotDetailRatingPublicDisclosure,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: cs.onSurface.withValues(alpha: 0.65),
+                                  ),
+                                ),
+                                if (_hasRated) ...[
+                                  const SizedBox(height: 8),
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: TextButton(
+                                      onPressed: () {
+                                        _clearRatingDirectly(
+                                          refreshModal: () =>
+                                              setModalState(() {}),
+                                        );
+                                      },
+                                      child: Text(_l10n.spotDetailClearRating),
+                                    ),
+                                  ),
+                                ],
+                                ..._ratingSheetCurrentRatingsSlivers(
+                                  sheetContext,
+                                  theme,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ),
         );
       },
     );
+  }
+
+  List<Widget> _ratingSheetCurrentRatingsSlivers(
+    BuildContext sheetContext,
+    ThemeData theme,
+  ) {
+    final spotId = _spot.id;
+    if (spotId == null) return const [];
+    final spotService = Provider.of<SpotService>(context, listen: false);
+    return [
+      StreamBuilder<List<Rating>>(
+        stream: spotService.watchSpotRaterPreviews(
+          spotId,
+          clusterSpotIds: _ratingClusterExtraIds(),
+        ),
+        initialData: _raterPreviews,
+        builder: (context, snapshot) {
+          final ratings = snapshot.data ?? const <Rating>[];
+          if (ratings.isEmpty) return const SizedBox.shrink();
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 24),
+              Text(
+                _l10n.spotDetailCurrentRatings,
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              SpotRaterList(
+                ratings: ratings,
+                onRaterTap: (rating) {
+                  Navigator.pop(sheetContext);
+                  _navigateToUserProfile(rating.userId);
+                },
+              ),
+            ],
+          );
+        },
+      ),
+    ];
   }
 
   Widget _spotDetailRatingQuickChip() {
@@ -1230,10 +1306,38 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       final theme = Theme.of(context);
       final baseLabel = theme.textTheme.labelLarge;
       final cs = theme.colorScheme;
+      const maxStack = 4;
+      const stackRadius = 10.0;
+      final stackEntries = _raterPreviews
+          .map(
+            (r) => StackedUserAvatarEntry(
+              userId: r.userId,
+              displayName: r.displayName,
+              photoURL: r.photoURL,
+            ),
+          )
+          .toList(growable: false);
+      final Widget? trailing;
+      if (stackEntries.isNotEmpty) {
+        trailing = StackedUserAvatars(
+          entries: stackEntries,
+          maxShown: maxStack,
+          radius: stackRadius,
+        );
+      } else if (!_raterPreviewsLoaded) {
+        // Reserve stack space once we know ratings exist (Community-style
+        // soft circles) so the chip does not jump when faces arrive.
+        trailing = StackedUserAvatarsSkeleton(
+          count: math.min(count, maxStack),
+          radius: stackRadius,
+        );
+      } else {
+        trailing = null;
+      }
       return SpotDetailQuickActionChip(
         icon: Icons.star,
         iconColor: Colors.amber,
-        label: '',
+        label: _l10n.spotDetailQuickActionRate,
         labelWidget: Text.rich(
           TextSpan(
             children: [
@@ -1250,6 +1354,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
+        trailing: trailing,
         showSpinner: false,
       );
     }
@@ -4252,6 +4357,38 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
         );
   }
 
+  void _loadRaterPreviewsSubscription() {
+    final listingId = widget.spot.id;
+    if (listingId == null) return;
+
+    _raterPreviewsSubscription?.cancel();
+    setState(() {
+      _raterPreviewsLoaded = false;
+    });
+    final spotService = Provider.of<SpotService>(context, listen: false);
+    _raterPreviewsSubscription = spotService
+        .watchSpotRaterPreviews(
+          listingId,
+          clusterSpotIds: _ratingClusterExtraIds(),
+        )
+        .listen(
+          (previews) {
+            if (!mounted) return;
+            setState(() {
+              _raterPreviews = previews;
+              _raterPreviewsLoaded = true;
+            });
+          },
+          onError: (Object error) {
+            debugPrint('Error listening to rater previews: $error');
+            if (!mounted) return;
+            setState(() {
+              _raterPreviewsLoaded = true;
+            });
+          },
+        );
+  }
+
   /// Submits a rating directly when a star is clicked.
   /// Tapping the same star again clears the rating.
   Future<void> _submitRatingDirectly(
@@ -4288,11 +4425,14 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       bumpModal();
 
       final spotService = Provider.of<SpotService>(context, listen: false);
+      final profile = authService.userProfile!;
       final success = await spotService.rateSpot(
         widget.spot.id!,
         rating,
-        authService.userProfile!.id,
+        profile.id,
         clusterSpotIds: _ratingClusterExtraIds(),
+        displayName: profile.displayName,
+        photoURL: profile.isPublicProfile ? profile.photoURL : null,
       );
 
       if (success && mounted) {

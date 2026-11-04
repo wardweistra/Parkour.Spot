@@ -262,6 +262,7 @@ const {
   syncSpotPhotoAddedActivity,
   syncSpotCheckInActivity,
   syncSpotRatedActivity,
+  syncRatingActorPreview,
   syncSpotTrainingPlanActivity,
   syncEventEndedActivity,
   syncCommunityActivityForSpotChange,
@@ -1722,6 +1723,7 @@ exports.onSpotCheckInWrittenForCommunityActivity = onDocumentWritten(
 );
 
 // Explore Community stream: mirror ratings (create + score change) into communityActivity.
+// Also denormalize rater displayName/photoURL onto the rating doc for spot UI.
 exports.onRatingWrittenForCommunityActivity = onDocumentWritten(
     {document: "ratings/{ratingId}", region: "europe-west1"},
     async (event) => {
@@ -1736,6 +1738,11 @@ exports.onRatingWrittenForCommunityActivity = onDocumentWritten(
         await syncSpotRatedActivity(db, ratingId, afterData, {beforeData});
       } catch (e) {
         console.error("onRatingWrittenForCommunityActivity error", {ratingId, e});
+      }
+      try {
+        await syncRatingActorPreview(db, ratingId, afterData);
+      } catch (e) {
+        console.error("syncRatingActorPreview error", {ratingId, e});
       }
     },
 );

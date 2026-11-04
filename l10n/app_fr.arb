@@ -757,6 +757,7 @@
   "spotDetailRatingClearFailed": "Impossible de supprimer la note. Réessayez.",
   "spotDetailRatingPublicDisclosure": "Ta note est publique et peut apparaître dans l’activité de la communauté à proximité.",
   "spotDetailClearRating": "Supprimer la note",
+  "spotDetailCurrentRatings": "Notes actuelles",
   "spotDetailRatingSubmitError": "Erreur lors de l’envoi de la note : {error}",
   "spotDetailNotExternalSource": "Ce spot ne provient pas d’une source externe.",
   "spotDetailMustBeLoggedInCreateNative": "Vous devez être connecté·e pour créer un spot natif.",

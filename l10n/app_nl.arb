@@ -814,6 +814,7 @@
   "spotDetailRatingClearFailed": "Beoordeling verwijderen mislukt. Probeer het opnieuw.",
   "spotDetailRatingPublicDisclosure": "Je beoordeling is openbaar en kan in community-activiteit in de buurt verschijnen.",
   "spotDetailClearRating": "Beoordeling wissen",
+  "spotDetailCurrentRatings": "Huidige beoordelingen",
   "spotDetailRatingSubmitError": "Fout bij beoordeling: {error}",
   "spotDetailNotExternalSource": "Deze spot komt niet van een externe bron.",
   "spotDetailMustBeLoggedInCreateNative": "Je moet ingelogd zijn om een native spot aan te maken.",

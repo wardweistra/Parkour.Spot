@@ -757,6 +757,7 @@
   "spotDetailRatingClearFailed": "Bewertung konnte nicht entfernt werden. Bitte erneut versuchen.",
   "spotDetailRatingPublicDisclosure": "Deine Bewertung ist öffentlich und kann in der Community-Aktivität in der Nähe erscheinen.",
   "spotDetailClearRating": "Bewertung entfernen",
+  "spotDetailCurrentRatings": "Aktuelle Bewertungen",
   "spotDetailRatingSubmitError": "Fehler bei der Bewertung: {error}",
   "spotDetailNotExternalSource": "Dieser Spot stammt nicht von einer externen Quelle.",
   "spotDetailMustBeLoggedInCreateNative": "Zum Erstellen eines nativen Spots musst du angemeldet sein.",

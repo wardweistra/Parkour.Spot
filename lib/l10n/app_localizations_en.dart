@@ -3125,6 +3125,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get spotDetailClearRating => 'Clear rating';
 
   @override
+  String get spotDetailCurrentRatings => 'Current ratings';
+
+  @override
   String spotDetailRatingSubmitError(String error) {
     return 'Error submitting rating: $error';
   }
