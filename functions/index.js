@@ -8997,7 +8997,8 @@ exports.uploadReplacementImage = onCall(
  * spot photos (same Storage path as import). Moderator or admin only.
  */
 exports.fetchYoutubeThumbnails = onCall(
-    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 120},
+    // Sharp + Admin SDK cold start exceeds 512MiB on single thumbnail uploads.
+    {region: "europe-west1", memory: "1GiB", timeoutSeconds: 120},
     async (request) => {
       try {
         await ensureModerator(request);
