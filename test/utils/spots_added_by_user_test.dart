@@ -102,6 +102,10 @@ void main() {
         spotTrackingListRoutePath(SpotTrackingListType.added),
         '/profile/added',
       );
+      expect(
+        spotTrackingListRoutePath(SpotTrackingListType.rated),
+        '/profile/rated',
+      );
     });
   });
 
@@ -120,6 +124,23 @@ void main() {
       expect(list.createdBy, 'user-1');
       expect(addedByUserPublicListPath('hank'), '/user/hank/added');
       expect(isAddedByUserListId('list-1'), isFalse);
+    });
+  });
+
+  group('rated-by-you public list', () {
+    test('builds a public synthetic list for profile entries', () {
+      final list = buildRatedByUserSpotList(
+        userId: 'user-1',
+        name: 'Rated by you',
+        spotCount: 2,
+      );
+
+      expect(list.id, 'rated-by:user-1');
+      expect(isRatedByUserListId(list.id), isTrue);
+      expect(list.visibility, SpotListVisibility.public);
+      expect(list.spotCount, 2);
+      expect(ratedByUserPublicListPath('hank'), '/user/hank/rated');
+      expect(isRatedByUserListId('list-1'), isFalse);
     });
   });
 }

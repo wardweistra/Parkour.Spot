@@ -1,8 +1,8 @@
 import '../models/spot.dart';
 import '../models/spot_list.dart';
 
-/// Built-in lists on the My spots hub. Added-by-you can be made public.
-enum SpotTrackingListType { wantToVisit, visited, added }
+/// Built-in lists on the My spots hub. Added-by-you and rated-by-you can be public.
+enum SpotTrackingListType { wantToVisit, visited, added, rated }
 
 /// Whether [spot] belongs on the signed-in user's added-spots list.
 ///
@@ -36,6 +36,8 @@ String spotTrackingListRoutePath(SpotTrackingListType type) {
       return '/profile/visited';
     case SpotTrackingListType.added:
       return '/profile/added';
+    case SpotTrackingListType.rated:
+      return '/profile/rated';
   }
 }
 
@@ -50,6 +52,17 @@ bool isAddedByUserListId(String? id) {
   return id != null && id.startsWith('added-by:');
 }
 
+String ratedByUserListId(String userId) => 'rated-by:$userId';
+
+bool isRatedByUserListId(String? id) {
+  return id != null && id.startsWith('rated-by:');
+}
+
+/// Public URL for another user's rated-spots list.
+String ratedByUserPublicListPath(String userIdOrUsername) {
+  return '/user/$userIdOrUsername/rated';
+}
+
 /// Synthetic public list used on profiles when the owner opts in.
 SpotList buildAddedByUserSpotList({
   required String userId,
@@ -59,6 +72,24 @@ SpotList buildAddedByUserSpotList({
   final epoch = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
   return SpotList(
     id: addedByUserListId(userId),
+    name: name,
+    spotIds: List<String>.generate(spotCount, (index) => '$index'),
+    visibility: SpotListVisibility.public,
+    createdBy: userId,
+    createdAt: epoch,
+    updatedAt: epoch,
+  );
+}
+
+/// Synthetic public list used on profiles when the owner opts in.
+SpotList buildRatedByUserSpotList({
+  required String userId,
+  required String name,
+  required int spotCount,
+}) {
+  final epoch = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+  return SpotList(
+    id: ratedByUserListId(userId),
     name: name,
     spotIds: List<String>.generate(spotCount, (index) => '$index'),
     visibility: SpotListVisibility.public,

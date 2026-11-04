@@ -66,6 +66,23 @@ Rating? uniqueUserRating(Iterable<Rating> ratings) {
   return best;
 }
 
+/// One rating per spot (latest wins), newest first.
+List<Rating> uniqueRatingsBySpot(Iterable<Rating> ratings) {
+  final bySpot = <String, Rating>{};
+  for (final rating in ratings) {
+    final spotId = rating.spotId.trim();
+    if (spotId.isEmpty) continue;
+    final existing = bySpot[spotId];
+    if (existing == null ||
+        _ratingRecency(rating).isAfter(_ratingRecency(existing))) {
+      bySpot[spotId] = rating;
+    }
+  }
+  final list = bySpot.values.toList();
+  list.sort((a, b) => _ratingRecency(b).compareTo(_ratingRecency(a)));
+  return list;
+}
+
 /// One rating per user (latest wins), newest first.
 List<Rating> uniqueRatingsByUser(Iterable<Rating> ratings) {
   final byUser = <String, Rating>{};

@@ -9,6 +9,9 @@ class User {
 
   /// When true, the built-in "added by you" list is listed on the public profile.
   final bool isAddedSpotsListPublic;
+
+  /// When true, the built-in "rated by you" list is listed on the public profile.
+  final bool isRatedSpotsListPublic;
   final DateTime? createdAt;
   final DateTime? lastLoginAt;
   final DateTime? lastActiveAt;
@@ -37,6 +40,7 @@ class User {
     this.instagramUrl,
     this.isPublicProfile = true,
     this.isAddedSpotsListPublic = false,
+    this.isRatedSpotsListPublic = false,
     this.createdAt,
     this.lastLoginAt,
     this.lastActiveAt,
@@ -67,6 +71,7 @@ class User {
       instagramUrl: map['instagramUrl'],
       isPublicProfile: map['isPublicProfile'] ?? true,
       isAddedSpotsListPublic: map['isAddedSpotsListPublic'] == true,
+      isRatedSpotsListPublic: map['isRatedSpotsListPublic'] == true,
       createdAt: map['createdAt']?.toDate(),
       lastLoginAt: map['lastLoginAt']?.toDate(),
       lastActiveAt: map['lastActiveAt']?.toDate(),
@@ -122,6 +127,7 @@ class User {
       'instagramUrl': instagramUrl,
       'isPublicProfile': isPublicProfile,
       'isAddedSpotsListPublic': isAddedSpotsListPublic,
+      'isRatedSpotsListPublic': isRatedSpotsListPublic,
       'createdAt': createdAt,
       'lastLoginAt': lastLoginAt,
       'lastActiveAt': lastActiveAt,
@@ -154,6 +160,7 @@ class User {
     Object? instagramUrl = _omit,
     bool? isPublicProfile,
     bool? isAddedSpotsListPublic,
+    bool? isRatedSpotsListPublic,
     DateTime? createdAt,
     DateTime? lastLoginAt,
     DateTime? lastActiveAt,
@@ -185,6 +192,8 @@ class User {
       isPublicProfile: isPublicProfile ?? this.isPublicProfile,
       isAddedSpotsListPublic:
           isAddedSpotsListPublic ?? this.isAddedSpotsListPublic,
+      isRatedSpotsListPublic:
+          isRatedSpotsListPublic ?? this.isRatedSpotsListPublic,
       createdAt: createdAt ?? this.createdAt,
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       lastActiveAt: lastActiveAt ?? this.lastActiveAt,

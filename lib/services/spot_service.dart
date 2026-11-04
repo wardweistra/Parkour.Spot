@@ -91,6 +91,43 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  /// Spots the given user rated, newest rating first.
+  Future<List<Spot>> getSpotsRatedByUser(String userId) async {
+    if (userId.isEmpty) return [];
+    try {
+      final snapshot = await _firestore
+          .collection('ratings')
+          .where('userId', isEqualTo: userId)
+          .get();
+      final ratings = uniqueRatingsBySpot(
+        snapshot.docs.map(Rating.fromFirestore),
+      );
+      final spots = <Spot>[];
+      for (final rating in ratings) {
+        final spot = await getSpotById(rating.spotId);
+        if (spot != null) {
+          spots.add(spot);
+        }
+      }
+      return spots;
+    } catch (e) {
+      debugPrint('Error loading spots rated by user: $e');
+      rethrow;
+    }
+  }
+
+  /// Count of spots the given user has rated (one per spot listing).
+  Future<int> countSpotsRatedByUser(String userId) async {
+    if (userId.isEmpty) return 0;
+    try {
+      final spots = await getSpotsRatedByUser(userId);
+      return spots.length;
+    } catch (e) {
+      debugPrint('Error counting spots rated by user: $e');
+      rethrow;
+    }
+  }
+
   // Get a single spot by ID
   Future<Spot?> getSpotById(String spotId) async {
     for (var attempt = 0; attempt < 2; attempt++) {

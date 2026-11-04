@@ -370,6 +370,7 @@ class AppRouter {
             if (path == '/profile/want-to-visit' ||
                 path == '/profile/visited' ||
                 path == '/profile/added' ||
+                path == '/profile/rated' ||
                 path == '/profile/check-ins' ||
                 path == '/profile/events' ||
                 path == '/profile/lists' ||
@@ -396,6 +397,12 @@ class AppRouter {
               path: 'added',
               builder: (context, state) => const SpotTrackingListScreen(
                 type: SpotTrackingListType.added,
+              ),
+            ),
+            GoRoute(
+              path: 'rated',
+              builder: (context, state) => const SpotTrackingListScreen(
+                type: SpotTrackingListType.rated,
               ),
             ),
             GoRoute(
@@ -445,6 +452,17 @@ class AppRouter {
                     state.pathParameters['userIdOrUsername']!;
                 return SpotTrackingListScreen(
                   type: SpotTrackingListType.added,
+                  profileUserIdOrUsername: userIdOrUsername,
+                );
+              },
+            ),
+            GoRoute(
+              path: 'rated',
+              builder: (context, state) {
+                final userIdOrUsername =
+                    state.pathParameters['userIdOrUsername']!;
+                return SpotTrackingListScreen(
+                  type: SpotTrackingListType.rated,
                   profileUserIdOrUsername: userIdOrUsername,
                 );
               },

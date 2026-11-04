@@ -240,6 +240,19 @@
       }
     }
   },
+  "spotListsHubRatedByYou": "Rated by you",
+  "@spotListsHubRatedByYou": {
+    "description": "Private list of spots the signed-in user rated"
+  },
+  "publicProfileRatedByUser": "Rated by {name}",
+  "@publicProfileRatedByUser": {
+    "description": "Public profile and list title for another user's rated-spots list",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "notificationsTitle": "Notifications",
   "@notificationsTitle": {
     "description": "Notifications inbox screen title and Account tab row"
@@ -3209,6 +3222,30 @@
   "spotTrackingAddedVisibilityUpdateFailed": "Could not update list visibility",
   "@spotTrackingAddedVisibilityUpdateFailed": {
     "description": "Error when toggling added-by-you list public/private"
+  },
+  "spotTrackingBuiltInListVisibilityUpdateFailed": "Could not update list visibility",
+  "@spotTrackingBuiltInListVisibilityUpdateFailed": {
+    "description": "Error when toggling added-by-you or rated-by-you list public/private"
+  },
+  "spotTrackingRatedEmptyHint": "Spots you rate show up here",
+  "@spotTrackingRatedEmptyHint": {
+    "description": "Empty state hint for the private rated-by-you spot list"
+  },
+  "spotTrackingAddedListPublicVisibilityHelp": "Listed on your profile. Spots you add still show you as the creator on each spot and in the activity feed.",
+  "@spotTrackingAddedListPublicVisibilityHelp": {
+    "description": "Added-by-you list: public toggle help when the list is public"
+  },
+  "spotTrackingAddedListPrivateVisibilityHelp": "Only you see this list. Spots you add still show you as the creator on each spot and in the activity feed.",
+  "@spotTrackingAddedListPrivateVisibilityHelp": {
+    "description": "Added-by-you list: public toggle help when the list is private"
+  },
+  "spotTrackingRatedListPublicVisibilityHelp": "Listed on your profile. Your ratings still appear on each spot and in the activity feed.",
+  "@spotTrackingRatedListPublicVisibilityHelp": {
+    "description": "Rated-by-you list: public toggle help when the list is public"
+  },
+  "spotTrackingRatedListPrivateVisibilityHelp": "Only you see this list. Your ratings still appear on each spot and in the activity feed.",
+  "@spotTrackingRatedListPrivateVisibilityHelp": {
+    "description": "Rated-by-you list: public toggle help when the list is private"
   },
   "spotListSaveTooltipSaveList": "Save list",
   "@spotListSaveTooltipSaveList": {
