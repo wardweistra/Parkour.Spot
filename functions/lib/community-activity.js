@@ -479,7 +479,7 @@ function isTrainingPlanEligibleForCommunityActivity(planData, now = new Date()) 
 }
 
 /**
- * "A is planning to train at this spot" (public plans that have not ended).
+ * "A is planning a session at this spot" (public plans that have not ended).
  * @param {string} planId
  * @param {Object} planData
  * @param {Object|null} spotData

@@ -1056,7 +1056,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get exploreNoCommunityAreaHint =>
-      'Haz check-in, planifica un entrenamiento o añade un spot para empezar';
+      'Haz check-in, planifica una sesión o añade un spot para empezar';
 
   @override
   String get communityStreamFilterAll => 'Todo';
@@ -1167,7 +1167,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String communityStreamPlanningToTrain(String name) {
-    return '$name planea entrenar en este spot';
+    return '$name planea una sesión en este spot';
   }
 
   @override
@@ -1669,7 +1669,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String spotTrainingPlanTooltipPrivate(String timeRange) {
-    return 'Planeas una sesión aquí $timeRange — solo tú ves este plan';
+    return 'Planeas una sesión aquí $timeRange — solo tú ves esta sesión';
   }
 
   @override
@@ -1679,7 +1679,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String spotTrainingPlanTooltipPrivateUntil(String untilTime) {
-    return 'Planeas una sesión aquí hasta $untilTime — solo tú ves este plan';
+    return 'Planeas una sesión aquí hasta $untilTime — solo tú ves esta sesión';
   }
 
   @override
@@ -2367,14 +2367,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get spotDetailCommunityPlanningToTrain => 'Sesiones planificadas';
 
   @override
-  String get spotDetailCommunityNobodyPlanningShort => 'Aún no hay planes.';
+  String get spotDetailCommunityNobodyPlanningShort =>
+      'Aún no hay sesiones planificadas.';
 
   @override
   String get spotDetailCommunitySignInToPlanButton =>
-      'Inicia sesión para planear';
+      'Inicia sesión para planear una sesión';
 
   @override
-  String get spotDetailCommunityEditTrainingPlanButton => 'Editar plan';
+  String get spotDetailCommunityEditTrainingPlanButton => 'Editar sesión';
 
   @override
   String get spotCheckInDialogTitle => 'Check-in';
@@ -2456,7 +2457,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get spotCheckInDialogTrainingPlanConversionBanner =>
-      'Al guardar, tu plan se sustituye por este check-in. Tu hora de fin planificada aparece abajo.';
+      'Al guardar, tu sesión planificada se sustituye por este check-in. Tu hora de fin planificada aparece abajo.';
 
   @override
   String get spotDetailSessionNoteLabel => 'Nota (opcional)';
@@ -2468,7 +2469,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get spotTrainingPlanDialogTitle => 'Planear una sesión aquí';
 
   @override
-  String get spotTrainingPlanDialogTitleEdit => 'Editar plan';
+  String get spotTrainingPlanDialogTitleEdit => 'Editar sesión';
 
   @override
   String get spotTrainingPlanDialogCheckInCtaBody =>
@@ -2483,14 +2484,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get spotTrainingPlanDialogBody =>
-      'Define cuándo empiezas y terminas. Los planes públicos aparecen en la comunidad de este spot junto a otras personas que comparten.';
+      'Define cuándo empiezas y terminas. Las sesiones públicas aparecen en la comunidad de este spot junto a otras personas que comparten.';
 
   @override
   String get spotTrainingPlanDialogSharePublic => 'Compartir en público';
 
   @override
   String get spotTrainingPlanDialogShareSub =>
-      'Desactívalo para que solo tú veas el plan.';
+      'Desactívalo para que solo tú veas esta sesión.';
 
   @override
   String get spotTrainingPlanDialogStartLabel => 'Empieza';
@@ -2505,14 +2506,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get spotTrainingPlanDialogCancel => 'Cancelar';
 
   @override
-  String get spotTrainingPlanDialogDelete => 'Quitar plan';
+  String get spotTrainingPlanDialogDelete => 'Quitar sesión';
 
   @override
-  String get spotTrainingPlanDialogDeleteTitle => '¿Quitar este plan?';
+  String get spotTrainingPlanDialogDeleteTitle => '¿Quitar esta sesión?';
 
   @override
   String get spotTrainingPlanDialogDeleteBody =>
-      'Puedes crear un plan nuevo cuando quieras.';
+      'Puedes planear una sesión nueva cuando quieras.';
 
   @override
   String get spotTrainingPlanValidationOrder =>
@@ -2557,20 +2558,20 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get spotTrainingPlanListDialogSubtitle =>
-      'Personas con plan público en este spot.';
+      'Personas con sesión pública en este spot.';
 
   @override
   String get spotTrainingPlanListDialogClose => 'Cerrar';
 
   @override
-  String get spotTrainingPlanListEmpty => 'Aún no hay planes públicos.';
+  String get spotTrainingPlanListEmpty => 'Aún no hay sesiones públicas.';
 
   @override
   String get spotTrainingPlanListLoadError =>
       'No se pudieron cargar las sesiones planificadas';
 
   @override
-  String get spotTrainingPlanEditMine => 'Editar plan';
+  String get spotTrainingPlanEditMine => 'Editar sesión';
 
   @override
   String get spotTrainingPlanJoin => 'Unirse';
@@ -3805,7 +3806,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get myCheckInsLoadMore => 'Cargar más';
 
   @override
-  String get myCheckInsEmptyTitle => 'Aún no hay visitas ni planes';
+  String get myCheckInsEmptyTitle =>
+      'Aún no hay check-ins ni sesiones planificadas';
 
   @override
   String get myCheckInsEmptyDescription =>

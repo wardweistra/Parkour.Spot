@@ -64,8 +64,8 @@ describe("localizedNotificationCopy", () => {
       templateArgs: {actorName: "Alex", spotName: "Wall"},
       locale: "en",
     })).toEqual({
-      title: "Alex planned training at Wall",
-      body: "They shared a public training window near one of your saved locations.",
+      title: "Alex planned a session at Wall",
+      body: "They shared a public planned session near one of your saved locations.",
     });
   });
 

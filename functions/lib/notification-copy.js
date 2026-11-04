@@ -29,8 +29,8 @@ const STRINGS = {
       body: "They’ve just checked in to this spot.",
     },
     nearby_training_plan: {
-      title: "{actorName} planned training at {spotName}",
-      body: "They shared a public training window near one of your saved locations.",
+      title: "{actorName} planned a session at {spotName}",
+      body: "They shared a public planned session near one of your saved locations.",
     },
     nearby_new_event: {
       title: "New event nearby: {eventName}",
@@ -54,8 +54,8 @@ const STRINGS = {
       body: "Gerade an diesem Spot eingecheckt.",
     },
     nearby_training_plan: {
-      title: "{actorName} hat Training bei {spotName} geplant",
-      body: "Öffentliches Trainingsfenster in der Nähe eines deiner gespeicherten Orte.",
+      title: "{actorName} hat eine Session bei {spotName} geplant",
+      body: "Öffentliche geplante Session in der Nähe eines deiner gespeicherten Orte.",
     },
     nearby_new_event: {
       title: "Neues Event in der Nähe: {eventName}",
@@ -79,8 +79,8 @@ const STRINGS = {
       body: "Net ingecheckt bij deze spot.",
     },
     nearby_training_plan: {
-      title: "{actorName} plant training bij {spotName}",
-      body: "Ze deelden een openbaar trainingsvenster nabij een van je opgeslagen locaties.",
+      title: "{actorName} plant een sessie bij {spotName}",
+      body: "Ze deelden een openbare geplande sessie nabij een van je opgeslagen locaties.",
     },
     nearby_new_event: {
       title: "Nieuw evenement in de buurt: {eventName}",
@@ -104,8 +104,8 @@ const STRINGS = {
       body: "Vient de s’enregistrer sur ce spot.",
     },
     nearby_training_plan: {
-      title: "{actorName} a planifié un entraînement à {spotName}",
-      body: "Une fenêtre d’entraînement publique a été partagée près de l’un de vos lieux enregistrés.",
+      title: "{actorName} a planifié une séance à {spotName}",
+      body: "Une séance planifiée publique a été partagée près de l’un de vos lieux enregistrés.",
     },
     nearby_new_event: {
       title: "Nouvel événement à proximité : {eventName}",
@@ -129,8 +129,8 @@ const STRINGS = {
       body: "Acaba de hacer check-in en este spot.",
     },
     nearby_training_plan: {
-      title: "{actorName} ha planeado entrenar en {spotName}",
-      body: "Han compartido una ventana de entreno pública cerca de uno de tus lugares guardados.",
+      title: "{actorName} ha planeado una sesión en {spotName}",
+      body: "Han compartido una sesión planificada pública cerca de uno de tus lugares guardados.",
     },
     nearby_new_event: {
       title: "Evento nuevo cerca: {eventName}",
@@ -154,8 +154,8 @@ const STRINGS = {
       body: "Acabou de fazer check-in neste spot.",
     },
     nearby_training_plan: {
-      title: "{actorName} planeou treino em {spotName}",
-      body: "Partilharam uma janela de treino pública perto de uma das suas localizações guardadas.",
+      title: "{actorName} planeou uma sessão em {spotName}",
+      body: "Partilharam uma sessão planeada pública perto de uma das suas localizações guardadas.",
     },
     nearby_new_event: {
       title: "Novo evento nas proximidades: {eventName}",
@@ -163,7 +163,7 @@ const STRINGS = {
     },
     training_plan_check_in_reminder: {
       title: "Hora de fazer check-in em {spotName}",
-      body: "O teu treino planeado já começou. Toca para fazer check-in.",
+      body: "A tua sessão planeada já começou. Toca para fazer check-in.",
     },
   },
 };

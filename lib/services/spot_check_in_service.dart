@@ -108,18 +108,18 @@ class SpotCheckInService extends ChangeNotifier {
     if (consumeId != null) {
       final planSnap = await _spotTrainingPlansCol.doc(consumeId).get();
       if (!planSnap.exists) {
-        _error = 'Training plan not found';
+        _error = 'Planned session not found';
         notifyListeners();
         return false;
       }
       final plan = SpotTrainingPlan.fromFirestore(planSnap);
       if (plan.userId != userId || plan.spotId != spotId) {
-        _error = 'Invalid training plan';
+        _error = 'Invalid planned session';
         notifyListeners();
         return false;
       }
       if (!trainingPlanEligibleForLinkedCheckIn(plan, DateTime.now())) {
-        _error = 'Training plan is no longer valid for check-in';
+        _error = 'This planned session is no longer valid for check-in';
         notifyListeners();
         return false;
       }
@@ -215,7 +215,7 @@ class SpotCheckInService extends ChangeNotifier {
     }
     final dur = endUtc.difference(startUtc);
     if (dur > SpotCheckIn.maxSessionDuration) {
-      _error = 'Session cannot be longer than 12 hours';
+      _error = 'Check-in cannot be longer than 12 hours';
       notifyListeners();
       return false;
     }

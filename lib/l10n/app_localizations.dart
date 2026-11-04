@@ -1795,7 +1795,7 @@ abstract class AppLocalizations {
   /// Explore activities stream: empty state hint
   ///
   /// In en, this message translates to:
-  /// **'Check in, plan a training session or add a spot to get things going'**
+  /// **'Check in, plan a session or add a spot to get things going'**
   String get exploreNoCommunityAreaHint;
 
   /// Explore activities kind lens: show every activity type
@@ -1939,7 +1939,7 @@ abstract class AppLocalizations {
   /// Explore community stream: someone has a public training plan at a spot
   ///
   /// In en, this message translates to:
-  /// **'{name} is planning to train at this spot'**
+  /// **'{name} is planning a session at this spot'**
   String communityStreamPlanningToTrain(String name);
 
   /// Explore community stream: event whose time window includes now
@@ -2737,7 +2737,7 @@ abstract class AppLocalizations {
   /// Avatar tooltip: private planned session
   ///
   /// In en, this message translates to:
-  /// **'You plan a session here {timeRange} — only you can see this plan'**
+  /// **'You plan a session here {timeRange} — only you can see this session'**
   String spotTrainingPlanTooltipPrivate(String timeRange);
 
   /// Avatar tooltip: public planned session during its scheduled window (start time has passed)
@@ -2749,7 +2749,7 @@ abstract class AppLocalizations {
   /// Avatar tooltip: private planned session during its scheduled window
   ///
   /// In en, this message translates to:
-  /// **'You plan a session here until {untilTime} — only you can see this plan'**
+  /// **'You plan a session here until {untilTime} — only you can see this session'**
   String spotTrainingPlanTooltipPrivateUntil(String untilTime);
 
   /// No description provided for @spotDetailRouteErrorLoading.
@@ -3816,19 +3816,19 @@ abstract class AppLocalizations {
   /// No description provided for @spotDetailCommunityNobodyPlanningShort.
   ///
   /// In en, this message translates to:
-  /// **'No upcoming plans yet.'**
+  /// **'No planned sessions yet.'**
   String get spotDetailCommunityNobodyPlanningShort;
 
   /// No description provided for @spotDetailCommunitySignInToPlanButton.
   ///
   /// In en, this message translates to:
-  /// **'Sign in to plan a visit'**
+  /// **'Sign in to plan a session'**
   String get spotDetailCommunitySignInToPlanButton;
 
   /// No description provided for @spotDetailCommunityEditTrainingPlanButton.
   ///
   /// In en, this message translates to:
-  /// **'Edit plan'**
+  /// **'Edit session'**
   String get spotDetailCommunityEditTrainingPlanButton;
 
   /// Title for new check-in dialog on spot detail
@@ -3972,7 +3972,7 @@ abstract class AppLocalizations {
   /// Shown when checking in from an eligible training plan; explains the plan will be removed
   ///
   /// In en, this message translates to:
-  /// **'Saving replaces your plan with this check-in. Your planned end time is pre-filled below.'**
+  /// **'Saving replaces your planned session with this check-in. Your planned end time is pre-filled below.'**
   String get spotCheckInDialogTrainingPlanConversionBanner;
 
   /// Shared label for optional note field on check-in and training-plan dialogs
@@ -3996,7 +3996,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotTrainingPlanDialogTitleEdit.
   ///
   /// In en, this message translates to:
-  /// **'Edit plan'**
+  /// **'Edit session'**
   String get spotTrainingPlanDialogTitleEdit;
 
   /// Prompt in edit planned-session dialog to switch to a live check-in
@@ -4020,7 +4020,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotTrainingPlanDialogBody.
   ///
   /// In en, this message translates to:
-  /// **'Set when you plan to start and finish. Public plans appear on this spot’s Community strip alongside other people who’ve shared.'**
+  /// **'Set when you plan to start and finish. Public sessions appear on this spot’s Community strip alongside other people who’ve shared.'**
   String get spotTrainingPlanDialogBody;
 
   /// No description provided for @spotTrainingPlanDialogSharePublic.
@@ -4032,7 +4032,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotTrainingPlanDialogShareSub.
   ///
   /// In en, this message translates to:
-  /// **'Turn off to keep this plan visible only to you.'**
+  /// **'Turn off to keep this session visible only to you.'**
   String get spotTrainingPlanDialogShareSub;
 
   /// No description provided for @spotTrainingPlanDialogStartLabel.
@@ -4062,19 +4062,19 @@ abstract class AppLocalizations {
   /// No description provided for @spotTrainingPlanDialogDelete.
   ///
   /// In en, this message translates to:
-  /// **'Remove plan'**
+  /// **'Remove session'**
   String get spotTrainingPlanDialogDelete;
 
   /// No description provided for @spotTrainingPlanDialogDeleteTitle.
   ///
   /// In en, this message translates to:
-  /// **'Remove this plan?'**
+  /// **'Remove this session?'**
   String get spotTrainingPlanDialogDeleteTitle;
 
   /// No description provided for @spotTrainingPlanDialogDeleteBody.
   ///
   /// In en, this message translates to:
-  /// **'You can create a new plan anytime.'**
+  /// **'You can plan a new session anytime.'**
   String get spotTrainingPlanDialogDeleteBody;
 
   /// No description provided for @spotTrainingPlanValidationOrder.
@@ -4086,13 +4086,13 @@ abstract class AppLocalizations {
   /// No description provided for @spotTrainingPlanValidationMinDuration.
   ///
   /// In en, this message translates to:
-  /// **'Window must be at least 15 minutes.'**
+  /// **'Session must be at least 15 minutes.'**
   String get spotTrainingPlanValidationMinDuration;
 
   /// No description provided for @spotTrainingPlanValidationMaxDuration.
   ///
   /// In en, this message translates to:
-  /// **'Window cannot be longer than 12 hours.'**
+  /// **'Session cannot be longer than 12 hours.'**
   String get spotTrainingPlanValidationMaxDuration;
 
   /// No description provided for @spotTrainingPlanValidationStartTooFar.
@@ -4152,7 +4152,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotTrainingPlanListDialogSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'People who shared a public plan for this spot.'**
+  /// **'People who shared a public session for this spot.'**
   String get spotTrainingPlanListDialogSubtitle;
 
   /// No description provided for @spotTrainingPlanListDialogClose.
@@ -4164,7 +4164,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotTrainingPlanListEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No public plans yet.'**
+  /// **'No public sessions yet.'**
   String get spotTrainingPlanListEmpty;
 
   /// No description provided for @spotTrainingPlanListLoadError.
@@ -4176,7 +4176,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotTrainingPlanEditMine.
   ///
   /// In en, this message translates to:
-  /// **'Edit plan'**
+  /// **'Edit session'**
   String get spotTrainingPlanEditMine;
 
   /// No description provided for @spotTrainingPlanJoin.
@@ -6186,7 +6186,7 @@ abstract class AppLocalizations {
   /// Empty state title on My sessions
   ///
   /// In en, this message translates to:
-  /// **'No visits or plans yet'**
+  /// **'No check-ins or planned sessions yet'**
   String get myCheckInsEmptyTitle;
 
   /// Empty state helper text on My sessions

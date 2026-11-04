@@ -131,7 +131,7 @@ class SpotTrainingPlanService extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _error = 'Could not save plan: $e';
+      _error = 'Could not save planned session: $e';
       debugPrint('upsertPlan error: $e');
       _isLoading = false;
       notifyListeners();
@@ -144,9 +144,9 @@ class SpotTrainingPlanService extends ChangeNotifier {
       case 'order':
         return 'End time must be after start time';
       case 'minDuration':
-        return 'Window must be at least 15 minutes';
+        return 'Session must be at least 15 minutes';
       case 'maxDuration':
-        return 'Window cannot be longer than 12 hours';
+        return 'Session cannot be longer than 12 hours';
       case 'startTooFar':
         return 'Start time cannot be more than 30 days away';
       case 'endNotFuture':
@@ -223,7 +223,7 @@ class SpotTrainingPlanService extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _error = 'Could not remove plan: $e';
+      _error = 'Could not remove planned session: $e';
       debugPrint('deletePlan error: $e');
       notifyListeners();
       return false;

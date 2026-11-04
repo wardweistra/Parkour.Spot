@@ -113,7 +113,7 @@ void main() {
     expect(find.byKey(CommunityActivityKindFilter.chipKeyAll), findsOneWidget);
     expect(find.textContaining('checked in'), findsOneWidget);
     expect(find.textContaining('added this new spot'), findsOneWidget);
-    expect(find.textContaining('planning to train'), findsOneWidget);
+    expect(find.textContaining('planning a session'), findsOneWidget);
     expect(find.text('Jam past-e'), findsOneWidget);
     expect(find.text('Jam up-e'), findsOneWidget);
   });
@@ -139,7 +139,7 @@ void main() {
 
     expect(find.textContaining('checked in'), findsNothing);
     expect(find.textContaining('added this new spot'), findsNothing);
-    expect(find.textContaining('planning to train'), findsNothing);
+    expect(find.textContaining('planning a session'), findsNothing);
     expect(find.text('Jam past-e'), findsOneWidget);
     expect(find.text('Jam up-e'), findsOneWidget);
   });
@@ -152,7 +152,7 @@ void main() {
     );
 
     expect(find.textContaining('checked in'), findsOneWidget);
-    expect(find.textContaining('planning to train'), findsOneWidget);
+    expect(find.textContaining('planning a session'), findsOneWidget);
     expect(find.textContaining('added this new spot'), findsNothing);
     expect(find.text('Jam past-e'), findsNothing);
     expect(find.text('Jam up-e'), findsNothing);

@@ -1057,7 +1057,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get exploreNoCommunityAreaHint =>
-      'Checke ein, plane ein Training oder füge einen Spot hinzu, um loszulegen';
+      'Checke ein, plane eine Session oder füge einen Spot hinzu, um loszulegen';
 
   @override
   String get communityStreamFilterAll => 'Alle';
@@ -1169,7 +1169,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String communityStreamPlanningToTrain(String name) {
-    return '$name plant, an diesem Spot zu trainieren';
+    return '$name plant eine Session an diesem Spot';
   }
 
   @override
@@ -1673,7 +1673,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String spotTrainingPlanTooltipPrivate(String timeRange) {
-    return 'Du planst hier eine Session $timeRange — nur du siehst diesen Plan';
+    return 'Du planst hier eine Session $timeRange — nur du siehst diese Session';
   }
 
   @override
@@ -1683,7 +1683,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String spotTrainingPlanTooltipPrivateUntil(String untilTime) {
-    return 'Du planst hier eine Session bis $untilTime — nur du siehst diesen Plan';
+    return 'Du planst hier eine Session bis $untilTime — nur du siehst diese Session';
   }
 
   @override
@@ -2375,14 +2375,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get spotDetailCommunityPlanningToTrain => 'Geplante Sessions';
 
   @override
-  String get spotDetailCommunityNobodyPlanningShort => 'Noch keine Pläne.';
+  String get spotDetailCommunityNobodyPlanningShort =>
+      'Noch keine geplanten Sessions.';
 
   @override
   String get spotDetailCommunitySignInToPlanButton =>
-      'Anmelden, um einen Besuch zu planen';
+      'Anmelden, um eine Session zu planen';
 
   @override
-  String get spotDetailCommunityEditTrainingPlanButton => 'Plan bearbeiten';
+  String get spotDetailCommunityEditTrainingPlanButton => 'Session bearbeiten';
 
   @override
   String get spotCheckInDialogTitle => 'Einchecken';
@@ -2465,7 +2466,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get spotCheckInDialogTrainingPlanConversionBanner =>
-      'Beim Speichern wird dein Plan durch diesen Check-in ersetzt. Dein geplantes Ende ist unten vorausgefüllt.';
+      'Beim Speichern wird deine geplante Session durch diesen Check-in ersetzt. Dein geplantes Ende ist unten vorausgefüllt.';
 
   @override
   String get spotDetailSessionNoteLabel => 'Notiz (optional)';
@@ -2477,7 +2478,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get spotTrainingPlanDialogTitle => 'Session hier planen';
 
   @override
-  String get spotTrainingPlanDialogTitleEdit => 'Plan bearbeiten';
+  String get spotTrainingPlanDialogTitleEdit => 'Session bearbeiten';
 
   @override
   String get spotTrainingPlanDialogCheckInCtaBody =>
@@ -2492,14 +2493,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get spotTrainingPlanDialogBody =>
-      'Lege Start und Ende deines Trainings fest. Öffentliche Pläne erscheinen auf dem Community-Bereich dieses Spots neben anderen, die geteilt haben.';
+      'Lege Start und Ende deiner Session fest. Öffentliche Sessions erscheinen auf dem Community-Bereich dieses Spots neben anderen, die geteilt haben.';
 
   @override
   String get spotTrainingPlanDialogSharePublic => 'Öffentlich teilen';
 
   @override
   String get spotTrainingPlanDialogShareSub =>
-      'Ausschalten, damit nur du den Plan siehst.';
+      'Ausschalten, damit nur du diese Session siehst.';
 
   @override
   String get spotTrainingPlanDialogStartLabel => 'Beginn';
@@ -2514,14 +2515,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get spotTrainingPlanDialogCancel => 'Abbrechen';
 
   @override
-  String get spotTrainingPlanDialogDelete => 'Plan entfernen';
+  String get spotTrainingPlanDialogDelete => 'Session entfernen';
 
   @override
-  String get spotTrainingPlanDialogDeleteTitle => 'Diesen Plan entfernen?';
+  String get spotTrainingPlanDialogDeleteTitle => 'Diese Session entfernen?';
 
   @override
   String get spotTrainingPlanDialogDeleteBody =>
-      'Du kannst jederzeit einen neuen Plan anlegen.';
+      'Du kannst jederzeit eine neue Session planen.';
 
   @override
   String get spotTrainingPlanValidationOrder =>
@@ -2566,20 +2567,20 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get spotTrainingPlanListDialogSubtitle =>
-      'Personen mit öffentlichem Plan für diesen Spot.';
+      'Personen mit öffentlicher Session für diesen Spot.';
 
   @override
   String get spotTrainingPlanListDialogClose => 'Schließen';
 
   @override
-  String get spotTrainingPlanListEmpty => 'Noch keine öffentlichen Pläne.';
+  String get spotTrainingPlanListEmpty => 'Noch keine öffentlichen Sessions.';
 
   @override
   String get spotTrainingPlanListLoadError =>
       'Geplante Sessions konnten nicht geladen werden';
 
   @override
-  String get spotTrainingPlanEditMine => 'Plan bearbeiten';
+  String get spotTrainingPlanEditMine => 'Session bearbeiten';
 
   @override
   String get spotTrainingPlanJoin => 'Mitmachen';
@@ -3833,7 +3834,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get myCheckInsLoadMore => 'Mehr laden';
 
   @override
-  String get myCheckInsEmptyTitle => 'Noch keine Besuche oder Pläne';
+  String get myCheckInsEmptyTitle =>
+      'Noch keine Check-ins oder geplanten Sessions';
 
   @override
   String get myCheckInsEmptyDescription =>

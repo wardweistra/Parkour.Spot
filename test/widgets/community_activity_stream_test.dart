@@ -157,7 +157,7 @@ void main() {
     final spotAdded = find.textContaining('has added this new spot');
     final photoAdded = find.textContaining('2 new photos');
     final checkedIn = find.textContaining('has checked in to this spot');
-    final planning = find.textContaining('is planning to train at this spot');
+    final planning = find.textContaining('is planning a session at this spot');
     final eventUpcoming = find.text('This event is coming up');
 
     expect(spotAdded, findsOneWidget);
@@ -727,7 +727,7 @@ void main() {
 
     final soon = find.text('Jam soon');
     final later = find.text('Jam later');
-    final plan = find.textContaining('is planning to train');
+    final plan = find.textContaining('is planning a session');
     expect(_topOf(tester, soon), lessThan(_topOf(tester, plan)));
     expect(_topOf(tester, plan), lessThan(_topOf(tester, later)));
   });
