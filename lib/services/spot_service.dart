@@ -2882,6 +2882,7 @@ class SpotService extends ChangeNotifier {
   Future<Map<String, dynamic>> findDuplicateSpots({
     required String sourceId,
     int maxDistanceMeters = 50,
+    bool includeWithinSourceClusters = false,
   }) async {
     try {
       _isLoading = true;
@@ -2897,6 +2898,7 @@ class SpotService extends ChangeNotifier {
       final result = await callable.call({
         'sourceId': sourceId,
         'maxDistanceMeters': maxDistanceMeters,
+        'includeWithinSourceClusters': includeWithinSourceClusters,
       });
 
       final responseData = result.data as Map<String, dynamic>?;
