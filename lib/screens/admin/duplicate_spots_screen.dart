@@ -19,6 +19,7 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
   bool _isRunning = false;
   String? _error;
   bool _hideCheckedResults = true; // Hide checked results by default
+  bool _includeWithinSourceClusters = false;
 
   @override
   void initState() {
@@ -53,6 +54,7 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
       final spotService = Provider.of<SpotService>(context, listen: false);
       final result = await spotService.findDuplicateSpots(
         sourceId: _selectedSourceId!,
+        includeWithinSourceClusters: _includeWithinSourceClusters,
       );
 
       if (mounted) {
@@ -136,7 +138,7 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Select a source from the dropdown below and click "Find Duplicates" to scan for potential duplicate spots within 50 meters of each other. The system will check spots from the selected source against all other spots in the database. Review the results to identify and merge duplicate entries.',
+                  'Select a source from the dropdown below and click "Find duplicates" to scan for nearby spots within 50 meters. By default, spots from the selected source are compared against spots from other sources. Enable "Also detect clusters within the selected source" when a feed lists many challenges at the same location (for example challenge feeds). Review the results to merge duplicates or combine challenges into one native spot.',
                   style: TextStyle(
                     color: colorScheme.onPrimaryContainer,
                     fontSize: 12,
@@ -189,7 +191,29 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
               );
             },
           ),
-          const SizedBox(height: 16),
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: const Text(
+              'Also detect clusters within the selected source',
+            ),
+            subtitle: Text(
+              'Find nearby spots from the same feed, not just other sources',
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            value: _includeWithinSourceClusters,
+            onChanged: _isRunning
+                ? null
+                : (value) {
+                    setState(() {
+                      _includeWithinSourceClusters = value ?? false;
+                    });
+                  },
+          ),
+          const SizedBox(height: 8),
           ElevatedButton.icon(
             onPressed: (_isRunning || _selectedSourceId == null)
                 ? null
@@ -202,7 +226,7 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
                   )
                 : const Icon(Icons.search),
             label: Text(
-              _isRunning ? 'Finding Duplicates...' : 'Find Duplicates',
+              _isRunning ? 'Finding duplicates...' : 'Find duplicates',
             ),
           ),
           const SizedBox(height: 16),
@@ -389,6 +413,8 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
             final spotsChecked = stats['spotsChecked'] as int? ?? 0;
             final sourceId = data['sourceId'] as String? ?? 'Unknown';
             final sourceName = data['sourceName'] as String? ?? sourceId;
+            final includeWithinSource =
+                data['includeWithinSourceClusters'] as bool? ?? false;
             final createdAt = data['createdAt'] as Timestamp?;
             final isChecked = data['isChecked'] as bool? ?? false;
 
@@ -426,7 +452,8 @@ class _DuplicateSpotsScreenState extends State<DuplicateSpotsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Found $pairsFound pair${pairsFound == 1 ? '' : 's'} (checked $spotsChecked spots)',
+                      'Found $pairsFound pair${pairsFound == 1 ? '' : 's'} (checked $spotsChecked spots)'
+                      '${includeWithinSource ? ' · includes within-source clusters' : ''}',
                     ),
                     if (createdAt != null)
                       Text(

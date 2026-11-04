@@ -11478,13 +11478,21 @@ exports.findDuplicateSpots = onCall(
     async (request) => {
       try {
         await ensureModerator(request);
-        const {sourceId, maxDistanceMeters = 50, maxPairs = 1000} = request.data || {};
+        const {
+          sourceId,
+          maxDistanceMeters = 50,
+          maxPairs = 1000,
+          includeWithinSourceClusters = false,
+        } = request.data || {};
 
         if (!sourceId) {
           throw new Error("sourceId is required");
         }
 
-        console.log(`Finding potential duplicate spots for source: ${sourceId} (max distance: ${maxDistanceMeters}m)`);
+        console.log(
+            `Finding potential duplicate spots for source: ${sourceId} ` +
+            `(max distance: ${maxDistanceMeters}m, within-source clusters: ${includeWithinSourceClusters})`,
+        );
 
         // Get the source name
         let sourceName = sourceId;
@@ -11508,6 +11516,7 @@ exports.findDuplicateSpots = onCall(
         console.log(`Found ${sourceSpotsSnapshot.size} spots from source ${sourceId}`);
 
         const duplicatePairs = [];
+        const seenPairKeys = new Set();
         let spotsChecked = 0;
         let spotsSkipped = 0;
 
@@ -11586,8 +11595,13 @@ exports.findDuplicateSpots = onCall(
               continue;
             }
 
-            // Skip if from the same source (we want duplicates from OTHER sources)
-            if (candidate.spotSource === sourceId) {
+            const candidateFromSameSource = candidate.spotSource === sourceId;
+            if (candidateFromSameSource && !includeWithinSourceClusters) {
+              continue;
+            }
+
+            const pairKey = [sourceSpotDoc.id, candidate.id].sort().join("|");
+            if (seenPairKeys.has(pairKey)) {
               continue;
             }
 
@@ -11600,17 +11614,18 @@ exports.findDuplicateSpots = onCall(
             );
 
             if (distance <= maxDistanceMeters) {
+              seenPairKeys.add(pairKey);
               duplicatePairs.push({
                 spot1: {
                   id: sourceSpotDoc.id,
                   name: sourceSpot.name || "",
                   latitude: sourceLat,
                   longitude: sourceLon,
-                  address: sourceSpot.address,
-                  city: sourceSpot.city,
-                  countryCode: sourceSpot.countryCode,
-                  spotSource: sourceSpot.spotSource,
-                  spotSourceName: sourceSpot.spotSourceName,
+                  address: sourceSpot.address ?? null,
+                  city: sourceSpot.city ?? null,
+                  countryCode: sourceSpot.countryCode ?? null,
+                  spotSource: sourceSpot.spotSource ?? null,
+                  spotSourceName: sourceSpot.spotSourceName ?? null,
                   hasImages: (sourceSpot.imageUrls || []).length > 0,
                 },
                 spot2: {
@@ -11618,11 +11633,11 @@ exports.findDuplicateSpots = onCall(
                   name: candidate.name || "",
                   latitude: candidateLat,
                   longitude: candidateLon,
-                  address: candidate.address,
-                  city: candidate.city,
-                  countryCode: candidate.countryCode,
-                  spotSource: candidate.spotSource,
-                  spotSourceName: candidate.spotSourceName,
+                  address: candidate.address ?? null,
+                  city: candidate.city ?? null,
+                  countryCode: candidate.countryCode ?? null,
+                  spotSource: candidate.spotSource ?? null,
+                  spotSourceName: candidate.spotSourceName ?? null,
                   hasImages: (candidate.imageUrls || []).length > 0,
                 },
                 distanceMeters: Math.round(distance),
@@ -11653,6 +11668,7 @@ exports.findDuplicateSpots = onCall(
           runId: runId,
           sourceId: sourceId,
           sourceName: sourceName,
+          includeWithinSourceClusters: includeWithinSourceClusters,
           createdAt: FieldValue.serverTimestamp(),
           stats: {
             spotsChecked: spotsChecked,

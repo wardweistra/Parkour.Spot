@@ -112,6 +112,8 @@ class _DuplicateSpotsResultsScreenState
           final pairsFound = firestoreInt(stats['pairsFound']);
           final spotsChecked = firestoreInt(stats['spotsChecked']);
           final sourceName = data['sourceName'] as String? ?? 'Unknown';
+          final includeWithinSource =
+              data['includeWithinSourceClusters'] as bool? ?? false;
           final pairResolutions = firestoreMap(data['pairResolutions']);
           final firestoreCollapsedPairs = firestoreIntSet(
             data['collapsedPairs'] as List<dynamic>?,
@@ -122,6 +124,7 @@ class _DuplicateSpotsResultsScreenState
               sourceName: sourceName,
               pairsFound: pairsFound,
               spotsChecked: spotsChecked,
+              includeWithinSource: includeWithinSource,
             );
           }
 
@@ -130,6 +133,7 @@ class _DuplicateSpotsResultsScreenState
             sourceName: sourceName,
             pairsFound: pairsFound,
             spotsChecked: spotsChecked,
+            includeWithinSource: includeWithinSource,
             pairResolutions: pairResolutions,
             firestoreCollapsedPairs: firestoreCollapsedPairs,
           );
@@ -143,6 +147,7 @@ class _DuplicateSpotsResultsScreenState
     required String sourceName,
     required int pairsFound,
     required int spotsChecked,
+    required bool includeWithinSource,
     required Map<String, dynamic> pairResolutions,
     required Set<int> firestoreCollapsedPairs,
   }) {
@@ -186,6 +191,7 @@ class _DuplicateSpotsResultsScreenState
             sourceName: sourceName,
             pairsFound: pairsFound,
             spotsChecked: spotsChecked,
+            includeWithinSource: includeWithinSource,
           );
         }
 
@@ -320,6 +326,7 @@ class _DuplicateSpotsResultsScreenState
     required String sourceName,
     required int pairsFound,
     required int spotsChecked,
+    required bool includeWithinSource,
   }) {
     return ListView(
       padding: EdgeInsets.zero,
@@ -329,6 +336,7 @@ class _DuplicateSpotsResultsScreenState
           sourceName: sourceName,
           pairsFound: pairsFound,
           spotsChecked: spotsChecked,
+          includeWithinSource: includeWithinSource,
         ),
         _buildStatusMessage(
           icon: Icons.check_circle,
@@ -384,6 +392,7 @@ class _DuplicateSpotsResultsScreenState
     required String sourceName,
     required int pairsFound,
     required int spotsChecked,
+    required bool includeWithinSource,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
@@ -402,7 +411,8 @@ class _DuplicateSpotsResultsScreenState
                 Text(sourceName, style: const TextStyle(fontSize: 18)),
                 const SizedBox(height: 8),
                 Text(
-                  'Found $pairsFound potential duplicate pair${pairsFound == 1 ? '' : 's'} (checked $spotsChecked spots)',
+                  'Found $pairsFound potential duplicate pair${pairsFound == 1 ? '' : 's'} (checked $spotsChecked spots)'
+                  '${includeWithinSource ? ' · includes within-source clusters' : ''}',
                   style: TextStyle(
                     fontSize: 14,
                     color: colorScheme.onSurfaceVariant,
