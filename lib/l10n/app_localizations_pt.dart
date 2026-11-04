@@ -1252,6 +1252,28 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String communityStreamInMinutes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'em $count min',
+      one: 'em 1 min',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String communityStreamInHours(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'em $count horas',
+      one: 'em 1 hora',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get explorePwaBannerInstall => 'Instalar';
 
   @override
@@ -1873,6 +1895,50 @@ class AppLocalizationsPt extends AppLocalizations {
       locale: localeName,
       other: 'Há $count anos',
       one: 'Há 1 ano',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String spotDetailDateInDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'em $count dias',
+      one: 'em 1 dia',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String spotDetailDateInWeeks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'em $count semanas',
+      one: 'em 1 semana',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String spotDetailDateInMonths(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'em $count meses',
+      one: 'em 1 mês',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String spotDetailDateInYears(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'em $count anos',
+      one: 'em 1 ano',
     );
     return '$_temp0';
   }

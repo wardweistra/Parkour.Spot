@@ -2002,6 +2002,18 @@ abstract class AppLocalizations {
   /// **'{count, plural, one{1 hour ago} other{{count} hours ago}}'**
   String communityStreamHoursAgo(int count);
 
+  /// Explore community stream: relative time until an upcoming activity in minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{in 1 min} other{in {count} min}}'**
+  String communityStreamInMinutes(int count);
+
+  /// Explore community stream: relative time until an upcoming activity in hours
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{in 1 hour} other{in {count} hours}}'**
+  String communityStreamInHours(int count);
+
   /// Compact install button on explore PWA banner
   ///
   /// In en, this message translates to:
@@ -3016,6 +3028,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, one{1 year ago} other{{count} years ago}}'**
   String spotDetailDateYearsAgo(int count);
+
+  /// Relative future date in days
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{in 1 day} other{in {count} days}}'**
+  String spotDetailDateInDays(int count);
+
+  /// Relative future date in weeks
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{in 1 week} other{in {count} weeks}}'**
+  String spotDetailDateInWeeks(int count);
+
+  /// Relative future date in months
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{in 1 month} other{in {count} months}}'**
+  String spotDetailDateInMonths(int count);
+
+  /// Relative future date in years
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{in 1 year} other{in {count} years}}'**
+  String spotDetailDateInYears(int count);
 
   /// No description provided for @spotDetailCopySpotFailed.
   ///

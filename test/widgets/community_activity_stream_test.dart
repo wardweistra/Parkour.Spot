@@ -725,6 +725,10 @@ void main() {
     );
     await _pump(tester, feed);
 
+    expect(find.text('just now'), findsOneWidget);
+    expect(find.text('in 2 hours'), findsOneWidget);
+    expect(find.text('in 1 week'), findsOneWidget);
+
     final soon = find.text('Jam soon');
     final later = find.text('Jam later');
     final plan = find.textContaining('is planning a session');
@@ -815,6 +819,8 @@ void main() {
     expect(find.text('4 people attended'), findsOneWidget);
     expect(find.text('2 were interested'), findsOneWidget);
     expect(find.text('1 person is going'), findsOneWidget);
+    expect(find.text('2 days ago'), findsOneWidget);
+    expect(find.text('tomorrow'), findsOneWidget);
 
     final nowTop = _topOf(tester, nowDivider);
     expect(_topOf(tester, pastEvent), lessThan(nowTop));

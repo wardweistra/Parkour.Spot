@@ -1130,9 +1130,8 @@ class CommunityActivityCard extends StatelessWidget {
     CommunityActivityKind.eventEnded => actor,
   };
 
-  /// Trailing time for past kinds; training plans show their window inline.
-  String? _trailingTime(AppLocalizations l10n) {
-    if (item.kind == CommunityActivityKind.spotTrainingPlan) return null;
+  /// Trailing relative time (when the activity was posted / happened).
+  String _trailingTime(AppLocalizations l10n) {
     return communityStreamRelativeTime(item.occurredAt, l10n, now: now);
   }
 
@@ -1276,15 +1275,13 @@ class CommunityActivityCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (trailingTime != null) ...[
-                    const SizedBox(width: 8),
-                    Text(
-                      trailingTime,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: mutedColor,
-                      ),
+                  const SizedBox(width: 8),
+                  Text(
+                    trailingTime,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: mutedColor,
                     ),
-                  ],
+                  ),
                 ],
               ),
               if (images.isNotEmpty) ...[
@@ -1342,6 +1339,12 @@ class CommunityEventActivityCard extends StatelessWidget {
     return now.difference(pin.startAt) < const Duration(days: 1);
   }
 
+  /// Trailing relative time: past events from end, upcoming from start.
+  String _trailingTime(AppLocalizations l10n) {
+    final when = event.isPast ? event.occurredAt : event.pin.startAt;
+    return communityStreamRelativeTime(when, l10n, now: now);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -1359,6 +1362,7 @@ class CommunityEventActivityCard extends StatelessWidget {
     );
     final city = pin.city?.trim() ?? '';
     final isPast = event.isPast;
+    final trailingTime = _trailingTime(l10n);
     final headline = isPast
         ? l10n.communityStreamEventPast
         : _isHappeningNow
@@ -1487,6 +1491,13 @@ class CommunityEventActivityCard extends StatelessWidget {
                       ),
                     ],
                   ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                trailingTime,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: mutedColor,
                 ),
               ),
             ],

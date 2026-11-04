@@ -3,8 +3,11 @@ import 'package:intl/intl.dart';
 import '../l10n/app_localizations.dart';
 import 'relative_date_localization.dart';
 
-/// Relative "how long ago" label for the Explore community stream:
-/// "just now" / "12 min ago" / "3 hours ago", then day granularity.
+/// Relative time label for the Explore community stream.
+///
+/// Past: "just now" / "12 min ago" / "3 hours ago", then day granularity.
+/// Future: "in 12 min" / "in 3 hours", then day granularity ("tomorrow",
+/// "in 3 days", …).
 String communityStreamRelativeTime(
   DateTime whenUtc,
   AppLocalizations l10n, {
@@ -12,6 +15,23 @@ String communityStreamRelativeTime(
 }) {
   final ref = now ?? DateTime.now();
   final diff = ref.difference(whenUtc);
+  if (diff.isNegative) {
+    final ahead = whenUtc.difference(ref);
+    if (ahead.inMinutes < 1) {
+      return l10n.communityStreamJustNow;
+    }
+    if (ahead.inHours < 1) {
+      return l10n.communityStreamInMinutes(ahead.inMinutes);
+    }
+    if (ahead.inHours < 24) {
+      return l10n.communityStreamInHours(ahead.inHours);
+    }
+    return formatRelativeDateInDays(
+      whenUtc.toLocal(),
+      l10n,
+      now: ref.toLocal(),
+    );
+  }
   if (diff.inMinutes < 1) {
     return l10n.communityStreamJustNow;
   }

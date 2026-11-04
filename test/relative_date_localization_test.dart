@@ -46,5 +46,31 @@ void main() {
         '1 maand geleden',
       );
     });
+
+    test('returns localized future day phrases', () {
+      final en = AppLocalizationsEn();
+      final nl = AppLocalizationsNl();
+
+      expect(
+        formatRelativeDateInDays(DateTime(2026, 4, 11), en, now: now),
+        'tomorrow',
+      );
+      expect(
+        formatRelativeDateInDays(DateTime(2026, 4, 13), en, now: now),
+        'in 3 days',
+      );
+      expect(
+        formatRelativeDateInDays(DateTime(2026, 4, 24), en, now: now),
+        'in 2 weeks',
+      );
+      expect(
+        formatRelativeDateInDays(DateTime(2026, 4, 11), nl, now: now),
+        'morgen',
+      );
+      expect(
+        formatRelativeDateInDays(DateTime(2026, 4, 13), nl, now: now),
+        'over 3 dagen',
+      );
+    });
   });
 }
