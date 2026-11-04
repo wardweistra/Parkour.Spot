@@ -1,6 +1,3 @@
-const {describe, it} = require("node:test");
-const assert = require("node:assert/strict");
-
 /**
  * Mirrors pair deduplication in findDuplicateSpots (sorted spot id key).
  */
@@ -27,7 +24,7 @@ function shouldIncludeCandidate({
 
 describe("findDuplicateSpots candidate filtering", () => {
   it("skips same-source candidates when within-source clustering is disabled", () => {
-    assert.equal(
+    expect(
         shouldIncludeCandidate({
           candidateSpotSource: "feed-a",
           sourceId: "feed-a",
@@ -35,12 +32,11 @@ describe("findDuplicateSpots candidate filtering", () => {
           pairKey: "a|b",
           seenPairKeys: new Set(),
         }),
-        false,
-    );
+    ).toBe(false);
   });
 
   it("includes same-source candidates when within-source clustering is enabled", () => {
-    assert.equal(
+    expect(
         shouldIncludeCandidate({
           candidateSpotSource: "feed-a",
           sourceId: "feed-a",
@@ -48,13 +44,12 @@ describe("findDuplicateSpots candidate filtering", () => {
           pairKey: "a|b",
           seenPairKeys: new Set(),
         }),
-        true,
-    );
+    ).toBe(true);
   });
 
   it("deduplicates reversed spot pairs", () => {
     const seen = new Set(["a|b"]);
-    assert.equal(
+    expect(
         shouldIncludeCandidate({
           candidateSpotSource: "feed-a",
           sourceId: "feed-a",
@@ -62,7 +57,6 @@ describe("findDuplicateSpots candidate filtering", () => {
           pairKey: duplicatePairKey("b", "a"),
           seenPairKeys: seen,
         }),
-        false,
-    );
+    ).toBe(false);
   });
 });
