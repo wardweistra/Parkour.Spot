@@ -198,6 +198,14 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get spotListsHubRatedByYou => 'Valorados por ti';
+
+  @override
+  String publicProfileRatedByUser(String name) {
+    return 'Valorados por $name';
+  }
+
+  @override
   String get notificationsTitle => 'Notificaciones';
 
   @override
@@ -3505,6 +3513,30 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get spotTrackingAddedVisibilityUpdateFailed =>
       'No se pudo actualizar la visibilidad de la lista';
+
+  @override
+  String get spotTrackingBuiltInListVisibilityUpdateFailed =>
+      'No se pudo actualizar la visibilidad de la lista';
+
+  @override
+  String get spotTrackingRatedEmptyHint =>
+      'Los spots que valoras aparecen aquí';
+
+  @override
+  String get spotTrackingAddedListPublicVisibilityHelp =>
+      'Aparece en tu perfil. Los spots que añades siguen mostrándote como creador en cada spot y en el feed de actividad.';
+
+  @override
+  String get spotTrackingAddedListPrivateVisibilityHelp =>
+      'Solo tú ves esta lista. Los spots que añades siguen mostrándote como creador en cada spot y en el feed de actividad.';
+
+  @override
+  String get spotTrackingRatedListPublicVisibilityHelp =>
+      'Aparece en tu perfil. Tus valoraciones siguen visibles en cada spot y en el feed de actividad.';
+
+  @override
+  String get spotTrackingRatedListPrivateVisibilityHelp =>
+      'Solo tú ves esta lista. Tus valoraciones siguen visibles en cada spot y en el feed de actividad.';
 
   @override
   String get spotListSaveTooltipSaveList => 'Guardar lista';

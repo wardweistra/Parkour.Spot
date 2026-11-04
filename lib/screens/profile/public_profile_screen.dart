@@ -43,9 +43,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   _lastUserIdOrUsername; // Track the last userIdOrUsername used to create the future
   bool _isUploadingProfilePicture = false;
   final ProfilePictureService _profilePictureService = ProfilePictureService();
-  Future<(List<SpotList>, int)>? _publicListsFuture;
+  Future<(List<SpotList>, int, int)>? _publicListsFuture;
   String? _publicListsUserId;
   bool? _publicListsIncludeAdded;
+  bool? _publicListsIncludeRated;
 
   @override
   void didChangeDependencies() {
@@ -499,22 +500,27 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     );
   }
 
-  Future<(List<SpotList>, int)> _publicListsForUser(app_user.User user) {
+  Future<(List<SpotList>, int, int)> _publicListsForUser(app_user.User user) {
     if (_publicListsFuture != null &&
         _publicListsUserId == user.id &&
-        _publicListsIncludeAdded == user.isAddedSpotsListPublic) {
+        _publicListsIncludeAdded == user.isAddedSpotsListPublic &&
+        _publicListsIncludeRated == user.isRatedSpotsListPublic) {
       return _publicListsFuture!;
     }
     final spotListService = context.read<SpotListService>();
     final spotService = context.read<SpotService>();
     _publicListsUserId = user.id;
     _publicListsIncludeAdded = user.isAddedSpotsListPublic;
+    _publicListsIncludeRated = user.isRatedSpotsListPublic;
     _publicListsFuture = () async {
       final lists = await spotListService.getSpotListsByUser(user.id);
       final addedCount = user.isAddedSpotsListPublic
           ? await spotService.countSpotsAddedByUser(user.id)
           : 0;
-      return (lists, addedCount);
+      final ratedCount = user.isRatedSpotsListPublic
+          ? await spotService.countSpotsRatedByUser(user.id)
+          : 0;
+      return (lists, addedCount, ratedCount);
     }();
     return _publicListsFuture!;
   }
@@ -529,8 +535,15 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         ? (authService.userProfile?.isAddedSpotsListPublic ??
               user.isAddedSpotsListPublic)
         : user.isAddedSpotsListPublic;
-    final userForLists = user.copyWith(isAddedSpotsListPublic: isAddedPublic);
-    return FutureBuilder<(List<SpotList>, int)>(
+    final isRatedPublic = isOwnProfile
+        ? (authService.userProfile?.isRatedSpotsListPublic ??
+              user.isRatedSpotsListPublic)
+        : user.isRatedSpotsListPublic;
+    final userForLists = user.copyWith(
+      isAddedSpotsListPublic: isAddedPublic,
+      isRatedSpotsListPublic: isRatedPublic,
+    );
+    return FutureBuilder<(List<SpotList>, int, int)>(
       future: _publicListsForUser(userForLists),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -565,19 +578,32 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         final lists = (snapshot.data?.$1 ?? [])
             .where((list) => list.visibility == SpotListVisibility.public)
             .toList();
+        var builtInInsertIndex = 0;
+        final displayName =
+            user.displayName ??
+            user.username ??
+            _l10n.profileDefaultDisplayName;
         if (userForLists.isAddedSpotsListPublic) {
-          final displayName =
-              user.displayName ??
-              user.username ??
-              _l10n.profileDefaultDisplayName;
           lists.insert(
-            0,
+            builtInInsertIndex++,
             buildAddedByUserSpotList(
               userId: user.id,
               name: isOwnProfile
                   ? _l10n.spotListsHubAddedByYou
                   : _l10n.publicProfileAddedByUser(displayName),
               spotCount: snapshot.data?.$2 ?? 0,
+            ),
+          );
+        }
+        if (userForLists.isRatedSpotsListPublic) {
+          lists.insert(
+            builtInInsertIndex++,
+            buildRatedByUserSpotList(
+              userId: user.id,
+              name: isOwnProfile
+                  ? _l10n.spotListsHubRatedByYou
+                  : _l10n.publicProfileRatedByUser(displayName),
+              spotCount: snapshot.data?.$3 ?? 0,
             ),
           );
         }
@@ -622,6 +648,15 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                 ? user.username!.trim()
                                 : user.id;
                             context.push(addedByUserPublicListPath(segment));
+                            return;
+                          }
+                          if (isRatedByUserListId(list.id)) {
+                            final segment =
+                                (user.username != null &&
+                                    user.username!.trim().isNotEmpty)
+                                ? user.username!.trim()
+                                : user.id;
+                            context.push(ratedByUserPublicListPath(segment));
                             return;
                           }
                           final id = list.id;

@@ -807,6 +807,29 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// Show or hide the built-in rated-spots list on the public profile.
+  Future<bool> updateRatedSpotsListPublic(bool isPublic) async {
+    if (_auth.currentUser == null || _userProfile == null) {
+      debugPrint(
+        'Cannot update rated-spots list visibility: user not authenticated or profile not loaded',
+      );
+      return false;
+    }
+
+    try {
+      final userId = _auth.currentUser!.uid;
+      await _firestore.collection('users').doc(userId).update({
+        'isRatedSpotsListPublic': isPublic,
+      });
+      _userProfile = _userProfile!.copyWith(isRatedSpotsListPublic: isPublic);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error updating rated-spots list visibility: $e');
+      return false;
+    }
+  }
+
   /// Show or hide the built-in added-spots list on the public profile.
   Future<bool> updateAddedSpotsListPublic(bool isPublic) async {
     if (_auth.currentUser == null || _userProfile == null) {

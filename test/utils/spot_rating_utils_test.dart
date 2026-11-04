@@ -85,6 +85,31 @@ void main() {
     });
   });
 
+  group('uniqueRatingsBySpot', () {
+    test('keeps one rating per spot, newest first', () {
+      final list = uniqueRatingsBySpot([
+        rating(
+          spotId: 'spot-a',
+          value: 3,
+          updatedAt: DateTime.utc(2026, 1, 1),
+        ),
+        rating(
+          spotId: 'spot-b',
+          value: 5,
+          updatedAt: DateTime.utc(2026, 6, 1),
+        ),
+        rating(
+          spotId: 'spot-a',
+          value: 4,
+          updatedAt: DateTime.utc(2026, 3, 1),
+        ),
+      ]);
+      expect(list.map((r) => r.spotId).toList(), ['spot-b', 'spot-a']);
+      expect(list.first.rating, 5);
+      expect(list.last.rating, 4);
+    });
+  });
+
   group('uniqueRatingsByUser', () {
     test('keeps one rating per user, newest first', () {
       final list = uniqueRatingsByUser([

@@ -25,8 +25,10 @@ class SpotListsHubScreen extends StatefulWidget {
 class _SpotListsHubScreenState extends State<SpotListsHubScreen> {
   Future<List<SpotList>>? _ownedListsFuture;
   Future<int>? _addedCountFuture;
+  Future<int>? _ratedCountFuture;
   int _ownedListsLoadToken = 0;
   int _addedCountLoadToken = 0;
+  int _ratedCountLoadToken = 0;
   String? _loadedForUserId;
 
   AppLocalizations get _l10n => AppLocalizations.of(context)!;
@@ -38,9 +40,9 @@ class _SpotListsHubScreenState extends State<SpotListsHubScreen> {
     if (userId != null && userId != _loadedForUserId) {
       _loadedForUserId = userId;
       _ownedListsFuture = context.read<SpotListService>().getUserSpotLists();
-      _addedCountFuture = context.read<SpotService>().countSpotsAddedByUser(
-        userId,
-      );
+      final spotService = context.read<SpotService>();
+      _addedCountFuture = spotService.countSpotsAddedByUser(userId);
+      _ratedCountFuture = spotService.countSpotsRatedByUser(userId);
     }
   }
 
@@ -59,6 +61,16 @@ class _SpotListsHubScreenState extends State<SpotListsHubScreen> {
     setState(() {
       _addedCountLoadToken++;
       _addedCountFuture = spotService.countSpotsAddedByUser(userId);
+    });
+  }
+
+  void _reloadRatedCount() {
+    final userId = context.read<AuthService>().currentUser?.uid;
+    if (userId == null) return;
+    final spotService = context.read<SpotService>();
+    setState(() {
+      _ratedCountLoadToken++;
+      _ratedCountFuture = spotService.countSpotsRatedByUser(userId);
     });
   }
 
@@ -145,6 +157,24 @@ class _SpotListsHubScreenState extends State<SpotListsHubScreen> {
                         )
                         .then((_) {
                           if (mounted) _reloadAddedCount();
+                        }),
+                  );
+                },
+              ),
+              FutureBuilder<int>(
+                key: ValueKey('rated-count-$_ratedCountLoadToken'),
+                future: _ratedCountFuture,
+                builder: (context, snapshot) {
+                  return _HubTrackingRow(
+                    icon: Icons.star_outline,
+                    title: _l10n.spotListsHubRatedByYou,
+                    count: snapshot.data ?? 0,
+                    onTap: () => context
+                        .push(
+                          spotTrackingListRoutePath(SpotTrackingListType.rated),
+                        )
+                        .then((_) {
+                          if (mounted) _reloadRatedCount();
                         }),
                   );
                 },

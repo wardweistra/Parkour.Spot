@@ -198,6 +198,14 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get spotListsHubRatedByYou => 'Door jou beoordeeld';
+
+  @override
+  String publicProfileRatedByUser(String name) {
+    return 'Beoordeeld door $name';
+  }
+
+  @override
   String get notificationsTitle => 'Meldingen';
 
   @override
@@ -3491,6 +3499,30 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get spotTrackingAddedVisibilityUpdateFailed =>
       'Lijstzichtbaarheid kon niet worden bijgewerkt';
+
+  @override
+  String get spotTrackingBuiltInListVisibilityUpdateFailed =>
+      'Lijstzichtbaarheid kon niet worden bijgewerkt';
+
+  @override
+  String get spotTrackingRatedEmptyHint =>
+      'Spots die je beoordeelt, verschijnen hier';
+
+  @override
+  String get spotTrackingAddedListPublicVisibilityHelp =>
+      'Staat op je profiel. Spots die je toevoegt, tonen je nog steeds als maker op de spot en in de activiteitenfeed.';
+
+  @override
+  String get spotTrackingAddedListPrivateVisibilityHelp =>
+      'Alleen jij ziet deze lijst. Spots die je toevoegt, tonen je nog steeds als maker op de spot en in de activiteitenfeed.';
+
+  @override
+  String get spotTrackingRatedListPublicVisibilityHelp =>
+      'Staat op je profiel. Je beoordelingen blijven zichtbaar op elke spot en in de activiteitenfeed.';
+
+  @override
+  String get spotTrackingRatedListPrivateVisibilityHelp =>
+      'Alleen jij ziet deze lijst. Je beoordelingen blijven zichtbaar op elke spot en in de activiteitenfeed.';
 
   @override
   String get spotListSaveTooltipSaveList => 'Lijst opslaan';

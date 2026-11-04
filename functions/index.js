@@ -831,6 +831,15 @@ exports.userAndListPage = onRequest({region: "europe-west1"}, async (req, res) =
             url: `/user/${userIdOrUsername}/added`,
           });
         }
+        if (pathSegments[2] === "rated" &&
+            userDoc.isRatedSpotsListPublic === true) {
+          title = `Rated by ${displayName} - ${siteName}`;
+          description = `Parkour spots rated by ${displayName} on ${siteName} — ${APP_DESCRIPTION}`;
+          breadcrumbs.push({
+            name: `Rated by ${displayName}`,
+            url: `/user/${userIdOrUsername}/rated`,
+          });
+        }
       }
     }
 

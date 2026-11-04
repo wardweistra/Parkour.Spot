@@ -436,6 +436,18 @@ abstract class AppLocalizations {
   /// **'Added by {name}'**
   String publicProfileAddedByUser(String name);
 
+  /// Private list of spots the signed-in user rated
+  ///
+  /// In en, this message translates to:
+  /// **'Rated by you'**
+  String get spotListsHubRatedByYou;
+
+  /// Public profile and list title for another user's rated-spots list
+  ///
+  /// In en, this message translates to:
+  /// **'Rated by {name}'**
+  String publicProfileRatedByUser(String name);
+
   /// Notifications inbox screen title and Account tab row
   ///
   /// In en, this message translates to:
@@ -5624,6 +5636,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not update list visibility'**
   String get spotTrackingAddedVisibilityUpdateFailed;
+
+  /// Error when toggling added-by-you or rated-by-you list public/private
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update list visibility'**
+  String get spotTrackingBuiltInListVisibilityUpdateFailed;
+
+  /// Empty state hint for the private rated-by-you spot list
+  ///
+  /// In en, this message translates to:
+  /// **'Spots you rate show up here'**
+  String get spotTrackingRatedEmptyHint;
+
+  /// Added-by-you list: public toggle help when the list is public
+  ///
+  /// In en, this message translates to:
+  /// **'Listed on your profile. Spots you add still show you as the creator on each spot and in the activity feed.'**
+  String get spotTrackingAddedListPublicVisibilityHelp;
+
+  /// Added-by-you list: public toggle help when the list is private
+  ///
+  /// In en, this message translates to:
+  /// **'Only you see this list. Spots you add still show you as the creator on each spot and in the activity feed.'**
+  String get spotTrackingAddedListPrivateVisibilityHelp;
+
+  /// Rated-by-you list: public toggle help when the list is public
+  ///
+  /// In en, this message translates to:
+  /// **'Listed on your profile. Your ratings still appear on each spot and in the activity feed.'**
+  String get spotTrackingRatedListPublicVisibilityHelp;
+
+  /// Rated-by-you list: public toggle help when the list is private
+  ///
+  /// In en, this message translates to:
+  /// **'Only you see this list. Your ratings still appear on each spot and in the activity feed.'**
+  String get spotTrackingRatedListPrivateVisibilityHelp;
 
   /// Tooltip on list save button when list is not saved
   ///

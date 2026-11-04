@@ -18,7 +18,7 @@ export '../../utils/spots_added_by_user.dart' show SpotTrackingListType;
 class SpotTrackingListScreen extends StatefulWidget {
   final SpotTrackingListType type;
 
-  /// When set, load this user's added-spots list (public profile route).
+  /// When set, load this user's built-in spot list (public profile route).
   final String? profileUserIdOrUsername;
 
   const SpotTrackingListScreen({
@@ -39,15 +39,29 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
   String? _error;
   List<String>? _lastLoadedSpotIds;
   bool _isOwner = false;
-  String? _addedListOwnerName;
+  String? _builtInListOwnerName;
   bool _isUpdatingPublic = false;
 
-  bool get _isAddedList => widget.type == SpotTrackingListType.added;
+  bool get _isBuiltInList =>
+      widget.type == SpotTrackingListType.added ||
+      widget.type == SpotTrackingListType.rated;
 
-  bool get _isOwnerAddedRoute =>
-      _isAddedList &&
+  bool get _isOwnerBuiltInRoute =>
+      _isBuiltInList &&
       (widget.profileUserIdOrUsername == null ||
           widget.profileUserIdOrUsername!.isEmpty);
+
+  bool _isBuiltInListPublic(app_user.User profile) {
+    switch (widget.type) {
+      case SpotTrackingListType.added:
+        return profile.isAddedSpotsListPublic;
+      case SpotTrackingListType.rated:
+        return profile.isRatedSpotsListPublic;
+      case SpotTrackingListType.wantToVisit:
+      case SpotTrackingListType.visited:
+        return false;
+    }
+  }
 
   @override
   void initState() {
@@ -79,6 +93,7 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
       case SpotTrackingListType.visited:
         return authService.userProfile?.visited ?? [];
       case SpotTrackingListType.added:
+      case SpotTrackingListType.rated:
         final userId = authService.currentUser?.uid;
         return userId == null ? const [] : [userId];
     }
@@ -87,8 +102,8 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
   Future<void> _loadSpots() async {
     final authService = Provider.of<AuthService>(context, listen: false);
 
-    if (_isAddedList) {
-      await _loadAddedSpots(authService);
+    if (_isBuiltInList) {
+      await _loadBuiltInListSpots(authService);
       return;
     }
 
@@ -127,7 +142,7 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
     }
   }
 
-  Future<void> _loadAddedSpots(AuthService authService) async {
+  Future<void> _loadBuiltInListSpots(AuthService authService) async {
     final lookup = widget.profileUserIdOrUsername?.trim();
     final currentUserId = authService.currentUser?.uid;
     final ownProfile = authService.userProfile;
@@ -144,7 +159,7 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
           _isLoading = false;
           _error = null;
           _isOwner = false;
-          _addedListOwnerName = null;
+          _builtInListOwnerName = null;
         });
         return;
       }
@@ -175,21 +190,21 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
             _isLoading = false;
             _error = _l10n.spotListDetailListNotFoundOrNotAccessible;
             _isOwner = false;
-            _addedListOwnerName = null;
+            _builtInListOwnerName = null;
           });
           return;
         }
         targetUserId = targetProfile.id;
         isOwner = currentUserId != null && currentUserId == targetProfile.id;
         ownerName = targetProfile.displayName ?? targetProfile.username;
-        if (!targetProfile.isAddedSpotsListPublic && !isOwner) {
+        if (!_isBuiltInListPublic(targetProfile) && !isOwner) {
           _lastLoadedSpotIds = [targetUserId];
           setState(() {
             _spots = [];
             _isLoading = false;
             _error = _l10n.spotListDetailListNotFoundOrNotAccessible;
             _isOwner = false;
-            _addedListOwnerName = ownerName;
+            _builtInListOwnerName = ownerName;
           });
           return;
         }
@@ -201,12 +216,21 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
       _isLoading = true;
       _error = null;
       _isOwner = isOwner;
-      _addedListOwnerName = ownerName;
+      _builtInListOwnerName = ownerName;
     });
 
     try {
       final spotService = Provider.of<SpotService>(context, listen: false);
-      final loadedSpots = await spotService.getSpotsAddedByUser(targetUserId);
+      final loadedSpots = switch (widget.type) {
+        SpotTrackingListType.added => await spotService.getSpotsAddedByUser(
+          targetUserId,
+        ),
+        SpotTrackingListType.rated => await spotService.getSpotsRatedByUser(
+          targetUserId,
+        ),
+        SpotTrackingListType.wantToVisit ||
+        SpotTrackingListType.visited => const <Spot>[],
+      };
       if (!mounted) return;
       setState(() {
         _spots = loadedSpots;
@@ -228,14 +252,23 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
       case SpotTrackingListType.visited:
         return _l10n.publicProfileBeenTo;
       case SpotTrackingListType.added:
-        if (_isOwner || _isOwnerAddedRoute) {
+        if (_isOwner || _isOwnerBuiltInRoute) {
           return _l10n.spotListsHubAddedByYou;
         }
-        final name = _addedListOwnerName?.trim();
-        if (name != null && name.isNotEmpty) {
-          return _l10n.publicProfileAddedByUser(name);
+        final addedName = _builtInListOwnerName?.trim();
+        if (addedName != null && addedName.isNotEmpty) {
+          return _l10n.publicProfileAddedByUser(addedName);
         }
         return _l10n.spotListsHubAddedByYou;
+      case SpotTrackingListType.rated:
+        if (_isOwner || _isOwnerBuiltInRoute) {
+          return _l10n.spotListsHubRatedByYou;
+        }
+        final ratedName = _builtInListOwnerName?.trim();
+        if (ratedName != null && ratedName.isNotEmpty) {
+          return _l10n.publicProfileRatedByUser(ratedName);
+        }
+        return _l10n.spotListsHubRatedByYou;
     }
   }
 
@@ -247,14 +280,20 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
         return Icons.check_circle_outline;
       case SpotTrackingListType.added:
         return Icons.add_location_alt_outlined;
+      case SpotTrackingListType.rated:
+        return Icons.star_outline;
     }
   }
 
   String? get _emptyHint {
     switch (widget.type) {
       case SpotTrackingListType.added:
-        return _isOwner || _isOwnerAddedRoute
+        return _isOwner || _isOwnerBuiltInRoute
             ? _l10n.spotTrackingAddedEmptyHint
+            : null;
+      case SpotTrackingListType.rated:
+        return _isOwner || _isOwnerBuiltInRoute
+            ? _l10n.spotTrackingRatedEmptyHint
             : null;
       case SpotTrackingListType.wantToVisit:
       case SpotTrackingListType.visited:
@@ -263,7 +302,7 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
   }
 
   void _checkProfileAndReload(AuthService authService) {
-    if (_isAddedList && !_isOwnerAddedRoute) {
+    if (_isBuiltInList && !_isOwnerBuiltInRoute) {
       return;
     }
     // When navigating directly or refreshing, AuthService may load the profile
@@ -279,16 +318,47 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
     }
   }
 
-  Future<void> _setAddedListPublic(bool isPublic) async {
+  Future<void> _setBuiltInListPublic(bool isPublic) async {
     if (_isUpdatingPublic) return;
     setState(() => _isUpdatingPublic = true);
     final authService = context.read<AuthService>();
-    final success = await authService.updateAddedSpotsListPublic(isPublic);
+    final success = switch (widget.type) {
+      SpotTrackingListType.added => await authService.updateAddedSpotsListPublic(
+        isPublic,
+      ),
+      SpotTrackingListType.rated => await authService.updateRatedSpotsListPublic(
+        isPublic,
+      ),
+      SpotTrackingListType.wantToVisit ||
+      SpotTrackingListType.visited => false,
+    };
     if (!mounted) return;
     setState(() => _isUpdatingPublic = false);
     if (!success) {
-      SnackbarService.showError(_l10n.spotTrackingAddedVisibilityUpdateFailed);
+      SnackbarService.showError(_l10n.spotTrackingBuiltInListVisibilityUpdateFailed);
     }
+  }
+
+  String _builtInListVisibilitySubtitle(bool isPublic) {
+    switch (widget.type) {
+      case SpotTrackingListType.added:
+        return isPublic
+            ? _l10n.spotTrackingAddedListPublicVisibilityHelp
+            : _l10n.spotTrackingAddedListPrivateVisibilityHelp;
+      case SpotTrackingListType.rated:
+        return isPublic
+            ? _l10n.spotTrackingRatedListPublicVisibilityHelp
+            : _l10n.spotTrackingRatedListPrivateVisibilityHelp;
+      case SpotTrackingListType.wantToVisit:
+      case SpotTrackingListType.visited:
+        return '';
+    }
+  }
+
+  bool _builtInListIsPublic(AuthService authService) {
+    final profile = authService.userProfile;
+    if (profile == null) return false;
+    return _isBuiltInListPublic(profile);
   }
 
   Widget _buildSpotsBody() {
@@ -424,7 +494,7 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
       builder: (context, authService, _) {
         _checkProfileAndReload(authService);
 
-        final needsSignIn = _isOwnerAddedRoute && !authService.isAuthenticated;
+        final needsSignIn = _isOwnerBuiltInRoute && !authService.isAuthenticated;
         if (needsSignIn) {
           return PageScaffold(
             title: _title,
@@ -453,11 +523,10 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
         }
 
         final showPublicToggle =
-            _isAddedList &&
+            _isBuiltInList &&
             authService.isAuthenticated &&
-            (_isOwnerAddedRoute || _isOwner);
-        final isPublic =
-            authService.userProfile?.isAddedSpotsListPublic ?? false;
+            (_isOwnerBuiltInRoute || _isOwner);
+        final isPublic = _builtInListIsPublic(authService);
 
         return PageScaffold(
           title: _title,
@@ -469,13 +538,9 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(_l10n.spotListEditVisibilityPublic),
-                  subtitle: Text(
-                    isPublic
-                        ? _l10n.spotListEditVisibilityPublicHelp
-                        : _l10n.spotListEditVisibilityPrivateHelp,
-                  ),
+                  subtitle: Text(_builtInListVisibilitySubtitle(isPublic)),
                   value: isPublic,
-                  onChanged: _isUpdatingPublic ? null : _setAddedListPublic,
+                  onChanged: _isUpdatingPublic ? null : _setBuiltInListPublic,
                 ),
               Expanded(child: _buildSpotsBody()),
             ],
