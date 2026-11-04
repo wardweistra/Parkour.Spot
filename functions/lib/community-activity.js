@@ -287,38 +287,20 @@ function buildSpotAddedActivity(spotId, spotData, options = {}) {
 
 /**
  * Image URLs that an auditLog entry added to a spot.
- * Supports `photoAdded` (approved photo suggestions) and `spotEdit` entries
- * whose `changes.imageUrls` grew (staff edits). Duplicate-cluster merges that
- * only transfer photos (`updatedFromDuplicateCluster`) are excluded.
+ * Only `photoAdded` (approved photo suggestions) produce community photo
+ * activity. Staff `spotEdit` audits (Edit page, cluster merge, etc.) are
+ * ignored even when `imageUrls` grew.
  * @param {Object} logData
  * @return {string[]}
  */
 function addedImageUrlsFromAuditLog(logData) {
   if (!logData || typeof logData !== "object") return [];
   const action = trimmedString(logData.action);
-  if (action === "photoAdded") {
-    const metadata = logData.metadata && typeof logData.metadata === "object" ?
-      logData.metadata :
-      {};
-    return normalizeUrlList(metadata.photoUrls, Number.MAX_SAFE_INTEGER);
-  }
-  if (action === "spotEdit") {
-    const changes = logData.changes && typeof logData.changes === "object" ?
-      logData.changes :
-      {};
-    // Cluster resolve into an existing native spot grows imageUrls via merge;
-    // that must not create a photo-added community activity.
-    if (Object.prototype.hasOwnProperty.call(
-        changes, "updatedFromDuplicateCluster")) {
-      return [];
-    }
-    const imageChange = changes.imageUrls;
-    if (!imageChange || typeof imageChange !== "object") return [];
-    const before = new Set(normalizeUrlList(imageChange.from, Number.MAX_SAFE_INTEGER));
-    return normalizeUrlList(imageChange.to, Number.MAX_SAFE_INTEGER)
-        .filter((url) => !before.has(url));
-  }
-  return [];
+  if (action !== "photoAdded") return [];
+  const metadata = logData.metadata && typeof logData.metadata === "object" ?
+    logData.metadata :
+    {};
+  return normalizeUrlList(metadata.photoUrls, Number.MAX_SAFE_INTEGER);
 }
 
 /** Sentinel matching Flutter `SpotService.anonymousContributorUserId`. */
@@ -338,7 +320,7 @@ function isAnonymousContributorUserId(userId) {
  * Who should be credited for an auditLog photo addition.
  * `photoAdded` credits the suggester in `metadata.contributor` only — never
  * the approving moderator. Missing/anonymous contributor → null actor
- * (client shows "Someone"). `spotEdit` credits the editor.
+ * (client shows "Someone"). Other actions fall back to the audit actor.
  * @param {Object} logData
  * @return {{userId: ?string, displayName: ?string}}
  */
@@ -2056,29 +2038,27 @@ async function backfillCommunityActivity(db, options = {}) {
     result.spotsAdded += 1;
   }
 
-  for (const action of ["photoAdded", "spotEdit"]) {
-    const logsSnap = await db.collection("auditLog")
-        .where("action", "==", action)
-        .where("timestamp", ">=", since)
-        .orderBy("timestamp", "desc")
-        .get();
-    for (const doc of logsSnap.docs) {
-      result.scanned.auditLogs += 1;
-      const data = doc.data() || {};
-      if (addedImageUrlsFromAuditLog(data).length === 0) continue;
-      const spotData = await spotLoader(data.spotId);
-      if (!isSpotEligibleForCommunityActivity(spotData)) continue;
-      const actor = await resolvePhotoAddedActor(db, data);
-      const actorProfile = actor.userId ? await profileLoader(actor.userId) : {};
-      const activity = buildSpotPhotoAddedActivity(doc.id, data, spotData, {
-        now,
-        actor,
-        actorProfile,
-      });
-      if (!activity) continue;
-      await writeCommunityActivity(db, activity);
-      result.photosAdded += 1;
-    }
+  const photoLogsSnap = await db.collection("auditLog")
+      .where("action", "==", "photoAdded")
+      .where("timestamp", ">=", since)
+      .orderBy("timestamp", "desc")
+      .get();
+  for (const doc of photoLogsSnap.docs) {
+    result.scanned.auditLogs += 1;
+    const data = doc.data() || {};
+    if (addedImageUrlsFromAuditLog(data).length === 0) continue;
+    const spotData = await spotLoader(data.spotId);
+    if (!isSpotEligibleForCommunityActivity(spotData)) continue;
+    const actor = await resolvePhotoAddedActor(db, data);
+    const actorProfile = actor.userId ? await profileLoader(actor.userId) : {};
+    const activity = buildSpotPhotoAddedActivity(doc.id, data, spotData, {
+      now,
+      actor,
+      actorProfile,
+    });
+    if (!activity) continue;
+    await writeCommunityActivity(db, activity);
+    result.photosAdded += 1;
   }
 
   const checkInsSnap = await db.collection("spotCheckIns")
