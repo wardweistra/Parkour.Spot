@@ -8,6 +8,7 @@ const {slugify} = require("../utils");
 const {
   hasValidCoordinates,
   isEventPast,
+  normalizeDate,
   resolveEventMainLocation,
 } = require("./event-map-pins");
 
@@ -411,7 +412,33 @@ function buildPlaceSnapshots(spots, options = {}) {
 }
 
 /**
- * Attach upcoming public events into place hubs and build event docs.
+ * UTC midnight on the first day of the month containing `now`.
+ * Matches the About events calendar grid start (monthKeyAt(generatedAt)).
+ * @param {Date} now
+ * @return {Date}
+ */
+function utcMonthStart(now) {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+}
+
+/**
+ * Whether a public event belongs on About event pages and the calendar index.
+ * Upcoming and in-progress events are included; past events are kept through
+ * the current UTC month so the calendar's first month is not half empty.
+ * @param {Object} event
+ * @param {Date=} now
+ * @return {boolean}
+ */
+function includeInAboutEventsIndex(event, now = new Date()) {
+  if (!isEventPast(event, now)) return true;
+  const endAt = normalizeDate(event.endAt);
+  const effectiveEnd = endAt || normalizeDate(event.startAt);
+  if (!effectiveEnd) return false;
+  return effectiveEnd.getTime() >= utcMonthStart(now).getTime();
+}
+
+/**
+ * Attach public events into place hubs and build event docs.
  * @param {{countryDocs: Map, cityDocs: Map, indexCountries: Array, generatedAt: string}} placeState
  * @param {Array<Object>} events
  * @param {Date=} now
@@ -426,7 +453,7 @@ function attachEventsAndBuildIndexes(placeState, events, now = new Date()) {
 
   for (const event of events) {
     if (!isPublicEvent(event)) continue;
-    if (isEventPast(event, now)) continue;
+    if (!includeInAboutEventsIndex(event, now)) continue;
 
     const slug = eventSlug(event.title, event.id);
     const detail = toEventDetail(event, slug);
@@ -507,6 +534,8 @@ module.exports = {
   TOP_SPOTS_LIMIT,
   eventSlug,
   isPublicEvent,
+  utcMonthStart,
+  includeInAboutEventsIndex,
   toSpotSummary,
   effectiveEventLocation,
   needsResolvedLocationFallback,

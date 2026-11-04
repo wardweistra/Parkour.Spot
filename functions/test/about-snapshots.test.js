@@ -3,6 +3,7 @@ const {
   isPublicEvent,
   buildPlaceSnapshots,
   attachEventsAndBuildIndexes,
+  includeInAboutEventsIndex,
   effectiveEventLocation,
   withResolvedLocationFallback,
   toEventDetail,
@@ -230,6 +231,23 @@ describe("about-snapshots", () => {
     });
   });
 
+  describe("includeInAboutEventsIndex", () => {
+    it("keeps past events that ended in the current UTC month", () => {
+      const now = new Date("2026-11-04T12:00:00.000Z");
+      expect(includeInAboutEventsIndex({
+        startAt: new Date("2026-11-01T10:00:00.000Z"),
+        endAt: new Date("2026-11-03T18:00:00.000Z"),
+      }, now)).toBe(true);
+      expect(includeInAboutEventsIndex({
+        startAt: new Date("2026-09-01T10:00:00.000Z"),
+        endAt: new Date("2026-10-31T23:00:00.000Z"),
+      }, now)).toBe(false);
+      expect(includeInAboutEventsIndex({
+        startAt: new Date("2026-12-01T10:00:00.000Z"),
+      }, now)).toBe(true);
+    });
+  });
+
   describe("attachEventsAndBuildIndexes", () => {
     it("attaches upcoming events to matching hubs", () => {
       const spots = [];
@@ -273,6 +291,35 @@ describe("about-snapshots", () => {
       expect(result.cityDocs.get("nl_amsterdam").events).toHaveLength(1);
       expect(result.countryDocs.get("nl").events).toHaveLength(1);
       expect(result.aboutIndex.eventCount).toBe(1);
+    });
+
+    it("includes events that ended earlier in the current UTC month", () => {
+      const placeState = buildPlaceSnapshots([], {
+        generatedAt: "2026-11-04T00:00:00.000Z",
+      });
+      const now = new Date("2026-11-04T12:00:00.000Z");
+      const events = [
+        {
+          id: "earlymo01xxxx",
+          title: "Early November jam",
+          startAt: new Date("2026-11-01T10:00:00.000Z"),
+          endAt: new Date("2026-11-02T18:00:00.000Z"),
+          countryCode: "NL",
+          city: "Amsterdam",
+        },
+        {
+          id: "lastmo01xxxx",
+          title: "Last month jam",
+          startAt: new Date("2026-10-28T10:00:00.000Z"),
+          endAt: new Date("2026-10-31T18:00:00.000Z"),
+          countryCode: "NL",
+          city: "Amsterdam",
+        },
+      ];
+
+      const result = attachEventsAndBuildIndexes(placeState, events, now);
+      expect(result.eventsIndex.events).toHaveLength(1);
+      expect(result.eventsIndex.events[0].slug).toBe("early-november-jam-earlymo0");
     });
 
     it("creates a city page for an event with no spots", () => {
