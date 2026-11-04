@@ -205,4 +205,74 @@ void main() {
       );
     });
   });
+
+  group('parseFetchYoutubeThumbnailsResponse', () {
+    test('parses a normal List of Maps', () {
+      expect(
+        parseFetchYoutubeThumbnailsResponse({
+          'success': true,
+          'thumbnails': [
+            {
+              'videoId': 'gfYtZ6aNo9A',
+              'url': 'https://storage.googleapis.com/bucket/spots/a.jpg',
+            },
+          ],
+        }),
+        {
+          'gfYtZ6aNo9A':
+              'https://storage.googleapis.com/bucket/spots/a.jpg',
+        },
+      );
+    });
+
+    test('accepts Iterable that is not a List (dart2wasm callable shape)', () {
+      // MappedIterable is Iterable but not List — same class of shape seen on
+      // dart2wasm for callable JSON arrays.
+      final thumbnails = [
+        {
+          'videoId': 'gfYtZ6aNo9A',
+          'url': 'https://storage.googleapis.com/bucket/spots/a.jpg',
+        },
+      ].map((e) => e);
+
+      expect(thumbnails is List, isFalse);
+      expect(
+        parseFetchYoutubeThumbnailsResponse({
+          'success': true,
+          'thumbnails': thumbnails,
+        }),
+        {
+          'gfYtZ6aNo9A':
+              'https://storage.googleapis.com/bucket/spots/a.jpg',
+        },
+      );
+    });
+
+    test('returns empty for missing or non-iterable thumbnails', () {
+      expect(parseFetchYoutubeThumbnailsResponse(null), isEmpty);
+      expect(parseFetchYoutubeThumbnailsResponse('x'), isEmpty);
+      expect(
+        parseFetchYoutubeThumbnailsResponse({'thumbnails': 'nope'}),
+        isEmpty,
+      );
+      expect(
+        parseFetchYoutubeThumbnailsResponse({'success': false, 'thumbnails': []}),
+        isEmpty,
+      );
+    });
+
+    test('skips entries without videoId or url', () {
+      expect(
+        parseFetchYoutubeThumbnailsResponse({
+          'thumbnails': [
+            {'videoId': 'ok', 'url': 'https://example.com/a.jpg'},
+            {'videoId': 'missing-url'},
+            {'url': 'https://example.com/b.jpg'},
+            'not-a-map',
+          ],
+        }),
+        {'ok': 'https://example.com/a.jpg'},
+      );
+    });
+  });
 }

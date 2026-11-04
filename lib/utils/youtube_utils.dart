@@ -187,3 +187,26 @@ List<String> appendYoutubeThumbnails({
   }
   return result;
 }
+
+/// Parses `fetchYoutubeThumbnails` callable [rawData] into videoId -> Storage URL.
+///
+/// Tolerates dart2wasm JS-interop shapes: outer/nested values may be [Map] but
+/// not `Map<String, dynamic>`, and `thumbnails` may be [Iterable] but not [List].
+Map<String, String> parseFetchYoutubeThumbnailsResponse(dynamic rawData) {
+  if (rawData is! Map) return const {};
+  final data = Map<String, dynamic>.from(rawData);
+  final rawThumbnails = data['thumbnails'];
+  if (rawThumbnails == null || rawThumbnails is! Iterable) return const {};
+
+  final resolved = <String, String>{};
+  for (final item in rawThumbnails) {
+    if (item is! Map) continue;
+    final map = Map<String, dynamic>.from(item);
+    final id = map['videoId']?.toString();
+    final url = map['url']?.toString();
+    if (id != null && id.isNotEmpty && url != null && url.isNotEmpty) {
+      resolved[id] = url;
+    }
+  }
+  return resolved;
+}
