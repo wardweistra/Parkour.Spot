@@ -12,6 +12,7 @@ const {
   withResolvedLocationFallback,
 } = require("./lib/about-snapshots");
 const {activityWindowStart, buildAboutStats} = require("./lib/about-stats");
+const {isEventPast} = require("./lib/event-map-pins");
 const {buildCommunitySources} = require("./lib/about-community-sources");
 
 const db = getFirestore();
@@ -276,7 +277,9 @@ async function generateAboutSnapshots(options = {}) {
 
   assembled.aboutIndex.stats = buildAboutStats({
     spots,
-    upcomingEvents: assembled.eventsIndex.events,
+    upcomingEvents: assembled.eventsIndex.events.filter(
+        (event) => !isEventPast(event, now),
+    ),
     spotSourceCount: communitySources.spotSources.length,
     counts: await loadActivityCounts(now),
     now,
