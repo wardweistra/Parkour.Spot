@@ -374,8 +374,10 @@ class SpotDataActions {
             'Backfill completed. New spots: '
             '${_formatStatInt(result['spotsAdded'])}, photo additions: '
             '${_formatStatInt(result['photosAdded'])}, check-ins: '
-            '${_formatStatInt(result['checkIns'])}, training plans: '
-            '${_formatStatInt(result['trainingPlans'])}'
+            '${_formatStatInt(result['checkIns'])}, ratings: '
+            '${_formatStatInt(result['ratings'])}, training plans: '
+            '${_formatStatInt(result['trainingPlans'])}, events ended: '
+            '${_formatStatInt(result['eventsEnded'])}'
             '${purge ? ', purged: $purgedCount' : ''}.';
         scaffoldMessenger.showSnackBar(
           SnackBar(content: Text(message), backgroundColor: Colors.green),

@@ -288,7 +288,8 @@ function buildSpotAddedActivity(spotId, spotData, options = {}) {
 /**
  * Image URLs that an auditLog entry added to a spot.
  * Supports `photoAdded` (approved photo suggestions) and `spotEdit` entries
- * whose `changes.imageUrls` grew (staff edits).
+ * whose `changes.imageUrls` grew (staff edits). Duplicate-cluster merges that
+ * only transfer photos (`updatedFromDuplicateCluster`) are excluded.
  * @param {Object} logData
  * @return {string[]}
  */
@@ -305,6 +306,12 @@ function addedImageUrlsFromAuditLog(logData) {
     const changes = logData.changes && typeof logData.changes === "object" ?
       logData.changes :
       {};
+    // Cluster resolve into an existing native spot grows imageUrls via merge;
+    // that must not create a photo-added community activity.
+    if (Object.prototype.hasOwnProperty.call(
+        changes, "updatedFromDuplicateCluster")) {
+      return [];
+    }
     const imageChange = changes.imageUrls;
     if (!imageChange || typeof imageChange !== "object") return [];
     const before = new Set(normalizeUrlList(imageChange.from, Number.MAX_SAFE_INTEGER));

@@ -109,6 +109,22 @@ describe("addedImageUrlsFromAuditLog", () => {
     })).toEqual(["https://img/3.jpg"]);
   });
 
+  it("ignores spotEdit image growth from duplicate-cluster resolve", () => {
+    expect(addedImageUrlsFromAuditLog({
+      action: "spotEdit",
+      changes: {
+        imageUrls: {
+          from: ["https://img/1.jpg"],
+          to: ["https://img/1.jpg", "https://img/3.jpg"],
+        },
+        updatedFromDuplicateCluster: {
+          from: null,
+          to: ["spot-a", "spot-b"],
+        },
+      },
+    })).toEqual([]);
+  });
+
   it("ignores removals and other actions", () => {
     expect(addedImageUrlsFromAuditLog({
       action: "spotEdit",
