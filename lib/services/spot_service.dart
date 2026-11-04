@@ -91,23 +91,54 @@ class SpotService extends ChangeNotifier {
     }
   }
 
+  static const int _inQueryLimit = 30;
+
+  /// Unique ratings for [userId], one per spot listing, newest first.
+  Future<List<Rating>> _uniqueRatingsByUser(String userId) async {
+    final snapshot = await _firestore
+        .collection('ratings')
+        .where('userId', isEqualTo: userId)
+        .get();
+    return uniqueRatingsBySpot(snapshot.docs.map(Rating.fromFirestore));
+  }
+
+  /// Spots by id via chunked `whereIn` (Firestore limit 30). Missing ids omitted.
+  Future<Map<String, Spot>> _getSpotsByIds(Iterable<String> ids) async {
+    final unique = ids
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+    if (unique.isEmpty) return const {};
+
+    final result = <String, Spot>{};
+    for (var i = 0; i < unique.length; i += _inQueryLimit) {
+      final end = (i + _inQueryLimit) < unique.length
+          ? i + _inQueryLimit
+          : unique.length;
+      final chunk = unique.sublist(i, end);
+      final snap = await _firestore
+          .collection('spots')
+          .where(FieldPath.documentId, whereIn: chunk)
+          .get();
+      for (final doc in snap.docs) {
+        result[doc.id] = Spot.fromFirestore(doc);
+      }
+    }
+    return result;
+  }
+
   /// Spots the given user rated, newest rating first.
   Future<List<Spot>> getSpotsRatedByUser(String userId) async {
     if (userId.isEmpty) return [];
     try {
-      final snapshot = await _firestore
-          .collection('ratings')
-          .where('userId', isEqualTo: userId)
-          .get();
-      final ratings = uniqueRatingsBySpot(
-        snapshot.docs.map(Rating.fromFirestore),
-      );
+      final ratings = await _uniqueRatingsByUser(userId);
+      if (ratings.isEmpty) return [];
+      final byId = await _getSpotsByIds(ratings.map((r) => r.spotId));
       final spots = <Spot>[];
       for (final rating in ratings) {
-        final spot = await getSpotById(rating.spotId);
-        if (spot != null) {
-          spots.add(spot);
-        }
+        final spot = byId[rating.spotId.trim()];
+        if (spot != null) spots.add(spot);
       }
       return spots;
     } catch (e) {
@@ -120,8 +151,8 @@ class SpotService extends ChangeNotifier {
   Future<int> countSpotsRatedByUser(String userId) async {
     if (userId.isEmpty) return 0;
     try {
-      final spots = await getSpotsRatedByUser(userId);
-      return spots.length;
+      final ratings = await _uniqueRatingsByUser(userId);
+      return ratings.length;
     } catch (e) {
       debugPrint('Error counting spots rated by user: $e');
       rethrow;
