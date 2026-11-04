@@ -1071,6 +1071,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get communityStreamFilterContributions => 'Aportaciones';
 
   @override
+  String get communityStreamFilterTooltip => 'Filtrar actividades';
+
+  @override
   String get communityStreamFilterEmptyEvents =>
       'No hay eventos recientes en esta zona';
 

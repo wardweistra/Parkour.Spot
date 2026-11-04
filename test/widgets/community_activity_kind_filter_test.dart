@@ -75,42 +75,52 @@ Future<void> _pumpHarness(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: CommunityActivityKindFilter(
-                value: lens,
-                onChanged: onChanged,
-              ),
-            ),
-            Expanded(
-              child: filtered.isEmpty
-                  ? const Center(child: Text('lens-empty'))
-                  : CommunityActivityStream(
-                      feed: filtered,
-                      now: _now,
-                      onOpenSpot: (_) {},
-                      onOpenEvent: (_) {},
+        body: filtered.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CommunityActivityKindFilter(
+                      value: lens,
+                      onChanged: onChanged,
                     ),
-            ),
-          ],
-        ),
+                    const Text('lens-empty'),
+                  ],
+                ),
+              )
+            : CommunityActivityStream(
+                feed: filtered,
+                now: _now,
+                lens: lens,
+                onLensChanged: onChanged,
+                onOpenSpot: (_) {},
+                onOpenEvent: (_) {},
+              ),
       ),
     ),
   );
   await tester.pumpAndSettle();
 }
 
+Future<void> _openLensMenu(WidgetTester tester) async {
+  await tester.tap(find.byKey(CommunityActivityKindFilter.buttonKey));
+  await tester.pumpAndSettle();
+}
+
 void main() {
-  testWidgets('defaults to All and shows mixed activity copy', (tester) async {
+  testWidgets('defaults to All with icon-only filter on the now row', (
+    tester,
+  ) async {
     await _pumpHarness(
       tester,
       lens: CommunityActivityLens.all,
       onChanged: (_) {},
     );
 
-    expect(find.byKey(CommunityActivityKindFilter.chipKeyAll), findsOneWidget);
+    expect(find.byKey(CommunityActivityKindFilter.buttonKey), findsOneWidget);
+    expect(find.byType(CommunityNowDivider), findsOneWidget);
+    // Closed control on All does not shout the "All" label.
+    expect(find.text('All'), findsNothing);
     expect(find.textContaining('checked in'), findsOneWidget);
     expect(find.textContaining('added this new spot'), findsOneWidget);
     expect(find.textContaining('planning a session'), findsOneWidget);
@@ -118,7 +128,19 @@ void main() {
     expect(find.text('Jam up-e'), findsOneWidget);
   });
 
-  testWidgets('Events lens hides sessions and contributions', (tester) async {
+  testWidgets('active lens name shows on the closed control', (tester) async {
+    await _pumpHarness(
+      tester,
+      lens: CommunityActivityLens.sessions,
+      onChanged: (_) {},
+    );
+
+    expect(find.text('Sessions'), findsOneWidget);
+  });
+
+  testWidgets('Events lens hides sessions and contributions via popup', (
+    tester,
+  ) async {
     var lens = CommunityActivityLens.all;
 
     await _pumpHarness(
@@ -127,8 +149,10 @@ void main() {
       onChanged: (next) => lens = next,
     );
 
+    await _openLensMenu(tester);
     await tester.tap(find.byKey(CommunityActivityKindFilter.chipKeyEvents));
     await tester.pumpAndSettle();
+    expect(lens, CommunityActivityLens.events);
 
     // Re-pump with updated lens (parent would setState).
     await _pumpHarness(
@@ -137,6 +161,7 @@ void main() {
       onChanged: (_) {},
     );
 
+    expect(find.text('Events'), findsOneWidget);
     expect(find.textContaining('checked in'), findsNothing);
     expect(find.textContaining('added this new spot'), findsNothing);
     expect(find.textContaining('planning a session'), findsNothing);
@@ -167,12 +192,15 @@ void main() {
       onChanged: (_) {},
     );
 
+    expect(find.text('Contributions'), findsOneWidget);
     expect(find.textContaining('added this new spot'), findsOneWidget);
     expect(find.textContaining('checked in'), findsNothing);
     expect(find.text('Jam past-e'), findsNothing);
   });
 
-  testWidgets('empty lens shows empty placeholder', (tester) async {
+  testWidgets('empty lens shows empty placeholder with filter escape', (
+    tester,
+  ) async {
     final sessionsOnly = CommunityActivityFeed(
       past: [_item('checkin', CommunityActivityKind.spotCheckIn)],
     );
@@ -185,6 +213,7 @@ void main() {
     );
 
     expect(find.text('lens-empty'), findsOneWidget);
+    expect(find.byKey(CommunityActivityKindFilter.buttonKey), findsOneWidget);
     expect(find.byType(CommunityActivityStream), findsNothing);
   });
 

@@ -3277,6 +3277,8 @@ class SearchScreenState extends State<SearchScreen>
       loadingMoreUpcoming: _isLoadingMoreCommunityUpcoming,
       onLoadMorePast: _loadMoreCommunityPast,
       onLoadMoreUpcoming: _loadMoreCommunityUpcoming,
+      lens: _communityLens,
+      onLensChanged: _onCommunityLensChanged,
       onOpenSpot: (item) {
         _mapController?.animateCamera(
           CameraUpdate.newLatLng(LatLng(item.latitude, item.longitude)),
@@ -3297,6 +3299,15 @@ class SearchScreenState extends State<SearchScreen>
       },
       onOpenActor: (userId) => navigateToUserProfileForCheckIn(context, userId),
     );
+  }
+
+  void _onCommunityLensChanged(CommunityActivityLens lens) {
+    if (lens == _communityLens) return;
+    setState(() {
+      _communityLens = lens;
+      _loadedCommunityFeed = CommunityActivityFeed.empty;
+    });
+    _reloadCommunityFeedForLens();
   }
 
   Widget _buildExploreCommunityBody(BuildContext context) {
@@ -3388,6 +3399,11 @@ class SearchScreenState extends State<SearchScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            CommunityActivityKindFilter(
+              value: _communityLens,
+              onChanged: _onCommunityLensChanged,
+            ),
+            const SizedBox(height: 16),
             Icon(
               Icons.filter_list_off_outlined,
               size: 64,
@@ -4486,60 +4502,8 @@ class SearchScreenState extends State<SearchScreen>
                                                 if (exploreListMode ==
                                                     ExploreBottomSheetHeader
                                                         .modeCommunity) {
-                                                  // Chips live in the expanded
-                                                  // body (not the peek header)
-                                                  // and hide until the sheet is
-                                                  // tall enough mid-animation.
-                                                  return LayoutBuilder(
-                                                    builder: (context, constraints) {
-                                                      final showKindFilter =
-                                                          constraints.maxHeight >=
-                                                          120;
-                                                      return Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .stretch,
-                                                        children: [
-                                                          if (showKindFilter)
-                                                            Padding(
-                                                              padding:
-                                                                  const EdgeInsets
-                                                                      .fromLTRB(
-                                                                16,
-                                                                0,
-                                                                16,
-                                                                8,
-                                                              ),
-                                                              child:
-                                                                  CommunityActivityKindFilter(
-                                                                value:
-                                                                    _communityLens,
-                                                                onChanged:
-                                                                    (lens) {
-                                                                  if (lens ==
-                                                                      _communityLens) {
-                                                                    return;
-                                                                  }
-                                                                  setState(() {
-                                                                    _communityLens =
-                                                                        lens;
-                                                                    _loadedCommunityFeed =
-                                                                        CommunityActivityFeed
-                                                                            .empty;
-                                                                  });
-                                                                  _reloadCommunityFeedForLens();
-                                                                },
-                                                              ),
-                                                            ),
-                                                          Expanded(
-                                                            child:
-                                                                _buildExploreCommunityBody(
-                                                              context,
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      );
-                                                    },
+                                                  return _buildExploreCommunityBody(
+                                                    context,
                                                   );
                                                 }
                                                 return _visibleSpots.isEmpty

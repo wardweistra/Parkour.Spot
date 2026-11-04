@@ -1822,6 +1822,12 @@ abstract class AppLocalizations {
   /// **'Contributions'**
   String get communityStreamFilterContributions;
 
+  /// Explore activities: tooltip and semantics for the kind-lens control on the now row
+  ///
+  /// In en, this message translates to:
+  /// **'Filter activities'**
+  String get communityStreamFilterTooltip;
+
   /// Explore activities: empty state when Events lens has nothing in the retention window
   ///
   /// In en, this message translates to:

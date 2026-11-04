@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/community_activity.dart';
+import '../models/community_activity_lens.dart';
 import '../models/event_map_pin.dart';
 import '../utils/community_activity_time_formatting.dart';
 import '../utils/event_schedule_utils.dart';
+import 'community_activity_kind_filter.dart';
 import 'resized_spot_image.dart';
 
 /// Explore "Community" stream for one map viewport, laid out as a timeline:
@@ -29,6 +31,8 @@ class CommunityActivityStream extends StatefulWidget {
     this.onLoadMoreUpcoming,
     this.loadingMorePast = false,
     this.loadingMoreUpcoming = false,
+    this.lens,
+    this.onLensChanged,
     this.now,
     this.padding = const EdgeInsets.fromLTRB(16, 8, 16, 16),
   });
@@ -47,6 +51,10 @@ class CommunityActivityStream extends StatefulWidget {
   final VoidCallback? onLoadMoreUpcoming;
   final bool loadingMorePast;
   final bool loadingMoreUpcoming;
+
+  /// Kind lens shown on the now-row filter; omit with [onLensChanged] to hide.
+  final CommunityActivityLens? lens;
+  final ValueChanged<CommunityActivityLens>? onLensChanged;
 
   /// Injectable clock (tests); defaults to [DateTime.now].
   final DateTime? now;
@@ -587,7 +595,10 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
         now: now,
         onTap: () => widget.onOpenEvent(event.pin),
       ),
-      _NowEntry() => const CommunityNowDivider(),
+      _NowEntry() => CommunityNowDivider(
+        lens: widget.lens,
+        onLensChanged: widget.onLensChanged,
+      ),
       _PlanEntry(:final item) => CommunityActivityCard(
         item: item,
         now: now,
@@ -994,8 +1005,14 @@ class _PastHistoryLimitCaption extends StatelessWidget {
 }
 
 /// Timeline marker between what already happened and what is planned.
+///
+/// When [lens] and [onLensChanged] are set, a compact filter control sits on
+/// the seam beside the Now pill (not inside it).
 class CommunityNowDivider extends StatelessWidget {
-  const CommunityNowDivider({super.key});
+  const CommunityNowDivider({super.key, this.lens, this.onLensChanged});
+
+  final CommunityActivityLens? lens;
+  final ValueChanged<CommunityActivityLens>? onLensChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -1003,6 +1020,7 @@ class CommunityNowDivider extends StatelessWidget {
     final line = Expanded(
       child: Divider(color: colorScheme.primary.withValues(alpha: 0.6)),
     );
+    final showFilter = lens != null && onLensChanged != null;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -1012,6 +1030,13 @@ class CommunityNowDivider extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 10),
             child: _NowPill(),
           ),
+          if (showFilter) ...[
+            CommunityActivityKindFilter(
+              value: lens!,
+              onChanged: onLensChanged!,
+            ),
+            const SizedBox(width: 4),
+          ],
           line,
         ],
       ),

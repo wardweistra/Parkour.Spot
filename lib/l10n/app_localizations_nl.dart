@@ -1061,6 +1061,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get communityStreamFilterContributions => 'Bijdragen';
 
   @override
+  String get communityStreamFilterTooltip => 'Activiteiten filteren';
+
+  @override
   String get communityStreamFilterEmptyEvents =>
       'Geen recente events in dit gebied';
 

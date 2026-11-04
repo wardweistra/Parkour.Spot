@@ -1331,6 +1331,10 @@
   "@communityStreamFilterContributions": {
     "description": "Explore activities kind lens: new spots and photos"
   },
+  "communityStreamFilterTooltip": "Filter activities",
+  "@communityStreamFilterTooltip": {
+    "description": "Explore activities: tooltip and semantics for the kind-lens control on the now row"
+  },
   "communityStreamFilterEmptyEvents": "No recent events in this area",
   "@communityStreamFilterEmptyEvents": {
     "description": "Explore activities: empty state when Events lens has nothing in the retention window"

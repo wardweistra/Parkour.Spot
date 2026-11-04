@@ -286,6 +286,7 @@
   "communityStreamFilterEvents": "Events",
   "communityStreamFilterSessions": "Sessies",
   "communityStreamFilterContributions": "Bijdragen",
+  "communityStreamFilterTooltip": "Activiteiten filteren",
   "communityStreamFilterEmptyEvents": "Geen recente events in dit gebied",
   "communityStreamFilterEmptySessions": "Geen recente sessies in dit gebied",
   "communityStreamFilterEmptyContributions": "Geen recente bijdragen in dit gebied",

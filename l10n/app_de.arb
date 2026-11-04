@@ -229,6 +229,7 @@
   "communityStreamFilterEvents": "Events",
   "communityStreamFilterSessions": "Sessions",
   "communityStreamFilterContributions": "Beiträge",
+  "communityStreamFilterTooltip": "Aktivitäten filtern",
   "communityStreamFilterEmptyEvents": "Keine aktuellen Events in diesem Gebiet",
   "communityStreamFilterEmptySessions": "Keine aktuellen Sessions in diesem Gebiet",
   "communityStreamFilterEmptyContributions": "Keine aktuellen Beiträge in diesem Gebiet",
