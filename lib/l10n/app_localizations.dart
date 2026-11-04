@@ -1948,6 +1948,12 @@ abstract class AppLocalizations {
   /// **'{name} is planning a session at this spot'**
   String communityStreamPlanningToTrain(String name);
 
+  /// Explore community stream: someone rated a spot (stars shown separately)
+  ///
+  /// In en, this message translates to:
+  /// **'{name} rated this spot'**
+  String communityStreamSpotRated(String name);
+
   /// Explore community stream: event whose time window includes now
   ///
   /// In en, this message translates to:
@@ -5084,6 +5090,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to remove rating. Please try again.'**
   String get spotDetailRatingClearFailed;
+
+  /// Rate-this-spot sheet: informs that ratings are public and may appear in Explore activities
+  ///
+  /// In en, this message translates to:
+  /// **'Your rating is public and may show in community activity nearby.'**
+  String get spotDetailRatingPublicDisclosure;
 
   /// No description provided for @spotDetailClearRating.
   ///

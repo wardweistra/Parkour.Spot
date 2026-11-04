@@ -1163,6 +1163,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String communityStreamSpotRated(String name) {
+    return '$name heeft deze spot beoordeeld';
+  }
+
+  @override
   String get communityStreamEventHappeningNow => 'Dit evenement is nu bezig';
 
   @override
@@ -3126,6 +3131,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get spotDetailRatingClearFailed =>
       'Beoordeling verwijderen mislukt. Probeer het opnieuw.';
+
+  @override
+  String get spotDetailRatingPublicDisclosure =>
+      'Je beoordeling is openbaar en kan in community-activiteit in de buurt verschijnen.';
 
   @override
   String get spotDetailClearRating => 'Beoordeling wissen';

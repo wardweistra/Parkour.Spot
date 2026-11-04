@@ -7,6 +7,7 @@ enum CommunityActivityKind {
   spotPhotoAdded,
   spotCheckIn,
   spotTrainingPlan,
+  spotRated,
   eventEnded,
 }
 
@@ -20,6 +21,8 @@ CommunityActivityKind? parseCommunityActivityKind(Object? raw) {
       return CommunityActivityKind.spotCheckIn;
     case 'spot_training_plan':
       return CommunityActivityKind.spotTrainingPlan;
+    case 'spot_rated':
+      return CommunityActivityKind.spotRated;
     case 'event_ended':
       return CommunityActivityKind.eventEnded;
     default:
@@ -46,6 +49,7 @@ class CommunityActivityItem {
     this.actorDisplayName,
     this.actorPhotoURL,
     this.photoCount,
+    this.rating,
     this.imageUrls = const [],
     this.comment,
   });
@@ -73,6 +77,9 @@ class CommunityActivityItem {
 
   /// Number of photos added for [CommunityActivityKind.spotPhotoAdded].
   final int? photoCount;
+
+  /// Star score for [CommunityActivityKind.spotRated] (typically 1..5).
+  final double? rating;
 
   /// Up to three preview image URLs (new photos, or the new spot's images).
   final List<String> imageUrls;
@@ -106,6 +113,7 @@ class CommunityActivityItem {
       return null;
     }
     final rawCount = data['photoCount'];
+    final rawRating = data['rating'];
     return CommunityActivityItem(
       id: id,
       kind: kind,
@@ -122,6 +130,7 @@ class CommunityActivityItem {
       actorDisplayName: data['actorDisplayName'] as String?,
       actorPhotoURL: data['actorPhotoURL'] as String?,
       photoCount: rawCount is num ? rawCount.toInt() : null,
+      rating: rawRating is num ? rawRating.toDouble() : null,
       imageUrls: data['imageUrls'] is List
           ? List<String>.from((data['imageUrls'] as List).whereType<String>())
           : const [],

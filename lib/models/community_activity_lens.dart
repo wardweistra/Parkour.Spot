@@ -19,7 +19,7 @@ extension CommunityActivityLensQuery on CommunityActivityLens {
       case CommunityActivityLens.sessions:
         return const ['spot_check_in', 'spot_training_plan'];
       case CommunityActivityLens.contributions:
-        return const ['spot_added', 'spot_photo_added'];
+        return const ['spot_added', 'spot_photo_added', 'spot_rated'];
     }
   }
 
@@ -52,7 +52,8 @@ bool communityActivityKindMatchesLens(
           kind == CommunityActivityKind.spotTrainingPlan;
     case CommunityActivityLens.contributions:
       return kind == CommunityActivityKind.spotAdded ||
-          kind == CommunityActivityKind.spotPhotoAdded;
+          kind == CommunityActivityKind.spotPhotoAdded ||
+          kind == CommunityActivityKind.spotRated;
   }
 }
 

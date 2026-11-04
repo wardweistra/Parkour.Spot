@@ -3,6 +3,7 @@ const {
   KIND_SPOT_PHOTO_ADDED,
   KIND_SPOT_CHECK_IN,
   KIND_SPOT_TRAINING_PLAN,
+  KIND_SPOT_RATED,
   KIND_EVENT_ENDED,
   TIMELINE_PAST,
   TIMELINE_UPCOMING,
@@ -13,9 +14,11 @@ const {
   buildSpotAddedActivity,
   buildSpotPhotoAddedActivity,
   buildSpotCheckInActivity,
+  buildSpotRatedActivity,
   buildSpotTrainingPlanActivity,
   buildEventEndedActivity,
   syncSpotCheckInActivity,
+  syncSpotRatedActivity,
   syncSpotTrainingPlanActivity,
   syncEventEndedActivity,
   syncCommunityActivityForSpotChange,
@@ -287,6 +290,52 @@ describe("buildSpotCheckInActivity", () => {
   });
 });
 
+describe("buildSpotRatedActivity", () => {
+  const rating = {
+    userId: "user-4",
+    spotId: "spot-1",
+    rating: 4,
+    createdAt: new Date("2026-05-09T09:00:00.000Z"),
+    updatedAt: new Date("2026-05-10T11:30:00.000Z"),
+  };
+
+  it("materializes a past item with the score and updatedAt as occurredAt", () => {
+    const activity = buildSpotRatedActivity("r-1", rating, SPOT, {
+      now: NOW,
+      actorProfile: {displayName: "Sam", photoURL: "https://img/sam.png"},
+    });
+    expect(activity.id).toBe("spot_rated_r-1");
+    expect(activity.data).toMatchObject({
+      kind: KIND_SPOT_RATED,
+      timeline: TIMELINE_PAST,
+      occurredAt: rating.updatedAt,
+      rating: 4,
+      actorUserId: "user-4",
+      actorDisplayName: "Sam",
+      actorPhotoURL: "https://img/sam.png",
+      spotId: "spot-1",
+    });
+  });
+
+  it("falls back to createdAt when updatedAt is missing", () => {
+    const withoutUpdated = {
+      userId: rating.userId,
+      spotId: rating.spotId,
+      rating: rating.rating,
+      createdAt: rating.createdAt,
+    };
+    const activity = buildSpotRatedActivity("r-2", withoutUpdated, SPOT, {now: NOW});
+    expect(activity.data.occurredAt).toEqual(rating.createdAt);
+  });
+
+  it("skips ineligible ratings or spots", () => {
+    expect(buildSpotRatedActivity("r", {...rating, rating: "x"}, SPOT)).toBeNull();
+    expect(buildSpotRatedActivity("r", {...rating, userId: ""}, SPOT)).toBeNull();
+    expect(buildSpotRatedActivity("r", rating, {...SPOT, hidden: true})).toBeNull();
+    expect(buildSpotRatedActivity("r", rating, null)).toBeNull();
+  });
+});
+
 describe("buildSpotTrainingPlanActivity", () => {
   const plan = {
     userId: "user-3",
@@ -495,6 +544,52 @@ describe("syncSpotCheckInActivity", () => {
   });
 });
 
+describe("syncSpotRatedActivity", () => {
+  const rating = {
+    userId: "user-4",
+    spotId: "spot-1",
+    rating: 4,
+    createdAt: new Date("2026-05-09T09:00:00.000Z"),
+    updatedAt: new Date("2026-05-10T11:30:00.000Z"),
+  };
+
+  it("writes on create, skips unchanged score, rewrites on score change, deletes on clear", async () => {
+    const db = fakeDb({
+      spots: {"spot-1": SPOT},
+      users: {"user-4": {displayName: "Sam", photoURL: "https://img/sam.png"}},
+    });
+    const created = await syncSpotRatedActivity(db, "r-1", rating, {now: NOW});
+    expect(created).toEqual({written: true, deleted: false, skipped: false});
+    expect(db._store.get("communityActivity").get("spot_rated_r-1")).toMatchObject({
+      kind: KIND_SPOT_RATED,
+      rating: 4,
+      actorDisplayName: "Sam",
+    });
+
+    const skipped = await syncSpotRatedActivity(db, "r-1", rating, {
+      now: NOW,
+      beforeData: rating,
+    });
+    expect(skipped).toEqual({written: false, deleted: false, skipped: true});
+
+    const updatedAt = new Date("2026-05-10T12:00:00.000Z");
+    const changed = await syncSpotRatedActivity(
+        db,
+        "r-1",
+        {...rating, rating: 5, updatedAt},
+        {now: NOW, beforeData: rating},
+    );
+    expect(changed).toEqual({written: true, deleted: false, skipped: false});
+    expect(db._store.get("communityActivity").get("spot_rated_r-1")).toMatchObject({
+      rating: 5,
+      occurredAt: updatedAt,
+    });
+
+    await syncSpotRatedActivity(db, "r-1", null, {now: NOW});
+    expect(db._store.get("communityActivity").has("spot_rated_r-1")).toBe(false);
+  });
+});
+
 describe("syncSpotTrainingPlanActivity", () => {
   it("removes the upcoming item when the plan is deleted (converted to a check-in)", async () => {
     const plan = {
@@ -698,6 +793,25 @@ describe("normalizeCommunityActivity", () => {
     expect(normalizeCommunityActivity("x", {
       kind: "k", timeline: "past", spotId: "s", occurredAt: new Date(), latitude: 200, longitude: 0,
     })).toBeNull();
+  });
+
+  it("includes rating score for spot_rated", () => {
+    const normalized = normalizeCommunityActivity("spot_rated_r1", {
+      kind: KIND_SPOT_RATED,
+      timeline: TIMELINE_PAST,
+      latitude: 52.3,
+      longitude: 4.9,
+      occurredAt: new Date("2026-05-10T11:30:00.000Z"),
+      spotId: "spot-1",
+      rating: 4,
+      actorDisplayName: "Sam",
+    });
+    expect(normalized).toMatchObject({
+      id: "spot_rated_r1",
+      kind: KIND_SPOT_RATED,
+      rating: 4,
+      actorDisplayName: "Sam",
+    });
   });
 
   it("serializes event_ended without requiring spotId", () => {

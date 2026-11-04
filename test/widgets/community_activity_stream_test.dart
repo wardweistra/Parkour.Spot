@@ -16,6 +16,7 @@ CommunityActivityItem _item(
   String actor = 'Alex',
   String? actorUserId = 'u1',
   int? photoCount,
+  double? rating,
 }) {
   return CommunityActivityItem(
     id: id,
@@ -31,6 +32,7 @@ CommunityActivityItem _item(
     actorUserId: actorUserId,
     actorDisplayName: actor,
     photoCount: photoCount,
+    rating: rating,
   );
 }
 
@@ -130,6 +132,13 @@ void main() {
           photoCount: 2,
         ),
         _item(
+          'rated',
+          CommunityActivityKind.spotRated,
+          occurredAt: _now.subtract(const Duration(hours: 6)),
+          actor: 'Sam',
+          rating: 4,
+        ),
+        _item(
           'spot',
           CommunityActivityKind.spotAdded,
           occurredAt: _now.subtract(const Duration(days: 1)),
@@ -156,12 +165,17 @@ void main() {
 
     final spotAdded = find.textContaining('has added this new spot');
     final photoAdded = find.textContaining('2 new photos');
+    final rated = find.textContaining('rated this spot');
     final checkedIn = find.textContaining('has checked in to this spot');
     final planning = find.textContaining('is planning a session at this spot');
     final eventUpcoming = find.text('This event is coming up');
 
+    // Oldest past may sit above the initial viewport (stream opens on "now").
+    await _scrollTowardPastUntilVisible(tester, spotAdded);
+
     expect(spotAdded, findsOneWidget);
     expect(photoAdded, findsOneWidget);
+    expect(rated, findsOneWidget);
     expect(checkedIn, findsOneWidget);
     expect(planning, findsOneWidget);
     expect(eventUpcoming, findsOneWidget);
@@ -171,7 +185,8 @@ void main() {
     // Timeline: oldest past at the top, newest just above "now", then plans
     // and events soonest first.
     final nowTop = _topOf(tester, find.byType(CommunityNowDivider));
-    expect(_topOf(tester, spotAdded), lessThan(_topOf(tester, photoAdded)));
+    expect(_topOf(tester, spotAdded), lessThan(_topOf(tester, rated)));
+    expect(_topOf(tester, rated), lessThan(_topOf(tester, photoAdded)));
     expect(_topOf(tester, photoAdded), lessThan(_topOf(tester, checkedIn)));
     expect(_topOf(tester, checkedIn), lessThan(nowTop));
     expect(nowTop, lessThan(_topOf(tester, planning)));

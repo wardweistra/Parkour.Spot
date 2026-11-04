@@ -1108,6 +1108,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           },
                           child: Text(_l10n.spotDetailCreateAccountButton),
                         ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _l10n.spotDetailRatingPublicDisclosure,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: cs.onSurface.withValues(alpha: 0.65),
+                          ),
+                        ),
                       ],
                     ),
                   );
@@ -1171,6 +1178,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   tooltip: '${index + 1}',
                                 );
                               }),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _l10n.spotDetailRatingPublicDisclosure,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: cs.onSurface.withValues(alpha: 0.65),
+                              ),
                             ),
                             if (_hasRated) ...[
                               const SizedBox(height: 8),

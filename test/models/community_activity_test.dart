@@ -17,6 +17,17 @@ void main() {
             'actorDisplayName': 'Kim',
           },
           {
+            'id': 'spot_rated_r1',
+            'kind': 'spot_rated',
+            'timeline': 'past',
+            'latitude': 52.3,
+            'longitude': 4.9,
+            'occurredAt': '2026-05-10T10:00:00.000Z',
+            'spotId': 'spot-1',
+            'actorDisplayName': 'Sam',
+            'rating': 4,
+          },
+          {
             'id': 'event_ended_e1',
             'kind': 'event_ended',
             'timeline': 'past',
@@ -48,8 +59,12 @@ void main() {
         ],
       });
 
-      expect(feed.past, hasLength(1));
-      expect(feed.past.single.kind, CommunityActivityKind.spotCheckIn);
+      expect(feed.past, hasLength(2));
+      expect(feed.past.map((e) => e.kind), [
+        CommunityActivityKind.spotCheckIn,
+        CommunityActivityKind.spotRated,
+      ]);
+      expect(feed.past[1].rating, 4);
       expect(feed.pastEvents, hasLength(1));
       expect(feed.pastEvents.single.isPast, isTrue);
       expect(feed.pastEvents.single.pin.eventId, 'e1');
@@ -58,7 +73,7 @@ void main() {
       expect(feed.pastEvents.single.interestedCount, 2);
       expect(feed.events, hasLength(1));
       expect(feed.events.single.isPast, isFalse);
-      expect(feed.itemCount, 3);
+      expect(feed.itemCount, 4);
     });
   });
 }

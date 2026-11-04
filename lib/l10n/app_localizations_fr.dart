@@ -1180,6 +1180,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String communityStreamSpotRated(String name) {
+    return '$name a noté ce spot';
+  }
+
+  @override
   String get communityStreamEventHappeningNow =>
       'Cet événement a lieu en ce moment';
 
@@ -3158,6 +3163,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get spotDetailRatingClearFailed =>
       'Impossible de supprimer la note. Réessayez.';
+
+  @override
+  String get spotDetailRatingPublicDisclosure =>
+      'Ta note est publique et peut apparaître dans l’activité de la communauté à proximité.';
 
   @override
   String get spotDetailClearRating => 'Supprimer la note';

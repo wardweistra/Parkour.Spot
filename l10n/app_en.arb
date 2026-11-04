@@ -1458,6 +1458,15 @@
       }
     }
   },
+  "communityStreamSpotRated": "{name} rated this spot",
+  "@communityStreamSpotRated": {
+    "description": "Explore community stream: someone rated a spot (stars shown separately)",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "communityStreamEventHappeningNow": "This event is happening now",
   "@communityStreamEventHappeningNow": {
     "description": "Explore community stream: event whose time window includes now"
@@ -2928,6 +2937,10 @@
   "spotDetailRatingSubmitFailed": "Failed to submit rating. Please try again.",
   "spotDetailRatingCleared": "Rating removed",
   "spotDetailRatingClearFailed": "Failed to remove rating. Please try again.",
+  "spotDetailRatingPublicDisclosure": "Your rating is public and may show in community activity nearby.",
+  "@spotDetailRatingPublicDisclosure": {
+    "description": "Rate-this-spot sheet: informs that ratings are public and may appear in Explore activities"
+  },
   "spotDetailClearRating": "Clear rating",
   "spotDetailRatingSubmitError": "Error submitting rating: {error}",
   "@spotDetailRatingSubmitError": {

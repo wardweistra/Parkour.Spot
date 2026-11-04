@@ -261,6 +261,7 @@ const {
   syncSpotAddedActivity,
   syncSpotPhotoAddedActivity,
   syncSpotCheckInActivity,
+  syncSpotRatedActivity,
   syncSpotTrainingPlanActivity,
   syncEventEndedActivity,
   syncCommunityActivityForSpotChange,
@@ -1716,6 +1717,25 @@ exports.onSpotCheckInWrittenForCommunityActivity = onDocumentWritten(
         await syncSpotCheckInActivity(db, checkInId, afterData);
       } catch (e) {
         console.error("onSpotCheckInWrittenForCommunityActivity error", {checkInId, e});
+      }
+    },
+);
+
+// Explore Community stream: mirror ratings (create + score change) into communityActivity.
+exports.onRatingWrittenForCommunityActivity = onDocumentWritten(
+    {document: "ratings/{ratingId}", region: "europe-west1"},
+    async (event) => {
+      const ratingId = event.params.ratingId;
+      const afterData = event.data && event.data.after.exists ?
+        (event.data.after.data() || {}) :
+        null;
+      const beforeData = event.data && event.data.before.exists ?
+        (event.data.before.data() || {}) :
+        null;
+      try {
+        await syncSpotRatedActivity(db, ratingId, afterData, {beforeData});
+      } catch (e) {
+        console.error("onRatingWrittenForCommunityActivity error", {ratingId, e});
       }
     },
 );

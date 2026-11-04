@@ -1176,6 +1176,11 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String communityStreamSpotRated(String name) {
+    return '$name hat diesen Spot bewertet';
+  }
+
+  @override
   String get communityStreamEventHappeningNow =>
       'Dieses Event findet gerade statt';
 
@@ -3157,6 +3162,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get spotDetailRatingClearFailed =>
       'Bewertung konnte nicht entfernt werden. Bitte erneut versuchen.';
+
+  @override
+  String get spotDetailRatingPublicDisclosure =>
+      'Deine Bewertung ist öffentlich und kann in der Community-Aktivität in der Nähe erscheinen.';
 
   @override
   String get spotDetailClearRating => 'Bewertung entfernen';

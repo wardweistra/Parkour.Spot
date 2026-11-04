@@ -2,11 +2,12 @@
 /**
  * Region-scoped community activity for the Explore "Community" stream.
  *
- * Source documents (spots, spotCheckIns, spotTrainingPlans, auditLog photo
- * entries, ended events) are not queryable by map bounds together, so Cloud
- * Functions materialize one flat document per activity in `communityActivity`
- * with latitude/longitude denormalized. The Explore sheet then runs the same
- * latitude/longitude range queries it already uses for spots and eventMapPins.
+ * Source documents (spots, ratings, spotCheckIns, spotTrainingPlans, auditLog
+ * photo entries, ended events) are not queryable by map bounds together, so
+ * Cloud Functions materialize one flat document per activity in
+ * `communityActivity` with latitude/longitude denormalized. The Explore sheet
+ * then runs the same latitude/longitude range queries it already uses for
+ * spots and eventMapPins.
  *
  * Documents are written by Cloud Functions only (see firestore.rules).
  *
@@ -40,6 +41,7 @@ const KIND_SPOT_ADDED = "spot_added";
 const KIND_SPOT_PHOTO_ADDED = "spot_photo_added";
 const KIND_SPOT_CHECK_IN = "spot_check_in";
 const KIND_SPOT_TRAINING_PLAN = "spot_training_plan";
+const KIND_SPOT_RATED = "spot_rated";
 const KIND_EVENT_ENDED = "event_ended";
 
 const ALL_ACTIVITY_KINDS = new Set([
@@ -47,6 +49,7 @@ const ALL_ACTIVITY_KINDS = new Set([
   KIND_SPOT_PHOTO_ADDED,
   KIND_SPOT_CHECK_IN,
   KIND_SPOT_TRAINING_PLAN,
+  KIND_SPOT_RATED,
   KIND_EVENT_ENDED,
 ]);
 
@@ -55,6 +58,7 @@ const PAST_ACTIVITY_KINDS = new Set([
   KIND_SPOT_ADDED,
   KIND_SPOT_PHOTO_ADDED,
   KIND_SPOT_CHECK_IN,
+  KIND_SPOT_RATED,
   KIND_EVENT_ENDED,
 ]);
 
@@ -152,11 +156,31 @@ function checkInActivityId(checkInId) {
 }
 
 /**
+ * @param {string} ratingId
+ * @return {string}
+ */
+function spotRatedActivityId(ratingId) {
+  return `spot_rated_${ratingId}`;
+}
+
+/**
  * @param {string} planId
  * @return {string}
  */
 function trainingPlanActivityId(planId) {
   return `training_plan_${planId}`;
+}
+
+/**
+ * Numeric star value from a ratings document (1..5 in product use).
+ * @param {Object|null|undefined} ratingData
+ * @return {number|null}
+ */
+function ratingScore(ratingData) {
+  if (!ratingData || typeof ratingData !== "object") return null;
+  const raw = ratingData.rating;
+  if (typeof raw !== "number" || !Number.isFinite(raw)) return null;
+  return raw;
 }
 
 /**
@@ -458,6 +482,58 @@ function buildSpotCheckInActivity(checkInId, checkInData, spotData) {
         photoURL: checkInData.photoURL,
       }),
       comment: normalizeComment(checkInData.comment),
+    }),
+  };
+}
+
+/**
+ * @param {Object|null|undefined} ratingData
+ * @return {boolean}
+ */
+function isRatingEligibleForCommunityActivity(ratingData) {
+  if (!ratingData || typeof ratingData !== "object") return false;
+  if (!trimmedString(ratingData.spotId)) return false;
+  if (!trimmedString(ratingData.userId)) return false;
+  return ratingScore(ratingData) != null;
+}
+
+/**
+ * "X rated this spot" — public numeric ratings (create + score changes).
+ * @param {string} ratingId
+ * @param {Object} ratingData
+ * @param {Object|null} spotData
+ * @param {Object=} options
+ * @param {Date=} options.now
+ * @param {Object=} options.actorProfile displayName / photoURL
+ * @return {{id: string, data: Object}|null}
+ */
+function buildSpotRatedActivity(ratingId, ratingData, spotData, options = {}) {
+  if (!isRatingEligibleForCommunityActivity(ratingData)) return null;
+  if (!isSpotEligibleForCommunityActivity(spotData)) return null;
+  const spotId = trimmedString(ratingData.spotId);
+  const score = ratingScore(ratingData);
+  const now = options.now || new Date();
+  // Prefer updatedAt so score changes resurface near "now"; fall back to create.
+  const occurredAt = normalizeDate(ratingData.updatedAt) ||
+    normalizeDate(ratingData.createdAt) ||
+    now;
+  const profile = options.actorProfile || {};
+
+  return {
+    id: spotRatedActivityId(ratingId),
+    data: withoutNulls({
+      kind: KIND_SPOT_RATED,
+      timeline: TIMELINE_PAST,
+      sourceId: ratingId,
+      occurredAt,
+      expiresAt: new Date(occurredAt.getTime() + PAST_ACTIVITY_RETENTION_MS),
+      rating: score,
+      ...pickSpotFields(spotId, spotData),
+      ...pickActorFields({
+        userId: ratingData.userId,
+        displayName: profile.displayName,
+        photoURL: profile.photoURL,
+      }),
     }),
   };
 }
@@ -917,6 +993,46 @@ async function syncSpotCheckInActivity(db, checkInId, afterData) {
 }
 
 /**
+ * onWrite(ratings/{ratingId}). Deletes remove the activity; creates and
+ * score-changing updates (re)write it. Unchanged scores skip rewrite so the
+ * feed does not churn.
+ * @param {FirebaseFirestore.Firestore} db
+ * @param {string} ratingId
+ * @param {Object|null} afterData null when deleted
+ * @param {Object=} options
+ * @param {Object|null=} options.beforeData prior rating when this is an update
+ * @param {Date=} options.now
+ * @return {Promise<{written: boolean, deleted: boolean, skipped: boolean}>}
+ */
+async function syncSpotRatedActivity(db, ratingId, afterData, options = {}) {
+  const activityId = spotRatedActivityId(ratingId);
+  if (!isRatingEligibleForCommunityActivity(afterData)) {
+    await deleteCommunityActivity(db, activityId);
+    return {written: false, deleted: true, skipped: false};
+  }
+  const beforeData = options.beforeData;
+  if (
+    beforeData &&
+    ratingScore(beforeData) != null &&
+    ratingScore(beforeData) === ratingScore(afterData)
+  ) {
+    return {written: false, deleted: false, skipped: true};
+  }
+  const spotData = await loadSpotData(db, afterData.spotId);
+  const actorProfile = await loadActorProfile(db, afterData.userId);
+  const activity = buildSpotRatedActivity(ratingId, afterData, spotData, {
+    now: options.now,
+    actorProfile,
+  });
+  if (!activity) {
+    await deleteCommunityActivity(db, activityId);
+    return {written: false, deleted: true, skipped: false};
+  }
+  await writeCommunityActivity(db, activity);
+  return {written: true, deleted: false, skipped: false};
+}
+
+/**
  * onWrite(spotTrainingPlans/{planId}). Plans are deleted when converted into a
  * check-in, which removes the upcoming item; the check-in trigger adds the
  * past one.
@@ -1052,6 +1168,9 @@ function normalizeCommunityActivity(docId, data) {
     actorDisplayName: trimmedString(data.actorDisplayName),
     actorPhotoURL: trimmedString(data.actorPhotoURL),
     photoCount,
+    rating: typeof data.rating === "number" && Number.isFinite(data.rating) ?
+      data.rating :
+      null,
     imageUrls: imageUrls.length > 0 ? imageUrls : null,
     comment: trimmedString(data.comment),
   });
@@ -1850,9 +1969,17 @@ async function backfillCommunityActivity(db, options = {}) {
     spotsAdded: 0,
     photosAdded: 0,
     checkIns: 0,
+    ratings: 0,
     trainingPlans: 0,
     eventsEnded: 0,
-    scanned: {spots: 0, auditLogs: 0, checkIns: 0, trainingPlans: 0, events: 0},
+    scanned: {
+      spots: 0,
+      auditLogs: 0,
+      checkIns: 0,
+      ratings: 0,
+      trainingPlans: 0,
+      events: 0,
+    },
   };
 
   if (options.purge === true) {
@@ -1931,6 +2058,24 @@ async function backfillCommunityActivity(db, options = {}) {
     result.checkIns += 1;
   }
 
+  // updatedAt covers creates and score changes within the retention window.
+  const ratingsSnap = await db.collection("ratings")
+      .where("updatedAt", ">=", since)
+      .get();
+  for (const doc of ratingsSnap.docs) {
+    result.scanned.ratings += 1;
+    const data = doc.data() || {};
+    const spotData = await spotLoader(data.spotId);
+    const actorProfile = await profileLoader(data.userId);
+    const activity = buildSpotRatedActivity(doc.id, data, spotData, {
+      now,
+      actorProfile,
+    });
+    if (!activity) continue;
+    await writeCommunityActivity(db, activity);
+    result.ratings += 1;
+  }
+
   const plansSnap = await db.collection("spotTrainingPlans")
       .where("isPrivate", "==", false)
       .where("plannedEndAt", ">=", now)
@@ -1966,6 +2111,7 @@ module.exports = {
   KIND_SPOT_PHOTO_ADDED,
   KIND_SPOT_CHECK_IN,
   KIND_SPOT_TRAINING_PLAN,
+  KIND_SPOT_RATED,
   KIND_EVENT_ENDED,
   TIMELINE_PAST,
   TIMELINE_UPCOMING,
@@ -1976,10 +2122,12 @@ module.exports = {
   spotAddedActivityId,
   spotPhotoActivityId,
   checkInActivityId,
+  spotRatedActivityId,
   trainingPlanActivityId,
   eventEndedActivityId,
   isSpotEligibleForCommunityActivity,
   isCheckInEligibleForCommunityActivity,
+  isRatingEligibleForCommunityActivity,
   isTrainingPlanEligibleForCommunityActivity,
   isEventEligibleForEndedActivity,
   locationFromEventResolvedOrVenue,
@@ -1990,12 +2138,14 @@ module.exports = {
   buildSpotAddedActivity,
   buildSpotPhotoAddedActivity,
   buildSpotCheckInActivity,
+  buildSpotRatedActivity,
   buildSpotTrainingPlanActivity,
   buildEventEndedActivity,
   loadActorProfile,
   syncSpotAddedActivity,
   syncSpotPhotoAddedActivity,
   syncSpotCheckInActivity,
+  syncSpotRatedActivity,
   syncSpotTrainingPlanActivity,
   syncEventEndedActivity,
   syncCommunityActivityForSpotChange,

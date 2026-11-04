@@ -1139,6 +1139,7 @@ class CommunityActivityCard extends StatelessWidget {
     CommunityActivityKind.spotPhotoAdded => Icons.add_a_photo_outlined,
     CommunityActivityKind.spotCheckIn => Icons.where_to_vote_outlined,
     CommunityActivityKind.spotTrainingPlan => Icons.fitness_center,
+    CommunityActivityKind.spotRated => Icons.star_outline,
     // Past events use [CommunityEventActivityCard], not this card.
     CommunityActivityKind.eventEnded => Icons.event,
   };
@@ -1152,6 +1153,7 @@ class CommunityActivityCard extends StatelessWidget {
     CommunityActivityKind.spotCheckIn => l10n.communityStreamCheckedIn(actor),
     CommunityActivityKind.spotTrainingPlan =>
       l10n.communityStreamPlanningToTrain(actor),
+    CommunityActivityKind.spotRated => l10n.communityStreamSpotRated(actor),
     CommunityActivityKind.eventEnded => actor,
   };
 
@@ -1182,9 +1184,30 @@ class CommunityActivityCard extends StatelessWidget {
         return null;
       case CommunityActivityKind.spotAdded:
       case CommunityActivityKind.spotPhotoAdded:
+      case CommunityActivityKind.spotRated:
       case CommunityActivityKind.eventEnded:
         return null;
     }
+  }
+
+  /// Compact amber stars for [CommunityActivityKind.spotRated].
+  Widget? _ratingStars(Color mutedColor) {
+    final score = item.rating;
+    if (item.kind != CommunityActivityKind.spotRated || score == null) {
+      return null;
+    }
+    final filled = score.round().clamp(0, 5);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 1; i <= 5; i++)
+          Icon(
+            i <= filled ? Icons.star : Icons.star_border,
+            size: 16,
+            color: i <= filled ? Colors.amber : mutedColor,
+          ),
+      ],
+    );
   }
 
   @override
@@ -1241,6 +1264,10 @@ class CommunityActivityCard extends StatelessWidget {
                           highlight: actor,
                           style: theme.textTheme.bodyMedium,
                         ),
+                        if (_ratingStars(mutedColor) case final stars?) ...[
+                          const SizedBox(height: 4),
+                          stars,
+                        ],
                         const SizedBox(height: 4),
                         Row(
                           children: [

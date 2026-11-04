@@ -34,6 +34,7 @@ CommunityActivityFeed _mixedFeed() {
     past: [
       _item('added', CommunityActivityKind.spotAdded),
       _item('photo', CommunityActivityKind.spotPhotoAdded),
+      _item('rated', CommunityActivityKind.spotRated),
       _item('checkin', CommunityActivityKind.spotCheckIn),
     ],
     pastEvents: [_event('past-e', isPast: true)],
@@ -66,6 +67,7 @@ void main() {
       expect(CommunityActivityLens.contributions.firestoreKinds, [
         'spot_added',
         'spot_photo_added',
+        'spot_rated',
       ]);
       expect(
         CommunityActivityLens.contributions.includeUpcomingEvents,
@@ -114,7 +116,7 @@ void main() {
       expect(filtered.events, isEmpty);
     });
 
-    test('contributions keeps new spots and photos only', () {
+    test('contributions keeps new spots, photos, and ratings', () {
       final filtered = filterCommunityActivityFeed(
         _mixedFeed(),
         CommunityActivityLens.contributions,
@@ -124,6 +126,7 @@ void main() {
         [
           CommunityActivityKind.spotAdded,
           CommunityActivityKind.spotPhotoAdded,
+          CommunityActivityKind.spotRated,
         ],
       );
       expect(filtered.upcoming, isEmpty);
@@ -166,6 +169,13 @@ void main() {
       expect(
         communityActivityKindMatchesLens(
           CommunityActivityKind.spotPhotoAdded,
+          CommunityActivityLens.contributions,
+        ),
+        isTrue,
+      );
+      expect(
+        communityActivityKindMatchesLens(
+          CommunityActivityKind.spotRated,
           CommunityActivityLens.contributions,
         ),
         isTrue,
