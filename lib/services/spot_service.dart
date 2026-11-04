@@ -787,20 +787,15 @@ class SpotService extends ChangeNotifier {
         'videoIds': videoIds,
         'spotName': spotName,
       });
-      final rawData = result.data;
-      if (rawData is! Map) return const {};
-      final data = Map<String, dynamic>.from(rawData);
-      final rawThumbnails = data['thumbnails'];
-      if (rawThumbnails is! List) return const {};
-
-      final resolved = <String, String>{};
-      for (final item in rawThumbnails) {
-        if (item is! Map) continue;
-        final map = Map<String, dynamic>.from(item);
-        final id = map['videoId']?.toString();
-        final url = map['url']?.toString();
-        if (id != null && id.isNotEmpty && url != null && url.isNotEmpty) {
-          resolved[id] = url;
+      // dart2wasm: callable arrays/maps are often Iterable/Map but not List /
+      // Map<String, dynamic>. parseFetchYoutubeThumbnailsResponse tolerates that.
+      final resolved = parseFetchYoutubeThumbnailsResponse(result.data);
+      if (resolved.isEmpty && result.data is Map) {
+        final data = Map<String, dynamic>.from(result.data as Map);
+        if (data['success'] == false) {
+          debugPrint(
+            'fetchYoutubeThumbnails failed: ${data['error'] ?? 'unknown'}',
+          );
         }
       }
       return resolved;
