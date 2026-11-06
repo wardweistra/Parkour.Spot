@@ -103,13 +103,13 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
     return AlertDialog(
       title: Row(
         children: [
+          Expanded(child: SelectableText(source.name)),
+          const SizedBox(width: 12),
           SourceLogoImage(
             logoUrl: source.logoUrl,
-            size: 36,
+            size: 48,
             cacheVersion: source.updatedAt?.millisecondsSinceEpoch,
           ),
-          const SizedBox(width: 12),
-          Expanded(child: SelectableText(source.name)),
         ],
       ),
       content: SingleChildScrollView(
