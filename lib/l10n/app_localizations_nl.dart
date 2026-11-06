@@ -1029,11 +1029,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get exploreNoSpotsArea => 'Geen spots in dit gebied';
 
   @override
-  String get exploreNoSpotsSearchHint => 'Pas je zoektermen aan';
+  String get exploreNoSpotsFiltersHint =>
+      'Filters kunnen spots verbergen. Wis ze om meer te zien.';
 
   @override
   String get exploreNoSpotsMapHint =>
       'Verplaats de kaart om andere gebieden te verkennen';
+
+  @override
+  String get exploreNoSpotsAddSuggestion =>
+      'Mis je een spot die je verwachtte? Voeg hem toe voor de community.';
 
   @override
   String get exploreRefreshMapTooltip => 'Spots in huidig beeld vernieuwen';
@@ -1055,6 +1060,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get exploreClearFilters => 'Wissen';
+
+  @override
+  String get exploreClearFiltersAction => 'Filters wissen';
 
   @override
   String get exploreDoneFilters => 'Klaar';

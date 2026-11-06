@@ -1762,17 +1762,23 @@ abstract class AppLocalizations {
   /// **'No spots in this area'**
   String get exploreNoSpotsArea;
 
-  /// Empty state hint for search
+  /// Empty state hint when spot filters are active
   ///
   /// In en, this message translates to:
-  /// **'Try adjusting your search terms'**
-  String get exploreNoSpotsSearchHint;
+  /// **'Filters may be hiding spots. Clear them to see more.'**
+  String get exploreNoSpotsFiltersHint;
 
   /// Empty state hint for map
   ///
   /// In en, this message translates to:
   /// **'Move the map to explore different areas'**
   String get exploreNoSpotsMapHint;
+
+  /// Empty state and end-of-list suggestion to add a spot
+  ///
+  /// In en, this message translates to:
+  /// **'Missing a spot you expected? Add it for the community.'**
+  String get exploreNoSpotsAddSuggestion;
 
   /// FAB: reload spots
   ///
@@ -1815,6 +1821,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear'**
   String get exploreClearFilters;
+
+  /// Empty-state action to clear active spot filters
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get exploreClearFiltersAction;
 
   /// Close filters panel; filters already apply live
   ///

@@ -1295,13 +1295,17 @@
   "@exploreNoSpotsArea": {
     "description": "Empty state when map area has no spots"
   },
-  "exploreNoSpotsSearchHint": "Try adjusting your search terms",
-  "@exploreNoSpotsSearchHint": {
-    "description": "Empty state hint for search"
+  "exploreNoSpotsFiltersHint": "Filters may be hiding spots. Clear them to see more.",
+  "@exploreNoSpotsFiltersHint": {
+    "description": "Empty state hint when spot filters are active"
   },
   "exploreNoSpotsMapHint": "Move the map to explore different areas",
   "@exploreNoSpotsMapHint": {
     "description": "Empty state hint for map"
+  },
+  "exploreNoSpotsAddSuggestion": "Missing a spot you expected? Add it for the community.",
+  "@exploreNoSpotsAddSuggestion": {
+    "description": "Empty state and end-of-list suggestion to add a spot"
   },
   "exploreRefreshMapTooltip": "Refresh spots in current view",
   "@exploreRefreshMapTooltip": {
@@ -1330,6 +1334,10 @@
   "exploreClearFilters": "Clear",
   "@exploreClearFilters": {
     "description": "Reset all filters"
+  },
+  "exploreClearFiltersAction": "Clear filters",
+  "@exploreClearFiltersAction": {
+    "description": "Empty-state action to clear active spot filters"
   },
   "exploreDoneFilters": "Done",
   "@exploreDoneFilters": {

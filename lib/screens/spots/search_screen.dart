@@ -3135,101 +3135,216 @@ class SearchScreenState extends State<SearchScreen>
     await _openSpotListPreview(listId);
   }
 
+  Future<void> _clearExploreFilters() async {
+    final searchState = Provider.of<SearchStateService>(context, listen: false);
+    await searchState.clearAllFilters();
+  }
+
+  void _navigateToAddSpotFromExplore() {
+    final center = _mapCenterFromSearchState();
+    final queryParameters = <String, String>{};
+    if (center != null) {
+      queryParameters['lat'] = center.latitude.toString();
+      queryParameters['lng'] = center.longitude.toString();
+    }
+    final addSpotUri = Uri(
+      path: '/spots/add',
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
+    );
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    if (!authService.isAuthenticated) {
+      context.go(
+        '/login?redirectTo=${Uri.encodeComponent(addSpotUri.toString())}',
+      );
+    } else if (!authService.isProfileReady) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.exploreLoadingProfile),
+        ),
+      );
+    } else {
+      context.go(addSpotUri.toString());
+    }
+  }
+
+  Widget _buildAddSpotSuggestion({required bool compact}) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        compact ? 0 : 16,
+        compact ? 16 : 8,
+        compact ? 0 : 16,
+        compact ? 8 : 24,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            l10n.exploreNoSpotsAddSuggestion,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+          SizedBox(height: compact ? 12 : 16),
+          OutlinedButton.icon(
+            onPressed: _navigateToAddSpotFromExplore,
+            icon: const Icon(Icons.add_location_alt_outlined),
+            label: Text(l10n.exploreAddSpotTitle),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExploreSpotsEmptyState() {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final hasFilters = _hasActiveFilters();
+    final hasSearch = _searchQuery.isNotEmpty;
+
+    final IconData icon;
+    if (hasFilters) {
+      icon = Icons.filter_alt_off_outlined;
+    } else if (hasSearch) {
+      icon = Icons.search_off;
+    } else {
+      icon = Icons.location_off;
+    }
+
+    final title = hasSearch
+        ? l10n.exploreNoSpotsSearch
+        : l10n.exploreNoSpotsArea;
+    final hint = hasFilters
+        ? l10n.exploreNoSpotsFiltersHint
+        : l10n.exploreNoSpotsMapHint;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 64,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  hint,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+                if (hasFilters) ...[
+                  const SizedBox(height: 4),
+                  TextButton(
+                    onPressed: () async {
+                      await _clearExploreFilters();
+                    },
+                    child: Text(l10n.exploreClearFiltersAction),
+                  ),
+                ],
+                _buildAddSpotSuggestion(compact: true),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildVisibleSpotCard(Spot spot, int index) {
+    final bool isHighlighted =
+        spot.id != null && _highlightedSpotIds.contains(spot.id);
+    return SpotCard(
+      key: ValueKey(spot.id ?? 'spot-$index'),
+      spot: spot,
+      showCheckInPresence: true,
+      upcomingEventPin: _upcomingEventPinForSpot(spot),
+      spotListId: isHighlighted ? _selectedListId : null,
+      spotListName: isHighlighted ? _selectedListName : null,
+      onSpotListTap: isHighlighted && _selectedListId != null
+          ? () => _openSpotListPreview(_selectedListId!)
+          : null,
+      onTapWithImageIndex: (imageIndex) {
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLng(LatLng(spot.latitude, spot.longitude)),
+        );
+        final baseUrl = UrlService.generateNavigationUrl(
+          spot.id!,
+          countryCode: spot.countryCode,
+          city: spot.city,
+        );
+        final navigationUrl = imageIndex > 0
+            ? '$baseUrl?imageIndex=$imageIndex'
+            : baseUrl;
+        context.push(navigationUrl);
+      },
+      onLocate: () => _locateSpot(spot),
+    );
+  }
+
   Widget _buildSpotsList() {
     final screenWidth = MediaQuery.of(context).size.width;
     final useGrid = screenWidth >= 600; // Use grid layout on wider screens
 
     if (useGrid) {
       // Calculate optimal grid dimensions based on screen size
-      final maxCrossAxisExtent = 480.0;
-      final mainAxisExtent = 440.0; // Height to accommodate bottom content
+      const maxCrossAxisExtent = 480.0;
+      const mainAxisExtent = 440.0; // Height to accommodate bottom content
 
-      return GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: maxCrossAxisExtent,
-          mainAxisExtent: mainAxisExtent,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-        ),
-        itemCount: _visibleSpots.length,
-        itemBuilder: (context, index) {
-          final spot = _visibleSpots[index];
-          final bool isHighlighted =
-              spot.id != null && _highlightedSpotIds.contains(spot.id);
-          return SpotCard(
-            key: ValueKey(spot.id ?? 'spot-$index'),
-            spot: spot,
-            showCheckInPresence: true,
-            upcomingEventPin: _upcomingEventPinForSpot(spot),
-            spotListId: isHighlighted ? _selectedListId : null,
-            spotListName: isHighlighted ? _selectedListName : null,
-            onSpotListTap: isHighlighted && _selectedListId != null
-                ? () => _openSpotListPreview(_selectedListId!)
-                : null,
-            onTapWithImageIndex: (imageIndex) {
-              // Center map on selected spot
-              _mapController?.animateCamera(
-                CameraUpdate.newLatLng(LatLng(spot.latitude, spot.longitude)),
-              );
-              // Navigate to spot detail using proper URL format with image index
-              final baseUrl = UrlService.generateNavigationUrl(
-                spot.id!,
-                countryCode: spot.countryCode,
-                city: spot.city,
-              );
-              final navigationUrl = imageIndex > 0
-                  ? '$baseUrl?imageIndex=$imageIndex'
-                  : baseUrl;
-              context.push(navigationUrl);
-            },
-            onLocate: () => _locateSpot(spot),
-          );
-        },
-      );
-    } else {
-      // Use list layout on narrower screens
-      return ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _visibleSpots.length,
-        itemBuilder: (context, index) {
-          final spot = _visibleSpots[index];
-          final bool isHighlighted =
-              spot.id != null && _highlightedSpotIds.contains(spot.id);
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: SpotCard(
-              key: ValueKey(spot.id ?? 'spot-$index'),
-              spot: spot,
-              showCheckInPresence: true,
-              upcomingEventPin: _upcomingEventPinForSpot(spot),
-              spotListId: isHighlighted ? _selectedListId : null,
-              spotListName: isHighlighted ? _selectedListName : null,
-              onSpotListTap: isHighlighted && _selectedListId != null
-                  ? () => _openSpotListPreview(_selectedListId!)
-                  : null,
-              onTapWithImageIndex: (imageIndex) {
-                // Center map on selected spot
-                _mapController?.animateCamera(
-                  CameraUpdate.newLatLng(LatLng(spot.latitude, spot.longitude)),
-                );
-                // Navigate to spot detail using proper URL format with image index
-                final baseUrl = UrlService.generateNavigationUrl(
-                  spot.id!,
-                  countryCode: spot.countryCode,
-                  city: spot.city,
-                );
-                final navigationUrl = imageIndex > 0
-                    ? '$baseUrl?imageIndex=$imageIndex'
-                    : baseUrl;
-                context.push(navigationUrl);
-              },
-              onLocate: () => _locateSpot(spot),
+      return CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: maxCrossAxisExtent,
+                mainAxisExtent: mainAxisExtent,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                return _buildVisibleSpotCard(_visibleSpots[index], index);
+              }, childCount: _visibleSpots.length),
             ),
-          );
-        },
+          ),
+          SliverToBoxAdapter(child: _buildAddSpotSuggestion(compact: false)),
+        ],
       );
     }
+
+    // Use list layout on narrower screens
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          sliver: SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _buildVisibleSpotCard(_visibleSpots[index], index),
+              );
+            }, childCount: _visibleSpots.length),
+          ),
+        ),
+        SliverToBoxAdapter(child: _buildAddSpotSuggestion(compact: false)),
+      ],
+    );
   }
 
   EventMapPin? _upcomingEventPinForSpot(Spot spot) {
@@ -4507,71 +4622,7 @@ class SearchScreenState extends State<SearchScreen>
                                                   );
                                                 }
                                                 return _visibleSpots.isEmpty
-                                                    ? Center(
-                                                        child: Column(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .center,
-                                                          children: [
-                                                            Icon(
-                                                              _searchQuery
-                                                                      .isNotEmpty
-                                                                  ? Icons
-                                                                        .search_off
-                                                                  : Icons
-                                                                        .location_off,
-                                                              size: 64,
-                                                              color: Theme.of(
-                                                                context,
-                                                              ).colorScheme.onSurface.withValues(
-                                                                alpha: 0.5,
-                                                              ),
-                                                            ),
-                                                            const SizedBox(
-                                                              height: 16,
-                                                            ),
-                                                            Text(
-                                                              _searchQuery
-                                                                      .isNotEmpty
-                                                                  ? AppLocalizations.of(
-                                                                      context,
-                                                                    )!.exploreNoSpotsSearch
-                                                                  : AppLocalizations.of(
-                                                                      context,
-                                                                    )!.exploreNoSpotsArea,
-                                                              style: Theme.of(
-                                                                context,
-                                                              ).textTheme.headlineSmall,
-                                                            ),
-                                                            const SizedBox(
-                                                              height: 8,
-                                                            ),
-                                                            Text(
-                                                              _searchQuery
-                                                                      .isNotEmpty
-                                                                  ? AppLocalizations.of(
-                                                                      context,
-                                                                    )!.exploreNoSpotsSearchHint
-                                                                  : AppLocalizations.of(
-                                                                      context,
-                                                                    )!.exploreNoSpotsMapHint,
-                                                              textAlign:
-                                                                  TextAlign
-                                                                      .center,
-                                                              style: Theme.of(context)
-                                                                  .textTheme
-                                                                  .bodyMedium
-                                                                  ?.copyWith(
-                                                                    color: Theme.of(
-                                                                      context,
-                                                                    ).colorScheme.onSurface.withValues(
-                                                                      alpha: 0.7,
-                                                                    ),
-                                                                  ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      )
+                                                    ? _buildExploreSpotsEmptyState()
                                                     : _buildSpotsList();
                                               },
                                             ),

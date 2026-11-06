@@ -1038,11 +1038,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get exploreNoSpotsArea => 'Keine Spots in diesem Gebiet';
 
   @override
-  String get exploreNoSpotsSearchHint => 'Passe deine Suchbegriffe an';
+  String get exploreNoSpotsFiltersHint =>
+      'Filter können Spots ausblenden. Setze sie zurück, um mehr zu sehen.';
 
   @override
   String get exploreNoSpotsMapHint =>
       'Verschiebe die Karte, um andere Gebiete zu erkunden';
+
+  @override
+  String get exploreNoSpotsAddSuggestion =>
+      'Fehlt ein Spot, den du erwartet hast? Füge ihn für die Community hinzu.';
 
   @override
   String get exploreRefreshMapTooltip =>
@@ -1065,6 +1070,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get exploreClearFilters => 'Zurücksetzen';
+
+  @override
+  String get exploreClearFiltersAction => 'Filter zurücksetzen';
 
   @override
   String get exploreDoneFilters => 'Fertig';
