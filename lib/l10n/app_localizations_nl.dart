@@ -2432,7 +2432,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get spotDetailCommunitySectionSubtitle =>
-      'Zie wie hier traint of een sessie plant, en deel je sessie.';
+      'Check in of plan een sessie zodat anderen weten wanneer je hier bent.';
 
   @override
   String get spotDetailCommunityNobodyHere =>
@@ -2506,7 +2506,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get spotCheckInDialogIntroNew =>
-      'Laat anderen weten dat je hier traint en ongeveer tot wanneer. Bij openbaar delen verschijn je op de community van deze spot tot je eindtijd.';
+      'Laat anderen weten dat je hier traint en ongeveer tot wanneer.';
 
   @override
   String get spotCheckInDialogIntroEdit =>
@@ -2517,7 +2517,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get spotCheckInDialogShareSub =>
-      'Zet uit zodat alleen jij deze check-in ziet.';
+      'Verschijnt op deze spot tot je eindtijd, en blijft daarna onder Activiteiten.';
 
   @override
   String get spotCheckInDialogLabelArrived => 'Aangekomen';
@@ -2604,15 +2604,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get spotTrainingPlanDialogCheckInCtaButton => 'Check in';
 
   @override
-  String get spotTrainingPlanDialogBody =>
-      'Stel in wanneer je wilt beginnen en eindigen. Openbare sessies verschijnen op de community van deze spot naast anderen die delen.';
+  String get spotTrainingPlanDialogBody => 'Kies begin- en eindtijd.';
 
   @override
   String get spotTrainingPlanDialogSharePublic => 'Openbaar delen';
 
   @override
   String get spotTrainingPlanDialogShareSub =>
-      'Zet uit zodat alleen jij deze sessie ziet.';
+      'Verschijnt op deze spot en onder Activiteiten.';
 
   @override
   String get spotTrainingPlanDialogStartLabel => 'Start';
@@ -2765,7 +2764,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get spotDetailSignInToRateSubtitle =>
-      'Log in om deze spot te beoordelen en andere parkoursporters te helpen.';
+      'Log in om een beoordeling te geven.';
 
   @override
   String get spotDetailSignInButton => 'Inloggen';
@@ -3191,13 +3190,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get spotDetailRatingPublicDisclosure =>
-      'Je beoordeling is openbaar en kan in community-activiteit in de buurt verschijnen.';
+      'Beoordelingen zijn openbaar op deze spot en kunnen in de buurt verschijnen.';
 
   @override
   String get spotDetailClearRating => 'Beoordeling wissen';
 
   @override
-  String get spotDetailCurrentRatings => 'Huidige beoordelingen';
+  String get spotDetailCurrentRatings => 'Wie beoordeelde';
 
   @override
   String spotDetailRatingSubmitError(String error) {
@@ -3559,19 +3558,19 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get spotTrackingAddedListPublicVisibilityHelp =>
-      'Staat op je profiel. Spots die je toevoegt, tonen je nog steeds als maker op de spot en in de activiteitenfeed.';
+      'Zichtbaar op je profiel. Je wordt ook als maker op elke spot genoemd.';
 
   @override
   String get spotTrackingAddedListPrivateVisibilityHelp =>
-      'Alleen jij ziet deze lijst. Spots die je toevoegt, tonen je nog steeds als maker op de spot en in de activiteitenfeed.';
+      'Alleen jij ziet deze lijst. Je wordt nog steeds als maker op elke spot genoemd.';
 
   @override
   String get spotTrackingRatedListPublicVisibilityHelp =>
-      'Staat op je profiel. Je beoordelingen blijven zichtbaar op elke spot en in de activiteitenfeed.';
+      'Zichtbaar op je profiel. Je beoordelingen staan ook op elke spot.';
 
   @override
   String get spotTrackingRatedListPrivateVisibilityHelp =>
-      'Alleen jij ziet deze lijst. Je beoordelingen blijven zichtbaar op elke spot en in de activiteitenfeed.';
+      'Alleen jij ziet deze lijst. Je beoordelingen blijven op elke spot zichtbaar.';
 
   @override
   String get spotListSaveTooltipSaveList => 'Lijst opslaan';

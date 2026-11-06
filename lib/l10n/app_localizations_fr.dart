@@ -2454,7 +2454,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get spotDetailCommunitySectionSubtitle =>
-      'Voyez qui s’entraîne ou prévoit une séance ici, et partagez votre séance.';
+      'Faites un check-in ou planifiez une séance pour que les autres sachent quand vous êtes ici.';
 
   @override
   String get spotDetailCommunityNobodyHere =>
@@ -2529,7 +2529,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get spotCheckInDialogIntroNew =>
-      'Indiquez que vous vous entraînez ici et environ jusqu’à quand. Si vous partagez publiquement, vous apparaissez sur la communauté de ce spot jusqu’à l’heure de fin.';
+      'Indiquez que vous vous entraînez ici et environ jusqu’à quand.';
 
   @override
   String get spotCheckInDialogIntroEdit =>
@@ -2540,7 +2540,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get spotCheckInDialogShareSub =>
-      'Désactivez pour que vous seul·e voyiez ce pointage.';
+      'Apparaît sur ce spot jusqu’à cette heure, puis reste visible dans Activités.';
 
   @override
   String get spotCheckInDialogLabelArrived => 'Arrivée';
@@ -2628,15 +2628,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get spotTrainingPlanDialogCheckInCtaButton => 'S’enregistrer';
 
   @override
-  String get spotTrainingPlanDialogBody =>
-      'Indiquez le début et la fin prévus. Les séances publiques apparaissent sur la communauté de ce spot avec les autres personnes qui partagent.';
+  String get spotTrainingPlanDialogBody => 'Choisissez début et fin.';
 
   @override
   String get spotTrainingPlanDialogSharePublic => 'Partager publiquement';
 
   @override
   String get spotTrainingPlanDialogShareSub =>
-      'Désactivez pour que vous seul·e voyiez cette séance.';
+      'Apparaît sur ce spot et dans Activités.';
 
   @override
   String get spotTrainingPlanDialogStartLabel => 'Début';
@@ -2791,7 +2790,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get spotDetailSignInToRateSubtitle =>
-      'Connectez-vous pour noter ce spot et aider la communauté.';
+      'Connectez-vous pour laisser une note.';
 
   @override
   String get spotDetailSignInButton => 'Connexion';
@@ -3223,13 +3222,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get spotDetailRatingPublicDisclosure =>
-      'Ta note est publique et peut apparaître dans l’activité de la communauté à proximité.';
+      'Les notes sont publiques sur ce spot et peuvent apparaître à proximité.';
 
   @override
   String get spotDetailClearRating => 'Supprimer la note';
 
   @override
-  String get spotDetailCurrentRatings => 'Notes actuelles';
+  String get spotDetailCurrentRatings => 'Qui a noté';
 
   @override
   String spotDetailRatingSubmitError(String error) {
@@ -3592,19 +3591,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get spotTrackingAddedListPublicVisibilityHelp =>
-      'Affichée sur votre profil. Les spots que vous ajoutez vous créditent toujours comme créateur sur chaque spot et dans le fil d\'activité.';
+      'Visible sur votre profil. Vous êtes aussi crédité comme créateur sur chaque spot.';
 
   @override
   String get spotTrackingAddedListPrivateVisibilityHelp =>
-      'Seulement vous voyez cette liste. Les spots que vous ajoutez vous créditent toujours comme créateur sur chaque spot et dans le fil d\'activité.';
+      'Vous seul voyez cette liste. Vous restez crédité comme créateur sur chaque spot.';
 
   @override
   String get spotTrackingRatedListPublicVisibilityHelp =>
-      'Affichée sur votre profil. Vos notes restent visibles sur chaque spot et dans le fil d\'activité.';
+      'Visible sur votre profil. Vos notes apparaissent aussi sur chaque spot.';
 
   @override
   String get spotTrackingRatedListPrivateVisibilityHelp =>
-      'Seulement vous voyez cette liste. Vos notes restent visibles sur chaque spot et dans le fil d\'activité.';
+      'Vous seul voyez cette liste. Vos notes restent sur chaque spot.';
 
   @override
   String get spotListSaveTooltipSaveList => 'Enregistrer la liste';

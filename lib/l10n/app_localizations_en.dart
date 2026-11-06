@@ -2416,7 +2416,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get spotDetailCommunitySectionSubtitle =>
-      'See who’s training or planning to be here, and share your session.';
+      'Check in or plan a session so others know when you’re here.';
 
   @override
   String get spotDetailCommunityNobodyHere =>
@@ -2489,7 +2489,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get spotCheckInDialogIntroNew =>
-      'Let others know you’re training here and roughly when you’ll finish. If you share publicly, you show on this spot’s Community strip until that time.';
+      'Let others know you’re training here and roughly when you’ll finish.';
 
   @override
   String get spotCheckInDialogIntroEdit =>
@@ -2500,7 +2500,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get spotCheckInDialogShareSub =>
-      'Turn off to keep this check-in visible only to you.';
+      'Shows on this spot until that time, then stays in Activities.';
 
   @override
   String get spotCheckInDialogLabelArrived => 'Arrived';
@@ -2588,15 +2588,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get spotTrainingPlanDialogCheckInCtaButton => 'Check in';
 
   @override
-  String get spotTrainingPlanDialogBody =>
-      'Set when you plan to start and finish. Public sessions appear on this spot’s Community strip alongside other people who’ve shared.';
+  String get spotTrainingPlanDialogBody => 'Choose start and end times.';
 
   @override
   String get spotTrainingPlanDialogSharePublic => 'Share publicly';
 
   @override
   String get spotTrainingPlanDialogShareSub =>
-      'Turn off to keep this session visible only to you.';
+      'Shows on this spot and in Activities.';
 
   @override
   String get spotTrainingPlanDialogStartLabel => 'Starts';
@@ -2749,11 +2748,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get spotDetailSignInToRateTitle => 'Sign in to rate this spot';
 
   @override
-  String get spotDetailSignInToRateSubtitle =>
-      'Sign in to rate this spot and help other parkour enthusiasts.';
+  String get spotDetailSignInToRateSubtitle => 'Sign in to leave a rating.';
 
   @override
-  String get spotDetailSignInButton => 'Sign In';
+  String get spotDetailSignInButton => 'Sign in';
 
   @override
   String get spotDetailCreateAccountButton => 'Create an Account';
@@ -3175,13 +3173,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get spotDetailRatingPublicDisclosure =>
-      'Your rating is public and may show in community activity nearby.';
+      'Ratings are public on this spot and may appear in nearby activity.';
 
   @override
   String get spotDetailClearRating => 'Clear rating';
 
   @override
-  String get spotDetailCurrentRatings => 'Current ratings';
+  String get spotDetailCurrentRatings => 'Who rated';
 
   @override
   String spotDetailRatingSubmitError(String error) {
@@ -3539,19 +3537,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get spotTrackingAddedListPublicVisibilityHelp =>
-      'Listed on your profile. Spots you add still show you as the creator on each spot and in the activity feed.';
+      'Shown on your profile. You’re also named as creator on each spot.';
 
   @override
   String get spotTrackingAddedListPrivateVisibilityHelp =>
-      'Only you see this list. Spots you add still show you as the creator on each spot and in the activity feed.';
+      'Only you see this list. You’re still named as creator on each spot.';
 
   @override
   String get spotTrackingRatedListPublicVisibilityHelp =>
-      'Listed on your profile. Your ratings still appear on each spot and in the activity feed.';
+      'Shown on your profile. Your ratings also appear on each spot.';
 
   @override
   String get spotTrackingRatedListPrivateVisibilityHelp =>
-      'Only you see this list. Your ratings still appear on each spot and in the activity feed.';
+      'Only you see this list. Your ratings still appear on each spot.';
 
   @override
   String get spotListSaveTooltipSaveList => 'Save list';

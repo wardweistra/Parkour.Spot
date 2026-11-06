@@ -3834,7 +3834,7 @@ abstract class AppLocalizations {
   /// No description provided for @spotDetailCommunitySectionSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'See who’s training or planning to be here, and share your session.'**
+  /// **'Check in or plan a session so others know when you’re here.'**
   String get spotDetailCommunitySectionSubtitle;
 
   /// No description provided for @spotDetailCommunityNobodyHere.
@@ -3957,10 +3957,10 @@ abstract class AppLocalizations {
   /// **'Edit check-in'**
   String get spotCheckInDialogTitleEdit;
 
-  /// Intro paragraph for new check-in dialog
+  /// Intro paragraph for new check-in dialog; task purpose only—visibility lives on the share switch
   ///
   /// In en, this message translates to:
-  /// **'Let others know you’re training here and roughly when you’ll finish. If you share publicly, you show on this spot’s Community strip until that time.'**
+  /// **'Let others know you’re training here and roughly when you’ll finish.'**
   String get spotCheckInDialogIntroNew;
 
   /// Intro paragraph for edit check-in dialog
@@ -3975,10 +3975,10 @@ abstract class AppLocalizations {
   /// **'Share publicly'**
   String get spotCheckInDialogSharePublic;
 
-  /// Subtitle explaining private check-in on check-in dialog
+  /// Subtitle for share switch: where a public check-in appears
   ///
   /// In en, this message translates to:
-  /// **'Turn off to keep this check-in visible only to you.'**
+  /// **'Shows on this spot until that time, then stays in Activities.'**
   String get spotCheckInDialogShareSub;
 
   /// No description provided for @spotCheckInDialogLabelArrived.
@@ -4131,10 +4131,10 @@ abstract class AppLocalizations {
   /// **'Check in'**
   String get spotTrainingPlanDialogCheckInCtaButton;
 
-  /// No description provided for @spotTrainingPlanDialogBody.
+  /// Body for plan-session dialog; task only—visibility lives on the share switch
   ///
   /// In en, this message translates to:
-  /// **'Set when you plan to start and finish. Public sessions appear on this spot’s Community strip alongside other people who’ve shared.'**
+  /// **'Choose start and end times.'**
   String get spotTrainingPlanDialogBody;
 
   /// No description provided for @spotTrainingPlanDialogSharePublic.
@@ -4143,10 +4143,10 @@ abstract class AppLocalizations {
   /// **'Share publicly'**
   String get spotTrainingPlanDialogSharePublic;
 
-  /// No description provided for @spotTrainingPlanDialogShareSub.
+  /// Subtitle for share switch: where a public planned session appears
   ///
   /// In en, this message translates to:
-  /// **'Turn off to keep this session visible only to you.'**
+  /// **'Shows on this spot and in Activities.'**
   String get spotTrainingPlanDialogShareSub;
 
   /// No description provided for @spotTrainingPlanDialogStartLabel.
@@ -4422,13 +4422,13 @@ abstract class AppLocalizations {
   /// No description provided for @spotDetailSignInToRateSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Sign in to rate this spot and help other parkour enthusiasts.'**
+  /// **'Sign in to leave a rating.'**
   String get spotDetailSignInToRateSubtitle;
 
   /// No description provided for @spotDetailSignInButton.
   ///
   /// In en, this message translates to:
-  /// **'Sign In'**
+  /// **'Sign in'**
   String get spotDetailSignInButton;
 
   /// No description provided for @spotDetailCreateAccountButton.
@@ -5160,7 +5160,7 @@ abstract class AppLocalizations {
   /// Rate-this-spot sheet: informs that ratings are public and may appear in Explore activities
   ///
   /// In en, this message translates to:
-  /// **'Your rating is public and may show in community activity nearby.'**
+  /// **'Ratings are public on this spot and may appear in nearby activity.'**
   String get spotDetailRatingPublicDisclosure;
 
   /// No description provided for @spotDetailClearRating.
@@ -5172,7 +5172,7 @@ abstract class AppLocalizations {
   /// Rate-this-spot sheet: heading above the list of people who rated
   ///
   /// In en, this message translates to:
-  /// **'Current ratings'**
+  /// **'Who rated'**
   String get spotDetailCurrentRatings;
 
   /// No description provided for @spotDetailRatingSubmitError.
@@ -5706,25 +5706,25 @@ abstract class AppLocalizations {
   /// Added-by-you list: public toggle help when the list is public
   ///
   /// In en, this message translates to:
-  /// **'Listed on your profile. Spots you add still show you as the creator on each spot and in the activity feed.'**
+  /// **'Shown on your profile. You’re also named as creator on each spot.'**
   String get spotTrackingAddedListPublicVisibilityHelp;
 
   /// Added-by-you list: public toggle help when the list is private
   ///
   /// In en, this message translates to:
-  /// **'Only you see this list. Spots you add still show you as the creator on each spot and in the activity feed.'**
+  /// **'Only you see this list. You’re still named as creator on each spot.'**
   String get spotTrackingAddedListPrivateVisibilityHelp;
 
   /// Rated-by-you list: public toggle help when the list is public
   ///
   /// In en, this message translates to:
-  /// **'Listed on your profile. Your ratings still appear on each spot and in the activity feed.'**
+  /// **'Shown on your profile. Your ratings also appear on each spot.'**
   String get spotTrackingRatedListPublicVisibilityHelp;
 
   /// Rated-by-you list: public toggle help when the list is private
   ///
   /// In en, this message translates to:
-  /// **'Only you see this list. Your ratings still appear on each spot and in the activity feed.'**
+  /// **'Only you see this list. Your ratings still appear on each spot.'**
   String get spotTrackingRatedListPrivateVisibilityHelp;
 
   /// Tooltip on list save button when list is not saved

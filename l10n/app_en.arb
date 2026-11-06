@@ -2642,7 +2642,7 @@
   "spotDetailRatingTooltip": "Community rating and your stars",
   "spotDetailPresenceHereNow": "Here now",
   "spotDetailCommunitySectionTitle": "Community",
-  "spotDetailCommunitySectionSubtitle": "See who’s training or planning to be here, and share your session.",
+  "spotDetailCommunitySectionSubtitle": "Check in or plan a session so others know when you’re here.",
   "spotDetailCommunityNobodyHere": "No one’s checked in yet. Check in to let others know you’re here.",
   "spotDetailCommunityNobodyHereShort": "No one’s here yet.",
   "spotDetailCommunityNobodySocialShort": "No one’s here or planning ahead yet.",
@@ -2678,9 +2678,9 @@
   "@spotCheckInDialogTitleEdit": {
     "description": "Title for edit check-in dialog on spot detail"
   },
-  "spotCheckInDialogIntroNew": "Let others know you’re training here and roughly when you’ll finish. If you share publicly, you show on this spot’s Community strip until that time.",
+  "spotCheckInDialogIntroNew": "Let others know you’re training here and roughly when you’ll finish.",
   "@spotCheckInDialogIntroNew": {
-    "description": "Intro paragraph for new check-in dialog"
+    "description": "Intro paragraph for new check-in dialog; task purpose only—visibility lives on the share switch"
   },
   "spotCheckInDialogIntroEdit": "Change your arrival and end times, who can see this check-in, and your note.",
   "@spotCheckInDialogIntroEdit": {
@@ -2690,9 +2690,9 @@
   "@spotCheckInDialogSharePublic": {
     "description": "Title for visibility switch on check-in dialog"
   },
-  "spotCheckInDialogShareSub": "Turn off to keep this check-in visible only to you.",
+  "spotCheckInDialogShareSub": "Shows on this spot until that time, then stays in Activities.",
   "@spotCheckInDialogShareSub": {
-    "description": "Subtitle explaining private check-in on check-in dialog"
+    "description": "Subtitle for share switch: where a public check-in appears"
   },
   "spotCheckInDialogLabelArrived": "Arrived",
   "spotCheckInDialogLabelHereUntil": "Here until",
@@ -2746,9 +2746,15 @@
   "@spotTrainingPlanDialogCheckInCtaButton": {
     "description": "Button to leave edit plan and open check-in"
   },
-  "spotTrainingPlanDialogBody": "Set when you plan to start and finish. Public sessions appear on this spot’s Community strip alongside other people who’ve shared.",
+  "spotTrainingPlanDialogBody": "Choose start and end times.",
+  "@spotTrainingPlanDialogBody": {
+    "description": "Body for plan-session dialog; task only—visibility lives on the share switch"
+  },
   "spotTrainingPlanDialogSharePublic": "Share publicly",
-  "spotTrainingPlanDialogShareSub": "Turn off to keep this session visible only to you.",
+  "spotTrainingPlanDialogShareSub": "Shows on this spot and in Activities.",
+  "@spotTrainingPlanDialogShareSub": {
+    "description": "Subtitle for share switch: where a public planned session appears"
+  },
   "spotTrainingPlanDialogStartLabel": "Starts",
   "spotTrainingPlanDialogEndLabel": "Ends",
   "spotTrainingPlanDialogSave": "Save",
@@ -2818,8 +2824,8 @@
   "spotDetailCouldNotLoadProfile": "Couldn’t load your profile.",
   "spotDetailRefreshPageToRate": "Please refresh the page to rate.",
   "spotDetailSignInToRateTitle": "Sign in to rate this spot",
-  "spotDetailSignInToRateSubtitle": "Sign in to rate this spot and help other parkour enthusiasts.",
-  "spotDetailSignInButton": "Sign In",
+  "spotDetailSignInToRateSubtitle": "Sign in to leave a rating.",
+  "spotDetailSignInButton": "Sign in",
   "spotDetailCreateAccountButton": "Create an Account",
   "spotDetailMapSwitchToMap": "Switch to Map",
   "spotDetailMapSwitchToSatellite": "Switch to Satellite",
@@ -3000,12 +3006,12 @@
   "spotDetailRatingSubmitFailed": "Failed to submit rating. Please try again.",
   "spotDetailRatingCleared": "Rating removed",
   "spotDetailRatingClearFailed": "Failed to remove rating. Please try again.",
-  "spotDetailRatingPublicDisclosure": "Your rating is public and may show in community activity nearby.",
+  "spotDetailRatingPublicDisclosure": "Ratings are public on this spot and may appear in nearby activity.",
   "@spotDetailRatingPublicDisclosure": {
     "description": "Rate-this-spot sheet: informs that ratings are public and may appear in Explore activities"
   },
   "spotDetailClearRating": "Clear rating",
-  "spotDetailCurrentRatings": "Current ratings",
+  "spotDetailCurrentRatings": "Who rated",
   "@spotDetailCurrentRatings": {
     "description": "Rate-this-spot sheet: heading above the list of people who rated"
   },
@@ -3281,19 +3287,19 @@
   "@spotTrackingRatedEmptyHint": {
     "description": "Empty state hint for the private rated-by-you spot list"
   },
-  "spotTrackingAddedListPublicVisibilityHelp": "Listed on your profile. Spots you add still show you as the creator on each spot and in the activity feed.",
+  "spotTrackingAddedListPublicVisibilityHelp": "Shown on your profile. You’re also named as creator on each spot.",
   "@spotTrackingAddedListPublicVisibilityHelp": {
     "description": "Added-by-you list: public toggle help when the list is public"
   },
-  "spotTrackingAddedListPrivateVisibilityHelp": "Only you see this list. Spots you add still show you as the creator on each spot and in the activity feed.",
+  "spotTrackingAddedListPrivateVisibilityHelp": "Only you see this list. You’re still named as creator on each spot.",
   "@spotTrackingAddedListPrivateVisibilityHelp": {
     "description": "Added-by-you list: public toggle help when the list is private"
   },
-  "spotTrackingRatedListPublicVisibilityHelp": "Listed on your profile. Your ratings still appear on each spot and in the activity feed.",
+  "spotTrackingRatedListPublicVisibilityHelp": "Shown on your profile. Your ratings also appear on each spot.",
   "@spotTrackingRatedListPublicVisibilityHelp": {
     "description": "Rated-by-you list: public toggle help when the list is public"
   },
-  "spotTrackingRatedListPrivateVisibilityHelp": "Only you see this list. Your ratings still appear on each spot and in the activity feed.",
+  "spotTrackingRatedListPrivateVisibilityHelp": "Only you see this list. Your ratings still appear on each spot.",
   "@spotTrackingRatedListPrivateVisibilityHelp": {
     "description": "Rated-by-you list: public toggle help when the list is private"
   },

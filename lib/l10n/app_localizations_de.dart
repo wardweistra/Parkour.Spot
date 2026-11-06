@@ -2449,7 +2449,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get spotDetailCommunitySectionSubtitle =>
-      'Sieh, wer hier trainiert oder eine Session plant, und teile deine Session.';
+      'Checke dich ein oder plane eine Session, damit andere wissen, wann du hier bist.';
 
   @override
   String get spotDetailCommunityNobodyHere =>
@@ -2523,7 +2523,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get spotCheckInDialogIntroNew =>
-      'Zeig anderen, dass du hier trainierst und ungefähr bis wann. Bei öffentlicher Freigabe erscheinst du auf dem Community-Bereich dieses Spots bis zu deiner Endzeit.';
+      'Zeig anderen, dass du hier trainierst und ungefähr bis wann.';
 
   @override
   String get spotCheckInDialogIntroEdit =>
@@ -2534,7 +2534,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get spotCheckInDialogShareSub =>
-      'Ausschalten, damit nur du diesen Check-in siehst.';
+      'Erscheint auf diesem Spot bis zu deiner Endzeit und bleibt danach unter Aktivitäten.';
 
   @override
   String get spotCheckInDialogLabelArrived => 'Ankunft';
@@ -2622,15 +2622,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get spotTrainingPlanDialogCheckInCtaButton => 'Check-in';
 
   @override
-  String get spotTrainingPlanDialogBody =>
-      'Lege Start und Ende deiner Session fest. Öffentliche Sessions erscheinen auf dem Community-Bereich dieses Spots neben anderen, die geteilt haben.';
+  String get spotTrainingPlanDialogBody => 'Wähle Start und Ende.';
 
   @override
   String get spotTrainingPlanDialogSharePublic => 'Öffentlich teilen';
 
   @override
   String get spotTrainingPlanDialogShareSub =>
-      'Ausschalten, damit nur du diese Session siehst.';
+      'Erscheint auf diesem Spot und unter Aktivitäten.';
 
   @override
   String get spotTrainingPlanDialogStartLabel => 'Beginn';
@@ -2787,7 +2786,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get spotDetailSignInToRateSubtitle =>
-      'Melde dich an, um diesen Spot zu bewerten und anderen zu helfen.';
+      'Melde dich an, um eine Bewertung abzugeben.';
 
   @override
   String get spotDetailSignInButton => 'Anmelden';
@@ -3221,13 +3220,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get spotDetailRatingPublicDisclosure =>
-      'Deine Bewertung ist öffentlich und kann in der Community-Aktivität in der Nähe erscheinen.';
+      'Bewertungen sind auf diesem Spot öffentlich und können in der Nähe erscheinen.';
 
   @override
   String get spotDetailClearRating => 'Bewertung entfernen';
 
   @override
-  String get spotDetailCurrentRatings => 'Aktuelle Bewertungen';
+  String get spotDetailCurrentRatings => 'Wer bewertet hat';
 
   @override
   String spotDetailRatingSubmitError(String error) {
@@ -3592,19 +3591,19 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get spotTrackingAddedListPublicVisibilityHelp =>
-      'Auf deinem Profil gelistet. Spots, die du hinzufügst, zeigen dich weiterhin als Ersteller:in auf dem Spot und im Aktivitätsfeed.';
+      'Auf deinem Profil sichtbar. Du wirst auch als Ersteller:in auf jedem Spot genannt.';
 
   @override
   String get spotTrackingAddedListPrivateVisibilityHelp =>
-      'Nur du siehst diese Liste. Spots, die du hinzufügst, zeigen dich weiterhin als Ersteller:in auf dem Spot und im Aktivitätsfeed.';
+      'Nur du siehst diese Liste. Du wirst weiterhin als Ersteller:in auf jedem Spot genannt.';
 
   @override
   String get spotTrackingRatedListPublicVisibilityHelp =>
-      'Auf deinem Profil gelistet. Deine Bewertungen erscheinen weiterhin auf jedem Spot und im Aktivitätsfeed.';
+      'Auf deinem Profil sichtbar. Deine Bewertungen erscheinen auch auf jedem Spot.';
 
   @override
   String get spotTrackingRatedListPrivateVisibilityHelp =>
-      'Nur du siehst diese Liste. Deine Bewertungen erscheinen weiterhin auf jedem Spot und im Aktivitätsfeed.';
+      'Nur du siehst diese Liste. Deine Bewertungen erscheinen weiterhin auf jedem Spot.';
 
   @override
   String get spotListSaveTooltipSaveList => 'Liste speichern';

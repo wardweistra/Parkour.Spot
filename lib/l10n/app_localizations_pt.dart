@@ -2444,7 +2444,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get spotDetailCommunitySectionSubtitle =>
-      'Vê quem está a treinar ou planeia uma sessão aqui, e partilha a tua sessão.';
+      'Faz check-in ou planeia uma sessão para que outros saibam quando estás aqui.';
 
   @override
   String get spotDetailCommunityNobodyHere =>
@@ -2518,7 +2518,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get spotCheckInDialogIntroNew =>
-      'Indica que estás a treinar aqui e mais ou menos até quando. Se partilhares em público, apareces na comunidade deste spot até à hora de fim.';
+      'Indica que estás a treinar aqui e mais ou menos até quando.';
 
   @override
   String get spotCheckInDialogIntroEdit =>
@@ -2529,7 +2529,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get spotCheckInDialogShareSub =>
-      'Desliga para só tu veres este check-in.';
+      'Aparece neste spot até essa hora, e fica em Atividades depois.';
 
   @override
   String get spotCheckInDialogLabelArrived => 'Chegada';
@@ -2616,15 +2616,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotTrainingPlanDialogCheckInCtaButton => 'Check-in';
 
   @override
-  String get spotTrainingPlanDialogBody =>
-      'Define quando começas e terminas. As sessões públicas aparecem na comunidade deste spot junto de outras pessoas que partilham.';
+  String get spotTrainingPlanDialogBody => 'Escolhe início e fim.';
 
   @override
   String get spotTrainingPlanDialogSharePublic => 'Partilhar publicamente';
 
   @override
   String get spotTrainingPlanDialogShareSub =>
-      'Desliga para só tu veres esta sessão.';
+      'Aparece neste spot e em Atividades.';
 
   @override
   String get spotTrainingPlanDialogStartLabel => 'Começa';
@@ -2781,7 +2780,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get spotDetailSignInToRateSubtitle =>
-      'Inicia sessão para avaliar este spot e ajudar outros.';
+      'Inicia sessão para deixar uma avaliação.';
 
   @override
   String get spotDetailSignInButton => 'Iniciar sessão';
@@ -3211,13 +3210,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get spotDetailRatingPublicDisclosure =>
-      'A tua avaliação é pública e pode aparecer na atividade da comunidade perto daqui.';
+      'As avaliações são públicas neste spot e podem aparecer por perto.';
 
   @override
   String get spotDetailClearRating => 'Remover avaliação';
 
   @override
-  String get spotDetailCurrentRatings => 'Avaliações atuais';
+  String get spotDetailCurrentRatings => 'Quem avaliou';
 
   @override
   String spotDetailRatingSubmitError(String error) {
@@ -3579,19 +3578,19 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get spotTrackingAddedListPublicVisibilityHelp =>
-      'Listada no teu perfil. Os spots que adicionas continuam a mostrar-te como criador em cada spot e no feed de atividade.';
+      'Visível no teu perfil. Também és indicado como criador em cada spot.';
 
   @override
   String get spotTrackingAddedListPrivateVisibilityHelp =>
-      'Só tu vês esta lista. Os spots que adicionas continuam a mostrar-te como criador em cada spot e no feed de atividade.';
+      'Só tu vês esta lista. Continuas a ser indicado como criador em cada spot.';
 
   @override
   String get spotTrackingRatedListPublicVisibilityHelp =>
-      'Listada no teu perfil. As tuas avaliações continuam visíveis em cada spot e no feed de atividade.';
+      'Visível no teu perfil. As tuas avaliações também aparecem em cada spot.';
 
   @override
   String get spotTrackingRatedListPrivateVisibilityHelp =>
-      'Só tu vês esta lista. As tuas avaliações continuam visíveis em cada spot e no feed de atividade.';
+      'Só tu vês esta lista. As tuas avaliações continuam em cada spot.';
 
   @override
   String get spotListSaveTooltipSaveList => 'Guardar lista';
