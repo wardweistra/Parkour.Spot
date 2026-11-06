@@ -115,10 +115,42 @@ class AppLocalizationsNl extends AppLocalizations {
       'Dit is geen inschrijving. Het toont wie openbaar heeft aangegeven aanwezig of geïnteresseerd te zijn geweest.';
 
   @override
-  String get eventInterestPeopleTitle => 'Wie interesse heeft gemarkeerd';
+  String get eventInterestPeopleTitle => 'Wie komt er';
 
   @override
   String get eventInterestPeopleTitlePast => 'Wie interesse heeft gemarkeerd';
+
+  @override
+  String eventInterestPeopleSubtitle(int going, int interested) {
+    return '$going gaan · $interested geïnteresseerd';
+  }
+
+  @override
+  String eventInterestPeopleSubtitlePast(int going, int interested) {
+    return '$going aanwezig · $interested geïnteresseerd';
+  }
+
+  @override
+  String eventInterestPeopleStripLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count mensen · zie wie komt',
+      one: '1 persoon · zie wie komt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String eventInterestPeopleStripLabelPast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count mensen hebben interesse gemarkeerd',
+      one: '1 persoon heeft interesse gemarkeerd',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get eventInterestPeopleViewAll => 'Alles bekijken';

@@ -115,10 +115,42 @@ class AppLocalizationsEn extends AppLocalizations {
       'This is not a registration. It shows who publicly marked they attended or were interested.';
 
   @override
-  String get eventInterestPeopleTitle => 'Who\'s marked interest';
+  String get eventInterestPeopleTitle => 'Who\'s coming';
 
   @override
   String get eventInterestPeopleTitlePast => 'Who marked interest';
+
+  @override
+  String eventInterestPeopleSubtitle(int going, int interested) {
+    return '$going going · $interested interested';
+  }
+
+  @override
+  String eventInterestPeopleSubtitlePast(int going, int interested) {
+    return '$going attended · $interested interested';
+  }
+
+  @override
+  String eventInterestPeopleStripLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count people · see who\'s coming',
+      one: '1 person · see who\'s coming',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String eventInterestPeopleStripLabelPast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count people marked interest',
+      one: '1 person marked interest',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get eventInterestPeopleViewAll => 'View all';

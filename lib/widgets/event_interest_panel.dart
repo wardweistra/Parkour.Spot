@@ -97,19 +97,20 @@ class EventInterestPanel extends StatelessWidget {
               ],
             ),
             if (people.isNotEmpty || (!peopleLoaded && _totalCount > 0)) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               _EventInterestPeopleStrip(
                 people: people,
-                totalCount: _totalCount,
+                totalCount: math.max(_totalCount, people.length),
+                isPast: isPast,
                 onPressed: onPeoplePressed,
               ),
             ],
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Text(
               disclaimer,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colors.onSurfaceVariant,
-                height: 1.35,
+                height: 1.4,
               ),
             ),
           ],
@@ -123,35 +124,32 @@ class _EventInterestPeopleStrip extends StatelessWidget {
   const _EventInterestPeopleStrip({
     required this.people,
     required this.totalCount,
+    required this.isPast,
     this.onPressed,
   });
 
   final List<EventInterestPerson> people;
   final int totalCount;
+  final bool isPast;
   final VoidCallback? onPressed;
 
-  static const int _maxStack = 4;
-  static const double _stackRadius = 10;
+  static const int _maxStack = 5;
+  static const double _stackRadius = 14;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final stackEntries = people
-        .map(
-          (person) => StackedUserAvatarEntry(
-            userId: person.userId,
-            displayName: person.displayName,
-            photoURL: person.photoURL,
-          ),
-        )
-        .toList(growable: false);
+    final countForCopy = people.isNotEmpty ? people.length : totalCount;
+    final label = isPast
+        ? l10n.eventInterestPeopleStripLabelPast(countForCopy)
+        : l10n.eventInterestPeopleStripLabel(countForCopy);
 
     final Widget avatars;
-    if (stackEntries.isNotEmpty) {
-      avatars = StackedUserAvatars(
-        entries: stackEntries,
+    if (people.isNotEmpty) {
+      avatars = _EventInterestCrewStack(
+        people: people,
         maxShown: _maxStack,
         radius: _stackRadius,
       );
@@ -163,32 +161,153 @@ class _EventInterestPeopleStrip extends StatelessWidget {
     }
 
     return Material(
-      color: Colors.transparent,
+      color: colors.primaryContainer.withValues(alpha: 0.28),
+      borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onPressed,
         borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            children: [
-              avatars,
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  l10n.eventInterestPeopleViewAll,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: colors.primary,
-                    fontWeight: FontWeight.w600,
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
+            border: Border.all(
+              color: colors.primary.withValues(alpha: 0.22),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
+            child: Row(
+              children: [
+                avatars,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: colors.onPrimaryContainer,
+                      fontWeight: FontWeight.w600,
+                      height: 1.25,
+                    ),
                   ),
                 ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: colors.onSurfaceVariant,
-              ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 22,
+                  color: colors.primary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Overlapping crew faces with status rings (primary = Going, secondary =
+/// Interested), matching the community presence language.
+class _EventInterestCrewStack extends StatelessWidget {
+  const _EventInterestCrewStack({
+    required this.people,
+    this.maxShown = 5,
+    this.radius = 14,
+  });
+
+  final List<EventInterestPerson> people;
+  final int maxShown;
+  final double radius;
+
+  static const double _overlapFactor = 1.35;
+
+  @override
+  Widget build(BuildContext context) {
+    if (people.isEmpty || maxShown <= 0) return const SizedBox.shrink();
+
+    final shown = people.take(maxShown).toList(growable: false);
+    final extra = people.length - shown.length;
+    final overlap = radius * _overlapFactor;
+    final stackWidth =
+        shown.isEmpty ? 0.0 : (shown.length - 1) * overlap + radius * 2;
+    final theme = Theme.of(context);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: stackWidth,
+          height: radius * 2,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              for (var i = 0; i < shown.length; i++)
+                Positioned(
+                  left: i * overlap,
+                  child: _EventInterestRingAvatar(
+                    person: shown[i],
+                    radius: radius,
+                  ),
+                ),
             ],
           ),
+        ),
+        if (extra > 0) ...[
+          const SizedBox(width: 6),
+          Text(
+            '+$extra',
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _EventInterestRingAvatar extends StatelessWidget {
+  const _EventInterestRingAvatar({
+    required this.person,
+    required this.radius,
+  });
+
+  final EventInterestPerson person;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final going = person.status == EventInterestStatus.going;
+    final ringColor = going ? cs.primary : cs.secondary;
+    final photo = person.photoURL?.trim();
+    final name = person.displayName?.trim();
+    final initial = (name != null && name.isNotEmpty)
+        ? name[0].toUpperCase()
+        : '?';
+    final innerRadius = radius - 2.2;
+
+    return Tooltip(
+      message: name ?? '',
+      child: CircleAvatar(
+        radius: radius,
+        backgroundColor: ringColor,
+        child: CircleAvatar(
+          radius: innerRadius,
+          backgroundColor: cs.surfaceContainerHighest,
+          backgroundImage: (photo != null && photo.isNotEmpty)
+              ? NetworkImage(photo)
+              : null,
+          child: (photo == null || photo.isEmpty)
+              ? Text(
+                  initial,
+                  style: TextStyle(
+                    fontSize: innerRadius * 0.9,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurfaceVariant,
+                  ),
+                )
+              : null,
         ),
       ),
     );
@@ -272,72 +391,106 @@ void showEventInterestPeopleDialog(
   BuildContext context, {
   required List<EventInterestPerson> people,
   required bool isPast,
+  int? goingCount,
+  int? interestedCount,
 }) {
   final hostContext = context;
   final theme = Theme.of(context);
   final l10n = AppLocalizations.of(context)!;
+  final cs = theme.colorScheme;
   final title = isPast
       ? l10n.eventInterestPeopleTitlePast
       : l10n.eventInterestPeopleTitle;
+  final going = goingCount ??
+      people.where((p) => p.status == EventInterestStatus.going).length;
+  final interested = interestedCount ??
+      people.where((p) => p.status == EventInterestStatus.interested).length;
+  final subtitle = isPast
+      ? l10n.eventInterestPeopleSubtitlePast(going, interested)
+      : l10n.eventInterestPeopleSubtitle(going, interested);
 
   showDialog<void>(
     context: context,
     builder: (ctx) {
-      final maxH = MediaQuery.sizeOf(ctx).height * 0.55;
+      final maxH = MediaQuery.sizeOf(ctx).height * 0.58;
       return AlertDialog(
-        titlePadding: const EdgeInsets.fromLTRB(24, 20, 12, 0),
-        contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        backgroundColor: cs.surface,
+        surfaceTintColor: cs.primaryContainer.withValues(alpha: 0.35),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        titlePadding: const EdgeInsets.fromLTRB(20, 18, 8, 0),
+        contentPadding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
         title: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.groups_2_outlined,
-              color: theme.colorScheme.primary,
-              size: 26,
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: cs.primaryContainer.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.groups_2_rounded,
+                color: cs.primary,
+                size: 22,
+              ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                title,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 2),
+                  Text(
+                    title,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                    ),
+                  ),
+                  if (people.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             IconButton(
               tooltip: MaterialLocalizations.of(ctx).closeButtonTooltip,
               onPressed: () => Navigator.of(ctx).pop(),
-              icon: const Icon(Icons.close),
+              icon: const Icon(Icons.close_rounded),
             ),
           ],
         ),
         content: SizedBox(
           width: double.maxFinite,
-          height: math.min(420, maxH),
+          height: math.min(440, maxH),
           child: people.isEmpty
               ? Center(
                   child: Text(
                     l10n.eventInterestPeopleEmpty,
+                    textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                      color: cs.onSurfaceVariant,
                     ),
                   ),
                 )
-              : ListView.separated(
-                  padding: EdgeInsets.zero,
-                  itemCount: people.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 4),
-                  itemBuilder: (context, index) {
-                    final person = people[index];
-                    return _EventInterestPersonTile(
-                      person: person,
-                      isPast: isPast,
-                      onTap: () {
-                        Navigator.of(ctx).pop();
-                        navigateToUserProfileForCheckIn(
-                          hostContext,
-                          person.userId,
-                        );
-                      },
+              : _EventInterestRosterList(
+                  people: people,
+                  isPast: isPast,
+                  onPersonTap: (person) {
+                    Navigator.of(ctx).pop();
+                    navigateToUserProfileForCheckIn(
+                      hostContext,
+                      person.userId,
                     );
                   },
                 ),
@@ -345,6 +498,143 @@ void showEventInterestPeopleDialog(
       );
     },
   );
+}
+
+class _EventInterestRosterList extends StatefulWidget {
+  const _EventInterestRosterList({
+    required this.people,
+    required this.isPast,
+    required this.onPersonTap,
+  });
+
+  final List<EventInterestPerson> people;
+  final bool isPast;
+  final ValueChanged<EventInterestPerson> onPersonTap;
+
+  @override
+  State<_EventInterestRosterList> createState() =>
+      _EventInterestRosterListState();
+}
+
+class _EventInterestRosterListState extends State<_EventInterestRosterList>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+    );
+    final reduceMotion = WidgetsBinding
+        .instance
+        .platformDispatcher
+        .accessibilityFeatures
+        .disableAnimations;
+    if (reduceMotion) {
+      _controller.value = 1;
+    } else {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
+      itemCount: widget.people.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 6),
+      itemBuilder: (context, index) {
+        final person = widget.people[index];
+        final tile = _EventInterestPersonTile(
+          person: person,
+          isPast: widget.isPast,
+          onTap: () => widget.onPersonTap(person),
+        );
+        if (reduceMotion || _controller.value >= 1) return tile;
+
+        final start = (index * 0.07).clamp(0.0, 0.55);
+        final end = (start + 0.35).clamp(0.0, 1.0);
+        final animation = CurvedAnimation(
+          parent: _controller,
+          curve: Interval(start, end, curve: Curves.easeOutCubic),
+        );
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.08),
+              end: Offset.zero,
+            ).animate(animation),
+            child: tile,
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _EventInterestStatusBadge extends StatelessWidget {
+  const _EventInterestStatusBadge({
+    required this.status,
+    required this.isPast,
+  });
+
+  final EventInterestStatus status;
+  final bool isPast;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+    final going = status == EventInterestStatus.going;
+    final label = going
+        ? (isPast ? l10n.eventInterestAttended : l10n.eventInterestGoing)
+        : l10n.eventInterestInterested;
+    final icon = going
+        ? (isPast ? Icons.how_to_reg_rounded : Icons.check_circle_rounded)
+        : Icons.star_rounded;
+    final background = going
+        ? cs.primaryContainer.withValues(alpha: 0.85)
+        : cs.surfaceContainerHighest.withValues(alpha: 0.9);
+    final foreground = going ? cs.onPrimaryContainer : cs.onSurfaceVariant;
+    final iconColor = going ? cs.primary : cs.secondary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+        border: going
+            ? null
+            : Border.all(color: cs.outline.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: iconColor),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: foreground,
+              fontWeight: FontWeight.w700,
+              height: 1.1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _EventInterestPersonTile extends StatelessWidget {
@@ -367,54 +657,37 @@ class _EventInterestPersonTile extends StatelessWidget {
     final label = (name != null && name.isNotEmpty)
         ? name
         : l10n.spotTrainingPlanUnnamedPerson;
-    final photo = person.photoURL?.trim();
-    final initial = label.isNotEmpty ? label[0].toUpperCase() : '?';
-    final statusLabel = person.status == EventInterestStatus.going
-        ? (isPast ? l10n.eventInterestAttended : l10n.eventInterestGoing)
-        : l10n.eventInterestInterested;
 
     return Material(
-      color: Colors.transparent,
+      color: cs.surfaceContainerLow.withValues(alpha: 0.55),
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 40),
+          constraints: const BoxConstraints(minHeight: 56),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
+            padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: cs.surfaceContainerHighest,
-                  backgroundImage: (photo != null && photo.isNotEmpty)
-                      ? NetworkImage(photo)
-                      : null,
-                  child: (photo == null || photo.isEmpty)
-                      ? Text(
-                          initial,
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: cs.onSurfaceVariant,
-                          ),
-                        )
-                      : null,
-                ),
+                _EventInterestRingAvatar(person: person, radius: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     label,
-                    style: theme.textTheme.bodyLarge,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  statusLabel,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: cs.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
+                _EventInterestStatusBadge(
+                  status: person.status,
+                  isPast: isPast,
                 ),
               ],
             ),
@@ -599,19 +872,19 @@ class _EventInterestSectionState extends State<EventInterestSection> {
             return StreamBuilder<List<EventInterestPerson>>(
               stream: service.watchPeople(statsEventId),
               builder: (context, peopleSnap) {
-                final peopleLoaded = peopleSnap.connectionState ==
-                        ConnectionState.active ||
+                final peopleLoaded =
+                    peopleSnap.connectionState == ConnectionState.active ||
                     peopleSnap.hasData;
-                final livePeople = peopleSnap.data ?? const <EventInterestPerson>[];
+                final livePeople =
+                    peopleSnap.data ?? const <EventInterestPerson>[];
                 return StreamBuilder<EventInterestStatus?>(
                   stream: interestStream,
                   builder: (context, interestSnap) {
                     final liveStatus = interestSnap.data;
                     final useOptimistic =
                         _isBusy || _statsStillAtBaseline(liveStats);
-                    final status = useOptimistic
-                        ? _optimisticStatus
-                        : liveStatus;
+                    final status =
+                        useOptimistic ? _optimisticStatus : liveStatus;
                     final stats = useOptimistic
                         ? (_optimisticStats ?? liveStats)
                         : liveStats;
@@ -649,6 +922,8 @@ class _EventInterestSectionState extends State<EventInterestSection> {
                         context,
                         people: people,
                         isPast: isPast,
+                        goingCount: stats.goingCount,
+                        interestedCount: stats.interestedCount,
                       ),
                     );
                   },

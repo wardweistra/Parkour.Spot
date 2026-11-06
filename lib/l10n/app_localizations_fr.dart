@@ -115,10 +115,42 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ce n\'est pas une inscription. Cela montre qui a marqué publiquement avoir été présent ou intéressé.';
 
   @override
-  String get eventInterestPeopleTitle => 'Qui a marqué son intérêt';
+  String get eventInterestPeopleTitle => 'Qui vient';
 
   @override
   String get eventInterestPeopleTitlePast => 'Qui a marqué son intérêt';
+
+  @override
+  String eventInterestPeopleSubtitle(int going, int interested) {
+    return '$going y vont · $interested intéressés';
+  }
+
+  @override
+  String eventInterestPeopleSubtitlePast(int going, int interested) {
+    return '$going présents · $interested intéressés';
+  }
+
+  @override
+  String eventInterestPeopleStripLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personnes · voir qui vient',
+      one: '1 personne · voir qui vient',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String eventInterestPeopleStripLabelPast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count personnes ont marqué leur intérêt',
+      one: '1 personne a marqué son intérêt',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get eventInterestPeopleViewAll => 'Tout voir';

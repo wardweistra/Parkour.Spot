@@ -139,7 +139,7 @@
   "@eventInterestDisclaimerPast": {
     "description": "Past event detail: RSVP is interest only and publicly visible"
   },
-  "eventInterestPeopleTitle": "Who's marked interest",
+  "eventInterestPeopleTitle": "Who's coming",
   "@eventInterestPeopleTitle": {
     "description": "Dialog title listing people who marked Going or Interested"
   },
@@ -147,9 +147,39 @@
   "@eventInterestPeopleTitlePast": {
     "description": "Past-event dialog title listing people who marked interest"
   },
+  "eventInterestPeopleSubtitle": "{going} going · {interested} interested",
+  "@eventInterestPeopleSubtitle": {
+    "description": "Dialog subtitle with Going and Interested counts",
+    "placeholders": {
+      "going": {"type": "int"},
+      "interested": {"type": "int"}
+    }
+  },
+  "eventInterestPeopleSubtitlePast": "{going} attended · {interested} interested",
+  "@eventInterestPeopleSubtitlePast": {
+    "description": "Past-event dialog subtitle with Attended and Interested counts",
+    "placeholders": {
+      "going": {"type": "int"},
+      "interested": {"type": "int"}
+    }
+  },
+  "eventInterestPeopleStripLabel": "{count, plural, one{1 person · see who's coming} other{{count} people · see who's coming}}",
+  "@eventInterestPeopleStripLabel": {
+    "description": "Event detail presence strip copy for upcoming events",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "eventInterestPeopleStripLabelPast": "{count, plural, one{1 person marked interest} other{{count} people marked interest}}",
+  "@eventInterestPeopleStripLabelPast": {
+    "description": "Event detail presence strip copy for past events",
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "eventInterestPeopleViewAll": "View all",
   "@eventInterestPeopleViewAll": {
-    "description": "Affordance on the event interest avatar stack"
+    "description": "Affordance on the event interest avatar stack (fallback)"
   },
   "eventInterestPeopleEmpty": "No one has marked interest yet.",
   "@eventInterestPeopleEmpty": {
