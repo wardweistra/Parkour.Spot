@@ -7,9 +7,11 @@ import '../constants/spot_detail_ui.dart';
 import '../l10n/app_localizations.dart';
 import '../models/spot_check_in.dart';
 import '../models/spot_training_plan.dart';
+import '../models/spot_training_stats.dart';
 import '../services/auth_service.dart';
 import '../services/spot_check_in_service.dart';
 import '../services/spot_training_plan_service.dart';
+import '../services/spot_training_stats_service.dart';
 import '../utils/community_activity_time_formatting.dart';
 import 'spot_check_in_presence.dart';
 import 'spot_detail_community_activity_dialog.dart';
@@ -648,6 +650,7 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
     required AppLocalizations l10n,
     required bool showSubtitle,
     required Widget socialStrip,
+    Widget? volumeCaption,
     required Widget checkIn,
     required Widget planning,
   }) {
@@ -665,6 +668,10 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
             ),
             const SizedBox(height: 8),
             socialStrip,
+            if (volumeCaption != null) ...[
+              const SizedBox(height: 8),
+              volumeCaption,
+            ],
             const SizedBox(height: 10),
             if (wide)
               Row(
@@ -683,6 +690,160 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
           ],
         );
       },
+    );
+  }
+
+  Widget? _volumeCaption(
+    ThemeData theme,
+    ColorScheme cs,
+    AppLocalizations l10n,
+    SpotTrainingStats stats,
+  ) {
+    if (!stats.hasVolume) return null;
+    final text = stats.peopleCount == stats.checkInCount
+        ? l10n.spotDetailCommunityTrainingVolumePeople(stats.peopleCount)
+        : l10n.spotDetailCommunityTrainingVolumeBoth(
+            stats.peopleCount,
+            stats.checkInCount,
+          );
+    return Text(
+      text,
+      style: theme.textTheme.bodySmall?.copyWith(
+        height: 1.3,
+        color: cs.onSurface.withValues(alpha: 0.68),
+      ),
+    );
+  }
+
+  Widget _recentTrainersStrip(
+    BuildContext context,
+    ThemeData theme,
+    ColorScheme cs,
+    AppLocalizations l10n,
+    List<SpotRecentTrainer> people,
+  ) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => showSpotCommunityActivityDialog(
+          context,
+          theme,
+          widget.spotId,
+          spotDisplayName: widget.spotDisplayName,
+          countryCode: widget.countryCode,
+          city: widget.city,
+          onJoinTrainingPlan: widget.onJoinTrainingPlan,
+          onLoginRequired: widget.onLoginRequired,
+        ),
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            children: [
+              Tooltip(
+                message: l10n.spotDetailCommunityRecentTrainersTooltip,
+                child: Icon(
+                  Icons.history,
+                  size: 17,
+                  color: cs.primary,
+                ),
+              ),
+              const SizedBox(width: 5),
+              _recentAvatarStackRow(context, theme, people),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.spotDetailCommunityViewAll,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: cs.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: cs.primary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _recentAvatarStackRow(
+    BuildContext context,
+    ThemeData theme,
+    List<SpotRecentTrainer> people,
+  ) {
+    const maxShown = 6;
+    final shown = people.take(maxShown).toList();
+    final extra = people.length - shown.length;
+    final extraStyle = theme.textTheme.labelMedium?.copyWith(
+      fontWeight: FontWeight.w600,
+    );
+    final cs = theme.colorScheme;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: shown.isEmpty
+              ? 0
+              : (shown.length - 1) * _avatarOverlap + _avatarRadius * 2,
+          height: _avatarRadius * 2,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              for (var i = 0; i < shown.length; i++)
+                Positioned(
+                  left: i * _avatarOverlap,
+                  child: Tooltip(
+                    message: () {
+                      final name = shown[i].displayName?.trim();
+                      return (name != null && name.isNotEmpty)
+                          ? name
+                          : AppLocalizations.of(context)!.spotCheckInUnnamedPerson;
+                    }(),
+                    child: CircleAvatar(
+                      radius: _avatarRadius,
+                      backgroundColor: cs.primaryContainer,
+                      backgroundImage: () {
+                        final url = shown[i].photoURL?.trim();
+                        if (url == null || url.isEmpty) return null;
+                        return NetworkImage(url);
+                      }(),
+                      child: () {
+                        final url = shown[i].photoURL?.trim();
+                        if (url != null && url.isNotEmpty) {
+                          return null;
+                        }
+                        final name = shown[i].displayName?.trim();
+                        final letter = (name != null && name.isNotEmpty)
+                            ? name.substring(0, 1).toUpperCase()
+                            : '?';
+                        return Text(
+                          letter,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: cs.onPrimaryContainer,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        );
+                      }(),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        if (extra > 0) ...[
+          const SizedBox(width: 6),
+          Text('+$extra', style: extraStyle),
+        ],
+      ],
     );
   }
 
@@ -746,6 +907,8 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
         auth: auth,
       );
     } else {
+      final statsSvc =
+          Provider.of<SpotTrainingStatsService>(context, listen: false);
       body = StreamBuilder<List<SpotCheckIn>>(
         stream: _publicStream,
         builder: (context, publicSnap) {
@@ -758,6 +921,9 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                   return StreamBuilder<SpotTrainingPlan?>(
                     stream: _myPlanStream,
                     builder: (context, myPlanSnap) {
+                      return StreamBuilder<SpotTrainingStats>(
+                        stream: statsSvc.watchStats(widget.spotId),
+                        builder: (context, statsSnap) {
                       // Until every stream has emitted, avoid flashing empty
                       // presence then jumping to avatars (moves the buttons).
                       final anyWaiting = [
@@ -765,9 +931,11 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                         mySnap,
                         plansPublicSnap,
                         myPlanSnap,
+                        statsSnap,
                       ].any(
                         (snap) =>
-                            snap.connectionState == ConnectionState.waiting,
+                            snap.connectionState == ConnectionState.waiting &&
+                            !snap.hasData,
                       );
                       if (anyWaiting) {
                         return _loadingPanel(
@@ -778,6 +946,8 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                         );
                       }
 
+                      final stats =
+                          statsSnap.data ?? SpotTrainingStats.empty;
                       final entries = buildCheckInAvatarEntries(
                         publicSnap.data ?? [],
                         mySnap.data,
@@ -791,19 +961,32 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                       );
                       final hasPlanningPresence = planningEntries.isNotEmpty;
                       final myPlan = myPlanSnap.data;
+                      final hasRecentTrainers = stats.hasRecentPeople;
+                      final volumeCaption =
+                          _volumeCaption(theme, cs, l10n, stats);
 
-                      final unifiedSocialStrip =
-                          !hasPeople && !hasPlanningPresence
-                              ? Text(
-                                  l10n.spotDetailCommunityNobodySocialShort,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    height: 1.3,
-                                    color: cs.onSurface.withValues(alpha: 0.75),
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                )
-                              : Material(
+                      final Widget unifiedSocialStrip;
+                      if (!hasPeople && !hasPlanningPresence) {
+                        unifiedSocialStrip = hasRecentTrainers
+                            ? _recentTrainersStrip(
+                                context,
+                                theme,
+                                cs,
+                                l10n,
+                                stats.recentPeople,
+                              )
+                            : Text(
+                                l10n.spotDetailCommunityNobodySocialShort,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  height: 1.3,
+                                  color:
+                                      cs.onSurface.withValues(alpha: 0.75),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              );
+                      } else {
+                        unifiedSocialStrip = Material(
                                   color: Colors.transparent,
                                   child: InkWell(
                                     onTap: () => showSpotCommunityActivityDialog(
@@ -899,13 +1082,17 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                                     ),
                                   ),
                                 );
+                      }
 
                       return _panelColumn(
                         theme: theme,
                         cs: cs,
                         l10n: l10n,
-                        showSubtitle: hasPeople || hasPlanningPresence,
+                        showSubtitle: hasPeople ||
+                            hasPlanningPresence ||
+                            hasRecentTrainers,
                         socialStrip: unifiedSocialStrip,
+                        volumeCaption: volumeCaption,
                         checkIn: _checkInButton(
                           l10n: l10n,
                           authenticated: auth.isAuthenticated,
@@ -917,6 +1104,8 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                           authenticated: auth.isAuthenticated,
                           myPlan: myPlan,
                         ),
+                      );
+                        },
                       );
                     },
                   );

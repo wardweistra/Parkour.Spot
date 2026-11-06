@@ -264,6 +264,14 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "spotId", "order": "ASCENDING" },
+        { "fieldPath": "checkedInAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spotCheckIns",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "spotId", "order": "ASCENDING" },
         { "fieldPath": "isPrivate", "order": "ASCENDING" },
         { "fieldPath": "checkedInAt", "order": "DESCENDING" }
       ]

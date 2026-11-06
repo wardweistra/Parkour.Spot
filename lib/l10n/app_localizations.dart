@@ -3927,6 +3927,39 @@ abstract class AppLocalizations {
   /// **'Planned sessions'**
   String get spotDetailCommunityPlanningToTrain;
 
+  /// Community dialog section for people who publicly checked in during the last 90 days
+  ///
+  /// In en, this message translates to:
+  /// **'Recently trained'**
+  String get spotDetailCommunityRecentlyTrained;
+
+  /// Tooltip for the recent-trainers avatar stack on spot detail Community
+  ///
+  /// In en, this message translates to:
+  /// **'People who checked in here in the last 90 days'**
+  String get spotDetailCommunityRecentTrainersTooltip;
+
+  /// Spot Community caption when unique people and check-in counts differ
+  ///
+  /// In en, this message translates to:
+  /// **'{peopleCount, plural, one{1 person} other{{peopleCount} people}} trained here {checkInCount} times in the last 90 days'**
+  String spotDetailCommunityTrainingVolumeBoth(
+    int peopleCount,
+    int checkInCount,
+  );
+
+  /// Spot Community caption when unique people equals check-in count
+  ///
+  /// In en, this message translates to:
+  /// **'{peopleCount, plural, one{1 person trained here in the last 90 days} other{{peopleCount} people trained here in the last 90 days}}'**
+  String spotDetailCommunityTrainingVolumePeople(int peopleCount);
+
+  /// Subtitle under a recent trainer in the Community dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Last trained {when}'**
+  String spotDetailCommunityRecentLastTrained(String when);
+
   /// No description provided for @spotDetailCommunityNobodyPlanningShort.
   ///
   /// In en, this message translates to:

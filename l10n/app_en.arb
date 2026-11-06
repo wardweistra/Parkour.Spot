@@ -2667,6 +2667,44 @@
     "description": "Hover text for Community sign-in-to-check-in button"
   },
   "spotDetailCommunityPlanningToTrain": "Planned sessions",
+  "spotDetailCommunityRecentlyTrained": "Recently trained",
+  "@spotDetailCommunityRecentlyTrained": {
+    "description": "Community dialog section for people who publicly checked in during the last 90 days"
+  },
+  "spotDetailCommunityRecentTrainersTooltip": "People who checked in here in the last 90 days",
+  "@spotDetailCommunityRecentTrainersTooltip": {
+    "description": "Tooltip for the recent-trainers avatar stack on spot detail Community"
+  },
+  "spotDetailCommunityTrainingVolumeBoth": "{peopleCount, plural, one{1 person} other{{peopleCount} people}} trained here {checkInCount} times in the last 90 days",
+  "@spotDetailCommunityTrainingVolumeBoth": {
+    "description": "Spot Community caption when unique people and check-in counts differ",
+    "placeholders": {
+      "peopleCount": {
+        "type": "int"
+      },
+      "checkInCount": {
+        "type": "int"
+      }
+    }
+  },
+  "spotDetailCommunityTrainingVolumePeople": "{peopleCount, plural, one{1 person trained here in the last 90 days} other{{peopleCount} people trained here in the last 90 days}}",
+  "@spotDetailCommunityTrainingVolumePeople": {
+    "description": "Spot Community caption when unique people equals check-in count",
+    "placeholders": {
+      "peopleCount": {
+        "type": "int"
+      }
+    }
+  },
+  "spotDetailCommunityRecentLastTrained": "Last trained {when}",
+  "@spotDetailCommunityRecentLastTrained": {
+    "description": "Subtitle under a recent trainer in the Community dialog",
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
   "spotDetailCommunityNobodyPlanningShort": "No planned sessions yet.",
   "spotDetailCommunitySignInToPlanButton": "Sign in to plan a session",
   "spotDetailCommunityEditTrainingPlanButton": "Edit session",

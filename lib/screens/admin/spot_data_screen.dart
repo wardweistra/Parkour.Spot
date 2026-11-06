@@ -64,6 +64,15 @@ class SpotDataScreen extends StatelessWidget {
                 onTap: () => SpotDataActions.backfillCommunityActivity(context),
               ),
               AdminToolTile(
+                icon: Icons.fitness_center_outlined,
+                title: 'Recompute spot training stats',
+                subtitle:
+                    'Rebuild 90-day check-in counts and recent trainers per spot',
+                showChevron: false,
+                onTap: () =>
+                    SpotDataActions.recomputeSpotTrainingStats(context),
+              ),
+              AdminToolTile(
                 icon: Icons.star_rate,
                 title: 'Recompute ratings for rated spots',
                 subtitle:

@@ -317,6 +317,11 @@ const {
   recomputeAllEventInterestAggregates,
 } = require("./lib/event-interest-stats");
 const {
+  handleSpotCheckInWrittenForTrainingStats,
+  refreshExistingSpotTrainingStats,
+  recomputeAllSpotTrainingStats,
+} = require("./lib/spot-training-stats");
+const {
   getOrCreateCalendarFeed,
   regenerateCalendarFeed,
   resolveUserIdFromCalendarToken,
@@ -1507,6 +1512,21 @@ exports.recomputeAllEventInterestStats = onCall(
     },
 );
 
+// ========== Admin Callable: Recompute 90-day spot training stats ==========
+exports.recomputeAllSpotTrainingStats = onCall(
+    {region: "europe-west1", memory: "512MiB", timeoutSeconds: 540},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const result = await recomputeAllSpotTrainingStats(db);
+        return {success: true, ...result};
+      } catch (error) {
+        console.error("recomputeAllSpotTrainingStats error", error);
+        return {success: false, error: error.message};
+      }
+    },
+);
+
 // ========== Admin Callable: Recompute spot rankings ==========
 exports.recomputeSpotRankings = onCall(
     {region: "europe-west1", memory: "512MiB", timeoutSeconds: 540},
@@ -1731,6 +1751,29 @@ exports.onSpotCheckInWrittenForCommunityActivity = onDocumentWritten(
     },
 );
 
+// Spot detail Community: rolling 90-day check-in volume + public recent trainers.
+exports.onSpotCheckInWrittenForTrainingStats = onDocumentWritten(
+    {document: "spotCheckIns/{checkInId}", region: "europe-west1"},
+    async (event) => {
+      const checkInId = event.params.checkInId;
+      const beforeData = event.data && event.data.before.exists ?
+        (event.data.before.data() || {}) :
+        null;
+      const afterData = event.data && event.data.after.exists ?
+        (event.data.after.data() || {}) :
+        null;
+      try {
+        await handleSpotCheckInWrittenForTrainingStats(
+            db,
+            beforeData,
+            afterData,
+        );
+      } catch (e) {
+        console.error("onSpotCheckInWrittenForTrainingStats error", {checkInId, e});
+      }
+    },
+);
+
 // Explore Community stream: mirror ratings (create + score change) into communityActivity.
 // Also denormalize rater displayName/photoURL onto the rating doc for spot UI.
 exports.onRatingWrittenForCommunityActivity = onDocumentWritten(
@@ -1907,6 +1950,26 @@ exports.pruneOldSyncRunsScheduled = onSchedule(
         console.log("pruneOldSyncRuns:", result);
       } catch (e) {
         console.error("pruneOldSyncRunsScheduled error", e);
+        throw e;
+      }
+    },
+);
+
+// Age check-ins out of the 90-day spot training stats window.
+exports.refreshSpotTrainingStatsScheduled = onSchedule(
+    {
+      schedule: "every 24 hours",
+      timeZone: "UTC",
+      region: "europe-west1",
+      memory: "512MiB",
+      timeoutSeconds: 540,
+    },
+    async () => {
+      try {
+        const result = await refreshExistingSpotTrainingStats(db);
+        console.log("refreshSpotTrainingStatsScheduled:", result);
+      } catch (e) {
+        console.error("refreshSpotTrainingStatsScheduled error", e);
         throw e;
       }
     },

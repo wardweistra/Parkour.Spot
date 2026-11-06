@@ -2488,6 +2488,43 @@ class AppLocalizationsNl extends AppLocalizations {
   String get spotDetailCommunityPlanningToTrain => 'Geplande sessies';
 
   @override
+  String get spotDetailCommunityRecentlyTrained => 'Recent getraind';
+
+  @override
+  String get spotDetailCommunityRecentTrainersTooltip =>
+      'Mensen die hier de afgelopen 90 dagen hebben ingecheckt';
+
+  @override
+  String spotDetailCommunityTrainingVolumeBoth(
+    int peopleCount,
+    int checkInCount,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      peopleCount,
+      locale: localeName,
+      other: '$peopleCount personen',
+      one: '1 persoon',
+    );
+    return '$_temp0 hebben hier de afgelopen 90 dagen $checkInCount keer getraind';
+  }
+
+  @override
+  String spotDetailCommunityTrainingVolumePeople(int peopleCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      peopleCount,
+      locale: localeName,
+      other: '$peopleCount personen hebben hier de afgelopen 90 dagen getraind',
+      one: '1 persoon heeft hier de afgelopen 90 dagen getraind',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String spotDetailCommunityRecentLastTrained(String when) {
+    return 'Laatst getraind $when';
+  }
+
+  @override
   String get spotDetailCommunityNobodyPlanningShort =>
       'Nog geen geplande sessies.';
 

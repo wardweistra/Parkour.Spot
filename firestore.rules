@@ -251,6 +251,14 @@ service cloud.firestore {
       }
     }
 
+    // Spot detail Community: 90-day check-in volume + public recent trainers
+    // (Cloud Functions only). Counts include private check-ins; recentPeople
+    // never does.
+    match /spotTrainingStats/{spotId} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
     // Explore Community stream: geo-indexed public activity (new spots, photos,
     // public check-ins and training plans). Written by Cloud Functions only.
     match /communityActivity/{activityId} {

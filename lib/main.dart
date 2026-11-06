@@ -35,6 +35,7 @@ import 'package:parkour_spot/services/spot_list_service.dart';
 import 'package:parkour_spot/services/saved_spot_list_service.dart';
 import 'package:parkour_spot/services/spot_tracking_service.dart';
 import 'package:parkour_spot/services/spot_check_in_service.dart';
+import 'package:parkour_spot/services/spot_training_stats_service.dart';
 import 'package:parkour_spot/services/event_interest_service.dart';
 import 'package:parkour_spot/services/spot_training_plan_service.dart';
 import 'package:parkour_spot/services/pwa_install_service.dart';
@@ -380,6 +381,7 @@ class _ParkourSpotAppState extends State<ParkourSpotApp> {
             return previous ?? SpotCheckInService(authService, tracking);
           },
         ),
+        Provider(create: (_) => SpotTrainingStatsService()),
         ChangeNotifierProxyProvider<AuthService, SpotTrainingPlanService>(
           create: (context) {
             final authService = Provider.of<AuthService>(

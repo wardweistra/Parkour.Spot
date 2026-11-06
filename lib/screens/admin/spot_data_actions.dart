@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/community_activity_service.dart';
+import '../../services/spot_training_stats_service.dart';
 import '../../services/sync_source_service.dart';
 import '../../utils/search_index_backfill_message.dart';
 import 'missing_images_screen.dart';
@@ -293,6 +294,86 @@ class SpotDataActions {
       scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text('Backfill failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  static Future<void> recomputeSpotTrainingStats(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Recompute spot training stats'),
+        content: const Text(
+          'Rebuilds the 90-day check-in volume and public recent-trainers '
+          'roster for every spot (spotTrainingStats). Safe to run again; '
+          'counts include private check-ins, faces stay public-only.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Run'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !context.mounted) return;
+
+    final statsService = context.read<SpotTrainingStatsService>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    late NavigatorState navigator;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) {
+        navigator = Navigator.of(c);
+        return const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Expanded(
+                child: Text('Recomputing spot training stats...'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    try {
+      final result = await statsService.recomputeAllSpotTrainingStats();
+      navigator.pop();
+      if (!context.mounted) return;
+      if (result != null && result['success'] == true) {
+        final message =
+            'Done. Spots: ${_formatStatInt(result['spotIds'])}, '
+            'updated: ${_formatStatInt(result['updated'])}, '
+            'deleted: ${_formatStatInt(result['deleted'])}, '
+            'failed: ${_formatStatInt(result['failed'])}.';
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: Colors.green),
+        );
+      } else {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              statsService.error ?? 'Failed to recompute spot training stats',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      navigator.pop();
+      if (!context.mounted) return;
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to recompute spot training stats: $e'),
           backgroundColor: Colors.red,
         ),
       );
