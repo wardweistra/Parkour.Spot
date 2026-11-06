@@ -234,7 +234,7 @@
   "exploreSpotsLoadingLabel": "spots",
   "exploreCommunityCountShort": "{count, plural, one{1 activité} other{{count} activités}}",
   "exploreCommunityLoadingLabel": "activités",
-  "exploreNoCommunityArea": "Aucune activité dans cette zone",
+  "exploreNoCommunityArea": "Aucune activité récente dans cette zone",
   "exploreNoCommunityAreaHint": "Faites un check-in, planifiez une séance ou ajoutez un spot pour lancer les choses",
   "communityStreamFilterAll": "Tout",
   "communityStreamFilterEvents": "Événements",

@@ -1855,7 +1855,7 @@ abstract class AppLocalizations {
   /// Explore activities stream: empty state title
   ///
   /// In en, this message translates to:
-  /// **'No activity in this area'**
+  /// **'No recent activity in this area'**
   String get exploreNoCommunityArea;
 
   /// Explore activities stream: empty state hint

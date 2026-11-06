@@ -1099,7 +1099,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get exploreCommunityLoadingLabel => 'activiteiten';
 
   @override
-  String get exploreNoCommunityArea => 'Geen activiteit in dit gebied';
+  String get exploreNoCommunityArea => 'Geen recente activiteit in dit gebied';
 
   @override
   String get exploreNoCommunityAreaHint =>

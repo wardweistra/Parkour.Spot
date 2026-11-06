@@ -291,7 +291,7 @@
   "exploreSpotsLoadingLabel": "spots",
   "exploreCommunityCountShort": "{count, plural, one{1 activiteit} other{{count} activiteiten}}",
   "exploreCommunityLoadingLabel": "activiteiten",
-  "exploreNoCommunityArea": "Geen activiteit in dit gebied",
+  "exploreNoCommunityArea": "Geen recente activiteit in dit gebied",
   "exploreNoCommunityAreaHint": "Check in, plan een sessie of voeg een spot toe om het op gang te brengen",
   "communityStreamFilterAll": "Alles",
   "communityStreamFilterEvents": "Events",

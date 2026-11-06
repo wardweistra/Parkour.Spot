@@ -1115,7 +1115,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get exploreCommunityLoadingLabel => 'activités';
 
   @override
-  String get exploreNoCommunityArea => 'Aucune activité dans cette zone';
+  String get exploreNoCommunityArea =>
+      'Aucune activité récente dans cette zone';
 
   @override
   String get exploreNoCommunityAreaHint =>
