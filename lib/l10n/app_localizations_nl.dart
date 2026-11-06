@@ -1114,6 +1114,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Check in, plan een sessie of voeg een spot toe om het op gang te brengen';
 
   @override
+  String get exploreNoEventsAddSuggestion =>
+      'Mis je een event dat je verwachtte? Voeg het toe voor de community.';
+
+  @override
   String get communityStreamFilterAll => 'Alles';
 
   @override

@@ -70,6 +70,7 @@ Future<void> _pump(
   ValueChanged<String>? onOpenActor,
   VoidCallback? onLoadMorePast,
   VoidCallback? onLoadMoreUpcoming,
+  VoidCallback? onAddEvent,
   bool loadingMorePast = false,
   bool loadingMoreUpcoming = false,
 }) async {
@@ -86,6 +87,7 @@ Future<void> _pump(
           onOpenActor: onOpenActor,
           onLoadMorePast: onLoadMorePast,
           onLoadMoreUpcoming: onLoadMoreUpcoming,
+          onAddEvent: onAddEvent,
           loadingMorePast: loadingMorePast,
           loadingMoreUpcoming: loadingMoreUpcoming,
         ),
@@ -112,6 +114,58 @@ Future<void> _scrollTowardPastUntilVisible(
 }
 
 void main() {
+
+  testWidgets('shows add-event suggestion when upcoming is empty', (
+    tester,
+  ) async {
+    var tapped = false;
+    final feed = CommunityActivityFeed(
+      past: [
+        _item(
+          'checkin',
+          CommunityActivityKind.spotCheckIn,
+          occurredAt: _now.subtract(const Duration(minutes: 5)),
+          endAt: _now.add(const Duration(hours: 1)),
+          actor: 'Zoë',
+        ),
+      ],
+    );
+    await _pump(
+      tester,
+      feed,
+      onAddEvent: () => tapped = true,
+    );
+    expect(find.textContaining('Missing an event you expected'), findsOneWidget);
+    expect(find.text('Add new event'), findsOneWidget);
+    await tester.tap(find.text('Add new event'));
+    await tester.pump();
+    expect(tapped, isTrue);
+  });
+
+  testWidgets('shows add-event suggestion after upcoming items', (
+    tester,
+  ) async {
+    final feed = CommunityActivityFeed(
+      upcoming: [
+        _item(
+          'plan',
+          CommunityActivityKind.spotTrainingPlan,
+          occurredAt: _now,
+          startAt: _now.add(const Duration(hours: 2)),
+          endAt: _now.add(const Duration(hours: 4)),
+          actor: 'Alex',
+        ),
+      ],
+    );
+    await _pump(
+      tester,
+      feed,
+      onAddEvent: () {},
+    );
+    expect(find.textContaining('Missing an event you expected'), findsOneWidget);
+    expect(find.text('Add new event'), findsOneWidget);
+  });
+
   testWidgets('renders past → now → upcoming with the expected copy', (
     tester,
   ) async {

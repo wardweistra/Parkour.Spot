@@ -295,6 +295,7 @@
   "exploreCommunityLoadingLabel": "activiteiten",
   "exploreNoCommunityArea": "Geen recente activiteit in dit gebied",
   "exploreNoCommunityAreaHint": "Check in, plan een sessie of voeg een spot toe om het op gang te brengen",
+  "exploreNoEventsAddSuggestion": "Mis je een event dat je verwachtte? Voeg het toe voor de community.",
   "communityStreamFilterAll": "Alles",
   "communityStreamFilterEvents": "Events",
   "communityStreamFilterSessions": "Sessies",

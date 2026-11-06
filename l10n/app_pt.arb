@@ -238,6 +238,7 @@
   "exploreCommunityLoadingLabel": "atividades",
   "exploreNoCommunityArea": "Sem atividade recente nesta zona",
   "exploreNoCommunityAreaHint": "Faz check-in, planeia uma sessão ou adiciona um spot para começar",
+  "exploreNoEventsAddSuggestion": "Falta um evento que esperavas? Adiciona-o para a comunidade.",
   "communityStreamFilterAll": "Tudo",
   "communityStreamFilterEvents": "Eventos",
   "communityStreamFilterSessions": "Sessões",

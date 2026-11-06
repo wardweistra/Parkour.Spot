@@ -1130,6 +1130,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Faites un check-in, planifiez une séance ou ajoutez un spot pour lancer les choses';
 
   @override
+  String get exploreNoEventsAddSuggestion =>
+      'Il manque un événement que tu attendais ? Ajoute-le pour la communauté.';
+
+  @override
   String get communityStreamFilterAll => 'Tout';
 
   @override

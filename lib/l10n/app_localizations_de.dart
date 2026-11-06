@@ -1125,6 +1125,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Checke ein, plane eine Session oder füge einen Spot hinzu, um loszulegen';
 
   @override
+  String get exploreNoEventsAddSuggestion =>
+      'Fehlt ein Event, das du erwartet hast? Füge es für die Community hinzu.';
+
+  @override
   String get communityStreamFilterAll => 'Alle';
 
   @override

@@ -29,6 +29,7 @@ class CommunityActivityStream extends StatefulWidget {
     this.onOpenActor,
     this.onLoadMorePast,
     this.onLoadMoreUpcoming,
+    this.onAddEvent,
     this.loadingMorePast = false,
     this.loadingMoreUpcoming = false,
     this.lens,
@@ -49,6 +50,10 @@ class CommunityActivityStream extends StatefulWidget {
   final ValueChanged<String>? onOpenActor;
   final VoidCallback? onLoadMorePast;
   final VoidCallback? onLoadMoreUpcoming;
+
+  /// When set, shows an add-event suggestion for an empty upcoming section and
+  /// again after the last loaded upcoming row (including after "Show more").
+  final VoidCallback? onAddEvent;
   final bool loadingMorePast;
   final bool loadingMoreUpcoming;
 
@@ -575,6 +580,32 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
     );
   }
 
+  Widget _buildAddEventSuggestion({required bool compact}) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(0, compact ? 16 : 8, 0, compact ? 8 : 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            l10n.exploreNoEventsAddSuggestion,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+          SizedBox(height: compact ? 12 : 16),
+          OutlinedButton.icon(
+            onPressed: widget.onAddEvent,
+            icon: const Icon(Icons.event_available_outlined),
+            label: Text(l10n.addHubEventButton),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEntry(_StreamEntry entry, DateTime now) {
     final anchorId = _entryAnchorId(entry);
     final child = switch (entry) {
@@ -647,6 +678,8 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
         !widget.feed.hasMorePast && widget.feed.loadedPastCount > 0;
     final showMoreUpcoming =
         widget.feed.hasMoreUpcoming && widget.onLoadMoreUpcoming != null;
+    final showAddEventSuggestion = widget.onAddEvent != null;
+    final upcomingEmpty = upcoming.isEmpty;
 
     _ensureInitialScrollToNow();
 
@@ -764,43 +797,73 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
                       ),
                     ),
                   ),
-                  SliverPadding(
-                    padding: EdgeInsets.fromLTRB(
-                      padding.left,
-                      0,
-                      padding.right,
-                      showMoreUpcoming ? 0 : padding.bottom,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final entry = upcoming[index];
-                          final isLast =
-                              index == upcoming.length - 1 && !showMoreUpcoming;
-                          return _padRow(
-                            _buildEntry(entry, now),
-                            isLastInSection: isLast,
-                          );
-                        },
-                        childCount: upcoming.length,
-                      ),
-                    ),
-                  ),
-                  if (showMoreUpcoming)
+                  if (upcomingEmpty && showAddEventSuggestion)
                     SliverPadding(
                       padding: EdgeInsets.fromLTRB(
                         padding.left,
-                        10,
+                        0,
                         padding.right,
                         padding.bottom,
                       ),
                       sliver: SliverToBoxAdapter(
-                        child: _buildEntry(
-                          _ShowMoreUpcomingEntry(remainingUpcoming),
-                          now,
+                        child: _buildAddEventSuggestion(compact: true),
+                      ),
+                    )
+                  else ...[
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                        padding.left,
+                        0,
+                        padding.right,
+                        showMoreUpcoming || showAddEventSuggestion
+                            ? 0
+                            : padding.bottom,
+                      ),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final entry = upcoming[index];
+                            final isLast =
+                                index == upcoming.length - 1 &&
+                                !showMoreUpcoming &&
+                                !showAddEventSuggestion;
+                            return _padRow(
+                              _buildEntry(entry, now),
+                              isLastInSection: isLast,
+                            );
+                          },
+                          childCount: upcoming.length,
                         ),
                       ),
                     ),
+                    if (showMoreUpcoming)
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          padding.left,
+                          10,
+                          padding.right,
+                          showAddEventSuggestion ? 0 : padding.bottom,
+                        ),
+                        sliver: SliverToBoxAdapter(
+                          child: _buildEntry(
+                            _ShowMoreUpcomingEntry(remainingUpcoming),
+                            now,
+                          ),
+                        ),
+                      ),
+                    if (showAddEventSuggestion)
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          padding.left,
+                          10,
+                          padding.right,
+                          padding.bottom,
+                        ),
+                        sliver: SliverToBoxAdapter(
+                          child: _buildAddEventSuggestion(compact: false),
+                        ),
+                      ),
+                  ],
                 ],
               ),
             ),

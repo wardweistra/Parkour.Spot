@@ -1876,6 +1876,12 @@ abstract class AppLocalizations {
   /// **'Check in, plan a session or add a spot to get things going'**
   String get exploreNoCommunityAreaHint;
 
+  /// Empty upcoming and end-of-upcoming suggestion to add an event
+  ///
+  /// In en, this message translates to:
+  /// **'Missing an event you expected? Add it for the community.'**
+  String get exploreNoEventsAddSuggestion;
+
   /// Explore activities kind lens: show every activity type
   ///
   /// In en, this message translates to:

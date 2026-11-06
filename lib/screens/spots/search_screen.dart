@@ -3141,21 +3141,29 @@ class SearchScreenState extends State<SearchScreen>
   }
 
   void _navigateToAddSpotFromExplore() {
+    _navigateToExploreAddPath('/spots/add');
+  }
+
+  void _navigateToAddEventFromExplore() {
+    _navigateToExploreAddPath('/events/add');
+  }
+
+  void _navigateToExploreAddPath(String path) {
     final center = _mapCenterFromSearchState();
     final queryParameters = <String, String>{};
     if (center != null) {
       queryParameters['lat'] = center.latitude.toString();
       queryParameters['lng'] = center.longitude.toString();
     }
-    final addSpotUri = Uri(
-      path: '/spots/add',
+    final addUri = Uri(
+      path: path,
       queryParameters: queryParameters.isEmpty ? null : queryParameters,
     );
     final authService = Provider.of<AuthService>(context, listen: false);
 
     if (!authService.isAuthenticated) {
       context.go(
-        '/login?redirectTo=${Uri.encodeComponent(addSpotUri.toString())}',
+        '/login?redirectTo=${Uri.encodeComponent(addUri.toString())}',
       );
     } else if (!authService.isProfileReady) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -3164,12 +3172,39 @@ class SearchScreenState extends State<SearchScreen>
         ),
       );
     } else {
-      context.go(addSpotUri.toString());
+      context.go(addUri.toString());
     }
   }
 
   Widget _buildAddSpotSuggestion({required bool compact}) {
     final l10n = AppLocalizations.of(context)!;
+    return _buildExploreAddSuggestion(
+      compact: compact,
+      message: l10n.exploreNoSpotsAddSuggestion,
+      buttonLabel: l10n.exploreAddSpotTitle,
+      icon: Icons.add_location_alt_outlined,
+      onPressed: _navigateToAddSpotFromExplore,
+    );
+  }
+
+  Widget _buildAddEventSuggestion({required bool compact}) {
+    final l10n = AppLocalizations.of(context)!;
+    return _buildExploreAddSuggestion(
+      compact: compact,
+      message: l10n.exploreNoEventsAddSuggestion,
+      buttonLabel: l10n.addHubEventButton,
+      icon: Icons.event_available_outlined,
+      onPressed: _navigateToAddEventFromExplore,
+    );
+  }
+
+  Widget _buildExploreAddSuggestion({
+    required bool compact,
+    required String message,
+    required String buttonLabel,
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
     final theme = Theme.of(context);
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -3182,7 +3217,7 @@ class SearchScreenState extends State<SearchScreen>
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            l10n.exploreNoSpotsAddSuggestion,
+            message,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
@@ -3190,9 +3225,9 @@ class SearchScreenState extends State<SearchScreen>
           ),
           SizedBox(height: compact ? 12 : 16),
           OutlinedButton.icon(
-            onPressed: _navigateToAddSpotFromExplore,
-            icon: const Icon(Icons.add_location_alt_outlined),
-            label: Text(l10n.exploreAddSpotTitle),
+            onPressed: onPressed,
+            icon: Icon(icon),
+            label: Text(buttonLabel),
           ),
         ],
       ),
@@ -3392,6 +3427,7 @@ class SearchScreenState extends State<SearchScreen>
       loadingMoreUpcoming: _isLoadingMoreCommunityUpcoming,
       onLoadMorePast: _loadMoreCommunityPast,
       onLoadMoreUpcoming: _loadMoreCommunityUpcoming,
+      onAddEvent: _navigateToAddEventFromExplore,
       lens: _communityLens,
       onLensChanged: _onCommunityLensChanged,
       onOpenSpot: (item) {
@@ -3446,45 +3482,54 @@ class SearchScreenState extends State<SearchScreen>
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final failed = _communityLoadFailed;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              failed ? Icons.cloud_off_outlined : Icons.timeline_outlined,
-              size: 64,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              failed
-                  ? l10n.communityStreamLoadFailed
-                  : l10n.exploreNoCommunityArea,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            if (failed)
-              TextButton.icon(
-                onPressed: _isLoadingCommunityForView
-                    ? null
-                    : _loadMapDataForCurrentView,
-                icon: const Icon(Icons.refresh),
-                label: Text(l10n.communityStreamRetry),
-              )
-            else
-              Text(
-                l10n.exploreNoCommunityAreaHint,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  failed ? Icons.cloud_off_outlined : Icons.timeline_outlined,
+                  size: 64,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
-              ),
-          ],
-        ),
-      ),
+                const SizedBox(height: 16),
+                Text(
+                  failed
+                      ? l10n.communityStreamLoadFailed
+                      : l10n.exploreNoCommunityArea,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 8),
+                if (failed)
+                  TextButton.icon(
+                    onPressed: _isLoadingCommunityForView
+                        ? null
+                        : _loadMapDataForCurrentView,
+                    icon: const Icon(Icons.refresh),
+                    label: Text(l10n.communityStreamRetry),
+                  )
+                else ...[
+                  Text(
+                    l10n.exploreNoCommunityAreaHint,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.7,
+                      ),
+                    ),
+                  ),
+                  _buildAddEventSuggestion(compact: true),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -3507,71 +3552,78 @@ class SearchScreenState extends State<SearchScreen>
     final feed = _loadedCommunityFeed;
     final showEarlier = feed.hasMorePast;
     final showMoreUpcoming = feed.hasMoreUpcoming;
+    final suggestAddEvent = _communityLens == CommunityActivityLens.events;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CommunityActivityKindFilter(
-              value: _communityLens,
-              onChanged: _onCommunityLensChanged,
-            ),
-            const SizedBox(height: 16),
-            Icon(
-              Icons.filter_list_off_outlined,
-              size: 64,
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _communityLensEmptyTitle(l10n),
-              textAlign: TextAlign.center,
-              style: theme.textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.communityStreamFilterEmptyHint,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
-            ),
-            if (showEarlier || showMoreUpcoming) ...[
-              const SizedBox(height: 16),
-              if (showEarlier)
-                TextButton(
-                  onPressed: _isLoadingMoreCommunityPast
-                      ? null
-                      : _loadMoreCommunityPast,
-                  child: Text(
-                    _isLoadingMoreCommunityPast
-                        ? l10n.communityStreamShowEarlierGeneric
-                        : (feed.pastTotal > feed.loadedPastCount
-                              ? l10n.communityStreamShowEarlier(
-                                  feed.pastTotal - feed.loadedPastCount,
-                                )
-                              : l10n.communityStreamShowEarlierGeneric),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CommunityActivityKindFilter(
+                  value: _communityLens,
+                  onChanged: _onCommunityLensChanged,
+                ),
+                const SizedBox(height: 16),
+                Icon(
+                  Icons.filter_list_off_outlined,
+                  size: 64,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _communityLensEmptyTitle(l10n),
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.communityStreamFilterEmptyHint,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
-              if (showMoreUpcoming)
-                TextButton(
-                  onPressed: _isLoadingMoreCommunityUpcoming
-                      ? null
-                      : _loadMoreCommunityUpcoming,
-                  child: Text(
-                    feed.upcomingTotal > feed.loadedUpcomingCount
-                        ? l10n.communityStreamShowMoreUpcoming(
-                            feed.upcomingTotal - feed.loadedUpcomingCount,
-                          )
-                        : l10n.communityStreamShowMoreUpcomingGeneric,
-                  ),
-                ),
-            ],
-          ],
-        ),
-      ),
+                if (showEarlier || showMoreUpcoming) ...[
+                  const SizedBox(height: 16),
+                  if (showEarlier)
+                    TextButton(
+                      onPressed: _isLoadingMoreCommunityPast
+                          ? null
+                          : _loadMoreCommunityPast,
+                      child: Text(
+                        _isLoadingMoreCommunityPast
+                            ? l10n.communityStreamShowEarlierGeneric
+                            : (feed.pastTotal > feed.loadedPastCount
+                                  ? l10n.communityStreamShowEarlier(
+                                      feed.pastTotal - feed.loadedPastCount,
+                                    )
+                                  : l10n.communityStreamShowEarlierGeneric),
+                      ),
+                    ),
+                  if (showMoreUpcoming)
+                    TextButton(
+                      onPressed: _isLoadingMoreCommunityUpcoming
+                          ? null
+                          : _loadMoreCommunityUpcoming,
+                      child: Text(
+                        feed.upcomingTotal > feed.loadedUpcomingCount
+                            ? l10n.communityStreamShowMoreUpcoming(
+                                feed.upcomingTotal - feed.loadedUpcomingCount,
+                              )
+                            : l10n.communityStreamShowMoreUpcomingGeneric,
+                      ),
+                    ),
+                ],
+                if (suggestAddEvent) _buildAddEventSuggestion(compact: true),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
