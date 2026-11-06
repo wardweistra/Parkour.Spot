@@ -283,13 +283,13 @@ abstract class AppLocalizations {
   /// Event detail: RSVP is interest only and publicly visible
   ///
   /// In en, this message translates to:
-  /// **'This is not a registration. Your name and photo appear publicly on this event if you mark Going or Interested.'**
+  /// **'Not a registration — marks show publicly on this event.'**
   String get eventInterestDisclaimer;
 
   /// Past event detail: RSVP is interest only and publicly visible
   ///
   /// In en, this message translates to:
-  /// **'This is not a registration. It shows who publicly marked they attended or were interested.'**
+  /// **'Not a registration — just who marked they attended or were interested.'**
   String get eventInterestDisclaimerPast;
 
   /// Dialog title listing people who marked Going or Interested

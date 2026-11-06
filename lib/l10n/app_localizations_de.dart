@@ -110,11 +110,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get eventInterestDisclaimer =>
-      'Das ist keine Anmeldung. Dein Name und Foto erscheinen öffentlich auf diesem Event, wenn du Dabei oder Interessiert markierst.';
+      'Keine Anmeldung — Markierungen sind auf diesem Event öffentlich.';
 
   @override
   String get eventInterestDisclaimerPast =>
-      'Das ist keine Anmeldung. Es zeigt, wer öffentlich markiert hat, teilgenommen oder interessiert gewesen zu sein.';
+      'Keine Anmeldung — nur wer markiert hat, teilgenommen oder interessiert gewesen zu sein.';
 
   @override
   String get eventInterestPeopleTitle => 'Wer kommt';

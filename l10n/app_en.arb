@@ -131,11 +131,11 @@
       }
     }
   },
-  "eventInterestDisclaimer": "This is not a registration. Your name and photo appear publicly on this event if you mark Going or Interested.",
+  "eventInterestDisclaimer": "Not a registration — marks show publicly on this event.",
   "@eventInterestDisclaimer": {
     "description": "Event detail: RSVP is interest only and publicly visible"
   },
-  "eventInterestDisclaimerPast": "This is not a registration. It shows who publicly marked they attended or were interested.",
+  "eventInterestDisclaimerPast": "Not a registration — just who marked they attended or were interested.",
   "@eventInterestDisclaimerPast": {
     "description": "Past event detail: RSVP is interest only and publicly visible"
   },

@@ -108,11 +108,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get eventInterestDisclaimer =>
-      'Dit is geen inschrijving. Je naam en foto verschijnen openbaar op dit event als je Ik ga of Geïnteresseerd markeert.';
+      'Geen inschrijving — markeringen zijn openbaar op dit event.';
 
   @override
   String get eventInterestDisclaimerPast =>
-      'Dit is geen inschrijving. Het toont wie openbaar heeft aangegeven aanwezig of geïnteresseerd te zijn geweest.';
+      'Geen inschrijving — alleen wie heeft aangegeven aanwezig of geïnteresseerd te zijn geweest.';
 
   @override
   String get eventInterestPeopleTitle => 'Wie komt er';

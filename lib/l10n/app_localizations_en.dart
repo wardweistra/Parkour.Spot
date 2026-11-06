@@ -108,11 +108,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventInterestDisclaimer =>
-      'This is not a registration. Your name and photo appear publicly on this event if you mark Going or Interested.';
+      'Not a registration — marks show publicly on this event.';
 
   @override
   String get eventInterestDisclaimerPast =>
-      'This is not a registration. It shows who publicly marked they attended or were interested.';
+      'Not a registration — just who marked they attended or were interested.';
 
   @override
   String get eventInterestPeopleTitle => 'Who\'s coming';

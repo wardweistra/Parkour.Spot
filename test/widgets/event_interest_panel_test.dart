@@ -40,7 +40,7 @@ Future<void> pumpPanel(
 }
 
 void main() {
-  testWidgets('shows totals, disclaimer, and selected Going state', (
+  testWidgets('shows action labels without counts, and disclaimer', (
     tester,
   ) async {
     await pumpPanel(
@@ -48,19 +48,29 @@ void main() {
       selected: EventInterestStatus.going,
       goingCount: 3,
       interestedCount: 12,
+      people: const [
+        EventInterestPerson(
+          userId: 'u1',
+          status: EventInterestStatus.going,
+          displayName: 'Ada',
+        ),
+      ],
     );
 
-    expect(find.text('Going (3)'), findsOneWidget);
-    expect(find.text('Interested (12)'), findsOneWidget);
+    expect(find.text('Going'), findsOneWidget);
+    expect(find.text('Interested'), findsOneWidget);
+    expect(find.text('Going (3)'), findsNothing);
+    expect(find.text('Interested (12)'), findsNothing);
+    expect(find.text('1 person · see who\'s coming'), findsOneWidget);
     expect(
       find.text(
-        'This is not a registration. Your name and photo appear publicly on this event if you mark Going or Interested.',
+        'Not a registration — marks show publicly on this event.',
       ),
       findsOneWidget,
     );
   });
 
-  testWidgets('shows past-tense labels and disclaimer when event has ended', (
+  testWidgets('shows past-tense action labels and disclaimer when ended', (
     tester,
   ) async {
     await pumpPanel(
@@ -69,13 +79,21 @@ void main() {
       goingCount: 3,
       interestedCount: 12,
       isPast: true,
+      people: const [
+        EventInterestPerson(
+          userId: 'u1',
+          status: EventInterestStatus.going,
+          displayName: 'Ada',
+        ),
+      ],
     );
 
-    expect(find.text('Attended (3)'), findsOneWidget);
-    expect(find.text('Interested (12)'), findsOneWidget);
+    expect(find.text('Attended'), findsOneWidget);
+    expect(find.text('Interested'), findsOneWidget);
+    expect(find.text('Attended (3)'), findsNothing);
     expect(
       find.text(
-        'This is not a registration. It shows who publicly marked they attended or were interested.',
+        'Not a registration — just who marked they attended or were interested.',
       ),
       findsOneWidget,
     );
@@ -90,8 +108,8 @@ void main() {
       onInterested: () => interestedTaps += 1,
     );
 
-    await tester.tap(find.text('Going (0)'));
-    await tester.tap(find.text('Interested (0)'));
+    await tester.tap(find.text('Going'));
+    await tester.tap(find.text('Interested'));
     expect(goingTaps, 1);
     expect(interestedTaps, 1);
   });
@@ -100,11 +118,11 @@ void main() {
     var goingTaps = 0;
     await pumpPanel(tester, isBusy: true, onGoing: () => goingTaps += 1);
 
-    await tester.tap(find.text('Going (0)'));
+    await tester.tap(find.text('Going'));
     expect(goingTaps, 0);
   });
 
-  testWidgets('shows crew strip and opens people dialog', (tester) async {
+  testWidgets('shows crew strip totals and opens people dialog', (tester) async {
     var peopleTaps = 0;
     await pumpPanel(
       tester,
@@ -182,5 +200,7 @@ void main() {
     await pumpPanel(tester, goingCount: 0, interestedCount: 0, people: const []);
     expect(find.textContaining('see who\'s coming'), findsNothing);
     expect(find.textContaining('marked interest'), findsNothing);
+    expect(find.text('Going'), findsOneWidget);
+    expect(find.text('Interested'), findsOneWidget);
   });
 }

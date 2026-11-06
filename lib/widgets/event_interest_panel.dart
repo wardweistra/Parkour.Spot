@@ -50,10 +50,10 @@ class EventInterestPanel extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final goingLabel = isPast
-        ? l10n.eventInterestAttendedLabel(goingCount)
-        : l10n.eventInterestGoingLabel(goingCount);
-    final interestedLabel = l10n.eventInterestInterestedLabel(interestedCount);
+    // Counts live on the people strip / dialog — buttons are actions only.
+    final goingLabel =
+        isPast ? l10n.eventInterestAttended : l10n.eventInterestGoing;
+    final interestedLabel = l10n.eventInterestInterested;
     final disclaimer = isPast
         ? l10n.eventInterestDisclaimerPast
         : l10n.eventInterestDisclaimer;
