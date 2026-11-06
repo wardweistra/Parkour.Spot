@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
@@ -38,7 +39,8 @@ class CommunityActivityStream extends StatefulWidget {
     this.padding = const EdgeInsets.fromLTRB(16, 8, 16, 16),
   });
 
-  /// Single column; wider sheets centre the stream instead of stretching cards.
+  /// Readable column width on wide sheets. The scroll viewport stays full-bleed
+  /// so the scrollbar hugs the sheet edge; side gutters centre the cards.
   static const double maxContentWidth = 720;
 
   /// Key on the floating control that scrolls back to the "now" divider.
@@ -688,63 +690,66 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
     // and the viewport stays put.
     final jumpDirection = _jumpToNowDirection;
 
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(
-          maxWidth: CommunityActivityStream.maxContentWidth,
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            _onViewportConstraints(constraints);
-            return Stack(
-              key: _viewportKey,
-              children: [
-                NotificationListener<ScrollNotification>(
-                  onNotification: (notification) {
-                    if (notification is UserScrollNotification) {
-                      // Hand off: stop auto-centering once the user scrolls.
-                      if (_autoCenterNow) {
-                        _stopAutoCenterNow();
-                      }
-                      if (_anchorFramesRemaining > 0) {
-                        // Don't fight the user if they scroll during extent settling.
-                        _clearAnchorCorrection();
-                      }
-                    }
-                    // Metrics fire on sheet resize / extent settle — re-center
-                    // while still auto-centering so image loads don't leave
-                    // "now" pinned to the leading edge.
-                    if (_autoCenterNow &&
-                        notification is ScrollMetricsNotification &&
-                        _didApplyInitialScroll &&
-                        _scrollController.hasClients) {
-                      final drift =
-                          (_scrollController.position.pixels -
-                                  _nowCenteredScrollOffset())
-                              .abs();
-                      if (drift > 8) {
-                        _ensureInitialScrollToNow();
-                      }
-                    }
-                    // Metrics fire on sheet resize; updates/ends on user scroll.
-                    if (notification is ScrollMetricsNotification ||
-                        notification is ScrollEndNotification ||
-                        notification is ScrollUpdateNotification) {
-                      _scheduleNowVisibilityUpdate();
-                    }
-                    return false;
-                  },
-                  child: _CenteredTimelineScrollView(
+    // Scroll viewport spans the full sheet so the scrollbar sits on the sheet
+    // edge; side gutters keep the timeline at [maxContentWidth] without
+    // widening cards.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _onViewportConstraints(constraints);
+        final sideGutter = math.max(
+          0.0,
+          (constraints.maxWidth - CommunityActivityStream.maxContentWidth) / 2,
+        );
+        final left = padding.left + sideGutter;
+        final right = padding.right + sideGutter;
+        return Stack(
+          key: _viewportKey,
+          children: [
+            NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (notification is UserScrollNotification) {
+                  // Hand off: stop auto-centering once the user scrolls.
+                  if (_autoCenterNow) {
+                    _stopAutoCenterNow();
+                  }
+                  if (_anchorFramesRemaining > 0) {
+                    // Don't fight the user if they scroll during extent settling.
+                    _clearAnchorCorrection();
+                  }
+                }
+                // Metrics fire on sheet resize / extent settle — re-center
+                // while still auto-centering so image loads don't leave
+                // "now" pinned to the leading edge.
+                if (_autoCenterNow &&
+                    notification is ScrollMetricsNotification &&
+                    _didApplyInitialScroll &&
+                    _scrollController.hasClients) {
+                  final drift =
+                      (_scrollController.position.pixels -
+                              _nowCenteredScrollOffset())
+                          .abs();
+                  if (drift > 8) {
+                    _ensureInitialScrollToNow();
+                  }
+                }
+                // Metrics fire on sheet resize; updates/ends on user scroll.
+                if (notification is ScrollMetricsNotification ||
+                    notification is ScrollEndNotification ||
+                    notification is ScrollUpdateNotification) {
+                  _scheduleNowVisibilityUpdate();
+                }
+                return false;
+              },
+              child: _CenteredTimelineScrollView(
                 controller: _scrollController,
                 centerKey: _nowCenterKey,
                 slivers: [
                   if (showEarlier || showPastLimit)
                     SliverPadding(
                       padding: EdgeInsets.fromLTRB(
-                        padding.left,
+                        left,
                         padding.top,
-                        padding.right,
+                        right,
                         10,
                       ),
                       sliver: SliverToBoxAdapter(
@@ -764,12 +769,7 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
                       ),
                     ),
                   SliverPadding(
-                    padding: EdgeInsets.fromLTRB(
-                      padding.left,
-                      0,
-                      padding.right,
-                      0,
-                    ),
+                    padding: EdgeInsets.fromLTRB(left, 0, right, 0),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
@@ -786,12 +786,7 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
                   KeyedSubtree(
                     key: _nowCenterKey,
                     child: SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        padding.left,
-                        0,
-                        padding.right,
-                        10,
-                      ),
+                      padding: EdgeInsets.fromLTRB(left, 0, right, 10),
                       sliver: SliverToBoxAdapter(
                         child: _buildEntry(const _NowEntry(), now),
                       ),
@@ -800,9 +795,9 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
                   if (upcomingEmpty && showAddEventSuggestion)
                     SliverPadding(
                       padding: EdgeInsets.fromLTRB(
-                        padding.left,
+                        left,
                         0,
-                        padding.right,
+                        right,
                         padding.bottom,
                       ),
                       sliver: SliverToBoxAdapter(
@@ -812,9 +807,9 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
                   else ...[
                     SliverPadding(
                       padding: EdgeInsets.fromLTRB(
-                        padding.left,
+                        left,
                         0,
-                        padding.right,
+                        right,
                         showMoreUpcoming || showAddEventSuggestion
                             ? 0
                             : padding.bottom,
@@ -839,9 +834,9 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
                     if (showMoreUpcoming)
                       SliverPadding(
                         padding: EdgeInsets.fromLTRB(
-                          padding.left,
+                          left,
                           10,
-                          padding.right,
+                          right,
                           showAddEventSuggestion ? 0 : padding.bottom,
                         ),
                         sliver: SliverToBoxAdapter(
@@ -854,9 +849,9 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
                     if (showAddEventSuggestion)
                       SliverPadding(
                         padding: EdgeInsets.fromLTRB(
-                          padding.left,
+                          left,
                           10,
-                          padding.right,
+                          right,
                           padding.bottom,
                         ),
                         sliver: SliverToBoxAdapter(
@@ -867,26 +862,22 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
                 ],
               ),
             ),
-                if (jumpDirection != null)
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    top: jumpDirection == _JumpToNowDirection.up ? 8 : null,
-                    bottom: jumpDirection == _JumpToNowDirection.down
-                        ? 8
-                        : null,
-                    child: Center(
-                      child: _JumpToNowPill(
-                        direction: jumpDirection,
-                        onPressed: _scrollToNow,
-                      ),
-                    ),
+            if (jumpDirection != null)
+              Positioned(
+                left: 0,
+                right: 0,
+                top: jumpDirection == _JumpToNowDirection.up ? 8 : null,
+                bottom: jumpDirection == _JumpToNowDirection.down ? 8 : null,
+                child: Center(
+                  child: _JumpToNowPill(
+                    direction: jumpDirection,
+                    onPressed: _scrollToNow,
                   ),
-              ],
-            );
-          },
-        ),
-      ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
