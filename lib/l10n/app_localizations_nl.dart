@@ -118,7 +118,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get eventInterestPeopleTitle => 'Wie komt er';
 
   @override
-  String get eventInterestPeopleTitlePast => 'Wie interesse heeft gemarkeerd';
+  String get eventInterestPeopleTitlePast => 'Wie er was';
 
   @override
   String eventInterestPeopleSubtitle(int going, int interested) {
@@ -146,8 +146,8 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count mensen hebben interesse gemarkeerd',
-      one: '1 persoon heeft interesse gemarkeerd',
+      other: '$count mensen · zie wie er was',
+      one: '1 persoon · zie wie er was',
     );
     return '$_temp0';
   }

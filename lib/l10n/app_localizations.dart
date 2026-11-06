@@ -298,10 +298,10 @@ abstract class AppLocalizations {
   /// **'Who\'s coming'**
   String get eventInterestPeopleTitle;
 
-  /// Past-event dialog title listing people who marked interest
+  /// Past-event dialog title listing people who marked Attended or Interested
   ///
   /// In en, this message translates to:
-  /// **'Who marked interest'**
+  /// **'Who was there'**
   String get eventInterestPeopleTitlePast;
 
   /// Dialog subtitle with Going and Interested counts
@@ -325,7 +325,7 @@ abstract class AppLocalizations {
   /// Event detail presence strip copy for past events
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{1 person marked interest} other{{count} people marked interest}}'**
+  /// **'{count, plural, one{1 person · see who was there} other{{count} people · see who was there}}'**
   String eventInterestPeopleStripLabelPast(int count);
 
   /// Affordance on the event interest avatar stack (fallback)
