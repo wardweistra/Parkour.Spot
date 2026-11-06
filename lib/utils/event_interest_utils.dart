@@ -28,6 +28,58 @@ EventInterestStats eventInterestStatsAfterChange({
   );
 }
 
+/// Going first, then Interested; within each group, newest [updatedAt] first.
+int compareEventInterestPeople(EventInterestPerson a, EventInterestPerson b) {
+  if (a.status != b.status) {
+    if (a.status == EventInterestStatus.going) return -1;
+    if (b.status == EventInterestStatus.going) return 1;
+  }
+  final aAt = a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+  final bAt = b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+  final byTime = bAt.compareTo(aAt);
+  if (byTime != 0) return byTime;
+  return a.userId.compareTo(b.userId);
+}
+
+List<EventInterestPerson> sortedEventInterestPeople(
+  Iterable<EventInterestPerson> people,
+) {
+  final list = people.toList();
+  list.sort(compareEventInterestPeople);
+  return list;
+}
+
+/// Optimistic roster update when the signed-in user changes their RSVP.
+List<EventInterestPerson> eventInterestPeopleAfterChange({
+  required Iterable<EventInterestPerson> people,
+  required String userId,
+  required EventInterestStatus? to,
+  String? displayName,
+  String? photoURL,
+  DateTime? now,
+}) {
+  final trimmed = userId.trim();
+  if (trimmed.isEmpty) {
+    return sortedEventInterestPeople(people);
+  }
+  final withoutSelf = people
+      .where((person) => person.userId.trim() != trimmed)
+      .toList(growable: true);
+  if (to == null) {
+    return sortedEventInterestPeople(withoutSelf);
+  }
+  withoutSelf.add(
+    EventInterestPerson(
+      userId: trimmed,
+      status: to,
+      displayName: displayName,
+      photoURL: photoURL,
+      updatedAt: now ?? DateTime.now().toUtc(),
+    ),
+  );
+  return sortedEventInterestPeople(withoutSelf);
+}
+
 String? _trimmedId(String? value) {
   final trimmed = value?.trim();
   if (trimmed == null || trimmed.isEmpty) return null;

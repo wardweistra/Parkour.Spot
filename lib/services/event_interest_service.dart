@@ -44,6 +44,22 @@ class EventInterestService extends ChangeNotifier {
     return _statsRef(trimmed).snapshots().map(EventInterestStats.fromFirestore);
   }
 
+  /// Public people roster for [eventId] (native / canonical stats doc).
+  ///
+  /// Sorted Going first, then Interested; newest within each group first.
+  Stream<List<EventInterestPerson>> watchPeople(String eventId) {
+    final trimmed = eventId.trim();
+    if (trimmed.isEmpty) {
+      return Stream<List<EventInterestPerson>>.value(const []);
+    }
+    return _statsRef(trimmed).collection('people').snapshots().map((snap) {
+      final people = snap.docs
+          .map(EventInterestPerson.fromFirestore)
+          .toList(growable: false);
+      return sortedEventInterestPeople(people);
+    });
+  }
+
   Stream<EventInterest?> watchUserInterest(String eventId) {
     final userId = _userId;
     final trimmed = eventId.trim();

@@ -1,16 +1,62 @@
 /* eslint-disable max-len */
 /**
- * Denormalized Going / Interested totals for events.
+ * Denormalized Going / Interested totals and public people roster for events.
  * Source of truth remains `users/{userId}/eventInterests/{eventId}`.
  *
  * Totals for an event include RSVPs on that event and on any events marked as
  * duplicates of it (`duplicateOf == eventId`), matching how spot ratings roll
  * up to the native spot. The same user is counted once; Going wins over
  * Interested when they marked both listings.
+ *
+ * Public roster: `eventInterestStats/{eventId}/people/{userId}` with status and
+ * denormalized profile fields (Cloud Functions only).
  */
+
+const {FieldValue} = require("firebase-admin/firestore");
 
 const STATUSES = Object.freeze(["going", "interested"]);
 const IN_QUERY_LIMIT = 30;
+const BATCH_LIMIT = 400;
+
+/**
+ * @param {*} value
+ * @return {string|null}
+ */
+function trimmedString(value) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+/**
+ * Public profile fields for the people roster (same rules as community activity
+ * actors: private profiles keep displayName, clear photoURL).
+ * @param {Object} db Firestore instance
+ * @param {string|null} userId
+ * @return {Promise<{displayName: ?string, photoURL: ?string}>}
+ */
+async function loadInterestPersonProfile(db, userId) {
+  const trimmed = trimmedString(userId);
+  if (!trimmed) return {displayName: null, photoURL: null};
+  try {
+    const snap = await db.collection("users").doc(trimmed).get();
+    if (!snap.exists) return {displayName: null, photoURL: null};
+    const data = snap.data() || {};
+    if (data.isPublicProfile === false) {
+      return {displayName: trimmedString(data.displayName), photoURL: null};
+    }
+    return {
+      displayName: trimmedString(data.displayName),
+      photoURL: trimmedString(data.photoURL),
+    };
+  } catch (err) {
+    console.warn("eventInterest.loadInterestPersonProfile failed", {
+      userId: trimmed,
+      err,
+    });
+    return {displayName: null, photoURL: null};
+  }
+}
 
 /**
  * @param {*} value
@@ -115,12 +161,31 @@ function userIdFromInterestDoc(doc) {
 }
 
 /**
- * Unique-by-user Going / Interested counts. Going wins when the same user
- * marked both on native and duplicate listings.
- * @param {Array<Object>} interestDocs
- * @return {{goingCount: number, interestedCount: number}}
+ * @param {*} value
+ * @return {number} millis, or 0 when unknown
  */
-function aggregateInterestCounts(interestDocs) {
+function timestampMillis(value) {
+  if (!value) return 0;
+  if (typeof value.toMillis === "function") return value.toMillis();
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  if (typeof value.seconds === "number") {
+    return (value.seconds * 1000) + Math.floor((value.nanoseconds || 0) / 1e6);
+  }
+  return 0;
+}
+
+/**
+ * Unique-by-user status map. Going wins when the same user marked both on
+ * native and duplicate listings.
+ * @param {Array<Object>} interestDocs
+ * @return {Map<string, {status: string, updatedAt: (Object|null)}>}
+ */
+function aggregateInterestByUser(interestDocs) {
   const byUser = new Map();
   const docs = Array.isArray(interestDocs) ? interestDocs : [];
   for (const doc of docs) {
@@ -130,17 +195,127 @@ function aggregateInterestCounts(interestDocs) {
     const userId = userIdFromInterestDoc(doc) ||
       (typeof data.userId === "string" ? data.userId.trim() : "");
     if (!userId) continue;
+    const updatedAt = data.updatedAt || data.createdAt || null;
     const prev = byUser.get(userId);
-    if (prev === "going") continue;
-    if (status === "going" || !prev) byUser.set(userId, status);
+    if (!prev) {
+      byUser.set(userId, {status, updatedAt});
+      continue;
+    }
+    if (prev.status === "going") {
+      if (status === "going" &&
+          timestampMillis(updatedAt) > timestampMillis(prev.updatedAt)) {
+        byUser.set(userId, {status: "going", updatedAt});
+      }
+      continue;
+    }
+    if (status === "going") {
+      byUser.set(userId, {status, updatedAt});
+      continue;
+    }
+    if (timestampMillis(updatedAt) > timestampMillis(prev.updatedAt)) {
+      byUser.set(userId, {status, updatedAt});
+    }
   }
+  return byUser;
+}
+
+/**
+ * Unique-by-user Going / Interested counts. Going wins when the same user
+ * marked both on native and duplicate listings.
+ * @param {Array<Object>} interestDocs
+ * @return {{goingCount: number, interestedCount: number}}
+ */
+function aggregateInterestCounts(interestDocs) {
+  const byUser = aggregateInterestByUser(interestDocs);
   let goingCount = 0;
   let interestedCount = 0;
-  for (const status of byUser.values()) {
-    if (status === "going") goingCount += 1;
+  for (const entry of byUser.values()) {
+    if (entry.status === "going") goingCount += 1;
     else interestedCount += 1;
   }
   return {goingCount, interestedCount};
+}
+
+/**
+ * @param {Object} db Firestore instance
+ * @param {Array<{type: string, ref: Object, data: (Object|undefined)}>} ops
+ * @return {Promise<void>}
+ */
+async function commitBatchedOps(db, ops) {
+  const list = Array.isArray(ops) ? ops : [];
+  for (let i = 0; i < list.length; i += BATCH_LIMIT) {
+    const chunk = list.slice(i, i + BATCH_LIMIT);
+    const batch = db.batch();
+    for (const op of chunk) {
+      if (op.type === "delete") {
+        batch.delete(op.ref);
+      } else {
+        batch.set(op.ref, op.data, {merge: true});
+      }
+    }
+    await batch.commit();
+  }
+}
+
+/**
+ * Sync public people roster under eventInterestStats/{eventId}/people.
+ * @param {Object} db Firestore instance
+ * @param {string} eventId
+ * @param {Map<string, {status: string, updatedAt: (Object|null)}>} byUser
+ * @return {Promise<void>}
+ */
+async function syncEventInterestPeople(db, eventId, byUser) {
+  if (!eventId) return;
+  const peopleCol = db.collection("eventInterestStats").doc(eventId)
+      .collection("people");
+  const existingSnap = await peopleCol.get();
+  const existingIds = new Set(
+      (existingSnap.docs || []).map((doc) => doc.id).filter(Boolean),
+  );
+  const desiredIds = new Set(byUser.keys());
+
+  const profileCache = new Map();
+  const ops = [];
+  for (const [userId, entry] of byUser.entries()) {
+    let profile = profileCache.get(userId);
+    if (!profile) {
+      profile = await loadInterestPersonProfile(db, userId);
+      profileCache.set(userId, profile);
+    }
+    const data = {
+      userId,
+      status: entry.status,
+      displayName: profile.displayName || null,
+      photoURL: profile.photoURL || null,
+      updatedAt: entry.updatedAt || FieldValue.serverTimestamp(),
+    };
+    ops.push({type: "set", ref: peopleCol.doc(userId), data});
+  }
+  for (const existingId of existingIds) {
+    if (!desiredIds.has(existingId)) {
+      ops.push({type: "delete", ref: peopleCol.doc(existingId)});
+    }
+  }
+  await commitBatchedOps(db, ops);
+}
+
+/**
+ * Deletes the public people roster for an event (e.g. when the event is removed).
+ * @param {Object} db Firestore instance
+ * @param {string} eventId
+ * @return {Promise<void>}
+ */
+async function deleteEventInterestPeople(db, eventId) {
+  if (!eventId) return;
+  const peopleCol = db.collection("eventInterestStats").doc(eventId)
+      .collection("people");
+  const snap = await peopleCol.get();
+  const docs = snap.docs || [];
+  if (docs.length === 0) return;
+  await commitBatchedOps(
+      db,
+      docs.map((doc) => ({type: "delete", ref: doc.ref})),
+  );
 }
 
 /**
@@ -174,8 +349,8 @@ async function loadInterestsForEventIds(db, eventIds) {
 }
 
 /**
- * Recomputes public Going / Interested totals for one event, including RSVPs
- * on events marked as duplicates of it.
+ * Recomputes public Going / Interested totals and people roster for one event,
+ * including RSVPs on events marked as duplicates of it.
  * @param {Object} db Firestore instance
  * @param {string} eventId
  * @return {Promise<{goingCount: number, interestedCount: number}|null>}
@@ -187,8 +362,17 @@ async function recomputeEventInterestAggregates(db, eventId) {
       db,
       [eventId, ...duplicateIds],
   );
-  const counts = aggregateInterestCounts(interests);
+  const byUser = aggregateInterestByUser(interests);
+  const counts = {
+    goingCount: 0,
+    interestedCount: 0,
+  };
+  for (const entry of byUser.values()) {
+    if (entry.status === "going") counts.goingCount += 1;
+    else counts.interestedCount += 1;
+  }
   await db.collection("eventInterestStats").doc(eventId).set(counts, {merge: true});
+  await syncEventInterestPeople(db, eventId, byUser);
   return counts;
 }
 
@@ -312,6 +496,7 @@ async function handleEventDuplicateOfChanged(db, eventId, beforeData, afterData)
     await recomputeEventInterestAggregates(db, id);
   }
   if (!afterData && eventId) {
+    await deleteEventInterestPeople(db, eventId);
     await db.collection("eventInterestStats").doc(eventId).delete();
   }
 }
@@ -325,7 +510,10 @@ module.exports = {
   applyInterestCountDeltas,
   applyEventInterestStatsChange,
   idsToRecomputeForDuplicateOfChange,
+  aggregateInterestByUser,
   aggregateInterestCounts,
+  syncEventInterestPeople,
+  deleteEventInterestPeople,
   recomputeEventInterestAggregates,
   recomputeEventInterestAndNative,
   collectEventIdsForInterestRecompute,

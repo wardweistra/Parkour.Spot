@@ -114,3 +114,73 @@ class EventInterestStats {
     return 0;
   }
 }
+
+/// One public person on an event roster
+/// (`eventInterestStats/{eventId}/people/{userId}`).
+class EventInterestPerson {
+  const EventInterestPerson({
+    required this.userId,
+    required this.status,
+    this.displayName,
+    this.photoURL,
+    this.updatedAt,
+  });
+
+  final String userId;
+  final EventInterestStatus status;
+  final String? displayName;
+  final String? photoURL;
+  final DateTime? updatedAt;
+
+  factory EventInterestPerson.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
+    return EventInterestPerson.fromMap(doc.data(), userId: doc.id);
+  }
+
+  factory EventInterestPerson.fromMap(
+    Map<String, dynamic>? data, {
+    required String userId,
+  }) {
+    DateTime? parseDate(dynamic value) {
+      if (value == null) return null;
+      if (value is Timestamp) return value.toDate();
+      if (value is DateTime) return value;
+      if (value is String) return DateTime.tryParse(value);
+      return null;
+    }
+
+    final map = data ?? const <String, dynamic>{};
+    final storedUserId = (map['userId'] as String?)?.trim();
+    final status =
+        parseEventInterestStatus(map['status']) ??
+        EventInterestStatus.interested;
+    final name = (map['displayName'] as String?)?.trim();
+    final photo = (map['photoURL'] as String?)?.trim();
+
+    return EventInterestPerson(
+      userId: (storedUserId != null && storedUserId.isNotEmpty)
+          ? storedUserId
+          : userId,
+      status: status,
+      displayName: (name != null && name.isNotEmpty) ? name : null,
+      photoURL: (photo != null && photo.isNotEmpty) ? photo : null,
+      updatedAt: parseDate(map['updatedAt']),
+    );
+  }
+
+  EventInterestPerson copyWith({
+    EventInterestStatus? status,
+    String? displayName,
+    String? photoURL,
+    DateTime? updatedAt,
+  }) {
+    return EventInterestPerson(
+      userId: userId,
+      status: status ?? this.status,
+      displayName: displayName ?? this.displayName,
+      photoURL: photoURL ?? this.photoURL,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+}

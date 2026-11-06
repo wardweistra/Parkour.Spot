@@ -240,10 +240,15 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
-    // Public Going / Interested totals (written by Cloud Functions only).
+    // Public Going / Interested totals and people roster (Cloud Functions only).
     match /eventInterestStats/{eventId} {
       allow read: if true;
       allow create, update, delete: if false;
+
+      match /people/{userId} {
+        allow read: if true;
+        allow create, update, delete: if false;
+      }
     }
 
     // Explore Community stream: geo-indexed public activity (new spots, photos,
@@ -449,7 +454,7 @@ service cloud.firestore {
       }
 
       // Event RSVPs (Going / Interested). Only the owner can read their own.
-      // Public totals live in eventInterestStats (Cloud Functions).
+      // Public totals and people roster live in eventInterestStats (Cloud Functions).
       match /eventInterests/{eventId} {
         function eventInterestStatusOk(data) {
           return data.status is string &&

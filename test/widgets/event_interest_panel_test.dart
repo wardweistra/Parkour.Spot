@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:parkour_spot/l10n/app_localizations.dart';
 import 'package:parkour_spot/models/event_interest.dart';
 import 'package:parkour_spot/widgets/event_interest_panel.dart';
+import 'package:parkour_spot/widgets/stacked_user_avatars.dart';
 
 Future<void> pumpPanel(
   WidgetTester tester, {
@@ -11,8 +12,11 @@ Future<void> pumpPanel(
   int interestedCount = 0,
   bool isBusy = false,
   bool isPast = false,
+  List<EventInterestPerson> people = const [],
+  bool peopleLoaded = true,
   VoidCallback? onGoing,
   VoidCallback? onInterested,
+  VoidCallback? onPeople,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -25,8 +29,11 @@ Future<void> pumpPanel(
           interestedCount: interestedCount,
           isBusy: isBusy,
           isPast: isPast,
+          people: people,
+          peopleLoaded: peopleLoaded,
           onGoingPressed: onGoing ?? () {},
           onInterestedPressed: onInterested ?? () {},
+          onPeoplePressed: onPeople,
         ),
       ),
     ),
@@ -48,7 +55,7 @@ void main() {
     expect(find.text('Interested (12)'), findsOneWidget);
     expect(
       find.text(
-        'This is not a registration. It only lets others know you might be there.',
+        'This is not a registration. Your name and photo appear publicly on this event if you mark Going or Interested.',
       ),
       findsOneWidget,
     );
@@ -69,7 +76,7 @@ void main() {
     expect(find.text('Interested (12)'), findsOneWidget);
     expect(
       find.text(
-        'This is not a registration. It only shows who marked they attended or were interested.',
+        'This is not a registration. It shows who publicly marked they attended or were interested.',
       ),
       findsOneWidget,
     );
@@ -96,5 +103,83 @@ void main() {
 
     await tester.tap(find.text('Going (0)'));
     expect(goingTaps, 0);
+  });
+
+  testWidgets('shows avatar stack and opens people dialog', (tester) async {
+    var peopleTaps = 0;
+    await pumpPanel(
+      tester,
+      goingCount: 1,
+      interestedCount: 1,
+      people: const [
+        EventInterestPerson(
+          userId: 'u1',
+          status: EventInterestStatus.going,
+          displayName: 'Ada',
+        ),
+        EventInterestPerson(
+          userId: 'u2',
+          status: EventInterestStatus.interested,
+          displayName: 'Bea',
+        ),
+      ],
+      onPeople: () => peopleTaps += 1,
+    );
+
+    expect(find.byType(StackedUserAvatars), findsOneWidget);
+    expect(find.text('View all'), findsOneWidget);
+    await tester.tap(find.text('View all'));
+    expect(peopleTaps, 1);
+  });
+
+  testWidgets('people dialog lists status labels including past Attended', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) {
+            return Scaffold(
+              body: TextButton(
+                onPressed: () => showEventInterestPeopleDialog(
+                  context,
+                  isPast: true,
+                  people: const [
+                    EventInterestPerson(
+                      userId: 'u1',
+                      status: EventInterestStatus.going,
+                      displayName: 'Ada',
+                    ),
+                    EventInterestPerson(
+                      userId: 'u2',
+                      status: EventInterestStatus.interested,
+                      displayName: 'Bea',
+                    ),
+                  ],
+                ),
+                child: const Text('Open'),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Who marked interest'), findsOneWidget);
+    expect(find.text('Ada'), findsOneWidget);
+    expect(find.text('Bea'), findsOneWidget);
+    expect(find.text('Attended'), findsOneWidget);
+    expect(find.text('Interested'), findsOneWidget);
+  });
+
+  testWidgets('hides people strip when empty and loaded', (tester) async {
+    await pumpPanel(tester, goingCount: 0, interestedCount: 0, people: const []);
+    expect(find.byType(StackedUserAvatars), findsNothing);
+    expect(find.text('View all'), findsNothing);
   });
 }

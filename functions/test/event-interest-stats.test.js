@@ -6,14 +6,15 @@ const {
   applyInterestCountDeltas,
   idsToRecomputeForDuplicateOfChange,
   aggregateInterestCounts,
+  aggregateInterestByUser,
   recomputeEventInterestAggregates,
   handleEventInterestWritten,
   handleEventDuplicateOfChanged,
 } = require("../lib/event-interest-stats");
 
-function interestDoc({userId, status, eventId}) {
+function interestDoc({userId, status, eventId, updatedAt}) {
   return {
-    data: () => ({userId, status, eventId}),
+    data: () => ({userId, status, eventId, updatedAt}),
     ref: {
       parent: {
         parent: {id: userId},
@@ -26,8 +27,12 @@ function mockDb({
   duplicateIdsByNative = {},
   interestsByEventId = {},
   eventsById = {},
+  usersById = {},
+  existingPeopleByEventId = {},
   statsWrites = [],
   statsDeletes = [],
+  peopleWrites = [],
+  peopleDeletes = [],
 } = {}) {
   const collectionGroupQuery = {
     where: jest.fn((field, op, chunk) => {
@@ -47,7 +52,44 @@ function mockDb({
     }),
   };
 
+  function peopleCollection(eventId) {
+    const existing = existingPeopleByEventId[eventId] || [];
+    return {
+      doc: jest.fn((userId) => ({
+        id: userId,
+        set: jest.fn(),
+        path: `eventInterestStats/${eventId}/people/${userId}`,
+      })),
+      get: jest.fn(async () => ({
+        docs: existing.map((userId) => ({
+          id: userId,
+          ref: {
+            id: userId,
+            path: `eventInterestStats/${eventId}/people/${userId}`,
+          },
+        })),
+      })),
+    };
+  }
+
   return {
+    batch: jest.fn(() => {
+      const ops = [];
+      return {
+        set: jest.fn((ref, data) => {
+          ops.push({type: "set", ref, data});
+          peopleWrites.push({
+            path: ref.path || (ref.id ? String(ref.id) : ""),
+            data,
+          });
+        }),
+        delete: jest.fn((ref) => {
+          ops.push({type: "delete", ref});
+          peopleDeletes.push(ref.path || (ref.id ? String(ref.id) : ""));
+        }),
+        commit: jest.fn(async () => ops),
+      };
+    }),
     collectionGroup: jest.fn((name) => {
       expect(name).toBe("eventInterests");
       return collectionGroupQuery;
@@ -76,6 +118,19 @@ function mockDb({
           })),
         };
       }
+      if (name === "users") {
+        return {
+          doc: jest.fn((userId) => ({
+            get: jest.fn(async () => {
+              const data = usersById[userId];
+              return {
+                exists: data != null,
+                data: () => data,
+              };
+            }),
+          })),
+        };
+      }
       if (name === "eventInterestStats") {
         return {
           doc: jest.fn((eventId) => ({
@@ -84,6 +139,10 @@ function mockDb({
             }),
             delete: jest.fn(async () => {
               statsDeletes.push(eventId);
+            }),
+            collection: jest.fn((sub) => {
+              expect(sub).toBe("people");
+              return peopleCollection(eventId);
             }),
           })),
         };
@@ -220,9 +279,31 @@ describe("event-interest-stats", () => {
     });
   });
 
+  describe("aggregateInterestByUser", () => {
+    it("keeps Going when the same user marked both", () => {
+      const byUser = aggregateInterestByUser([
+        interestDoc({
+          userId: "a",
+          status: "interested",
+          eventId: "native",
+          updatedAt: new Date("2024-01-01"),
+        }),
+        interestDoc({
+          userId: "a",
+          status: "going",
+          eventId: "dup",
+          updatedAt: new Date("2024-02-01"),
+        }),
+      ]);
+      expect(byUser.get("a").status).toBe("going");
+    });
+  });
+
   describe("recomputeEventInterestAggregates", () => {
     it("writes rolled-up totals including duplicate RSVPs", async () => {
       const statsWrites = [];
+      const peopleWrites = [];
+      const peopleDeletes = [];
       const db = mockDb({
         duplicateIdsByNative: {native: ["dup-1"]},
         interestsByEventId: {
@@ -232,7 +313,14 @@ describe("event-interest-stats", () => {
             interestDoc({userId: "a", status: "going", eventId: "dup-1"}),
           ],
         },
+        usersById: {
+          a: {displayName: "Ada", photoURL: "https://example/a.jpg"},
+          b: {displayName: "Bea", isPublicProfile: false, photoURL: "secret"},
+        },
+        existingPeopleByEventId: {native: ["stale"]},
         statsWrites,
+        peopleWrites,
+        peopleDeletes,
       });
 
       const counts = await recomputeEventInterestAggregates(db, "native");
@@ -244,6 +332,25 @@ describe("event-interest-stats", () => {
           options: {merge: true},
         },
       ]);
+
+      const writtenByUser = Object.fromEntries(
+          peopleWrites
+              .filter((w) => w.data && w.data.userId)
+              .map((w) => [w.data.userId, w.data]),
+      );
+      expect(writtenByUser.a).toMatchObject({
+        userId: "a",
+        status: "going",
+        displayName: "Ada",
+        photoURL: "https://example/a.jpg",
+      });
+      expect(writtenByUser.b).toMatchObject({
+        userId: "b",
+        status: "interested",
+        displayName: "Bea",
+        photoURL: null,
+      });
+      expect(peopleDeletes.some((path) => path.includes("/stale"))).toBe(true);
     });
   });
 
@@ -257,6 +364,7 @@ describe("event-interest-stats", () => {
           dup: [interestDoc({userId: "a", status: "going", eventId: "dup"})],
           native: [],
         },
+        usersById: {a: {displayName: "Ada"}},
         statsWrites,
       });
 
@@ -281,11 +389,14 @@ describe("event-interest-stats", () => {
     it("recomputes both events and deletes stats when the duplicate is removed", async () => {
       const statsWrites = [];
       const statsDeletes = [];
+      const peopleDeletes = [];
       const db = mockDb({
         duplicateIdsByNative: {native: []},
         interestsByEventId: {native: []},
+        existingPeopleByEventId: {dup: ["a"]},
         statsWrites,
         statsDeletes,
+        peopleDeletes,
       });
 
       await handleEventDuplicateOfChanged(
@@ -297,6 +408,7 @@ describe("event-interest-stats", () => {
 
       expect(statsWrites.map((write) => write.eventId)).toEqual(["native"]);
       expect(statsDeletes).toEqual(["dup"]);
+      expect(peopleDeletes.some((path) => path.includes("dup/people/a"))).toBe(true);
     });
   });
 });

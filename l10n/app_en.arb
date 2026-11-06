@@ -131,13 +131,33 @@
       }
     }
   },
-  "eventInterestDisclaimer": "This is not a registration. It only lets others know you might be there.",
+  "eventInterestDisclaimer": "This is not a registration. Your name and photo appear publicly on this event if you mark Going or Interested.",
   "@eventInterestDisclaimer": {
-    "description": "Event detail: RSVP is interest only, not a sign-up"
+    "description": "Event detail: RSVP is interest only and publicly visible"
   },
-  "eventInterestDisclaimerPast": "This is not a registration. It only shows who marked they attended or were interested.",
+  "eventInterestDisclaimerPast": "This is not a registration. It shows who publicly marked they attended or were interested.",
   "@eventInterestDisclaimerPast": {
-    "description": "Past event detail: RSVP is interest only, not a sign-up"
+    "description": "Past event detail: RSVP is interest only and publicly visible"
+  },
+  "eventInterestPeopleTitle": "Who's marked interest",
+  "@eventInterestPeopleTitle": {
+    "description": "Dialog title listing people who marked Going or Interested"
+  },
+  "eventInterestPeopleTitlePast": "Who marked interest",
+  "@eventInterestPeopleTitlePast": {
+    "description": "Past-event dialog title listing people who marked interest"
+  },
+  "eventInterestPeopleViewAll": "View all",
+  "@eventInterestPeopleViewAll": {
+    "description": "Affordance on the event interest avatar stack"
+  },
+  "eventInterestPeopleEmpty": "No one has marked interest yet.",
+  "@eventInterestPeopleEmpty": {
+    "description": "Empty state in the event interest people dialog"
+  },
+  "eventInterestPeopleLoadError": "Could not load who marked interest.",
+  "@eventInterestPeopleLoadError": {
+    "description": "Error loading the event interest people dialog"
   },
   "eventInterestUpdateFailed": "Could not update your interest.",
   "@eventInterestUpdateFailed": {

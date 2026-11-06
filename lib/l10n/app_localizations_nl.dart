@@ -108,11 +108,28 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get eventInterestDisclaimer =>
-      'Dit is geen inschrijving. Het laat anderen alleen weten dat je er misschien bij bent.';
+      'Dit is geen inschrijving. Je naam en foto verschijnen openbaar op dit event als je Ik ga of Geïnteresseerd markeert.';
 
   @override
   String get eventInterestDisclaimerPast =>
-      'Dit is geen inschrijving. Het toont alleen wie heeft aangegeven aanwezig of geïnteresseerd te zijn geweest.';
+      'Dit is geen inschrijving. Het toont wie openbaar heeft aangegeven aanwezig of geïnteresseerd te zijn geweest.';
+
+  @override
+  String get eventInterestPeopleTitle => 'Wie interesse heeft gemarkeerd';
+
+  @override
+  String get eventInterestPeopleTitlePast => 'Wie interesse heeft gemarkeerd';
+
+  @override
+  String get eventInterestPeopleViewAll => 'Alles bekijken';
+
+  @override
+  String get eventInterestPeopleEmpty =>
+      'Nog niemand heeft interesse gemarkeerd.';
+
+  @override
+  String get eventInterestPeopleLoadError =>
+      'Kon niet laden wie interesse heeft gemarkeerd.';
 
   @override
   String get eventInterestUpdateFailed =>

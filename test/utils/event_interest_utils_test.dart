@@ -78,6 +78,59 @@ void main() {
     });
   });
 
+  group('sortedEventInterestPeople', () {
+    test('orders Going before Interested, newest first within group', () {
+      final olderGoing = EventInterestPerson(
+        userId: 'a',
+        status: EventInterestStatus.going,
+        updatedAt: DateTime.utc(2026, 1, 1),
+      );
+      final newerGoing = EventInterestPerson(
+        userId: 'b',
+        status: EventInterestStatus.going,
+        updatedAt: DateTime.utc(2026, 2, 1),
+      );
+      final interested = EventInterestPerson(
+        userId: 'c',
+        status: EventInterestStatus.interested,
+        updatedAt: DateTime.utc(2026, 3, 1),
+      );
+      final sorted = sortedEventInterestPeople([
+        interested,
+        olderGoing,
+        newerGoing,
+      ]);
+      expect(sorted.map((p) => p.userId).toList(), ['b', 'a', 'c']);
+    });
+  });
+
+  group('eventInterestPeopleAfterChange', () {
+    test('inserts self as Going and removes on clear', () {
+      final existing = [
+        const EventInterestPerson(
+          userId: 'other',
+          status: EventInterestStatus.interested,
+        ),
+      ];
+      final withSelf = eventInterestPeopleAfterChange(
+        people: existing,
+        userId: 'me',
+        to: EventInterestStatus.going,
+        displayName: 'Me',
+        now: DateTime.utc(2026, 4, 1),
+      );
+      expect(withSelf.first.userId, 'me');
+      expect(withSelf.first.status, EventInterestStatus.going);
+
+      final cleared = eventInterestPeopleAfterChange(
+        people: withSelf,
+        userId: 'me',
+        to: null,
+      );
+      expect(cleared.map((p) => p.userId), ['other']);
+    });
+  });
+
   group('isParkourEventPast', () {
     test('uses endAt when present', () {
       final jam = event(

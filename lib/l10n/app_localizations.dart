@@ -280,17 +280,47 @@ abstract class AppLocalizations {
   /// **'Attended ({count})'**
   String eventInterestAttendedLabel(int count);
 
-  /// Event detail: RSVP is interest only, not a sign-up
+  /// Event detail: RSVP is interest only and publicly visible
   ///
   /// In en, this message translates to:
-  /// **'This is not a registration. It only lets others know you might be there.'**
+  /// **'This is not a registration. Your name and photo appear publicly on this event if you mark Going or Interested.'**
   String get eventInterestDisclaimer;
 
-  /// Past event detail: RSVP is interest only, not a sign-up
+  /// Past event detail: RSVP is interest only and publicly visible
   ///
   /// In en, this message translates to:
-  /// **'This is not a registration. It only shows who marked they attended or were interested.'**
+  /// **'This is not a registration. It shows who publicly marked they attended or were interested.'**
   String get eventInterestDisclaimerPast;
+
+  /// Dialog title listing people who marked Going or Interested
+  ///
+  /// In en, this message translates to:
+  /// **'Who\'s marked interest'**
+  String get eventInterestPeopleTitle;
+
+  /// Past-event dialog title listing people who marked interest
+  ///
+  /// In en, this message translates to:
+  /// **'Who marked interest'**
+  String get eventInterestPeopleTitlePast;
+
+  /// Affordance on the event interest avatar stack
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get eventInterestPeopleViewAll;
+
+  /// Empty state in the event interest people dialog
+  ///
+  /// In en, this message translates to:
+  /// **'No one has marked interest yet.'**
+  String get eventInterestPeopleEmpty;
+
+  /// Error loading the event interest people dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load who marked interest.'**
+  String get eventInterestPeopleLoadError;
 
   /// Error when saving Going or Interested fails
   ///

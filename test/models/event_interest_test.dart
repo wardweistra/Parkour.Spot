@@ -66,4 +66,36 @@ void main() {
       expect(stats.interestedCount, 4);
     });
   });
+
+  group('EventInterestPerson.fromMap', () {
+    test('uses document id and trims profile fields', () {
+      final person = EventInterestPerson.fromMap(
+        const {
+          'status': 'going',
+          'displayName': ' Ada ',
+          'photoURL': ' https://example/a.jpg ',
+        },
+        userId: 'user-1',
+      );
+      expect(person.userId, 'user-1');
+      expect(person.status, EventInterestStatus.going);
+      expect(person.displayName, 'Ada');
+      expect(person.photoURL, 'https://example/a.jpg');
+    });
+
+    test('parses updatedAt', () {
+      final updated = DateTime.utc(2026, 9, 1, 12);
+      final person = EventInterestPerson.fromMap(
+        {
+          'userId': 'user-2',
+          'status': 'interested',
+          'updatedAt': Timestamp.fromDate(updated),
+        },
+        userId: 'ignored',
+      );
+      expect(person.userId, 'user-2');
+      expect(person.status, EventInterestStatus.interested);
+      expect(person.updatedAt?.toUtc(), updated);
+    });
+  });
 }

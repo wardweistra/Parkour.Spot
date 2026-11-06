@@ -108,11 +108,28 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get eventInterestDisclaimer =>
-      'Ce n\'est pas une inscription. Cela indique seulement aux autres que vous pourriez venir.';
+      'Ce n\'est pas une inscription. Votre nom et photo apparaissent publiquement sur cet événement si vous marquez J\'y vais ou Intéressé.';
 
   @override
   String get eventInterestDisclaimerPast =>
-      'Ce n\'est pas une inscription. Cela indique seulement qui a marqué avoir été présent ou intéressé.';
+      'Ce n\'est pas une inscription. Cela montre qui a marqué publiquement avoir été présent ou intéressé.';
+
+  @override
+  String get eventInterestPeopleTitle => 'Qui a marqué son intérêt';
+
+  @override
+  String get eventInterestPeopleTitlePast => 'Qui a marqué son intérêt';
+
+  @override
+  String get eventInterestPeopleViewAll => 'Tout voir';
+
+  @override
+  String get eventInterestPeopleEmpty =>
+      'Personne n\'a encore marqué d\'intérêt.';
+
+  @override
+  String get eventInterestPeopleLoadError =>
+      'Impossible de charger qui a marqué son intérêt.';
 
   @override
   String get eventInterestUpdateFailed =>
