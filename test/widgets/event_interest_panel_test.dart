@@ -188,7 +188,7 @@ void main() {
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Who marked interest'), findsOneWidget);
+    expect(find.text('Who was there'), findsOneWidget);
     expect(find.text('1 attended · 1 interested'), findsOneWidget);
     expect(find.text('Ada'), findsOneWidget);
     expect(find.text('Bea'), findsOneWidget);
