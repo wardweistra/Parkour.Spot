@@ -47,7 +47,7 @@ const firebaseAuth = getAuth();
 countries.registerLocale(require("i18n-iso-countries/langs/en.json"));
 
 // Import shared utilities
-const {slugify, formatDateToISO, clipForMeta} = require("./utils");
+const {slugify, spotPath, formatDateToISO, clipForMeta} = require("./utils");
 const {
   extractSpotIdFromPath,
   extractFilename,
@@ -575,9 +575,8 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
 
     // Generate canonical URL
     let canonicalUrl = fullUrl;
-    if (spot && spot.countryCode && spot.city && isSpotUrl) {
-      const citySlug = slugify(spot.city);
-      const canonicalPath = `/${spot.countryCode.toLowerCase()}/${citySlug}/${spot.id}`;
+    if (spot && spot.id && isSpotUrl) {
+      const canonicalPath = spotPath(spot.id, spot.countryCode, spot.city);
       canonicalUrl = `https://${canonicalHost}${canonicalPath}`;
     } else if (locationInfo) {
       // Use the current URL as canonical for location pages
@@ -606,21 +605,20 @@ exports.spotPage = onRequest({region: "europe-west1"}, async (req, res) => {
       const countryCodeValue = locationInfo?.countryCode || spot?.countryCode;
       const countryCode = countryCodeValue ? countryCodeValue.toLowerCase() : null;
       const cityName = locationInfo?.city || spot?.city;
-      const citySlug = slugify(cityName);
+      const citySlug = cityName ? slugify(cityName) : "";
 
-      breadcrumbs.push({
-        name: cityName,
-        url: `/${countryCode}/${citySlug}`,
-      });
+      if (countryCode && citySlug) {
+        breadcrumbs.push({
+          name: cityName,
+          url: `/${countryCode}/${citySlug}`,
+        });
+      }
     }
 
-    if (spot && spot.name && spot.countryCode && spot.city) {
-      const countryCode = spot.countryCode.toLowerCase();
-      const citySlug = slugify(spot.city);
-
+    if (spot && spot.name && spot.id) {
       breadcrumbs.push({
         name: spot.name,
-        url: `/${countryCode}/${citySlug}/${spot.id}`,
+        url: spotPath(spot.id, spot.countryCode, spot.city),
       });
     }
 

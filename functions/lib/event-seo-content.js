@@ -3,7 +3,7 @@
  * Pure helpers for crawlable event-page SEO content (view-model only).
  */
 
-const {slugify} = require("../utils");
+const {spotPath} = require("../utils");
 const {cleanDescription} = require("./text-processing");
 const {toJsDate} = require("./user-calendar-feed");
 
@@ -121,16 +121,10 @@ function linkedSpotLink(spot) {
   const name = typeof spot.name === "string" ? spot.name.trim() : "";
   if (!id || !name) return null;
 
-  const city = spot.city != null ? String(spot.city).trim() : "";
-  const countryCode = spot.countryCode != null ?
-    String(spot.countryCode).trim().toLowerCase() : "";
-  let url;
-  if (city && countryCode && countryCode.length === 2) {
-    url = `/${countryCode}/${slugify(city)}/${id}`;
-  } else {
-    url = `/spot/${id}`;
-  }
-  return {title: name, url};
+  return {
+    title: name,
+    url: spotPath(id, spot.countryCode, spot.city),
+  };
 }
 
 /**

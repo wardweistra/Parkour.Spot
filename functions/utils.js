@@ -5,7 +5,7 @@
 
 /**
  * Normalizes special characters to their ASCII equivalents
- * e.g., é -> e, É -> e, ñ -> n, etc.
+ * e.g., é -> e, É -> e, ñ -> n, Ηράκλειο -> Irakleio, etc.
  * @param {string} input - The input string
  * @return {string} Normalized string
  */
@@ -26,6 +26,56 @@ function normalizeToAscii(input) {
     "ñ": "n", "Ñ": "N",
     "ç": "c", "Ç": "C",
     "ß": "ss",
+    // Greek lowercase
+    "α": "a", "ά": "a",
+    "β": "v",
+    "γ": "g",
+    "δ": "d",
+    "ε": "e", "έ": "e",
+    "ζ": "z",
+    "η": "i", "ή": "i",
+    "θ": "th",
+    "ι": "i", "ί": "i", "ϊ": "i", "ΐ": "i",
+    "κ": "k",
+    "λ": "l",
+    "μ": "m",
+    "ν": "n",
+    "ξ": "x",
+    "ο": "o", "ό": "o",
+    "π": "p",
+    "ρ": "r",
+    "σ": "s", "ς": "s",
+    "τ": "t",
+    "υ": "y", "ύ": "y", "ϋ": "y", "ΰ": "y",
+    "φ": "f",
+    "χ": "ch",
+    "ψ": "ps",
+    "ω": "o", "ώ": "o",
+    // Greek uppercase
+    "Α": "A", "Ά": "A",
+    "Β": "V",
+    "Γ": "G",
+    "Δ": "D",
+    "Ε": "E", "Έ": "E",
+    "Ζ": "Z",
+    "Η": "I", "Ή": "I",
+    "Θ": "Th",
+    "Ι": "I", "Ί": "I", "Ϊ": "I",
+    "Κ": "K",
+    "Λ": "L",
+    "Μ": "M",
+    "Ν": "N",
+    "Ξ": "X",
+    "Ο": "O", "Ό": "O",
+    "Π": "P",
+    "Ρ": "R",
+    "Σ": "S",
+    "Τ": "T",
+    "Υ": "Y", "Ύ": "Y", "Ϋ": "Y",
+    "Φ": "F",
+    "Χ": "Ch",
+    "Ψ": "Ps",
+    "Ω": "O", "Ώ": "O",
   };
 
   let result = input;
@@ -41,15 +91,38 @@ function normalizeToAscii(input) {
  * Slugifies a string for use in URLs
  * Normalizes special characters, lowercases, and replaces spaces/hyphens
  * @param {string} input - The input string
- * @return {string} Slugified string
+ * @return {string} Slugified string (may be empty if nothing ASCII remains)
  */
 function slugify(input) {
   const normalized = normalizeToAscii(input);
   const lowered = normalized.toLowerCase();
-  const replaced = lowered
-      .replace(/[^a-z0-9\s-_]/g, "")
-      .replace(/[\s_]+/g, "-");
-  return replaced;
+  return lowered
+      .replace(/[^a-z0-9\s_-]/g, "")
+      .replace(/[\s_]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-+|-+$/g, "");
+}
+
+/**
+ * Build a spot path: /{cc}/{citySlug}/{id} when city slugifies, else /spot/{id}.
+ * Avoids empty city segments like /gr//{id}.
+ * @param {string} spotId
+ * @param {string|null|undefined} countryCode
+ * @param {string|null|undefined} city
+ * @return {string}
+ */
+function spotPath(spotId, countryCode, city) {
+  const id = spotId != null ? String(spotId).trim() : "";
+  if (!id) return "/spot/";
+  const cc = countryCode != null ? String(countryCode).trim().toLowerCase() : "";
+  if (cc.length === 2) {
+    const cityRaw = city != null ? String(city).trim() : "";
+    const citySegment = cityRaw ? slugify(cityRaw) : "";
+    if (citySegment) {
+      return `/${cc}/${citySegment}/${id}`;
+    }
+  }
+  return `/spot/${id}`;
 }
 
 /**
@@ -99,6 +172,7 @@ function formatDateToISO(date) {
 module.exports = {
   normalizeToAscii,
   slugify,
+  spotPath,
   escapeXml,
   formatDateToISO,
   clipForMeta,

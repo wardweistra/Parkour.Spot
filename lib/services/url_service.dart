@@ -163,15 +163,15 @@ class UrlService {
   
   /// Generate a shareable URL for a spot
   /// Uses format: parkour.spot/nl/amsterdam/&lt;spot-id&gt;
+  /// Falls back to /spot/&lt;id&gt; when country/city cannot form a usable path
+  /// (e.g. missing city, or a city name that slugifies to empty).
   static String generateSpotUrl(String spotId, {String? countryCode, String? city}) {
-    if (countryCode != null && countryCode.length == 2) {
-      final cc = countryCode.toLowerCase();
-      final citySegment = (city != null && city.trim().isNotEmpty)
-          ? _slugify(city)
-          : 'city';
-      return '$_baseUrl/$cc/$citySegment/$spotId';
-    }
-    return '$_baseUrl/spot/$spotId';
+    final path = generateNavigationUrl(
+      spotId,
+      countryCode: countryCode,
+      city: city,
+    );
+    return '$_baseUrl$path';
   }
 
   /// Generate a shareable URL for an event (`/event/:eventId`).
@@ -303,15 +303,17 @@ class UrlService {
     final normalized = _normalizeToAscii(input);
     final lowered = normalized.toLowerCase();
     final replaced = lowered
-        .replaceAll(RegExp(r"[^a-z0-9\s-_]", caseSensitive: false), '')
-        .replaceAll(RegExp(r"[\s_]+"), '-');
+        .replaceAll(RegExp(r"[^a-z0-9\s_-]"), '')
+        .replaceAll(RegExp(r"[\s_]+"), '-')
+        .replaceAll(RegExp(r'-+'), '-')
+        .replaceAll(RegExp(r'^-+|-+$'), '');
     return replaced;
   }
 
   /// Normalize special characters to their ASCII equivalents
-  /// e.g., é -> e, É -> e, ñ -> n, etc.
+  /// e.g., é -> e, É -> e, ñ -> n, Ηράκλειο -> Irakleio, etc.
   static String _normalizeToAscii(String input) {
-    // Common accented characters and their ASCII equivalents
+    // Latin accents + modern Greek (ELOT 743 / ISO 843-ish) for URL slugs.
     const Map<String, String> replacements = {
       'à': 'a', 'á': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a', 'å': 'a',
       'À': 'A', 'Á': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A', 'Å': 'A',
@@ -328,13 +330,63 @@ class UrlService {
       'ñ': 'n', 'Ñ': 'N',
       'ç': 'c', 'Ç': 'C',
       'ß': 'ss',
+      // Greek lowercase
+      'α': 'a', 'ά': 'a',
+      'β': 'v',
+      'γ': 'g',
+      'δ': 'd',
+      'ε': 'e', 'έ': 'e',
+      'ζ': 'z',
+      'η': 'i', 'ή': 'i',
+      'θ': 'th',
+      'ι': 'i', 'ί': 'i', 'ϊ': 'i', 'ΐ': 'i',
+      'κ': 'k',
+      'λ': 'l',
+      'μ': 'm',
+      'ν': 'n',
+      'ξ': 'x',
+      'ο': 'o', 'ό': 'o',
+      'π': 'p',
+      'ρ': 'r',
+      'σ': 's', 'ς': 's',
+      'τ': 't',
+      'υ': 'y', 'ύ': 'y', 'ϋ': 'y', 'ΰ': 'y',
+      'φ': 'f',
+      'χ': 'ch',
+      'ψ': 'ps',
+      'ω': 'o', 'ώ': 'o',
+      // Greek uppercase
+      'Α': 'A', 'Ά': 'A',
+      'Β': 'V',
+      'Γ': 'G',
+      'Δ': 'D',
+      'Ε': 'E', 'Έ': 'E',
+      'Ζ': 'Z',
+      'Η': 'I', 'Ή': 'I',
+      'Θ': 'Th',
+      'Ι': 'I', 'Ί': 'I', 'Ϊ': 'I',
+      'Κ': 'K',
+      'Λ': 'L',
+      'Μ': 'M',
+      'Ν': 'N',
+      'Ξ': 'X',
+      'Ο': 'O', 'Ό': 'O',
+      'Π': 'P',
+      'Ρ': 'R',
+      'Σ': 'S',
+      'Τ': 'T',
+      'Υ': 'Y', 'Ύ': 'Y', 'Ϋ': 'Y',
+      'Φ': 'F',
+      'Χ': 'Ch',
+      'Ψ': 'Ps',
+      'Ω': 'O', 'Ώ': 'O',
     };
-    
+
     String result = input;
     replacements.forEach((char, replacement) {
       result = result.replaceAll(char, replacement);
     });
-    
+
     return result;
   }
   
@@ -426,13 +478,17 @@ class UrlService {
 
   /// Generate a navigation URL for a spot (for internal navigation)
   /// Uses the same format as share URLs: /countryCode/city/spotId
+  /// Falls back to /spot/&lt;id&gt; when country/city cannot form a usable path
+  /// (e.g. missing city, or a city name that slugifies to empty).
   static String generateNavigationUrl(String spotId, {String? countryCode, String? city}) {
     if (countryCode != null && countryCode.length == 2) {
       final cc = countryCode.toLowerCase();
       final citySegment = (city != null && city.trim().isNotEmpty)
           ? _slugify(city)
-          : 'city';
-      return '/$cc/$citySegment/$spotId';
+          : '';
+      if (citySegment.isNotEmpty) {
+        return '/$cc/$citySegment/$spotId';
+      }
     }
     return '/spot/$spotId';
   }

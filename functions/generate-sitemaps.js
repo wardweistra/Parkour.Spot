@@ -16,7 +16,7 @@ const {getFirestore} = require("firebase-admin/firestore");
 const {getStorage} = require("firebase-admin/storage");
 
 // Import shared utility functions
-const {slugify, escapeXml, formatDateToISO} = require("./utils");
+const {slugify, spotPath, escapeXml, formatDateToISO} = require("./utils");
 
 const db = getFirestore();
 const bucket = getStorage().bucket();
@@ -100,17 +100,20 @@ function generateCountrySitemapUrls(countryCode, citiesMap) {
   for (const [cityName, spots] of citiesMap.entries()) {
     const citySlug = slugify(cityName);
 
-    // Add city page URL
-    urls.push({
-      loc: `${BASE_URL}/${countryCode}/${citySlug}`,
-      lastmod: null,
-    });
+    // Skip empty slugs (e.g. non-transliterable scripts before a mapping exists)
+    // — spot URLs still use spotPath which falls back to /spot/:id.
+    if (citySlug) {
+      urls.push({
+        loc: `${BASE_URL}/${countryCode}/${citySlug}`,
+        lastmod: null,
+      });
+    }
 
     // Add spot URLs with lastmod
     for (const spot of spots) {
       const lastmod = formatDateToISO(spot.updatedAt);
       urls.push({
-        loc: `${BASE_URL}/${countryCode}/${citySlug}/${spot.id}`,
+        loc: `${BASE_URL}${spotPath(spot.id, countryCode, cityName)}`,
         lastmod: lastmod,
       });
     }

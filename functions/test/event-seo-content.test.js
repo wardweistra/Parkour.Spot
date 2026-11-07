@@ -76,6 +76,18 @@ describe("linkedSpotLink", () => {
     expect(linkedSpotLink({id: "abc", name: "Somewhere"}))
         .toEqual({title: "Somewhere", url: "/spot/abc"});
   });
+
+  it("transliterates greek cities and avoids empty city segments", () => {
+    expect(linkedSpotLink({
+      id: "991hF1AL1pEGkWQDjB8S",
+      name: "Ancient Stairs",
+      countryCode: "GR",
+      city: "Ηράκλειο",
+    })).toEqual({
+      title: "Ancient Stairs",
+      url: "/gr/irakleio/991hF1AL1pEGkWQDjB8S",
+    });
+  });
 });
 
 describe("buildEventSeoContent", () => {
