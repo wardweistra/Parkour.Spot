@@ -202,6 +202,7 @@ Static Astro site in `about/`. Once per night, Cloud Function `generateAboutSnap
 | `/nl` | `/nl` |
 | `/nl/amsterdam` | `/nl/amsterdam` |
 | `/events/{slug}` | `/event/{eventId}` |
+| `/lists/{slug}` | `/list/{listId}` |
 
 **Secrets / setup**
 

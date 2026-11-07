@@ -3549,6 +3549,46 @@
   "@spotListDetailMenuEditList": {
     "description": "List management menu item that enters inline list edit mode"
   },
+  "featuredSpotListsSectionTitle": "Featured spot lists",
+  "@featuredSpotListsSectionTitle": {
+    "description": "Section title for staff-featured lists on the lists hub"
+  },
+  "spotListFeaturedBadge": "Featured spot list",
+  "@spotListFeaturedBadge": {
+    "description": "Status chip on a list detail page when the list is staff-featured"
+  },
+  "spotListFeaturedBadgeShort": "Featured",
+  "@spotListFeaturedBadgeShort": {
+    "description": "Compact featured label in list hub rows"
+  },
+  "spotListFeaturedTooltip": "Highlighted by the Parkour·Spot team for the community to discover.",
+  "@spotListFeaturedTooltip": {
+    "description": "Mouse-over / long-press explanation of the featured spot list badge"
+  },
+  "spotListFeatureThisList": "Feature",
+  "@spotListFeatureThisList": {
+    "description": "Admin quick action to promote a public list to featured"
+  },
+  "spotListRemoveFromFeatured": "Unfeature",
+  "@spotListRemoveFromFeatured": {
+    "description": "Admin quick action to remove a list from featured"
+  },
+  "spotListFeaturedUpdated": "Featured status updated",
+  "@spotListFeaturedUpdated": {
+    "description": "Snackbar after admin successfully toggles featured"
+  },
+  "spotListFeaturedUpdateFailed": "Could not update featured status",
+  "@spotListFeaturedUpdateFailed": {
+    "description": "Snackbar when featuring a list fails"
+  },
+  "spotListFeaturePublicOnlyHint": "Only public lists can be featured",
+  "@spotListFeaturePublicOnlyHint": {
+    "description": "Hint when admin tries to feature a non-public list"
+  },
+  "spotOnFeaturedListsTitle": "On featured lists",
+  "@spotOnFeaturedListsTitle": {
+    "description": "Section title on spot detail listing featured lists that include this spot"
+  },
   "spotListEditDiscardTitle": "Discard changes?",
   "@spotListEditDiscardTitle": {
     "description": "Title of unsaved list edits discard dialog"

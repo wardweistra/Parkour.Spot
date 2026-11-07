@@ -111,6 +111,25 @@ export type EventsIndex = {
   events: EventSummary[];
 };
 
+export type FeaturedListSummary = {
+  slug: string;
+  listId: string;
+  name: string;
+  description: string | null;
+  spotCount: number;
+  imageUrl: string | null;
+};
+
+export type FeaturedListDetail = FeaturedListSummary & {
+  generatedAt: string;
+  spots: SpotSummary[];
+};
+
+export type ListsIndex = {
+  generatedAt: string;
+  lists: FeaturedListSummary[];
+};
+
 /** Public sync-source row for Community catalogs (no sync URLs). */
 export type CommunitySource = {
   id: string;

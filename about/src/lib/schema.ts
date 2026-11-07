@@ -5,6 +5,8 @@ import type {
   AboutStats,
   EventDetail,
   EventSummary,
+  FeaturedListDetail,
+  FeaturedListSummary,
   SpotSummary,
 } from "./types";
 import {
@@ -13,6 +15,8 @@ import {
   OPEN_SOURCE_URL,
   aboutAbsolute,
   aboutEventPath,
+  aboutListPath,
+  aboutListsPath,
   appSpotUrl,
 } from "./urls";
 
@@ -237,4 +241,38 @@ export function buildEventsListJsonLd(
       url: aboutAbsolute(aboutEventPath(event.slug)),
     })),
   };
+}
+
+/** ItemList for /lists, pointing at each featured list page. */
+export function buildFeaturedListsIndexJsonLd(
+  lists: FeaturedListSummary[],
+): Record<string, unknown> | null {
+  if (lists.length === 0) return null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Featured parkour spot lists",
+    url: aboutAbsolute(aboutListsPath()),
+    numberOfItems: lists.length,
+    itemListElement: lists.map((list, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      url: aboutAbsolute(aboutListPath(list.slug)),
+    })),
+  };
+}
+
+/** Place ItemList for a featured list detail page. */
+export function buildFeaturedListJsonLd(
+  list: FeaturedListDetail,
+): Record<string, unknown> | null {
+  return buildPlaceJsonLd({
+    name: list.name,
+    pageUrl: aboutAbsolute(aboutListPath(list.slug)),
+    spots: list.spots,
+    breadcrumbs: [
+      {name: "Featured lists", url: aboutAbsolute(aboutListsPath())},
+      {name: list.name, url: aboutAbsolute(aboutListPath(list.slug))},
+    ],
+  });
 }

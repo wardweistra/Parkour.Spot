@@ -151,6 +151,14 @@ class SpotList {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// Staff-curated highlight. Only admins set this (via callable).
+  final bool featured;
+  final DateTime? featuredAt;
+  final String? featuredBy;
+
+  /// Stable About-site path segment; set on first feature, then immutable.
+  final String? aboutSlug;
+
   SpotList({
     this.id,
     required this.name,
@@ -162,6 +170,10 @@ class SpotList {
     required this.createdBy,
     required this.createdAt,
     required this.updatedAt,
+    this.featured = false,
+    this.featuredAt,
+    this.featuredBy,
+    this.aboutSlug,
   });
 
   /// When sections exist and are non-empty, returns ordered unique spot IDs.
@@ -225,6 +237,10 @@ class SpotList {
       createdBy: data['createdBy'] ?? '',
       createdAt: data['createdAt']?.toDate() ?? DateTime.now(),
       updatedAt: data['updatedAt']?.toDate() ?? DateTime.now(),
+      featured: data['featured'] == true,
+      featuredAt: data['featuredAt']?.toDate(),
+      featuredBy: data['featuredBy'] as String?,
+      aboutSlug: data['aboutSlug'] as String?,
     );
   }
 
@@ -264,9 +280,14 @@ class SpotList {
       createdBy: (data['createdBy'] ?? '') as String,
       createdAt: parseDate(data['createdAt']) ?? DateTime.now(),
       updatedAt: parseDate(data['updatedAt']) ?? DateTime.now(),
+      featured: data['featured'] == true,
+      featuredAt: parseDate(data['featuredAt']),
+      featuredBy: data['featuredBy'] as String?,
+      aboutSlug: data['aboutSlug'] as String?,
     );
   }
 
+  /// Client writes never include featured/aboutSlug — admins set those via callable.
   Map<String, dynamic> toFirestore() {
     return {
       'name': name,
@@ -294,6 +315,10 @@ class SpotList {
     String? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? featured,
+    DateTime? featuredAt,
+    String? featuredBy,
+    String? aboutSlug,
   }) {
     return SpotList(
       id: id ?? this.id,
@@ -306,6 +331,10 @@ class SpotList {
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      featured: featured ?? this.featured,
+      featuredAt: featuredAt ?? this.featuredAt,
+      featuredBy: featuredBy ?? this.featuredBy,
+      aboutSlug: aboutSlug ?? this.aboutSlug,
     );
   }
 

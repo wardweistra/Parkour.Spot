@@ -3804,6 +3804,39 @@ class AppLocalizationsFr extends AppLocalizations {
   String get spotListDetailMenuEditList => 'Modifier la liste';
 
   @override
+  String get featuredSpotListsSectionTitle => 'Listes de spots à la une';
+
+  @override
+  String get spotListFeaturedBadge => 'Liste de spots à la une';
+
+  @override
+  String get spotListFeaturedBadgeShort => 'À la une';
+
+  @override
+  String get spotListFeaturedTooltip =>
+      'Mise en avant par l’équipe Parkour·Spot pour que la communauté la découvre.';
+
+  @override
+  String get spotListFeatureThisList => 'Mettre à la une';
+
+  @override
+  String get spotListRemoveFromFeatured => 'Retirer';
+
+  @override
+  String get spotListFeaturedUpdated => 'Statut à la une mis à jour';
+
+  @override
+  String get spotListFeaturedUpdateFailed =>
+      'Impossible de mettre à jour le statut à la une';
+
+  @override
+  String get spotListFeaturePublicOnlyHint =>
+      'Seules les listes publiques peuvent être mises à la une';
+
+  @override
+  String get spotOnFeaturedListsTitle => 'Dans les listes à la une';
+
+  @override
   String get spotListEditDiscardTitle => 'Abandonner les modifications ?';
 
   @override

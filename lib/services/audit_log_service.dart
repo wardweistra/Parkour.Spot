@@ -622,4 +622,28 @@ class AuditLogService {
       debugPrint('Error logging spot list delete: $e');
     }
   }
+
+  Future<void> logSpotListFeatured({
+    required String listId,
+    required bool featured,
+    String? userId,
+    String? userName,
+    Map<String, dynamic>? metadata,
+  }) async {
+    try {
+      await _firestore.collection('auditLog').add({
+        'action': AuditLogAction.spotListFeatured.toString().split('.').last,
+        'listId': listId,
+        'userId': userId,
+        'userName': userName,
+        'timestamp': FieldValue.serverTimestamp(),
+        'changes': {
+          'featured': {'from': !featured, 'to': featured},
+        },
+        'metadata': ?metadata,
+      });
+    } catch (e) {
+      debugPrint('Error logging spot list featured: $e');
+    }
+  }
 }

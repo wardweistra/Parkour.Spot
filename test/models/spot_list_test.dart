@@ -20,6 +20,30 @@ SpotList buildList({
 }
 
 void main() {
+  group('SpotList.featured fields', () {
+    test('defaults featured to false', () {
+      final list = buildList();
+      expect(list.featured, isFalse);
+      expect(list.featuredAt, isNull);
+      expect(list.featuredBy, isNull);
+      expect(list.aboutSlug, isNull);
+    });
+
+    test('toFirestore omits featured admin fields', () {
+      final list = buildList().copyWith(
+        featured: true,
+        featuredAt: DateTime.utc(2026, 3, 1),
+        featuredBy: 'admin-1',
+        aboutSlug: 'session-list-1',
+      );
+      final map = list.toFirestore();
+      expect(map.containsKey('featured'), isFalse);
+      expect(map.containsKey('featuredAt'), isFalse);
+      expect(map.containsKey('featuredBy'), isFalse);
+      expect(map.containsKey('aboutSlug'), isFalse);
+    });
+  });
+
   group('SpotList.isPlainList', () {
     test('legacy lists without sections are plain', () {
       final list = buildList();

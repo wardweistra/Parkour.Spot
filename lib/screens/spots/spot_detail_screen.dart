@@ -13,6 +13,7 @@ import '../../models/spot_check_in.dart';
 import '../../models/spot_training_plan.dart';
 import '../../widgets/spot_check_in_dialog.dart';
 import '../../widgets/add_to_spot_list_dialog.dart';
+import '../../widgets/featured_spot_list_chrome.dart';
 import '../../widgets/spot_training_plan_dialog.dart';
 import '../../widgets/spot_duplicate_changes_dialog.dart';
 import '../../widgets/spot_rater_list.dart';
@@ -2642,6 +2643,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             margin: EdgeInsets.zero,
                           ),
                           const SizedBox(height: 12),
+                          SpotFeaturedListsSection(
+                            spotId: _spot.id!,
+                            margin: const EdgeInsets.only(bottom: 12),
+                          ),
                           SpotDetailCommunitySection(
                             spotId: _spot.id!,
                             spotDisplayName: _spot.name,

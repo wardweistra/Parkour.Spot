@@ -6030,6 +6030,66 @@ abstract class AppLocalizations {
   /// **'Edit list'**
   String get spotListDetailMenuEditList;
 
+  /// Section title for staff-featured lists on the lists hub
+  ///
+  /// In en, this message translates to:
+  /// **'Featured spot lists'**
+  String get featuredSpotListsSectionTitle;
+
+  /// Status chip on a list detail page when the list is staff-featured
+  ///
+  /// In en, this message translates to:
+  /// **'Featured spot list'**
+  String get spotListFeaturedBadge;
+
+  /// Compact featured label in list hub rows
+  ///
+  /// In en, this message translates to:
+  /// **'Featured'**
+  String get spotListFeaturedBadgeShort;
+
+  /// Mouse-over / long-press explanation of the featured spot list badge
+  ///
+  /// In en, this message translates to:
+  /// **'Highlighted by the Parkour·Spot team for the community to discover.'**
+  String get spotListFeaturedTooltip;
+
+  /// Admin quick action to promote a public list to featured
+  ///
+  /// In en, this message translates to:
+  /// **'Feature'**
+  String get spotListFeatureThisList;
+
+  /// Admin quick action to remove a list from featured
+  ///
+  /// In en, this message translates to:
+  /// **'Unfeature'**
+  String get spotListRemoveFromFeatured;
+
+  /// Snackbar after admin successfully toggles featured
+  ///
+  /// In en, this message translates to:
+  /// **'Featured status updated'**
+  String get spotListFeaturedUpdated;
+
+  /// Snackbar when featuring a list fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update featured status'**
+  String get spotListFeaturedUpdateFailed;
+
+  /// Hint when admin tries to feature a non-public list
+  ///
+  /// In en, this message translates to:
+  /// **'Only public lists can be featured'**
+  String get spotListFeaturePublicOnlyHint;
+
+  /// Section title on spot detail listing featured lists that include this spot
+  ///
+  /// In en, this message translates to:
+  /// **'On featured lists'**
+  String get spotOnFeaturedListsTitle;
+
   /// Title of unsaved list edits discard dialog
   ///
   /// In en, this message translates to:

@@ -79,6 +79,7 @@ export function buildLlmsTxt(input: {
     `- [How ${SITE_NAME} works](${aboutAbsolute("/how-it-works")}): How to find spots and events, add them, keep lists, and train with the community.`,
     `- [Community](${aboutAbsolute("/community")}): Spot and event sources, open-source code, people credits, and peer tools.`,
     `- [Events](${aboutAbsolute("/events")}): Upcoming public parkour events.`,
+    `- [Featured lists](${aboutAbsolute("/lists")}): Staff-featured community spot lists.`,
     `- [Contact](${aboutAbsolute(aboutContactPath())}): Email and Instagram.`,
     "",
     "## Tasks",

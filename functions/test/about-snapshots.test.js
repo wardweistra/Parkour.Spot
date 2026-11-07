@@ -7,6 +7,9 @@ const {
   effectiveEventLocation,
   withResolvedLocationFallback,
   toEventDetail,
+  buildFeaturedListSnapshots,
+  spotListAboutSlug,
+  effectiveSpotListSpotIds,
   TOP_SPOTS_LIMIT,
 } = require("../lib/about-snapshots");
 
@@ -449,6 +452,75 @@ describe("about-snapshots", () => {
         placeSpotId: null,
         placeSpotCitySlug: null,
       }));
+    });
+  });
+
+  describe("spotListAboutSlug", () => {
+    it("slugifies name and appends id prefix", () => {
+      expect(spotListAboutSlug("Amsterdam Essentials!", "list0001abcd"))
+          .toBe("amsterdam-essentials-list0001");
+    });
+  });
+
+  describe("effectiveSpotListSpotIds", () => {
+    it("prefers section order and dedupes", () => {
+      expect(effectiveSpotListSpotIds({
+        spotIds: ["a", "b"],
+        sections: [
+          {entries: [{spotId: "s1"}, {spotId: "s2"}]},
+          {entries: [{spotId: "s2"}, {spotId: "s3"}]},
+        ],
+      })).toEqual(["s1", "s2", "s3"]);
+    });
+  });
+
+  describe("buildFeaturedListSnapshots", () => {
+    it("builds index and detail for featured public lists", () => {
+      const spotsById = new Map([
+        ["spot-dam", {
+          id: "spot-dam",
+          name: "Dam",
+          countryCode: "nl",
+          city: "Amsterdam",
+          hidden: false,
+          ranking: 10,
+        }],
+        ["hidden", {
+          id: "hidden",
+          name: "Hidden",
+          countryCode: "nl",
+          city: "Amsterdam",
+          hidden: true,
+        }],
+      ]);
+      const {listsIndex, listDetails} = buildFeaturedListSnapshots([
+        {
+          id: "list0001abcd",
+          name: "Amsterdam essentials",
+          description: "Central spots",
+          featured: true,
+          visibility: "public",
+          aboutSlug: "amsterdam-essentials-list0001",
+          spotIds: ["spot-dam", "hidden", "missing"],
+          featuredAt: new Date("2026-11-01T00:00:00.000Z"),
+        },
+        {
+          id: "private1",
+          name: "Private",
+          featured: true,
+          visibility: "private",
+          spotIds: ["spot-dam"],
+        },
+      ], spotsById, {generatedAt: "2026-11-07T00:00:00.000Z"});
+
+      expect(listsIndex.lists).toHaveLength(1);
+      expect(listsIndex.lists[0]).toEqual(expect.objectContaining({
+        slug: "amsterdam-essentials-list0001",
+        listId: "list0001abcd",
+        spotCount: 1,
+      }));
+      expect(listDetails.get("amsterdam-essentials-list0001").spots)
+          .toHaveLength(1);
     });
   });
 

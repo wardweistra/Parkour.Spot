@@ -54,11 +54,36 @@ class SpotListSummaryTile extends StatelessWidget {
             ),
           Padding(
             padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              subtitle,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: scheme.onSurface.withValues(alpha: 0.6),
-              ),
+            child: Row(
+              children: [
+                if (list.featured) ...[
+                  Icon(Icons.star, size: 14, color: scheme.primary),
+                  const SizedBox(width: 4),
+                  Text(
+                    l10n.spotListFeaturedBadgeShort,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onPrimaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    ' · ',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
+                Flexible(
+                  child: Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurface.withValues(alpha: 0.6),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

@@ -530,6 +530,127 @@ function attachEventsAndBuildIndexes(placeState, events, now = new Date()) {
   return {eventDetails, eventsIndex, aboutIndex, countryDocs, cityDocs};
 }
 
+/**
+ * Ordered unique spot IDs for a spot list (sections first, else spotIds).
+ * @param {Object} list
+ * @return {string[]}
+ */
+function effectiveSpotListSpotIds(list) {
+  const sections = list && Array.isArray(list.sections) ? list.sections : null;
+  if (sections && sections.length > 0) {
+    const seen = new Set();
+    const result = [];
+    for (const section of sections) {
+      const entries = section && Array.isArray(section.entries) ?
+        section.entries :
+        [];
+      for (const entry of entries) {
+        const id = entry && typeof entry.spotId === "string" ?
+          entry.spotId.trim() :
+          "";
+        if (id && !seen.has(id)) {
+          seen.add(id);
+          result.push(id);
+        }
+      }
+    }
+    return result;
+  }
+  if (!list || !Array.isArray(list.spotIds)) return [];
+  return list.spotIds
+      .filter((id) => typeof id === "string" && id.trim())
+      .map((id) => id.trim());
+}
+
+/**
+ * Stable About slug for a featured list.
+ * @param {string} name
+ * @param {string} listId
+ * @return {string}
+ */
+function spotListAboutSlug(name, listId) {
+  const base = slugify(name || "list").replace(/^-+|-+$/g, "") || "list";
+  const suffix = String(listId || "").slice(0, 8);
+  return suffix ? `${base}-${suffix}` : base;
+}
+
+/**
+ * Build About snapshots for staff-featured public spot lists.
+ * @param {Array<Object>} lists - spotLists docs with id
+ * @param {Map<string, Object>} spotsById
+ * @param {Object} [options]
+ * @return {{listsIndex: Object, listDetails: Map<string, Object>}}
+ */
+function buildFeaturedListSnapshots(lists, spotsById, options = {}) {
+  const generatedAt = options.generatedAt || new Date().toISOString();
+  /** @type {Map<string, Object>} */
+  const listDetails = new Map();
+  /** @type {Array<Object>} */
+  const indexLists = [];
+
+  const sorted = [...lists].sort((a, b) => {
+    const aAt = a.featuredAt && typeof a.featuredAt.toDate === "function" ?
+      a.featuredAt.toDate().getTime() :
+      (a.featuredAt instanceof Date ? a.featuredAt.getTime() : 0);
+    const bAt = b.featuredAt && typeof b.featuredAt.toDate === "function" ?
+      b.featuredAt.toDate().getTime() :
+      (b.featuredAt instanceof Date ? b.featuredAt.getTime() : 0);
+    return bAt - aAt;
+  });
+
+  for (const list of sorted) {
+    if (!list || list.featured !== true) continue;
+    if (list.visibility !== "public") continue;
+    const listId = typeof list.id === "string" ? list.id.trim() : "";
+    if (!listId) continue;
+    const name = typeof list.name === "string" && list.name.trim() ?
+      list.name.trim() :
+      "Featured list";
+    const slug = typeof list.aboutSlug === "string" && list.aboutSlug.trim() ?
+      list.aboutSlug.trim() :
+      spotListAboutSlug(name, listId);
+    if (listDetails.has(slug)) continue;
+
+    const spots = [];
+    for (const spotId of effectiveSpotListSpotIds(list)) {
+      const spot = spotsById.get(spotId);
+      if (!spot) continue;
+      if (spot.hidden === true) continue;
+      if (spot.duplicateOf != null && spot.duplicateOf !== "") continue;
+      const countryCode = typeof spot.countryCode === "string" ?
+        spot.countryCode.trim().toLowerCase() :
+        "";
+      const cityRaw = typeof spot.city === "string" ? spot.city.trim() : "";
+      if (!countryCode || countryCode.length !== 2 || !cityRaw) continue;
+      spots.push(toSpotSummary(spot, slugify(cityRaw), countryCode));
+    }
+
+    const description = nonEmpty(list.description);
+    const summary = {
+      slug,
+      listId,
+      name,
+      description,
+      spotCount: spots.length,
+      imageUrl: spots.find((s) => s.imageUrl)?.imageUrl || null,
+    };
+    indexLists.push(summary);
+    listDetails.set(slug, {
+      ...summary,
+      generatedAt,
+      spots,
+    });
+  }
+
+  return {
+    listsIndex: {
+      generatedAt,
+      lists: indexLists,
+    },
+    listDetails,
+  };
+}
+
 module.exports = {
   TOP_SPOTS_LIMIT,
   eventSlug,
@@ -544,4 +665,7 @@ module.exports = {
   toEventDetail,
   buildPlaceSnapshots,
   attachEventsAndBuildIndexes,
+  effectiveSpotListSpotIds,
+  spotListAboutSlug,
+  buildFeaturedListSnapshots,
 };

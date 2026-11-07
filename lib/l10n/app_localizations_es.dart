@@ -3776,6 +3776,39 @@ class AppLocalizationsEs extends AppLocalizations {
   String get spotListDetailMenuEditList => 'Editar lista';
 
   @override
+  String get featuredSpotListsSectionTitle => 'Listas de spots destacadas';
+
+  @override
+  String get spotListFeaturedBadge => 'Lista de spots destacada';
+
+  @override
+  String get spotListFeaturedBadgeShort => 'Destacada';
+
+  @override
+  String get spotListFeaturedTooltip =>
+      'Destacada por el equipo de Parkour·Spot para que la comunidad la descubra.';
+
+  @override
+  String get spotListFeatureThisList => 'Destacar';
+
+  @override
+  String get spotListRemoveFromFeatured => 'Quitar destacado';
+
+  @override
+  String get spotListFeaturedUpdated => 'Estado de destacado actualizado';
+
+  @override
+  String get spotListFeaturedUpdateFailed =>
+      'No se pudo actualizar el estado de destacado';
+
+  @override
+  String get spotListFeaturePublicOnlyHint =>
+      'Solo las listas públicas se pueden destacar';
+
+  @override
+  String get spotOnFeaturedListsTitle => 'En listas destacadas';
+
+  @override
   String get spotListEditDiscardTitle => '¿Descartar cambios?';
 
   @override

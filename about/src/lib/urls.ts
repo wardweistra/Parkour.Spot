@@ -57,6 +57,18 @@ export function appEventUrl(eventId: string): string {
   return `${APP_ORIGIN}/event/${eventId}`;
 }
 
+export function appListUrl(listId: string): string {
+  return `${APP_ORIGIN}/list/${listId}`;
+}
+
+export function aboutListPath(slug: string): string {
+  return `/lists/${slug}`;
+}
+
+export function aboutListsPath(): string {
+  return "/lists";
+}
+
 export function aboutCountryPath(countryCode: string): string {
   return `/${countryCode.toLowerCase()}`;
 }

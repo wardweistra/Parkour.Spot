@@ -72,6 +72,7 @@ AuditLogCategory auditLogCategoryForAction(AuditLogAction action) {
     case AuditLogAction.apiClientCreate:
     case AuditLogAction.apiClientUpdate:
     case AuditLogAction.apiClientDelete:
+    case AuditLogAction.spotListFeatured:
       return AuditLogCategory.moderatorActions;
   }
 }

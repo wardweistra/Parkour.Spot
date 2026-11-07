@@ -14,6 +14,8 @@ import type {
   CountrySnapshot,
   EventDetail,
   EventsIndex,
+  FeaturedListDetail,
+  ListsIndex,
 } from "./types";
 
 // Astro 7 bundles this module into dist/.prerender/chunks before getStaticPaths
@@ -64,6 +66,10 @@ function emptyEventsIndex(): EventsIndex {
   return {generatedAt: new Date().toISOString(), events: []};
 }
 
+function emptyListsIndex(): ListsIndex {
+  return {generatedAt: new Date().toISOString(), lists: []};
+}
+
 function normalizeAboutIndex(data: Partial<AboutIndex> | undefined): AboutIndex {
   if (!data) return emptyAboutIndex();
   return {
@@ -87,6 +93,34 @@ function normalizeEventsIndex(
         ? data.generatedAt
         : new Date().toISOString(),
     events: Array.isArray(data.events) ? data.events : [],
+  };
+}
+
+function normalizeListsIndex(
+  data: Partial<ListsIndex> | undefined,
+): ListsIndex {
+  if (!data) return emptyListsIndex();
+  return {
+    generatedAt:
+      typeof data.generatedAt === "string"
+        ? data.generatedAt
+        : new Date().toISOString(),
+    lists: Array.isArray(data.lists) ? data.lists : [],
+  };
+}
+
+function normalizeFeaturedList(data: FeaturedListDetail): FeaturedListDetail {
+  return {
+    ...data,
+    spots: Array.isArray(data.spots) ? data.spots : [],
+    description: data.description ?? null,
+    imageUrl: data.imageUrl ?? null,
+    spotCount:
+      typeof data.spotCount === "number"
+        ? data.spotCount
+        : Array.isArray(data.spots)
+          ? data.spots.length
+          : 0,
   };
 }
 
@@ -119,10 +153,12 @@ async function getDb() {
  * Live layout under Firestore:
  * - snapshots/about-index
  * - snapshots/about-events-index
+ * - snapshots/about-lists-index
  * - snapshots/about-community-sources
  * - snapshots/about/countries/{cc}
  * - snapshots/about/cities/{cc}_{citySlug}
  * - snapshots/about/events/{slug}
+ * - snapshots/about/lists/{slug}
  */
 let aboutIndexPromise: Promise<AboutIndex> | null = null;
 let communitySourcesPromise: Promise<CommunitySources> | null = null;
@@ -516,4 +552,60 @@ export async function listEventSlugs(): Promise<string[]> {
   return (index.events ?? [])
     .filter((e) => typeof e?.slug === "string" && e.slug.length > 0)
     .map((e) => e.slug);
+}
+
+export async function loadListsIndex(): Promise<ListsIndex> {
+  if (useFixtures()) {
+    try {
+      return normalizeListsIndex(
+        await readFixtureJson<ListsIndex>("about-lists-index.json"),
+      );
+    } catch {
+      return emptyListsIndex();
+    }
+  }
+  const db = await getDb();
+  const snap = await db.collection("snapshots").doc("about-lists-index").get();
+  if (!snap.exists) return emptyListsIndex();
+  return normalizeListsIndex(snap.data() as Partial<ListsIndex>);
+}
+
+export async function loadFeaturedList(
+  slug: string,
+): Promise<FeaturedListDetail | null> {
+  if (useFixtures()) {
+    try {
+      return normalizeFeaturedList(
+        await readFixtureJson<FeaturedListDetail>(`about-lists/${slug}.json`),
+      );
+    } catch {
+      return null;
+    }
+  }
+  const db = await getDb();
+  const snap = await db
+    .collection("snapshots")
+    .doc("about")
+    .collection("lists")
+    .doc(slug)
+    .get();
+  if (!snap.exists) return null;
+  return normalizeFeaturedList(snap.data() as FeaturedListDetail);
+}
+
+export async function listFeaturedListSlugs(): Promise<string[]> {
+  if (useFixtures()) {
+    try {
+      const files = await readdir(path.join(FIXTURES_ROOT, "about-lists"));
+      return files
+        .filter((f) => f.endsWith(".json"))
+        .map((f) => f.replace(/\.json$/, ""));
+    } catch {
+      return [];
+    }
+  }
+  const index = await loadListsIndex();
+  return (index.lists ?? [])
+    .filter((list) => typeof list?.slug === "string" && list.slug.length > 0)
+    .map((list) => list.slug);
 }

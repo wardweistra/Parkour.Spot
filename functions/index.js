@@ -354,6 +354,7 @@ const {
 const {
   generateAboutSnapshotsAndDispatch,
 } = require("./generate-about-snapshots");
+const {spotListAboutSlug} = require("./lib/about-snapshots");
 
 /** App description appended to spot, list, and user page meta descriptions */
 const APP_DESCRIPTION = "Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.";
@@ -6529,6 +6530,131 @@ exports.onSpotListUpdatedForEventPins = onDocumentUpdated(
       } catch (err) {
         console.error("onSpotListUpdatedForEventPins error", {listId, err});
         throw err;
+      }
+    },
+);
+
+/**
+ * Clear featured status when a list is no longer public.
+ * Owners cannot write featured fields (rules); Admin SDK clears them here.
+ */
+exports.onSpotListUpdatedClearFeatured = onDocumentUpdated(
+    {document: "spotLists/{listId}", region: "europe-west1"},
+    async (event) => {
+      const before = event.data && event.data.before ?
+        event.data.before.data() :
+        null;
+      const after = event.data && event.data.after ?
+        event.data.after.data() :
+        null;
+      if (!after || after.featured !== true) {
+        return;
+      }
+      if (after.visibility === "public") {
+        return;
+      }
+      // Avoid loops if featured was already cleared in the same write.
+      if (before && before.featured !== true) {
+        return;
+      }
+      const listId = event.params.listId;
+      try {
+        await db.collection("spotLists").doc(listId).update({
+          featured: false,
+          featuredAt: null,
+          featuredBy: null,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        console.log("Cleared featured on non-public spot list", {listId});
+      } catch (err) {
+        console.error("onSpotListUpdatedClearFeatured error", {listId, err});
+        throw err;
+      }
+    },
+);
+
+// Admin callable: promote or remove a public spot list from featured.
+exports.setSpotListFeatured = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const listId = request.data && request.data.listId;
+        const featured = request.data && request.data.featured;
+        if (typeof listId !== "string" || !listId.trim()) {
+          throw new HttpsError("invalid-argument", "listId is required");
+        }
+        if (typeof featured !== "boolean") {
+          throw new HttpsError("invalid-argument", "featured boolean is required");
+        }
+
+        const ref = db.collection("spotLists").doc(listId.trim());
+        const snap = await ref.get();
+        if (!snap.exists) {
+          throw new HttpsError("not-found", "Spot list not found");
+        }
+        const data = snap.data() || {};
+        const wasFeatured = data.featured === true;
+
+        if (featured) {
+          if (data.visibility !== "public") {
+            throw new HttpsError(
+                "failed-precondition",
+                "Only public lists can be featured",
+            );
+          }
+          const updates = {
+            featured: true,
+            featuredAt: FieldValue.serverTimestamp(),
+            featuredBy: request.auth.uid,
+            updatedAt: FieldValue.serverTimestamp(),
+          };
+          if (typeof data.aboutSlug !== "string" || !data.aboutSlug.trim()) {
+            updates.aboutSlug = spotListAboutSlug(data.name, listId.trim());
+          }
+          await ref.update(updates);
+        } else if (wasFeatured) {
+          await ref.update({
+            featured: false,
+            featuredAt: null,
+            featuredBy: null,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+        }
+
+        const actor = await resolveAuditActor(db, request);
+        await writeAuditLog(db, FieldValue, {
+          action: "spotListFeatured",
+          listId: listId.trim(),
+          userId: actor.userId,
+          userName: actor.userName,
+          changes: {
+            featured: {from: wasFeatured, to: featured},
+          },
+          metadata: {
+            name: typeof data.name === "string" ? data.name : null,
+            aboutSlug: featured ?
+              (typeof data.aboutSlug === "string" && data.aboutSlug.trim() ?
+                data.aboutSlug.trim() :
+                spotListAboutSlug(data.name, listId.trim())) :
+              (typeof data.aboutSlug === "string" ? data.aboutSlug : null),
+          },
+        });
+
+        return {
+          success: true,
+          listId: listId.trim(),
+          featured,
+        };
+      } catch (error) {
+        if (error instanceof HttpsError) {
+          throw error;
+        }
+        console.error("Error setting spot list featured:", error);
+        throw new HttpsError(
+            "internal",
+            error.message || "Failed to set spot list featured",
+        );
       }
     },
 );

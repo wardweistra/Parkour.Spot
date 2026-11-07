@@ -1,0 +1,64 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import OpenInApp from "../../components/OpenInApp.astro";
+import SpotList from "../../components/SpotList.astro";
+import {metaDescription} from "../../lib/citation";
+import {buildFeaturedListJsonLd} from "../../lib/schema";
+import {listFeaturedListSlugs, loadFeaturedList} from "../../lib/snapshots";
+import {
+  aboutListsPath,
+  appListUrl,
+} from "../../lib/urls";
+
+export async function getStaticPaths() {
+  const slugs = await listFeaturedListSlugs();
+  return slugs.map((slug) => ({params: {slug}}));
+}
+
+const {slug} = Astro.params;
+const list = slug ? await loadFeaturedList(slug) : null;
+
+if (!list) {
+  return Astro.redirect("/lists");
+}
+
+const jsonLd = buildFeaturedListJsonLd(list);
+const description = list.description?.trim()
+  ? metaDescription(list.description)
+  : `${list.name}: a featured parkour spot list with ${list.spotCount} ${
+      list.spotCount === 1 ? "spot" : "spots"
+    } on Parkour·Spot.`;
+const appHref = appListUrl(list.listId);
+---
+
+<BaseLayout
+  title={list.name}
+  description={description}
+  canonicalPath={`/lists/${list.slug}`}
+  jsonLd={jsonLd}
+  image={list.imageUrl}
+  imageAlt={list.name}
+>
+  <article>
+    <nav class="muted event-trail" aria-label="Featured lists">
+      <a href={aboutListsPath()}>Featured lists</a>
+      <span aria-hidden="true"> › </span>
+      <span>{list.name}</span>
+    </nav>
+    <h1 class="page-title">{list.name}</h1>
+    {
+      list.description?.trim() && (
+        <p class="page-lede">{list.description.trim()}</p>
+      )
+    }
+    <div class="hero__actions">
+      <OpenInApp href={appHref} label="Open list in app" />
+    </div>
+    <h2 class="section__title">Spots</h2>
+    <SpotList
+      spots={list.spots}
+      showCity
+      emptyLabel="No spots in this list yet."
+    />
+  </article>
+</BaseLayout>

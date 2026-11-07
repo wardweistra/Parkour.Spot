@@ -1,0 +1,39 @@
+{
+  "slug": "amsterdam-essentials-list0001",
+  "listId": "list0001abcd",
+  "name": "Amsterdam essentials",
+  "description": "A short route through central Amsterdam training spots.",
+  "spotCount": 2,
+  "imageUrl": null,
+  "generatedAt": "2026-11-07T00:00:00.000Z",
+  "spots": [
+    {
+      "id": "spot-dam",
+      "name": "Dam square rails",
+      "averageRating": 4.6,
+      "ratingCount": 12,
+      "ranking": 14.2,
+      "imageUrl": null,
+      "city": "Amsterdam",
+      "citySlug": "amsterdam",
+      "countryCode": "nl",
+      "latitude": 52.3731,
+      "longitude": 4.8926,
+      "address": "Dam, 1012 JS Amsterdam"
+    },
+    {
+      "id": "spot-vondel",
+      "name": "Vondelpark walls",
+      "averageRating": 4.4,
+      "ratingCount": 9,
+      "ranking": 13.8,
+      "imageUrl": null,
+      "city": "Amsterdam",
+      "citySlug": "amsterdam",
+      "countryCode": "nl",
+      "latitude": 52.358,
+      "longitude": 4.8686,
+      "address": "Vondelpark, Amsterdam"
+    }
+  ]
+}

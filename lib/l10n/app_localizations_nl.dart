@@ -3766,6 +3766,39 @@ class AppLocalizationsNl extends AppLocalizations {
   String get spotListDetailMenuEditList => 'Lijst bewerken';
 
   @override
+  String get featuredSpotListsSectionTitle => 'Uitgelichte spotlijsten';
+
+  @override
+  String get spotListFeaturedBadge => 'Uitgelichte spotlijst';
+
+  @override
+  String get spotListFeaturedBadgeShort => 'Uitgelicht';
+
+  @override
+  String get spotListFeaturedTooltip =>
+      'Uitgelicht door het Parkour·Spot-team zodat de community ze kan ontdekken.';
+
+  @override
+  String get spotListFeatureThisList => 'Uitlichten';
+
+  @override
+  String get spotListRemoveFromFeatured => 'Niet meer uitlichten';
+
+  @override
+  String get spotListFeaturedUpdated => 'Uitgelichte status bijgewerkt';
+
+  @override
+  String get spotListFeaturedUpdateFailed =>
+      'Uitgelichte status bijwerken mislukt';
+
+  @override
+  String get spotListFeaturePublicOnlyHint =>
+      'Alleen openbare lijsten kunnen worden uitgelicht';
+
+  @override
+  String get spotOnFeaturedListsTitle => 'Op uitgelichte lijsten';
+
+  @override
   String get spotListEditDiscardTitle => 'Wijzigingen verwerpen?';
 
   @override

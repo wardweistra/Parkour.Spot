@@ -208,6 +208,14 @@
       ]
     },
     {
+      "collectionGroup": "spotLists",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "featured", "order": "ASCENDING" },
+        { "fieldPath": "featuredAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "spots",
       "queryScope": "COLLECTION",
       "fields": [

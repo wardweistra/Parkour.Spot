@@ -10,6 +10,7 @@ const {
   attachEventsAndBuildIndexes,
   needsResolvedLocationFallback,
   withResolvedLocationFallback,
+  buildFeaturedListSnapshots,
 } = require("./lib/about-snapshots");
 const {activityWindowStart, buildAboutStats} = require("./lib/about-stats");
 const {isEventPast} = require("./lib/event-map-pins");
@@ -30,14 +31,19 @@ async function writeAboutSnapshots(payload) {
   const {
     aboutIndex,
     eventsIndex,
+    listsIndex,
     countryDocs,
     cityDocs,
     eventDetails,
+    listDetails,
     communitySources,
   } = payload;
 
   await db.collection("snapshots").doc("about-index").set(aboutIndex);
   await db.collection("snapshots").doc("about-events-index").set(eventsIndex);
+  if (listsIndex) {
+    await db.collection("snapshots").doc("about-lists-index").set(listsIndex);
+  }
   if (communitySources) {
     await db.collection("snapshots").doc("about-community-sources")
         .set(communitySources);
@@ -67,6 +73,14 @@ async function writeAboutSnapshots(payload) {
             .collection("events").doc(slug).set(doc),
     );
   }
+  if (listDetails) {
+    for (const [slug, doc] of listDetails.entries()) {
+      writes.push(
+          db.collection("snapshots").doc("about")
+              .collection("lists").doc(slug).set(doc),
+      );
+    }
+  }
 
   const CHUNK = 40;
   for (let i = 0; i < writes.length; i += CHUNK) {
@@ -77,6 +91,7 @@ async function writeAboutSnapshots(payload) {
     countries: countryDocs.size,
     cities: cityDocs.size,
     events: eventDetails.size,
+    lists: listDetails ? listDetails.size : 0,
     spotSources: communitySources?.spotSources?.length ?? 0,
     eventSources: communitySources?.eventSources?.length ?? 0,
   };
@@ -275,6 +290,24 @@ async function generateAboutSnapshots(options = {}) {
       "event",
   );
 
+  console.log("About snapshots: fetching featured spot lists...");
+  const featuredListsSnap = await db.collection("spotLists")
+      .where("featured", "==", true)
+      .get();
+  const featuredLists = featuredListsSnap.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+  const featuredListSnapshots = buildFeaturedListSnapshots(
+      featuredLists,
+      spotsById,
+      {generatedAt: now.toISOString()},
+  );
+  console.log(
+      "About featured lists:",
+      featuredListSnapshots.listsIndex.lists.length,
+  );
+
   assembled.aboutIndex.stats = buildAboutStats({
     spots,
     upcomingEvents: assembled.eventsIndex.events.filter(
@@ -288,6 +321,8 @@ async function generateAboutSnapshots(options = {}) {
 
   const counts = await writeAboutSnapshots({
     ...assembled,
+    listsIndex: featuredListSnapshots.listsIndex,
+    listDetails: featuredListSnapshots.listDetails,
     communitySources,
   });
 

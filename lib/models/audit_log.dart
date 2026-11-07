@@ -36,6 +36,7 @@ enum AuditLogAction {
   spotListCreate,
   spotListEdit,
   spotListDelete,
+  spotListFeatured,
 }
 
 class AuditLog {

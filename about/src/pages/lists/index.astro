@@ -1,0 +1,58 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import StackListThumb from "../../components/StackListThumb.astro";
+import {SITE_NAME} from "../../lib/brand";
+import {buildFeaturedListsIndexJsonLd} from "../../lib/schema";
+import {loadListsIndex} from "../../lib/snapshots";
+import {aboutListPath, appListUrl} from "../../lib/urls";
+
+const index = await loadListsIndex();
+const description = `Staff-featured parkour spot lists from the ${SITE_NAME} community — curated routes and training collections, each opening in the app.`;
+---
+
+<BaseLayout
+  title="Featured spot lists"
+  description={description}
+  canonicalPath="/lists"
+  jsonLd={buildFeaturedListsIndexJsonLd(index.lists)}
+>
+  <h1 class="page-title">Featured spot lists</h1>
+  <p class="page-lede">
+    Community lists highlighted by the Parkour·Spot team. Open a list for every
+    spot, then continue in the app.
+  </p>
+
+  {
+    index.lists.length === 0 ? (
+      <p class="empty">No featured lists yet.</p>
+    ) : (
+      <ul class="stack-list stack-list--spots">
+        {index.lists.map((list) => (
+          <li class="stack-list__card">
+            <StackListThumb
+              src={list.imageUrl}
+              size={96}
+              alt={`${list.name} spot list`}
+            />
+            <div>
+              <p class="stack-list__title">
+                <a class="stack-list__link" href={aboutListPath(list.slug)}>
+                  {list.name}
+                </a>
+              </p>
+              {list.description && (
+                <p class="stack-list__place">{list.description}</p>
+              )}
+              <p class="stack-list__meta">
+                {list.spotCount} {list.spotCount === 1 ? "spot" : "spots"}
+                {" · "}
+                <a href={appListUrl(list.listId)}>Open in app</a>
+              </p>
+            </div>
+            <span class="chip" aria-hidden="true">View</span>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</BaseLayout>

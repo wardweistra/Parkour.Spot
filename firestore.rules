@@ -734,20 +734,31 @@ service cloud.firestore {
           data.visibility == 'public' ||
           data.visibility == 'unlisted';
       }
+      // Featured / About slug fields are admin-only (Admin SDK callable).
+      function spotListFeaturedFieldsUnchanged() {
+        return !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['featured', 'featuredAt', 'featuredBy', 'aboutSlug']);
+      }
+      function spotListCreateHasNoFeaturedFields() {
+        return !request.resource.data.keys()
+          .hasAny(['featured', 'featuredAt', 'featuredBy', 'aboutSlug']);
+      }
 
       // Owners can always read; others can only read public/unlisted lists.
       allow read: if (request.auth != null &&
         resource.data.createdBy == request.auth.uid) ||
         canReadSpotList(resource.data);
-      // Users can create lists
+      // Users can create lists (cannot self-feature)
       allow create: if request.auth != null &&
         request.resource.data.createdBy == request.auth.uid &&
-        hasValidSpotListVisibility(request.resource.data);
-      // Users can update their own lists
+        hasValidSpotListVisibility(request.resource.data) &&
+        spotListCreateHasNoFeaturedFields();
+      // Users can update their own lists (featured fields locked)
       allow update: if request.auth != null &&
         resource.data.createdBy == request.auth.uid &&
         request.resource.data.createdBy == resource.data.createdBy &&
-        hasValidSpotListVisibility(request.resource.data);
+        hasValidSpotListVisibility(request.resource.data) &&
+        spotListFeaturedFieldsUnchanged();
       // Users can delete their own lists
       allow delete: if request.auth != null &&
         resource.data.createdBy == request.auth.uid;

@@ -1071,6 +1071,19 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                 : 'Deleted by unknown';
             details = _spotListCrudDetails(auditLog);
             break;
+          case AuditLogAction.spotListFeatured:
+            final featuredTo =
+                auditLog.changes?['featured']?['to'] == true;
+            title = featuredTo
+                ? 'Spot list featured'
+                : 'Spot list unfeatured';
+            subtitle = auditLog.userName != null
+                ? 'By ${auditLog.userName}'
+                : auditLog.userId != null
+                ? 'By ${auditLog.userId}'
+                : 'By unknown';
+            details = _spotListCrudDetails(auditLog);
+            break;
         }
 
         newEntries.add(

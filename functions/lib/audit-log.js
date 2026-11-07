@@ -57,6 +57,7 @@ async function writeAuditLog(db, FieldValue, payload) {
     };
     if (payload.spotId != null) doc.spotId = payload.spotId;
     if (payload.eventId != null) doc.eventId = payload.eventId;
+    if (payload.listId != null) doc.listId = payload.listId;
     if (payload.reportId != null) doc.reportId = payload.reportId;
     if (payload.changes && typeof payload.changes === "object") {
       doc.changes = payload.changes;

@@ -26,6 +26,7 @@ import '../../constants/spot_detail_ui.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_detail_quick_action_chip.dart';
 import '../../widgets/spot_list_save_button.dart';
+import '../../widgets/featured_spot_list_chrome.dart';
 import '../../widgets/linked_upcoming_event_panel.dart';
 import '../../widgets/detail_external_link_tile.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
@@ -66,6 +67,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   Future<LinkedSpotEvents>? _linkedEventsFuture;
   bool _isEditing = false;
   bool _isSavingEdits = false;
+  bool _isUpdatingFeatured = false;
   SpotListEditDraft? _draft;
 
   @override
@@ -623,6 +625,37 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     return authService.currentUser?.uid != _list!.createdBy;
   }
 
+  Future<void> _toggleFeatured() async {
+    final list = _list;
+    if (list == null || list.id == null || _isUpdatingFeatured) return;
+
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (!authService.isAdmin) return;
+
+    final makeFeatured = !list.featured;
+    if (makeFeatured && list.visibility != SpotListVisibility.public) {
+      SnackbarService.showError(_l10n.spotListFeaturePublicOnlyHint);
+      return;
+    }
+
+    setState(() => _isUpdatingFeatured = true);
+    final spotListService = Provider.of<SpotListService>(context, listen: false);
+    final ok = await spotListService.setSpotListFeatured(
+      list.id!,
+      featured: makeFeatured,
+    );
+    if (!mounted) return;
+    if (ok) {
+      SnackbarService.showSuccess(_l10n.spotListFeaturedUpdated);
+      await _loadList();
+    } else {
+      SnackbarService.showError(
+        spotListService.error ?? _l10n.spotListFeaturedUpdateFailed,
+      );
+    }
+    if (mounted) setState(() => _isUpdatingFeatured = false);
+  }
+
   String _visibilitySummary(SpotListVisibility visibility) {
     return spotListVisibilitySummary(_l10n, visibility);
   }
@@ -1017,16 +1050,70 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     );
   }
 
+  Widget _buildFeaturedBadge() {
+    if (_list?.featured != true) return const SizedBox.shrink();
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: FeaturedStatusChip(),
+      ),
+    );
+  }
+
   /// Save (when applicable), List settings, Share — matches spot detail action row.
   Widget _buildListActionsRow() {
     if (_list?.id == null) return const SizedBox.shrink();
 
     return Consumer<AuthService>(
-      builder: (context, _, _) {
+      builder: (context, authService, _) {
         final items = <Widget>[];
 
         if (_shouldShowListSaveButton()) {
           items.add(SpotListSaveButton(listId: widget.listId));
+        }
+        if (authService.isAdmin && !_isEditing) {
+          final isFeatured = _list!.featured;
+          final canFeature =
+              isFeatured || _list!.visibility == SpotListVisibility.public;
+          if (canFeature) {
+            final actionLabel = isFeatured
+                ? _l10n.spotListRemoveFromFeatured
+                : _l10n.spotListFeatureThisList;
+            items.add(
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Tooltip(
+                  message: actionLabel,
+                  child: Semantics(
+                    button: true,
+                    label: actionLabel,
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(
+                        SpotDetailUi.surfaceRadius,
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(
+                          SpotDetailUi.surfaceRadius,
+                        ),
+                        onTap: _isUpdatingFeatured ? null : _toggleFeatured,
+                        child: SpotDetailQuickActionChip(
+                          icon: isFeatured
+                              ? Icons.star
+                              : Icons.star_outline,
+                          iconColor: Theme.of(context).colorScheme.primary,
+                          label: actionLabel,
+                          showSpinner: _isUpdatingFeatured,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
         }
         if (_canManageList() && !_isEditing) {
           items.add(
@@ -1287,6 +1374,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
           controller: _scrollController,
           slivers: [
             if (_mapSpots.isNotEmpty) SliverToBoxAdapter(child: _buildMap()),
+            if (!_isEditing) SliverToBoxAdapter(child: _buildFeaturedBadge()),
             if (!_isEditing) SliverToBoxAdapter(child: _buildListActionsRow()),
             SliverToBoxAdapter(
               child: LinkedUpcomingEventPanel(

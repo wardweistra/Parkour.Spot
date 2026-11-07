@@ -262,6 +262,8 @@ class _SpotListsHubScreenState extends State<SpotListsHubScreen> {
               ),
               const SizedBox(height: 24),
               _SavedListsSection(onOpenList: _openList),
+              const SizedBox(height: 24),
+              _FeaturedListsSection(onOpenList: _openList),
             ],
           ),
         );
@@ -428,6 +430,53 @@ class _SavedListsSection extends StatelessWidget {
                       .toList(),
                 );
               },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _FeaturedListsSection extends StatelessWidget {
+  const _FeaturedListsSection({required this.onOpenList});
+
+  final ValueChanged<SpotList> onOpenList;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final spotListService = context.read<SpotListService>();
+    final scheme = Theme.of(context).colorScheme;
+
+    return StreamBuilder<List<SpotList>>(
+      stream: spotListService.watchFeaturedSpotLists(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+        final lists = snapshot.data ?? [];
+        if (lists.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _HubSectionHeader(title: l10n.featuredSpotListsSectionTitle),
+            const SizedBox(height: 8),
+            Column(
+              children: lists
+                  .map(
+                    (list) => SpotListSummaryTile(
+                      list: list,
+                      leading: Icon(
+                        Icons.star,
+                        color: scheme.primary,
+                      ),
+                      onTap: () => onOpenList(list),
+                    ),
+                  )
+                  .toList(),
             ),
           ],
         );

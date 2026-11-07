@@ -3804,6 +3804,39 @@ class AppLocalizationsDe extends AppLocalizations {
   String get spotListDetailMenuEditList => 'Liste bearbeiten';
 
   @override
+  String get featuredSpotListsSectionTitle => 'Empfohlene Spot-Listen';
+
+  @override
+  String get spotListFeaturedBadge => 'Empfohlene Spot-Liste';
+
+  @override
+  String get spotListFeaturedBadgeShort => 'Empfohlen';
+
+  @override
+  String get spotListFeaturedTooltip =>
+      'Vom Parkour·Spot-Team hervorgehoben, damit die Community sie entdecken kann.';
+
+  @override
+  String get spotListFeatureThisList => 'Empfehlen';
+
+  @override
+  String get spotListRemoveFromFeatured => 'Nicht mehr empfehlen';
+
+  @override
+  String get spotListFeaturedUpdated => 'Empfehlungsstatus aktualisiert';
+
+  @override
+  String get spotListFeaturedUpdateFailed =>
+      'Empfehlungsstatus konnte nicht aktualisiert werden';
+
+  @override
+  String get spotListFeaturePublicOnlyHint =>
+      'Nur öffentliche Listen können empfohlen werden';
+
+  @override
+  String get spotOnFeaturedListsTitle => 'In empfohlenen Listen';
+
+  @override
   String get spotListEditDiscardTitle => 'Änderungen verwerfen?';
 
   @override

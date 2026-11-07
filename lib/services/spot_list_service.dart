@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:uuid/uuid.dart';
 import '../models/spot_list.dart';
 import '../services/audit_log_service.dart';
@@ -974,6 +975,82 @@ class SpotListService extends ChangeNotifier {
     } catch (e) {
       _error = 'Failed to delete list: $e';
       debugPrint('Error deleting spot list: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Featured public lists, newest feature first.
+  Future<List<SpotList>> getFeaturedSpotLists() async {
+    try {
+      final snapshot = await _firestore
+          .collection('spotLists')
+          .where('featured', isEqualTo: true)
+          .orderBy('featuredAt', descending: true)
+          .get();
+      return snapshot.docs
+          .map(SpotList.fromFirestore)
+          .where((list) => list.visibility == SpotListVisibility.public)
+          .toList();
+    } catch (e) {
+      debugPrint('Error getting featured spot lists: $e');
+      return [];
+    }
+  }
+
+  /// Live stream of featured public lists.
+  Stream<List<SpotList>> watchFeaturedSpotLists() {
+    return _firestore
+        .collection('spotLists')
+        .where('featured', isEqualTo: true)
+        .orderBy('featuredAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map(SpotList.fromFirestore)
+              .where((list) => list.visibility == SpotListVisibility.public)
+              .toList(),
+        );
+  }
+
+  /// Admin-only: promote or remove a list from featured via Cloud Function.
+  Future<bool> setSpotListFeatured(String listId, {required bool featured}) async {
+    if (!_isAuthenticated()) {
+      _error = 'You must be signed in';
+      notifyListeners();
+      return false;
+    }
+    if (!_authService.isAdmin) {
+      _error = 'Admin privileges required';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable('setSpotListFeatured');
+      await callable.call(<String, dynamic>{
+        'listId': listId,
+        'featured': featured,
+      });
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on FirebaseFunctionsException catch (e) {
+      _error = e.message ?? 'Failed to update featured status';
+      debugPrint('Error setting spot list featured: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = 'Failed to update featured status: $e';
+      debugPrint('Error setting spot list featured: $e');
       _isLoading = false;
       notifyListeners();
       return false;
