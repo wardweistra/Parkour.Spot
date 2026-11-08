@@ -49,6 +49,14 @@ UserNotificationCopy localizedUserNotificationCopy(
     return t;
   }
 
+  String listLabel(String? raw) {
+    final t = raw?.trim();
+    if (t == null || t.isEmpty) {
+      return l10n.notificationsListUntitled;
+    }
+    return t;
+  }
+
   switch (kind) {
     case 'nearby_new_spot':
       return UserNotificationCopy(
@@ -84,6 +92,23 @@ UserNotificationCopy localizedUserNotificationCopy(
           eventLabel(args['eventName']),
         ),
         body: l10n.notificationNearbyNewEventBody,
+      );
+    case 'spot_list_invite':
+      return UserNotificationCopy(
+        title: l10n.notificationSpotListInviteTitle(
+          actorLabel(args['actorName']),
+          listLabel(args['listName']),
+        ),
+        body: l10n.notificationSpotListInviteBody,
+      );
+    case 'spot_list_invite_accepted':
+      return UserNotificationCopy(
+        title: l10n.notificationSpotListInviteAcceptedTitle(
+          actorLabel(args['actorName']),
+        ),
+        body: l10n.notificationSpotListInviteAcceptedBody(
+          listLabel(args['listName']),
+        ),
       );
     default:
       return UserNotificationCopy(

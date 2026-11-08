@@ -436,6 +436,60 @@
   "@notificationsEventUntitled": {
     "description": "Fallback event name in notifications when the event title is empty"
   },
+  "notificationsListUntitled": "Untitled list",
+  "@notificationsListUntitled": {
+    "description": "Fallback list name in notifications when the list title is empty"
+  },
+  "notificationSpotListInviteTitle": "{actorName} invited you to {listName}",
+  "@notificationSpotListInviteTitle": {
+    "description": "Inbox title when someone invites you to a spot list",
+    "placeholders": {
+      "actorName": {"type": "String"},
+      "listName": {"type": "String"}
+    }
+  },
+  "notificationSpotListInviteBody": "Accept to get access, or decline to dismiss the invite.",
+  "@notificationSpotListInviteBody": {
+    "description": "Inbox body for a spot list invite"
+  },
+  "notificationSpotListInviteBodyAccepted": "You accepted this invite. Tap to open the list.",
+  "@notificationSpotListInviteBodyAccepted": {
+    "description": "Inbox body after the invitee accepted a spot list invite"
+  },
+  "notificationSpotListInviteBodyDeclined": "You declined this invite.",
+  "@notificationSpotListInviteBodyDeclined": {
+    "description": "Inbox body after the invitee declined a spot list invite"
+  },
+  "notificationSpotListInviteBodyRevoked": "This invite is no longer available.",
+  "@notificationSpotListInviteBodyRevoked": {
+    "description": "Inbox body when an invite was revoked or otherwise closed"
+  },
+  "notificationSpotListInviteStatusAccepted": "Accepted",
+  "@notificationSpotListInviteStatusAccepted": {
+    "description": "Status label on an inbox invite row after accept"
+  },
+  "notificationSpotListInviteStatusDeclined": "Declined",
+  "@notificationSpotListInviteStatusDeclined": {
+    "description": "Status label on an inbox invite row after decline"
+  },
+  "notificationSpotListInviteStatusClosed": "Closed",
+  "@notificationSpotListInviteStatusClosed": {
+    "description": "Status label when an invite was revoked or left"
+  },
+  "notificationSpotListInviteAcceptedTitle": "{actorName} accepted your invite",
+  "@notificationSpotListInviteAcceptedTitle": {
+    "description": "Inbox title when an invitee accepts a spot list invite",
+    "placeholders": {
+      "actorName": {"type": "String"}
+    }
+  },
+  "notificationSpotListInviteAcceptedBody": "They can now access {listName}.",
+  "@notificationSpotListInviteAcceptedBody": {
+    "description": "Inbox body when an invitee accepts a spot list invite",
+    "placeholders": {
+      "listName": {"type": "String"}
+    }
+  },
   "notificationNearbyNewSpotTitle": "New spot nearby: {spotName}",
   "@notificationNearbyNewSpotTitle": {
     "description": "In-app notification title when a new spot was added near a saved location",
@@ -3549,6 +3603,139 @@
   "@spotListDetailMenuEditList": {
     "description": "List management menu item that enters inline list edit mode"
   },
+  "spotListDetailMenuManageAccess": "Manage access",
+  "@spotListDetailMenuManageAccess": {
+    "description": "List management menu item that opens collaborator access sheet"
+  },
+  "spotListsHubSharedWithMe": "Shared with me",
+  "@spotListsHubSharedWithMe": {
+    "description": "Hub section title for lists shared with the current user"
+  },
+  "spotListsHubSharedPending": "Invite pending · {role}",
+  "@spotListsHubSharedPending": {
+    "description": "Subtitle for a pending shared list invite",
+    "placeholders": {
+      "role": {"type": "String"}
+    }
+  },
+  "spotListsHubSharedAccepted": "Shared · {role}",
+  "@spotListsHubSharedAccepted": {
+    "description": "Subtitle for an accepted shared list",
+    "placeholders": {
+      "role": {"type": "String"}
+    }
+  },
+  "spotListAccessTitle": "Access",
+  "@spotListAccessTitle": {
+    "description": "Title for spot list access management sheet"
+  },
+  "spotListAccessSubtitle": "Invite people by username, user id, or profile URL.",
+  "@spotListAccessSubtitle": {
+    "description": "Subtitle explaining how to invite collaborators"
+  },
+  "spotListAccessInviteeLabel": "Username, user id, or profile URL",
+  "@spotListAccessInviteeLabel": {
+    "description": "Label for invitee input field"
+  },
+  "spotListAccessInviteeHint": "trainer or https://parkour.spot/user/…",
+  "@spotListAccessInviteeHint": {
+    "description": "Hint for invitee input field"
+  },
+  "spotListAccessInviteeRequired": "Enter a username, user id, or profile URL",
+  "@spotListAccessInviteeRequired": {
+    "description": "Validation when invitee field is empty"
+  },
+  "spotListAccessRoleEdit": "Can edit",
+  "@spotListAccessRoleEdit": {
+    "description": "Edit role label for spot list sharing"
+  },
+  "spotListAccessRoleView": "View only",
+  "@spotListAccessRoleView": {
+    "description": "View-only role label for spot list sharing"
+  },
+  "spotListAccessSendInvite": "Send invite",
+  "@spotListAccessSendInvite": {
+    "description": "Button to send a spot list invite"
+  },
+  "spotListAccessPeopleTitle": "People with access",
+  "@spotListAccessPeopleTitle": {
+    "description": "Section heading for current members and pending invites"
+  },
+  "spotListAccessNobodyYet": "Nobody else has access yet",
+  "@spotListAccessNobodyYet": {
+    "description": "Empty state when a list has no collaborators"
+  },
+  "spotListAccessStatusPending": "Pending",
+  "@spotListAccessStatusPending": {
+    "description": "Status chip for a pending invite"
+  },
+  "spotListAccessStatusAccepted": "Accepted",
+  "@spotListAccessStatusAccepted": {
+    "description": "Status chip for an accepted invite"
+  },
+  "spotListAccessCancelInvite": "Cancel invite",
+  "@spotListAccessCancelInvite": {
+    "description": "Action to cancel a pending invite"
+  },
+  "spotListAccessRemoveAccess": "Remove access",
+  "@spotListAccessRemoveAccess": {
+    "description": "Action for owner to revoke accepted access"
+  },
+  "spotListAccessInviteSent": "Invite sent",
+  "@spotListAccessInviteSent": {
+    "description": "Snackbar after successfully sending an invite"
+  },
+  "spotListAccessInviteFailed": "Could not send invite",
+  "@spotListAccessInviteFailed": {
+    "description": "Snackbar when invite fails"
+  },
+  "spotListAccessUpdateFailed": "Could not update access",
+  "@spotListAccessUpdateFailed": {
+    "description": "Snackbar when access update fails"
+  },
+  "spotListAccessRemovedMember": "Access removed",
+  "@spotListAccessRemovedMember": {
+    "description": "Snackbar after owner removes a member"
+  },
+  "spotListAccessLeftList": "You left this list",
+  "@spotListAccessLeftList": {
+    "description": "Snackbar after leaving a shared list"
+  },
+  "spotListAccessAccept": "Accept",
+  "@spotListAccessAccept": {
+    "description": "Accept a spot list invite"
+  },
+  "spotListAccessDecline": "Decline",
+  "@spotListAccessDecline": {
+    "description": "Decline a spot list invite"
+  },
+  "spotListAccessLeave": "Leave list",
+  "@spotListAccessLeave": {
+    "description": "Leave a shared list after accepting"
+  },
+  "spotListAccessAccepted": "Invite accepted",
+  "@spotListAccessAccepted": {
+    "description": "Snackbar after accepting an invite"
+  },
+  "spotListAccessDeclined": "Invite declined",
+  "@spotListAccessDeclined": {
+    "description": "Snackbar after declining an invite"
+  },
+  "spotListAccessNoAccess": "You do not have shared access to this list",
+  "@spotListAccessNoAccess": {
+    "description": "Shown when opening access sheet without membership"
+  },
+  "spotListAccessYourPendingInvite": "You have a pending invite to this list",
+  "@spotListAccessYourPendingInvite": {
+    "description": "Invitee access sheet pending state"
+  },
+  "spotListAccessYourAccess": "Your access: {role}",
+  "@spotListAccessYourAccess": {
+    "description": "Invitee access sheet accepted state",
+    "placeholders": {
+      "role": {"type": "String"}
+    }
+  },
   "featuredSpotListsSectionTitle": "Featured spot lists",
   "@featuredSpotListsSectionTitle": {
     "description": "Section title for staff-featured lists on the lists hub"
@@ -3726,7 +3913,7 @@
   "@spotListEditVisibilityUnlistedHelp": {
     "description": "Helper text for unlisted list visibility"
   },
-  "spotListEditVisibilityPrivateHelp": "Only visible to you",
+  "spotListEditVisibilityPrivateHelp": "Only visible to you and people you invite",
   "@spotListEditVisibilityPrivateHelp": {
     "description": "Helper text for private list visibility"
   },

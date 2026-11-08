@@ -84,9 +84,13 @@ const spotPayload = {
 };
 
 describe("clickUrlForDeeplink", () => {
-  it("builds spot and event URLs", () => {
+  it("builds spot, event, list, and profile URLs", () => {
     expect(clickUrlForDeeplink("spot", "abc")).toBe("https://parkour.spot/spot/abc");
     expect(clickUrlForDeeplink("event", "evt1")).toBe("https://parkour.spot/event/evt1");
+    expect(clickUrlForDeeplink("list", "list1")).toBe("https://parkour.spot/list/list1");
+    expect(clickUrlForDeeplink("profile", "trainer")).toBe(
+        "https://parkour.spot/user/trainer",
+    );
   });
 
   it("appends nid when an inbox id is provided", () => {
@@ -95,6 +99,9 @@ describe("clickUrlForDeeplink", () => {
     );
     expect(clickUrlForDeeplink("event", "evt1", "n1")).toBe(
         "https://parkour.spot/event/evt1?nid=n1",
+    );
+    expect(clickUrlForDeeplink("list", "list1", "n1")).toBe(
+        "https://parkour.spot/list/list1?nid=n1",
     );
   });
 

@@ -10,6 +10,9 @@
  *   notificationNearbyNewEventTitle / Body
  *   notificationTrainingPlanCheckInReminderTitle / Body
  *   notificationsActorSomeone, notificationsSpotUntitled, notificationsEventUntitled
+ *   notificationsListUntitled
+ *   notificationSpotListInviteTitle / Body
+ *   notificationSpotListInviteAcceptedTitle / Body
  */
 
 const SUPPORTED_LOCALES = Object.freeze(["en", "de", "nl", "fr", "es", "pt"]);
@@ -20,6 +23,7 @@ const STRINGS = {
     actorSomeone: "Someone",
     spotUntitled: "Untitled spot",
     eventUntitled: "Untitled event",
+    listUntitled: "Untitled list",
     nearby_new_spot: {
       title: "New spot nearby: {spotName}",
       body: "{actorName} added a new parkour spot near one of your saved locations.",
@@ -40,11 +44,20 @@ const STRINGS = {
       title: "Time to check in at {spotName}",
       body: "Your planned session has started. Tap to check in.",
     },
+    spot_list_invite: {
+      title: "{actorName} invited you to {listName}",
+      body: "Accept to get access, or decline to dismiss the invite.",
+    },
+    spot_list_invite_accepted: {
+      title: "{actorName} accepted your invite",
+      body: "They can now access {listName}.",
+    },
   },
   de: {
     actorSomeone: "Jemand",
     spotUntitled: "Unbenannter Spot",
     eventUntitled: "Unbenanntes Event",
+    listUntitled: "Unbenannte Liste",
     nearby_new_spot: {
       title: "Neuer Spot in der Nähe: {spotName}",
       body: "{actorName} hat einen neuen Parkour-Spot in der Nähe eines deiner gespeicherten Orte hinzugefügt.",
@@ -65,11 +78,20 @@ const STRINGS = {
       title: "Zeit für Check-in bei {spotName}",
       body: "Deine geplante Session hat begonnen. Tippe zum Einchecken.",
     },
+    spot_list_invite: {
+      title: "{actorName} hat dich zu {listName} eingeladen",
+      body: "Annehmen für Zugang, oder ablehnen zum Verwerfen.",
+    },
+    spot_list_invite_accepted: {
+      title: "{actorName} hat deine Einladung angenommen",
+      body: "Sie können jetzt auf {listName} zugreifen.",
+    },
   },
   nl: {
     actorSomeone: "Iemand",
     spotUntitled: "Spot zonder naam",
     eventUntitled: "Evenement zonder naam",
+    listUntitled: "Lijst zonder naam",
     nearby_new_spot: {
       title: "Nieuwe spot in de buurt: {spotName}",
       body: "{actorName} heeft een nieuwe parkourspot toegevoegd nabij een van je opgeslagen locaties.",
@@ -90,11 +112,20 @@ const STRINGS = {
       title: "Tijd om in te checken bij {spotName}",
       body: "Je geplande sessie is begonnen. Tik om in te checken.",
     },
+    spot_list_invite: {
+      title: "{actorName} heeft je uitgenodigd voor {listName}",
+      body: "Accepteer voor toegang, of weiger om de uitnodiging te sluiten.",
+    },
+    spot_list_invite_accepted: {
+      title: "{actorName} heeft je uitnodiging geaccepteerd",
+      body: "Ze hebben nu toegang tot {listName}.",
+    },
   },
   fr: {
     actorSomeone: "Quelqu’un",
     spotUntitled: "Spot sans titre",
     eventUntitled: "Événement sans titre",
+    listUntitled: "Liste sans titre",
     nearby_new_spot: {
       title: "Nouveau spot à proximité : {spotName}",
       body: "{actorName} a ajouté un nouveau spot de parkour près d’un de vos lieux enregistrés.",
@@ -115,11 +146,20 @@ const STRINGS = {
       title: "C’est l’heure du check-in à {spotName}",
       body: "Votre séance prévue a commencé. Touchez pour vous enregistrer.",
     },
+    spot_list_invite: {
+      title: "{actorName} vous a invité à {listName}",
+      body: "Acceptez pour obtenir l’accès, ou refusez pour ignorer l’invitation.",
+    },
+    spot_list_invite_accepted: {
+      title: "{actorName} a accepté votre invitation",
+      body: "Ils peuvent maintenant accéder à {listName}.",
+    },
   },
   es: {
     actorSomeone: "Alguien",
     spotUntitled: "Spot sin título",
     eventUntitled: "Evento sin título",
+    listUntitled: "Lista sin título",
     nearby_new_spot: {
       title: "Nuevo spot cerca: {spotName}",
       body: "{actorName} ha añadido un nuevo spot de parkour cerca de uno de tus lugares guardados.",
@@ -140,11 +180,20 @@ const STRINGS = {
       title: "Hora de hacer check-in en {spotName}",
       body: "Tu sesión planificada ya ha empezado. Toca para hacer check-in.",
     },
+    spot_list_invite: {
+      title: "{actorName} te invitó a {listName}",
+      body: "Acepta para obtener acceso, o rechaza para descartar la invitación.",
+    },
+    spot_list_invite_accepted: {
+      title: "{actorName} aceptó tu invitación",
+      body: "Ya pueden acceder a {listName}.",
+    },
   },
   pt: {
     actorSomeone: "Alguém",
     spotUntitled: "Spot sem nome",
     eventUntitled: "Evento sem nome",
+    listUntitled: "Lista sem nome",
     nearby_new_spot: {
       title: "Novo spot por perto: {spotName}",
       body: "{actorName} adicionou um novo spot de parkour perto de um dos teus locais guardados.",
@@ -164,6 +213,14 @@ const STRINGS = {
     training_plan_check_in_reminder: {
       title: "Hora de fazer check-in em {spotName}",
       body: "A tua sessão planeada já começou. Toca para fazer check-in.",
+    },
+    spot_list_invite: {
+      title: "{actorName} convidou-te para {listName}",
+      body: "Aceita para obter acesso, ou recusa para dispensar o convite.",
+    },
+    spot_list_invite_accepted: {
+      title: "{actorName} aceitou o teu convite",
+      body: "Já podem aceder a {listName}.",
     },
   },
 };
@@ -244,6 +301,7 @@ function localizedNotificationCopy({
     actorName: labelOrFallback(args.actorName, pack.actorSomeone),
     spotName: labelOrFallback(args.spotName, pack.spotUntitled),
     eventName: labelOrFallback(args.eventName, pack.eventUntitled),
+    listName: labelOrFallback(args.listName, pack.listUntitled),
   };
   return {
     title: interpolate(kindCopy.title, vars),

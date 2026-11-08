@@ -132,7 +132,7 @@ enum SpotListVisibility {
       case SpotListVisibility.unlisted:
         return 'Visible with a direct link, but hidden from your profile';
       case SpotListVisibility.private:
-        return 'Only visible to you';
+        return 'Only visible to you and people you invite';
     }
   }
 }
@@ -159,6 +159,12 @@ class SpotList {
   /// Stable About-site path segment; set on first feature, then immutable.
   final String? aboutSlug;
 
+  /// Accepted editors (Cloud Functions only; clients must not write).
+  final List<String> editorIds;
+
+  /// Accepted viewers (Cloud Functions only; clients must not write).
+  final List<String> viewerIds;
+
   SpotList({
     this.id,
     required this.name,
@@ -174,7 +180,24 @@ class SpotList {
     this.featuredAt,
     this.featuredBy,
     this.aboutSlug,
-  });
+    List<String>? editorIds,
+    List<String>? viewerIds,
+  })  : editorIds = editorIds ?? const [],
+        viewerIds = viewerIds ?? const [];
+
+  bool isOwner(String? uid) =>
+      uid != null && uid.isNotEmpty && createdBy == uid;
+
+  bool isEditor(String? uid) =>
+      uid != null && uid.isNotEmpty && editorIds.contains(uid);
+
+  bool isViewer(String? uid) =>
+      uid != null && uid.isNotEmpty && viewerIds.contains(uid);
+
+  bool canEditContent(String? uid) => isOwner(uid) || isEditor(uid);
+
+  bool canAccessAsMember(String? uid) =>
+      canEditContent(uid) || isViewer(uid);
 
   /// When sections exist and are non-empty, returns ordered unique spot IDs.
   /// Otherwise returns spotIds.
@@ -241,6 +264,12 @@ class SpotList {
       featuredAt: data['featuredAt']?.toDate(),
       featuredBy: data['featuredBy'] as String?,
       aboutSlug: data['aboutSlug'] as String?,
+      editorIds: data['editorIds'] != null
+          ? List<String>.from(data['editorIds'])
+          : const [],
+      viewerIds: data['viewerIds'] != null
+          ? List<String>.from(data['viewerIds'])
+          : const [],
     );
   }
 
@@ -284,10 +313,17 @@ class SpotList {
       featuredAt: parseDate(data['featuredAt']),
       featuredBy: data['featuredBy'] as String?,
       aboutSlug: data['aboutSlug'] as String?,
+      editorIds: data['editorIds'] is List
+          ? List<String>.from(data['editorIds'])
+          : const [],
+      viewerIds: data['viewerIds'] is List
+          ? List<String>.from(data['viewerIds'])
+          : const [],
     );
   }
 
-  /// Client writes never include featured/aboutSlug — admins set those via callable.
+  /// Client writes never include featured/aboutSlug/membership — those are
+  /// admin or Cloud Functions only.
   Map<String, dynamic> toFirestore() {
     return {
       'name': name,
@@ -319,6 +355,8 @@ class SpotList {
     DateTime? featuredAt,
     String? featuredBy,
     String? aboutSlug,
+    List<String>? editorIds,
+    List<String>? viewerIds,
   }) {
     return SpotList(
       id: id ?? this.id,
@@ -335,6 +373,8 @@ class SpotList {
       featuredAt: featuredAt ?? this.featuredAt,
       featuredBy: featuredBy ?? this.featuredBy,
       aboutSlug: aboutSlug ?? this.aboutSlug,
+      editorIds: editorIds ?? this.editorIds,
+      viewerIds: viewerIds ?? this.viewerIds,
     );
   }
 

@@ -694,6 +694,72 @@ abstract class AppLocalizations {
   /// **'Untitled event'**
   String get notificationsEventUntitled;
 
+  /// Fallback list name in notifications when the list title is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled list'**
+  String get notificationsListUntitled;
+
+  /// Inbox title when someone invites you to a spot list
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} invited you to {listName}'**
+  String notificationSpotListInviteTitle(String actorName, String listName);
+
+  /// Inbox body for a spot list invite
+  ///
+  /// In en, this message translates to:
+  /// **'Accept to get access, or decline to dismiss the invite.'**
+  String get notificationSpotListInviteBody;
+
+  /// Inbox body after the invitee accepted a spot list invite
+  ///
+  /// In en, this message translates to:
+  /// **'You accepted this invite. Tap to open the list.'**
+  String get notificationSpotListInviteBodyAccepted;
+
+  /// Inbox body after the invitee declined a spot list invite
+  ///
+  /// In en, this message translates to:
+  /// **'You declined this invite.'**
+  String get notificationSpotListInviteBodyDeclined;
+
+  /// Inbox body when an invite was revoked or otherwise closed
+  ///
+  /// In en, this message translates to:
+  /// **'This invite is no longer available.'**
+  String get notificationSpotListInviteBodyRevoked;
+
+  /// Status label on an inbox invite row after accept
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get notificationSpotListInviteStatusAccepted;
+
+  /// Status label on an inbox invite row after decline
+  ///
+  /// In en, this message translates to:
+  /// **'Declined'**
+  String get notificationSpotListInviteStatusDeclined;
+
+  /// Status label when an invite was revoked or left
+  ///
+  /// In en, this message translates to:
+  /// **'Closed'**
+  String get notificationSpotListInviteStatusClosed;
+
+  /// Inbox title when an invitee accepts a spot list invite
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} accepted your invite'**
+  String notificationSpotListInviteAcceptedTitle(String actorName);
+
+  /// Inbox body when an invitee accepts a spot list invite
+  ///
+  /// In en, this message translates to:
+  /// **'They can now access {listName}.'**
+  String notificationSpotListInviteAcceptedBody(String listName);
+
   /// In-app notification title when a new spot was added near a saved location
   ///
   /// In en, this message translates to:
@@ -6030,6 +6096,192 @@ abstract class AppLocalizations {
   /// **'Edit list'**
   String get spotListDetailMenuEditList;
 
+  /// List management menu item that opens collaborator access sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Manage access'**
+  String get spotListDetailMenuManageAccess;
+
+  /// Hub section title for lists shared with the current user
+  ///
+  /// In en, this message translates to:
+  /// **'Shared with me'**
+  String get spotListsHubSharedWithMe;
+
+  /// Subtitle for a pending shared list invite
+  ///
+  /// In en, this message translates to:
+  /// **'Invite pending · {role}'**
+  String spotListsHubSharedPending(String role);
+
+  /// Subtitle for an accepted shared list
+  ///
+  /// In en, this message translates to:
+  /// **'Shared · {role}'**
+  String spotListsHubSharedAccepted(String role);
+
+  /// Title for spot list access management sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Access'**
+  String get spotListAccessTitle;
+
+  /// Subtitle explaining how to invite collaborators
+  ///
+  /// In en, this message translates to:
+  /// **'Invite people by username, user id, or profile URL.'**
+  String get spotListAccessSubtitle;
+
+  /// Label for invitee input field
+  ///
+  /// In en, this message translates to:
+  /// **'Username, user id, or profile URL'**
+  String get spotListAccessInviteeLabel;
+
+  /// Hint for invitee input field
+  ///
+  /// In en, this message translates to:
+  /// **'trainer or https://parkour.spot/user/…'**
+  String get spotListAccessInviteeHint;
+
+  /// Validation when invitee field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a username, user id, or profile URL'**
+  String get spotListAccessInviteeRequired;
+
+  /// Edit role label for spot list sharing
+  ///
+  /// In en, this message translates to:
+  /// **'Can edit'**
+  String get spotListAccessRoleEdit;
+
+  /// View-only role label for spot list sharing
+  ///
+  /// In en, this message translates to:
+  /// **'View only'**
+  String get spotListAccessRoleView;
+
+  /// Button to send a spot list invite
+  ///
+  /// In en, this message translates to:
+  /// **'Send invite'**
+  String get spotListAccessSendInvite;
+
+  /// Section heading for current members and pending invites
+  ///
+  /// In en, this message translates to:
+  /// **'People with access'**
+  String get spotListAccessPeopleTitle;
+
+  /// Empty state when a list has no collaborators
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody else has access yet'**
+  String get spotListAccessNobodyYet;
+
+  /// Status chip for a pending invite
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get spotListAccessStatusPending;
+
+  /// Status chip for an accepted invite
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get spotListAccessStatusAccepted;
+
+  /// Action to cancel a pending invite
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel invite'**
+  String get spotListAccessCancelInvite;
+
+  /// Action for owner to revoke accepted access
+  ///
+  /// In en, this message translates to:
+  /// **'Remove access'**
+  String get spotListAccessRemoveAccess;
+
+  /// Snackbar after successfully sending an invite
+  ///
+  /// In en, this message translates to:
+  /// **'Invite sent'**
+  String get spotListAccessInviteSent;
+
+  /// Snackbar when invite fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send invite'**
+  String get spotListAccessInviteFailed;
+
+  /// Snackbar when access update fails
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update access'**
+  String get spotListAccessUpdateFailed;
+
+  /// Snackbar after owner removes a member
+  ///
+  /// In en, this message translates to:
+  /// **'Access removed'**
+  String get spotListAccessRemovedMember;
+
+  /// Snackbar after leaving a shared list
+  ///
+  /// In en, this message translates to:
+  /// **'You left this list'**
+  String get spotListAccessLeftList;
+
+  /// Accept a spot list invite
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get spotListAccessAccept;
+
+  /// Decline a spot list invite
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get spotListAccessDecline;
+
+  /// Leave a shared list after accepting
+  ///
+  /// In en, this message translates to:
+  /// **'Leave list'**
+  String get spotListAccessLeave;
+
+  /// Snackbar after accepting an invite
+  ///
+  /// In en, this message translates to:
+  /// **'Invite accepted'**
+  String get spotListAccessAccepted;
+
+  /// Snackbar after declining an invite
+  ///
+  /// In en, this message translates to:
+  /// **'Invite declined'**
+  String get spotListAccessDeclined;
+
+  /// Shown when opening access sheet without membership
+  ///
+  /// In en, this message translates to:
+  /// **'You do not have shared access to this list'**
+  String get spotListAccessNoAccess;
+
+  /// Invitee access sheet pending state
+  ///
+  /// In en, this message translates to:
+  /// **'You have a pending invite to this list'**
+  String get spotListAccessYourPendingInvite;
+
+  /// Invitee access sheet accepted state
+  ///
+  /// In en, this message translates to:
+  /// **'Your access: {role}'**
+  String spotListAccessYourAccess(String role);
+
   /// Section title for staff-featured lists on the lists hub
   ///
   /// In en, this message translates to:
@@ -6291,7 +6543,7 @@ abstract class AppLocalizations {
   /// Helper text for private list visibility
   ///
   /// In en, this message translates to:
-  /// **'Only visible to you'**
+  /// **'Only visible to you and people you invite'**
   String get spotListEditVisibilityPrivateHelp;
 
   /// List management menu item

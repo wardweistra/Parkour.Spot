@@ -602,12 +602,12 @@ service cloud.firestore {
             (data.notificationKind is string &&
               data.notificationKind.size() > 0 &&
               data.notificationKind.size() <= 64 &&
-              data.notificationKind in ['nearby_new_spot', 'nearby_check_in', 'nearby_training_plan', 'nearby_new_event', 'training_plan_check_in_reminder']);
+              data.notificationKind in ['nearby_new_spot', 'nearby_check_in', 'nearby_training_plan', 'nearby_new_event', 'training_plan_check_in_reminder', 'spot_list_invite', 'spot_list_invite_accepted']);
         }
         function notificationTemplateArgsOk(data) {
           return !('templateArgs' in data) || (
             data.templateArgs is map &&
-            data.templateArgs.size() <= 4 &&
+            data.templateArgs.size() <= 5 &&
             (!('actorName' in data.templateArgs) ||
               (data.templateArgs.actorName is string &&
                 data.templateArgs.actorName.size() <= 200)) &&
@@ -616,12 +616,18 @@ service cloud.firestore {
                 data.templateArgs.spotName.size() <= 200)) &&
             (!('eventName' in data.templateArgs) ||
               (data.templateArgs.eventName is string &&
-                data.templateArgs.eventName.size() <= 200))
+                data.templateArgs.eventName.size() <= 200)) &&
+            (!('listName' in data.templateArgs) ||
+              (data.templateArgs.listName is string &&
+                data.templateArgs.listName.size() <= 200)) &&
+            (!('inviteId' in data.templateArgs) ||
+              (data.templateArgs.inviteId is string &&
+                data.templateArgs.inviteId.size() <= 200))
           );
         }
         function notificationDeeplinkOk(data) {
           return data.deeplinkKind is string &&
-            data.deeplinkKind in ['spot', 'event', 'profile'] &&
+            data.deeplinkKind in ['spot', 'event', 'profile', 'list'] &&
             data.deeplinkId is string &&
             data.deeplinkId.size() > 0 &&
             data.deeplinkId.size() <= 200;
@@ -722,46 +728,83 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // SpotLists collection - users manage their own lists, visibility controls read access
+    // SpotLists collection - owners and accepted editors manage content;
+    // visibility + accepted members control read access.
     match /spotLists/{listId} {
       function hasValidSpotListVisibility(data) {
         return !('visibility' in data) ||
           data.visibility in ['public', 'unlisted', 'private'];
       }
-      function canReadSpotList(data) {
+      function canReadSpotListByVisibility(data) {
         // Legacy lists without visibility default to unlisted behavior.
         return !('visibility' in data) ||
           data.visibility == 'public' ||
           data.visibility == 'unlisted';
+      }
+      function spotListHasUidInList(data, field) {
+        return field in data &&
+          data[field] is list &&
+          request.auth.uid in data[field];
+      }
+      function isSpotListOwner(data) {
+        return request.auth != null && data.createdBy == request.auth.uid;
+      }
+      function isSpotListEditor(data) {
+        return request.auth != null && spotListHasUidInList(data, 'editorIds');
+      }
+      function isSpotListViewer(data) {
+        return request.auth != null && spotListHasUidInList(data, 'viewerIds');
       }
       // Featured / About slug fields are admin-only (Admin SDK callable).
       function spotListFeaturedFieldsUnchanged() {
         return !request.resource.data.diff(resource.data).affectedKeys()
           .hasAny(['featured', 'featuredAt', 'featuredBy', 'aboutSlug']);
       }
+      // Membership arrays are Cloud Functions only.
+      function spotListMembershipFieldsUnchanged() {
+        return !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['editorIds', 'viewerIds']);
+      }
       function spotListCreateHasNoFeaturedFields() {
         return !request.resource.data.keys()
           .hasAny(['featured', 'featuredAt', 'featuredBy', 'aboutSlug']);
       }
+      function spotListCreateMembershipOk() {
+        return (!('editorIds' in request.resource.data) ||
+          (request.resource.data.editorIds is list &&
+            request.resource.data.editorIds.size() == 0)) &&
+          (!('viewerIds' in request.resource.data) ||
+            (request.resource.data.viewerIds is list &&
+              request.resource.data.viewerIds.size() == 0));
+      }
 
-      // Owners can always read; others can only read public/unlisted lists.
-      allow read: if (request.auth != null &&
-        resource.data.createdBy == request.auth.uid) ||
-        canReadSpotList(resource.data);
-      // Users can create lists (cannot self-feature)
+      allow read: if isSpotListOwner(resource.data) ||
+        isSpotListEditor(resource.data) ||
+        isSpotListViewer(resource.data) ||
+        canReadSpotListByVisibility(resource.data);
       allow create: if request.auth != null &&
         request.resource.data.createdBy == request.auth.uid &&
         hasValidSpotListVisibility(request.resource.data) &&
-        spotListCreateHasNoFeaturedFields();
-      // Users can update their own lists (featured fields locked)
+        spotListCreateHasNoFeaturedFields() &&
+        spotListCreateMembershipOk();
       allow update: if request.auth != null &&
-        resource.data.createdBy == request.auth.uid &&
+        (isSpotListOwner(resource.data) || isSpotListEditor(resource.data)) &&
         request.resource.data.createdBy == resource.data.createdBy &&
         hasValidSpotListVisibility(request.resource.data) &&
-        spotListFeaturedFieldsUnchanged();
-      // Users can delete their own lists
-      allow delete: if request.auth != null &&
-        resource.data.createdBy == request.auth.uid;
+        spotListFeaturedFieldsUnchanged() &&
+        spotListMembershipFieldsUnchanged();
+      allow delete: if isSpotListOwner(resource.data);
+    }
+
+    // Spot list share invites — written by Cloud Functions only.
+    match /spotListInvites/{inviteId} {
+      allow read: if request.auth != null &&
+        (resource.data.inviteeUid == request.auth.uid ||
+          (resource.data.listId is string &&
+            exists(/databases/$(database)/documents/spotLists/$(resource.data.listId)) &&
+            get(/databases/$(database)/documents/spotLists/$(resource.data.listId)).data.createdBy ==
+              request.auth.uid));
+      allow create, update, delete: if false;
     }
 
     // DuplicateDetectionResults collection - moderators and admins can read

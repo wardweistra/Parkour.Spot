@@ -26,6 +26,7 @@ import '../../constants/spot_detail_ui.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/spot_detail_quick_action_chip.dart';
 import '../../widgets/spot_list_save_button.dart';
+import '../../widgets/spot_list_access_sheet.dart';
 import '../../widgets/featured_spot_list_chrome.dart';
 import '../../widgets/linked_upcoming_event_panel.dart';
 import '../../widgets/detail_external_link_tile.dart';
@@ -39,7 +40,7 @@ import '../../utils/spot_list_localization.dart';
 import '../../utils/relative_date_localization.dart';
 import '../../utils/upcoming_linked_events_utils.dart';
 
-enum _ListManageMenuAction { editList, createEvent, delete }
+enum _ListManageMenuAction { editList, manageAccess, createEvent, delete }
 
 class SpotListDetailScreen extends StatefulWidget {
   final String listId;
@@ -606,15 +607,30 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     );
   }
 
-  bool _canManageList() {
-    if (_list == null) return false;
+  String? get _currentUid {
     final authService = Provider.of<AuthService>(context, listen: false);
-    if (!authService.isAuthenticated) return false;
+    if (!authService.isAuthenticated) return null;
+    return authService.currentUser?.uid;
+  }
 
-    final userId = authService.currentUser?.uid;
-    if (userId == null || _list!.createdBy != userId) return false;
+  bool _isListOwner() {
+    final list = _list;
+    if (list == null) return false;
+    return list.isOwner(_currentUid);
+  }
 
-    return true;
+  bool _canEditList() {
+    final list = _list;
+    if (list == null) return false;
+    return list.canEditContent(_currentUid);
+  }
+
+  bool _canOpenAccessSheet() {
+    final list = _list;
+    if (list == null) return false;
+    final uid = _currentUid;
+    if (uid == null) return false;
+    return list.isOwner(uid) || list.canAccessAsMember(uid);
   }
 
   /// Show save affordance for guests and non-owners (not for the list creator).
@@ -806,6 +822,11 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     switch (action) {
       case _ListManageMenuAction.editList:
         _enterEditMode();
+        break;
+      case _ListManageMenuAction.manageAccess:
+        final list = _list;
+        if (list == null) return;
+        showSpotListAccessSheet(context, list: list);
         break;
       case _ListManageMenuAction.createEvent:
         if (_list == null || _list!.id == null) return;
@@ -1115,7 +1136,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
             );
           }
         }
-        if (_canManageList() && !_isEditing) {
+        if ((_canEditList() || _canOpenAccessSheet()) && !_isEditing) {
           items.add(
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
@@ -1128,63 +1149,96 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                 itemBuilder: (menuContext) {
                   final theme = Theme.of(menuContext);
                   final primary = theme.colorScheme.primary;
-                  return <PopupMenuEntry<_ListManageMenuAction>>[
-                    PopupMenuItem<_ListManageMenuAction>(
-                      value: _ListManageMenuAction.editList,
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit_outlined, color: primary, size: 20),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              _l10n.spotListDetailMenuEditList,
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem<_ListManageMenuAction>(
-                      value: _ListManageMenuAction.createEvent,
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.event_available_outlined,
-                            color: primary,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Create event for this list',
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem<_ListManageMenuAction>(
-                      value: _ListManageMenuAction.delete,
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.delete_outline,
-                            color: theme.colorScheme.error,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              _l10n.spotListDetailMenuDeleteList,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.error,
+                  final entries = <PopupMenuEntry<_ListManageMenuAction>>[];
+                  if (_canEditList()) {
+                    entries.add(
+                      PopupMenuItem<_ListManageMenuAction>(
+                        value: _ListManageMenuAction.editList,
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined, color: primary, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _l10n.spotListDetailMenuEditList,
+                                style: theme.textTheme.bodyMedium,
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ];
+                    );
+                  }
+                  if (_canOpenAccessSheet()) {
+                    entries.add(
+                      PopupMenuItem<_ListManageMenuAction>(
+                        value: _ListManageMenuAction.manageAccess,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.group_outlined,
+                              color: primary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _l10n.spotListDetailMenuManageAccess,
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  if (_isListOwner()) {
+                    entries.add(
+                      PopupMenuItem<_ListManageMenuAction>(
+                        value: _ListManageMenuAction.createEvent,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.event_available_outlined,
+                              color: primary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Create event for this list',
+                                style: theme.textTheme.bodyMedium,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                    entries.add(
+                      PopupMenuItem<_ListManageMenuAction>(
+                        value: _ListManageMenuAction.delete,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.delete_outline,
+                              color: theme.colorScheme.error,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _l10n.spotListDetailMenuDeleteList,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.error,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  return entries;
                 },
                 child: SpotDetailQuickActionChip(
                   icon: Icons.edit_outlined,

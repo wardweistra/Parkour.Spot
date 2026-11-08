@@ -130,5 +130,37 @@ void main() {
       expect(copy.title, 'Stored');
       expect(copy.body, 'Body');
     });
+
+    test('localizes spot_list_invite and accepted', () {
+      final invite = UserNotification(
+        id: '1',
+        title: 'x',
+        notificationKind: 'spot_list_invite',
+        templateArgs: const {
+          'actorName': 'Alex',
+          'listName': 'Jam map',
+          'inviteId': 'inv1',
+        },
+        deeplinkKind: UserNotificationDeeplinkKind.list,
+        deeplinkId: 'list1',
+      );
+      final inviteCopy = localizedUserNotificationCopy(invite, en);
+      expect(inviteCopy.title, 'Alex invited you to Jam map');
+      expect(inviteCopy.body, en.notificationSpotListInviteBody);
+      expect(invite.isSpotListInvite, isTrue);
+      expect(invite.inviteId, 'inv1');
+
+      final accepted = UserNotification(
+        id: '2',
+        title: 'x',
+        notificationKind: 'spot_list_invite_accepted',
+        templateArgs: const {'actorName': 'Alex', 'listName': 'Jam map'},
+        deeplinkKind: UserNotificationDeeplinkKind.list,
+        deeplinkId: 'list1',
+      );
+      final acceptedCopy = localizedUserNotificationCopy(accepted, en);
+      expect(acceptedCopy.title, 'Alex accepted your invite');
+      expect(acceptedCopy.body, 'They can now access Jam map.');
+    });
   });
 }

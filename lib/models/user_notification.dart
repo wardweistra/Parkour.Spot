@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum UserNotificationDeeplinkKind { spot, event, profile }
+enum UserNotificationDeeplinkKind { spot, event, profile, list }
 
 class UserNotification {
   const UserNotification({
@@ -72,7 +72,13 @@ class UserNotification {
   static Map<String, String>? _templateArgsFromFirestore(dynamic raw) {
     if (raw is! Map) return null;
     final out = <String, String>{};
-    for (final key in const ['actorName', 'spotName', 'eventName']) {
+    for (final key in const [
+      'actorName',
+      'spotName',
+      'eventName',
+      'listName',
+      'inviteId',
+    ]) {
       final v = raw[key];
       if (v is String) {
         out[key] = v;
@@ -87,9 +93,19 @@ class UserNotification {
         return UserNotificationDeeplinkKind.profile;
       case 'event':
         return UserNotificationDeeplinkKind.event;
+      case 'list':
+        return UserNotificationDeeplinkKind.list;
       case 'spot':
       default:
         return UserNotificationDeeplinkKind.spot;
     }
   }
+
+  String? get inviteId {
+    final raw = templateArgs?['inviteId']?.trim();
+    if (raw == null || raw.isEmpty) return null;
+    return raw;
+  }
+
+  bool get isSpotListInvite => notificationKind == 'spot_list_invite';
 }

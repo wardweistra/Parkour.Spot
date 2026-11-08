@@ -42,6 +42,31 @@ void main() {
       expect(map.containsKey('featuredBy'), isFalse);
       expect(map.containsKey('aboutSlug'), isFalse);
     });
+
+    test('toFirestore omits membership arrays', () {
+      final list = buildList().copyWith(
+        editorIds: const ['editor-1'],
+        viewerIds: const ['viewer-1'],
+      );
+      final map = list.toFirestore();
+      expect(map.containsKey('editorIds'), isFalse);
+      expect(map.containsKey('viewerIds'), isFalse);
+    });
+  });
+
+  group('SpotList membership helpers', () {
+    test('owner can edit; editors can edit; viewers cannot', () {
+      final list = buildList().copyWith(
+        editorIds: const ['editor-1'],
+        viewerIds: const ['viewer-1'],
+      );
+      expect(list.isOwner('user-1'), isTrue);
+      expect(list.canEditContent('user-1'), isTrue);
+      expect(list.canEditContent('editor-1'), isTrue);
+      expect(list.canEditContent('viewer-1'), isFalse);
+      expect(list.canAccessAsMember('viewer-1'), isTrue);
+      expect(list.canAccessAsMember('stranger'), isFalse);
+    });
   });
 
   group('SpotList.isPlainList', () {

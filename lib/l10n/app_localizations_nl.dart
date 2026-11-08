@@ -369,6 +369,49 @@ class AppLocalizationsNl extends AppLocalizations {
   String get notificationsEventUntitled => 'Evenement zonder naam';
 
   @override
+  String get notificationsListUntitled => 'Lijst zonder naam';
+
+  @override
+  String notificationSpotListInviteTitle(String actorName, String listName) {
+    return '$actorName heeft je uitgenodigd voor $listName';
+  }
+
+  @override
+  String get notificationSpotListInviteBody =>
+      'Accepteer voor toegang, of weiger om de uitnodiging te sluiten.';
+
+  @override
+  String get notificationSpotListInviteBodyAccepted =>
+      'Je hebt deze uitnodiging geaccepteerd. Tik om de lijst te openen.';
+
+  @override
+  String get notificationSpotListInviteBodyDeclined =>
+      'Je hebt deze uitnodiging geweigerd.';
+
+  @override
+  String get notificationSpotListInviteBodyRevoked =>
+      'Deze uitnodiging is niet meer beschikbaar.';
+
+  @override
+  String get notificationSpotListInviteStatusAccepted => 'Geaccepteerd';
+
+  @override
+  String get notificationSpotListInviteStatusDeclined => 'Geweigerd';
+
+  @override
+  String get notificationSpotListInviteStatusClosed => 'Gesloten';
+
+  @override
+  String notificationSpotListInviteAcceptedTitle(String actorName) {
+    return '$actorName heeft je uitnodiging geaccepteerd';
+  }
+
+  @override
+  String notificationSpotListInviteAcceptedBody(String listName) {
+    return 'Ze hebben nu toegang tot $listName.';
+  }
+
+  @override
   String notificationNearbyNewSpotTitle(String spotName) {
     return 'Nieuwe spot in de buurt: $spotName';
   }
@@ -3766,6 +3809,111 @@ class AppLocalizationsNl extends AppLocalizations {
   String get spotListDetailMenuEditList => 'Lijst bewerken';
 
   @override
+  String get spotListDetailMenuManageAccess => 'Toegang beheren';
+
+  @override
+  String get spotListsHubSharedWithMe => 'Met mij gedeeld';
+
+  @override
+  String spotListsHubSharedPending(String role) {
+    return 'Uitnodiging openstaand · $role';
+  }
+
+  @override
+  String spotListsHubSharedAccepted(String role) {
+    return 'Gedeeld · $role';
+  }
+
+  @override
+  String get spotListAccessTitle => 'Toegang';
+
+  @override
+  String get spotListAccessSubtitle =>
+      'Nodig mensen uit via gebruikersnaam, gebruikers-id of profiel-URL.';
+
+  @override
+  String get spotListAccessInviteeLabel =>
+      'Gebruikersnaam, gebruikers-id of profiel-URL';
+
+  @override
+  String get spotListAccessInviteeHint =>
+      'trainer of https://parkour.spot/user/…';
+
+  @override
+  String get spotListAccessInviteeRequired =>
+      'Voer een gebruikersnaam, gebruikers-id of profiel-URL in';
+
+  @override
+  String get spotListAccessRoleEdit => 'Kan bewerken';
+
+  @override
+  String get spotListAccessRoleView => 'Alleen bekijken';
+
+  @override
+  String get spotListAccessSendInvite => 'Uitnodiging sturen';
+
+  @override
+  String get spotListAccessPeopleTitle => 'Mensen met toegang';
+
+  @override
+  String get spotListAccessNobodyYet => 'Nog niemand anders heeft toegang';
+
+  @override
+  String get spotListAccessStatusPending => 'Openstaand';
+
+  @override
+  String get spotListAccessStatusAccepted => 'Geaccepteerd';
+
+  @override
+  String get spotListAccessCancelInvite => 'Uitnodiging annuleren';
+
+  @override
+  String get spotListAccessRemoveAccess => 'Toegang verwijderen';
+
+  @override
+  String get spotListAccessInviteSent => 'Uitnodiging verstuurd';
+
+  @override
+  String get spotListAccessInviteFailed => 'Uitnodiging versturen mislukt';
+
+  @override
+  String get spotListAccessUpdateFailed => 'Toegang bijwerken mislukt';
+
+  @override
+  String get spotListAccessRemovedMember => 'Toegang verwijderd';
+
+  @override
+  String get spotListAccessLeftList => 'Je hebt deze lijst verlaten';
+
+  @override
+  String get spotListAccessAccept => 'Accepteren';
+
+  @override
+  String get spotListAccessDecline => 'Weigeren';
+
+  @override
+  String get spotListAccessLeave => 'Lijst verlaten';
+
+  @override
+  String get spotListAccessAccepted => 'Uitnodiging geaccepteerd';
+
+  @override
+  String get spotListAccessDeclined => 'Uitnodiging geweigerd';
+
+  @override
+  String get spotListAccessNoAccess =>
+      'Je hebt geen gedeelde toegang tot deze lijst';
+
+  @override
+  String get spotListAccessYourPendingInvite =>
+      'Je hebt een openstaande uitnodiging voor deze lijst';
+
+  @override
+  String spotListAccessYourAccess(String role) {
+    return 'Jouw toegang: $role';
+  }
+
+  @override
   String get featuredSpotListsSectionTitle => 'Uitgelichte spotlijsten';
 
   @override
@@ -3905,7 +4053,8 @@ class AppLocalizationsNl extends AppLocalizations {
       'Zichtbaar via een directe link, maar verborgen op je profiel';
 
   @override
-  String get spotListEditVisibilityPrivateHelp => 'Alleen zichtbaar voor jou';
+  String get spotListEditVisibilityPrivateHelp =>
+      'Alleen zichtbaar voor jou en mensen die je uitnodigt';
 
   @override
   String get spotListDetailMenuDeleteList => 'Lijst verwijderen';

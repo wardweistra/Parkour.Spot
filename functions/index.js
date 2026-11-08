@@ -355,6 +355,13 @@ const {
   generateAboutSnapshotsAndDispatch,
 } = require("./generate-about-snapshots");
 const {spotListAboutSlug} = require("./lib/about-snapshots");
+const {
+  inviteToSpotList,
+  respondToSpotListInvite,
+  updateSpotListMemberRole,
+  removeSpotListMember,
+} = require("./lib/spot-list-sharing");
+const {deliverNotifications} = require("./lib/deliver-notification");
 
 /** App description appended to spot, list, and user page meta descriptions */
 const APP_DESCRIPTION = "Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.";
@@ -6567,6 +6574,117 @@ exports.onSpotListUpdatedClearFeatured = onDocumentUpdated(
       } catch (err) {
         console.error("onSpotListUpdatedClearFeatured error", {listId, err});
         throw err;
+      }
+    },
+);
+
+// Spot list sharing: owner invites another user (edit or view).
+exports.inviteToSpotList = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        const authUid = request.auth && request.auth.uid;
+        return await inviteToSpotList({
+          db,
+          FieldValue,
+          HttpsError,
+          deliverNotifications,
+          authUid,
+          listId: request.data && request.data.listId,
+          inviteeRaw: request.data &&
+            (request.data.invitee || request.data.inviteeRaw),
+          role: request.data && request.data.role,
+        });
+      } catch (error) {
+        if (error instanceof HttpsError) {
+          throw error;
+        }
+        console.error("Error inviting to spot list:", error);
+        throw new HttpsError(
+            "internal",
+            error.message || "Failed to invite to spot list",
+        );
+      }
+    },
+);
+
+// Spot list sharing: invitee accepts or declines.
+exports.respondToSpotListInvite = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        const authUid = request.auth && request.auth.uid;
+        return await respondToSpotListInvite({
+          db,
+          FieldValue,
+          HttpsError,
+          deliverNotifications,
+          authUid,
+          inviteId: request.data && request.data.inviteId,
+          accept: request.data && request.data.accept,
+        });
+      } catch (error) {
+        if (error instanceof HttpsError) {
+          throw error;
+        }
+        console.error("Error responding to spot list invite:", error);
+        throw new HttpsError(
+            "internal",
+            error.message || "Failed to respond to spot list invite",
+        );
+      }
+    },
+);
+
+// Spot list sharing: owner changes an accepted member's role.
+exports.updateSpotListMemberRole = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        const authUid = request.auth && request.auth.uid;
+        return await updateSpotListMemberRole({
+          db,
+          FieldValue,
+          HttpsError,
+          authUid,
+          inviteId: request.data && request.data.inviteId,
+          role: request.data && request.data.role,
+        });
+      } catch (error) {
+        if (error instanceof HttpsError) {
+          throw error;
+        }
+        console.error("Error updating spot list member role:", error);
+        throw new HttpsError(
+            "internal",
+            error.message || "Failed to update spot list member role",
+        );
+      }
+    },
+);
+
+// Spot list sharing: owner revokes, or member leaves / declines.
+exports.removeSpotListMember = onCall(
+    {region: "europe-west1"},
+    async (request) => {
+      try {
+        const authUid = request.auth && request.auth.uid;
+        return await removeSpotListMember({
+          db,
+          FieldValue,
+          HttpsError,
+          authUid,
+          inviteId: request.data && request.data.inviteId,
+        });
+      } catch (error) {
+        if (error instanceof HttpsError) {
+          throw error;
+        }
+        console.error("Error removing spot list member:", error);
+        throw new HttpsError(
+            "internal",
+            error.message || "Failed to remove spot list member",
+        );
       }
     },
 );

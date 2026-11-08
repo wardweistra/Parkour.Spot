@@ -370,6 +370,49 @@ class AppLocalizationsFr extends AppLocalizations {
   String get notificationsEventUntitled => 'Événement sans titre';
 
   @override
+  String get notificationsListUntitled => 'Liste sans titre';
+
+  @override
+  String notificationSpotListInviteTitle(String actorName, String listName) {
+    return '$actorName vous a invité à $listName';
+  }
+
+  @override
+  String get notificationSpotListInviteBody =>
+      'Acceptez pour obtenir l’accès, ou refusez pour ignorer l’invitation.';
+
+  @override
+  String get notificationSpotListInviteBodyAccepted =>
+      'Vous avez accepté cette invitation. Touchez pour ouvrir la liste.';
+
+  @override
+  String get notificationSpotListInviteBodyDeclined =>
+      'Vous avez refusé cette invitation.';
+
+  @override
+  String get notificationSpotListInviteBodyRevoked =>
+      'Cette invitation n’est plus disponible.';
+
+  @override
+  String get notificationSpotListInviteStatusAccepted => 'Acceptée';
+
+  @override
+  String get notificationSpotListInviteStatusDeclined => 'Refusée';
+
+  @override
+  String get notificationSpotListInviteStatusClosed => 'Fermée';
+
+  @override
+  String notificationSpotListInviteAcceptedTitle(String actorName) {
+    return '$actorName a accepté votre invitation';
+  }
+
+  @override
+  String notificationSpotListInviteAcceptedBody(String listName) {
+    return 'Ils peuvent maintenant accéder à $listName.';
+  }
+
+  @override
   String notificationNearbyNewSpotTitle(String spotName) {
     return 'Nouveau spot à proximité : $spotName';
   }
@@ -3804,6 +3847,112 @@ class AppLocalizationsFr extends AppLocalizations {
   String get spotListDetailMenuEditList => 'Modifier la liste';
 
   @override
+  String get spotListDetailMenuManageAccess => 'Gérer l’accès';
+
+  @override
+  String get spotListsHubSharedWithMe => 'Partagé avec moi';
+
+  @override
+  String spotListsHubSharedPending(String role) {
+    return 'Invitation en attente · $role';
+  }
+
+  @override
+  String spotListsHubSharedAccepted(String role) {
+    return 'Partagé · $role';
+  }
+
+  @override
+  String get spotListAccessTitle => 'Accès';
+
+  @override
+  String get spotListAccessSubtitle =>
+      'Invitez des personnes par nom d’utilisateur, identifiant ou URL de profil.';
+
+  @override
+  String get spotListAccessInviteeLabel =>
+      'Nom d’utilisateur, identifiant ou URL de profil';
+
+  @override
+  String get spotListAccessInviteeHint =>
+      'trainer ou https://parkour.spot/user/…';
+
+  @override
+  String get spotListAccessInviteeRequired =>
+      'Saisissez un nom d’utilisateur, un identifiant ou une URL de profil';
+
+  @override
+  String get spotListAccessRoleEdit => 'Peut modifier';
+
+  @override
+  String get spotListAccessRoleView => 'Lecture seule';
+
+  @override
+  String get spotListAccessSendInvite => 'Envoyer l’invitation';
+
+  @override
+  String get spotListAccessPeopleTitle => 'Personnes ayant accès';
+
+  @override
+  String get spotListAccessNobodyYet => 'Personne d’autre n’a encore accès';
+
+  @override
+  String get spotListAccessStatusPending => 'En attente';
+
+  @override
+  String get spotListAccessStatusAccepted => 'Acceptée';
+
+  @override
+  String get spotListAccessCancelInvite => 'Annuler l’invitation';
+
+  @override
+  String get spotListAccessRemoveAccess => 'Retirer l’accès';
+
+  @override
+  String get spotListAccessInviteSent => 'Invitation envoyée';
+
+  @override
+  String get spotListAccessInviteFailed => 'Impossible d’envoyer l’invitation';
+
+  @override
+  String get spotListAccessUpdateFailed =>
+      'Impossible de mettre à jour l’accès';
+
+  @override
+  String get spotListAccessRemovedMember => 'Accès retiré';
+
+  @override
+  String get spotListAccessLeftList => 'Vous avez quitté cette liste';
+
+  @override
+  String get spotListAccessAccept => 'Accepter';
+
+  @override
+  String get spotListAccessDecline => 'Refuser';
+
+  @override
+  String get spotListAccessLeave => 'Quitter la liste';
+
+  @override
+  String get spotListAccessAccepted => 'Invitation acceptée';
+
+  @override
+  String get spotListAccessDeclined => 'Invitation refusée';
+
+  @override
+  String get spotListAccessNoAccess =>
+      'Vous n’avez pas d’accès partagé à cette liste';
+
+  @override
+  String get spotListAccessYourPendingInvite =>
+      'Vous avez une invitation en attente pour cette liste';
+
+  @override
+  String spotListAccessYourAccess(String role) {
+    return 'Votre accès : $role';
+  }
+
+  @override
   String get featuredSpotListsSectionTitle => 'Listes de spots à la une';
 
   @override
@@ -3944,7 +4093,8 @@ class AppLocalizationsFr extends AppLocalizations {
       'Visible avec un lien direct, mais masquée sur ton profil';
 
   @override
-  String get spotListEditVisibilityPrivateHelp => 'Visible uniquement par toi';
+  String get spotListEditVisibilityPrivateHelp =>
+      'Visible uniquement par toi et les personnes que tu invites';
 
   @override
   String get spotListDetailMenuDeleteList => 'Supprimer la liste';

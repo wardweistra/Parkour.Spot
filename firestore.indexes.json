@@ -519,6 +519,30 @@
         { "fieldPath": "isPrivate", "order": "ASCENDING" },
         { "fieldPath": "plannedEndAt", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "spotListInvites",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "inviteeUid", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spotListInvites",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "listId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "spotListInvites",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "listId", "order": "ASCENDING" },
+        { "fieldPath": "inviteeUid", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [

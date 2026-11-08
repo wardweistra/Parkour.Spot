@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/spot_list.dart';
+import '../../models/spot_list_invite.dart';
 import '../../services/auth_service.dart';
 import '../../services/saved_spot_list_service.dart';
 import '../../services/spot_list_service.dart';
@@ -261,6 +262,8 @@ class _SpotListsHubScreenState extends State<SpotListsHubScreen> {
                 },
               ),
               const SizedBox(height: 24),
+              _SharedWithMeSection(onOpenList: _openList),
+              const SizedBox(height: 24),
               _SavedListsSection(onOpenList: _openList),
               const SizedBox(height: 24),
               _FeaturedListsSection(onOpenList: _openList),
@@ -354,6 +357,141 @@ class _HubInlineError extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SharedWithMeSection extends StatelessWidget {
+  const _SharedWithMeSection({required this.onOpenList});
+
+  final ValueChanged<SpotList> onOpenList;
+
+  Future<void> _respond(
+    BuildContext context,
+    SpotListInvite invite, {
+    required bool accept,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final service = context.read<SpotListService>();
+    final ok = await service.respondToSpotListInvite(
+      inviteId: invite.id,
+      accept: accept,
+    );
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? (accept
+                    ? l10n.spotListAccessAccepted
+                    : l10n.spotListAccessDeclined)
+              : (service.error ?? l10n.spotListAccessUpdateFailed),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return StreamBuilder<List<SpotListInvite>>(
+      stream: context.read<SpotListService>().watchSharedWithMeInvites(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+        final invites = snapshot.data ?? const <SpotListInvite>[];
+        if (invites.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _HubSectionHeader(title: l10n.spotListsHubSharedWithMe),
+            const SizedBox(height: 8),
+            ...invites.map((invite) {
+              final roleLabel = invite.role == SpotListInviteRole.edit
+                  ? l10n.spotListAccessRoleEdit
+                  : l10n.spotListAccessRoleView;
+              final isPending =
+                  invite.status == SpotListInviteStatus.pending;
+              return Material(
+                color: scheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          invite.listName.isEmpty
+                              ? l10n.notificationsListUntitled
+                              : invite.listName,
+                          style: textTheme.titleMedium,
+                        ),
+                        subtitle: Text(
+                          isPending
+                              ? l10n.spotListsHubSharedPending(roleLabel)
+                              : l10n.spotListsHubSharedAccepted(roleLabel),
+                          style: textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurface.withValues(alpha: 0.65),
+                          ),
+                        ),
+                        trailing: isPending
+                            ? null
+                            : Icon(
+                                Icons.arrow_forward_ios,
+                                size: 16,
+                                color: scheme.onSurface.withValues(alpha: 0.5),
+                              ),
+                        onTap: isPending
+                            ? null
+                            : () {
+                                onOpenList(
+                                  SpotList(
+                                    id: invite.listId,
+                                    name: invite.listName,
+                                    spotIds: const [],
+                                    createdBy: invite.inviterUid,
+                                    createdAt: DateTime.now(),
+                                    updatedAt: DateTime.now(),
+                                  ),
+                                );
+                              },
+                      ),
+                      if (isPending)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: () =>
+                                    _respond(context, invite, accept: true),
+                                child: Text(l10n.spotListAccessAccept),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () =>
+                                    _respond(context, invite, accept: false),
+                                child: Text(l10n.spotListAccessDecline),
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
+        );
+      },
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:uuid/uuid.dart';
 import '../models/spot_list.dart';
+import '../models/spot_list_invite.dart';
 import '../services/audit_log_service.dart';
 import '../services/auth_service.dart';
 import '../utils/http_url_utils.dart' as http_url;
@@ -35,6 +36,17 @@ class SpotListService extends ChangeNotifier {
     return _authService.userProfile?.displayName ??
         _authService.currentUser?.displayName;
   }
+
+  bool _userCanEditList(SpotList list, String userId) =>
+      list.canEditContent(userId);
+
+  bool _userCanViewList(SpotList list, String? userId) {
+    if (list.visibility != SpotListVisibility.private) return true;
+    return list.canAccessAsMember(userId);
+  }
+
+  FirebaseFunctions get _functions =>
+      FirebaseFunctions.instanceFor(region: 'europe-west1');
 
   void _trackChange(
     Map<String, dynamic> changes,
@@ -194,10 +206,7 @@ class SpotListService extends ChangeNotifier {
       if (doc.exists) {
         final list = SpotList.fromFirestore(doc);
         final currentUserId = _getCurrentUserId();
-        final canView =
-            list.visibility != SpotListVisibility.private ||
-            list.createdBy == currentUserId;
-        return canView ? list : null;
+        return _userCanViewList(list, currentUserId) ? list : null;
       }
       return null;
     } catch (e) {
@@ -229,7 +238,7 @@ class SpotListService extends ChangeNotifier {
 
     // Verify ownership
     final list = await getSpotListById(listId);
-    if (list == null || list.createdBy != userId) {
+    if (list == null || !_userCanEditList(list, userId)) {
       _error = 'You do not have permission to update this list';
       notifyListeners();
       return false;
@@ -319,7 +328,7 @@ class SpotListService extends ChangeNotifier {
     }
 
     final list = await getSpotListById(listId);
-    if (list == null || list.createdBy != userId) {
+    if (list == null || !_userCanEditList(list, userId)) {
       _error = 'You do not have permission to modify this list';
       notifyListeners();
       return false;
@@ -404,7 +413,7 @@ class SpotListService extends ChangeNotifier {
     }
 
     final list = await getSpotListById(listId);
-    if (list == null || list.createdBy != userId) {
+    if (list == null || !_userCanEditList(list, userId)) {
       _error = 'You do not have permission to modify this list';
       notifyListeners();
       return false;
@@ -485,7 +494,7 @@ class SpotListService extends ChangeNotifier {
     }
 
     final list = await getSpotListById(listId);
-    if (list == null || list.createdBy != userId) {
+    if (list == null || !_userCanEditList(list, userId)) {
       _error = 'You do not have permission to update this list';
       notifyListeners();
       return false;
@@ -630,7 +639,7 @@ class SpotListService extends ChangeNotifier {
     }
 
     final list = await getSpotListById(listId);
-    if (list == null || list.createdBy != userId) {
+    if (list == null || !_userCanEditList(list, userId)) {
       _error = 'You do not have permission to modify this list';
       notifyListeners();
       return false;
@@ -728,7 +737,7 @@ class SpotListService extends ChangeNotifier {
     }
 
     final list = await getSpotListById(listId);
-    if (list == null || list.createdBy != userId) {
+    if (list == null || !_userCanEditList(list, userId)) {
       _error = 'You do not have permission to modify this list';
       notifyListeners();
       return false;
@@ -782,7 +791,7 @@ class SpotListService extends ChangeNotifier {
     }
 
     final list = await getSpotListById(listId);
-    if (list == null || list.createdBy != userId) {
+    if (list == null || !_userCanEditList(list, userId)) {
       _error = 'You do not have permission to modify this list';
       notifyListeners();
       return false;
@@ -824,7 +833,7 @@ class SpotListService extends ChangeNotifier {
     }
 
     final list = await getSpotListById(listId);
-    if (list == null || list.createdBy != userId) {
+    if (list == null || !_userCanEditList(list, userId)) {
       _error = 'You do not have permission to modify this list';
       notifyListeners();
       return false;
@@ -882,7 +891,7 @@ class SpotListService extends ChangeNotifier {
     }
 
     final list = await getSpotListById(listId);
-    if (list == null || list.createdBy != userId) {
+    if (list == null || !_userCanEditList(list, userId)) {
       _error = 'You do not have permission to modify this list';
       notifyListeners();
       return false;
@@ -1032,8 +1041,7 @@ class SpotListService extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
-      final callable = functions.httpsCallable('setSpotListFeatured');
+      final callable = _functions.httpsCallable('setSpotListFeatured');
       await callable.call(<String, dynamic>{
         'listId': listId,
         'featured': featured,
@@ -1052,6 +1060,176 @@ class SpotListService extends ChangeNotifier {
       _error = 'Failed to update featured status: $e';
       debugPrint('Error setting spot list featured: $e');
       _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Live stream of a single invite document (any status).
+  Stream<SpotListInvite?> watchInviteById(String inviteId) {
+    final id = inviteId.trim();
+    if (id.isEmpty) {
+      return Stream.value(null);
+    }
+    return _firestore.collection('spotListInvites').doc(id).snapshots().map((
+      snap,
+    ) {
+      if (!snap.exists) return null;
+      return SpotListInvite.fromFirestore(snap);
+    });
+  }
+
+  /// Active invites shared with the current user (pending + accepted).
+  Stream<List<SpotListInvite>> watchSharedWithMeInvites() {
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      return Stream.value(const <SpotListInvite>[]);
+    }
+    return _firestore
+        .collection('spotListInvites')
+        .where('inviteeUid', isEqualTo: userId)
+        .where('status', whereIn: ['pending', 'accepted'])
+        .snapshots()
+        .map(
+          (snap) =>
+              snap.docs.map(SpotListInvite.fromFirestore).toList(),
+        );
+  }
+
+  /// Active invites for a list the current user owns.
+  Stream<List<SpotListInvite>> watchListInvites(String listId) {
+    return _firestore
+        .collection('spotListInvites')
+        .where('listId', isEqualTo: listId)
+        .where('status', whereIn: ['pending', 'accepted'])
+        .snapshots()
+        .map(
+          (snap) =>
+              snap.docs.map(SpotListInvite.fromFirestore).toList(),
+        );
+  }
+
+  /// Current user's active invite for a list (if any).
+  Stream<SpotListInvite?> watchMyInviteForList(String listId) {
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      return Stream.value(null);
+    }
+    return _firestore
+        .collection('spotListInvites')
+        .where('listId', isEqualTo: listId)
+        .where('inviteeUid', isEqualTo: userId)
+        .snapshots()
+        .map((snap) {
+          for (final doc in snap.docs) {
+            final invite = SpotListInvite.fromFirestore(doc);
+            if (invite.status.isActive) return invite;
+          }
+          return null;
+        });
+  }
+
+  Future<bool> inviteToSpotList({
+    required String listId,
+    required String invitee,
+    required SpotListInviteRole role,
+  }) async {
+    if (!_isAuthenticated()) {
+      _error = 'You must be signed in';
+      notifyListeners();
+      return false;
+    }
+    try {
+      final callable = _functions.httpsCallable('inviteToSpotList');
+      await callable.call(<String, dynamic>{
+        'listId': listId,
+        'invitee': invitee,
+        'role': role.firestoreValue,
+      });
+      return true;
+    } on FirebaseFunctionsException catch (e) {
+      _error = e.message ?? 'Failed to send invite';
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = 'Failed to send invite: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> respondToSpotListInvite({
+    required String inviteId,
+    required bool accept,
+  }) async {
+    if (!_isAuthenticated()) {
+      _error = 'You must be signed in';
+      notifyListeners();
+      return false;
+    }
+    try {
+      final callable = _functions.httpsCallable('respondToSpotListInvite');
+      await callable.call(<String, dynamic>{
+        'inviteId': inviteId,
+        'accept': accept,
+      });
+      return true;
+    } on FirebaseFunctionsException catch (e) {
+      _error = e.message ?? 'Failed to respond to invite';
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = 'Failed to respond to invite: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateSpotListMemberRole({
+    required String inviteId,
+    required SpotListInviteRole role,
+  }) async {
+    if (!_isAuthenticated()) {
+      _error = 'You must be signed in';
+      notifyListeners();
+      return false;
+    }
+    try {
+      final callable = _functions.httpsCallable('updateSpotListMemberRole');
+      await callable.call(<String, dynamic>{
+        'inviteId': inviteId,
+        'role': role.firestoreValue,
+      });
+      return true;
+    } on FirebaseFunctionsException catch (e) {
+      _error = e.message ?? 'Failed to update role';
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = 'Failed to update role: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> removeSpotListMember({required String inviteId}) async {
+    if (!_isAuthenticated()) {
+      _error = 'You must be signed in';
+      notifyListeners();
+      return false;
+    }
+    try {
+      final callable = _functions.httpsCallable('removeSpotListMember');
+      await callable.call(<String, dynamic>{
+        'inviteId': inviteId,
+      });
+      return true;
+    } on FirebaseFunctionsException catch (e) {
+      _error = e.message ?? 'Failed to update access';
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = 'Failed to update access: $e';
       notifyListeners();
       return false;
     }

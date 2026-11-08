@@ -27,9 +27,16 @@ const MIN_TOKEN_LENGTH = 10;
  */
 function clickUrlForDeeplink(deeplinkKind, deeplinkId, notificationId) {
   const id = typeof deeplinkId === "string" ? deeplinkId.trim() : "";
-  const path = deeplinkKind === "event" ?
-    `${PUBLIC_ORIGIN}/event/${id}` :
-    `${PUBLIC_ORIGIN}/spot/${id}`;
+  let path;
+  if (deeplinkKind === "event") {
+    path = `${PUBLIC_ORIGIN}/event/${id}`;
+  } else if (deeplinkKind === "list") {
+    path = `${PUBLIC_ORIGIN}/list/${id}`;
+  } else if (deeplinkKind === "profile") {
+    path = `${PUBLIC_ORIGIN}/user/${encodeURIComponent(id)}`;
+  } else {
+    path = `${PUBLIC_ORIGIN}/spot/${id}`;
+  }
   const nid = typeof notificationId === "string" ? notificationId.trim() : "";
   if (!nid) {
     return path;

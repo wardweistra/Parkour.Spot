@@ -7,7 +7,9 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../models/spot_list_invite.dart';
 import '../../models/user_notification.dart';
+import '../../services/spot_list_service.dart';
 import '../../services/user_notification_service.dart';
 import '../../services/web_push_subscription_service.dart';
 import '../../utils/user_notification_localization.dart';
@@ -368,6 +370,73 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           const SizedBox(height: _kNotificationRowSpacing),
                       itemBuilder: (context, index) {
                         final item = displayItems[index];
+                        final inviteId = item.isSpotListInvite
+                            ? item.inviteId
+                            : null;
+                        if (inviteId != null) {
+                          return StreamBuilder<SpotListInvite?>(
+                            stream: context
+                                .read<SpotListService>()
+                                .watchInviteById(inviteId),
+                            builder: (context, inviteSnap) {
+                              final loading =
+                                  inviteSnap.connectionState ==
+                                      ConnectionState.waiting &&
+                                  !inviteSnap.hasData;
+                              final invite = inviteSnap.data;
+                              // Until the invite doc loads, hide actions so
+                              // resolved invites don't briefly show Accept.
+                              final SpotListInviteStatus? status = loading
+                                  ? null
+                                  : (invite?.status ??
+                                        SpotListInviteStatus.revoked);
+                              final pending =
+                                  status == SpotListInviteStatus.pending;
+                              return _NotificationListTile(
+                                item: item,
+                                timeLabel: _formatTimestamp(
+                                  context,
+                                  item.createdAt,
+                                  l10n,
+                                ),
+                                inviteStatus: status,
+                                onOpen: () =>
+                                    _openNotification(context, item),
+                                onAcceptInvite: pending
+                                    ? () => unawaited(
+                                        _respondSpotListInvite(
+                                          context,
+                                          item,
+                                          accept: true,
+                                        ),
+                                      )
+                                    : null,
+                                onDeclineInvite: pending
+                                    ? () => unawaited(
+                                        _respondSpotListInvite(
+                                          context,
+                                          item,
+                                          accept: false,
+                                        ),
+                                      )
+                                    : null,
+                                onLongPress: item.read
+                                    ? () => unawaited(
+                                        _markNotificationUnread(
+                                          context,
+                                          item,
+                                        ),
+                                      )
+                                    : () => unawaited(
+                                        _markNotificationReadOnly(
+                                          context,
+                                          item,
+                                        ),
+                                      ),
+                              );
+                            },
+                          );
+                        }
                         return _NotificationListTile(
                           item: item,
                           timeLabel: _formatTimestamp(
@@ -439,6 +508,39 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  Future<void> _respondSpotListInvite(
+    BuildContext context,
+    UserNotification item, {
+    required bool accept,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final inviteId = item.inviteId;
+    if (inviteId == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final listService = context.read<SpotListService>();
+    final notificationService = context.read<UserNotificationService>();
+    final ok = await listService.respondToSpotListInvite(
+      inviteId: inviteId,
+      accept: accept,
+    );
+    if (!context.mounted) return;
+    if (ok) {
+      await notificationService.markAsRead(item.id);
+    }
+    if (!context.mounted) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? (accept
+                    ? l10n.spotListAccessAccepted
+                    : l10n.spotListAccessDeclined)
+              : (listService.error ?? l10n.spotListAccessUpdateFailed),
+        ),
+      ),
+    );
+  }
+
   Future<void> _openNotification(
     BuildContext context,
     UserNotification item,
@@ -473,6 +575,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         context.push('/event/${item.deeplinkId}');
       case UserNotificationDeeplinkKind.profile:
         context.push('/user/${Uri.encodeComponent(item.deeplinkId)}');
+      case UserNotificationDeeplinkKind.list:
+        context.push('/list/${item.deeplinkId}');
     }
   }
 }
@@ -636,14 +740,50 @@ class _NotificationListTile extends StatelessWidget {
     required this.timeLabel,
     required this.onOpen,
     required this.onLongPress,
+    this.onAcceptInvite,
+    this.onDeclineInvite,
+    this.inviteStatus,
   });
 
   final UserNotification item;
   final String timeLabel;
   final VoidCallback onOpen;
+  final VoidCallback? onAcceptInvite;
+  final VoidCallback? onDeclineInvite;
+  final SpotListInviteStatus? inviteStatus;
 
   /// Read row → mark unread; unread row → mark read (no navigation).
   final VoidCallback onLongPress;
+
+  String? _inviteBody(AppLocalizations l10n) {
+    if (!item.isSpotListInvite || inviteStatus == null) return null;
+    switch (inviteStatus!) {
+      case SpotListInviteStatus.pending:
+        return null;
+      case SpotListInviteStatus.accepted:
+        return l10n.notificationSpotListInviteBodyAccepted;
+      case SpotListInviteStatus.declined:
+        return l10n.notificationSpotListInviteBodyDeclined;
+      case SpotListInviteStatus.revoked:
+      case SpotListInviteStatus.left:
+        return l10n.notificationSpotListInviteBodyRevoked;
+    }
+  }
+
+  String? _inviteStatusLabel(AppLocalizations l10n) {
+    if (!item.isSpotListInvite || inviteStatus == null) return null;
+    switch (inviteStatus!) {
+      case SpotListInviteStatus.pending:
+        return null;
+      case SpotListInviteStatus.accepted:
+        return l10n.notificationSpotListInviteStatusAccepted;
+      case SpotListInviteStatus.declined:
+        return l10n.notificationSpotListInviteStatusDeclined;
+      case SpotListInviteStatus.revoked:
+      case SpotListInviteStatus.left:
+        return l10n.notificationSpotListInviteStatusClosed;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -652,6 +792,10 @@ class _NotificationListTile extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isUnread = !item.read;
+    final showInviteActions =
+        onAcceptInvite != null && onDeclineInvite != null;
+    final resolvedBody = _inviteBody(l10n) ?? copy.body;
+    final statusLabel = _inviteStatusLabel(l10n);
 
     final titleStyle = (isUnread ? textTheme.titleMedium : textTheme.bodyLarge)
         ?.copyWith(
@@ -696,6 +840,8 @@ class _NotificationListTile extends StatelessWidget {
                       UserNotificationDeeplinkKind.spot => Icons.place_outlined,
                       UserNotificationDeeplinkKind.profile =>
                         Icons.person_outline,
+                      UserNotificationDeeplinkKind.list =>
+                        Icons.list_alt_outlined,
                     },
                     color: scheme.primary.withValues(
                       alpha: isUnread ? 1 : 0.65,
@@ -714,10 +860,10 @@ class _NotificationListTile extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (copy.body != null && copy.body!.isNotEmpty) ...[
+                      if (resolvedBody != null && resolvedBody.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Text(
-                          copy.body!,
+                          resolvedBody,
                           style: textTheme.bodyMedium?.copyWith(
                             color: scheme.onSurface.withValues(
                               alpha: isUnread ? 0.8 : 0.62,
@@ -725,6 +871,30 @@ class _NotificationListTile extends StatelessWidget {
                           ),
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      if (showInviteActions) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            FilledButton(
+                              onPressed: onAcceptInvite,
+                              child: Text(l10n.spotListAccessAccept),
+                            ),
+                            const SizedBox(width: 8),
+                            OutlinedButton(
+                              onPressed: onDeclineInvite,
+                              child: Text(l10n.spotListAccessDecline),
+                            ),
+                          ],
+                        ),
+                      ] else if (statusLabel != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          statusLabel,
+                          style: textTheme.labelLarge?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                       const SizedBox(height: 6),
