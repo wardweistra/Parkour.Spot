@@ -11,6 +11,7 @@ import '../services/web_share_service.dart';
 import '../utils/share_link_text.dart';
 import '../services/snackbar_service.dart';
 import '../l10n/app_localizations.dart';
+import 'explore_list_action_button.dart';
 import 'no_images_placeholder.dart';
 import 'resized_spot_image.dart';
 import 'spot_check_in_presence.dart';
@@ -504,49 +505,23 @@ class _SpotCardState extends State<SpotCard> {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Share button (always shown)
-                        Material(
-                          color: Theme.of(context).colorScheme.secondary,
-                          shape: const CircleBorder(),
-                          elevation: 2,
-                          child: InkWell(
-                            onTap: () => _shareSpot(context),
-                            customBorder: const CircleBorder(),
-                            child: Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: Icon(
-                                Icons.share,
-                                size: 18,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSecondary,
-                              ),
-                            ),
-                          ),
+                        ExploreListActionButton(
+                          icon: Icons.share,
+                          tooltip: AppLocalizations.of(
+                            context,
+                          )!.spotDetailShareTooltip,
+                          onPressed: () => _shareSpot(context),
                         ),
-                        // Spacing between Share and Locate buttons
-                        if (widget.onLocate != null) const SizedBox(width: 8),
-                        // Locate button
-                        if (widget.onLocate != null)
-                          Material(
-                            color: Theme.of(context).colorScheme.secondary,
-                            shape: const CircleBorder(),
-                            elevation: 2,
-                            child: InkWell(
-                              onTap: widget.onLocate,
-                              customBorder: const CircleBorder(),
-                              child: Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Icon(
-                                  Icons.my_location,
-                                  size: 18,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSecondary,
-                                ),
-                              ),
-                            ),
+                        if (widget.onLocate != null) ...[
+                          const SizedBox(width: 8),
+                          ExploreListActionButton(
+                            icon: Icons.my_location,
+                            tooltip: AppLocalizations.of(
+                              context,
+                            )!.spotDetailMapLocateOnMap,
+                            onPressed: widget.onLocate!,
                           ),
+                        ],
                       ],
                     ),
                   ],

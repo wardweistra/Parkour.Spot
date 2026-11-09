@@ -10,6 +10,7 @@ import '../models/event_map_pin.dart';
 import '../utils/community_activity_time_formatting.dart';
 import '../utils/event_schedule_utils.dart';
 import 'community_activity_kind_filter.dart';
+import 'explore_list_action_button.dart';
 import 'resized_spot_image.dart';
 
 /// Explore "Community" stream for one map viewport, laid out as a timeline:
@@ -1658,7 +1659,7 @@ class CommunityEventActivityCard extends StatelessWidget {
   }
 }
 
-/// Locate control matching [SpotCard] / [EventCard] circular secondary buttons.
+/// Locate control matching Explore list share/locate buttons.
 class _LocateActivityButton extends StatelessWidget {
   const _LocateActivityButton({required this.onPressed});
 
@@ -1667,27 +1668,10 @@ class _LocateActivityButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Tooltip(
-      message: l10n.spotDetailMapLocateOnMap,
-      child: Material(
-        color: colorScheme.secondary,
-        shape: const CircleBorder(),
-        elevation: 2,
-        child: InkWell(
-          onTap: onPressed,
-          customBorder: const CircleBorder(),
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: Icon(
-              Icons.my_location,
-              size: 18,
-              color: colorScheme.onSecondary,
-            ),
-          ),
-        ),
-      ),
+    return ExploreListActionButton(
+      icon: Icons.my_location,
+      tooltip: l10n.spotDetailMapLocateOnMap,
+      onPressed: onPressed,
     );
   }
 }

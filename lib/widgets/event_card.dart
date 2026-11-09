@@ -11,6 +11,7 @@ import '../services/url_service.dart';
 import '../services/web_share_service.dart';
 import '../utils/share_link_text.dart';
 import '../utils/event_schedule_utils.dart';
+import 'explore_list_action_button.dart';
 import 'no_images_placeholder.dart';
 import 'country_flag_badge.dart';
 import 'resized_spot_image.dart';
@@ -370,44 +371,21 @@ class _EventCardState extends State<EventCard> {
   }
 
   Widget _buildListActionButtons(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Material(
-          color: Theme.of(context).colorScheme.secondary,
-          shape: const CircleBorder(),
-          elevation: 2,
-          child: InkWell(
-            onTap: () => _shareEvent(context),
-            customBorder: const CircleBorder(),
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Icon(
-                Icons.share,
-                size: 18,
-                color: Theme.of(context).colorScheme.onSecondary,
-              ),
-            ),
-          ),
+        ExploreListActionButton(
+          icon: Icons.share,
+          tooltip: l10n.spotDetailShareTooltip,
+          onPressed: () => _shareEvent(context),
         ),
         if (widget.onLocate != null) ...[
           const SizedBox(width: 8),
-          Material(
-            color: Theme.of(context).colorScheme.secondary,
-            shape: const CircleBorder(),
-            elevation: 2,
-            child: InkWell(
-              onTap: widget.onLocate,
-              customBorder: const CircleBorder(),
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Icon(
-                  Icons.my_location,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.onSecondary,
-                ),
-              ),
-            ),
+          ExploreListActionButton(
+            icon: Icons.my_location,
+            tooltip: l10n.spotDetailMapLocateOnMap,
+            onPressed: widget.onLocate!,
           ),
         ],
       ],
