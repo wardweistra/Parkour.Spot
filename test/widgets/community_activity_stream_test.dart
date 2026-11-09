@@ -67,6 +67,8 @@ Future<void> _pump(
   CommunityActivityFeed feed, {
   ValueChanged<CommunityActivityItem>? onOpenSpot,
   ValueChanged<EventMapPin>? onOpenEvent,
+  ValueChanged<CommunityActivityItem>? onLocateSpot,
+  ValueChanged<EventMapPin>? onLocateEvent,
   ValueChanged<String>? onOpenActor,
   VoidCallback? onLoadMorePast,
   VoidCallback? onLoadMoreUpcoming,
@@ -84,6 +86,8 @@ Future<void> _pump(
           now: _now,
           onOpenSpot: onOpenSpot ?? (_) {},
           onOpenEvent: onOpenEvent ?? (_) {},
+          onLocateSpot: onLocateSpot,
+          onLocateEvent: onLocateEvent,
           onOpenActor: onOpenActor,
           onLoadMorePast: onLoadMorePast,
           onLoadMoreUpcoming: onLoadMoreUpcoming,
@@ -968,6 +972,47 @@ void main() {
 
     await tester.tap(find.byType(CircleAvatar));
     expect(openedActor, 'xavi-id');
+  });
+
+  testWidgets('locate buttons focus the spot and event without opening', (
+    tester,
+  ) async {
+    CommunityActivityItem? locatedSpot;
+    EventMapPin? locatedEvent;
+    var openedSpot = false;
+    var openedEvent = false;
+    final feed = CommunityActivityFeed(
+      past: [
+        _item(
+          'spot',
+          CommunityActivityKind.spotAdded,
+          occurredAt: _now.subtract(const Duration(hours: 1)),
+          actor: 'Xavi',
+        ),
+      ],
+      events: [_event('e1', _now.add(const Duration(days: 1)))],
+    );
+    await _pump(
+      tester,
+      feed,
+      onOpenSpot: (_) => openedSpot = true,
+      onOpenEvent: (_) => openedEvent = true,
+      onLocateSpot: (item) => locatedSpot = item,
+      onLocateEvent: (pin) => locatedEvent = pin,
+    );
+
+    final locateButtons = find.byIcon(Icons.my_location);
+    expect(locateButtons, findsNWidgets(2));
+
+    await tester.tap(locateButtons.first);
+    await tester.pumpAndSettle();
+    expect(locatedSpot?.spotId, 'spot-spot');
+    expect(openedSpot, isFalse);
+
+    await tester.tap(locateButtons.last);
+    await tester.pumpAndSettle();
+    expect(locatedEvent?.eventId, 'e1');
+    expect(openedEvent, isFalse);
   });
 
   testWidgets('falls back to "Someone" without a display name', (

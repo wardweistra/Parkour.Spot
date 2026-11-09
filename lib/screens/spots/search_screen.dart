@@ -3448,6 +3448,8 @@ class SearchScreenState extends State<SearchScreen>
         );
         context.push('/event/${pin.eventId}');
       },
+      onLocateSpot: (item) => _locateSpotById(item.spotId),
+      onLocateEvent: (pin) => _selectEventPin(pin, focusMap: true),
       onOpenActor: (userId) => navigateToUserProfileForCheckIn(context, userId),
     );
   }

@@ -27,6 +27,8 @@ class CommunityActivityStream extends StatefulWidget {
     required this.feed,
     required this.onOpenSpot,
     required this.onOpenEvent,
+    this.onLocateSpot,
+    this.onLocateEvent,
     this.onOpenActor,
     this.onLoadMorePast,
     this.onLoadMoreUpcoming,
@@ -49,6 +51,12 @@ class CommunityActivityStream extends StatefulWidget {
   final CommunityActivityFeed feed;
   final ValueChanged<CommunityActivityItem> onOpenSpot;
   final ValueChanged<EventMapPin> onOpenEvent;
+
+  /// Focus the map on the activity's spot without opening spot detail.
+  final ValueChanged<CommunityActivityItem>? onLocateSpot;
+
+  /// Focus the map on the event without opening event detail.
+  final ValueChanged<EventMapPin>? onLocateEvent;
   final ValueChanged<String>? onOpenActor;
   final VoidCallback? onLoadMorePast;
   final VoidCallback? onLoadMoreUpcoming;
@@ -621,12 +629,18 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
         item: item,
         now: now,
         onOpenSpot: () => widget.onOpenSpot(item),
+        onLocate: widget.onLocateSpot == null
+            ? null
+            : () => widget.onLocateSpot!(item),
         onOpenActor: _actorCallback(item),
       ),
       _PastEventEntry(:final event) => CommunityEventActivityCard(
         event: event,
         now: now,
         onTap: () => widget.onOpenEvent(event.pin),
+        onLocate: widget.onLocateEvent == null
+            ? null
+            : () => widget.onLocateEvent!(event.pin),
       ),
       _NowEntry() => CommunityNowDivider(
         lens: widget.lens,
@@ -636,12 +650,18 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
         item: item,
         now: now,
         onOpenSpot: () => widget.onOpenSpot(item),
+        onLocate: widget.onLocateSpot == null
+            ? null
+            : () => widget.onLocateSpot!(item),
         onOpenActor: _actorCallback(item),
       ),
       _EventEntry(:final event) => CommunityEventActivityCard(
         event: event,
         now: now,
         onTap: () => widget.onOpenEvent(event.pin),
+        onLocate: widget.onLocateEvent == null
+            ? null
+            : () => widget.onLocateEvent!(event.pin),
       ),
       _ShowMoreUpcomingEntry(:final remainingCount) => _ShowMoreUpcomingButton(
         remainingCount: remainingCount,
@@ -1177,12 +1197,14 @@ class CommunityActivityCard extends StatelessWidget {
     required this.item,
     required this.now,
     this.onOpenSpot,
+    this.onLocate,
     this.onOpenActor,
   });
 
   final CommunityActivityItem item;
   final DateTime now;
   final VoidCallback? onOpenSpot;
+  final VoidCallback? onLocate;
   final VoidCallback? onOpenActor;
 
   static const double _avatarRadius = 20;
@@ -1414,6 +1436,13 @@ class CommunityActivityCard extends StatelessWidget {
                   ),
                 ),
               ],
+              if (onLocate != null) ...[
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: _LocateActivityButton(onPressed: onLocate!),
+                ),
+              ],
             ],
           ),
         ),
@@ -1429,11 +1458,13 @@ class CommunityEventActivityCard extends StatelessWidget {
     required this.event,
     required this.now,
     this.onTap,
+    this.onLocate,
   });
 
   final CommunityEventItem event;
   final DateTime now;
   final VoidCallback? onTap;
+  final VoidCallback? onLocate;
 
   static const double _thumbSize = 64;
 
@@ -1490,123 +1521,170 @@ class CommunityEventActivityCard extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(12),
-          child: Row(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: SizedBox(
-                  width: _thumbSize,
-                  height: _thumbSize,
-                  child: pin.imageUrls.isNotEmpty
-                      ? ResizedSpotImage(
-                          imageUrl: pin.imageUrls.first,
-                          width: _thumbSize,
-                          height: _thumbSize,
-                          fit: BoxFit.cover,
-                        )
-                      : ColoredBox(
-                          color: colorScheme.primaryContainer,
-                          child: Icon(
-                            Icons.event,
-                            color: colorScheme.onPrimaryContainer,
-                          ),
-                        ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      headline,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      pin.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.schedule, size: 14, color: mutedColor),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            whenLine,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: mutedColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (city.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.place_outlined,
-                            size: 14,
-                            color: mutedColor,
-                          ),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              city,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: mutedColor,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: SizedBox(
+                      width: _thumbSize,
+                      height: _thumbSize,
+                      child: pin.imageUrls.isNotEmpty
+                          ? ResizedSpotImage(
+                              imageUrl: pin.imageUrls.first,
+                              width: _thumbSize,
+                              height: _thumbSize,
+                              fit: BoxFit.cover,
+                            )
+                          : ColoredBox(
+                              color: colorScheme.primaryContainer,
+                              child: Icon(
+                                Icons.event,
+                                color: colorScheme.onPrimaryContainer,
                               ),
                             ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          headline,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: colorScheme.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          pin.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.schedule, size: 14, color: mutedColor),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                whenLine,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: mutedColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (city.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.place_outlined,
+                                size: 14,
+                                color: mutedColor,
+                              ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  city,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: mutedColor,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
-                      ),
-                    ],
-                    if (event.goingCount > 0 || event.interestedCount > 0) ...[
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 2,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          if (event.goingCount > 0)
-                            _CountChip(
-                              icon: Icons.check_circle_outline,
-                              label: goingLabel,
-                              emphasized: true,
-                            ),
-                          if (event.interestedCount > 0)
-                            _CountChip(
-                              icon: Icons.star_outline,
-                              label: interestedLabel,
-                            ),
+                        if (event.goingCount > 0 ||
+                            event.interestedCount > 0) ...[
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 2,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              if (event.goingCount > 0)
+                                _CountChip(
+                                  icon: Icons.check_circle_outline,
+                                  label: goingLabel,
+                                  emphasized: true,
+                                ),
+                              if (event.interestedCount > 0)
+                                _CountChip(
+                                  icon: Icons.star_outline,
+                                  label: interestedLabel,
+                                ),
+                            ],
+                          ),
                         ],
-                      ),
-                    ],
-                  ],
-                ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    trailingTime,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: mutedColor,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Text(
-                trailingTime,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: mutedColor,
+              if (onLocate != null) ...[
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: _LocateActivityButton(onPressed: onLocate!),
                 ),
-              ),
+              ],
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Locate control matching [SpotCard] / [EventCard] circular secondary buttons.
+class _LocateActivityButton extends StatelessWidget {
+  const _LocateActivityButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Tooltip(
+      message: l10n.spotDetailMapLocateOnMap,
+      child: Material(
+        color: colorScheme.secondary,
+        shape: const CircleBorder(),
+        elevation: 2,
+        child: InkWell(
+          onTap: onPressed,
+          customBorder: const CircleBorder(),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Icon(
+              Icons.my_location,
+              size: 18,
+              color: colorScheme.onSecondary,
+            ),
           ),
         ),
       ),
