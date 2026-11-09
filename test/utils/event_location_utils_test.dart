@@ -184,6 +184,7 @@ void main() {
 
   group('resolveEventWherePickerCenter', () {
     const pin = LatLng(52.37, 4.89);
+    const continuity = LatLng(40.7128, -74.006);
     const gps = LatLng(50.85, 4.35);
     const evry = LatLng(48.629828, 2.441782);
 
@@ -191,16 +192,77 @@ void main() {
       expect(resolveEventWherePickerCenter(pin: pin, gps: gps), pin);
     });
 
-    test('uses GPS when no pin is selected', () {
+    test('prefers the selected pin over continuity', () {
+      expect(
+        resolveEventWherePickerCenter(
+          pin: pin,
+          continuity: continuity,
+          gps: gps,
+        ),
+        pin,
+      );
+    });
+
+    test('prefers continuity over GPS', () {
+      expect(
+        resolveEventWherePickerCenter(
+          pin: null,
+          continuity: continuity,
+          gps: gps,
+        ),
+        continuity,
+      );
+    });
+
+    test('uses GPS when no pin or continuity is selected', () {
       expect(resolveEventWherePickerCenter(pin: null, gps: gps), gps);
     });
 
-    test('returns null when neither pin nor GPS is set', () {
+    test('returns null when neither pin, continuity, nor GPS is set', () {
       expect(resolveEventWherePickerCenter(pin: null, gps: null), isNull);
     });
 
     test('does not use the app default when GPS is known', () {
       expect(resolveEventWherePickerCenter(pin: null, gps: gps) ?? evry, gps);
+    });
+  });
+
+  group('resolveEventWhereEmptyMapCenter', () {
+    const continuity = LatLng(40.7128, -74.006);
+    const gps = LatLng(50.85, 4.35);
+    const fallback = LatLng(48.629828, 2.441782);
+
+    test('prefers continuity over GPS and fallback', () {
+      expect(
+        resolveEventWhereEmptyMapCenter(
+          continuity: continuity,
+          gps: gps,
+          fallback: fallback,
+        ),
+        continuity,
+      );
+    });
+
+    test('uses GPS when continuity is absent', () {
+      expect(
+        resolveEventWhereEmptyMapCenter(
+          continuity: null,
+          gps: gps,
+          fallback: fallback,
+        ),
+        gps,
+      );
+    });
+
+    test('uses fallback when continuity and GPS are absent', () {
+      expect(
+        resolveEventWhereEmptyMapCenter(
+          continuity: null,
+          gps: null,
+          fallback: fallback,
+        ),
+        fallback,
+      );
     });
   });
 

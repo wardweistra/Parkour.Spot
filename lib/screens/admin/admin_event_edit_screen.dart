@@ -86,6 +86,10 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
   /// can recenter like an empty location picker.
   Position? _currentPosition;
   late LatLng _mapFallbackCenter;
+
+  /// Prior where coordinates kept across a modality switch so the empty map
+  /// and pickers stay near the previous selection instead of jumping to GPS.
+  LatLng? _whereMapContinuityCenter;
   final List<Spot> _linkedSpots = <Spot>[];
   final List<SpotList> _linkedLists = <SpotList>[];
   List<Spot> _linkedListSpots = <Spot>[];
@@ -157,7 +161,12 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
       _linkedLists.isNotEmpty;
 
   LatLng get _displayLocationForMap {
-    return _pickedLocation ?? _gpsLatLng ?? _mapFallbackCenter;
+    return _pickedLocation ??
+        resolveEventWhereEmptyMapCenter(
+          continuity: _whereMapContinuityCenter,
+          gps: _gpsLatLng,
+          fallback: _mapFallbackCenter,
+        );
   }
 
   List<Spot> get _mapDisplaySpots {
@@ -189,7 +198,13 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
       }
     }
     if (locations.isNotEmpty) return locations;
-    return [_gpsLatLng ?? _mapFallbackCenter];
+    return [
+      resolveEventWhereEmptyMapCenter(
+        continuity: _whereMapContinuityCenter,
+        gps: _gpsLatLng,
+        fallback: _mapFallbackCenter,
+      ),
+    ];
   }
 
   void _recenterMapForDisplay() {
@@ -555,7 +570,10 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
     });
   }
 
-  Future<void> _getCurrentLocation({bool setAsPickedPin = true}) async {
+  Future<void> _getCurrentLocation({
+    bool setAsPickedPin = true,
+    bool updateMapCenter = true,
+  }) async {
     if (_isSchedulePickerOpen) return;
     setState(() => _isGettingLocation = true);
 
@@ -587,13 +605,18 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
       final latLng = LatLng(position.latitude, position.longitude);
       setState(() {
         _currentPosition = position;
-        _mapFallbackCenter = latLng;
+        if (updateMapCenter) {
+          _whereMapContinuityCenter = null;
+          _mapFallbackCenter = latLng;
+        }
         if (setAsPickedPin) {
           _applyPinType(latLng, notify: false);
         }
         _isLocationPermissionDenied = false;
       });
-      _recenterMapForDisplay();
+      if (updateMapCenter) {
+        _recenterMapForDisplay();
+      }
       if (setAsPickedPin) {
         _syncTimeZoneFromLocation();
         await _geocodeLocation(latLng);
@@ -684,6 +707,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
   void _applyPinType(LatLng latLng, {bool notify = true}) {
     _pickedLocation = latLng;
     _whereMode = EventWhereUiMode.pin;
+    _whereMapContinuityCenter = null;
     _linkedSpots.clear();
     _linkedLists.clear();
     _linkedListSpots = [];
@@ -695,6 +719,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
       ..clear()
       ..addAll(spots);
     _whereMode = EventWhereUiMode.spots;
+    _whereMapContinuityCenter = null;
     _linkedLists.clear();
     _linkedListSpots = [];
     _clearPinFields();
@@ -704,7 +729,10 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
   Future<void> _ensureGpsForEmptyWhere() async {
     if (_hasSelectedWhere) return;
     if (_currentPosition != null || _isLocationPermissionDenied) return;
-    await _getCurrentLocation(setAsPickedPin: false);
+    await _getCurrentLocation(
+      setAsPickedPin: false,
+      updateMapCenter: _whereMapContinuityCenter == null,
+    );
   }
 
   void _restoreEmptyWhereMapCenter() {
@@ -736,8 +764,15 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
       if (!confirmed || !mounted) return;
     }
 
+    final previousCenter = resolveEventTimezoneCoordinates(
+      pickedLocation: _pickedLocation,
+      linkedSpots: _linkedSpots,
+      linkedSpotListSpots: _linkedListSpots,
+    );
+
     setState(() {
       _whereMode = mode;
+      _whereMapContinuityCenter = previousCenter;
       _formError = null;
       if (mode != EventWhereUiMode.pin) {
         _clearPinFields();
@@ -775,6 +810,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
             : const <Spot>[],
         initialCenter: resolveEventWherePickerCenter(
           pin: _pickedLocation,
+          continuity: _whereMapContinuityCenter,
           gps: _gpsLatLng,
         ),
         usageTip: LocationPickerUsageTip.addEvent,
@@ -859,6 +895,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
       _currentCity = null;
       _currentCountryCode = null;
       _resolvedAddressInput = null;
+      _whereMapContinuityCenter = null;
       _locationAddressController.clear();
       _formError = null;
     });
@@ -924,6 +961,7 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
     }
     setState(() {
       _whereMode = EventWhereUiMode.lists;
+      _whereMapContinuityCenter = null;
       _linkedLists.add(selected!);
       _linkedSpots.clear();
       _clearPinFields();
@@ -1401,11 +1439,21 @@ class _AdminEventEditScreenState extends State<AdminEventEditScreen>
       linkedSpots: _linkedSpots,
       linkedLists: _linkedLists,
       onRemoveSpot: (spot) {
-        setState(() => _linkedSpots.removeWhere((s) => s.id == spot.id));
+        setState(() {
+          _linkedSpots.removeWhere((s) => s.id == spot.id);
+          if (_linkedSpots.isEmpty) {
+            _whereMapContinuityCenter = null;
+          }
+        });
         _restoreEmptyWhereMapCenter();
       },
       onRemoveList: (list) async {
-        setState(() => _linkedLists.removeWhere((l) => l.id == list.id));
+        setState(() {
+          _linkedLists.removeWhere((l) => l.id == list.id);
+          if (_linkedLists.isEmpty) {
+            _whereMapContinuityCenter = null;
+          }
+        });
         await _reloadLinkedListSpots();
       },
       addressField: CustomTextField(

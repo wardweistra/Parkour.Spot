@@ -86,6 +86,10 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   /// can recenter like the first open of Add event.
   Position? _currentPosition;
   late LatLng _mapFallbackCenter;
+
+  /// Prior where coordinates kept across a modality switch so the empty map
+  /// and pickers stay near the previous selection instead of jumping to GPS.
+  LatLng? _whereMapContinuityCenter;
   String? _address;
   String? _city;
   String? _countryCode;
@@ -123,7 +127,12 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       linkedSpotListsDisplayName(_linkedLists);
 
   LatLng get _displayLocationForMap {
-    return _pickedLocation ?? _gpsLatLng ?? _mapFallbackCenter;
+    return _pickedLocation ??
+        resolveEventWhereEmptyMapCenter(
+          continuity: _whereMapContinuityCenter,
+          gps: _gpsLatLng,
+          fallback: _mapFallbackCenter,
+        );
   }
 
   bool _spotHasCoordinates(Spot spot) => spotHasCoordinates(spot);
@@ -165,7 +174,13 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       }
     }
     if (locations.isNotEmpty) return locations;
-    return [_gpsLatLng ?? _mapFallbackCenter];
+    return [
+      resolveEventWhereEmptyMapCenter(
+        continuity: _whereMapContinuityCenter,
+        gps: _gpsLatLng,
+        fallback: _mapFallbackCenter,
+      ),
+    ];
   }
 
   void _recenterMapForDisplay() {
@@ -580,7 +595,10 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     );
   }
 
-  Future<void> _getCurrentLocation({bool setAsPickedPin = true}) async {
+  Future<void> _getCurrentLocation({
+    bool setAsPickedPin = true,
+    bool updateMapCenter = true,
+  }) async {
     if (_isSchedulePickerOpen) return;
     setState(() => _isGettingLocation = true);
 
@@ -612,13 +630,18 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       final latLng = LatLng(position.latitude, position.longitude);
       setState(() {
         _currentPosition = position;
-        _mapFallbackCenter = latLng;
+        if (updateMapCenter) {
+          _whereMapContinuityCenter = null;
+          _mapFallbackCenter = latLng;
+        }
         if (setAsPickedPin) {
           _applyPinType(latLng, notify: false);
         }
         _isLocationPermissionDenied = false;
       });
-      _recenterMapForDisplay();
+      if (updateMapCenter) {
+        _recenterMapForDisplay();
+      }
       if (setAsPickedPin) {
         _syncTimeZoneFromLocation();
       }
@@ -758,6 +781,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   void _applyPinType(LatLng latLng, {bool notify = true}) {
     _pickedLocation = latLng;
     _whereMode = EventWhereUiMode.pin;
+    _whereMapContinuityCenter = null;
     _clearSpotFields();
     _clearListFields();
     if (notify) setState(() {});
@@ -766,6 +790,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   void _applySpotsType(List<Spot> spots) {
     _linkedSpots = List<Spot>.from(spots);
     _whereMode = EventWhereUiMode.spots;
+    _whereMapContinuityCenter = null;
     _clearListFields();
     _clearPinFields(notify: false);
     setState(() {});
@@ -774,7 +799,10 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
   Future<void> _ensureGpsForEmptyWhere() async {
     if (_hasSelectedWhere) return;
     if (_currentPosition != null || _isLocationPermissionDenied) return;
-    await _getCurrentLocation(setAsPickedPin: false);
+    await _getCurrentLocation(
+      setAsPickedPin: false,
+      updateMapCenter: _whereMapContinuityCenter == null,
+    );
   }
 
   void _restoreEmptyWhereMapCenter() {
@@ -806,8 +834,15 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       if (!confirmed || !mounted) return;
     }
 
+    final previousCenter = resolveEventTimezoneCoordinates(
+      pickedLocation: _pickedLocation,
+      linkedSpots: _linkedSpots,
+      linkedSpotListSpots: _linkedSpotListSpots,
+    );
+
     setState(() {
       _whereMode = mode;
+      _whereMapContinuityCenter = previousCenter;
       if (mode != EventWhereUiMode.pin) {
         _clearPinFields(notify: false);
       }
@@ -843,6 +878,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
             : const <Spot>[],
         initialCenter: resolveEventWherePickerCenter(
           pin: _pickedLocation,
+          continuity: _whereMapContinuityCenter,
           gps: _gpsLatLng,
         ),
         usageTip: LocationPickerUsageTip.addEvent,
@@ -884,6 +920,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
     }
     setState(() {
       _whereMode = EventWhereUiMode.lists;
+      _whereMapContinuityCenter = null;
       _linkedLists.add(selected!);
       _clearSpotFields();
       _clearPinFields(notify: false);
@@ -965,6 +1002,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       _city = null;
       _countryCode = null;
       _resolvedAddressInput = null;
+      _whereMapContinuityCenter = null;
       _locationAddressController.clear();
     });
     _restoreEmptyWhereMapCenter();
@@ -1449,13 +1487,21 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
       linkedSpots: _linkedSpots,
       linkedLists: _linkedLists,
       onRemoveSpot: (spot) {
-        setState(() => _linkedSpots.removeWhere((s) => s.id == spot.id));
+        setState(() {
+          _linkedSpots.removeWhere((s) => s.id == spot.id);
+          if (_linkedSpots.isEmpty) {
+            _whereMapContinuityCenter = null;
+          }
+        });
         _restoreEmptyWhereMapCenter();
       },
       onRemoveList: (list) async {
-        setState(
-          () => _linkedLists.removeWhere((existing) => existing.id == list.id),
-        );
+        setState(() {
+          _linkedLists.removeWhere((existing) => existing.id == list.id);
+          if (_linkedLists.isEmpty) {
+            _whereMapContinuityCenter = null;
+          }
+        });
         await _loadLinkedSpotListSpots();
         if (!mounted) return;
         _restoreEmptyWhereMapCenter();

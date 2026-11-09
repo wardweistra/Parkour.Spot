@@ -2237,6 +2237,10 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
   /// can recenter like an empty location picker.
   Position? _currentPosition;
   late LatLng _mapFallbackCenter;
+
+  /// Prior where coordinates kept across a modality switch so the empty map
+  /// and pickers stay near the previous selection instead of jumping to GPS.
+  LatLng? _whereMapContinuityCenter;
   String? _suggestedAddress;
   String? _suggestedCity;
   String? _suggestedCountryCode;
@@ -2269,7 +2273,12 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
       linkedSpotListIds(_suggestedSpotLists);
 
   LatLng get _displayLocationForMap {
-    return _suggestedLocation ?? _gpsLatLng ?? _mapFallbackCenter;
+    return _suggestedLocation ??
+        resolveEventWhereEmptyMapCenter(
+          continuity: _whereMapContinuityCenter,
+          gps: _gpsLatLng,
+          fallback: _mapFallbackCenter,
+        );
   }
 
   List<Spot> get _mapDisplaySpots {
@@ -2290,7 +2299,13 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
       }
     }
     if (locations.isNotEmpty) return locations;
-    return [_gpsLatLng ?? _mapFallbackCenter];
+    return [
+      resolveEventWhereEmptyMapCenter(
+        continuity: _whereMapContinuityCenter,
+        gps: _gpsLatLng,
+        fallback: _mapFallbackCenter,
+      ),
+    ];
   }
 
   void _recenterMapForDisplay() {
@@ -2645,7 +2660,10 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
     return typed != _resolvedAddressInput || _suggestedLocation == null;
   }
 
-  Future<void> _getCurrentLocation({bool setAsPickedPin = true}) async {
+  Future<void> _getCurrentLocation({
+    bool setAsPickedPin = true,
+    bool updateMapCenter = true,
+  }) async {
     if (_isSchedulePickerOpen) return;
     setState(() => _isGettingLocation = true);
 
@@ -2677,14 +2695,19 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
       final latLng = LatLng(position.latitude, position.longitude);
       setState(() {
         _currentPosition = position;
-        _mapFallbackCenter = latLng;
+        if (updateMapCenter) {
+          _whereMapContinuityCenter = null;
+          _mapFallbackCenter = latLng;
+        }
         if (setAsPickedPin) {
           _applyPinType(latLng, notify: false);
           _locationCleared = false;
         }
         _isLocationPermissionDenied = false;
       });
-      _recenterMapForDisplay();
+      if (updateMapCenter) {
+        _recenterMapForDisplay();
+      }
       if (setAsPickedPin) {
         _syncTimeZoneFromLocation();
         await _geocodeLocation(latLng);
@@ -2824,6 +2847,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
   void _applyPinType(LatLng latLng, {bool notify = true}) {
     _suggestedLocation = latLng;
     _whereMode = EventWhereUiMode.pin;
+    _whereMapContinuityCenter = null;
     _locationCleared = false;
     _suggestedLinkedSpots = [];
     _suggestedSpotLists = [];
@@ -2834,6 +2858,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
   void _applySpotsType(List<Spot> spots) {
     _suggestedLinkedSpots = List<Spot>.from(spots);
     _whereMode = EventWhereUiMode.spots;
+    _whereMapContinuityCenter = null;
     _suggestedSpotLists = [];
     _suggestedSpotListSpots = [];
     _clearSuggestedPinFields();
@@ -2843,7 +2868,10 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
   Future<void> _ensureGpsForEmptyWhere() async {
     if (_hasSelectedWhere) return;
     if (_currentPosition != null || _isLocationPermissionDenied) return;
-    await _getCurrentLocation(setAsPickedPin: false);
+    await _getCurrentLocation(
+      setAsPickedPin: false,
+      updateMapCenter: _whereMapContinuityCenter == null,
+    );
   }
 
   void _restoreEmptyWhereMapCenter() {
@@ -2875,8 +2903,15 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
       if (!confirmed || !mounted) return;
     }
 
+    final previousCenter = resolveEventTimezoneCoordinates(
+      pickedLocation: _suggestedLocation,
+      linkedSpots: _suggestedLinkedSpots,
+      linkedSpotListSpots: _suggestedSpotListSpots,
+    );
+
     setState(() {
       _whereMode = mode;
+      _whereMapContinuityCenter = previousCenter;
       _error = null;
       if (mode != EventWhereUiMode.pin) {
         _clearSuggestedPinFields();
@@ -2914,6 +2949,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
             : const <Spot>[],
         initialCenter: resolveEventWherePickerCenter(
           pin: _suggestedLocation,
+          continuity: _whereMapContinuityCenter,
           gps: _gpsLatLng,
         ),
         usageTip: LocationPickerUsageTip.addEvent,
@@ -2955,6 +2991,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
     }
     setState(() {
       _whereMode = EventWhereUiMode.lists;
+      _whereMapContinuityCenter = null;
       _suggestedSpotLists = [..._suggestedSpotLists, selected!];
       _suggestedLinkedSpots = [];
       _clearSuggestedPinFields();
@@ -2973,6 +3010,7 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
       _suggestedCity = null;
       _suggestedCountryCode = null;
       _resolvedAddressInput = null;
+      _whereMapContinuityCenter = null;
       _locationAddressController.clear();
       _locationCleared = true;
       _error = null;
@@ -3489,6 +3527,9 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
       onRemoveSpot: (spot) {
         setState(() {
           _suggestedLinkedSpots.removeWhere((s) => s.id == spot.id);
+          if (_suggestedLinkedSpots.isEmpty) {
+            _whereMapContinuityCenter = null;
+          }
           _error = null;
         });
         _restoreEmptyWhereMapCenter();
@@ -3498,6 +3539,9 @@ class _SuggestEventEditDialogState extends State<_SuggestEventEditDialog>
           _suggestedSpotLists = _suggestedSpotLists
               .where((existing) => existing.id != list.id)
               .toList();
+          if (_suggestedSpotLists.isEmpty) {
+            _whereMapContinuityCenter = null;
+          }
           _error = null;
         });
         await _loadSuggestedSpotLists();

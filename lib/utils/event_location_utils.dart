@@ -136,10 +136,27 @@ bool eventHasDirectLocation({
 
 /// Camera center for the event where-picker.
 ///
-/// A selected pin wins. Otherwise last-known GPS is used so clearing where
-/// does not fall back to the app default map center (Évry).
-LatLng? resolveEventWherePickerCenter({LatLng? pin, LatLng? gps}) {
-  return pin ?? gps;
+/// Priority: selected pin, continuity from a prior where selection, then
+/// last-known GPS so clearing where does not fall back to the app default
+/// map center (Évry).
+LatLng? resolveEventWherePickerCenter({
+  LatLng? pin,
+  LatLng? continuity,
+  LatLng? gps,
+}) {
+  return pin ?? continuity ?? gps;
+}
+
+/// Camera center for an empty event-where map preview.
+///
+/// Priority: continuity from a prior where selection, last-known GPS, then
+/// the screen's fallback center.
+LatLng resolveEventWhereEmptyMapCenter({
+  LatLng? continuity,
+  LatLng? gps,
+  required LatLng fallback,
+}) {
+  return continuity ?? gps ?? fallback;
 }
 
 /// Resolves coordinates used to infer an event's timezone.
