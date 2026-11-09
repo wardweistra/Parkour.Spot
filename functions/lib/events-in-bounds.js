@@ -524,8 +524,12 @@ async function pageEventPinsInBounds(db, params, options = {}) {
   }
 
   const hasMore = filtered.length > limit;
+  const pins = await enrichPinsWithEventCardFields(
+      db,
+      filtered.slice(0, limit),
+  );
   return {
-    pins: filtered.slice(0, limit),
+    pins,
     eventTotal,
     hasMore,
   };

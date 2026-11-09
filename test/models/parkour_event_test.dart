@@ -357,6 +357,28 @@ void main() {
       expect(event.toFirestore().containsKey('resolvedLocation'), isFalse);
     });
 
+    test('a linked spot wins over a city left from an earlier pin', () {
+      final event = ParkourEvent.fromMap({
+        'title': 'Lil GIZMO',
+        'startAt': Timestamp.fromDate(DateTime.utc(2026, 11, 1, 10)),
+        'spotIds': ['spot-1'],
+        'city': 'Hamburg',
+        'countryCode': 'DE',
+        'resolvedLocation': {
+          'source': 'spot',
+          'latitude': 50.88,
+          'longitude': 4.72,
+          'city': 'Leuven',
+          'countryCode': 'be',
+          'spotId': 'spot-1',
+          'spotName': 'Hal 5',
+        },
+      });
+
+      expect(event.effectiveCity, 'Leuven');
+      expect(event.effectiveCountryCode, 'BE');
+    });
+
     test('effective city and country prefer the event fields', () {
       final event = ParkourEvent.fromMap({
         'title': 'Venue jam',

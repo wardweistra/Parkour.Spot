@@ -211,6 +211,105 @@ describe("events-in-bounds helpers", () => {
       expect(enriched[0].countryCode).toBe("BE");
     });
 
+    it("fills city and country from resolvedLocation when the event has none", async () => {
+      const db = {
+        collection: (name) => ({
+          doc: (id) => ({collection: name, id}),
+        }),
+        getAll: jest.fn(async (...refs) => refs.map((ref) => ({
+          id: ref.id,
+          exists: true,
+          data: () => ({
+            resolvedLocation: {city: "Leuven", countryCode: "be", source: "spot"},
+          }),
+        }))),
+      };
+
+      const pins = [{
+        id: "evt1_spot_hal",
+        eventId: "evt1",
+        kind: "spot",
+        latitude: 50.88,
+        longitude: 4.72,
+        title: "HAL 5",
+        startAt: futureStart.toISOString(),
+      }];
+
+      const enriched = await enrichPinsWithEventCardFields(db, pins);
+      expect(enriched[0].city).toBe("Leuven");
+      expect(enriched[0].countryCode).toBe("BE");
+    });
+
+    it("prefers a linked spot over a city left on the event", async () => {
+      const db = {
+        collection: (name) => ({
+          doc: (id) => ({collection: name, id}),
+        }),
+        getAll: jest.fn(async (...refs) => refs.map((ref) => ({
+          id: ref.id,
+          exists: true,
+          data: () => ({
+            city: "Hamburg",
+            countryCode: "DE",
+            resolvedLocation: {
+              source: "spot",
+              city: "Leuven",
+              countryCode: "BE",
+            },
+          }),
+        }))),
+      };
+
+      const pins = [{
+        id: "evt1_spot",
+        eventId: "evt1",
+        kind: "spot",
+        latitude: 50.88,
+        longitude: 4.72,
+        title: "HAL 5",
+        startAt: futureStart.toISOString(),
+      }];
+
+      const enriched = await enrichPinsWithEventCardFields(db, pins);
+      expect(enriched[0].city).toBe("Leuven");
+      expect(enriched[0].countryCode).toBe("BE");
+    });
+
+    it("prefers the event city over resolvedLocation for a venue", async () => {
+      const db = {
+        collection: (name) => ({
+          doc: (id) => ({collection: name, id}),
+        }),
+        getAll: jest.fn(async (...refs) => refs.map((ref) => ({
+          id: ref.id,
+          exists: true,
+          data: () => ({
+            city: "Hamburg",
+            countryCode: "DE",
+            resolvedLocation: {
+              source: "venue",
+              city: "Leuven",
+              countryCode: "BE",
+            },
+          }),
+        }))),
+      };
+
+      const pins = [{
+        id: "evt1_spot",
+        eventId: "evt1",
+        kind: "spot",
+        latitude: 53.5,
+        longitude: 10,
+        title: "Workshop",
+        startAt: futureStart.toISOString(),
+      }];
+
+      const enriched = await enrichPinsWithEventCardFields(db, pins);
+      expect(enriched[0].city).toBe("Hamburg");
+      expect(enriched[0].countryCode).toBe("DE");
+    });
+
     it("leaves pins unchanged when they already have card fields", async () => {
       const db = {getAll: jest.fn()};
       const pins = [{

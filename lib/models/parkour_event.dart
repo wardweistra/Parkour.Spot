@@ -98,18 +98,35 @@ class ParkourEvent {
     this.resolvedLocation,
   });
 
-  /// [city], else the city of the server-derived main location.
+  /// City of the place that owns this event.
+  ///
+  /// A linked spot or list wins, including over a city left on the event from
+  /// an earlier pin. A direct venue uses its own city, then the resolved one.
   String? get effectiveCity {
-    final own = city?.trim();
-    if (own != null && own.isNotEmpty) return own;
-    return resolvedLocation?.city;
+    return _effectivePlace(own: city, resolved: resolvedLocation?.city);
   }
 
-  /// [countryCode], else the country of the server-derived main location.
+  /// Country of the place that owns this event. Same precedence as [effectiveCity].
   String? get effectiveCountryCode {
-    final own = countryCode?.trim();
-    if (own != null && own.isNotEmpty) return own.toUpperCase();
-    return resolvedLocation?.countryCode;
+    final code = _effectivePlace(
+      own: countryCode,
+      resolved: resolvedLocation?.countryCode,
+    );
+    return code?.toUpperCase();
+  }
+
+  String? _effectivePlace({required String? own, required String? resolved}) {
+    final ownValue = own?.trim();
+    final resolvedValue = resolved?.trim();
+    final linked =
+        resolvedLocation?.source == EventResolvedLocationSource.spot ||
+        resolvedLocation?.source == EventResolvedLocationSource.list;
+    if (linked && resolvedValue != null && resolvedValue.isNotEmpty) {
+      return resolvedValue;
+    }
+    if (ownValue != null && ownValue.isNotEmpty) return ownValue;
+    if (resolvedValue != null && resolvedValue.isNotEmpty) return resolvedValue;
+    return null;
   }
 
   /// Native events are authored on parkour.spot (not imported from an external calendar source).

@@ -148,8 +148,46 @@ describe("event-map-pins helpers", () => {
       );
       expect(pins[0].data.city).toBe("Rotterdam");
       expect(pins[0].data.countryCode).toBe("NL");
+      expect(pins.find((p) => p.kind === "spot" || p.data.kind === "spot")
+          .data.city).toBe("Rotterdam");
       expect(pins[0].data.isDateOnly).toBe(true);
       expect(pins[0].data.timeZone).toBe("Europe/Paris");
+    });
+
+    it("uses the spot's city on a spot pin, and resolvedLocation when the spot has none", () => {
+      const spotsById = new Map([
+        ["spot-leuven", {
+          latitude: 50.88,
+          longitude: 4.72,
+          city: "Leuven",
+          countryCode: "be",
+        }],
+        ["spot-plain", {latitude: 30.5, longitude: -97.6}],
+      ]);
+      const withSpotCity = buildEventMapPinWrites("evt-spot", {
+        title: "HAL 5",
+        startAt: futureStart,
+        spotIds: ["spot-leuven"],
+        resolvedLocation: {city: "Wrong", countryCode: "FR"},
+      }, spotsById, new Map(), {now});
+      expect(withSpotCity.pins).toHaveLength(1);
+      expect(withSpotCity.pins[0].data.city).toBe("Leuven");
+      expect(withSpotCity.pins[0].data.countryCode).toBe("BE");
+
+      const fromResolved = buildEventMapPinWrites("evt-resolved", {
+        title: "League",
+        startAt: futureStart,
+        city: "Hamburg",
+        countryCode: "DE",
+        spotIds: ["spot-plain"],
+        resolvedLocation: {
+          source: "spot",
+          city: "Round Rock",
+          countryCode: "us",
+        },
+      }, spotsById, new Map(), {now});
+      expect(fromResolved.pins[0].data.city).toBe("Round Rock");
+      expect(fromResolved.pins[0].data.countryCode).toBe("US");
     });
 
     it("skips spots without valid coordinates", () => {
@@ -355,6 +393,48 @@ describe("event-map-pins helpers", () => {
       expect(update).toHaveBeenCalledWith({
         resolvedLocation: expect.objectContaining({source: "spot", spotId: "s1"}),
       });
+    });
+
+    it("clears a city left behind after the pin was replaced by a spot", async () => {
+      const {db, update} = makeDb();
+      const eventData = {
+        spotIds: ["s1"],
+        city: "Hamburg",
+        countryCode: "DE",
+        resolvedLocation: {
+          spotId: "s1",
+          countryCode: "NL",
+          city: "Delft",
+          longitude: 4,
+          latitude: 52,
+          source: "spot",
+        },
+      };
+      expect(await syncEventResolvedLocation(db, "e1", eventData, inputs)).toBe(true);
+      const payload = update.mock.calls[0][0];
+      const {FieldValue} = require("firebase-admin/firestore");
+      expect(payload.resolvedLocation).toBeUndefined();
+      expect(payload.city).toEqual(FieldValue.delete());
+      expect(payload.countryCode).toEqual(FieldValue.delete());
+    });
+
+    it("keeps city on an event that still has its own pin", async () => {
+      const {db, update} = makeDb();
+      const eventData = {
+        latitude: 53.5,
+        longitude: 10,
+        city: "Hamburg",
+        countryCode: "DE",
+        resolvedLocation: {
+          source: "venue",
+          latitude: 53.5,
+          longitude: 10,
+          city: "Hamburg",
+          countryCode: "DE",
+        },
+      };
+      expect(await syncEventResolvedLocation(db, "e1", eventData, inputs)).toBe(false);
+      expect(update).not.toHaveBeenCalled();
     });
 
     it("does not write when the stored value matches", async () => {

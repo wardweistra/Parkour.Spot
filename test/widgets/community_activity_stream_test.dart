@@ -4,6 +4,7 @@ import 'package:parkour_spot/l10n/app_localizations.dart';
 import 'package:parkour_spot/models/community_activity.dart';
 import 'package:parkour_spot/models/event_map_pin.dart';
 import 'package:parkour_spot/widgets/community_activity_stream.dart';
+import 'package:parkour_spot/widgets/country_flag_badge.dart';
 
 final DateTime _now = DateTime.utc(2026, 11, 1, 12);
 
@@ -17,6 +18,7 @@ CommunityActivityItem _item(
   String? actorUserId = 'u1',
   int? photoCount,
   double? rating,
+  String? countryCode,
 }) {
   return CommunityActivityItem(
     id: id,
@@ -29,6 +31,7 @@ CommunityActivityItem _item(
     spotId: 'spot-$id',
     spotName: 'Spot $id',
     city: 'Amsterdam',
+    countryCode: countryCode,
     actorUserId: actorUserId,
     actorDisplayName: actor,
     photoCount: photoCount,
@@ -43,6 +46,8 @@ CommunityEventItem _event(
   int interested = 0,
   bool isPast = false,
   DateTime? endAt,
+  String? city,
+  String? countryCode,
 }) {
   final resolvedEnd = endAt ?? startAt.add(const Duration(hours: 3));
   return CommunityEventItem(
@@ -55,6 +60,8 @@ CommunityEventItem _event(
       title: 'Jam $id',
       startAt: startAt,
       endAt: resolvedEnd,
+      city: city,
+      countryCode: countryCode,
     ),
     goingCount: going,
     interestedCount: interested,
@@ -118,6 +125,55 @@ Future<void> _scrollTowardPastUntilVisible(
 }
 
 void main() {
+  testWidgets('uses a country flag in the place slot when a code is known', (
+    tester,
+  ) async {
+    final feed = CommunityActivityFeed(
+      past: [
+        _item(
+          'checkin',
+          CommunityActivityKind.spotCheckIn,
+          occurredAt: _now.subtract(const Duration(minutes: 20)),
+          countryCode: 'NL',
+        ),
+      ],
+      events: [
+        _event(
+          'jam',
+          _now.add(const Duration(days: 2)),
+          city: 'Rotterdam',
+          countryCode: 'NL',
+        ),
+      ],
+    );
+    await _pump(tester, feed);
+
+    expect(find.byType(CountryFlagBadge), findsNWidgets(2));
+    expect(find.byIcon(Icons.place_outlined), findsNothing);
+    expect(find.text('Spot checkin · Amsterdam'), findsOneWidget);
+    expect(find.text('Rotterdam'), findsOneWidget);
+  });
+
+  testWidgets('keeps the place pin when an activity has no country', (
+    tester,
+  ) async {
+    final feed = CommunityActivityFeed(
+      past: [
+        _item(
+          'checkin',
+          CommunityActivityKind.spotCheckIn,
+          occurredAt: _now.subtract(const Duration(minutes: 20)),
+        ),
+      ],
+      events: [
+        _event('jam', _now.add(const Duration(days: 2)), city: 'Rotterdam'),
+      ],
+    );
+    await _pump(tester, feed);
+
+    expect(find.byType(CountryFlagBadge), findsNothing);
+    expect(find.byIcon(Icons.place_outlined), findsNWidgets(2));
+  });
 
   testWidgets('shows add-event suggestion when upcoming is empty', (
     tester,
@@ -134,12 +190,11 @@ void main() {
         ),
       ],
     );
-    await _pump(
-      tester,
-      feed,
-      onAddEvent: () => tapped = true,
+    await _pump(tester, feed, onAddEvent: () => tapped = true);
+    expect(
+      find.textContaining('Missing an event you expected'),
+      findsOneWidget,
     );
-    expect(find.textContaining('Missing an event you expected'), findsOneWidget);
     expect(find.text('Add new event'), findsOneWidget);
     await tester.tap(find.text('Add new event'));
     await tester.pump();
@@ -161,12 +216,11 @@ void main() {
         ),
       ],
     );
-    await _pump(
-      tester,
-      feed,
-      onAddEvent: () {},
+    await _pump(tester, feed, onAddEvent: () {});
+    expect(
+      find.textContaining('Missing an event you expected'),
+      findsOneWidget,
     );
-    expect(find.textContaining('Missing an event you expected'), findsOneWidget);
     expect(find.text('Add new event'), findsOneWidget);
   });
 
@@ -270,11 +324,7 @@ void main() {
     );
     await _pump(
       tester,
-      CommunityActivityFeed(
-        past: past,
-        pastTotal: 7,
-        hasMorePast: true,
-      ),
+      CommunityActivityFeed(past: past, pastTotal: 7, hasMorePast: true),
       onLoadMorePast: () => loadMorePastCalls++,
     );
 
@@ -485,8 +535,7 @@ void main() {
 
     final nowBox =
         tester.renderObject(find.byType(CommunityNowDivider)) as RenderBox;
-    final scrollBox =
-        tester.renderObject(find.byType(Scrollable)) as RenderBox;
+    final scrollBox = tester.renderObject(find.byType(Scrollable)) as RenderBox;
     expect(
       nowBox.localToGlobal(Offset(0, nowBox.size.height / 2)).dy,
       closeTo(
@@ -559,12 +608,13 @@ void main() {
 
     final nowBox =
         tester.renderObject(find.byType(CommunityNowDivider)) as RenderBox;
-    final scrollBox =
-        tester.renderObject(find.byType(Scrollable)) as RenderBox;
-    final nowCenterY =
-        nowBox.localToGlobal(Offset(0, nowBox.size.height / 2)).dy;
-    final viewCenterY =
-        scrollBox.localToGlobal(Offset(0, scrollBox.size.height / 2)).dy;
+    final scrollBox = tester.renderObject(find.byType(Scrollable)) as RenderBox;
+    final nowCenterY = nowBox
+        .localToGlobal(Offset(0, nowBox.size.height / 2))
+        .dy;
+    final viewCenterY = scrollBox
+        .localToGlobal(Offset(0, scrollBox.size.height / 2))
+        .dy;
     expect(
       nowCenterY,
       closeTo(viewCenterY, scrollBox.size.height * 0.2),
@@ -601,10 +651,7 @@ void main() {
       ),
     );
 
-    await _pump(
-      tester,
-      CommunityActivityFeed(past: past, upcoming: upcoming),
-    );
+    await _pump(tester, CommunityActivityFeed(past: past, upcoming: upcoming));
     // Flush initial center-on-now + visibility settle.
     for (var i = 0; i < 10; i++) {
       await tester.pump();
@@ -618,12 +665,13 @@ void main() {
     final scrollable = find.byType(CustomScrollView);
     final nowBox =
         tester.renderObject(find.byType(CommunityNowDivider)) as RenderBox;
-    final scrollBox =
-        tester.renderObject(find.byType(Scrollable)) as RenderBox;
-    final nowCenterY =
-        nowBox.localToGlobal(Offset(0, nowBox.size.height / 2)).dy;
-    final viewCenterY =
-        scrollBox.localToGlobal(Offset(0, scrollBox.size.height / 2)).dy;
+    final scrollBox = tester.renderObject(find.byType(Scrollable)) as RenderBox;
+    final nowCenterY = nowBox
+        .localToGlobal(Offset(0, nowBox.size.height / 2))
+        .dy;
+    final viewCenterY = scrollBox
+        .localToGlobal(Offset(0, scrollBox.size.height / 2))
+        .dy;
     expect(
       nowCenterY,
       closeTo(viewCenterY, scrollBox.size.height * 0.2),
@@ -646,9 +694,7 @@ void main() {
     final recenteredScroll =
         tester.renderObject(find.byType(Scrollable)) as RenderBox;
     expect(
-      recenteredNow
-          .localToGlobal(Offset(0, recenteredNow.size.height / 2))
-          .dy,
+      recenteredNow.localToGlobal(Offset(0, recenteredNow.size.height / 2)).dy,
       closeTo(
         recenteredScroll
             .localToGlobal(Offset(0, recenteredScroll.size.height / 2))
@@ -753,7 +799,9 @@ void main() {
     );
   });
 
-  testWidgets('hides 90-day limit while more past pages remain', (tester) async {
+  testWidgets('hides 90-day limit while more past pages remain', (
+    tester,
+  ) async {
     await _pump(
       tester,
       CommunityActivityFeed(
@@ -777,9 +825,7 @@ void main() {
     );
   });
 
-  testWidgets('orders plans and events together by start time', (
-    tester,
-  ) async {
+  testWidgets('orders plans and events together by start time', (tester) async {
     final feed = CommunityActivityFeed(
       upcoming: [
         _item(
@@ -809,9 +855,7 @@ void main() {
     expect(_topOf(tester, plan), lessThan(_topOf(tester, later)));
   });
 
-  testWidgets('event in progress is labelled as happening now', (
-    tester,
-  ) async {
+  testWidgets('event in progress is labelled as happening now', (tester) async {
     await _pump(
       tester,
       CommunityActivityFeed(
@@ -829,11 +873,7 @@ void main() {
       tester,
       CommunityActivityFeed(
         events: [
-          _event(
-            'soon',
-            _now.add(const Duration(days: 1)),
-            interested: 1,
-          ),
+          _event('soon', _now.add(const Duration(days: 1)), interested: 1),
         ],
         pastEvents: [
           _event(
@@ -914,11 +954,7 @@ void main() {
     );
     final pastEvents = List.generate(
       2,
-      (i) => _event(
-        'pe$i',
-        _now.subtract(Duration(days: i + 1)),
-        isPast: true,
-      ),
+      (i) => _event('pe$i', _now.subtract(Duration(days: i + 1)), isPast: true),
     );
     await _pump(
       tester,
@@ -1015,9 +1051,7 @@ void main() {
     expect(openedEvent, isFalse);
   });
 
-  testWidgets('falls back to "Someone" without a display name', (
-    tester,
-  ) async {
+  testWidgets('falls back to "Someone" without a display name', (tester) async {
     await _pump(
       tester,
       CommunityActivityFeed(

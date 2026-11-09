@@ -10,6 +10,7 @@ import '../models/event_map_pin.dart';
 import '../utils/community_activity_time_formatting.dart';
 import '../utils/event_schedule_utils.dart';
 import 'community_activity_kind_filter.dart';
+import 'country_flag_badge.dart';
 import 'explore_list_action_button.dart';
 import 'resized_spot_image.dart';
 
@@ -290,7 +291,9 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
   }
 
   /// Prefer an already-mounted past card; fall back to the "now" divider.
-  ({String id, double screenY})? _pickInsertAnchor(CommunityActivityFeed oldFeed) {
+  ({String id, double screenY})? _pickInsertAnchor(
+    CommunityActivityFeed oldFeed,
+  ) {
     final priorIds = <String>[
       for (final item in oldFeed.past) _activityAnchorId(item),
       for (final event in oldFeed.pastEvents) _eventAnchorId(event),
@@ -522,7 +525,10 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
     );
   }
 
-  Future<void> _animateScrollTo(double offset, {required bool reduceMotion}) async {
+  Future<void> _animateScrollTo(
+    double offset, {
+    required bool reduceMotion,
+  }) async {
     if (reduceMotion) {
       _scrollController.jumpTo(offset);
       return;
@@ -792,16 +798,13 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
                   SliverPadding(
                     padding: EdgeInsets.fromLTRB(left, 0, right, 0),
                     sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final entry = pastNewestFirst[index];
-                          return _padRow(
-                            _buildEntry(entry, now),
-                            isLastInSection: false,
-                          );
-                        },
-                        childCount: pastNewestFirst.length,
-                      ),
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        final entry = pastNewestFirst[index];
+                        return _padRow(
+                          _buildEntry(entry, now),
+                          isLastInSection: false,
+                        );
+                      }, childCount: pastNewestFirst.length),
                     ),
                   ),
                   KeyedSubtree(
@@ -836,20 +839,17 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
                             : padding.bottom,
                       ),
                       sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final entry = upcoming[index];
-                            final isLast =
-                                index == upcoming.length - 1 &&
-                                !showMoreUpcoming &&
-                                !showAddEventSuggestion;
-                            return _padRow(
-                              _buildEntry(entry, now),
-                              isLastInSection: isLast,
-                            );
-                          },
-                          childCount: upcoming.length,
-                        ),
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final entry = upcoming[index];
+                          final isLast =
+                              index == upcoming.length - 1 &&
+                              !showMoreUpcoming &&
+                              !showAddEventSuggestion;
+                          return _padRow(
+                            _buildEntry(entry, now),
+                            isLastInSection: isLast,
+                          );
+                        }, childCount: upcoming.length),
                       ),
                     ),
                     if (showMoreUpcoming)
@@ -1071,9 +1071,9 @@ class _PastHistoryLimitCaption extends StatelessWidget {
       child: Text(
         l10n.communityStreamPastHistoryLimit(retentionDays),
         textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: colorScheme.onSurfaceVariant,
-        ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
       ),
     );
   }
@@ -1346,47 +1346,34 @@ class CommunityActivityCard extends StatelessWidget {
                           stars,
                         ],
                         const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.place_outlined,
-                              size: 14,
+                        _ActivityPlaceLine(
+                          countryCode: item.countryCode,
+                          color: mutedColor,
+                          child: Text(
+                            spotLine,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
                               color: mutedColor,
+                              fontWeight: FontWeight.w600,
                             ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                spotLine,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: mutedColor,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                         if (scheduleLine != null) ...[
                           const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.schedule,
-                                size: 14,
+                          _ActivityMetaRow(
+                            leading: Icon(
+                              Icons.schedule,
+                              size: 14,
+                              color: colorScheme.primary,
+                            ),
+                            child: Text(
+                              scheduleLine,
+                              style: theme.textTheme.bodySmall?.copyWith(
                                 color: colorScheme.primary,
+                                fontWeight: FontWeight.w600,
                               ),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  scheduleLine,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ],
                         if (comment.isNotEmpty) ...[
@@ -1571,43 +1558,34 @@ class CommunityEventActivityCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(Icons.schedule, size: 14, color: mutedColor),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                whenLine,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: mutedColor,
-                                ),
-                              ),
+                        _ActivityMetaRow(
+                          leading: Icon(
+                            Icons.schedule,
+                            size: 14,
+                            color: mutedColor,
+                          ),
+                          child: Text(
+                            whenLine,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: mutedColor,
                             ),
-                          ],
+                          ),
                         ),
                         if (city.isNotEmpty) ...[
                           const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.place_outlined,
-                                size: 14,
+                          _ActivityPlaceLine(
+                            countryCode: pin.countryCode,
+                            color: mutedColor,
+                            child: Text(
+                              city,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
                                 color: mutedColor,
                               ),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  city,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: mutedColor,
-                                  ),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ],
                         if (event.goingCount > 0 ||
@@ -1656,6 +1634,69 @@ class CommunityEventActivityCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Shared leading column for place and schedule lines on an activity card.
+class _ActivityMetaRow extends StatelessWidget {
+  const _ActivityMetaRow({required this.leading, required this.child});
+
+  final Widget leading;
+  final Widget child;
+
+  static const double leadingWidth = 18;
+  static const double leadingHeight = 14;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          width: leadingWidth,
+          height: leadingHeight,
+          child: Center(child: leading),
+        ),
+        const SizedBox(width: 4),
+        Flexible(child: child),
+      ],
+    );
+  }
+}
+
+/// Location row for an activity card.
+///
+/// A country flag takes the pin's slot when the place has an ISO code. It is
+/// smaller than the Spots list flag (20×30) so the feed stays quiet, and it
+/// sits in the same column as the schedule icon.
+class _ActivityPlaceLine extends StatelessWidget {
+  const _ActivityPlaceLine({
+    required this.countryCode,
+    required this.color,
+    required this.child,
+  });
+
+  final String? countryCode;
+  final Color color;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final code = isoAlpha2CountryCode(countryCode ?? '');
+    final mark = code == null
+        ? Icon(Icons.place_outlined, size: 14, color: color)
+        : Semantics(
+            label: code.toUpperCase(),
+            image: true,
+            child: ExcludeSemantics(
+              child: CountryFlagBadge(
+                countryCode: code,
+                height: 12,
+                width: _ActivityMetaRow.leadingWidth,
+              ),
+            ),
+          );
+
+    return _ActivityMetaRow(leading: mark, child: child);
   }
 }
 

@@ -195,20 +195,98 @@ function pickEventCardFields(eventData) {
     fields.imageUrls = imageUrls;
   }
 
-  const city = typeof eventData.city === "string" ?
-    eventData.city.trim() :
-    "";
-  if (city.length > 0) {
+  const resolved = resolvedLocationOf(eventData);
+  const city = placeCity(eventData, resolved);
+  if (city) {
     fields.city = city;
   }
 
-  const countryCode = typeof eventData.countryCode === "string" ?
-    eventData.countryCode.trim().toUpperCase() :
+  const countryCode = placeCountryCode(eventData, resolved);
+  if (countryCode) {
+    fields.countryCode = countryCode;
+  }
+
+  return fields;
+}
+
+/**
+ * @param {Object} eventData
+ * @return {Object|null}
+ */
+function resolvedLocationOf(eventData) {
+  const resolved = eventData.resolvedLocation;
+  if (!resolved || typeof resolved !== "object") return null;
+  return resolved;
+}
+
+/**
+ * Linked spots and lists own the place. A city left on the event from an
+ * earlier pin must not win over the spot the event points at now.
+ * @param {Object|null} resolved
+ * @return {boolean}
+ */
+function resolvedPlaceIsLinked(resolved) {
+  const source = resolved && typeof resolved.source === "string" ?
+    resolved.source.trim() :
+    "";
+  return source === "spot" || source === "list";
+}
+
+/**
+ * @param {Object} eventData
+ * @param {Object|null} resolved
+ * @return {string|null}
+ */
+function placeCity(eventData, resolved) {
+  if (resolvedPlaceIsLinked(resolved)) {
+    return firstTrimmedString(resolved.city, eventData.city);
+  }
+  return firstTrimmedString(eventData.city, resolved && resolved.city);
+}
+
+/**
+ * @param {Object} eventData
+ * @param {Object|null} resolved
+ * @return {string|null}
+ */
+function placeCountryCode(eventData, resolved) {
+  const raw = resolvedPlaceIsLinked(resolved) ?
+    firstTrimmedString(resolved.countryCode, eventData.countryCode) :
+    firstTrimmedString(eventData.countryCode, resolved && resolved.countryCode);
+  return raw ? raw.toUpperCase() : null;
+}
+
+/**
+ * @param {...*} values
+ * @return {string|null}
+ */
+function firstTrimmedString(...values) {
+  for (const value of values) {
+    if (typeof value !== "string") continue;
+    const trimmed = value.trim();
+    if (trimmed.length > 0) return trimmed;
+  }
+  return null;
+}
+
+/**
+ * City and country for a spot pin. Overrides the event's place when the spot
+ * has its own, so a multi-spot event keeps each pin in the right city.
+ * @param {Object} spotData
+ * @return {Object}
+ */
+function spotPinPlaceFields(spotData) {
+  const fields = {};
+  const city = typeof spotData.city === "string" ? spotData.city.trim() : "";
+  if (city.length > 0) {
+    fields.city = city;
+  }
+  const countryCode = typeof spotData.countryCode === "string" ?
+    spotData.countryCode.trim().toUpperCase() :
     "";
   if (countryCode.length > 0) {
     fields.countryCode = countryCode;
   }
-
   return fields;
 }
 
@@ -289,6 +367,7 @@ function buildEventMapPinWrites(
         spotId,
         latitude: spotData.latitude,
         longitude: spotData.longitude,
+        ...spotPinPlaceFields(spotData),
       },
     });
     spotPinCount += 1;
@@ -454,7 +533,30 @@ function onlyResolvedLocationChanged(beforeData, afterData) {
 }
 
 /**
- * Writes resolvedLocation on the event only when it changed.
+ * City and country stored on the event itself are only for a direct pin.
+ * A later switch to a linked spot leaves the old values behind, and nothing
+ * updates them when the spot moves.
+ * @param {Object} eventData
+ * @return {Object}
+ */
+function staleDirectPlaceDeletes(eventData) {
+  if (hasValidCoordinates(eventData.latitude, eventData.longitude)) {
+    return {};
+  }
+  const FieldValue = require("firebase-admin/firestore").FieldValue;
+  const deletes = {};
+  if (trimmedString(eventData.city)) {
+    deletes.city = FieldValue.delete();
+  }
+  if (trimmedString(eventData.countryCode)) {
+    deletes.countryCode = FieldValue.delete();
+  }
+  return deletes;
+}
+
+/**
+ * Writes resolvedLocation when it changed, and drops a direct city or country
+ * once the event is located by a linked spot or list.
  * @param {FirebaseFirestore.Firestore} db
  * @param {string} eventId
  * @param {Object} eventData
@@ -468,12 +570,20 @@ async function syncEventResolvedLocation(db, eventId, eventData, inputs) {
       inputs.spotsById,
       inputs.listsById,
   );
-  if (sameResolvedLocation(eventData.resolvedLocation, location)) {
+  const locationUnchanged = sameResolvedLocation(
+      eventData.resolvedLocation,
+      location,
+  );
+  const deletes = staleDirectPlaceDeletes(eventData);
+  if (locationUnchanged && Object.keys(deletes).length === 0) {
     return false;
   }
+  const FieldValue = require("firebase-admin/firestore").FieldValue;
   await db.collection("events").doc(eventId).update({
-    resolvedLocation: location ||
-      require("firebase-admin/firestore").FieldValue.delete(),
+    ...(locationUnchanged ? {} : {
+      resolvedLocation: location || FieldValue.delete(),
+    }),
+    ...deletes,
   });
   return true;
 }
