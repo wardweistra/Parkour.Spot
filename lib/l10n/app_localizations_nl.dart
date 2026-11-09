@@ -73,6 +73,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get mySpotsTitle => 'Mijn spots';
 
   @override
+  String get myActivitiesTitle => 'Mijn activiteiten';
+
+  @override
+  String get accountMyActivitiesSubtitle =>
+      'Events waar je naartoe gaat, geplande sessies en agendasync';
+
+  @override
+  String get myActivitiesHubSignInPrompt =>
+      'Log in om je events en sessies te bekijken';
+
+  @override
   String get mySessionsTitle => 'Mijn sessies';
 
   @override

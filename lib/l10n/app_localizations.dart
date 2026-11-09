@@ -226,6 +226,24 @@ abstract class AppLocalizations {
   /// **'My spots'**
   String get mySpotsTitle;
 
+  /// Account tab row and My activities hub screen title
+  ///
+  /// In en, this message translates to:
+  /// **'My activities'**
+  String get myActivitiesTitle;
+
+  /// Account tab: subtitle for the My activities row
+  ///
+  /// In en, this message translates to:
+  /// **'Events you\'re going to, planned sessions, and calendar sync'**
+  String get accountMyActivitiesSubtitle;
+
+  /// My activities hub when signed out
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to see your events and sessions'**
+  String get myActivitiesHubSignInPrompt;
+
   /// Account tab row and My sessions screen title
   ///
   /// In en, this message translates to:

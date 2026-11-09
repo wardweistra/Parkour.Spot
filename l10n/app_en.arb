@@ -80,6 +80,18 @@
   "@mySpotsTitle": {
     "description": "Account tab row and My spots screen title"
   },
+  "myActivitiesTitle": "My activities",
+  "@myActivitiesTitle": {
+    "description": "Account tab row and My activities hub screen title"
+  },
+  "accountMyActivitiesSubtitle": "Events you're going to, planned sessions, and calendar sync",
+  "@accountMyActivitiesSubtitle": {
+    "description": "Account tab: subtitle for the My activities row"
+  },
+  "myActivitiesHubSignInPrompt": "Sign in to see your events and sessions",
+  "@myActivitiesHubSignInPrompt": {
+    "description": "My activities hub when signed out"
+  },
   "mySessionsTitle": "My sessions",
   "@mySessionsTitle": {
     "description": "Account tab row and My sessions screen title"
