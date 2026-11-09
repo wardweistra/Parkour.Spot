@@ -207,6 +207,7 @@ const {
   EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR,
   EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR,
   EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL,
+  EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE,
   hasExternalEventAddressChanged,
   hasExternalEventContentChanges,
   hasExternalEventPlaceFields,
@@ -216,6 +217,7 @@ const {
   parseExternalEventsFromBoomTechPublishedCalendar,
   parseExternalEventsFromWixEvents,
   parseExternalEventsFromJumpEvents,
+  parseExternalEventsFromMomence,
   buildExternalEventKey,
   partitionExternalEventsByKey,
   shouldGeocodeExternalEventAddress,
@@ -243,6 +245,11 @@ const {
   normalizeJumpEventsFeedUrl,
   jumpEventsPublicUrl,
 } = require("./lib/jump-events");
+const {
+  fetchMomenceHostSchedule,
+  normalizeMomenceFeedUrl,
+  resolveMomenceFeedUrl,
+} = require("./lib/momence");
 const {
   deleteEventMapPins,
   materializeEventLocationAndPins,
@@ -4879,7 +4886,7 @@ function normalizeIcsUrl(value) {
  * Normalizes and validates a feed URL for an event sync source type.
  * @param {*} value
  * @param {"ics"|"boomTechPublishedCalendar"|"wixEventsCalendar"|
- *   "squarespaceCalendar"|"jumpEventsNl"} sourceType
+ *   "squarespaceCalendar"|"jumpEventsNl"|"momenceHostSchedule"} sourceType
  * @return {string}
  */
 function normalizeEventSyncFeedUrl(value, sourceType) {
@@ -4892,6 +4899,9 @@ function normalizeEventSyncFeedUrl(value, sourceType) {
   }
   if (normalizedType === EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL) {
     return normalizeJumpEventsFeedUrl(value);
+  }
+  if (normalizedType === EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE) {
+    return normalizeMomenceFeedUrl(value);
   }
   if (normalizedType !== EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR) {
     return normalizeIcsUrl(value);
@@ -4916,6 +4926,24 @@ function normalizeEventSyncFeedUrl(value, sourceType) {
     );
   }
   return parsed.toString();
+}
+
+/**
+ * Resolves a feed URL for storage and sync.
+ * Momence page URLs are fetched so the stored value is the host-schedule API.
+ * @param {*} value
+ * @param {string} sourceType
+ * @return {Promise<Object>} canonicalUrl and publicUrl.
+ */
+async function resolveEventSyncFeedUrl(value, sourceType) {
+  const normalizedType = normalizeEventSyncSourceType(sourceType);
+  if (normalizedType === EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE) {
+    return resolveMomenceFeedUrl(value, downloadTextFromUrl);
+  }
+  return {
+    canonicalUrl: normalizeEventSyncFeedUrl(value, normalizedType),
+    publicUrl: null,
+  };
 }
 
 /**
@@ -5471,7 +5499,11 @@ async function syncExternalEventSource(sourceDoc, options = {}) {
           process.env.GOOGLE_MAPS_API_KEY.trim().length > 0,
       ),
     });
-    const feedUrl = normalizeEventSyncFeedUrl(sourceData.icsUrl, sourceType);
+    const resolvedFeed = await resolveEventSyncFeedUrl(
+        sourceData.icsUrl,
+        sourceType,
+    );
+    const feedUrl = resolvedFeed.canonicalUrl;
     const sourceDefaultTimeZone =
       normalizeEventSyncSourceDefaultTimeZone(sourceData.defaultTimeZone);
     let parsedEvents;
@@ -5510,6 +5542,17 @@ async function syncExternalEventSource(sourceDoc, options = {}) {
         sourceName,
         siteOrigin: fetched.siteOrigin,
         feedDefaultTimeZone: fetched.defaultTimeZone,
+        sourceDefaultTimeZone,
+      });
+    } else if (sourceType === EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE) {
+      const fetched = await fetchMomenceHostSchedule(feedUrl, {
+        downloadText: downloadTextFromUrl,
+      });
+      feedBytes = fetched.items.length;
+      parsedEvents = parseExternalEventsFromMomence(fetched.items, {
+        sourceId,
+        sourceName,
+        hostTimeZone: fetched.hostTimeZone,
         sourceDefaultTimeZone,
       });
     } else {
@@ -5843,10 +5886,11 @@ exports.createEventSyncSource = onCall(
         }
 
         const normalizedSourceType = normalizeEventSyncSourceType(sourceType);
-        const normalizedFeedUrl = normalizeEventSyncFeedUrl(
+        const resolvedFeed = await resolveEventSyncFeedUrl(
             icsUrl,
             normalizedSourceType,
         );
+        const normalizedFeedUrl = resolvedFeed.canonicalUrl;
         const sourceData = {
           name: name.trim(),
           sourceType: normalizedSourceType,
@@ -5874,6 +5918,10 @@ exports.createEventSyncSource = onCall(
           normalizedSourceType === EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL
         ) {
           sourceData.publicUrl = jumpEventsPublicUrl(normalizedFeedUrl);
+        } else if (
+          normalizedSourceType === EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE
+        ) {
+          sourceData.publicUrl = resolvedFeed.publicUrl;
         }
         if (typeof syncSchedule === "string" && syncSchedule.trim().length > 0) {
           sourceData.syncSchedule = syncSchedule.trim();
@@ -5966,10 +6014,11 @@ exports.updateEventSyncSource = onCall(
           const effectiveFeedUrl = icsUrl !== undefined ?
             icsUrl :
             existingData.icsUrl;
-          updateData.icsUrl = normalizeEventSyncFeedUrl(
+          const resolvedFeed = await resolveEventSyncFeedUrl(
               effectiveFeedUrl,
               effectiveSourceType,
           );
+          updateData.icsUrl = resolvedFeed.canonicalUrl;
         }
         if (description !== undefined) {
           if (typeof description === "string" && description.trim().length > 0) {

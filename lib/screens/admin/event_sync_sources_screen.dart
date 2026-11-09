@@ -253,6 +253,8 @@ class _EventSyncSourcesScreenState extends State<EventSyncSourcesScreen> {
                                     ? 'Squarespace'
                                     : source.isJumpEventsNl
                                     ? 'Jump Events NL'
+                                    : source.isMomenceHostSchedule
+                                    ? 'Momence schedule'
                                     : 'ICS',
                               ),
                             ),
@@ -545,14 +547,19 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
   bool get _isJumpEventsNlSourceType =>
       _sourceType == EventSyncSource.sourceTypeJumpEventsNl;
 
+  bool get _isMomenceSourceType =>
+      _sourceType == EventSyncSource.sourceTypeMomenceHostSchedule;
+
   bool get _isPageUrlSourceType =>
       _isSquarespaceSourceType ||
       _isWixEventsSourceType ||
-      _isJumpEventsNlSourceType;
+      _isJumpEventsNlSourceType ||
+      _isMomenceSourceType;
 
   String get _feedUrlLabel {
     if (_isBoomTechSourceType) return 'Published calendar URL';
     if (_isJumpEventsNlSourceType) return 'Jump Events URL';
+    if (_isMomenceSourceType) return 'Momence schedule URL';
     if (_isPageUrlSourceType) return 'Events page URL';
     return 'ICS URL';
   }
@@ -569,6 +576,10 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
     }
     if (_isJumpEventsNlSourceType) {
       return 'https://jumpevents.nl/ or https://jumpevents.nl/api/events';
+    }
+    if (_isMomenceSourceType) {
+      return 'Schedule page or readonly API, '
+          'e.g. https://pathmovement.com/#schedule';
     }
     return 'Google Calendar public .ics URL';
   }
@@ -588,6 +599,10 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
     }
     if (_isJumpEventsNlSourceType) {
       return 'Overrides the Jump Events default (Europe/Amsterdam). '
+          'Re-sync after changing this.';
+    }
+    if (_isMomenceSourceType) {
+      return 'Overrides the Momence host timezone. '
           'Re-sync after changing this.';
     }
     return 'Used for all-day and floating timed events when the ICS feed has '
@@ -676,6 +691,10 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                       value: EventSyncSource.sourceTypeJumpEventsNl,
                       child: Text('Jump Events NL'),
                     ),
+                    DropdownMenuItem(
+                      value: EventSyncSource.sourceTypeMomenceHostSchedule,
+                      child: Text('Momence schedule'),
+                    ),
                   ],
                   onChanged: (value) {
                     if (value == null) return;
@@ -690,7 +709,10 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                             value ==
                                 EventSyncSource.sourceTypeWixEventsCalendar ||
                             value ==
-                                EventSyncSource.sourceTypeJumpEventsNl) &&
+                                EventSyncSource.sourceTypeJumpEventsNl ||
+                            value ==
+                                EventSyncSource
+                                    .sourceTypeMomenceHostSchedule) &&
                         _publicUrlCtrl.text.trim().isEmpty &&
                         _icsUrlCtrl.text.trim().isNotEmpty) {
                       _publicUrlCtrl.text = _pagePublicUrlFromFeed(

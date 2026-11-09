@@ -3,6 +3,7 @@ const {
   decodeBasicHtmlEntities,
   htmlToPlainText,
 } = require("./html-plain-text");
+const {formatMomenceTicketPrice} = require("./momence");
 
 /** @type {"feed"} */
 const EVENT_TIME_ZONE_SOURCE_FEED = "feed";
@@ -1212,11 +1213,14 @@ const EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR = "wixEventsCalendar";
 const EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR = "squarespaceCalendar";
 /** @type {"jumpEventsNl"} */
 const EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL = "jumpEventsNl";
+/** @type {"momenceHostSchedule"} */
+const EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE = "momenceHostSchedule";
 
 /**
  * @param {*} value
  * @return {"ics"|"boomTechPublishedCalendar"|
- *   "wixEventsCalendar"|"squarespaceCalendar"|"jumpEventsNl"}
+ *   "wixEventsCalendar"|"squarespaceCalendar"|"jumpEventsNl"|
+ *   "momenceHostSchedule"}
  */
 function normalizeEventSyncSourceType(value) {
   if (
@@ -1233,6 +1237,9 @@ function normalizeEventSyncSourceType(value) {
   }
   if (value === EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL) {
     return EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL;
+  }
+  if (value === EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE) {
+    return EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE;
   }
   return EVENT_SYNC_SOURCE_TYPE_ICS;
 }
@@ -2307,6 +2314,102 @@ function parseExternalEventsFromJumpEvents(
   return parsedEvents;
 }
 
+/**
+ * Parses Momence host-schedule sessions into normalized event payloads.
+ * `level` is the public blurb, not a skill level. startsAt/endsAt are UTC.
+ * @param {Array<Object>} items
+ * @param {Object} sourceMeta
+ * @param {string} sourceMeta.sourceId
+ * @param {string} sourceMeta.sourceName
+ * @param {string|null=} sourceMeta.hostTimeZone
+ * @param {string|null=} sourceMeta.sourceDefaultTimeZone
+ * @return {Array<Object>}
+ */
+function parseExternalEventsFromMomence(
+    items,
+    {
+      sourceId,
+      sourceName,
+      hostTimeZone = null,
+      sourceDefaultTimeZone = null,
+    },
+) {
+  if (!Array.isArray(items)) {
+    throw new Error("Momence sessions must be an array");
+  }
+
+  const feedTimeZone = normalizeImportedTimeZone(hostTimeZone);
+  const normalizedSourceDefaultTimeZone =
+    normalizeEventSyncSourceDefaultTimeZone(sourceDefaultTimeZone);
+
+  let timeZone = null;
+  let timeZoneSource = null;
+  if (normalizedSourceDefaultTimeZone) {
+    timeZone = normalizedSourceDefaultTimeZone;
+    timeZoneSource = EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT;
+  } else if (feedTimeZone) {
+    timeZone = feedTimeZone;
+    timeZoneSource = EVENT_TIME_ZONE_SOURCE_FEED;
+  }
+
+  const parsedEvents = [];
+  for (const item of items) {
+    if (!item || typeof item !== "object") continue;
+    if (item.isCancelled === true) continue;
+
+    const uid = item.id != null ? toNonEmptyString(String(item.id)) : null;
+    if (!uid) continue;
+
+    const startAt = item.startsAt ? new Date(item.startsAt) : null;
+    if (!startAt || Number.isNaN(startAt.getTime())) continue;
+    let endAt = null;
+    if (item.endsAt) {
+      const parsedEnd = new Date(item.endsAt);
+      if (!Number.isNaN(parsedEnd.getTime())) endAt = parsedEnd;
+    }
+
+    const blurb = normalizeImportedEventDescription(
+        toNonEmptyString(item.level) || "",
+    );
+    const price = formatMomenceTicketPrice(
+        item.fixedTicketPrice,
+        item.currency,
+    );
+    const descriptionParts = [blurb, price].filter((part) => part);
+    const description = descriptionParts.length > 0 ?
+      descriptionParts.join("\n\n") :
+      null;
+
+    const websiteUrl = toNonEmptyString(item.link) ||
+      `https://momence.com/s/${encodeURIComponent(uid)}`;
+    const address = toNonEmptyString(item.location);
+    const title = toNonEmptyString(item.sessionName) || "Untitled event";
+
+    const eventPayload = {
+      title,
+      description,
+      websiteUrl,
+      address,
+      startAt,
+      endAt,
+      isDateOnly: false,
+      eventSourceId: sourceId,
+      eventSourceName: sourceName,
+      externalEventUid: uid,
+      externalEventRecurrenceId: null,
+      externalEventKey: buildExternalEventKey(uid, null),
+    };
+    if (timeZone) eventPayload.timeZone = timeZone;
+    if (timeZoneSource) eventPayload.timeZoneSource = timeZoneSource;
+
+    const externalImageUrl = normalizeExternalImageUrl(item.image);
+    if (externalImageUrl) eventPayload.externalImageUrl = externalImageUrl;
+    parsedEvents.push(eventPayload);
+  }
+
+  return parsedEvents;
+}
+
 module.exports = {
   EVENT_SYNC_SOURCE_TYPE_ICS,
   EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR,
@@ -2314,6 +2417,7 @@ module.exports = {
   EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR,
   EVENT_SYNC_SOURCE_TYPE_SQUARESPACE_CALENDAR,
   EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL,
+  EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE,
   EVENT_TIME_ZONE_SOURCE_FEED,
   EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT,
   buildExternalEventKey,
@@ -2337,6 +2441,7 @@ module.exports = {
   parseExternalEventsFromWixEvents,
   parseExternalEventsFromSquarespace,
   parseExternalEventsFromJumpEvents,
+  parseExternalEventsFromMomence,
   normalizeRecurrenceId,
   partitionExternalEventsByKey,
   removeExtractedWebsiteUrlFromDescription,

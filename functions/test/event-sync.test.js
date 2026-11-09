@@ -22,6 +22,7 @@ const {
   EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR,
   EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR,
   EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL,
+  EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE,
   parseExternalEventsFromWixEvents,
   parseExternalEventsFromJumpEvents,
 } = require("../lib/event-sync");
@@ -1144,6 +1145,11 @@ describe("event-sync helpers", () => {
     it("recognizes jumpEventsNl", () => {
       expect(normalizeEventSyncSourceType("jumpEventsNl"))
           .toBe(EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL);
+    });
+
+    it("recognizes momenceHostSchedule", () => {
+      expect(normalizeEventSyncSourceType("momenceHostSchedule"))
+          .toBe(EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE);
     });
   });
 
