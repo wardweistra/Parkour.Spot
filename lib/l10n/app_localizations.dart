@@ -6300,6 +6300,12 @@ abstract class AppLocalizations {
   /// **'Featured'**
   String get spotListFeaturedBadgeShort;
 
+  /// Creator attribution in Saved/Featured list hub rows
+  ///
+  /// In en, this message translates to:
+  /// **'by {name}'**
+  String spotListSummaryCreatedBy(String name);
+
   /// Mouse-over / long-press explanation of the featured spot list badge
   ///
   /// In en, this message translates to:

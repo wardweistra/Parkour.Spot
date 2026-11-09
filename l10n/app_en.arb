@@ -3748,6 +3748,15 @@
   "@spotListFeaturedBadgeShort": {
     "description": "Compact featured label in list hub rows"
   },
+  "spotListSummaryCreatedBy": "by {name}",
+  "@spotListSummaryCreatedBy": {
+    "description": "Creator attribution in Saved/Featured list hub rows",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "spotListFeaturedTooltip": "Highlighted by the Parkour·Spot team for the community to discover.",
   "@spotListFeaturedTooltip": {
     "description": "Mouse-over / long-press explanation of the featured spot list badge"

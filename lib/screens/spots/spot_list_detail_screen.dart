@@ -1483,17 +1483,15 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                         ),
                       ),
                     _buildMoreInfoLinkTile(),
+                    _buildProvenanceSentence(
+                      compactTop:
+                          _list!.moreInfoUrl != null &&
+                          _list!.moreInfoUrl!.isNotEmpty,
+                    ),
                     _buildSpotsList(),
                   ],
                 ),
               ),
-            SliverToBoxAdapter(
-              child: _buildProvenanceSentence(
-                compactTop:
-                    _list!.moreInfoUrl != null &&
-                    _list!.moreInfoUrl!.isNotEmpty,
-              ),
-            ),
           ],
         ),
       ),

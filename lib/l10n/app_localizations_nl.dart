@@ -3923,6 +3923,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get spotListFeaturedBadgeShort => 'Uitgelicht';
 
   @override
+  String spotListSummaryCreatedBy(String name) {
+    return 'door $name';
+  }
+
+  @override
   String get spotListFeaturedTooltip =>
       'Uitgelicht door het Parkour·Spot-team zodat de community ze kan ontdekken.';
 

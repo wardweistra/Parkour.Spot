@@ -1015,6 +1015,7 @@
   "featuredSpotListsSectionTitle": "Uitgelichte spotlijsten",
   "spotListFeaturedBadge": "Uitgelichte spotlijst",
   "spotListFeaturedBadgeShort": "Uitgelicht",
+  "spotListSummaryCreatedBy": "door {name}",
   "spotListFeaturedTooltip": "Uitgelicht door het Parkour·Spot-team zodat de community ze kan ontdekken.",
   "spotListFeatureThisList": "Uitlichten",
   "spotListRemoveFromFeatured": "Niet meer uitlichten",

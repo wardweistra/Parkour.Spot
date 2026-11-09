@@ -8,6 +8,7 @@ SpotList buildList({
   String name = 'City jam',
   String? description = 'Rooftops and rails',
   List<String> spotIds = const ['s1', 's2', 's3'],
+  bool featured = false,
 }) {
   return SpotList(
     id: 'list-1',
@@ -18,16 +19,27 @@ SpotList buildList({
     createdBy: 'user-1',
     createdAt: DateTime.utc(2026, 1, 1),
     updatedAt: DateTime.utc(2026, 1, 2),
+    featured: featured,
   );
 }
 
-Future<void> pumpTile(WidgetTester tester, SpotList list) async {
+Future<void> pumpTile(
+  WidgetTester tester,
+  SpotList list, {
+  bool showCreator = false,
+  String? creatorName,
+}) async {
   await tester.pumpWidget(
     MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: SpotListSummaryTile(list: list, onTap: () {}),
+        body: SpotListSummaryTile(
+          list: list,
+          showCreator: showCreator,
+          creatorName: creatorName,
+          onTap: () {},
+        ),
       ),
     ),
   );
@@ -58,5 +70,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('shows creator on Saved/Featured-style rows', (tester) async {
+    await pumpTile(
+      tester,
+      buildList(featured: true),
+      showCreator: true,
+      creatorName: 'Ada Vault',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('by Ada Vault'), findsOneWidget);
+    expect(find.text('Featured'), findsOneWidget);
   });
 }

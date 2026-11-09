@@ -3947,6 +3947,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get spotListFeaturedBadgeShort => 'Em destaque';
 
   @override
+  String spotListSummaryCreatedBy(String name) {
+    return 'por $name';
+  }
+
+  @override
   String get spotListFeaturedTooltip =>
       'Destacada pela equipe Parkour·Spot para a comunidade descobrir.';
 

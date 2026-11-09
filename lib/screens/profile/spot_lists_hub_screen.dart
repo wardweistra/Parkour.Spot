@@ -558,6 +558,7 @@ class _SavedListsSection extends StatelessWidget {
                       .map(
                         (list) => SpotListSummaryTile(
                           list: list,
+                          showCreator: true,
                           leading: Icon(
                             Icons.bookmark,
                             color: Theme.of(context).colorScheme.primary,
@@ -607,6 +608,7 @@ class _FeaturedListsSection extends StatelessWidget {
                   .map(
                     (list) => SpotListSummaryTile(
                       list: list,
+                      showCreator: true,
                       leading: Icon(
                         Icons.star,
                         color: scheme.primary,

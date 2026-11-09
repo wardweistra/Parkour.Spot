@@ -3963,6 +3963,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get spotListFeaturedBadgeShort => 'Empfohlen';
 
   @override
+  String spotListSummaryCreatedBy(String name) {
+    return 'von $name';
+  }
+
+  @override
   String get spotListFeaturedTooltip =>
       'Vom Parkour·Spot-Team hervorgehoben, damit die Community sie entdecken kann.';
 

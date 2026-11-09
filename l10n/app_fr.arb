@@ -958,6 +958,7 @@
   "featuredSpotListsSectionTitle": "Listes de spots à la une",
   "spotListFeaturedBadge": "Liste de spots à la une",
   "spotListFeaturedBadgeShort": "À la une",
+  "spotListSummaryCreatedBy": "par {name}",
   "spotListFeaturedTooltip": "Mise en avant par l’équipe Parkour·Spot pour que la communauté la découvre.",
   "spotListFeatureThisList": "Mettre à la une",
   "spotListRemoveFromFeatured": "Retirer",

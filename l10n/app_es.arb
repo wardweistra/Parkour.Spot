@@ -958,6 +958,7 @@
   "featuredSpotListsSectionTitle": "Listas de spots destacadas",
   "spotListFeaturedBadge": "Lista de spots destacada",
   "spotListFeaturedBadgeShort": "Destacada",
+  "spotListSummaryCreatedBy": "por {name}",
   "spotListFeaturedTooltip": "Destacada por el equipo de Parkour·Spot para que la comunidad la descubra.",
   "spotListFeatureThisList": "Destacar",
   "spotListRemoveFromFeatured": "Quitar destacado",

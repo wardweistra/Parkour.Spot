@@ -1,40 +1,135 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/spot_list.dart';
+import '../services/user_profile_service.dart';
 import '../utils/spot_list_localization.dart';
 import 'emoji_text.dart';
 
 /// One list in a hub or public profile: name, optional description, visibility
 /// and count. Not wrapped in a Card so parents can group with spacing, not nesting.
-class SpotListSummaryTile extends StatelessWidget {
+///
+/// Set [showCreator] on Saved / Featured rows (and similar) where the viewer is
+/// not already looking at the owner's own lists. Pass [creatorName] when the
+/// parent already resolved it; otherwise the tile loads it from [createdBy].
+class SpotListSummaryTile extends StatefulWidget {
   const SpotListSummaryTile({
     super.key,
     required this.list,
     required this.onTap,
     this.leading,
+    this.showCreator = false,
+    this.creatorName,
   });
 
   final SpotList list;
   final VoidCallback onTap;
   final Widget? leading;
+  final bool showCreator;
+
+  /// Optional pre-resolved display name. When null and [showCreator] is true,
+  /// the tile fetches the creator profile.
+  final String? creatorName;
+
+  @override
+  State<SpotListSummaryTile> createState() => _SpotListSummaryTileState();
+}
+
+class _SpotListSummaryTileState extends State<SpotListSummaryTile> {
+  String? _resolvedCreatorName;
+  bool _loadingCreator = false;
+
+  SpotList get _list => widget.list;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadCreatorIfNeeded();
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant SpotListSummaryTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.showCreator != widget.showCreator ||
+        oldWidget.creatorName != widget.creatorName ||
+        oldWidget.list.createdBy != widget.list.createdBy ||
+        oldWidget.list.id != widget.list.id) {
+      _resolvedCreatorName = null;
+      _loadingCreator = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _loadCreatorIfNeeded();
+      });
+    }
+  }
+
+  Future<void> _loadCreatorIfNeeded() async {
+    if (!widget.showCreator) return;
+
+    final provided = widget.creatorName?.trim();
+    if (provided != null && provided.isNotEmpty) {
+      setState(() {
+        _resolvedCreatorName = provided;
+        _loadingCreator = false;
+      });
+      return;
+    }
+
+    final uid = _list.createdBy.trim();
+    if (uid.isEmpty) return;
+
+    setState(() => _loadingCreator = true);
+    try {
+      final profile = await context.read<UserProfileService>().getUserProfile(
+        uid,
+      );
+      if (!mounted) return;
+      final displayName = profile?.displayName?.trim();
+      final username = profile?.username?.trim();
+      setState(() {
+        _resolvedCreatorName = (displayName != null && displayName.isNotEmpty)
+            ? displayName
+            : (username != null && username.isNotEmpty)
+            ? username
+            : null;
+        _loadingCreator = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingCreator = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final description = list.description?.trim();
-    final subtitle = list.visibility.localizedVisibilityAndCount(
+    final description = _list.description?.trim();
+    final subtitle = _list.visibility.localizedVisibilityAndCount(
       l10n,
-      list.spotCount,
+      _list.spotCount,
     );
+    final mutedStyle = theme.textTheme.bodySmall?.copyWith(
+      color: scheme.onSurface.withValues(alpha: 0.6),
+    );
+    final effectiveCreator = widget.creatorName?.trim().isNotEmpty == true
+        ? widget.creatorName!.trim()
+        : _resolvedCreatorName;
+    final creatorLabel =
+        (!_loadingCreator &&
+            effectiveCreator != null &&
+            effectiveCreator.isNotEmpty)
+        ? l10n.spotListSummaryCreatedBy(effectiveCreator)
+        : null;
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-      leading: leading,
+      leading: widget.leading,
       title: EmojiText(
-        list.name,
+        _list.name,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: theme.textTheme.titleMedium,
@@ -56,7 +151,7 @@ class SpotListSummaryTile extends StatelessWidget {
             padding: const EdgeInsets.only(top: 4),
             child: Row(
               children: [
-                if (list.featured) ...[
+                if (_list.featured) ...[
                   Icon(Icons.star, size: 14, color: scheme.primary),
                   const SizedBox(width: 4),
                   Text(
@@ -66,19 +161,23 @@ class SpotListSummaryTile extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  Text(
-                    ' · ',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurface.withValues(alpha: 0.6),
+                  Text(' · ', style: mutedStyle),
+                ],
+                if (creatorLabel != null) ...[
+                  Flexible(
+                    child: Text(
+                      creatorLabel,
+                      style: mutedStyle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  Text(' · ', style: mutedStyle),
                 ],
                 Flexible(
                   child: Text(
                     subtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurface.withValues(alpha: 0.6),
-                    ),
+                    style: mutedStyle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -93,7 +192,7 @@ class SpotListSummaryTile extends StatelessWidget {
         size: 16,
         color: scheme.onSurface.withValues(alpha: 0.5),
       ),
-      onTap: onTap,
+      onTap: widget.onTap,
     );
   }
 }

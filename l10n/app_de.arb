@@ -958,6 +958,7 @@
   "featuredSpotListsSectionTitle": "Empfohlene Spot-Listen",
   "spotListFeaturedBadge": "Empfohlene Spot-Liste",
   "spotListFeaturedBadgeShort": "Empfohlen",
+  "spotListSummaryCreatedBy": "von {name}",
   "spotListFeaturedTooltip": "Vom Parkour·Spot-Team hervorgehoben, damit die Community sie entdecken kann.",
   "spotListFeatureThisList": "Empfehlen",
   "spotListRemoveFromFeatured": "Nicht mehr empfehlen",
