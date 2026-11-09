@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
@@ -30,6 +30,27 @@ import '../event_card.dart';
 import '../spot_card.dart';
 import 'explore_entity_picker_config.dart';
 import 'explore_entity_picker_result.dart';
+
+/// Initial multi-select / event-where selection for [ExploreEntityPickerScreen].
+///
+/// Callers such as suggest-edit and add-event pass already-linked spots via
+/// [ExploreEntityPickerConfig.initialSpots] with `spotsOnly` +
+/// `allowMultipleSpots`. Those must be seeded so Done keeps prior picks.
+@visibleForTesting
+List<Spot> seedSelectedSpotsForPicker(ExploreEntityPickerConfig config) {
+  if (config.isEventWhere) {
+    return List<Spot>.from(
+      collapseEventWhere(
+        pin: config.initialLocation,
+        spots: config.initialSpots,
+      ).spots,
+    );
+  }
+  if (config.isMultiSpotSelection && config.initialSpots.isNotEmpty) {
+    return List<Spot>.from(config.initialSpots);
+  }
+  return const <Spot>[];
+}
 
 class ExploreEntityPickerScreen extends StatefulWidget {
   const ExploreEntityPickerScreen({super.key, required this.config});
@@ -99,15 +120,14 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
   void initState() {
     super.initState();
     if (_config.isEventWhere) {
-      final collapsed = collapseEventWhere(
+      _pickedLocation = collapseEventWhere(
         pin: _config.initialLocation,
         spots: _config.initialSpots,
-      );
-      _pickedLocation = collapsed.pin;
-      _selectedSpots.addAll(collapsed.spots);
+      ).pin;
     } else if (_config.includesLocationPin) {
       _pickedLocation = _config.initialLocation ?? _config.initialCenter;
     }
+    _selectedSpots.addAll(seedSelectedSpotsForPicker(_config));
     _lastMapCenter = _initialCameraTarget;
     _autocompleteSession = ExploreAutocompleteSession(
       config: _config,
