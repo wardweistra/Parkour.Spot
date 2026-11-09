@@ -108,22 +108,23 @@ class _SpotListSummaryTileState extends State<SpotListSummaryTile> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final description = _list.description?.trim();
-    final subtitle = _list.visibility.localizedVisibilityAndCount(
-      l10n,
-      _list.spotCount,
-    );
     final mutedStyle = theme.textTheme.bodySmall?.copyWith(
       color: scheme.onSurface.withValues(alpha: 0.6),
     );
     final effectiveCreator = widget.creatorName?.trim().isNotEmpty == true
         ? widget.creatorName!.trim()
         : _resolvedCreatorName;
-    final creatorLabel =
-        (!_loadingCreator &&
-            effectiveCreator != null &&
-            effectiveCreator.isNotEmpty)
-        ? l10n.spotListSummaryCreatedBy(effectiveCreator)
-        : null;
+    final hasCreator =
+        !_loadingCreator &&
+        effectiveCreator != null &&
+        effectiveCreator.isNotEmpty;
+    final meta = hasCreator
+        ? _list.visibility.localizedVisibilityCountAndCreator(
+            l10n,
+            _list.spotCount,
+            effectiveCreator!,
+          )
+        : _list.visibility.localizedVisibilityAndCount(l10n, _list.spotCount);
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
@@ -163,22 +164,11 @@ class _SpotListSummaryTileState extends State<SpotListSummaryTile> {
                   ),
                   Text(' · ', style: mutedStyle),
                 ],
-                if (creatorLabel != null) ...[
-                  Flexible(
-                    child: Text(
-                      creatorLabel,
-                      style: mutedStyle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Text(' · ', style: mutedStyle),
-                ],
                 Flexible(
                   child: Text(
-                    subtitle,
+                    meta,
                     style: mutedStyle,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

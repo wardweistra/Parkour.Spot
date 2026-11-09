@@ -3536,12 +3536,15 @@
   "@spotListDetailCouldNotOpenProfile": {
     "description": "Snackbar when creator profile navigation fails"
   },
-  "spotListDetailCreatedPart": "{visibility} created {date}",
+  "spotListDetailCreatedPart": "{visibility} with {count, plural, one{{count} spot} other{{count} spots}}, created {date}",
   "@spotListDetailCreatedPart": {
-    "description": "First phrase in list provenance sentence",
+    "description": "First phrase in list provenance sentence (comma before created so the date attaches to the list, not the spots)",
     "placeholders": {
       "visibility": {
         "type": "String"
+      },
+      "count": {
+        "type": "int"
       },
       "date": {
         "type": "String"
@@ -3748,10 +3751,28 @@
   "@spotListFeaturedBadgeShort": {
     "description": "Compact featured label in list hub rows"
   },
-  "spotListSummaryCreatedBy": "by {name}",
-  "@spotListSummaryCreatedBy": {
-    "description": "Creator attribution in Saved/Featured list hub rows",
+  "spotListSummaryMeta": "{visibility} with {count, plural, one{{count} spot} other{{count} spots}}",
+  "@spotListSummaryMeta": {
+    "description": "Hub/profile list row meta without creator",
     "placeholders": {
+      "visibility": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "spotListSummaryMetaWithCreator": "{visibility} with {count, plural, one{{count} spot} other{{count} spots}} by {name}",
+  "@spotListSummaryMetaWithCreator": {
+    "description": "Hub Saved/Featured list row meta with creator",
+    "placeholders": {
+      "visibility": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
       "name": {
         "type": "String"
       }
@@ -4135,17 +4156,17 @@
       }
     }
   },
-  "publicProfileYours": "Yours",
+  "publicProfileYours": "Your spot lists",
   "@publicProfileYours": {
-    "description": "Subheading for user's own lists in unified card"
+    "description": "Hub section title for the signed-in user's own spot lists"
   },
   "publicProfileCreateYourFirstList": "Create your first list",
   "@publicProfileCreateYourFirstList": {
     "description": "CTA in empty owned-lists state"
   },
-  "publicProfileSaved": "Saved",
+  "publicProfileSaved": "Saved spot lists",
   "@publicProfileSaved": {
-    "description": "Subheading for saved lists in unified card"
+    "description": "Hub section title for spot lists the user has saved"
   },
   "publicProfilePublicSpotLists": "Public spot lists",
   "@publicProfilePublicSpotLists": {

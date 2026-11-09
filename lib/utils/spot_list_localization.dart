@@ -71,7 +71,19 @@ extension SpotListVisibilityLocalization on SpotListVisibility {
       spotListVisibilitySummary(l10n, this);
 
   String localizedVisibilityAndCount(AppLocalizations l10n, int spotCount) {
-    return '${localizedListLabel(l10n)} • ${l10n.exploreSpotCountShort(spotCount)}';
+    return l10n.spotListSummaryMeta(localizedListLabel(l10n), spotCount);
+  }
+
+  String localizedVisibilityCountAndCreator(
+    AppLocalizations l10n,
+    int spotCount,
+    String creatorName,
+  ) {
+    return l10n.spotListSummaryMetaWithCreator(
+      localizedListLabel(l10n),
+      spotCount,
+      creatorName,
+    );
   }
 
   IconData get icon {

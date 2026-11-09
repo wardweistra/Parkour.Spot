@@ -3804,8 +3804,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible d’ouvrir le profil';
 
   @override
-  String spotListDetailCreatedPart(String visibility, String date) {
-    return '$visibility créée $date';
+  String spotListDetailCreatedPart(String visibility, int count, String date) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count spots',
+      one: '$count spot',
+    );
+    return '$visibility avec $_temp0, créée $date';
   }
 
   @override
@@ -3962,8 +3968,29 @@ class AppLocalizationsFr extends AppLocalizations {
   String get spotListFeaturedBadgeShort => 'À la une';
 
   @override
-  String spotListSummaryCreatedBy(String name) {
-    return 'par $name';
+  String spotListSummaryMeta(String visibility, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count spots',
+      one: '$count spot',
+    );
+    return '$visibility avec $_temp0';
+  }
+
+  @override
+  String spotListSummaryMetaWithCreator(
+    String visibility,
+    int count,
+    String name,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count spots',
+      one: '$count spot',
+    );
+    return '$visibility avec $_temp0 par $name';
   }
 
   @override
@@ -4279,13 +4306,13 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get publicProfileYours => 'Les vôtres';
+  String get publicProfileYours => 'Vos listes de spots';
 
   @override
   String get publicProfileCreateYourFirstList => 'Créez votre première liste';
 
   @override
-  String get publicProfileSaved => 'Enregistrées';
+  String get publicProfileSaved => 'Listes de spots enregistrées';
 
   @override
   String get publicProfilePublicSpotLists => 'Listes publiques de spots';

@@ -718,9 +718,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
 
     final List<InlineSpan> children = [];
 
-    // "{Visibility} list created {X} ago"
+    // "{Visibility} with N spots, created {X} ago"
     String createdPart = _l10n.spotListDetailCreatedPart(
       visibilityLabel,
+      list.spotCount,
       createdDateText,
     );
     if (hasCreator) {

@@ -6030,11 +6030,11 @@ abstract class AppLocalizations {
   /// **'Could not open profile'**
   String get spotListDetailCouldNotOpenProfile;
 
-  /// First phrase in list provenance sentence
+  /// First phrase in list provenance sentence (comma before created so the date attaches to the list, not the spots)
   ///
   /// In en, this message translates to:
-  /// **'{visibility} created {date}'**
-  String spotListDetailCreatedPart(String visibility, String date);
+  /// **'{visibility} with {count, plural, one{{count} spot} other{{count} spots}}, created {date}'**
+  String spotListDetailCreatedPart(String visibility, int count, String date);
 
   /// Suffix before creator name in list provenance sentence (keep spaces)
   ///
@@ -6300,11 +6300,21 @@ abstract class AppLocalizations {
   /// **'Featured'**
   String get spotListFeaturedBadgeShort;
 
-  /// Creator attribution in Saved/Featured list hub rows
+  /// Hub/profile list row meta without creator
   ///
   /// In en, this message translates to:
-  /// **'by {name}'**
-  String spotListSummaryCreatedBy(String name);
+  /// **'{visibility} with {count, plural, one{{count} spot} other{{count} spots}}'**
+  String spotListSummaryMeta(String visibility, int count);
+
+  /// Hub Saved/Featured list row meta with creator
+  ///
+  /// In en, this message translates to:
+  /// **'{visibility} with {count, plural, one{{count} spot} other{{count} spots}} by {name}'**
+  String spotListSummaryMetaWithCreator(
+    String visibility,
+    int count,
+    String name,
+  );
 
   /// Mouse-over / long-press explanation of the featured spot list badge
   ///
@@ -6786,10 +6796,10 @@ abstract class AppLocalizations {
   /// **'{count}m'**
   String myCheckInsDurationMinutesShort(int count);
 
-  /// Subheading for user's own lists in unified card
+  /// Hub section title for the signed-in user's own spot lists
   ///
   /// In en, this message translates to:
-  /// **'Yours'**
+  /// **'Your spot lists'**
   String get publicProfileYours;
 
   /// CTA in empty owned-lists state
@@ -6798,10 +6808,10 @@ abstract class AppLocalizations {
   /// **'Create your first list'**
   String get publicProfileCreateYourFirstList;
 
-  /// Subheading for saved lists in unified card
+  /// Hub section title for spot lists the user has saved
   ///
   /// In en, this message translates to:
-  /// **'Saved'**
+  /// **'Saved spot lists'**
   String get publicProfileSaved;
 
   /// Card title for public lists on a user profile

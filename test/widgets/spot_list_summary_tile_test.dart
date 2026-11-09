@@ -51,7 +51,7 @@ void main() {
 
     expect(find.text('City jam'), findsOneWidget);
     expect(find.text('Rooftops and rails'), findsOneWidget);
-    expect(find.textContaining('3'), findsWidgets);
+    expect(find.text('Public list with 3 spots'), findsOneWidget);
   });
 
   testWidgets('ellipsizes a long name without overflowing', (tester) async {
@@ -72,7 +72,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('shows creator on Saved/Featured-style rows', (tester) async {
+  testWidgets('shows creator in a single attribution sentence', (tester) async {
     await pumpTile(
       tester,
       buildList(featured: true),
@@ -81,7 +81,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('by Ada Vault'), findsOneWidget);
+    expect(
+      find.text('Public list with 3 spots by Ada Vault'),
+      findsOneWidget,
+    );
     expect(find.text('Featured'), findsOneWidget);
   });
 }
