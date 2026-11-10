@@ -274,6 +274,32 @@ The project includes seed data for Firebase emulators to help new developers get
 [Authentication (Firebase Auth)]
 ```
 
+### Spots REST API and MCP
+
+External machine clients can read spots via:
+
+- **REST:** `GET https://parkour.spot/api/v1/spots` (name search `q` or bounds) and `GET https://parkour.spot/api/v1/spots/:spotId`
+- **MCP:** `POST https://parkour.spot/mcp` (Streamable HTTP JSON-RPC) with tools `search_spots` and `get_spot`
+
+Both require an API key from **Admin → API clients** (`X-API-Key` or `Authorization: Bearer ps_…`). Usage is counted per client; there is no hard rate limit yet.
+
+Example remote MCP client config (do not commit real keys):
+
+```json
+{
+  "mcpServers": {
+    "parkourspot": {
+      "url": "https://parkour.spot/mcp",
+      "headers": {
+        "Authorization": "Bearer ps_…"
+      }
+    }
+  }
+}
+```
+
+Deploy the endpoint with functions and app hosting, e.g. `firebase deploy --only functions:mcpServer,hosting:app`. Against emulators, call the `mcpServer` function URL directly.
+
 ### Spot sync sources
 
 External spot lists are imported through Firestore `syncSources` and Cloud Functions (`checkAndRunAutoSyncs`, `syncSingleSource`). Supported types:

@@ -52,7 +52,6 @@ const {
   extractSpotIdFromPath,
   extractFilename,
   resolveApiImageUrl,
-  resolveApiImageUrls,
   getImageContentTypeForPath,
   isGoogleUserContentUrl,
 } = require("./lib/url-helpers");
@@ -66,8 +65,13 @@ const {
 const {
   hashApiKey,
   generateApiKey,
-  serializeSpotForApi,
 } = require("./lib/api-helpers");
+const {
+  API_CLIENTS_COLLECTION,
+  SpotApiError,
+  createSpotApi,
+} = require("./lib/spot-api");
+const {createMcpHandler} = require("./lib/mcp-server");
 const {
   applyHasImagesFilter,
   deriveHasImages,
@@ -12050,8 +12054,14 @@ exports.findDuplicateSpots = onCall(
     },
 );
 
-// ========== Spot Details API (external clients) ==========
-const API_CLIENTS_COLLECTION = "apiClients";
+// ========== Spot Details API (external clients) + MCP ==========
+const spotApi = createSpotApi({
+  db,
+  bucket,
+  FieldValue,
+  executeSearchSpotsByTitle,
+  executeTopSpotsInBoundsQuery,
+});
 
 /**
  * Spot API - Handles GET /api/v1/spots (search in bounds) and GET /api/v1/spots/:spotId (single spot).
@@ -12078,187 +12088,57 @@ exports.getSpotByApi = onRequest(
           return;
         }
 
-        let apiKey = null;
-        const authHeader = req.headers["authorization"] || req.headers["Authorization"];
-        if (authHeader && authHeader.startsWith("Bearer ")) {
-          apiKey = authHeader.substring(7).trim();
-        } else {
-          apiKey = (req.headers["x-api-key"] || req.headers["X-API-Key"] || "").trim();
-        }
-        if (!apiKey) {
-          res.status(401).json({error: "API key required. Use X-API-Key or Authorization: Bearer"});
-          return;
-        }
-
-        const apiKeyHash = hashApiKey(apiKey);
-        const clientsSnap = await db.collection(API_CLIENTS_COLLECTION)
-            .where("apiKeyHash", "==", apiKeyHash)
-            .where("active", "==", true)
-            .limit(1)
-            .get();
-
-        if (clientsSnap.empty) {
-          res.status(401).json({error: "Invalid or inactive API key"});
-          return;
-        }
-        const clientDoc = clientsSnap.docs[0];
-        const clientId = clientDoc.id;
-        const now = new Date();
-        const dateId = now.toISOString().slice(0, 10);
+        const {clientId} = await spotApi.authenticateApiClient(req);
 
         if (isSearchRequest) {
           const q = req.query || {};
           const searchQ = typeof q.q === "string" ? q.q.trim() : "";
-          const hasSearchQuery = searchQ.length >= 2;
-          if (typeof q.q === "string" && searchQ.length > 0 && searchQ.length < 2) {
-            res.status(400).json({error: "Query param q must be at least 2 characters"});
-            return;
-          }
           const minLat = typeof q.minLat === "string" ? parseFloat(q.minLat) : NaN;
           const maxLat = typeof q.maxLat === "string" ? parseFloat(q.maxLat) : NaN;
           const minLng = typeof q.minLng === "string" ? parseFloat(q.minLng) : NaN;
           const maxLng = typeof q.maxLng === "string" ? parseFloat(q.maxLng) : NaN;
-          const hasBounds = Number.isFinite(minLat) && Number.isFinite(maxLat) &&
-              Number.isFinite(minLng) && Number.isFinite(maxLng);
-
-          if (hasSearchQuery) {
-            // GET /api/v1/spots?q=... (search by name)
-            const parsedLimit = Number(q.limit);
-            const limit = Number.isFinite(parsedLimit) ?
-              Math.max(1, Math.min(Math.floor(parsedLimit), 100)) : 20;
-            const result = await executeSearchSpotsByTitle({
-              query: searchQ,
-              limit,
-            });
-            if (!result.success) {
-              res.status(500).json({error: result.error || "Search failed"});
-              return;
-            }
-            const spots = result.spots || [];
-            for (const spot of spots) {
-              if (Array.isArray(spot.imageUrls)) {
-                spot.imageUrls = await resolveApiImageUrls(spot.imageUrls, bucket);
-              }
-            }
-            await db.runTransaction(async (transaction) => {
-              transaction.update(db.collection(API_CLIENTS_COLLECTION).doc(clientId), {
-                lastUsedAt: FieldValue.serverTimestamp(),
-              });
-              const usageRef = db.collection(API_CLIENTS_COLLECTION)
-                  .doc(clientId)
-                  .collection("usage")
-                  .doc(dateId);
-              transaction.set(usageRef, {
-                date: dateId,
-                count: FieldValue.increment(1),
-                lastUpdatedAt: FieldValue.serverTimestamp(),
-              }, {merge: true});
-            });
-            res.set("Content-Type", "application/json; charset=utf-8");
-            res.status(200).json({
-              spots,
-              totalCount: spots.length,
-              shownCount: spots.length,
-            });
-            return;
-          }
-
-          if (!hasBounds) {
-            res.status(400).json({
-              error: "Query params q (search by name) or minLat, maxLat, minLng, maxLng (search in bounds) are required",
-            });
-            return;
-          }
-
-          // GET /api/v1/spots?minLat=&maxLat=&minLng=&maxLng= (search in bounds)
-          const result = await executeTopSpotsInBoundsQuery({
+          const parsedLimit = Number(q.limit);
+          const result = await spotApi.searchSpotsForApi({
+            query: searchQ,
+            limit: Number.isFinite(parsedLimit) ? parsedLimit :
+              (searchQ.length >= 2 ? 20 : 100),
             minLat,
             maxLat,
             minLng,
             maxLng,
-            limit: 100,
           });
-
-          if (!result.success) {
-            res.status(500).json({error: result.error || "Query failed"});
-            return;
-          }
-
-          const spots = result.spots || [];
-          if (Array.isArray(spots)) {
-            for (const spot of spots) {
-              if (Array.isArray(spot.imageUrls)) {
-                spot.imageUrls = await resolveApiImageUrls(spot.imageUrls, bucket);
-              }
-            }
-          }
-
-          await db.runTransaction(async (transaction) => {
-            transaction.update(db.collection(API_CLIENTS_COLLECTION).doc(clientId), {
-              lastUsedAt: FieldValue.serverTimestamp(),
-            });
-            const usageRef = db.collection(API_CLIENTS_COLLECTION)
-                .doc(clientId)
-                .collection("usage")
-                .doc(dateId);
-            transaction.set(usageRef, {
-              date: dateId,
-              count: FieldValue.increment(1),
-              lastUpdatedAt: FieldValue.serverTimestamp(),
-            }, {merge: true});
-          });
-
+          await spotApi.recordApiClientUsage(clientId);
           res.set("Content-Type", "application/json; charset=utf-8");
-          res.status(200).json({
-            spots,
-            totalCount: result.totalCount,
-            shownCount: result.shownCount,
-          });
+          res.status(200).json(result);
           return;
         }
 
-        // Single spot: GET /api/v1/spots/:spotId
         const spotId = spotIdMatch[1];
-        const spotSnap = await db.collection("spots").doc(spotId).get();
-        if (!spotSnap.exists) {
-          res.status(404).json({error: "Spot not found"});
-          return;
-        }
-
-        const spotData = spotSnap.data();
-        await db.runTransaction(async (transaction) => {
-          transaction.update(db.collection(API_CLIENTS_COLLECTION).doc(clientId), {
-            lastUsedAt: FieldValue.serverTimestamp(),
-          });
-          const usageRef = db.collection(API_CLIENTS_COLLECTION)
-              .doc(clientId)
-              .collection("usage")
-              .doc(dateId);
-          transaction.set(usageRef, {
-            date: dateId,
-            count: FieldValue.increment(1),
-            lastUpdatedAt: FieldValue.serverTimestamp(),
-          }, {merge: true});
-        });
-
-        const out = serializeSpotForApi({
-          id: spotSnap.id,
-          ...spotData,
-        });
-        out.hidden = spotData.hidden === true;
-        out.duplicateOf = spotData.duplicateOf || null;
-
-        if (Array.isArray(out.imageUrls)) {
-          out.imageUrls = await resolveApiImageUrls(out.imageUrls, bucket);
-        }
-
+        const out = await spotApi.getSpotForApi(spotId);
+        await spotApi.recordApiClientUsage(clientId);
         res.set("Content-Type", "application/json; charset=utf-8");
         res.status(200).json(out);
       } catch (error) {
+        if (error instanceof SpotApiError) {
+          res.status(error.status).json({error: error.message});
+          return;
+        }
         console.error("getSpotByApi error:", error);
         res.status(500).json({error: "Internal server error"});
       }
     },
+);
+
+/**
+ * Hosted MCP (Streamable HTTP, JSON responses) at /mcp.
+ * Same API-key auth and spot tools as the REST spots API.
+ */
+exports.mcpServer = onRequest(
+    {
+      region: "europe-west1",
+      cors: true,
+    },
+    createMcpHandler(spotApi),
 );
 
 // Admin callables for API client management
