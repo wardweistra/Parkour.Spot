@@ -255,6 +255,8 @@ class _EventSyncSourcesScreenState extends State<EventSyncSourcesScreen> {
                                     ? 'Jump Events NL'
                                     : source.isMomenceHostSchedule
                                     ? 'Momence schedule'
+                                    : source.isEventbriteCollection
+                                    ? 'Eventbrite collection'
                                     : 'ICS',
                               ),
                             ),
@@ -550,16 +552,21 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
   bool get _isMomenceSourceType =>
       _sourceType == EventSyncSource.sourceTypeMomenceHostSchedule;
 
+  bool get _isEventbriteSourceType =>
+      _sourceType == EventSyncSource.sourceTypeEventbriteCollection;
+
   bool get _isPageUrlSourceType =>
       _isSquarespaceSourceType ||
       _isWixEventsSourceType ||
       _isJumpEventsNlSourceType ||
-      _isMomenceSourceType;
+      _isMomenceSourceType ||
+      _isEventbriteSourceType;
 
   String get _feedUrlLabel {
     if (_isBoomTechSourceType) return 'Published calendar URL';
     if (_isJumpEventsNlSourceType) return 'Jump Events URL';
     if (_isMomenceSourceType) return 'Momence schedule URL';
+    if (_isEventbriteSourceType) return 'Eventbrite collection URL';
     if (_isPageUrlSourceType) return 'Events page URL';
     return 'ICS URL';
   }
@@ -580,6 +587,10 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
     if (_isMomenceSourceType) {
       return 'Schedule page or readonly API, '
           'e.g. https://pathmovement.com/#schedule';
+    }
+    if (_isEventbriteSourceType) {
+      return 'Public collection page, e.g. '
+          'https://www.eventbrite.co.uk/cc/adapt-qualifications-courses-321289/';
     }
     return 'Google Calendar public .ics URL';
   }
@@ -604,6 +615,10 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
     if (_isMomenceSourceType) {
       return 'Overrides the Momence host timezone. '
           'Re-sync after changing this.';
+    }
+    if (_isEventbriteSourceType) {
+      return 'Each event uses the time zone of its venue. '
+          'Leave this empty.';
     }
     return 'Used for all-day and floating timed events when the ICS feed has '
         'no event or calendar timezone. Re-sync after changing this.';
@@ -695,6 +710,10 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                       value: EventSyncSource.sourceTypeMomenceHostSchedule,
                       child: Text('Momence schedule'),
                     ),
+                    DropdownMenuItem(
+                      value: EventSyncSource.sourceTypeEventbriteCollection,
+                      child: Text('Eventbrite collection'),
+                    ),
                   ],
                   onChanged: (value) {
                     if (value == null) return;
@@ -712,7 +731,10 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                                 EventSyncSource.sourceTypeJumpEventsNl ||
                             value ==
                                 EventSyncSource
-                                    .sourceTypeMomenceHostSchedule) &&
+                                    .sourceTypeMomenceHostSchedule ||
+                            value ==
+                                EventSyncSource
+                                    .sourceTypeEventbriteCollection) &&
                         _publicUrlCtrl.text.trim().isEmpty &&
                         _icsUrlCtrl.text.trim().isNotEmpty) {
                       _publicUrlCtrl.text = _pagePublicUrlFromFeed(

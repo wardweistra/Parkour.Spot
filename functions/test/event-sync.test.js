@@ -23,6 +23,7 @@ const {
   EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR,
   EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL,
   EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE,
+  EVENT_SYNC_SOURCE_TYPE_EVENTBRITE_COLLECTION,
   parseExternalEventsFromWixEvents,
   parseExternalEventsFromJumpEvents,
 } = require("../lib/event-sync");
@@ -1357,6 +1358,11 @@ describe("event-sync helpers", () => {
     it("recognizes momenceHostSchedule", () => {
       expect(normalizeEventSyncSourceType("momenceHostSchedule"))
           .toBe(EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE);
+    });
+
+    it("recognizes eventbriteCollection", () => {
+      expect(normalizeEventSyncSourceType("eventbriteCollection"))
+          .toBe(EVENT_SYNC_SOURCE_TYPE_EVENTBRITE_COLLECTION);
     });
   });
 

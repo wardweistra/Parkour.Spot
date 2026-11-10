@@ -55,6 +55,7 @@ class EventSyncSource {
   static const String sourceTypeSquarespaceCalendar = 'squarespaceCalendar';
   static const String sourceTypeJumpEventsNl = 'jumpEventsNl';
   static const String sourceTypeMomenceHostSchedule = 'momenceHostSchedule';
+  static const String sourceTypeEventbriteCollection = 'eventbriteCollection';
 
   final String id;
   final String name;
@@ -116,6 +117,9 @@ class EventSyncSource {
     } else if (rawSourceType ==
         EventSyncSource.sourceTypeMomenceHostSchedule) {
       sourceType = EventSyncSource.sourceTypeMomenceHostSchedule;
+    } else if (rawSourceType ==
+        EventSyncSource.sourceTypeEventbriteCollection) {
+      sourceType = EventSyncSource.sourceTypeEventbriteCollection;
     } else {
       sourceType = EventSyncSource.sourceTypeIcs;
     }
@@ -161,6 +165,9 @@ class EventSyncSource {
 
   bool get isMomenceHostSchedule =>
       sourceType == sourceTypeMomenceHostSchedule;
+
+  bool get isEventbriteCollection =>
+      sourceType == sourceTypeEventbriteCollection;
 }
 
 class EventSyncSourceService extends ChangeNotifier {

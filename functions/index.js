@@ -212,6 +212,7 @@ const {
   EVENT_SYNC_SOURCE_TYPE_WIX_EVENTS_CALENDAR,
   EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL,
   EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE,
+  EVENT_SYNC_SOURCE_TYPE_EVENTBRITE_COLLECTION,
   hasExternalEventAddressChanged,
   hasExternalEventContentChanges,
   hasExternalEventPlaceFields,
@@ -254,6 +255,11 @@ const {
   normalizeMomenceFeedUrl,
   resolveMomenceFeedUrl,
 } = require("./lib/momence");
+const {
+  normalizeEventbriteCollectionUrl,
+  parseEventbriteCollectionHtml,
+  resolveEventbriteLocations,
+} = require("./lib/eventbrite");
 const {
   deleteEventMapPins,
   materializeEventLocationAndPins,
@@ -4890,7 +4896,8 @@ function normalizeIcsUrl(value) {
  * Normalizes and validates a feed URL for an event sync source type.
  * @param {*} value
  * @param {"ics"|"boomTechPublishedCalendar"|"wixEventsCalendar"|
- *   "squarespaceCalendar"|"jumpEventsNl"|"momenceHostSchedule"} sourceType
+ *   "squarespaceCalendar"|"jumpEventsNl"|"momenceHostSchedule"|
+ *   "eventbriteCollection"} sourceType
  * @return {string}
  */
 function normalizeEventSyncFeedUrl(value, sourceType) {
@@ -4906,6 +4913,9 @@ function normalizeEventSyncFeedUrl(value, sourceType) {
   }
   if (normalizedType === EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE) {
     return normalizeMomenceFeedUrl(value);
+  }
+  if (normalizedType === EVENT_SYNC_SOURCE_TYPE_EVENTBRITE_COLLECTION) {
+    return normalizeEventbriteCollectionUrl(value);
   }
   if (normalizedType !== EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR) {
     return normalizeIcsUrl(value);
@@ -5559,6 +5569,33 @@ async function syncExternalEventSource(sourceDoc, options = {}) {
         hostTimeZone: fetched.hostTimeZone,
         sourceDefaultTimeZone,
       });
+    } else if (sourceType === EVENT_SYNC_SOURCE_TYPE_EVENTBRITE_COLLECTION) {
+      const html = await downloadTextFromUrl(feedUrl);
+      feedBytes = html.length;
+      const parsed = parseEventbriteCollectionHtml(html, {
+        sourceId,
+        sourceName,
+      });
+      parsedEvents = await resolveEventbriteLocations(parsed, {
+        geocodeAddress: (address) => geocodeExternalEventAddress(address, {
+          googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
+          geocodeCache: new Map(),
+        }),
+        lookupTimeZone: (latitude, longitude) => {
+          const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+          if (typeof apiKey !== "string" || apiKey.trim().length === 0) {
+            return Promise.resolve(null);
+          }
+          return lookupTimeZoneFromCoordinates(
+              latitude,
+              longitude,
+              apiKey.trim(),
+          );
+        },
+        warn: (code, details) => {
+          logger.warn(code, Object.assign({sourceId}, details || {}));
+        },
+      });
     } else {
       const feedText = await downloadTextFromUrl(feedUrl);
       feedBytes = feedText.length;
@@ -5926,6 +5963,10 @@ exports.createEventSyncSource = onCall(
           normalizedSourceType === EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE
         ) {
           sourceData.publicUrl = resolvedFeed.publicUrl;
+        } else if (
+          normalizedSourceType === EVENT_SYNC_SOURCE_TYPE_EVENTBRITE_COLLECTION
+        ) {
+          sourceData.publicUrl = normalizedFeedUrl;
         }
         if (typeof syncSchedule === "string" && syncSchedule.trim().length > 0) {
           sourceData.syncSchedule = syncSchedule.trim();
