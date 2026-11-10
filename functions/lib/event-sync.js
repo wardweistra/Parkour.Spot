@@ -1046,17 +1046,352 @@ function resolveAllDaySchedule(
 }
 
 /**
+ * How far ahead of the sync clock a repeating ICS event is expanded.
+ * Open-ended rules (no UNTIL/COUNT) would otherwise be infinite.
+ * @type {number}
+ */
+const ICS_RECURRENCE_HORIZON_MONTHS = 3;
+
+/**
+ * Adds calendar months in UTC, clamping the day so 31 January plus one
+ * month is 28 or 29 February.
+ * @param {Date} date
+ * @param {number} months
+ * @return {Date}
+ */
+function addUtcCalendarMonths(date, months) {
+  const monthStart = new Date(Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth() + months,
+      1,
+  ));
+  const lastDay = new Date(Date.UTC(
+      monthStart.getUTCFullYear(),
+      monthStart.getUTCMonth() + 1,
+      0,
+  )).getUTCDate();
+  return new Date(Date.UTC(
+      monthStart.getUTCFullYear(),
+      monthStart.getUTCMonth(),
+      Math.min(date.getUTCDate(), lastDay),
+      date.getUTCHours(),
+      date.getUTCMinutes(),
+      date.getUTCSeconds(),
+      date.getUTCMilliseconds(),
+  ));
+}
+
+/**
+ * @param {Date|null|undefined} now
+ * @return {{from: Date, to: Date}}
+ */
+function resolveIcsRecurrenceWindow(now) {
+  const from = now instanceof Date && !Number.isNaN(now.getTime()) ?
+    now :
+    new Date();
+  return {
+    from,
+    to: addUtcCalendarMonths(from, ICS_RECURRENCE_HORIZON_MONTHS),
+  };
+}
+
+/**
+ * Host-local calendar date. node-ical anchors expanded all-day instances
+ * at local midnight of the occurrence's calendar day.
+ * @param {Date} date
+ * @return {{year: number, month: number, day: number}}
+ */
+function calendarDateParts(date) {
+  return {
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    day: date.getDate(),
+  };
+}
+
+/**
+ * Host-local wall clock. node-ical parses floating times in the process
+ * timezone, so these fields are the original ICS clock time.
+ * @param {Date} date
+ * @return {{
+ *   year: number,
+ *   month: number,
+ *   day: number,
+ *   hour: number,
+ *   minute: number,
+ *   second: number,
+ * }}
+ */
+function wallClockParts(date) {
+  return {
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    day: date.getDate(),
+    hour: date.getHours(),
+    minute: date.getMinutes(),
+    second: date.getSeconds(),
+  };
+}
+
+/**
+ * All-day bounds for one expanded occurrence.
+ * @param {Date} start
+ * @param {Date|null} end Exclusive end (ICS DTEND), local midnight
+ * @param {string|null} timeZone
+ * @param {string|null} timeZoneSource
+ * @return {Object}
+ */
+function scheduleFromExpandedAllDayOccurrence(
+    start,
+    end,
+    timeZone,
+    timeZoneSource,
+) {
+  const startParts = calendarDateParts(start);
+  const startAt = timeZone ?
+    dateStartToUtc(
+        startParts.year,
+        startParts.month,
+        startParts.day,
+        timeZone,
+    ) :
+    new Date(Date.UTC(
+        startParts.year,
+        startParts.month - 1,
+        startParts.day,
+    ));
+
+  let endAt = null;
+  if (end instanceof Date && !Number.isNaN(end.getTime())) {
+    const inclusive = subtractOneCalendarDay(calendarDateParts(end));
+    endAt = timeZone ?
+      dateEndToUtc(
+          inclusive.year,
+          inclusive.month,
+          inclusive.day,
+          timeZone,
+      ) :
+      new Date(Date.UTC(
+          inclusive.year,
+          inclusive.month - 1,
+          inclusive.day,
+          23,
+          59,
+          59,
+          999,
+      ));
+  }
+
+  return {
+    startAt,
+    endAt,
+    isDateOnly: true,
+    timeZone: timeZone || null,
+    timeZoneSource: timeZone ? timeZoneSource : null,
+  };
+}
+
+/**
+ * Floating local clock of one expanded occurrence, in [timeZone].
+ * @param {Date} start
+ * @param {Date|null} end
+ * @param {string} timeZone
+ * @param {string} timeZoneSource
+ * @return {Object}
+ */
+function scheduleFromExpandedFloatingOccurrence(
+    start,
+    end,
+    timeZone,
+    timeZoneSource,
+) {
+  const startWall = wallClockParts(start);
+  const startAt = localDateTimeToUtc(
+      startWall.year,
+      startWall.month,
+      startWall.day,
+      startWall.hour,
+      startWall.minute,
+      startWall.second,
+      0,
+      timeZone,
+  );
+  let endAt = null;
+  if (end instanceof Date && !Number.isNaN(end.getTime())) {
+    const endWall = wallClockParts(end);
+    endAt = localDateTimeToUtc(
+        endWall.year,
+        endWall.month,
+        endWall.day,
+        endWall.hour,
+        endWall.minute,
+        endWall.second,
+        0,
+        timeZone,
+    );
+  }
+  return {
+    startAt,
+    endAt,
+    isDateOnly: false,
+    timeZone,
+    timeZoneSource,
+  };
+}
+
+/**
+ * True when this occurrence is the series DTSTART. That row keeps the bare
+ * UID key so a previously imported series updates in place.
+ * @param {Object} occurrence
+ * @return {boolean}
+ */
+function isExpandedSeriesAnchor(occurrence) {
+  const masterStart = normalizeDate(occurrence.masterStart);
+  const recurrenceId = normalizeDate(occurrence.recurrenceId);
+  if (!masterStart || !recurrenceId) return false;
+  return masterStart.getTime() === recurrenceId.getTime();
+}
+
+/**
+ * @param {Object} master
+ * @param {Object} instance Result from node-ical expandRecurringEvent
+ * @return {Object|null}
+ */
+function materializeExpandedOccurrence(master, instance) {
+  const source = instance.isOverride && instance.event ?
+    instance.event :
+    master;
+  const start = instance.start instanceof Date ?
+    instance.start :
+    normalizeDate(instance.start);
+  if (!start) return null;
+  const end = instance.end instanceof Date ? instance.end : null;
+  return {
+    type: "VEVENT",
+    uid: master.uid,
+    summary: source.summary != null ? source.summary : master.summary,
+    description: source.description != null ?
+      source.description :
+      master.description,
+    location: source.location != null ? source.location : master.location,
+    url: source.url != null ? source.url : master.url,
+    start,
+    end,
+    datetype: instance.isFullDay ? "date" : "date-time",
+    _icsOccurrence: {
+      isFullDay: Boolean(instance.isFullDay),
+      isOverride: Boolean(instance.isOverride),
+      recurrenceId: instance.isOverride ? source.recurrenceid : start,
+      masterStart: master.start,
+    },
+  };
+}
+
+/**
+ * RECURRENCE-ID rows whose original date is outside the window but whose
+ * new DTSTART falls inside it. node-ical only emits those when expanding
+ * the original date.
+ * @param {Object} master
+ * @param {Set<string>} coveredIds
+ * @param {Date} from
+ * @param {Date} to
+ * @return {Array<Object>}
+ */
+function overridesMovedIntoWindow(master, coveredIds, from, to) {
+  if (!master.recurrences || typeof master.recurrences !== "object") {
+    return [];
+  }
+  const extras = [];
+  const seen = new Set();
+  for (const override of Object.values(master.recurrences)) {
+    if (!override || !override.start) continue;
+    const id = normalizeRecurrenceId(override.recurrenceid) ||
+      normalizeRecurrenceId(override.start);
+    if (!id || seen.has(id) || coveredIds.has(id)) continue;
+    const start = normalizeDate(override.start);
+    if (!start) continue;
+    const end = normalizeDate(override.end) || start;
+    if (start.getTime() > to.getTime() || end.getTime() < from.getTime()) {
+      continue;
+    }
+    seen.add(id);
+    extras.push({
+      start: override.start,
+      end: override.end,
+      summary: override.summary || master.summary || "",
+      isFullDay: master.datetype === "date" ||
+        Boolean(override.start.dateOnly),
+      isRecurring: true,
+      isOverride: true,
+      event: override,
+    });
+  }
+  return extras;
+}
+
+/**
+ * Repeating VEVENTs become one payload per occurrence in the import window.
+ * A series that does not intersect the window stays a single event at DTSTART.
+ * @param {Object} value
+ * @param {Date|null|undefined} now
+ * @return {Array<Object>}
+ */
+function expandRecurringIcsEvent(value, now) {
+  if (
+    !value ||
+    !value.rrule ||
+    typeof value.rrule.between !== "function"
+  ) {
+    return [value];
+  }
+
+  const {from, to} = resolveIcsRecurrenceWindow(now);
+  let instances;
+  try {
+    instances = ical.expandRecurringEvent(value, {
+      from,
+      to,
+      expandOngoing: true,
+    });
+  } catch (error) {
+    const message = error && error.message ? error.message : String(error);
+    console.warn(
+        `Failed expanding RRULE for "${value.summary || value.uid}": ` +
+        message,
+    );
+    return [value];
+  }
+
+  const coveredIds = new Set();
+  for (const instance of instances) {
+    if (!instance || !instance.isOverride || !instance.event) continue;
+    const id = normalizeRecurrenceId(instance.event.recurrenceid);
+    if (id) coveredIds.add(id);
+  }
+  const extras = overridesMovedIntoWindow(value, coveredIds, from, to);
+  const occurrences = instances
+      .concat(extras)
+      .map((instance) => materializeExpandedOccurrence(value, instance))
+      .filter(Boolean);
+  if (occurrences.length === 0) return [value];
+  occurrences.sort((left, right) => left.start - right.start);
+  return occurrences;
+}
+
+/**
  * Parses VEVENT records from an ICS file into normalized event payloads.
+ * Repeating events are expanded from [now] through three months ahead.
  * @param {string} icsText
  * @param {Object} sourceMeta
  * @param {string} sourceMeta.sourceId
  * @param {string} sourceMeta.sourceName
  * @param {string=} sourceMeta.sourceDefaultTimeZone
+ * @param {Date=} sourceMeta.now Sync clock used to bound RRULE expansion
  * @return {Array<Object>}
  */
 function parseExternalEventsFromIcs(
     icsText,
-    {sourceId, sourceName, sourceDefaultTimeZone = null},
+    {sourceId, sourceName, sourceDefaultTimeZone = null, now = null},
 ) {
   const parsedCalendar = ical.sync.parseICS(icsText);
   const parsedEvents = [];
@@ -1065,20 +1400,47 @@ function parseExternalEventsFromIcs(
     normalizeEventSyncSourceDefaultTimeZone(sourceDefaultTimeZone);
   const uidToIcsBlock = buildUidToIcsBlockMap(icsText);
 
-  for (const value of Object.values(parsedCalendar)) {
-    if (!value || value.type !== "VEVENT") continue;
+  const occurrenceValues = [];
+  for (const calendarValue of Object.values(parsedCalendar)) {
+    if (!calendarValue || calendarValue.type !== "VEVENT") continue;
+    occurrenceValues.push(
+        ...expandRecurringIcsEvent(calendarValue, now),
+    );
+  }
 
+  for (const value of occurrenceValues) {
     const uid = toNonEmptyString(value.uid);
     if (!uid) continue;
 
-    const isAllDay = value.datetype === "date";
+    const occurrenceMeta = value._icsOccurrence || null;
+    const isAllDay = value.datetype === "date" ||
+      Boolean(occurrenceMeta && occurrenceMeta.isFullDay);
     let startAt = null;
     let endAt = null;
     let isDateOnly = false;
     let timeZone = null;
     let timeZoneSource = null;
 
-    if (isAllDay) {
+    if (occurrenceMeta && occurrenceMeta.isFullDay) {
+      const tzChoice = calendarTimeZone ? {
+        timeZone: calendarTimeZone,
+        timeZoneSource: EVENT_TIME_ZONE_SOURCE_FEED,
+      } : (normalizedSourceDefaultTimeZone ? {
+        timeZone: normalizedSourceDefaultTimeZone,
+        timeZoneSource: EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT,
+      } : {timeZone: null, timeZoneSource: null});
+      const schedule = scheduleFromExpandedAllDayOccurrence(
+          value.start,
+          value.end,
+          tzChoice.timeZone,
+          tzChoice.timeZoneSource,
+      );
+      startAt = schedule.startAt;
+      endAt = schedule.endAt;
+      isDateOnly = schedule.isDateOnly;
+      timeZone = schedule.timeZone;
+      timeZoneSource = schedule.timeZoneSource;
+    } else if (isAllDay) {
       const icsBlock = uidToIcsBlock.get(uid);
       if (!icsBlock) {
         console.warn(
@@ -1112,18 +1474,38 @@ function parseExternalEventsFromIcs(
       if (timeZone) {
         timeZoneSource = EVENT_TIME_ZONE_SOURCE_FEED;
       } else if (isFloatingTimedNodeIcalEvent(value)) {
-        const icsBlock = uidToIcsBlock.get(uid);
-        if (icsBlock) {
-          const resolved = resolveFloatingTimedSchedule(
-              icsBlock,
-              calendarTimeZone,
-              normalizedSourceDefaultTimeZone,
-          );
-          if (resolved.schedule) {
-            startAt = resolved.schedule.startAt;
-            endAt = resolved.schedule.endAt;
-            timeZone = resolved.schedule.timeZone;
-            timeZoneSource = resolved.timeZoneSource;
+        if (occurrenceMeta) {
+          const floatingZone = calendarTimeZone ||
+            normalizedSourceDefaultTimeZone;
+          if (floatingZone) {
+            const floatingSource = calendarTimeZone ?
+              EVENT_TIME_ZONE_SOURCE_FEED :
+              EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT;
+            const schedule = scheduleFromExpandedFloatingOccurrence(
+                value.start,
+                value.end,
+                floatingZone,
+                floatingSource,
+            );
+            startAt = schedule.startAt;
+            endAt = schedule.endAt;
+            timeZone = schedule.timeZone;
+            timeZoneSource = schedule.timeZoneSource;
+          }
+        } else {
+          const icsBlock = uidToIcsBlock.get(uid);
+          if (icsBlock) {
+            const resolved = resolveFloatingTimedSchedule(
+                icsBlock,
+                calendarTimeZone,
+                normalizedSourceDefaultTimeZone,
+            );
+            if (resolved.schedule) {
+              startAt = resolved.schedule.startAt;
+              endAt = resolved.schedule.endAt;
+              timeZone = resolved.schedule.timeZone;
+              timeZoneSource = resolved.timeZoneSource;
+            }
           }
         }
       }
@@ -1155,7 +1537,19 @@ function parseExternalEventsFromIcs(
 
     if (!startAt) continue;
 
-    const recurrenceId = normalizeRecurrenceId(value.recurrenceid);
+    let recurrenceId;
+    if (occurrenceMeta) {
+      if (isExpandedSeriesAnchor(occurrenceMeta)) {
+        recurrenceId = null;
+      } else if (occurrenceMeta.isOverride) {
+        recurrenceId = normalizeRecurrenceId(occurrenceMeta.recurrenceId) ||
+          normalizeRecurrenceId(startAt);
+      } else {
+        recurrenceId = normalizeRecurrenceId(startAt);
+      }
+    } else {
+      recurrenceId = normalizeRecurrenceId(value.recurrenceid);
+    }
 
     const rawDescription =
         typeof value.description === "string" ? value.description : "";

@@ -349,6 +349,213 @@ describe("event-sync helpers", () => {
       expect(events[0].websiteUrl).toBe("https://example.com/single");
     });
 
+    it("expands a TZID weekly rule across the import window", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//parkour spot test//EN",
+        "BEGIN:VEVENT",
+        "UID:mondays@example.com",
+        "DTSTART;TZID=America/Los_Angeles:20261116T173000",
+        "DTEND;TZID=America/Los_Angeles:20261116T190000",
+        "RRULE:FREQ=WEEKLY;COUNT=3",
+        "SUMMARY:Monday class",
+        "LOCATION:Campus",
+        "END:VEVENT",
+        "BEGIN:VEVENT",
+        "UID:mondays@example.com",
+        "RECURRENCE-ID;TZID=America/Los_Angeles:20261123T173000",
+        "DTSTART;TZID=America/Los_Angeles:20261124T180000",
+        "DTEND;TZID=America/Los_Angeles:20261124T193000",
+        "SUMMARY:Monday class moved",
+        "LOCATION:Other gym",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "s",
+        sourceName: "S",
+        now: new Date("2026-11-10T12:00:00Z"),
+      });
+
+      expect(events.map((event) => event.startAt.toISOString())).toEqual([
+        "2026-11-17T01:30:00.000Z",
+        "2026-11-25T02:00:00.000Z",
+        "2026-12-01T01:30:00.000Z",
+      ]);
+      expect(events[0].externalEventKey).toBe("mondays@example.com");
+      expect(events[0].externalEventRecurrenceId).toBeNull();
+      expect(events[0].title).toBe("Monday class");
+      expect(events[1].title).toBe("Monday class moved");
+      expect(events[1].address).toBe("Other gym");
+      expect(events[1].externalEventKey).toBe(
+          "mondays@example.com::2026-11-24T01:30:00.000Z",
+      );
+      expect(events[1].endAt.toISOString()).toBe("2026-11-25T03:30:00.000Z");
+      expect(events[2].externalEventKey).toBe(
+          "mondays@example.com::2026-12-01T01:30:00.000Z",
+      );
+      expect(events[0].timeZone).toBe("America/Los_Angeles");
+    });
+
+    it("keeps a series that ended before the window as one event", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "BEGIN:VEVENT",
+        "UID:old@example.com",
+        "DTSTART:20240104T180000Z",
+        "DTEND:20240104T200000Z",
+        "RRULE:FREQ=WEEKLY;UNTIL=20240120T180000Z",
+        "SUMMARY:Old class",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "s",
+        sourceName: "S",
+        now: new Date("2026-11-10T12:00:00Z"),
+      });
+
+      expect(events).toHaveLength(1);
+      expect(events[0].externalEventKey).toBe("old@example.com");
+      expect(events[0].startAt.toISOString()).toBe("2024-01-04T18:00:00.000Z");
+    });
+
+    it("drops EXDATE occurrences and caps open-ended rules at three months", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "BEGIN:VEVENT",
+        "UID:open@example.com",
+        "DTSTART;TZID=America/Los_Angeles:20261116T173000",
+        "DTEND;TZID=America/Los_Angeles:20261116T190000",
+        "RRULE:FREQ=WEEKLY",
+        "EXDATE;TZID=America/Los_Angeles:20261123T173000",
+        "SUMMARY:Open class",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "s",
+        sourceName: "S",
+        now: new Date("2026-11-10T12:00:00Z"),
+      });
+
+      const starts = events.map((event) => event.startAt.toISOString());
+      expect(starts).not.toContain("2026-11-24T01:30:00.000Z");
+      expect(starts[0]).toBe("2026-11-17T01:30:00.000Z");
+      expect(starts[starts.length - 1]).toBe("2027-02-09T01:30:00.000Z");
+      expect(starts).not.toContain("2027-02-16T01:30:00.000Z");
+      expect(events).toHaveLength(12);
+    });
+
+    it("includes a reschedule whose original date is already past", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "BEGIN:VEVENT",
+        "UID:moved@example.com",
+        "DTSTART;TZID=America/Los_Angeles:20261102T173000",
+        "DTEND;TZID=America/Los_Angeles:20261102T190000",
+        "RRULE:FREQ=WEEKLY;COUNT=4",
+        "SUMMARY:Class",
+        "END:VEVENT",
+        "BEGIN:VEVENT",
+        "UID:moved@example.com",
+        "RECURRENCE-ID;TZID=America/Los_Angeles:20261102T173000",
+        "DTSTART;TZID=America/Los_Angeles:20261112T180000",
+        "DTEND;TZID=America/Los_Angeles:20261112T193000",
+        "SUMMARY:Class moved",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "s",
+        sourceName: "S",
+        now: new Date("2026-11-10T12:00:00Z"),
+      });
+
+      expect(events.map((event) => event.title)).toEqual([
+        "Class moved",
+        "Class",
+        "Class",
+      ]);
+      expect(events[0].startAt.toISOString()).toBe(
+          "2026-11-13T02:00:00.000Z",
+      );
+      expect(events[0].externalEventKey).toBe("moved@example.com");
+      expect(events[1].startAt.toISOString()).toBe(
+          "2026-11-17T01:30:00.000Z",
+      );
+    });
+
+    it("expands all-day recurrences in the calendar timezone", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "X-WR-TIMEZONE:America/New_York",
+        "BEGIN:VEVENT",
+        "UID:allday@example.com",
+        "DTSTART;VALUE=DATE:20261116",
+        "DTEND;VALUE=DATE:20261118",
+        "RRULE:FREQ=WEEKLY;COUNT=2",
+        "SUMMARY:Weekend jam",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "s",
+        sourceName: "S",
+        now: new Date("2026-11-10T12:00:00Z"),
+      });
+
+      expect(events).toHaveLength(2);
+      expect(events[0].isDateOnly).toBe(true);
+      expect(events[0].timeZone).toBe("America/New_York");
+      expect(events[0].startAt.toISOString()).toBe("2026-11-16T05:00:00.000Z");
+      expect(events[0].endAt.toISOString()).toBe("2026-11-18T04:59:59.999Z");
+      expect(events[0].externalEventKey).toBe("allday@example.com");
+      expect(events[1].startAt.toISOString()).toBe("2026-11-23T05:00:00.000Z");
+      expect(events[1].externalEventKey).toBe(
+          "allday@example.com::2026-11-23T05:00:00.000Z",
+      );
+    });
+
+    it("expands floating recurrences in the calendar timezone", () => {
+      const icsText = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "X-WR-TIMEZONE:America/New_York",
+        "BEGIN:VEVENT",
+        "UID:float@example.com",
+        "DTSTART:20261116T180000",
+        "DTEND:20261116T200000",
+        "RRULE:FREQ=WEEKLY;COUNT=2",
+        "SUMMARY:Floating class",
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\r\n");
+
+      const events = parseExternalEventsFromIcs(icsText, {
+        sourceId: "s",
+        sourceName: "S",
+        now: new Date("2026-11-10T12:00:00Z"),
+      });
+
+      expect(events).toHaveLength(2);
+      expect(events[0].startAt.toISOString()).toBe("2026-11-16T23:00:00.000Z");
+      expect(events[0].endAt.toISOString()).toBe("2026-11-17T01:00:00.000Z");
+      expect(events[0].timeZone).toBe("America/New_York");
+      expect(events[1].startAt.toISOString()).toBe("2026-11-23T23:00:00.000Z");
+      expect(events[0].externalEventKey).toBe("float@example.com");
+    });
+
     it("uses last URL from HTML description and cleans description text", () => {
       const icsText = [
         "BEGIN:VCALENDAR",
