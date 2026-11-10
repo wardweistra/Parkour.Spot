@@ -394,17 +394,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ),
                             _buildActionTile(
                               context,
-                              Icons.event_outlined,
-                              l10n.myEventsTitle,
-                              l10n.accountMyEventsSubtitle,
-                              () => context.push('/profile/events'),
-                            ),
-                            _buildActionTile(
-                              context,
-                              Icons.how_to_reg_outlined,
-                              l10n.mySessionsTitle,
-                              l10n.publicProfileMyCheckInsSubtitle,
-                              () => context.push('/profile/check-ins'),
+                              Icons.dynamic_feed_outlined,
+                              l10n.myActivitiesTitle,
+                              l10n.accountMyActivitiesSubtitle,
+                              () => context.push('/profile/activities'),
                             ),
                             _buildActionTile(
                               context,

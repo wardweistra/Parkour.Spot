@@ -73,6 +73,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mySpotsTitle => 'My spots';
 
   @override
+  String get myActivitiesTitle => 'My activities';
+
+  @override
+  String get accountMyActivitiesSubtitle =>
+      'Events you\'re going to, planned sessions, and calendar sync';
+
+  @override
+  String get myActivitiesHubSignInPrompt =>
+      'Sign in to see your events and sessions';
+
+  @override
   String get mySessionsTitle => 'My sessions';
 
   @override
