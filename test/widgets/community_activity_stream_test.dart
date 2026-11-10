@@ -224,6 +224,55 @@ void main() {
     expect(find.text('Add new event'), findsOneWidget);
   });
 
+  testWidgets('hides add-event suggestion while more upcoming can expand', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      CommunityActivityFeed(
+        events: [_event('soon', _now.add(const Duration(hours: 2)))],
+        upcomingPlanTotal: 2,
+        eventTotal: 3,
+        hasMoreUpcoming: true,
+      ),
+      onLoadMoreUpcoming: () {},
+      onAddEvent: () {},
+    );
+
+    expect(find.text('Show 4 more upcoming'), findsOneWidget);
+    expect(find.textContaining('Missing an event you expected'), findsNothing);
+    expect(find.text('Add new event'), findsNothing);
+  });
+
+  testWidgets(
+    'hides add-event suggestion when the upcoming page is empty but more can expand',
+    (tester) async {
+      await _pump(
+        tester,
+        CommunityActivityFeed(
+          past: [
+            _item(
+              'checkin',
+              CommunityActivityKind.spotCheckIn,
+              occurredAt: _now.subtract(const Duration(minutes: 5)),
+              actor: 'Zoë',
+            ),
+          ],
+          upcomingPlanTotal: 3,
+          hasMoreUpcoming: true,
+        ),
+        onLoadMoreUpcoming: () {},
+        onAddEvent: () {},
+      );
+
+      expect(find.text('Show 3 more upcoming'), findsOneWidget);
+      expect(
+        find.textContaining('Missing an event you expected'),
+        findsNothing,
+      );
+    },
+  );
+
   testWidgets('renders past → now → upcoming with the expected copy', (
     tester,
   ) async {

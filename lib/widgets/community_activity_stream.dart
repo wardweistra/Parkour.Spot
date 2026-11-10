@@ -707,7 +707,9 @@ class _CommunityActivityStreamState extends State<CommunityActivityStream> {
         !widget.feed.hasMorePast && widget.feed.loadedPastCount > 0;
     final showMoreUpcoming =
         widget.feed.hasMoreUpcoming && widget.onLoadMoreUpcoming != null;
-    final showAddEventSuggestion = widget.onAddEvent != null;
+    // Offer to add an event only once every upcoming page is already shown.
+    final showAddEventSuggestion =
+        widget.onAddEvent != null && !showMoreUpcoming;
     final upcomingEmpty = upcoming.isEmpty;
 
     _ensureInitialScrollToNow();

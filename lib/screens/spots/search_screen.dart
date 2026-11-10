@@ -3575,7 +3575,8 @@ class SearchScreenState extends State<SearchScreen>
     final feed = _loadedCommunityFeed;
     final showEarlier = feed.hasMorePast;
     final showMoreUpcoming = feed.hasMoreUpcoming;
-    final suggestAddEvent = _communityLens == CommunityActivityLens.events;
+    final suggestAddEvent =
+        _communityLens == CommunityActivityLens.events && !showMoreUpcoming;
 
     return LayoutBuilder(
       builder: (context, constraints) {
