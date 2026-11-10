@@ -95,6 +95,22 @@ describe("wix-events helpers", () => {
       expect(events[0].id).toBe("evt-1");
       expect(events[1].title).toBe("Hawaii Jam 2027");
     });
+
+    it("reads widgetTPASection events widgets", () => {
+      const tpaHtml = [
+        `"appsWarmupData":{"${WIX_EVENTS_APP_DEFINITION_ID}":{`,
+        `"widgetTPASection_mhod7az8":{"events":{"events":[`,
+        `{"id":"asn-1","title":"Sydney jam","slug":"sydney-jam","status":0}`,
+        `]}}}}`,
+        `"widgetTPASection_other":{"formsById":{}}`,
+      ].join("");
+      expect(extractWixEventsCompIdsFromHtml(tpaHtml)).toEqual([
+        "comp-mhod7az8",
+      ]);
+      const events = extractWixEventsFromWarmupHtml(tpaHtml);
+      expect(events).toHaveLength(1);
+      expect(events[0].id).toBe("asn-1");
+    });
   });
 
   describe("fetchWixEventsCalendarEvents", () => {
@@ -146,6 +162,55 @@ describe("wix-events helpers", () => {
       expect(calls[1].url).toContain("compId=comp-abc123");
       expect(calls[1].url).toContain("offset=0");
       expect(calls[2].url).toContain("offset=2");
+    });
+
+    it("calls the viewer API for widgetTPASection ids", async () => {
+      const pageHtml = [
+        `"instance":"${eventsInstance}",`,
+        `"widgetTPASection_mhod7az8":{"events":{"events":[`,
+        `{"id":"warm-1","title":"From warmup","status":0}`,
+        `]}}`,
+      ].join("");
+      const calls = [];
+      const downloadText = async (url, options = {}) => {
+        calls.push({url, headers: options.headers || {}});
+        if (!url.includes("/_api/")) return pageHtml;
+        return JSON.stringify({
+          events: [{id: "api-1", title: "From API", status: 0}],
+          hasMore: false,
+          total: 1,
+        });
+      };
+
+      const result = await fetchWixEventsCalendarEvents(
+          "https://www.parkour.asn.au/event-list",
+          {downloadText},
+      );
+      expect(result.items.map((event) => event.id)).toEqual(["api-1"]);
+      expect(calls[1].url).toContain("compId=comp-mhod7az8");
+      expect(calls[1].headers.Authorization).toBe(eventsInstance);
+    });
+
+    it("falls back to widgetTPASection warmup events", async () => {
+      const pageHtml = [
+        `"instance":"${eventsInstance}",`,
+        `"widgetTPASection_mhod7az8":{"events":{"events":[`,
+        `{"id":"warm-1","slug":"sydney-jam","status":0}`,
+        `]}}`,
+        `<a href="https://www.parkour.asn.au/event-details/sydney-jam">`,
+        `Sydney jam</a>`,
+      ].join("");
+      const downloadText = async (url) => {
+        if (!url.includes("/_api/")) return pageHtml;
+        throw new Error("Failed fetching ICS (HTTP 401)");
+      };
+
+      const result = await fetchWixEventsCalendarEvents(
+          "https://www.parkour.asn.au/event-list",
+          {downloadText},
+      );
+      expect(result.items.map((event) => event.id)).toEqual(["warm-1"]);
+      expect(result.eventDetailsPath).toBe("/event-details");
     });
 
     it("falls back to warmup events when the viewer API fails", async () => {

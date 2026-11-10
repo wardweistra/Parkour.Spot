@@ -6,8 +6,11 @@
  *   GET /_api/wix-one-events-server/web/paginated-events/viewer
  * with Authorization: <instance JWT>.
  *
+ * Widget ids in SSR HTML are either widgetcomp-{id} or widgetTPASection_{id}.
+ * The viewer API compId for both is comp-{id}.
+ *
  * If the API fails or returns nothing, events embedded in appsWarmupData under
- * widgetcomp-* are used as a fallback (upcoming list only).
+ * those widget keys are used as a fallback (upcoming list only).
  */
 
 const MAX_EVENTS = 500;
@@ -109,13 +112,20 @@ function extractWixEventsCompIdsFromHtml(html) {
   if (typeof html !== "string" || !html) return [];
   const seen = new Set();
   const ids = [];
-  const re = /"widgetcomp-([a-zA-Z0-9_-]+)"/g;
-  let match;
-  while ((match = re.exec(html)) !== null) {
-    const compId = `comp-${match[1]}`;
-    if (seen.has(compId)) continue;
-    seen.add(compId);
-    ids.push(compId);
+  const patterns = [
+    /"widgetcomp-([a-zA-Z0-9_-]+)"/g,
+    // Only TPA sections that actually hold an events payload. Other TPA
+    // widgets on the same page are unrelated.
+    /"widgetTPASection_([a-zA-Z0-9_-]+)"\s*:\s*\{\s*"events"/g,
+  ];
+  for (const re of patterns) {
+    let match;
+    while ((match = re.exec(html)) !== null) {
+      const compId = `comp-${match[1]}`;
+      if (seen.has(compId)) continue;
+      seen.add(compId);
+      ids.push(compId);
+    }
   }
   return ids;
 }
@@ -129,8 +139,11 @@ function extractWixEventsFromWarmupHtml(html) {
   if (typeof html !== "string" || !html) return [];
   const items = [];
   const seenIds = new Set();
-  const markerRe =
-    /"widgetcomp-[^"]+"\s*:\s*\{\s*"events"\s*:\s*\{\s*"events"\s*:\s*\[/g;
+  const markerRe = new RegExp(
+      "\"widget(?:comp-|TPASection_)[^\"]+\"\\s*:\\s*\\{" +
+      "\\s*\"events\"\\s*:\\s*\\{\\s*\"events\"\\s*:\\s*\\[",
+      "g",
+  );
   let marker;
   while ((marker = markerRe.exec(html)) !== null) {
     const searchFrom = marker.index + marker[0].length - 1;
