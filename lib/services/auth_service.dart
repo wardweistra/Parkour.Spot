@@ -660,10 +660,12 @@ class AuthService extends ChangeNotifier {
     String? displayName,
     String? photoURL,
     String? instagramUrl,
+    String? bio,
     bool deleteOldPhoto = false,
     bool removePhoto = false,
     bool removeDisplayName = false,
     bool removeInstagramUrl = false,
+    bool removeBio = false,
   }) async {
     if (_auth.currentUser == null || _userProfile == null) {
       debugPrint(
@@ -696,6 +698,12 @@ class AuthService extends ChangeNotifier {
         updates['instagramUrl'] = null;
       } else if (instagramUrl != null) {
         updates['instagramUrl'] = instagramUrl;
+      }
+
+      if (removeBio) {
+        updates['bio'] = null;
+      } else if (bio != null) {
+        updates['bio'] = bio;
       }
 
       // Delete old profile picture from Storage if requested and it exists
@@ -735,6 +743,7 @@ class AuthService extends ChangeNotifier {
         instagramUrl: removeInstagramUrl
             ? null
             : (instagramUrl ?? _userProfile!.instagramUrl),
+        bio: removeBio ? null : (bio ?? _userProfile!.bio),
       );
 
       notifyListeners();

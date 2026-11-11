@@ -4455,6 +4455,51 @@
   "@publicProfileInstagramUpdateFailed": {
     "description": "Validation/error text when instagram update fails"
   },
+  "publicProfileBioLabel": "Bio",
+  "@publicProfileBioLabel": {
+    "description": "Profile settings: bio section title"
+  },
+  "publicProfileBioFieldHint": "What do you train, where do you explore?",
+  "@publicProfileBioFieldHint": {
+    "description": "Profile settings: bio text field hint"
+  },
+  "publicProfileBioHelper": "Up to {maxLength} characters",
+  "@publicProfileBioHelper": {
+    "description": "Profile settings: bio character limit helper",
+    "placeholders": {
+      "maxLength": {
+        "type": "int"
+      }
+    }
+  },
+  "publicProfileNoBioSet": "No bio yet",
+  "@publicProfileNoBioSet": {
+    "description": "Profile settings: fallback when bio is empty"
+  },
+  "publicProfileBioEmptyTitle": "Introduce yourself",
+  "@publicProfileBioEmptyTitle": {
+    "description": "Own profile card: title when bio is empty"
+  },
+  "publicProfileBioEmptySubtitle": "Share your style, home spots, or what you're working on.",
+  "@publicProfileBioEmptySubtitle": {
+    "description": "Own profile card: subtitle when bio is empty"
+  },
+  "publicProfileBioAddAction": "Write bio",
+  "@publicProfileBioAddAction": {
+    "description": "Own profile card: action to add bio"
+  },
+  "publicProfileBioRemoved": "Bio removed",
+  "@publicProfileBioRemoved": {
+    "description": "Snackbar when bio is removed"
+  },
+  "publicProfileBioUpdated": "Bio updated successfully",
+  "@publicProfileBioUpdated": {
+    "description": "Snackbar when bio update succeeds"
+  },
+  "publicProfileBioUpdateFailed": "Failed to update bio",
+  "@publicProfileBioUpdateFailed": {
+    "description": "Error when bio update fails"
+  },
   "publicProfilePrivacyTitle": "Profile privacy",
   "@publicProfilePrivacyTitle": {
     "description": "Profile settings: privacy section title"

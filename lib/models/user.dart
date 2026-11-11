@@ -5,6 +5,7 @@ class User {
   final String? photoURL;
   final String? username;
   final String? instagramUrl;
+  final String? bio;
   final bool isPublicProfile;
 
   /// When true, the built-in "added by you" list is listed on the public profile.
@@ -38,6 +39,7 @@ class User {
     this.photoURL,
     this.username,
     this.instagramUrl,
+    this.bio,
     this.isPublicProfile = true,
     this.isAddedSpotsListPublic = false,
     this.isRatedSpotsListPublic = false,
@@ -69,6 +71,7 @@ class User {
       photoURL: map['photoURL'],
       username: map['username'],
       instagramUrl: map['instagramUrl'],
+      bio: map['bio'] as String?,
       isPublicProfile: map['isPublicProfile'] ?? true,
       isAddedSpotsListPublic: map['isAddedSpotsListPublic'] == true,
       isRatedSpotsListPublic: map['isRatedSpotsListPublic'] == true,
@@ -125,6 +128,7 @@ class User {
       'photoURL': photoURL,
       'username': username,
       'instagramUrl': instagramUrl,
+      'bio': bio,
       'isPublicProfile': isPublicProfile,
       'isAddedSpotsListPublic': isAddedSpotsListPublic,
       'isRatedSpotsListPublic': isRatedSpotsListPublic,
@@ -158,6 +162,7 @@ class User {
     Object? photoURL = _omit,
     String? username,
     Object? instagramUrl = _omit,
+    Object? bio = _omit,
     bool? isPublicProfile,
     bool? isAddedSpotsListPublic,
     bool? isRatedSpotsListPublic,
@@ -189,6 +194,7 @@ class User {
       instagramUrl: instagramUrl == _omit
           ? this.instagramUrl
           : instagramUrl as String?,
+      bio: bio == _omit ? this.bio : bio as String?,
       isPublicProfile: isPublicProfile ?? this.isPublicProfile,
       isAddedSpotsListPublic:
           isAddedSpotsListPublic ?? this.isAddedSpotsListPublic,

@@ -7192,6 +7192,66 @@ abstract class AppLocalizations {
   /// **'Failed to update Instagram link'**
   String get publicProfileInstagramUpdateFailed;
 
+  /// Profile settings: bio section title
+  ///
+  /// In en, this message translates to:
+  /// **'Bio'**
+  String get publicProfileBioLabel;
+
+  /// Profile settings: bio text field hint
+  ///
+  /// In en, this message translates to:
+  /// **'What do you train, where do you explore?'**
+  String get publicProfileBioFieldHint;
+
+  /// Profile settings: bio character limit helper
+  ///
+  /// In en, this message translates to:
+  /// **'Up to {maxLength} characters'**
+  String publicProfileBioHelper(int maxLength);
+
+  /// Profile settings: fallback when bio is empty
+  ///
+  /// In en, this message translates to:
+  /// **'No bio yet'**
+  String get publicProfileNoBioSet;
+
+  /// Own profile card: title when bio is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Introduce yourself'**
+  String get publicProfileBioEmptyTitle;
+
+  /// Own profile card: subtitle when bio is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Share your style, home spots, or what you\'re working on.'**
+  String get publicProfileBioEmptySubtitle;
+
+  /// Own profile card: action to add bio
+  ///
+  /// In en, this message translates to:
+  /// **'Write bio'**
+  String get publicProfileBioAddAction;
+
+  /// Snackbar when bio is removed
+  ///
+  /// In en, this message translates to:
+  /// **'Bio removed'**
+  String get publicProfileBioRemoved;
+
+  /// Snackbar when bio update succeeds
+  ///
+  /// In en, this message translates to:
+  /// **'Bio updated successfully'**
+  String get publicProfileBioUpdated;
+
+  /// Error when bio update fails
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update bio'**
+  String get publicProfileBioUpdateFailed;
+
   /// Profile settings: privacy section title
   ///
   /// In en, this message translates to:

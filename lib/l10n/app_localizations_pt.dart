@@ -4519,6 +4519,40 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível atualizar a ligação do Instagram';
 
   @override
+  String get publicProfileBioLabel => 'Bio';
+
+  @override
+  String get publicProfileBioFieldHint =>
+      'What do you train, where do you explore?';
+
+  @override
+  String publicProfileBioHelper(int maxLength) {
+    return 'Up to $maxLength characters';
+  }
+
+  @override
+  String get publicProfileNoBioSet => 'No bio yet';
+
+  @override
+  String get publicProfileBioEmptyTitle => 'Introduce yourself';
+
+  @override
+  String get publicProfileBioEmptySubtitle =>
+      'Share your style, home spots, or what you\'re working on.';
+
+  @override
+  String get publicProfileBioAddAction => 'Write bio';
+
+  @override
+  String get publicProfileBioRemoved => 'Bio removed';
+
+  @override
+  String get publicProfileBioUpdated => 'Bio updated successfully';
+
+  @override
+  String get publicProfileBioUpdateFailed => 'Failed to update bio';
+
+  @override
   String get publicProfilePrivacyTitle => 'Privacidade';
 
   @override
