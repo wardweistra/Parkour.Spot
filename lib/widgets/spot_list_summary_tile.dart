@@ -122,7 +122,7 @@ class _SpotListSummaryTileState extends State<SpotListSummaryTile> {
         ? _list.visibility.localizedVisibilityCountAndCreator(
             l10n,
             _list.spotCount,
-            effectiveCreator!,
+            effectiveCreator,
           )
         : _list.visibility.localizedVisibilityAndCount(l10n, _list.spotCount);
 
