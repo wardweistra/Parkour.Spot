@@ -785,6 +785,7 @@
   "spotDetailFieldDescriptionHint": "Descrição do spot",
   "spotDetailFieldSpotAttributes": "Atributos do spot",
   "spotDetailSuggestEditEmailHelper": "Só te contactamos sobre esta sugestão.",
+  "spotDetailSuggestEditYoutubeHint": "Sugere um ou mais vídeos do YouTube para este spot. Introduz IDs ou URLs (p. ex., dQw4w9WgXcQ ou https://www.youtube.com/watch?v=dQw4w9WgXcQ). Arrasta para reordenar.",
   "spotDetailMustBeLoggedInToRate": "Tens de ter sessão iniciada para avaliar spots",
   "spotDetailRatingSubmitted": "{count, plural, one{Avaliação de 1 estrela enviada!} other{Avaliação de {count} estrelas enviada!}}",
   "spotDetailRatingSubmitFailed": "Não foi possível enviar a avaliação. Tenta novamente.",

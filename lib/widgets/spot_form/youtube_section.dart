@@ -10,6 +10,10 @@ class SpotYoutubeSection extends StatelessWidget {
   final void Function(int index) onRemove;
   final void Function(int oldIndex, int newIndex) onReorder;
   final VoidCallback? onChanged;
+  final String? hintText;
+
+  /// Compact layout without reorderable list — for nested dialogs.
+  final bool forDialog;
 
   const SpotYoutubeSection({
     super.key,
@@ -18,87 +22,124 @@ class SpotYoutubeSection extends StatelessWidget {
     required this.onRemove,
     required this.onReorder,
     this.onChanged,
+    this.hintText,
+    this.forDialog = false,
   });
+
+  Widget _linkFields(BuildContext context, AppLocalizations l10n) {
+    if (controllers.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        child: Text(
+          l10n.editSpotYoutubeEmpty,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    if (forDialog) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var index = 0; index < controllers.length; index++)
+            _YoutubeLinkRow(
+              key: ObjectKey(controllers[index]),
+              index: index,
+              controller: controllers[index],
+              labelText: l10n.editSpotYoutubeLinkLabel(index + 1),
+              hintText: l10n.editSpotYoutubeLinkHint,
+              removeTooltip: l10n.editSpotYoutubeRemoveTooltip,
+              reorderTooltip: l10n.editSpotYoutubeReorderTooltip,
+              thumbnailSemanticLabel:
+                  l10n.editSpotYoutubeThumbnailSemanticLabel,
+              onRemove: () => onRemove(index),
+              onChanged: onChanged,
+              showReorderHandle: false,
+            ),
+        ],
+      );
+    }
+
+    return ReorderableListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      buildDefaultDragHandles: false,
+      itemCount: controllers.length,
+      proxyDecorator: (child, index, animation) {
+        // Drag overlay is outside the Card's Material; TextField needs one.
+        return Material(
+          type: MaterialType.transparency,
+          child: child,
+        );
+      },
+      onReorder: (oldIndex, newIndex) {
+        if (newIndex > oldIndex) {
+          newIndex -= 1;
+        }
+        onReorder(oldIndex, newIndex);
+      },
+      itemBuilder: (context, index) {
+        return _YoutubeLinkRow(
+          key: ObjectKey(controllers[index]),
+          index: index,
+          controller: controllers[index],
+          labelText: l10n.editSpotYoutubeLinkLabel(index + 1),
+          hintText: l10n.editSpotYoutubeLinkHint,
+          removeTooltip: l10n.editSpotYoutubeRemoveTooltip,
+          reorderTooltip: l10n.editSpotYoutubeReorderTooltip,
+          thumbnailSemanticLabel: l10n.editSpotYoutubeThumbnailSemanticLabel,
+          onRemove: () => onRemove(index),
+          onChanged: onChanged,
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+  final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              l10n.editSpotYoutubeSectionTitle,
+              style: forDialog
+                  ? Theme.of(context).textTheme.titleSmall
+                  : Theme.of(context).textTheme.titleMedium,
+            ),
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: onAdd,
+              tooltip: l10n.editSpotYoutubeAddTooltip,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          hintText ?? l10n.editSpotYoutubeHint,
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _linkFields(context, l10n),
+      ],
+    );
+
+    if (forDialog) {
+      return body;
+    }
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  l10n.editSpotYoutubeSectionTitle,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: onAdd,
-                  tooltip: l10n.editSpotYoutubeAddTooltip,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.editSpotYoutubeHint,
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (controllers.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: Text(
-                  l10n.editSpotYoutubeEmpty,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              )
-            else
-              ReorderableListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                buildDefaultDragHandles: false,
-                itemCount: controllers.length,
-                proxyDecorator: (child, index, animation) {
-                  // Drag overlay is outside the Card's Material; TextField needs one.
-                  return Material(
-                    type: MaterialType.transparency,
-                    child: child,
-                  );
-                },
-                onReorder: (oldIndex, newIndex) {
-                  if (newIndex > oldIndex) {
-                    newIndex -= 1;
-                  }
-                  onReorder(oldIndex, newIndex);
-                },
-                itemBuilder: (context, index) {
-                  return _YoutubeLinkRow(
-                    key: ObjectKey(controllers[index]),
-                    index: index,
-                    controller: controllers[index],
-                    labelText: l10n.editSpotYoutubeLinkLabel(index + 1),
-                    hintText: l10n.editSpotYoutubeLinkHint,
-                    removeTooltip: l10n.editSpotYoutubeRemoveTooltip,
-                    reorderTooltip: l10n.editSpotYoutubeReorderTooltip,
-                    thumbnailSemanticLabel:
-                        l10n.editSpotYoutubeThumbnailSemanticLabel,
-                    onRemove: () => onRemove(index),
-                    onChanged: onChanged,
-                  );
-                },
-              ),
-          ],
-        ),
+        child: body,
       ),
     );
   }
@@ -114,6 +155,7 @@ class _YoutubeLinkRow extends StatelessWidget {
   final String thumbnailSemanticLabel;
   final VoidCallback onRemove;
   final VoidCallback? onChanged;
+  final bool showReorderHandle;
 
   const _YoutubeLinkRow({
     super.key,
@@ -126,6 +168,7 @@ class _YoutubeLinkRow extends StatelessWidget {
     required this.thumbnailSemanticLabel,
     required this.onRemove,
     this.onChanged,
+    this.showReorderHandle = true,
   });
 
   @override
@@ -141,31 +184,32 @@ class _YoutubeLinkRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
         children: [
-          ReorderableDragStartListener(
-            index: index,
-            child: Semantics(
-              label: reorderTooltip,
-              button: true,
-              child: Tooltip(
-                message: reorderTooltip,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 12,
-                  ),
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    color: scheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.drag_handle,
-                    color: scheme.onSurfaceVariant,
+          if (showReorderHandle)
+            ReorderableDragStartListener(
+              index: index,
+              child: Semantics(
+                label: reorderTooltip,
+                button: true,
+                child: Tooltip(
+                  message: reorderTooltip,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 12,
+                    ),
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      color: scheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.drag_handle,
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
           Semantics(
             label: thumbnailSemanticLabel,
             child: ClipRRect(

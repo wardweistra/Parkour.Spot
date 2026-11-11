@@ -131,6 +131,10 @@ class _EditSuggestionApprovalDialogState
         widget.report.suggestedSpotFacilities!.isNotEmpty) {
       _accepted['spotFacilities'] = true;
     }
+    if (widget.report.suggestedYoutubeVideoIds != null &&
+        widget.report.suggestedYoutubeVideoIds!.isNotEmpty) {
+      _accepted['youtubeVideoIds'] = true;
+    }
   }
 
   bool _canApply() {
@@ -258,6 +262,18 @@ class _EditSuggestionApprovalDialogState
         return;
       }
 
+      if (acceptedFields.contains('youtubeVideoIds') &&
+          widget.report.suggestedYoutubeVideoIds != null) {
+        final existing = targetSpot.youtubeVideoIds ?? const <String>[];
+        final merged = <String>[...existing];
+        for (final id in widget.report.suggestedYoutubeVideoIds!) {
+          if (!merged.contains(id)) {
+            merged.add(id);
+          }
+        }
+        updates['youtubeVideoIds'] = merged;
+      }
+
       final success = await spotService.applyEditSuggestions(
         spot: targetSpot,
         updates: updates,
@@ -315,6 +331,27 @@ class _EditSuggestionApprovalDialogState
     final trimmed = value?.trim();
     if (trimmed == null || trimmed.isEmpty) return _emptyValue(l10n);
     return trimmed;
+  }
+
+  List<String> _youtubeVideoLabels(List<String>? videoIds) {
+    if (videoIds == null || videoIds.isEmpty) {
+      return const [];
+    }
+    final ids = videoIds.where((id) => id.trim().isNotEmpty).toList()..sort();
+    return ids;
+  }
+
+  List<String> _mergedYoutubeVideoIds(
+    List<String>? existing,
+    List<String>? suggested,
+  ) {
+    final merged = <String>[...?existing];
+    for (final id in suggested ?? const <String>[]) {
+      if (id.trim().isEmpty || merged.contains(id)) continue;
+      merged.add(id);
+    }
+    merged.sort();
+    return merged;
   }
 
   List<String> _sortedLabels(List<String>? values, String category) {
@@ -747,6 +784,20 @@ class _EditSuggestionApprovalDialogState
                       l10n,
                     ),
                     useTextDiff: false,
+                  ),
+                if (report.suggestedYoutubeVideoIds != null &&
+                    report.suggestedYoutubeVideoIds!.isNotEmpty)
+                  _buildListFieldRow(
+                    context,
+                    fieldLabel: l10n.editSpotYoutubeSectionTitle,
+                    fieldKey: 'youtubeVideoIds',
+                    beforeLabels: _youtubeVideoLabels(spot.youtubeVideoIds),
+                    afterLabels: _youtubeVideoLabels(
+                      _mergedYoutubeVideoIds(
+                        spot.youtubeVideoIds,
+                        report.suggestedYoutubeVideoIds,
+                      ),
+                    ),
                   ),
                 Text(
                   'Comment (Optional)',

@@ -3279,6 +3279,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Solo te contactaremos por esta sugerencia.';
 
   @override
+  String get spotDetailSuggestEditYoutubeHint =>
+      'Sugiere uno o más vídeos de YouTube para este spot. Introduce IDs o URLs (p. ej., dQw4w9WgXcQ o https://www.youtube.com/watch?v=dQw4w9WgXcQ). Arrastra para reordenar.';
+
+  @override
   String get spotDetailMustBeLoggedInToRate =>
       'Debes iniciar sesión para valorar spots';
 

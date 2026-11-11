@@ -761,6 +761,12 @@ class _ReportCardState extends State<_ReportCard> {
                       label: const Text('Facilities'),
                       visualDensity: VisualDensity.compact,
                     ),
+                  if (widget.report.suggestedYoutubeVideoIds != null &&
+                      widget.report.suggestedYoutubeVideoIds!.isNotEmpty)
+                    Chip(
+                      label: const Text('YouTube'),
+                      visualDensity: VisualDensity.compact,
+                    ),
                 ],
               ),
               const SizedBox(height: 12),

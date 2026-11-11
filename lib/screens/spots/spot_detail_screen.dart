@@ -40,6 +40,8 @@ import '../../constants/spot_attributes.dart';
 import '../../constants/spot_detail_ui.dart';
 import '../../services/geocoding_service.dart';
 import '../../widgets/spot_form/attributes_section.dart';
+import '../../widgets/spot_form/youtube_section.dart';
+import '../../utils/youtube_utils.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
 import '../../services/snackbar_service.dart';
@@ -7446,6 +7448,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
   final Set<String> _selectedFeatures = {};
   final Map<String, String> _selectedFacilities = {};
   final Set<String> _selectedGoodFor = {};
+  final List<TextEditingController> _youtubeControllers = [];
 
   bool _isSubmitting = false;
   String? _submissionError;
@@ -7477,7 +7480,43 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
     _nameController.dispose();
     _descriptionController.dispose();
     _emailController.dispose();
+    for (final controller in _youtubeControllers) {
+      controller.dispose();
+    }
     super.dispose();
+  }
+
+  List<String> _suggestedYoutubeVideoIds() {
+    final existing = Set<String>.from(widget.spot.youtubeVideoIds ?? []);
+    final seen = <String>{};
+    final result = <String>[];
+    for (final controller in _youtubeControllers) {
+      final id = extractYoutubeVideoId(controller.text);
+      if (id == null || id.isEmpty) continue;
+      if (existing.contains(id) || !seen.add(id)) continue;
+      result.add(id);
+    }
+    return result;
+  }
+
+  void _addYoutubeRow() {
+    setState(() {
+      _youtubeControllers.add(TextEditingController());
+    });
+  }
+
+  void _removeYoutubeRow(int index) {
+    setState(() {
+      _youtubeControllers[index].dispose();
+      _youtubeControllers.removeAt(index);
+    });
+  }
+
+  void _reorderYoutubeRows(int oldIndex, int newIndex) {
+    setState(() {
+      final controller = _youtubeControllers.removeAt(oldIndex);
+      _youtubeControllers.insert(newIndex, controller);
+    });
   }
 
   Future<void> _pickLocation() async {
@@ -7557,6 +7596,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
     if (_selectedAccess != widget.spot.spotAccess) return true;
     final currentFacilities = widget.spot.spotFacilities ?? {};
     if (!_mapEquals(_selectedFacilities, currentFacilities)) return true;
+    if (_suggestedYoutubeVideoIds().isNotEmpty) return true;
     return false;
   }
 
@@ -7676,6 +7716,9 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
           _selectedFacilities.isNotEmpty) {
         suggestedSpotFacilities = Map.from(_selectedFacilities);
       }
+      final suggestedYoutubeVideoIds = _suggestedYoutubeVideoIds();
+      final List<String>? suggestedYoutubeIds =
+          suggestedYoutubeVideoIds.isEmpty ? null : suggestedYoutubeVideoIds;
 
       final hasAny =
           suggestedName != null ||
@@ -7685,7 +7728,8 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
           (suggestedSpotFeatures != null && suggestedSpotFeatures.isNotEmpty) ||
           suggestedSpotAccess != null ||
           (suggestedSpotFacilities != null &&
-              suggestedSpotFacilities.isNotEmpty);
+              suggestedSpotFacilities.isNotEmpty) ||
+          (suggestedYoutubeIds != null && suggestedYoutubeIds.isNotEmpty);
 
       if (!hasAny) {
         setState(() {
@@ -7715,6 +7759,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
         suggestedSpotFeatures: suggestedSpotFeatures,
         suggestedSpotAccess: suggestedSpotAccess,
         suggestedSpotFacilities: suggestedSpotFacilities,
+        suggestedYoutubeVideoIds: suggestedYoutubeIds,
       );
 
       if (!mounted) return;
@@ -7927,6 +7972,18 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                   onToggleFeature: _toggleFeature,
                   onFacilityChanged: _onFacilityChanged,
                   onToggleGoodFor: _toggleGoodFor,
+                ),
+                const SizedBox(height: 16),
+                SpotYoutubeSection(
+                  controllers: _youtubeControllers,
+                  onAdd: _isSubmitting ? () {} : _addYoutubeRow,
+                  onRemove: _isSubmitting ? (_) {} : _removeYoutubeRow,
+                  onReorder: _isSubmitting
+                      ? (_, __) {}
+                      : _reorderYoutubeRows,
+                  onChanged: _isSubmitting ? null : () => setState(() {}),
+                  hintText: l10n.spotDetailSuggestEditYoutubeHint,
+                  forDialog: true,
                 ),
                 if (_submissionError != null) ...[
                   const SizedBox(height: 16),
