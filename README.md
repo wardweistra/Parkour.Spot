@@ -278,8 +278,10 @@ The project includes seed data for Firebase emulators to help new developers get
 
 External machine clients can read spots via:
 
-- **REST:** `GET https://parkour.spot/api/v1/spots` (name search `q` or bounds) and `GET https://parkour.spot/api/v1/spots/:spotId`
-- **MCP:** `POST https://parkour.spot/mcp` (Streamable HTTP JSON-RPC) with tools `search_spots` and `get_spot`
+- **REST:** `GET https://parkour.spot/api/v1/spots` (name search `q` or bounds), `GET https://parkour.spot/api/v1/spots/:spotId`, and `GET https://parkour.spot/api/v1/spot-lists/:listId/spots` (every spot on a public or unlisted list, in list order)
+- **MCP:** `POST https://parkour.spot/mcp` (Streamable HTTP JSON-RPC) with tools `search_spots`, `get_spot`, and `list_spot_list_spots`
+
+`list_spot_list_spots` takes `listId`. Private lists and unknown ids both return not found. Spots keep list order; a section entry note is returned as `listNote`. Missing spot documents are omitted.
 
 Both require an API key from **Admin → API clients** (`X-API-Key` or `Authorization: Bearer ps_…`). Usage is counted per client; there is no hard rate limit yet.
 

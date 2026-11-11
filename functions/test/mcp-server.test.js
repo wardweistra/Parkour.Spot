@@ -71,6 +71,12 @@ describe("createMcpHandler", () => {
         shownCount: 1,
       }),
       getSpotForApi: jest.fn().mockResolvedValue({id: "s1", name: "Wall"}),
+      listSpotsForSpotList: jest.fn().mockResolvedValue({
+        list: {id: "list1", name: "Essentials", visibility: "public"},
+        spots: [{id: "s1"}],
+        totalCount: 1,
+        shownCount: 1,
+      }),
       ...overrides,
     };
   }
@@ -176,6 +182,29 @@ describe("createMcpHandler", () => {
     }, res);
     expect(api.getSpotForApi).toHaveBeenCalledWith("s1");
     expect(res.body.result.content[0].text).toContain("Wall");
+  });
+
+  it("calls list_spot_list_spots tool", async () => {
+    const api = createApi();
+    const handler = createMcpHandler(api);
+    const res = mockRes();
+    await handler({
+      method: "POST",
+      headers: {},
+      body: {
+        jsonrpc: "2.0",
+        id: 6,
+        method: "tools/call",
+        params: {
+          name: "list_spot_list_spots",
+          arguments: {listId: "list1"},
+        },
+      },
+    }, res);
+    expect(api.listSpotsForSpotList).toHaveBeenCalledWith("list1");
+    expect(api.recordApiClientUsage).toHaveBeenCalledWith("c1");
+    expect(res.body.result.isError).toBeUndefined();
+    expect(res.body.result.content[0].text).toContain("Essentials");
   });
 
   it("returns tool error for SpotApiError", async () => {

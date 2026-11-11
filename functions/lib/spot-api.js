@@ -3,9 +3,74 @@
  */
 
 const {hashApiKey, serializeSpotForApi} = require("./api-helpers");
+const {
+  effectiveSpotIdsFromList,
+  isExpandableListVisibility,
+} = require("./event-map-pins");
 const {resolveApiImageUrls} = require("./url-helpers");
 
 const API_CLIENTS_COLLECTION = "apiClients";
+const SPOT_GET_ALL_CHUNK = 10;
+
+/**
+ * Note from the first section entry for each spot. Flat lists have none.
+ * @param {Object} listData
+ * @return {Map<string, string>}
+ */
+function firstListNotesBySpotId(listData) {
+  const notes = new Map();
+  const sections = listData && listData.sections;
+  if (!Array.isArray(sections) || sections.length === 0) {
+    return notes;
+  }
+  for (const section of sections) {
+    const entries = section && Array.isArray(section.entries) ?
+      section.entries :
+      [];
+    for (const entry of entries) {
+      const spotId = entry && typeof entry.spotId === "string" ?
+        entry.spotId.trim() :
+        "";
+      if (spotId.length === 0 || notes.has(spotId)) continue;
+      const note = entry && typeof entry.note === "string" ?
+        entry.note.trim() :
+        "";
+      notes.set(spotId, note);
+    }
+  }
+  return notes;
+}
+
+/**
+ * Stable visibility string for API clients. Missing means unlisted.
+ * @param {*} visibility
+ * @return {string}
+ */
+function listVisibilityLabel(visibility) {
+  if (typeof visibility !== "string") return "unlisted";
+  const normalized = visibility.trim().toLowerCase();
+  if (normalized === "public" || normalized === "unlisted" ||
+      normalized === "private") {
+    return normalized;
+  }
+  return "unlisted";
+}
+
+/**
+ * Same spot payload as getSpotForApi, before image URL resolution.
+ * @param {FirebaseFirestore.DocumentSnapshot} snap
+ * @return {Object}
+ */
+function serializeSpotSnapshot(snap) {
+  const spotData = snap.data() || {};
+  const out = serializeSpotForApi({
+    id: snap.id,
+    ...spotData,
+  });
+  out.hidden = spotData.hidden === true;
+  out.duplicateOf = spotData.duplicateOf || null;
+  return out;
+}
 
 /**
  * API/domain error with an HTTP status for REST and MCP mapping.
@@ -202,17 +267,68 @@ function createSpotApi(deps) {
     if (!spotSnap.exists) {
       throw new SpotApiError(404, "Spot not found");
     }
-    const spotData = spotSnap.data();
-    const out = serializeSpotForApi({
-      id: spotSnap.id,
-      ...spotData,
-    });
-    out.hidden = spotData.hidden === true;
-    out.duplicateOf = spotData.duplicateOf || null;
+    const out = serializeSpotSnapshot(spotSnap);
     if (Array.isArray(out.imageUrls)) {
       out.imageUrls = await resolveApiImageUrls(out.imageUrls, bucket);
     }
     return out;
+  }
+
+  /**
+   * Every spot on a public or unlisted list, in list order.
+   * Missing and private lists both 404 so a private id is not confirmed.
+   * @param {string} listId
+   * @return {Promise<Object>}
+   */
+  async function listSpotsForSpotList(listId) {
+    const trimmed = typeof listId === "string" ? listId.trim() : "";
+    if (!trimmed) {
+      throw new SpotApiError(400, "listId is required");
+    }
+    const listSnap = await db.collection("spotLists").doc(trimmed).get();
+    if (!listSnap.exists) {
+      throw new SpotApiError(404, "Spot list not found");
+    }
+    const listData = listSnap.data() || {};
+    if (!isExpandableListVisibility(listData.visibility)) {
+      throw new SpotApiError(404, "Spot list not found");
+    }
+
+    const spotIds = effectiveSpotIdsFromList(listData);
+    const notes = firstListNotesBySpotId(listData);
+    const snapsById = new Map();
+    for (let i = 0; i < spotIds.length; i += SPOT_GET_ALL_CHUNK) {
+      const chunk = spotIds.slice(i, i + SPOT_GET_ALL_CHUNK);
+      const refs = chunk.map((id) => db.collection("spots").doc(id));
+      // eslint-disable-next-line no-await-in-loop
+      const snaps = await db.getAll(...refs);
+      for (const snap of snaps) {
+        if (snap && snap.exists) {
+          snapsById.set(snap.id, snap);
+        }
+      }
+    }
+
+    const spots = [];
+    for (const spotId of spotIds) {
+      const snap = snapsById.get(spotId);
+      if (!snap) continue;
+      const out = serializeSpotSnapshot(snap);
+      const note = notes.get(spotId);
+      if (note) out.listNote = note;
+      spots.push(out);
+    }
+    await resolveSpotImages(spots);
+    return {
+      list: {
+        id: trimmed,
+        name: typeof listData.name === "string" ? listData.name : "",
+        visibility: listVisibilityLabel(listData.visibility),
+      },
+      spots,
+      totalCount: spots.length,
+      shownCount: spots.length,
+    };
   }
 
   return {
@@ -220,6 +336,7 @@ function createSpotApi(deps) {
     recordApiClientUsage,
     searchSpotsForApi,
     getSpotForApi,
+    listSpotsForSpotList,
   };
 }
 

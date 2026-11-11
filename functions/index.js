@@ -12105,7 +12105,8 @@ const spotApi = createSpotApi({
 });
 
 /**
- * Spot API - Handles GET /api/v1/spots (search in bounds) and GET /api/v1/spots/:spotId (single spot).
+ * Spot API - GET /api/v1/spots (search), GET /api/v1/spots/:spotId,
+ * and GET /api/v1/spot-lists/:listId/spots.
  * Requires X-API-Key or Authorization: Bearer.
  */
 exports.getSpotByApi = onRequest(
@@ -12121,15 +12122,26 @@ exports.getSpotByApi = onRequest(
         }
 
         const path = (req.path || req.url || "/").split("?")[0];
+        const listSpotsMatch = path.match(
+            /^\/api\/v1\/spot-lists\/([^/]+)\/spots$/,
+        );
         const spotIdMatch = path.match(/^\/api\/v1\/spots\/([^/]+)$/);
         const isSearchRequest = path === "/api/v1/spots" || path === "/api/v1/spots/";
 
-        if (!spotIdMatch && !isSearchRequest) {
+        if (!listSpotsMatch && !spotIdMatch && !isSearchRequest) {
           res.status(404).json({error: "Not found"});
           return;
         }
 
         const {clientId} = await spotApi.authenticateApiClient(req);
+
+        if (listSpotsMatch) {
+          const result = await spotApi.listSpotsForSpotList(listSpotsMatch[1]);
+          await spotApi.recordApiClientUsage(clientId);
+          res.set("Content-Type", "application/json; charset=utf-8");
+          res.status(200).json(result);
+          return;
+        }
 
         if (isSearchRequest) {
           const q = req.query || {};

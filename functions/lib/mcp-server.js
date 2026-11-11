@@ -11,8 +11,10 @@ const SERVER_INFO = {
 };
 const SERVER_INSTRUCTIONS =
   "Read-only parkour spot discovery for ParkourSpot. " +
-  "Use search_spots to find spots by name or map bounds, and get_spot for " +
-  "full details. No writes, ratings, events, or admin tools.";
+  "Use search_spots to find spots by name or map bounds, get_spot for " +
+  "full details, and list_spot_list_spots to list every spot in a public " +
+  "or unlisted spot list when you already have the list id. " +
+  "No writes, ratings, events, or admin tools.";
 
 const TOOLS = [
   {
@@ -55,6 +57,25 @@ const TOOLS = [
         },
       },
       required: ["spotId"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "list_spot_list_spots",
+    description:
+      "List every parkour spot in a public or unlisted spot list, in list " +
+      "order. Requires the spot list id. Private lists are not available. " +
+      "Returns list, spots, totalCount, and shownCount. A spot may include " +
+      "listNote from the list entry.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        listId: {
+          type: "string",
+          description: "Firestore spot list document id",
+        },
+      },
+      required: ["listId"],
       additionalProperties: false,
     },
   },
@@ -159,6 +180,18 @@ function createMcpHandler(spotApi) {
   }
 
   /**
+   * @param {Object} args
+   * @param {string} clientId
+   * @return {Promise<Object>}
+   */
+  async function callListSpotListSpots(args, clientId) {
+    const listId = args && args.listId;
+    const result = await spotApi.listSpotsForSpotList(listId);
+    await spotApi.recordApiClientUsage(clientId);
+    return result;
+  }
+
+  /**
    * @param {Object} body
    * @param {string} clientId
    * @return {Promise<Object|null>}
@@ -210,6 +243,8 @@ function createMcpHandler(spotApi) {
           toolResult = await callSearchSpots(args, clientId);
         } else if (name === "get_spot") {
           toolResult = await callGetSpot(args, clientId);
+        } else if (name === "list_spot_list_spots") {
+          toolResult = await callListSpotListSpots(args, clientId);
         } else {
           return jsonRpcResult(id, {
             content: [{type: "text", text: `Unknown tool: ${name}`}],
