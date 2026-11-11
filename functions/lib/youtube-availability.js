@@ -6,6 +6,7 @@
 
 const https = require("https");
 
+const {hostnameMatches} = require("./url-helpers");
 const {isPlausibleYoutubeVideoId} = require("./youtube-thumbnails");
 
 const OEMBED_BASE = "https://www.youtube.com/oembed";
@@ -34,12 +35,12 @@ function normalizeYoutubeVideoId(raw) {
   try {
     const uri = new URL(trimmed);
     const host = uri.hostname.toLowerCase();
-    if (host === "youtu.be" || host.endsWith(".youtu.be")) {
+    if (hostnameMatches(host, "youtu.be")) {
       const segments = uri.pathname.split("/").filter(Boolean);
       const last = segments[segments.length - 1];
       return last && isPlausibleYoutubeVideoId(last) ? last : null;
     }
-    if (host.includes("youtube.com")) {
+    if (hostnameMatches(host, "youtube.com")) {
       const v = uri.searchParams.get("v");
       if (v && isPlausibleYoutubeVideoId(v)) return v;
       const segments = uri.pathname.split("/").filter(Boolean);
