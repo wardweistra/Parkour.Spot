@@ -21,7 +21,7 @@ interface Props {
   generatedAt?: string;
   /** Country flags on grid chips; pointless when every event shares a country. */
   showFlags?: boolean;
-  /** Country filter control + `?country=xx` URL sync (events index). */
+  /** Country filter control + `/events/{cc}` URL sync (events index). */
   showCountryFilter?: boolean;
   /** Level of the month title; the day panel headings follow below it. */
   headingLevel?: 2 | 3;
@@ -612,17 +612,54 @@ const initialMonth = months[0];
       return target;
     }
 
+    function eventsBasePath(): string {
+      const match = location.pathname.match(/^\/events(?:\/[a-z]{2})?\/?$/i);
+      if (match) {
+        return countryFilter ? `/events/${countryFilter}` : "/events";
+      }
+      return location.pathname;
+    }
+
     function buildCalUrl(nextView: "month" | "agenda"): string {
       const params = new URLSearchParams();
       if (nextView === "agenda") params.set("view", "agenda");
-      if (countryFilter) params.set("country", countryFilter);
+      const path = eventsBasePath();
       const query = params.toString();
-      const pathQuery = query
-        ? `${location.pathname}?${query}`
-        : location.pathname;
+      const pathQuery = query ? `${path}?${query}` : path;
       if (nextView === "agenda") return pathQuery;
       const month = currentMonth();
       return month ? `${pathQuery}#${month}` : pathQuery;
+    }
+
+    /** Country from `/events/{cc}`, or legacy `?country=cc` on `/events`. */
+    function countryFromLocation(): string | null {
+      const pathMatch = location.pathname.match(
+        /^\/events\/([a-z]{2})\/?$/i,
+      );
+      if (pathMatch) {
+        const code = pathMatch[1].toLowerCase();
+        return knownCountries.has(code) ? code : null;
+      }
+      if (/^\/events\/?$/i.test(location.pathname)) {
+        const raw =
+          new URLSearchParams(location.search).get("country")?.trim().toLowerCase() ??
+          "";
+        return raw && knownCountries.has(raw) ? raw : null;
+      }
+      return null;
+    }
+
+    /** Send bookmarks like `/events?country=us` to `/events/us`. */
+    function redirectLegacyCountryQuery(): boolean {
+      if (!/^\/events\/?$/i.test(location.pathname)) return false;
+      const params = new URLSearchParams(location.search);
+      const raw = params.get("country")?.trim().toLowerCase() ?? "";
+      if (!raw || !knownCountries.has(raw)) return false;
+      params.delete("country");
+      const query = params.toString();
+      const dest = `/events/${raw}${query ? `?${query}` : ""}${location.hash}`;
+      location.replace(dest);
+      return true;
     }
 
     function countryLabel(): string {
@@ -1111,9 +1148,7 @@ const initialMonth = months[0];
             ? todayIndex
             : 0;
       view = params.get("view") === "agenda" ? "agenda" : "month";
-      const rawCountry = params.get("country")?.trim().toLowerCase() ?? "";
-      countryFilter =
-        rawCountry && knownCountries.has(rawCountry) ? rawCountry : null;
+      countryFilter = countryFromLocation();
       showMonth(startIndex, {syncUrl: false});
       setView(view, "none");
       applyCountryFilter({jump: true});
@@ -1123,6 +1158,7 @@ const initialMonth = months[0];
 
     views.hidden = false;
     root.classList.add("is-enhanced");
+    if (redirectLegacyCountryQuery()) return;
     applyLocation();
   }
 

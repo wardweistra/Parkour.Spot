@@ -116,10 +116,10 @@ export function aboutEventPath(slug: string): string {
   return `/events/${slug}`;
 }
 
-/** Site events index, optionally filtered by country (`?country=xx`). */
+/** Site events index, optionally filtered by country (`/events/xx`). */
 export function aboutEventsPath(opts?: {country?: string}): string {
   const cc = opts?.country?.trim().toLowerCase() ?? "";
-  if (/^[a-z]{2}$/.test(cc)) return `/events?country=${cc}`;
+  if (/^[a-z]{2}$/.test(cc)) return `/events/${cc}`;
   return "/events";
 }
 

@@ -257,6 +257,8 @@ class _EventSyncSourcesScreenState extends State<EventSyncSourcesScreen> {
                                     ? 'Momence schedule'
                                     : source.isEventbriteCollection
                                     ? 'Eventbrite collection'
+                                    : source.isStreemParkour
+                                    ? 'Streem Parkour'
                                     : 'ICS',
                               ),
                             ),
@@ -555,18 +557,23 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
   bool get _isEventbriteSourceType =>
       _sourceType == EventSyncSource.sourceTypeEventbriteCollection;
 
+  bool get _isStreemParkourSourceType =>
+      _sourceType == EventSyncSource.sourceTypeStreemParkour;
+
   bool get _isPageUrlSourceType =>
       _isSquarespaceSourceType ||
       _isWixEventsSourceType ||
       _isJumpEventsNlSourceType ||
       _isMomenceSourceType ||
-      _isEventbriteSourceType;
+      _isEventbriteSourceType ||
+      _isStreemParkourSourceType;
 
   String get _feedUrlLabel {
     if (_isBoomTechSourceType) return 'Published calendar URL';
     if (_isJumpEventsNlSourceType) return 'Jump Events URL';
     if (_isMomenceSourceType) return 'Momence schedule URL';
     if (_isEventbriteSourceType) return 'Eventbrite collection URL';
+    if (_isStreemParkourSourceType) return 'Streem Parkour URL';
     if (_isPageUrlSourceType) return 'Events page URL';
     return 'ICS URL';
   }
@@ -591,6 +598,9 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
     if (_isEventbriteSourceType) {
       return 'Public collection page, e.g. '
           'https://www.eventbrite.co.uk/cc/adapt-qualifications-courses-321289/';
+    }
+    if (_isStreemParkourSourceType) {
+      return 'https://www.streemparkour.com/';
     }
     return 'Google Calendar public .ics URL';
   }
@@ -620,6 +630,10 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
       return 'Each event uses the time zone of its venue. '
           'Leave this empty.';
     }
+    if (_isStreemParkourSourceType) {
+      return 'Overrides the Streem Parkour default (Europe/Zurich). '
+          'Re-sync after changing this.';
+    }
     return 'Used for all-day and floating timed events when the ICS feed has '
         'no event or calendar timezone. Re-sync after changing this.';
   }
@@ -629,6 +643,9 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
     if (uri == null || uri.host.isEmpty) return feedUrl.trim();
     if (_isJumpEventsNlSourceType) {
       return 'https://jumpevents.nl/';
+    }
+    if (_isStreemParkourSourceType) {
+      return 'https://www.streemparkour.com/';
     }
     if (_isSquarespaceSourceType) {
       final params = Map<String, String>.from(uri.queryParameters)
@@ -714,6 +731,10 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                       value: EventSyncSource.sourceTypeEventbriteCollection,
                       child: Text('Eventbrite collection'),
                     ),
+                    DropdownMenuItem(
+                      value: EventSyncSource.sourceTypeStreemParkour,
+                      child: Text('Streem Parkour'),
+                    ),
                   ],
                   onChanged: (value) {
                     if (value == null) return;
@@ -721,6 +742,10 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                     if (value == EventSyncSource.sourceTypeJumpEventsNl &&
                         _icsUrlCtrl.text.trim().isEmpty) {
                       _icsUrlCtrl.text = 'https://jumpevents.nl/';
+                    }
+                    if (value == EventSyncSource.sourceTypeStreemParkour &&
+                        _icsUrlCtrl.text.trim().isEmpty) {
+                      _icsUrlCtrl.text = 'https://www.streemparkour.com/';
                     }
                     if ((value ==
                                 EventSyncSource
@@ -734,7 +759,9 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                                     .sourceTypeMomenceHostSchedule ||
                             value ==
                                 EventSyncSource
-                                    .sourceTypeEventbriteCollection) &&
+                                    .sourceTypeEventbriteCollection ||
+                            value ==
+                                EventSyncSource.sourceTypeStreemParkour) &&
                         _publicUrlCtrl.text.trim().isEmpty &&
                         _icsUrlCtrl.text.trim().isNotEmpty) {
                       _publicUrlCtrl.text = _pagePublicUrlFromFeed(

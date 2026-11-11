@@ -56,6 +56,7 @@ class EventSyncSource {
   static const String sourceTypeJumpEventsNl = 'jumpEventsNl';
   static const String sourceTypeMomenceHostSchedule = 'momenceHostSchedule';
   static const String sourceTypeEventbriteCollection = 'eventbriteCollection';
+  static const String sourceTypeStreemParkour = 'streemParkour';
 
   final String id;
   final String name;
@@ -120,6 +121,8 @@ class EventSyncSource {
     } else if (rawSourceType ==
         EventSyncSource.sourceTypeEventbriteCollection) {
       sourceType = EventSyncSource.sourceTypeEventbriteCollection;
+    } else if (rawSourceType == EventSyncSource.sourceTypeStreemParkour) {
+      sourceType = EventSyncSource.sourceTypeStreemParkour;
     } else {
       sourceType = EventSyncSource.sourceTypeIcs;
     }
@@ -168,6 +171,8 @@ class EventSyncSource {
 
   bool get isEventbriteCollection =>
       sourceType == sourceTypeEventbriteCollection;
+
+  bool get isStreemParkour => sourceType == sourceTypeStreemParkour;
 }
 
 class EventSyncSourceService extends ChangeNotifier {

@@ -1,5 +1,10 @@
 import {DEFAULT_OG_IMAGE, SITE_NAME} from "./brand";
-import {APP_DEFINITION, MISSION, statsSentence} from "./citation";
+import {
+  APP_DEFINITION,
+  MISSION,
+  countryInPhrase,
+  statsSentence,
+} from "./citation";
 import {answerPlainText, howItWorksQuestions} from "./how-it-works";
 import type {
   AboutStats,
@@ -15,6 +20,7 @@ import {
   OPEN_SOURCE_URL,
   aboutAbsolute,
   aboutEventPath,
+  aboutEventsPath,
   aboutListPath,
   aboutListsPath,
   appSpotUrl,
@@ -224,16 +230,22 @@ function spotPlace(spot: SpotSummary): Record<string, unknown> {
   return place;
 }
 
-/** ItemList for /events, pointing at each About event page. */
+/** ItemList for /events (or /events/{cc}), pointing at each About event page. */
 export function buildEventsListJsonLd(
   events: EventSummary[],
+  opts?: {country?: string},
 ): Record<string, unknown> | null {
   if (events.length === 0) return null;
+  const cc = opts?.country?.trim().toLowerCase() ?? "";
+  const path = aboutEventsPath(cc ? {country: cc} : undefined);
+  const name = cc
+    ? `Upcoming parkour events in ${countryInPhrase(cc)}`
+    : "Upcoming parkour events";
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: "Upcoming parkour events",
-    url: aboutAbsolute("/events"),
+    name,
+    url: aboutAbsolute(path),
     numberOfItems: events.length,
     itemListElement: events.map((event, index) => ({
       "@type": "ListItem",

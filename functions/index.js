@@ -213,6 +213,7 @@ const {
   EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL,
   EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE,
   EVENT_SYNC_SOURCE_TYPE_EVENTBRITE_COLLECTION,
+  EVENT_SYNC_SOURCE_TYPE_STREEM_PARKOUR,
   hasExternalEventAddressChanged,
   hasExternalEventContentChanges,
   hasExternalEventPlaceFields,
@@ -260,6 +261,11 @@ const {
   parseEventbriteCollectionHtml,
   resolveEventbriteLocations,
 } = require("./lib/eventbrite");
+const {
+  normalizeStreemParkourFeedUrl,
+  parseStreemParkourHtml,
+  streemParkourPublicUrl,
+} = require("./lib/streem-parkour");
 const {
   deleteEventMapPins,
   materializeEventLocationAndPins,
@@ -4897,7 +4903,7 @@ function normalizeIcsUrl(value) {
  * @param {*} value
  * @param {"ics"|"boomTechPublishedCalendar"|"wixEventsCalendar"|
  *   "squarespaceCalendar"|"jumpEventsNl"|"momenceHostSchedule"|
- *   "eventbriteCollection"} sourceType
+ *   "eventbriteCollection"|"streemParkour"} sourceType
  * @return {string}
  */
 function normalizeEventSyncFeedUrl(value, sourceType) {
@@ -4916,6 +4922,9 @@ function normalizeEventSyncFeedUrl(value, sourceType) {
   }
   if (normalizedType === EVENT_SYNC_SOURCE_TYPE_EVENTBRITE_COLLECTION) {
     return normalizeEventbriteCollectionUrl(value);
+  }
+  if (normalizedType === EVENT_SYNC_SOURCE_TYPE_STREEM_PARKOUR) {
+    return normalizeStreemParkourFeedUrl(value);
   }
   if (normalizedType !== EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR) {
     return normalizeIcsUrl(value);
@@ -5596,6 +5605,14 @@ async function syncExternalEventSource(sourceDoc, options = {}) {
           logger.warn(code, Object.assign({sourceId}, details || {}));
         },
       });
+    } else if (sourceType === EVENT_SYNC_SOURCE_TYPE_STREEM_PARKOUR) {
+      const html = await downloadTextFromUrl(feedUrl);
+      feedBytes = html.length;
+      parsedEvents = parseStreemParkourHtml(html, {
+        sourceId,
+        sourceName,
+        sourceDefaultTimeZone,
+      });
     } else {
       const feedText = await downloadTextFromUrl(feedUrl);
       feedBytes = feedText.length;
@@ -5967,6 +5984,10 @@ exports.createEventSyncSource = onCall(
           normalizedSourceType === EVENT_SYNC_SOURCE_TYPE_EVENTBRITE_COLLECTION
         ) {
           sourceData.publicUrl = normalizedFeedUrl;
+        } else if (
+          normalizedSourceType === EVENT_SYNC_SOURCE_TYPE_STREEM_PARKOUR
+        ) {
+          sourceData.publicUrl = streemParkourPublicUrl(normalizedFeedUrl);
         }
         if (typeof syncSchedule === "string" && syncSchedule.trim().length > 0) {
           sourceData.syncSchedule = syncSchedule.trim();

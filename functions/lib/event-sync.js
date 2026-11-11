@@ -1611,12 +1611,14 @@ const EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL = "jumpEventsNl";
 const EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE = "momenceHostSchedule";
 /** @type {"eventbriteCollection"} */
 const EVENT_SYNC_SOURCE_TYPE_EVENTBRITE_COLLECTION = "eventbriteCollection";
+/** @type {"streemParkour"} */
+const EVENT_SYNC_SOURCE_TYPE_STREEM_PARKOUR = "streemParkour";
 
 /**
  * @param {*} value
  * @return {"ics"|"boomTechPublishedCalendar"|
  *   "wixEventsCalendar"|"squarespaceCalendar"|"jumpEventsNl"|
- *   "momenceHostSchedule"|"eventbriteCollection"}
+ *   "momenceHostSchedule"|"eventbriteCollection"|"streemParkour"}
  */
 function normalizeEventSyncSourceType(value) {
   if (
@@ -1639,6 +1641,9 @@ function normalizeEventSyncSourceType(value) {
   }
   if (value === EVENT_SYNC_SOURCE_TYPE_EVENTBRITE_COLLECTION) {
     return EVENT_SYNC_SOURCE_TYPE_EVENTBRITE_COLLECTION;
+  }
+  if (value === EVENT_SYNC_SOURCE_TYPE_STREEM_PARKOUR) {
+    return EVENT_SYNC_SOURCE_TYPE_STREEM_PARKOUR;
   }
   return EVENT_SYNC_SOURCE_TYPE_ICS;
 }
@@ -2818,6 +2823,7 @@ module.exports = {
   EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL,
   EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE,
   EVENT_SYNC_SOURCE_TYPE_EVENTBRITE_COLLECTION,
+  EVENT_SYNC_SOURCE_TYPE_STREEM_PARKOUR,
   normalizeExternalImageUrl,
   EVENT_TIME_ZONE_SOURCE_FEED,
   EVENT_TIME_ZONE_SOURCE_SOURCE_DEFAULT,

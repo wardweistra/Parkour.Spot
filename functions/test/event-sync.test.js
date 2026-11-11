@@ -24,6 +24,7 @@ const {
   EVENT_SYNC_SOURCE_TYPE_JUMP_EVENTS_NL,
   EVENT_SYNC_SOURCE_TYPE_MOMENCE_HOST_SCHEDULE,
   EVENT_SYNC_SOURCE_TYPE_EVENTBRITE_COLLECTION,
+  EVENT_SYNC_SOURCE_TYPE_STREEM_PARKOUR,
   parseExternalEventsFromWixEvents,
   parseExternalEventsFromJumpEvents,
 } = require("../lib/event-sync");
@@ -1363,6 +1364,11 @@ describe("event-sync helpers", () => {
     it("recognizes eventbriteCollection", () => {
       expect(normalizeEventSyncSourceType("eventbriteCollection"))
           .toBe(EVENT_SYNC_SOURCE_TYPE_EVENTBRITE_COLLECTION);
+    });
+
+    it("recognizes streemParkour", () => {
+      expect(normalizeEventSyncSourceType("streemParkour"))
+          .toBe(EVENT_SYNC_SOURCE_TYPE_STREEM_PARKOUR);
     });
   });
 

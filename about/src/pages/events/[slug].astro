@@ -1,199 +1,285 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import CountryFlag from "../../components/CountryFlag.astro";
+import EventCalendar from "../../components/EventCalendar.astro";
 import EventList from "../../components/EventList.astro";
 import OpenInApp from "../../components/OpenInApp.astro";
 import {formatEventWhen} from "../../lib/calendar";
+import {SITE_NAME} from "../../lib/brand";
 import {
   countryInPhrase,
   countryName,
   eventInterestPushLine,
   metaDescription,
+  upcomingEventsPhrase,
 } from "../../lib/citation";
-import {buildEventJsonLd} from "../../lib/schema";
-import {listEventSlugs, loadCity, loadCountry, loadEvent} from "../../lib/snapshots";
+import {buildEventJsonLd, buildEventsListJsonLd} from "../../lib/schema";
+import {
+  listEventSlugs,
+  loadCity,
+  loadCountry,
+  loadEvent,
+  loadEventsIndex,
+  loadStats,
+} from "../../lib/snapshots";
+import type {EventDetail, EventSummary} from "../../lib/types";
 import {
   aboutCityPath,
   aboutCountryPath,
   aboutEventsPath,
   appEventUrl,
+  appHomeUrl,
+  appPath,
   appSpotUrl,
 } from "../../lib/urls";
 
+type PathProps =
+  | {kind: "event"}
+  | {kind: "country"; countryCode: string};
+
 export async function getStaticPaths() {
   const slugs = await listEventSlugs();
-  return slugs.map((slug) => ({params: {slug}}));
+  const slugSet = new Set(slugs);
+  const index = await loadEventsIndex();
+  const countries = [
+    ...new Set(
+      (index.events ?? [])
+        .map((event) => event.countryCode?.trim().toLowerCase() ?? "")
+        .filter((code) => /^[a-z]{2}$/.test(code) && !slugSet.has(code)),
+    ),
+  ];
+
+  return [
+    ...slugs.map((slug) => ({
+      params: {slug},
+      props: {kind: "event"} satisfies PathProps,
+    })),
+    ...countries.map((countryCode) => ({
+      params: {slug: countryCode},
+      props: {kind: "country", countryCode} satisfies PathProps,
+    })),
+  ];
 }
 
-const {slug} = Astro.params;
-const event = slug ? await loadEvent(slug) : null;
+const props = Astro.props as PathProps;
+const isCountry = props.kind === "country";
 
-if (!event) {
-  return Astro.redirect("/events");
-}
+let countryCodeParam = "";
+let countryTitle = "";
+let countryDescription = "";
+let countryCanonical = "";
+let countryJsonLd: Record<string, unknown> | null = null;
+let eventsIndex: Awaited<ReturnType<typeof loadEventsIndex>> | null = null;
 
-const jsonLd = buildEventJsonLd(event);
-const description = event.description?.trim()
-  ? metaDescription(event.description)
-  : `Parkour event: ${event.title}`;
-const whenLabel = formatEventWhen(event);
-
-const heroImage =
-  event.imageUrls?.[0] || event.imageUrl || null;
-
-const placeLabel = event.address?.trim() || event.placeName?.trim() || "";
-const placeIsSpot =
-  !event.address?.trim() &&
-  Boolean(
-    event.placeName?.trim() &&
-      event.placeSpotId &&
-      event.placeSpotCitySlug &&
-      event.countryCode,
+if (isCountry) {
+  countryCodeParam = props.countryCode;
+  eventsIndex = await loadEventsIndex();
+  const stats = await loadStats();
+  const countryEvents = eventsIndex.events.filter(
+    (event) => event.countryCode?.trim().toLowerCase() === countryCodeParam,
   );
-const placeSpotHref = placeIsSpot
-  ? appSpotUrl(
-      event.countryCode!,
-      event.placeSpotCitySlug!,
-      event.placeSpotId!,
+  const inPhrase = countryInPhrase(countryCodeParam);
+  const phrase = upcomingEventsPhrase({
+    ...stats,
+    upcomingEventCount: countryEvents.length,
+    eventCountryCount: undefined,
+  });
+  countryDescription = phrase
+    ? `${phrase.charAt(0).toUpperCase()}${phrase.slice(1)} in ${inPhrase} on ${SITE_NAME}: jams, workshops, and gatherings from the parkour community.`
+    : `Upcoming public parkour events in ${inPhrase} from the ${SITE_NAME} community.`;
+  countryTitle = `Events in ${inPhrase}`;
+  countryCanonical = aboutEventsPath({country: countryCodeParam});
+  countryJsonLd = buildEventsListJsonLd(countryEvents, {
+    country: countryCodeParam,
+  });
+}
+
+let event: EventDetail | null = null;
+let eventDescription = "";
+let whenLabel = "";
+let heroImage: string | null = null;
+let placeLabel = "";
+let placeSpotHref: string | null = null;
+let countryCode = "";
+let spotsHubHref: string | null = null;
+let spotsHubLabel: string | null = null;
+let relatedPlace = "";
+let related: EventSummary[] = [];
+let aboutBody = "";
+let interestLine: string | null = null;
+let eventJsonLd: Record<string, unknown> | null = null;
+
+if (!isCountry) {
+  const {slug} = Astro.params;
+  event = slug ? await loadEvent(slug) : null;
+  if (!event) {
+    return Astro.redirect("/events");
+  }
+
+  eventJsonLd = buildEventJsonLd(event);
+  eventDescription = event.description?.trim()
+    ? metaDescription(event.description)
+    : `Parkour event: ${event.title}`;
+  whenLabel = formatEventWhen(event);
+  heroImage = event.imageUrls?.[0] || event.imageUrl || null;
+  placeLabel = event.address?.trim() || event.placeName?.trim() || "";
+  const placeIsSpot =
+    !event.address?.trim() &&
+    Boolean(
+      event.placeName?.trim() &&
+        event.placeSpotId &&
+        event.placeSpotCitySlug &&
+        event.countryCode,
+    );
+  placeSpotHref = placeIsSpot
+    ? appSpotUrl(
+        event.countryCode!,
+        event.placeSpotCitySlug!,
+        event.placeSpotId!,
+      )
+    : null;
+
+  countryCode = event.countryCode?.trim().toLowerCase() ?? "";
+  const citySlug = event.citySlug?.trim() ?? "";
+  const countryHub = countryCode ? await loadCountry(countryCode) : null;
+  const cityHub =
+    countryCode && citySlug ? await loadCity(countryCode, citySlug) : null;
+
+  spotsHubHref = cityHub
+    ? aboutCityPath(countryCode, citySlug)
+    : countryHub
+      ? aboutCountryPath(countryCode)
+      : null;
+  spotsHubLabel = cityHub
+    ? `Spots in ${cityHub.city}`
+    : countryHub
+      ? `Spots in ${countryInPhrase(countryCode)}`
+      : null;
+
+  const relatedSource = cityHub?.events?.length
+    ? cityHub.events
+    : (countryHub?.events ?? []);
+  relatedPlace =
+    cityHub?.city || (countryCode ? countryName(countryCode) : "");
+  related = relatedSource
+    .filter(
+      (item) => item.slug !== event.slug && item.eventId !== event.eventId,
     )
-  : null;
+    .slice(0, 5);
 
-const countryCode = event.countryCode?.trim().toLowerCase() ?? "";
-const citySlug = event.citySlug?.trim() ?? "";
-const countryHub = countryCode ? await loadCountry(countryCode) : null;
-const cityHub =
-  countryCode && citySlug ? await loadCity(countryCode, citySlug) : null;
-
-const spotsHubHref = cityHub
-  ? aboutCityPath(countryCode, citySlug)
-  : countryHub
-    ? aboutCountryPath(countryCode)
-    : null;
-const spotsHubLabel = cityHub
-  ? `Spots in ${cityHub.city}`
-  : countryHub
-    ? `Spots in ${countryInPhrase(countryCode)}`
-    : null;
-
-const relatedSource = cityHub?.events?.length
-  ? cityHub.events
-  : (countryHub?.events ?? []);
-const relatedPlace = cityHub?.city || (countryCode ? countryName(countryCode) : "");
-const related = relatedSource
-  .filter(
-    (item) => item.slug !== event.slug && item.eventId !== event.eventId,
-  )
-  .slice(0, 5);
-
-const aboutBody = event.description?.trim() || "";
-const interestLine = eventInterestPushLine(event);
+  aboutBody = event.description?.trim() || "";
+  interestLine = eventInterestPushLine(event);
+}
 ---
 
-<BaseLayout
-  title={event.title}
-  description={description}
-  canonicalPath={`/events/${event.slug}`}
-  jsonLd={jsonLd}
-  image={heroImage}
-  imageAlt={event.title}
->
-  <article class="event-hero">
-    {
-      heroImage && (
-        <div class="event-hero__image">
-          <img src={heroImage} alt={event.title} loading="eager" />
-        </div>
-      )
-    }
-    <div class="event-hero__text">
-      <h1 class="page-title">{event.title}</h1>
-      <p class="page-lede">{whenLabel}</p>
-      <nav class="muted event-trail" aria-label="Events">
-        <a href={aboutEventsPath()}>Events</a>
-        {
-          countryCode && (
-            <>
-              <span aria-hidden="true"> › </span>
-              <a href={aboutEventsPath({country: countryCode})}>
-                {countryName(countryCode)}
-              </a>
-            </>
-          )
-        }
-      </nav>
-      {
-        (event.city && event.countryCode) || spotsHubHref ? (
-          <p class="muted">
-            {
-              event.city && event.countryCode && (
+{
+  isCountry && eventsIndex ? (
+    <BaseLayout
+      title={countryTitle}
+      description={countryDescription}
+      canonicalPath={countryCanonical}
+      jsonLd={countryJsonLd}
+    >
+      <h1 class="page-title">{countryTitle}</h1>
+      <p class="page-lede">
+        {countryDescription} Open an event for the time and place, or{" "}
+        <a href={appHomeUrl()}>see them all on the map</a>. Organizing one?{" "}
+        <a href={appPath("/events/add")}>Add your event</a>, and a moderator
+        will check it before it goes live.
+      </p>
+      <EventCalendar
+        events={eventsIndex.events}
+        generatedAt={eventsIndex.generatedAt}
+        showFlags
+        showCountryFilter
+      />
+    </BaseLayout>
+  ) : event ? (
+    <BaseLayout
+      title={event.title}
+      description={eventDescription}
+      canonicalPath={`/events/${event.slug}`}
+      jsonLd={eventJsonLd}
+      image={heroImage}
+      imageAlt={event.title}
+    >
+      <article class="event-hero">
+        {heroImage && (
+          <div class="event-hero__image">
+            <img src={heroImage} alt={event.title} loading="eager" />
+          </div>
+        )}
+        <div class="event-hero__text">
+          <h1 class="page-title">{event.title}</h1>
+          <p class="page-lede">{whenLabel}</p>
+          <nav class="muted event-trail" aria-label="Events">
+            <a href={aboutEventsPath()}>Events</a>
+            {countryCode && (
+              <>
+                <span aria-hidden="true"> › </span>
+                <a href={aboutEventsPath({country: countryCode})}>
+                  {countryName(countryCode)}
+                </a>
+              </>
+            )}
+          </nav>
+          {(event.city && event.countryCode) || spotsHubHref ? (
+            <p class="muted">
+              {event.city && event.countryCode && (
                 <>
-                  {
-                    placeLabel && (
-                      <>
-                        {
-                          placeSpotHref ? (
-                            <a href={placeSpotHref}>{placeLabel}</a>
-                          ) : (
-                            placeLabel
-                          )
-                        }
-                        {" · "}
-                      </>
-                    )
-                  }
+                  {placeLabel && (
+                    <>
+                      {placeSpotHref ? (
+                        <a href={placeSpotHref}>{placeLabel}</a>
+                      ) : (
+                        placeLabel
+                      )}
+                      {" · "}
+                    </>
+                  )}
                   <CountryFlag code={event.countryCode} />
                   {event.city}, {event.countryCode.toUpperCase()}
                 </>
-              )
-            }
-            {
-              spotsHubHref && spotsHubLabel && (
+              )}
+              {spotsHubHref && spotsHubLabel && (
                 <>
                   {event.city && event.countryCode ? " · " : ""}
                   <a href={spotsHubHref}>{spotsHubLabel}</a>
                 </>
-              )
-            }
-          </p>
-        ) : null
-      }
-      <div class="hero__actions event-hero__actions">
-        <OpenInApp href={appEventUrl(event.eventId)} />
-        {
-          event.websiteUrl && (
-            <a
-              class="btn btn--outlined"
-              href={event.websiteUrl}
-              rel="noopener noreferrer"
-            >
-              Event website
-            </a>
-          )
-        }
-      </div>
-      {
-        interestLine && (
-          <p class="muted event-interest">{interestLine}</p>
-        )
-      }
-      {
-        aboutBody && (
-          <div class="section prose">
-            <h2 class="section__title">About this event</h2>
-            <p>{aboutBody}</p>
+              )}
+            </p>
+          ) : null}
+          <div class="hero__actions event-hero__actions">
+            <OpenInApp href={appEventUrl(event.eventId)} />
+            {event.websiteUrl && (
+              <a
+                class="btn btn--outlined"
+                href={event.websiteUrl}
+                rel="noopener noreferrer"
+              >
+                Event website
+              </a>
+            )}
           </div>
-        )
-      }
-      {
-        related.length > 0 && relatedPlace && (
-          <section class="section" aria-labelledby="related-events-title">
-            <h2 class="section__title" id="related-events-title">
-              More events in {relatedPlace}
-            </h2>
-            <EventList events={related} />
-          </section>
-        )
-      }
-    </div>
-  </article>
-</BaseLayout>
+          {interestLine && (
+            <p class="muted event-interest">{interestLine}</p>
+          )}
+          {aboutBody && (
+            <div class="section prose">
+              <h2 class="section__title">About this event</h2>
+              <p>{aboutBody}</p>
+            </div>
+          )}
+          {related.length > 0 && relatedPlace && (
+            <section class="section" aria-labelledby="related-events-title">
+              <h2 class="section__title" id="related-events-title">
+                More events in {relatedPlace}
+              </h2>
+              <EventList events={related} />
+            </section>
+          )}
+        </div>
+      </article>
+    </BaseLayout>
+  ) : null
+}
