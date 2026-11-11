@@ -883,6 +883,121 @@ class SyncSourceService extends ChangeNotifier {
     }
   }
 
+  /// Scans all spot YouTube links and reports unavailable videos (batched oEmbed).
+  Future<Map<String, dynamic>?> findUnavailableYoutubeVideos({
+    void Function(String status)? onProgress,
+  }) async {
+    try {
+      final callable = _functions.httpsCallable(
+        'findUnavailableYoutubeVideos',
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
+      );
+
+      String? lastDocId;
+      final videoStatusCache = <String, String>{};
+      final allFindings = <Map<String, dynamic>>[];
+      var totalOembedChecks = 0;
+      var hasMore = true;
+      var batches = 0;
+      var rateLimited = false;
+
+      while (hasMore) {
+        batches += 1;
+        onProgress?.call(
+          lastDocId == null
+              ? 'Scanning spots (batch $batches)...'
+              : 'Continuing scan (batch $batches)...',
+        );
+
+        final result = await callable.call({
+          'lastDocId': ?lastDocId,
+          'videoStatusCache': videoStatusCache,
+        });
+        final data = result.data;
+        if (data == null) return null;
+        final map = _callableResponseAsMap(data);
+        if (map['success'] != true) {
+          _error = map['message']?.toString() ??
+              'Failed to find unavailable YouTube videos';
+          notifyListeners();
+          return map;
+        }
+
+        final batchFindings = map['findings'];
+        if (batchFindings is List) {
+          for (final entry in batchFindings) {
+            if (entry is Map) {
+              allFindings.add(Map<String, dynamic>.from(entry));
+            }
+          }
+        }
+
+        final returnedCache = map['videoStatusCache'];
+        if (returnedCache is Map) {
+          for (final entry in returnedCache.entries) {
+            final key = entry.key.toString();
+            final value = entry.value?.toString();
+            if (value != null) {
+              videoStatusCache[key] = value;
+            }
+          }
+        }
+
+        final statsValue = map['stats'];
+        final stats = statsValue is Map
+            ? Map<String, dynamic>.from(statsValue)
+            : const <String, dynamic>{};
+        totalOembedChecks += (stats['oembedChecks'] as num?)?.toInt() ?? 0;
+
+        rateLimited = map['rateLimited'] == true;
+        hasMore = map['hasMore'] == true && !rateLimited;
+        final scanComplete = map['scanComplete'] == true;
+
+        if (rateLimited) {
+          _error =
+              'YouTube rate-limited this scan. Wait a few minutes and run again; '
+              'cached results are kept for videos already checked.';
+          break;
+        }
+
+        final nextCursor = map['lastDocId']?.toString();
+        if (hasMore) {
+          if (nextCursor == null ||
+              nextCursor.isEmpty ||
+              (nextCursor == lastDocId && batches > 1)) {
+            _error = 'YouTube availability scan stalled (cursor did not advance)';
+            notifyListeners();
+            return {
+              'success': false,
+              'message': _error,
+              'findings': allFindings,
+            };
+          }
+          lastDocId = nextCursor;
+        } else if (scanComplete) {
+          lastDocId = nextCursor;
+        }
+      }
+
+      return {
+        'success': !rateLimited,
+        'rateLimited': rateLimited,
+        'message': rateLimited
+            ? _error
+            : 'Unavailable YouTube video scan complete',
+        'findings': allFindings,
+        'totalOembedChecks': totalOembedChecks,
+        'uniqueVideosInCache': videoStatusCache.length,
+        'batches': batches,
+      };
+    } catch (e) {
+      _error = 'Failed to find unavailable YouTube videos: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return null;
+    }
+  }
+
   /// Rehosts YouTube CDN URLs in spot imageUrls into Firebase Storage.
   /// Loops the resumable callable until [hasMore] is false.
   Future<Map<String, dynamic>?> rehostYoutubeCdnSpotImages() async {

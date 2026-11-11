@@ -6,6 +6,7 @@ import '../../services/spot_training_stats_service.dart';
 import '../../services/sync_source_service.dart';
 import '../../utils/search_index_backfill_message.dart';
 import 'missing_images_screen.dart';
+import 'unavailable_youtube_videos_screen.dart';
 
 /// JSON/callable counts often decode as [double] on web — avoid showing `13893.0`.
 String _formatStatInt(dynamic v) {
@@ -559,6 +560,143 @@ class SpotDataActions {
       scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text('Backfill failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  static Future<void> findUnavailableYoutubeVideos(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Find unavailable YouTube videos'),
+        content: const Text(
+          'Checks every spot YouTube link using YouTube’s oEmbed API '
+          '(not thumbnail URLs, which can lie for deleted videos). '
+          'The scan runs in small batches with pauses so we stay polite to '
+          'YouTube. Large databases can take several minutes.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Start scan'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !context.mounted) return;
+
+    final syncService = context.read<SyncSourceService>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    late NavigatorState progressNavigator;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) {
+        progressNavigator = Navigator.of(c);
+        return const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'Scanning YouTube links in batches (this may take several '
+                  'minutes)...',
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    try {
+      final result = await syncService.findUnavailableYoutubeVideos();
+      progressNavigator.pop();
+      if (!context.mounted) return;
+
+      if (result == null) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              syncService.error ?? 'YouTube availability scan failed',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      final findingsRaw = result['findings'];
+      final findings = findingsRaw is List
+          ? findingsRaw
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList()
+          : <Map<String, dynamic>>[];
+
+      final rateLimited = result['rateLimited'] == true;
+      if (rateLimited && findings.isEmpty) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              result['message']?.toString() ??
+                  syncService.error ??
+                  'YouTube rate limited the scan',
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      if (findings.isEmpty && result['success'] == true) {
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(
+            content: Text('All YouTube videos on spots appear to be available.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        return;
+      }
+
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => UnavailableYoutubeVideosScreen(
+            findings: findings,
+            totalOembedChecks:
+                (result['totalOembedChecks'] as num?)?.toInt() ?? 0,
+            uniqueVideosInCache:
+                (result['uniqueVideosInCache'] as num?)?.toInt() ?? 0,
+          ),
+        ),
+      );
+
+      if (rateLimited && context.mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              result['message']?.toString() ??
+                  'Partial results: YouTube rate limited the scan. '
+                      'Wait and run again to continue.',
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+    } catch (e) {
+      progressNavigator.pop();
+      if (!context.mounted) return;
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('YouTube availability scan failed: $e'),
           backgroundColor: Colors.red,
         ),
       );

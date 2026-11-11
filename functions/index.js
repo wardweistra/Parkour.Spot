@@ -134,6 +134,11 @@ const {
   applyYoutubeCdnRehosts,
 } = require("./lib/youtube-thumbnails");
 const {
+  sleep: youtubeAvailabilitySleep,
+  normalizeYoutubeVideoId,
+  checkYoutubeVideoOembedAvailability,
+} = require("./lib/youtube-availability");
+const {
   pickSpotIdsForTitleSearch,
   buildSpotIdMatchCounts,
   spotHasSearchTerm,
@@ -8228,6 +8233,222 @@ exports.rehostYoutubeCdnSpotImages = onCall(
         console.error("Error in rehostYoutubeCdnSpotImages:", error);
         throw new Error(
             `Failed to rehost YouTube CDN spot images: ${error.message}`,
+        );
+      }
+    },
+);
+
+/**
+ * Scans spot youtubeVideoIds and reports videos that no longer embed (oEmbed).
+ * Resumable: pass lastDocId and videoStatusCache from prior responses.
+ * Rate-limited: at most CHECKS_PER_INVOCATION oEmbed calls with delay between.
+ * Admin only.
+ */
+exports.findUnavailableYoutubeVideos = onCall(
+    {
+      region: "europe-west1",
+      memory: "512MiB",
+      timeoutSeconds: 540,
+    },
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+
+        const SCAN_PAGE_SIZE = 60;
+        const CHECKS_PER_INVOCATION = 18;
+        const DELAY_BETWEEN_CHECKS_MS = 400;
+
+        const rawLastDocId = request.data && request.data.lastDocId;
+        let lastCompletedDocId =
+          typeof rawLastDocId === "string" && rawLastDocId.trim() ?
+            rawLastDocId.trim() :
+            null;
+
+        const rawCache =
+          request.data && request.data.videoStatusCache;
+        const videoStatusCache =
+          rawCache && typeof rawCache === "object" && !Array.isArray(rawCache) ?
+            {...rawCache} :
+            {};
+
+        const batchFindings = [];
+        let spotsScanned = 0;
+        let spotsWithYoutube = 0;
+        let oembedChecks = 0;
+        let videosSkippedCached = 0;
+        let hasMore = true;
+        let stopForBudget = false;
+        let rateLimited = false;
+
+        const cacheStatus = (videoId, status) => {
+          videoStatusCache[videoId] = status;
+        };
+
+        const getCachedStatus = (videoId) => {
+          const entry = videoStatusCache[videoId];
+          return typeof entry === "string" ? entry : null;
+        };
+
+        const recordFindingIfUnavailable = (spotId, spotName, videoId, detail) => {
+          const status = getCachedStatus(videoId);
+          if (status === "unavailable" || status === "invalid") {
+            batchFindings.push({
+              spotId,
+              spotName,
+              videoId,
+              reason: detail && detail.reason ? detail.reason : status,
+              statusCode: detail && detail.statusCode ? detail.statusCode : null,
+            });
+          }
+        };
+
+        while (hasMore && !stopForBudget && !rateLimited) {
+          let query = db.collection("spots")
+              .orderBy(FieldPath.documentId())
+              .limit(SCAN_PAGE_SIZE);
+          if (lastCompletedDocId) {
+            const startDoc = await db.collection("spots")
+                .doc(lastCompletedDocId)
+                .get();
+            if (!startDoc.exists) {
+              throw new Error(`lastDocId not found: ${lastCompletedDocId}`);
+            }
+            query = query.startAfter(startDoc);
+          }
+
+          const snapshot = await query.get();
+          if (snapshot.empty) {
+            hasMore = false;
+            break;
+          }
+
+          for (const doc of snapshot.docs) {
+            spotsScanned += 1;
+            const spotData = doc.data() || {};
+            const spotId = doc.id;
+            const spotName =
+              typeof spotData.name === "string" && spotData.name.trim() ?
+                spotData.name.trim() :
+                "Unnamed spot";
+            const rawIds = Array.isArray(spotData.youtubeVideoIds) ?
+              spotData.youtubeVideoIds :
+              [];
+            const videoIds = [];
+            const seen = new Set();
+            for (const raw of rawIds) {
+              const normalized = normalizeYoutubeVideoId(
+                  typeof raw === "string" ? raw : String(raw),
+              );
+              if (!normalized || seen.has(normalized)) continue;
+              seen.add(normalized);
+              videoIds.push(normalized);
+            }
+
+            if (videoIds.length === 0) {
+              lastCompletedDocId = spotId;
+              continue;
+            }
+
+            spotsWithYoutube += 1;
+
+            for (const videoId of videoIds) {
+              const cached = getCachedStatus(videoId);
+              if (cached) {
+                videosSkippedCached += 1;
+                recordFindingIfUnavailable(spotId, spotName, videoId, null);
+                continue;
+              }
+
+              if (oembedChecks >= CHECKS_PER_INVOCATION) {
+                stopForBudget = true;
+                hasMore = true;
+                break;
+              }
+
+              if (!isPlausibleYoutubeVideoId(videoId)) {
+                cacheStatus(videoId, "invalid");
+                batchFindings.push({
+                  spotId,
+                  spotName,
+                  videoId,
+                  reason: "invalid_video_id",
+                  statusCode: null,
+                });
+                continue;
+              }
+
+              const result = await checkYoutubeVideoOembedAvailability(videoId);
+              oembedChecks += 1;
+
+              if (result.rateLimited) {
+                rateLimited = true;
+                hasMore = true;
+                stopForBudget = true;
+                break;
+              }
+
+              if (result.available === true) {
+                cacheStatus(videoId, "available");
+              } else if (result.available === false) {
+                cacheStatus(videoId, "unavailable");
+                batchFindings.push({
+                  spotId,
+                  spotName,
+                  videoId,
+                  reason: result.reason || "unavailable",
+                  statusCode: result.statusCode || null,
+                });
+              } else {
+                cacheStatus(videoId, "unknown");
+              }
+
+              if (oembedChecks < CHECKS_PER_INVOCATION &&
+                  !stopForBudget && !rateLimited) {
+                await youtubeAvailabilitySleep(DELAY_BETWEEN_CHECKS_MS);
+              }
+            }
+
+            if (!stopForBudget && !rateLimited) {
+              lastCompletedDocId = spotId;
+            }
+
+            if (stopForBudget || rateLimited) {
+              break;
+            }
+          }
+
+          if (!stopForBudget && !rateLimited) {
+            hasMore = snapshot.size === SCAN_PAGE_SIZE;
+          }
+        }
+
+        const scanComplete = !hasMore && !stopForBudget && !rateLimited;
+
+        return {
+          success: true,
+          scanComplete,
+          hasMore: Boolean(hasMore && (!scanComplete)),
+          lastDocId: lastCompletedDocId,
+          rateLimited,
+          videoStatusCache,
+          findings: batchFindings,
+          stats: {
+            spotsScanned,
+            spotsWithYoutube,
+            oembedChecks,
+            videosSkippedCached,
+            findingsInBatch: batchFindings.length,
+          },
+          message: rateLimited ?
+            "YouTube rate limited this batch; wait and run again" :
+            stopForBudget ?
+              "Batch complete; more spots or videos remain" :
+              "Unavailable YouTube video scan complete",
+        };
+      } catch (error) {
+        console.error("Error in findUnavailableYoutubeVideos:", error);
+        throw new Error(
+            `Failed to find unavailable YouTube videos: ${error.message}`,
         );
       }
     },

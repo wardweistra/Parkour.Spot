@@ -87,6 +87,16 @@ class SpotImagesScreen extends StatelessWidget {
                 onTap: () =>
                     SpotDataActions.rehostYoutubeCdnSpotImages(context),
               ),
+              AdminToolTile(
+                icon: Icons.video_library_outlined,
+                title: 'Find unavailable YouTube videos',
+                subtitle:
+                    'List spot YouTube links that no longer embed (polite '
+                    'batched oEmbed checks)',
+                showChevron: false,
+                onTap: () =>
+                    SpotDataActions.findUnavailableYoutubeVideos(context),
+              ),
             ],
           ),
         ],
