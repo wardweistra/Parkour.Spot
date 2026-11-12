@@ -766,6 +766,112 @@ class SyncSourceService extends ChangeNotifier {
     }
   }
 
+  /// Scans outgoing links on current/upcoming events and spot lists.
+  Future<Map<String, dynamic>?> findBrokenOutgoingLinks() async {
+    try {
+      final callable = _functions.httpsCallable(
+        'findBrokenOutgoingLinks',
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
+      );
+
+      final urlStatusCache = <String, String>{};
+      final allFindings = <Map<String, dynamic>>[];
+      var totalHttpChecks = 0;
+      var rateLimited = false;
+
+      for (final phase in ['events', 'spotLists']) {
+        String? lastDocId;
+        var hasMore = true;
+
+        while (hasMore) {
+          final result = await callable.call({
+            'phase': phase,
+            'lastDocId': ?lastDocId,
+            'urlStatusCache': urlStatusCache,
+          });
+          final data = result.data;
+          if (data == null) return null;
+          final map = _callableResponseAsMap(data);
+          if (map['success'] != true) {
+            _error = map['message']?.toString() ??
+                'Failed to find broken outgoing links';
+            notifyListeners();
+            return map;
+          }
+
+          final batchFindings = map['findings'];
+          if (batchFindings is List) {
+            for (final entry in batchFindings) {
+              if (entry is Map) {
+                allFindings.add(Map<String, dynamic>.from(entry));
+              }
+            }
+          }
+
+          final returnedCache = map['urlStatusCache'];
+          if (returnedCache is Map) {
+            for (final entry in returnedCache.entries) {
+              final key = entry.key.toString();
+              final value = entry.value?.toString();
+              if (value != null) {
+                urlStatusCache[key] = value;
+              }
+            }
+          }
+
+          final statsValue = map['stats'];
+          final stats = statsValue is Map
+              ? Map<String, dynamic>.from(statsValue)
+              : const <String, dynamic>{};
+          totalHttpChecks += (stats['httpChecks'] as num?)?.toInt() ?? 0;
+
+          rateLimited = map['rateLimited'] == true;
+          final phaseComplete = map['phaseComplete'] == true;
+          hasMore = map['hasMore'] == true && !rateLimited && !phaseComplete;
+
+          if (rateLimited) {
+            _error =
+                'A remote host rate-limited this scan. Wait and run again; '
+                'cached URL results are reused.';
+            break;
+          }
+
+          final nextCursor = map['lastDocId']?.toString();
+          if (hasMore) {
+            if (nextCursor == null ||
+                nextCursor.isEmpty ||
+                nextCursor == lastDocId) {
+              _error = 'Outgoing link scan stalled (cursor did not advance)';
+              notifyListeners();
+              return {
+                'success': false,
+                'message': _error,
+                'findings': allFindings,
+              };
+            }
+            lastDocId = nextCursor;
+          }
+        }
+
+        if (rateLimited) break;
+      }
+
+      return {
+        'success': !rateLimited,
+        'rateLimited': rateLimited,
+        'message': rateLimited ? _error : 'Outgoing link scan complete',
+        'findings': allFindings,
+        'totalHttpChecks': totalHttpChecks,
+        'uniqueUrlsChecked': urlStatusCache.length,
+      };
+    } catch (e) {
+      _error = 'Failed to find broken outgoing links: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return null;
+    }
+  }
+
   Future<Map<String, dynamic>?> findOrphanedSpots() async {
     try {
       final callable = _functions.httpsCallable('findOrphanedSpots');

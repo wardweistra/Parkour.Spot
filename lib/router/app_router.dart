@@ -17,6 +17,7 @@ import '../screens/admin/admin_event_edit_screen.dart';
 import '../screens/admin/spot_data_screen.dart';
 import '../screens/admin/spot_images_screen.dart';
 import '../screens/admin/event_data_screen.dart';
+import '../screens/admin/outgoing_links_screen.dart';
 import '../screens/admin/event_sync_sources_screen.dart';
 import '../screens/admin/admin_push_subscriptions_screen.dart';
 import '../screens/admin/user_activity_metrics_screen.dart';
@@ -503,6 +504,10 @@ class AppRouter {
         GoRoute(
           path: '/admin/event-data',
           builder: (context, state) => const EventDataScreen(),
+        ),
+        GoRoute(
+          path: '/admin/outgoing-links',
+          builder: (context, state) => const OutgoingLinksScreen(),
         ),
         GoRoute(
           path: '/admin/users',
