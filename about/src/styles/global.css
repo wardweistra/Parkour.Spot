@@ -1370,6 +1370,93 @@ img {
   color: var(--color-on-primary-container);
 }
 
+.not-found {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-md);
+  padding-block: clamp(2rem, 8vw, 5rem);
+  text-align: center;
+}
+
+.not-found__badge {
+  display: grid;
+  place-items: center;
+  gap: var(--space-sm);
+  width: min(100%, 18rem);
+  padding: var(--space-lg) var(--space-md);
+  border-radius: calc(var(--radius-md) + 4px);
+  background:
+    radial-gradient(
+      140% 100% at 50% 0%,
+      color-mix(in srgb, var(--color-primary-container) 85%, transparent),
+      color-mix(in srgb, var(--color-surface) 40%, transparent) 55%
+    ),
+    var(--color-surface);
+  border: 1px solid
+    color-mix(in srgb, var(--color-primary) 22%, var(--color-outline-variant));
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--color-on-surface) 6%, transparent),
+    0 12px 40px color-mix(in srgb, var(--color-primary) 8%, transparent);
+}
+
+.not-found__logo {
+  width: 72px;
+  height: 72px;
+  opacity: 0.92;
+}
+
+.not-found__code {
+  margin: 0;
+  font-size: clamp(3.5rem, 14vw, 5rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 0 color-mix(in srgb, var(--color-on-primary) 35%, transparent);
+}
+
+.not-found__title {
+  margin: var(--space-xs) 0 0;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.not-found__lede {
+  margin: 0;
+  max-width: 42ch;
+  color: var(--color-on-surface-variant);
+  font-size: 1.0625rem;
+}
+
+.not-found__path {
+  margin: 0;
+  max-width: 100%;
+}
+
+.not-found__path-value {
+  display: inline-block;
+  max-width: min(100%, 36rem);
+  padding: 0.35em 0.65em;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-container-low);
+  border: 1px solid
+    color-mix(in srgb, var(--color-outline-variant) 80%, transparent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-on-surface);
+  overflow-wrap: anywhere;
+}
+
+.not-found__actions {
+  justify-content: center;
+  margin-top: var(--space-sm);
+}
+
 .people-list {
   margin: 0 0 var(--space-md);
   padding-inline-start: 1.25rem;
