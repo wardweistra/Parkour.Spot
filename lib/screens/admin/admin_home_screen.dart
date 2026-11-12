@@ -162,6 +162,13 @@ class AdminHomeScreen extends StatelessWidget {
                     'View device detection and PWA install service status',
                 onTap: () => context.push('/admin/device-detection'),
               ),
+              AdminToolTile(
+                icon: Icons.link_outlined,
+                title: 'Outgoing links',
+                subtitle:
+                    'Check event and spot list links that no longer respond',
+                onTap: () => context.push('/admin/outgoing-links'),
+              ),
             ],
           ),
         ],

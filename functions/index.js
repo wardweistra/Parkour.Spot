@@ -134,6 +134,15 @@ const {
   applyYoutubeCdnRehosts,
 } = require("./lib/youtube-thumbnails");
 const {
+  sleep: httpLinkCheckSleep,
+  normalizeHttpUrl,
+  checkHttpUrlReachable,
+  cacheStatusFromCheckResult,
+  eventIsCurrentOrUpcoming,
+  collectEventOutgoingLinks,
+  collectSpotListOutgoingLinks,
+} = require("./lib/http-link-check");
+const {
   pickSpotIdsForTitleSearch,
   buildSpotIdMatchCounts,
   spotHasSearchTerm,
@@ -9307,6 +9316,233 @@ exports.cleanupUnusedImages = onCall(
           success: false,
           error: error.message,
         };
+      }
+    },
+);
+
+/**
+ * Scans outgoing links on current/upcoming events and spot lists.
+ * Resumable: phase (events|spotLists), lastDocId, urlStatusCache from client.
+ * Rate-limited HTTP HEAD/GET checks with delay between requests. Admin only.
+ */
+exports.findBrokenOutgoingLinks = onCall(
+    {
+      region: "europe-west1",
+      memory: "512MiB",
+      timeoutSeconds: 540,
+    },
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+
+        const SCAN_PAGE_SIZE = 50;
+        const CHECKS_PER_INVOCATION = 16;
+        const DELAY_BETWEEN_CHECKS_MS = 350;
+
+        const rawPhase = request.data && request.data.phase;
+        const phase = rawPhase === "spotLists" ? "spotLists" : "events";
+
+        const rawLastDocId = request.data && request.data.lastDocId;
+        let lastCompletedDocId =
+          typeof rawLastDocId === "string" && rawLastDocId.trim() ?
+            rawLastDocId.trim() :
+            null;
+
+        const rawCache =
+          request.data && request.data.urlStatusCache;
+        const urlStatusCache =
+          rawCache && typeof rawCache === "object" && !Array.isArray(rawCache) ?
+            {...rawCache} :
+            {};
+
+        const batchFindings = [];
+        let docsScanned = 0;
+        let docsWithLinks = 0;
+        let httpChecks = 0;
+        let urlsSkippedCached = 0;
+        let hasMore = true;
+        let stopForBudget = false;
+        let rateLimited = false;
+        const now = new Date();
+
+        const collectionName =
+          phase === "spotLists" ? "spotLists" : "events";
+
+        const getCachedStatus = (urlKey) => {
+          const entry = urlStatusCache[urlKey];
+          return typeof entry === "string" ? entry : null;
+        };
+
+        const setCachedStatus = (urlKey, status) => {
+          urlStatusCache[urlKey] = status;
+        };
+
+        const appendFinding = (link, checkResult, status) => {
+          if (status !== "broken" && status !== "invalid" &&
+              status !== "unknown") {
+            return;
+          }
+          batchFindings.push({
+            entityType: link.entityType,
+            entityId: link.entityId,
+            entityName: link.entityName,
+            field: link.field,
+            rawUrl: link.rawUrl,
+            normalizedUrl: checkResult && checkResult.normalizedUrl ?
+              checkResult.normalizedUrl :
+              null,
+            status,
+            reason: checkResult && checkResult.reason ? checkResult.reason : status,
+            statusCode: checkResult && checkResult.statusCode ?
+              checkResult.statusCode :
+              null,
+          });
+        };
+
+        const recordCachedLink = (link, urlKey) => {
+          const status = getCachedStatus(urlKey);
+          if (!status) return;
+          urlsSkippedCached += 1;
+          if (status === "broken" || status === "invalid" ||
+              status === "unknown") {
+            appendFinding(link, {normalizedUrl: urlKey}, status);
+          }
+        };
+
+        while (hasMore && !stopForBudget && !rateLimited) {
+          let query = db.collection(collectionName)
+              .orderBy(FieldPath.documentId())
+              .limit(SCAN_PAGE_SIZE);
+          if (lastCompletedDocId) {
+            const startDoc = await db.collection(collectionName)
+                .doc(lastCompletedDocId)
+                .get();
+            if (!startDoc.exists) {
+              throw new Error(`lastDocId not found: ${lastCompletedDocId}`);
+            }
+            query = query.startAfter(startDoc);
+          }
+
+          const snapshot = await query.get();
+          if (snapshot.empty) {
+            hasMore = false;
+            break;
+          }
+
+          for (const doc of snapshot.docs) {
+            docsScanned += 1;
+            const data = doc.data() || {};
+
+            if (phase === "events") {
+              if (typeof data.duplicateOf === "string" &&
+                  data.duplicateOf.trim()) {
+                lastCompletedDocId = doc.id;
+                continue;
+              }
+              if (!eventIsCurrentOrUpcoming(data, now)) {
+                lastCompletedDocId = doc.id;
+                continue;
+              }
+            }
+
+            const links = phase === "events" ?
+              collectEventOutgoingLinks(doc.id, data) :
+              collectSpotListOutgoingLinks(doc.id, data);
+
+            if (links.length === 0) {
+              lastCompletedDocId = doc.id;
+              continue;
+            }
+
+            docsWithLinks += 1;
+
+            for (const link of links) {
+              const urlKey = normalizeHttpUrl(link.rawUrl) || link.rawUrl;
+              const cached = getCachedStatus(urlKey);
+              if (cached) {
+                recordCachedLink(link, urlKey);
+                continue;
+              }
+
+              if (httpChecks >= CHECKS_PER_INVOCATION) {
+                stopForBudget = true;
+                hasMore = true;
+                break;
+              }
+
+              if (!normalizeHttpUrl(link.rawUrl)) {
+                setCachedStatus(urlKey, "invalid");
+                appendFinding(link, {
+                  normalizedUrl: null,
+                  reason: "invalid_url",
+                  statusCode: 0,
+                }, "invalid");
+                continue;
+              }
+
+              const checkResult = await checkHttpUrlReachable(link.rawUrl);
+              httpChecks += 1;
+              const status = cacheStatusFromCheckResult(checkResult);
+              setCachedStatus(urlKey, status);
+
+              if (checkResult.rateLimited) {
+                rateLimited = true;
+                hasMore = true;
+                stopForBudget = true;
+                break;
+              }
+
+              appendFinding(link, checkResult, status);
+
+              if (httpChecks < CHECKS_PER_INVOCATION &&
+                  !stopForBudget && !rateLimited) {
+                await httpLinkCheckSleep(DELAY_BETWEEN_CHECKS_MS);
+              }
+            }
+
+            if (!stopForBudget && !rateLimited) {
+              lastCompletedDocId = doc.id;
+            }
+
+            if (stopForBudget || rateLimited) {
+              break;
+            }
+          }
+
+          if (!stopForBudget && !rateLimited) {
+            hasMore = snapshot.size === SCAN_PAGE_SIZE;
+          }
+        }
+
+        const phaseComplete = !hasMore && !stopForBudget && !rateLimited;
+
+        return {
+          success: true,
+          phase,
+          phaseComplete,
+          hasMore: Boolean(hasMore && !phaseComplete),
+          lastDocId: lastCompletedDocId,
+          rateLimited,
+          urlStatusCache,
+          findings: batchFindings,
+          stats: {
+            docsScanned,
+            docsWithLinks,
+            httpChecks,
+            urlsSkippedCached,
+            findingsInBatch: batchFindings.length,
+          },
+          message: rateLimited ?
+            "Remote host rate-limited this batch; wait and run again" :
+            stopForBudget ?
+              "Batch complete; more documents or URLs remain" :
+              `Outgoing link scan complete for ${phase}`,
+        };
+      } catch (error) {
+        console.error("Error in findBrokenOutgoingLinks:", error);
+        throw new Error(
+            `Failed to find broken outgoing links: ${error.message}`,
+        );
       }
     },
 );
