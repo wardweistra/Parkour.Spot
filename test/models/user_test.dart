@@ -46,6 +46,26 @@ void main() {
     });
   });
 
+  group('User.bio', () {
+    test('round-trips from map and copyWith', () {
+      const bio = 'Training rails downtown on weekends.';
+      final user = User.fromMap({
+        'id': 'user-1',
+        'email': 'user@parkour.spot',
+        'bio': bio,
+      });
+
+      expect(user.bio, bio);
+      expect(user.toMap()['bio'], bio);
+      expect(user.copyWith(bio: null).bio, isNull);
+    });
+
+    test('is null when missing from map', () {
+      final user = User.fromMap({'id': 'user-1', 'email': 'user@parkour.spot'});
+      expect(user.bio, isNull);
+    });
+  });
+
   group('User.notifyEventsNearby', () {
     test('defaults to true when the field is missing', () {
       final user = User.fromMap({'id': 'user-1', 'email': 'user@parkour.spot'});

@@ -430,6 +430,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                         ),
                       ],
 
+                      _buildProfileBio(context, user, isOwnProfile),
+
                       // Member since
                       if (user.createdAt != null) ...[
                         const SizedBox(height: 16),
@@ -475,6 +477,114 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             isOwnProfile: isOwnProfile,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildProfileBio(
+    BuildContext context,
+    app_user.User user,
+    bool isOwnProfile,
+  ) {
+    final bio = user.bio?.trim() ?? '';
+    final hasBio = bio.isNotEmpty;
+
+    if (!hasBio && !isOwnProfile) {
+      return const SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    if (hasBio) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 20),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLow.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Text(
+                bio,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  height: 1.45,
+                  color: colorScheme.onSurface.withValues(alpha: 0.88),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Material(
+          color: colorScheme.surfaceContainerLowest,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: colorScheme.primary.withValues(alpha: 0.25),
+              width: 1,
+            ),
+          ),
+          child: InkWell(
+            onTap: () => _showProfileSettingsSheet(
+              context,
+              user,
+              openBioEditor: true,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.format_quote_outlined,
+                    color: colorScheme.primary.withValues(alpha: 0.85),
+                    size: 28,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    _l10n.publicProfileBioEmptyTitle,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _l10n.publicProfileBioEmptySubtitle,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _l10n.publicProfileBioAddAction,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -655,7 +765,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     );
   }
 
-  void _showProfileSettingsSheet(BuildContext context, app_user.User user) {
+  void _showProfileSettingsSheet(
+    BuildContext context,
+    app_user.User user, {
+    bool openBioEditor = false,
+  }) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -674,6 +788,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   user: user,
                   userIdOrUsername: widget.userIdOrUsername,
                   scrollController: scrollController,
+                  openBioEditorOnStart: openBioEditor,
                   onSaved: () {
                     Navigator.pop(sheetContext);
                     _loadProfile();
@@ -1239,6 +1354,7 @@ class _ProfileSettingsSheetContent extends StatefulWidget {
   final app_user.User user;
   final String userIdOrUsername;
   final ScrollController scrollController;
+  final bool openBioEditorOnStart;
   final VoidCallback onSaved;
   final void Function(String newUsername) onUsernameRedirect;
 
@@ -1246,6 +1362,7 @@ class _ProfileSettingsSheetContent extends StatefulWidget {
     required this.user,
     required this.userIdOrUsername,
     required this.scrollController,
+    this.openBioEditorOnStart = false,
     required this.onSaved,
     required this.onUsernameRedirect,
   });
@@ -1262,6 +1379,7 @@ class _ProfileSettingsSheetContentState
   late TextEditingController _displayNameController;
   late TextEditingController _usernameController;
   late TextEditingController _instagramUrlController;
+  late TextEditingController _bioController;
   bool _isEditingDisplayName = false;
   bool _isUpdatingDisplayName = false;
   String? _displayNameError;
@@ -1271,8 +1389,12 @@ class _ProfileSettingsSheetContentState
   bool _isEditingInstagramUrl = false;
   bool _isUpdatingInstagramUrl = false;
   String? _instagramUrlError;
+  bool _isEditingBio = false;
+  bool _isUpdatingBio = false;
+  String? _bioError;
 
   static const int _displayNameMaxLength = 50;
+  static const int _bioMaxLength = 280;
 
   @override
   void initState() {
@@ -1286,6 +1408,10 @@ class _ProfileSettingsSheetContentState
     _instagramUrlController = TextEditingController(
       text: widget.user.instagramUrl?.trim() ?? '',
     );
+    _bioController = TextEditingController(
+      text: widget.user.bio?.trim() ?? '',
+    );
+    _isEditingBio = widget.openBioEditorOnStart;
   }
 
   @override
@@ -1293,6 +1419,7 @@ class _ProfileSettingsSheetContentState
     _displayNameController.dispose();
     _usernameController.dispose();
     _instagramUrlController.dispose();
+    _bioController.dispose();
     super.dispose();
   }
 
@@ -1332,6 +1459,8 @@ class _ProfileSettingsSheetContentState
                 _buildDisplayNameSection(context),
                 const SizedBox(height: 16),
                 _buildUsernameSection(context),
+                const SizedBox(height: 16),
+                _buildBioSection(context),
                 const SizedBox(height: 16),
                 _buildInstagramSection(context),
                 const SizedBox(height: 16),
@@ -1660,6 +1789,158 @@ class _ProfileSettingsSheetContentState
                         }
                       },
                 child: _isCheckingUsername
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(_l10n.publicProfileSaveAction),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildBioSection(BuildContext context) {
+    final user = widget.user;
+    final currentBio = user.bio?.trim() ?? '';
+    final hasBio = currentBio.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _l10n.publicProfileBioLabel,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        if (!_isEditingBio) ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: hasBio
+                    ? Text(
+                        currentBio,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          height: 1.4,
+                        ),
+                      )
+                    : Text(
+                        _l10n.publicProfileNoBioSet,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _isEditingBio = true;
+                    _bioController.text = currentBio;
+                    _bioError = null;
+                  });
+                },
+                child: Text(
+                  hasBio
+                      ? _l10n.publicProfileEditAction
+                      : _l10n.publicProfileAddAction,
+                ),
+              ),
+            ],
+          ),
+        ] else ...[
+          TextField(
+            controller: _bioController,
+            decoration: InputDecoration(
+              labelText: _l10n.publicProfileBioLabel,
+              hintText: _l10n.publicProfileBioFieldHint,
+              helperText: _l10n.publicProfileBioHelper(_bioMaxLength),
+              errorText: _bioError,
+              alignLabelWithHint: true,
+            ),
+            enabled: !_isUpdatingBio,
+            maxLength: _bioMaxLength,
+            minLines: 3,
+            maxLines: 6,
+            keyboardType: TextInputType.multiline,
+            textCapitalization: TextCapitalization.sentences,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _isUpdatingBio
+                    ? null
+                    : () {
+                        setState(() {
+                          _isEditingBio = false;
+                          _bioController.text = currentBio;
+                          _bioError = null;
+                        });
+                      },
+                child: Text(_l10n.profileCancel),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _isUpdatingBio
+                    ? null
+                    : () async {
+                        final rawInput = _bioController.text.trim();
+
+                        if (rawInput.length > _bioMaxLength) {
+                          setState(() {
+                            _bioError = _l10n.publicProfileBioHelper(
+                              _bioMaxLength,
+                            );
+                          });
+                          return;
+                        }
+
+                        setState(() {
+                          _isUpdatingBio = true;
+                          _bioError = null;
+                        });
+
+                        final authService = Provider.of<AuthService>(
+                          context,
+                          listen: false,
+                        );
+                        final success = await authService.updateProfile(
+                          bio: rawInput.isEmpty ? null : rawInput,
+                          removeBio: rawInput.isEmpty,
+                        );
+
+                        if (!mounted) return;
+
+                        setState(() {
+                          _isUpdatingBio = false;
+                        });
+
+                        if (success) {
+                          setState(() {
+                            _isEditingBio = false;
+                            _bioError = null;
+                          });
+                          widget.onSaved();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                rawInput.isEmpty
+                                    ? _l10n.publicProfileBioRemoved
+                                    : _l10n.publicProfileBioUpdated,
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } else {
+                          setState(() {
+                            _bioError = _l10n.publicProfileBioUpdateFailed;
+                          });
+                        }
+                      },
+                child: _isUpdatingBio
                     ? const SizedBox(
                         width: 16,
                         height: 16,
