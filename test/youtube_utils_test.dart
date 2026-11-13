@@ -5,6 +5,15 @@ import 'package:parkour_spot/utils/image_url_utils.dart';
 import 'package:parkour_spot/utils/youtube_utils.dart';
 
 void main() {
+  group('youtubeWatchUrl', () {
+    test('builds watch URL for video id', () {
+      expect(
+        youtubeWatchUrl('dQw4w9WgXcQ'),
+        'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      );
+    });
+  });
+
   group('extractYoutubeVideoId', () {
     test('returns null for empty input', () {
       expect(extractYoutubeVideoId(''), isNull);

@@ -75,6 +75,10 @@ String youtubeThumbnailUrl(
 String youtubePreviewThumbnailUrl(String videoId) =>
     youtubeThumbnailUrl(videoId, quality: 'hqdefault');
 
+/// Watch URL for a YouTube [videoId].
+String youtubeWatchUrl(String videoId) =>
+    'https://www.youtube.com/watch?v=$videoId';
+
 /// Extracts a video ID from a YouTube CDN thumbnail URL, if present.
 String? extractYoutubeVideoIdFromThumbnailUrl(String url) {
   final match = _youtubeThumbnailUrlPattern.firstMatch(url);

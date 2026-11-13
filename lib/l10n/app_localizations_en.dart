@@ -5432,6 +5432,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editSpotYoutubeThumbnailSemanticLabel => 'YouTube thumbnail';
 
   @override
+  String get editSuggestionYoutubeEffectHint =>
+      'Accepting adds the YouTube link to this spot and adds the video thumbnail to its photos.';
+
+  @override
+  String get editSuggestionYoutubeToAddHeading => 'Videos to add';
+
+  @override
+  String get editSuggestionYoutubeExistingHeading => 'Already on this spot';
+
+  @override
+  String get editSuggestionYoutubeOutcomes =>
+      'Adds video link and spot thumbnail';
+
+  @override
+  String get editSuggestionYoutubeOpenLink => 'Open on YouTube';
+
+  @override
   String get auditLogCategorySpotSyncs => 'Spot syncs';
 
   @override

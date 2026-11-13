@@ -8824,6 +8824,36 @@ abstract class AppLocalizations {
   /// **'YouTube thumbnail'**
   String get editSpotYoutubeThumbnailSemanticLabel;
 
+  /// Moderator edit-suggestion review: explains that accepting a YouTube suggestion adds both the video link and a spot photo thumbnail
+  ///
+  /// In en, this message translates to:
+  /// **'Accepting adds the YouTube link to this spot and adds the video thumbnail to its photos.'**
+  String get editSuggestionYoutubeEffectHint;
+
+  /// Moderator edit-suggestion review: heading above newly suggested YouTube videos
+  ///
+  /// In en, this message translates to:
+  /// **'Videos to add'**
+  String get editSuggestionYoutubeToAddHeading;
+
+  /// Moderator edit-suggestion review: heading above YouTube videos already linked on the spot
+  ///
+  /// In en, this message translates to:
+  /// **'Already on this spot'**
+  String get editSuggestionYoutubeExistingHeading;
+
+  /// Moderator edit-suggestion review: per-video reminder of what accepting applies
+  ///
+  /// In en, this message translates to:
+  /// **'Adds video link and spot thumbnail'**
+  String get editSuggestionYoutubeOutcomes;
+
+  /// Moderator edit-suggestion review: button/tooltip to open the suggested video
+  ///
+  /// In en, this message translates to:
+  /// **'Open on YouTube'**
+  String get editSuggestionYoutubeOpenLink;
+
   /// Audit log filter chip: spot source sync entries
   ///
   /// In en, this message translates to:

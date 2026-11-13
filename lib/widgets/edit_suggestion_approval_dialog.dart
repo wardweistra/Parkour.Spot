@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'location_suggestion_review.dart';
 import 'text_diff_view.dart';
 import 'value_before_after_view.dart';
+import 'youtube_suggestion_review.dart';
 import '../l10n/app_localizations.dart';
 import '../models/spot.dart';
 import '../models/spot_report.dart';
@@ -331,27 +332,6 @@ class _EditSuggestionApprovalDialogState
     final trimmed = value?.trim();
     if (trimmed == null || trimmed.isEmpty) return _emptyValue(l10n);
     return trimmed;
-  }
-
-  List<String> _youtubeVideoLabels(List<String>? videoIds) {
-    if (videoIds == null || videoIds.isEmpty) {
-      return const [];
-    }
-    final ids = videoIds.where((id) => id.trim().isNotEmpty).toList()..sort();
-    return ids;
-  }
-
-  List<String> _mergedYoutubeVideoIds(
-    List<String>? existing,
-    List<String>? suggested,
-  ) {
-    final merged = <String>[...?existing];
-    for (final id in suggested ?? const <String>[]) {
-      if (id.trim().isEmpty || merged.contains(id)) continue;
-      merged.add(id);
-    }
-    merged.sort();
-    return merged;
   }
 
   List<String> _sortedLabels(List<String>? values, String category) {
@@ -787,16 +767,23 @@ class _EditSuggestionApprovalDialogState
                   ),
                 if (report.suggestedYoutubeVideoIds != null &&
                     report.suggestedYoutubeVideoIds!.isNotEmpty)
-                  _buildListFieldRow(
-                    context,
-                    fieldLabel: l10n.editSpotYoutubeSectionTitle,
-                    fieldKey: 'youtubeVideoIds',
-                    beforeLabels: _youtubeVideoLabels(spot.youtubeVideoIds),
-                    afterLabels: _youtubeVideoLabels(
-                      _mergedYoutubeVideoIds(
-                        spot.youtubeVideoIds,
-                        report.suggestedYoutubeVideoIds,
-                      ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildFieldHeader(
+                          context,
+                          fieldLabel: l10n.editSpotYoutubeSectionTitle,
+                          fieldKey: 'youtubeVideoIds',
+                        ),
+                        const SizedBox(height: 8),
+                        YoutubeSuggestionReview(
+                          existingVideoIds: spot.youtubeVideoIds,
+                          suggestedVideoIds:
+                              report.suggestedYoutubeVideoIds!,
+                        ),
+                      ],
                     ),
                   ),
                 Text(

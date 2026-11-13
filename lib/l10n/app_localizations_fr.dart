@@ -5526,6 +5526,23 @@ class AppLocalizationsFr extends AppLocalizations {
   String get editSpotYoutubeThumbnailSemanticLabel => 'Vignette YouTube';
 
   @override
+  String get editSuggestionYoutubeEffectHint =>
+      'En acceptant, le lien YouTube est ajouté à ce spot et la vignette de la vidéo à ses photos.';
+
+  @override
+  String get editSuggestionYoutubeToAddHeading => 'Vidéos à ajouter';
+
+  @override
+  String get editSuggestionYoutubeExistingHeading => 'Déjà sur ce spot';
+
+  @override
+  String get editSuggestionYoutubeOutcomes =>
+      'Ajoute le lien vidéo et la vignette du spot';
+
+  @override
+  String get editSuggestionYoutubeOpenLink => 'Ouvrir sur YouTube';
+
+  @override
   String get auditLogCategorySpotSyncs => 'Spot syncs';
 
   @override

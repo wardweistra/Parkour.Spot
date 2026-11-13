@@ -5631,6 +5631,26 @@
   "@editSpotYoutubeThumbnailSemanticLabel": {
     "description": "Moderator edit spot: semantic label for video thumbnail preview"
   },
+  "editSuggestionYoutubeEffectHint": "Accepting adds the YouTube link to this spot and adds the video thumbnail to its photos.",
+  "@editSuggestionYoutubeEffectHint": {
+    "description": "Moderator edit-suggestion review: explains that accepting a YouTube suggestion adds both the video link and a spot photo thumbnail"
+  },
+  "editSuggestionYoutubeToAddHeading": "Videos to add",
+  "@editSuggestionYoutubeToAddHeading": {
+    "description": "Moderator edit-suggestion review: heading above newly suggested YouTube videos"
+  },
+  "editSuggestionYoutubeExistingHeading": "Already on this spot",
+  "@editSuggestionYoutubeExistingHeading": {
+    "description": "Moderator edit-suggestion review: heading above YouTube videos already linked on the spot"
+  },
+  "editSuggestionYoutubeOutcomes": "Adds video link and spot thumbnail",
+  "@editSuggestionYoutubeOutcomes": {
+    "description": "Moderator edit-suggestion review: per-video reminder of what accepting applies"
+  },
+  "editSuggestionYoutubeOpenLink": "Open on YouTube",
+  "@editSuggestionYoutubeOpenLink": {
+    "description": "Moderator edit-suggestion review: button/tooltip to open the suggested video"
+  },
   "auditLogCategorySpotSyncs": "Spot syncs",
   "@auditLogCategorySpotSyncs": {
     "description": "Audit log filter chip: spot source sync entries"
