@@ -1545,6 +1545,11 @@ body:has(.not-found) {
   margin-top: var(--space-md);
 }
 
+.not-found__contact {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .not-found__frame {
     animation: not-found-shrine-recall 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
