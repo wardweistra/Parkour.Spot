@@ -5597,5 +5597,29 @@
   "auditLogViewSyncRun": "View sync run",
   "@auditLogViewSyncRun": {
     "description": "Audit log: open the durable syncRuns report for a sync entry"
+  },
+  "splashSloganStartTogether": "For those who start together and finish together",
+  "@splashSloganStartTogether": {
+    "description": "Splash screen: random community slogan"
+  },
+  "splashSloganLeaveSpotBetter": "For those who leave their spot better than they found it",
+  "@splashSloganLeaveSpotBetter": {
+    "description": "Splash screen: random stewardship slogan"
+  },
+  "splashSloganStrongToBeUseful": "For those who are strong to be useful",
+  "@splashSloganStrongToBeUseful": {
+    "description": "Splash screen: random slogan from être fort pour être utile"
+  },
+  "splashSloganTrainToLast": "For those who train to last",
+  "@splashSloganTrainToLast": {
+    "description": "Splash screen: random slogan from être et durer"
+  },
+  "splashSloganStrongBodyStrongMind": "For those who train a strong body and a strong mind",
+  "@splashSloganStrongBodyStrongMind": {
+    "description": "Splash screen: random slogan inspired by Yamakasi strong body/spirit"
+  },
+  "splashSloganObstaclesIntoPaths": "For those who turn obstacles into paths",
+  "@splashSloganObstaclesIntoPaths": {
+    "description": "Splash screen: random obstacle-as-path slogan"
   }
 }

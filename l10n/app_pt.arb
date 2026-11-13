@@ -1419,5 +1419,11 @@
   "editSpotYoutubeLinkHint": "Introduz o ID ou URL do YouTube",
   "editSpotYoutubeRemoveTooltip": "Remover ligação YouTube",
   "editSpotYoutubeReorderTooltip": "Reordenar ligação YouTube",
-  "editSpotYoutubeThumbnailSemanticLabel": "Miniatura do YouTube"
+  "editSpotYoutubeThumbnailSemanticLabel": "Miniatura do YouTube",
+  "splashSloganStartTogether": "Para quem começa junto e termina junto",
+  "splashSloganLeaveSpotBetter": "Para quem deixa o spot melhor do que o encontrou",
+  "splashSloganStrongToBeUseful": "Para quem é forte para ser útil",
+  "splashSloganTrainToLast": "Para quem treina para durar",
+  "splashSloganStrongBodyStrongMind": "Para quem treina um corpo forte e uma mente forte",
+  "splashSloganObstaclesIntoPaths": "Para quem transforma obstáculos em caminhos"
 }

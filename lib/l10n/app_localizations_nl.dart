@@ -5436,4 +5436,27 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get auditLogViewSyncRun => 'View sync run';
+
+  @override
+  String get splashSloganStartTogether =>
+      'Voor wie samen begint en samen eindigt';
+
+  @override
+  String get splashSloganLeaveSpotBetter =>
+      'Voor wie hun spot beter achterlaat dan ze hem aantroffen';
+
+  @override
+  String get splashSloganStrongToBeUseful =>
+      'Voor wie sterk is om nuttig te zijn';
+
+  @override
+  String get splashSloganTrainToLast => 'Voor wie traint om te blijven';
+
+  @override
+  String get splashSloganStrongBodyStrongMind =>
+      'Voor wie een sterk lichaam en een sterke geest traint';
+
+  @override
+  String get splashSloganObstaclesIntoPaths =>
+      'Voor wie obstakels in paden verandert';
 }

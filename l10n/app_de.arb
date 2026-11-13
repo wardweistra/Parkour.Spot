@@ -1419,5 +1419,11 @@
   "editSpotYoutubeLinkHint": "YouTube-Video-ID oder URL eingeben",
   "editSpotYoutubeRemoveTooltip": "YouTube-Link entfernen",
   "editSpotYoutubeReorderTooltip": "YouTube-Link neu anordnen",
-  "editSpotYoutubeThumbnailSemanticLabel": "YouTube-Vorschaubild"
+  "editSpotYoutubeThumbnailSemanticLabel": "YouTube-Vorschaubild",
+  "splashSloganStartTogether": "Für die, die zusammen starten und zusammen ankommen",
+  "splashSloganLeaveSpotBetter": "Für die, die ihren Spot besser hinterlassen, als sie ihn vorgefunden haben",
+  "splashSloganStrongToBeUseful": "Für die, die stark sind, um nützlich zu sein",
+  "splashSloganTrainToLast": "Für die, die trainieren, um zu bleiben",
+  "splashSloganStrongBodyStrongMind": "Für die, die einen starken Körper und einen starken Geist trainieren",
+  "splashSloganObstaclesIntoPaths": "Für die, die Hindernisse in Wege verwandeln"
 }

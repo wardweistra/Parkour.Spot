@@ -8781,6 +8781,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View sync run'**
   String get auditLogViewSyncRun;
+
+  /// Splash screen: random community slogan
+  ///
+  /// In en, this message translates to:
+  /// **'For those who start together and finish together'**
+  String get splashSloganStartTogether;
+
+  /// Splash screen: random stewardship slogan
+  ///
+  /// In en, this message translates to:
+  /// **'For those who leave their spot better than they found it'**
+  String get splashSloganLeaveSpotBetter;
+
+  /// Splash screen: random slogan from être fort pour être utile
+  ///
+  /// In en, this message translates to:
+  /// **'For those who are strong to be useful'**
+  String get splashSloganStrongToBeUseful;
+
+  /// Splash screen: random slogan from être et durer
+  ///
+  /// In en, this message translates to:
+  /// **'For those who train to last'**
+  String get splashSloganTrainToLast;
+
+  /// Splash screen: random slogan inspired by Yamakasi strong body/spirit
+  ///
+  /// In en, this message translates to:
+  /// **'For those who train a strong body and a strong mind'**
+  String get splashSloganStrongBodyStrongMind;
+
+  /// Splash screen: random obstacle-as-path slogan
+  ///
+  /// In en, this message translates to:
+  /// **'For those who turn obstacles into paths'**
+  String get splashSloganObstaclesIntoPaths;
 }
 
 class _AppLocalizationsDelegate

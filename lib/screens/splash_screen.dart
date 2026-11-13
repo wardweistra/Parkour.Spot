@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
+import 'package:parkour_spot/l10n/app_localizations.dart';
 import 'package:parkour_spot/utils/browser_location.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -16,29 +17,21 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-  
-  // Array of inspirational messages
-  static const List<String> _messages = [
-    'For those who start together and finish together',
-    'For those who leave their spot better than they found it',
-    'For those who are strong to be useful',
-  ];
-  
-  late String _selectedMessage;
+
+  /// Stable index into the localized slogan list for this splash visit.
+  late final int _messageIndex;
 
   @override
   void initState() {
     super.initState();
-    
-    // Select a random message
-    final random = Random();
-    _selectedMessage = _messages[random.nextInt(_messages.length)];
-    
+
+    _messageIndex = Random().nextInt(6);
+
     _animationController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     );
-    
+
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -46,7 +39,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       parent: _animationController,
       curve: Curves.easeIn,
     ));
-    
+
     _scaleAnimation = Tween<double>(
       begin: 0.8,
       end: 1.0,
@@ -54,21 +47,30 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       parent: _animationController,
       curve: Curves.elasticOut,
     ));
-    
+
     _animationController.forward();
-    
+
     // Check authentication status after animation
     _checkAuthStatus();
   }
 
+  List<String> _messages(AppLocalizations l10n) => [
+        l10n.splashSloganStartTogether,
+        l10n.splashSloganLeaveSpotBetter,
+        l10n.splashSloganStrongToBeUseful,
+        l10n.splashSloganTrainToLast,
+        l10n.splashSloganStrongBodyStrongMind,
+        l10n.splashSloganObstaclesIntoPaths,
+      ];
+
   Future<void> _checkAuthStatus() async {
     await Future.delayed(const Duration(seconds: 2));
-    
+
     if (!mounted) return;
-    
+
     // Check if we're already on a spot route
     String? currentPath;
-    
+
     // Method 1: Check the current route state
     try {
       final routerState = GoRouterState.of(context);
@@ -76,7 +78,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     } catch (e) {
       // Could not get router state
     }
-    
+
     // Method 2: Check if we're in a spot route by looking at the current location
     if (currentPath == null || currentPath == '/') {
       try {
@@ -89,7 +91,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         // Could not get location
       }
     }
-    
+
     // Method 3: Check the browser URL directly (web-specific)
     if (currentPath == null || currentPath == '/') {
       try {
@@ -104,18 +106,18 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         // Could not get browser URL
       }
     }
-    
+
     // If we have a spot URL, navigate directly to it (router will handle auth)
     if (currentPath != null && _isSpotUrl(currentPath)) {
       context.go(currentPath);
       return;
     }
-    
+
     // Allow both authenticated and unauthenticated users to access public features
     // Navigate to explore for all users - authentication will be handled per-feature
     context.go('/explore');
   }
-  
+
   /// Check if the given path is a spot URL
   /// Supports format: /&lt;xx&gt;/&lt;anything&gt;/&lt;spot-id&gt;
   /// where xx is a 2-letter country code
@@ -126,7 +128,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       final countryCode = segments[0];
       return countryCode.length == 2 && RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode);
     }
-    
+
     return false;
   }
 
@@ -138,6 +140,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final selectedMessage = _messages(l10n)[_messageIndex];
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.primary,
       body: Center(
@@ -162,9 +167,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         animate: true,
                       ),
                     ),
-                    
+
                     const SizedBox(height: 30),
-                    
+
                     // App Name
                     Text(
                       'Parkour·Spot',
@@ -172,9 +177,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
-                    
+
                     const SizedBox(height: 20),
-                    
+
                     // Header
                     Text(
                       'Parkour·Spot',
@@ -182,12 +187,12 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         color: Colors.white,
                       ),
                     ),
-                    
+
                     const SizedBox(height: 10),
-                    
+
                     // Random inspirational message
                     Text(
-                      _selectedMessage,
+                      selectedMessage,
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.white.withValues(alpha: 0.9),
@@ -195,9 +200,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    
+
                     const SizedBox(height: 50),
-                    
+
                     // Loading indicator
                     CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(

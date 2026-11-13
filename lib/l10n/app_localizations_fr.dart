@@ -5497,4 +5497,27 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get auditLogViewSyncRun => 'View sync run';
+
+  @override
+  String get splashSloganStartTogether =>
+      'Pour ceux qui commencent ensemble et finissent ensemble';
+
+  @override
+  String get splashSloganLeaveSpotBetter =>
+      'Pour ceux qui laissent leur spot mieux qu’ils ne l’ont trouvé';
+
+  @override
+  String get splashSloganStrongToBeUseful =>
+      'Pour ceux qui sont forts pour être utiles';
+
+  @override
+  String get splashSloganTrainToLast => 'Pour ceux qui s’entraînent pour durer';
+
+  @override
+  String get splashSloganStrongBodyStrongMind =>
+      'Pour ceux qui entraînent un corps fort et un esprit fort';
+
+  @override
+  String get splashSloganObstaclesIntoPaths =>
+      'Pour ceux qui transforment les obstacles en chemins';
 }
