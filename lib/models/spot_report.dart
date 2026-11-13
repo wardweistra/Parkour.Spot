@@ -30,6 +30,7 @@ class SpotReport {
     this.suggestedSpotFeatures,
     this.suggestedSpotAccess,
     this.suggestedSpotFacilities,
+    this.suggestedYoutubeVideoIds,
     this.acceptedEditFields,
     this.rejectedEditFields,
     this.moderatorNotes,
@@ -108,6 +109,9 @@ class SpotReport {
 
   /// Proposed facilities (when category is "Edit suggestion").
   final Map<String, String>? suggestedSpotFacilities;
+
+  /// YouTube video IDs to add (when category is "Edit suggestion").
+  final List<String>? suggestedYoutubeVideoIds;
 
   /// Fields moderator accepted (e.g. ["name", "description"]).
   final List<String>? acceptedEditFields;
@@ -214,6 +218,7 @@ class SpotReport {
       suggestedSpotFeatures: parseStringList(data['suggestedSpotFeatures']),
       suggestedSpotAccess: data['suggestedSpotAccess'] as String?,
       suggestedSpotFacilities: parseStringMap(data['suggestedSpotFacilities']),
+      suggestedYoutubeVideoIds: parseStringList(data['suggestedYoutubeVideoIds']),
       acceptedEditFields: parseStringList(data['acceptedEditFields']),
       rejectedEditFields: parseStringList(data['rejectedEditFields']),
       moderatorNotes: data['moderatorNotes'] as String?,
@@ -242,7 +247,8 @@ class SpotReport {
       (suggestedGoodFor != null && suggestedGoodFor!.isNotEmpty) ||
       (suggestedSpotFeatures != null && suggestedSpotFeatures!.isNotEmpty) ||
       suggestedSpotAccess != null ||
-      (suggestedSpotFacilities != null && suggestedSpotFacilities!.isNotEmpty);
+      (suggestedSpotFacilities != null && suggestedSpotFacilities!.isNotEmpty) ||
+      (suggestedYoutubeVideoIds != null && suggestedYoutubeVideoIds!.isNotEmpty);
 
   /// Human readable location string when city/country are available.
   String? get locationSummary {

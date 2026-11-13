@@ -3302,6 +3302,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'We nemen alleen contact op over dit voorstel.';
 
   @override
+  String get spotDetailSuggestEditYoutubeHint =>
+      'Stel één of meer YouTube-video\'s voor op deze spot. Voer video-ID\'s of URL\'s in (bijv. dQw4w9WgXcQ of https://www.youtube.com/watch?v=dQw4w9WgXcQ). Sleep om te herschikken.';
+
+  @override
   String get spotDetailMustBeLoggedInToRate =>
       'Je moet ingelogd zijn om spots te beoordelen';
 

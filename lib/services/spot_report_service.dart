@@ -61,6 +61,7 @@ class SpotReportService {
     List<String>? suggestedSpotFeatures,
     String? suggestedSpotAccess,
     Map<String, String>? suggestedSpotFacilities,
+    List<String>? suggestedYoutubeVideoIds,
   }) async {
     try {
       await _firestore.collection('spotReports').add({
@@ -99,6 +100,8 @@ class SpotReportService {
           'suggestedSpotAccess': suggestedSpotAccess,
         if (suggestedSpotFacilities != null && suggestedSpotFacilities.isNotEmpty)
           'suggestedSpotFacilities': suggestedSpotFacilities,
+        if (suggestedYoutubeVideoIds != null && suggestedYoutubeVideoIds.isNotEmpty)
+          'suggestedYoutubeVideoIds': suggestedYoutubeVideoIds,
         'status': statuses.first, // default "New"
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),

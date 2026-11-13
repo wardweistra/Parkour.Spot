@@ -533,6 +533,13 @@ class SpotService extends ChangeNotifier {
               : null,
         );
       }
+      if (updates.containsKey('youtubeVideoIds')) {
+        updatedSpot = updatedSpot.copyWith(
+          youtubeVideoIds: updates['youtubeVideoIds'] is List
+              ? List<String>.from(updates['youtubeVideoIds'] as List)
+              : null,
+        );
+      }
 
       List<Map<String, String>> contributors = List.from(
         updatedSpot.contributors ?? [],
@@ -554,10 +561,28 @@ class SpotService extends ChangeNotifier {
         updatedAt: DateTime.now(),
       );
 
-      await _firestore
-          .collection('spots')
-          .doc(spot.id)
-          .update(updatedSpot.toFirestore(isUpdate: true));
+      if (updates.containsKey('youtubeVideoIds')) {
+        final success = await updateSpot(
+          updatedSpot,
+          reportId: reportId,
+          notes: notes,
+        );
+        if (!success) {
+          _error = _lastUpdateWarning ?? 'Failed to apply YouTube suggestions';
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+        final refreshedSpot = await getSpotById(spot.id!);
+        if (refreshedSpot != null) {
+          updatedSpot = refreshedSpot;
+        }
+      } else {
+        await _firestore
+            .collection('spots')
+            .doc(spot.id)
+            .update(updatedSpot.toFirestore(isUpdate: true));
+      }
 
       final changes = _computeSpotChanges(oldSpot, updatedSpot);
       if (changes.isNotEmpty) {

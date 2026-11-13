@@ -5328,6 +5328,12 @@ abstract class AppLocalizations {
   /// **'We will contact you only about this suggestion.'**
   String get spotDetailSuggestEditEmailHelper;
 
+  /// Hint under YouTube links in Suggest an edit
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest one or more YouTube videos to add to this spot. Enter video IDs or URLs (e.g., dQw4w9WgXcQ or https://www.youtube.com/watch?v=dQw4w9WgXcQ). Drag to reorder.'**
+  String get spotDetailSuggestEditYoutubeHint;
+
   /// No description provided for @spotDetailMustBeLoggedInToRate.
   ///
   /// In en, this message translates to:

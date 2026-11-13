@@ -3154,6 +3154,10 @@
   "spotDetailFieldDescriptionHint": "Spot description",
   "spotDetailFieldSpotAttributes": "Spot attributes",
   "spotDetailSuggestEditEmailHelper": "We will contact you only about this suggestion.",
+  "spotDetailSuggestEditYoutubeHint": "Suggest one or more YouTube videos to add to this spot. Enter video IDs or URLs (e.g., dQw4w9WgXcQ or https://www.youtube.com/watch?v=dQw4w9WgXcQ). Drag to reorder.",
+  "@spotDetailSuggestEditYoutubeHint": {
+    "description": "Hint under YouTube links in Suggest an edit"
+  },
   "spotDetailMustBeLoggedInToRate": "You must be logged in to rate spots",
   "spotDetailRatingSubmitted": "{count, plural, one{Rating 1 star submitted!} other{Rating {count} stars submitted!}}",
   "@spotDetailRatingSubmitted": {

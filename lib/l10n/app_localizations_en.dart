@@ -3285,6 +3285,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'We will contact you only about this suggestion.';
 
   @override
+  String get spotDetailSuggestEditYoutubeHint =>
+      'Suggest one or more YouTube videos to add to this spot. Enter video IDs or URLs (e.g., dQw4w9WgXcQ or https://www.youtube.com/watch?v=dQw4w9WgXcQ). Drag to reorder.';
+
+  @override
   String get spotDetailMustBeLoggedInToRate =>
       'You must be logged in to rate spots';
 
