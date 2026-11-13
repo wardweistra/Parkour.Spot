@@ -39,6 +39,7 @@ import '../screens/events/add_event_report_screen.dart';
 import '../screens/spots/spot_detail_screen.dart';
 import '../screens/events/event_detail_screen.dart';
 import '../l10n/app_localizations.dart';
+import '../widgets/entity_not_found_view.dart';
 import '../screens/spots/add_spot_screen.dart';
 import '../screens/spots/edit_spot_screen.dart';
 import '../screens/spots/spot_list_detail_screen.dart';
@@ -914,24 +915,10 @@ class _SpotDetailRouteState extends State<SpotDetailRoute> {
             if (!snapshot.hasData || snapshot.data == null) {
               final l10n = AppLocalizations.of(context)!;
               return Scaffold(
-                body: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.location_off,
-                        size: 64,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(l10n.spotDetailRouteNotFound),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () => context.go('/explore'),
-                        child: Text(l10n.spotDetailRouteGoToExplore),
-                      ),
-                    ],
-                  ),
+                body: EntityNotFoundView(
+                  title: l10n.spotDetailRouteNotFound,
+                  primaryActionLabel: l10n.spotDetailRouteGoToExplore,
+                  onPrimaryAction: () => context.go('/explore'),
                 ),
               );
             }
@@ -1057,25 +1044,12 @@ class _EditSpotRouteContentState extends State<_EditSpotRouteContent> {
             }
 
             if (!snapshot.hasData || snapshot.data == null) {
+              final l10n = AppLocalizations.of(context)!;
               return Scaffold(
-                body: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.location_off,
-                        size: 64,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(height: 16),
-                      const Text('Spot not found'),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () => context.go('/explore'),
-                        child: const Text('Go to Explore'),
-                      ),
-                    ],
-                  ),
+                body: EntityNotFoundView(
+                  title: l10n.spotDetailRouteNotFound,
+                  primaryActionLabel: l10n.spotDetailRouteGoToExplore,
+                  onPrimaryAction: () => context.go('/explore'),
                 ),
               );
             }

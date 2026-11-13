@@ -24,6 +24,7 @@ import '../../services/user_profile_service.dart';
 import '../../services/admin_events_service.dart';
 import '../../constants/spot_detail_ui.dart';
 import '../../widgets/page_scaffold.dart';
+import '../../widgets/entity_not_found_view.dart';
 import '../../widgets/spot_detail_quick_action_chip.dart';
 import '../../widgets/spot_list_save_button.dart';
 import '../../widgets/spot_list_access_sheet.dart';
@@ -129,9 +130,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     final list = await spotListService.getSpotListById(widget.listId);
 
     if (list == null) {
+      // Keep `_list` null so the memorial not-found body can render.
       setState(() {
         _isLoading = false;
-        _error = _l10n.spotListDetailListNotFoundOrNotAccessible;
+        _error = null;
       });
       return;
     }
@@ -1373,7 +1375,11 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
         title: _l10n.spotListDetailPageTitle,
         onBack: _handleBack,
         scrollable: false,
-        body: Center(child: Text(_l10n.spotListDetailListNotFound)),
+        body: EntityNotFoundView(
+          title: _l10n.spotListDetailListNotFoundOrNotAccessible,
+          primaryActionLabel: _l10n.spotDetailRouteGoToExplore,
+          onPrimaryAction: _handleBack,
+        ),
       );
     }
 

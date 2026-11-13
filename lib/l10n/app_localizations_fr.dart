@@ -727,6 +727,29 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileContactUs => 'Nous contacter';
 
   @override
+  String get entityNotFoundShrineRip => 'RIP';
+
+  @override
+  String get entityNotFoundShrineName => 'Vauxhall Maze';
+
+  @override
+  String get entityNotFoundShrineMeta => 'Londres · démoli en 2015';
+
+  @override
+  String get entityNotFoundShrineAlt =>
+      'Rebord et murs en béton de l’ancien spot Vauxhall Maze à Londres, démoli en 2015.';
+
+  @override
+  String get entityNotFoundLede =>
+      'Ce lien n’est pas sur Parkour·Spot—ou n’y a jamais été. Continuez à explorer depuis ici.';
+
+  @override
+  String get entityNotFoundContactPrefix => 'Si cela semble incorrect, ';
+
+  @override
+  String get entityNotFoundContactLink => 'contactez-nous';
+
+  @override
   String get profileReportIssue => 'Signaler un problème';
 
   @override

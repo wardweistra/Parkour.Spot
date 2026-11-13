@@ -877,6 +877,34 @@
   "@profileContactUs": {
     "description": "About section: email button"
   },
+  "entityNotFoundShrineRip": "RIP",
+  "@entityNotFoundShrineRip": {
+    "description": "Memorial plaque mark on entity not-found shrine"
+  },
+  "entityNotFoundShrineName": "Vauxhall Maze",
+  "@entityNotFoundShrineName": {
+    "description": "Memorial plaque name for Vauxhall Maze shrine"
+  },
+  "entityNotFoundShrineMeta": "London · demolished 2015",
+  "@entityNotFoundShrineMeta": {
+    "description": "Memorial plaque meta for Vauxhall Maze shrine"
+  },
+  "entityNotFoundShrineAlt": "Concrete ledges and walls of the former Vauxhall Maze spot in London, demolished in 2015.",
+  "@entityNotFoundShrineAlt": {
+    "description": "Accessibility label for Vauxhall Maze shrine photo"
+  },
+  "entityNotFoundLede": "That link isn’t on Parkour·Spot—or never was. Keep exploring from here.",
+  "@entityNotFoundLede": {
+    "description": "Shared lede under entity-specific not-found titles"
+  },
+  "entityNotFoundContactPrefix": "If this looks wrong, ",
+  "@entityNotFoundContactPrefix": {
+    "description": "Prefix before contact link on entity not-found views"
+  },
+  "entityNotFoundContactLink": "contact us",
+  "@entityNotFoundContactLink": {
+    "description": "Inline contact link label on entity not-found views"
+  },
   "profileReportIssue": "Report an issue",
   "@profileReportIssue": {
     "description": "About section: GitHub issues button"

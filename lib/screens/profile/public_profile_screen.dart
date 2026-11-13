@@ -20,6 +20,7 @@ import '../../services/spot_service.dart';
 import '../../widgets/instagram_button.dart';
 import '../../utils/web_meta_utils.dart';
 import '../../widgets/page_scaffold.dart';
+import '../../widgets/entity_not_found_view.dart';
 import '../../widgets/spot_list_summary_tile.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/spot_list_localization.dart';
@@ -216,33 +217,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
               if (user == null) {
                 // Profile not found or is private
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.lock_outline,
-                        size: 64,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _l10n.publicProfileProfileNotFound,
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _l10n.publicProfileNotFoundOrPrivate,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () => context.go('/explore'),
-                        child: Text(_l10n.spotDetailRouteGoToExplore),
-                      ),
-                    ],
-                  ),
+                return EntityNotFoundView(
+                  title: _l10n.publicProfileProfileNotFound,
+                  subtitle: _l10n.publicProfileNotFoundOrPrivate,
+                  primaryActionLabel: _l10n.spotDetailRouteGoToExplore,
+                  onPrimaryAction: () => context.go('/explore'),
                 );
               }
 

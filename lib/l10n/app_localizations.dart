@@ -1264,6 +1264,48 @@ abstract class AppLocalizations {
   /// **'Contact us'**
   String get profileContactUs;
 
+  /// Memorial plaque mark on entity not-found shrine
+  ///
+  /// In en, this message translates to:
+  /// **'RIP'**
+  String get entityNotFoundShrineRip;
+
+  /// Memorial plaque name for Vauxhall Maze shrine
+  ///
+  /// In en, this message translates to:
+  /// **'Vauxhall Maze'**
+  String get entityNotFoundShrineName;
+
+  /// Memorial plaque meta for Vauxhall Maze shrine
+  ///
+  /// In en, this message translates to:
+  /// **'London · demolished 2015'**
+  String get entityNotFoundShrineMeta;
+
+  /// Accessibility label for Vauxhall Maze shrine photo
+  ///
+  /// In en, this message translates to:
+  /// **'Concrete ledges and walls of the former Vauxhall Maze spot in London, demolished in 2015.'**
+  String get entityNotFoundShrineAlt;
+
+  /// Shared lede under entity-specific not-found titles
+  ///
+  /// In en, this message translates to:
+  /// **'That link isn’t on Parkour·Spot—or never was. Keep exploring from here.'**
+  String get entityNotFoundLede;
+
+  /// Prefix before contact link on entity not-found views
+  ///
+  /// In en, this message translates to:
+  /// **'If this looks wrong, '**
+  String get entityNotFoundContactPrefix;
+
+  /// Inline contact link label on entity not-found views
+  ///
+  /// In en, this message translates to:
+  /// **'contact us'**
+  String get entityNotFoundContactLink;
+
   /// About section: GitHub issues button
   ///
   /// In en, this message translates to:

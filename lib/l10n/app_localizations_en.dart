@@ -721,6 +721,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileContactUs => 'Contact us';
 
   @override
+  String get entityNotFoundShrineRip => 'RIP';
+
+  @override
+  String get entityNotFoundShrineName => 'Vauxhall Maze';
+
+  @override
+  String get entityNotFoundShrineMeta => 'London · demolished 2015';
+
+  @override
+  String get entityNotFoundShrineAlt =>
+      'Concrete ledges and walls of the former Vauxhall Maze spot in London, demolished in 2015.';
+
+  @override
+  String get entityNotFoundLede =>
+      'That link isn’t on Parkour·Spot—or never was. Keep exploring from here.';
+
+  @override
+  String get entityNotFoundContactPrefix => 'If this looks wrong, ';
+
+  @override
+  String get entityNotFoundContactLink => 'contact us';
+
+  @override
   String get profileReportIssue => 'Report an issue';
 
   @override

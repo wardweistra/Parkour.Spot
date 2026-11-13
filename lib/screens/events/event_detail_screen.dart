@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../../config/app_config.dart';
 import '../../constants/spot_detail_ui.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/entity_not_found_view.dart';
 import '../../models/parkour_event.dart';
 import '../../models/spot.dart';
 import '../../models/spot_list.dart';
@@ -969,23 +970,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final event = _event;
     if (event == null) {
       return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.event_busy_outlined, size: 64),
-              const SizedBox(height: 16),
-              Text(
-                l10n.eventDetailRouteNotFound,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: () => context.go('/explore'),
-                child: Text(l10n.eventDetailRouteGoToExplore),
-              ),
-            ],
-          ),
+        body: EntityNotFoundView(
+          title: l10n.eventDetailRouteNotFound,
+          primaryActionLabel: l10n.eventDetailRouteGoToExplore,
+          onPrimaryAction: () => context.go('/explore'),
         ),
       );
     }
