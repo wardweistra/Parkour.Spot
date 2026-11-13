@@ -748,6 +748,19 @@ class AppLocalizationsNl extends AppLocalizations {
   String get entityNotFoundContactLink => 'neem contact op';
 
   @override
+  String get entityNotFoundEventShrineRip => 'RIP';
+
+  @override
+  String get entityNotFoundEventShrineName => '4 The Love of Movement';
+
+  @override
+  String get entityNotFoundEventShrineMeta => '4TLOM · voor het laatst in 2023';
+
+  @override
+  String get entityNotFoundEventShrineAlt =>
+      'Thumbnail van 4 The Love of Movement, een parkourevenement dat voor het laatst in 2023 werd georganiseerd.';
+
+  @override
   String get profileReportIssue => 'Probleem melden';
 
   @override

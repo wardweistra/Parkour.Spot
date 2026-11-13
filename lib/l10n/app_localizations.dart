@@ -1306,6 +1306,30 @@ abstract class AppLocalizations {
   /// **'contact us'**
   String get entityNotFoundContactLink;
 
+  /// Memorial plaque mark on event not-found shrine
+  ///
+  /// In en, this message translates to:
+  /// **'RIP'**
+  String get entityNotFoundEventShrineRip;
+
+  /// Memorial plaque name for 4TLOM event shrine
+  ///
+  /// In en, this message translates to:
+  /// **'4 The Love of Movement'**
+  String get entityNotFoundEventShrineName;
+
+  /// Memorial plaque meta for 4TLOM event shrine
+  ///
+  /// In en, this message translates to:
+  /// **'4TLOM · last held 2023'**
+  String get entityNotFoundEventShrineMeta;
+
+  /// Accessibility label for 4TLOM shrine image
+  ///
+  /// In en, this message translates to:
+  /// **'Thumbnail from 4 The Love of Movement, a parkour event last organized in 2023.'**
+  String get entityNotFoundEventShrineAlt;
+
   /// About section: GitHub issues button
   ///
   /// In en, this message translates to:

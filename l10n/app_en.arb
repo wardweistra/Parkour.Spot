@@ -905,6 +905,22 @@
   "@entityNotFoundContactLink": {
     "description": "Inline contact link label on entity not-found views"
   },
+  "entityNotFoundEventShrineRip": "RIP",
+  "@entityNotFoundEventShrineRip": {
+    "description": "Memorial plaque mark on event not-found shrine"
+  },
+  "entityNotFoundEventShrineName": "4 The Love of Movement",
+  "@entityNotFoundEventShrineName": {
+    "description": "Memorial plaque name for 4TLOM event shrine"
+  },
+  "entityNotFoundEventShrineMeta": "4TLOM · last held 2023",
+  "@entityNotFoundEventShrineMeta": {
+    "description": "Memorial plaque meta for 4TLOM event shrine"
+  },
+  "entityNotFoundEventShrineAlt": "Thumbnail from 4 The Love of Movement, a parkour event last organized in 2023.",
+  "@entityNotFoundEventShrineAlt": {
+    "description": "Accessibility label for 4TLOM shrine image"
+  },
   "profileReportIssue": "Report an issue",
   "@profileReportIssue": {
     "description": "About section: GitHub issues button"

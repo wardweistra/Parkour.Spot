@@ -3,13 +3,55 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/external_launch.dart';
 
+/// Memorial shrine content for [EntityNotFoundView].
+class NotFoundShrine {
+  static const String vauxhallAsset = 'assets/images/spots/vauxhall-maze.webp';
+  static const String event4tlomAsset = 'assets/images/events/4tlom-2023.webp';
+
+  final String assetPath;
+  final String rip;
+  final String name;
+  final String meta;
+  final String alt;
+  final double aspectRatio;
+
+  const NotFoundShrine({
+    required this.assetPath,
+    required this.rip,
+    required this.name,
+    required this.meta,
+    required this.alt,
+    this.aspectRatio = 4 / 3,
+  });
+
+  factory NotFoundShrine.vauxhall(AppLocalizations l10n) {
+    return NotFoundShrine(
+      assetPath: vauxhallAsset,
+      rip: l10n.entityNotFoundShrineRip,
+      name: l10n.entityNotFoundShrineName,
+      meta: l10n.entityNotFoundShrineMeta,
+      alt: l10n.entityNotFoundShrineAlt,
+    );
+  }
+
+  factory NotFoundShrine.event4tlom(AppLocalizations l10n) {
+    return NotFoundShrine(
+      assetPath: event4tlomAsset,
+      rip: l10n.entityNotFoundEventShrineRip,
+      name: l10n.entityNotFoundEventShrineName,
+      meta: l10n.entityNotFoundEventShrineMeta,
+      alt: l10n.entityNotFoundEventShrineAlt,
+      aspectRatio: 16 / 9,
+    );
+  }
+}
+
 /// Shared memorial not-found body for missing spots, events, profiles, and lists.
 ///
-/// Shows the Vauxhall Maze RIP shrine, an entity-specific title, shared lede,
-/// primary recovery action, and a quiet contact link.
+/// Defaults to the Vauxhall Maze shrine; pass [shrine] for entity-specific memorials
+/// (e.g. 4TLOM for events).
 class EntityNotFoundView extends StatelessWidget {
   static const String _contactEmail = 'parkour.spot@wardweistra.nl';
-  static const String _shrineAsset = 'assets/images/spots/vauxhall-maze.webp';
 
   /// Local shrine materials (match About 404 memorial; not general product chrome).
   static const Color _shrineTerracotta = Color(0xFF8F4F3A);
@@ -20,6 +62,7 @@ class EntityNotFoundView extends StatelessWidget {
   final String? subtitle;
   final String primaryActionLabel;
   final VoidCallback onPrimaryAction;
+  final NotFoundShrine? shrine;
 
   const EntityNotFoundView({
     super.key,
@@ -27,6 +70,7 @@ class EntityNotFoundView extends StatelessWidget {
     this.subtitle,
     required this.primaryActionLabel,
     required this.onPrimaryAction,
+    this.shrine,
   });
 
   @override
@@ -35,6 +79,7 @@ class EntityNotFoundView extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final memorial = shrine ?? NotFoundShrine.vauxhall(l10n);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -52,7 +97,7 @@ class EntityNotFoundView extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _Shrine(
-                    l10n: l10n,
+                    shrine: memorial,
                     reduceMotion: reduceMotion,
                   ),
                   const SizedBox(height: 20),
@@ -157,11 +202,11 @@ class EntityNotFoundView extends StatelessWidget {
 }
 
 class _Shrine extends StatelessWidget {
-  final AppLocalizations l10n;
+  final NotFoundShrine shrine;
   final bool reduceMotion;
 
   const _Shrine({
-    required this.l10n,
+    required this.shrine,
     required this.reduceMotion,
   });
 
@@ -169,7 +214,7 @@ class _Shrine extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final frame = ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 220),
+      constraints: const BoxConstraints(maxWidth: 280),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -206,11 +251,11 @@ class _Shrine extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(1),
               child: AspectRatio(
-                aspectRatio: 4 / 3,
+                aspectRatio: shrine.aspectRatio,
                 child: Image.asset(
-                  EntityNotFoundView._shrineAsset,
+                  shrine.assetPath,
                   fit: BoxFit.cover,
-                  semanticLabel: l10n.entityNotFoundShrineAlt,
+                  semanticLabel: shrine.alt,
                 ),
               ),
             ),
@@ -232,7 +277,7 @@ class _Shrine extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(
-          l10n.entityNotFoundShrineRip,
+          shrine.rip,
           style: theme.textTheme.labelSmall?.copyWith(
             fontWeight: FontWeight.w600,
             letterSpacing: 0.8,
@@ -241,7 +286,7 @@ class _Shrine extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          l10n.entityNotFoundShrineName,
+          shrine.name,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w600,
             letterSpacing: -0.2,
@@ -250,7 +295,7 @@ class _Shrine extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         Text(
-          l10n.entityNotFoundShrineMeta,
+          shrine.meta,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: EntityNotFoundView._shrineInk.withValues(alpha: 0.78),
           ),

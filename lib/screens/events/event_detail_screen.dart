@@ -974,6 +974,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           title: l10n.eventDetailRouteNotFound,
           primaryActionLabel: l10n.eventDetailRouteGoToExplore,
           onPrimaryAction: () => context.go('/explore'),
+          shrine: NotFoundShrine.event4tlom(l10n),
         ),
       );
     }

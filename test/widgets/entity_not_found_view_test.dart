@@ -32,4 +32,32 @@ void main() {
     await tester.pump();
     expect(tapped, isTrue);
   });
+
+  testWidgets('EntityNotFoundView can show 4TLOM event shrine', (tester) async {
+    late AppLocalizations l10n;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (context) {
+            l10n = AppLocalizations.of(context)!;
+            return Scaffold(
+              body: EntityNotFoundView(
+                title: 'Event not found',
+                primaryActionLabel: 'Go to Explore',
+                onPrimaryAction: () {},
+                shrine: NotFoundShrine.event4tlom(l10n),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    expect(find.text('4 The Love of Movement'), findsOneWidget);
+    expect(find.textContaining('2023'), findsOneWidget);
+    expect(find.text('Vauxhall Maze'), findsNothing);
+  });
 }
