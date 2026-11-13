@@ -2,9 +2,10 @@
 interface Props {
   href: string;
   label?: string;
+  variant?: "primary" | "outlined";
 }
 
-const {href, label = "Open the app"} = Astro.props;
+const {href, label = "Open the app", variant = "primary"} = Astro.props;
 ---
 
-<a class="btn btn--primary" href={href}>{label}</a>
+<a class:list={["btn", `btn--${variant}`]} href={href}>{label}</a>

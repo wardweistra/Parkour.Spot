@@ -4,38 +4,67 @@ import OpenInApp from "../components/OpenInApp.astro";
 import {appHomeUrl} from "../lib/urls";
 
 const description =
-  "This page isn't on about.parkour.spot. Head home, browse events, or open the app to keep exploring.";
+  "This page does not exist. Maybe it was demolished by the city council? Head home, browse events, or open the app.";
+const shrineAlt =
+  "Concrete ledges and walls of the former Vauxhall Maze spot in London, demolished in 2015.";
 ---
 
 <BaseLayout
   title="Page not found"
   description={description}
   noIndex
+  image="/spots/vauxhall-maze.jpg"
+  imageAlt={shrineAlt}
 >
   <section class="not-found" aria-labelledby="not-found-title">
-    <div class="not-found__badge" aria-hidden="true">
-      <img
-        class="not-found__logo"
-        src="/logo-square.svg"
-        alt=""
-        width="72"
-        height="72"
-      />
-      <p class="not-found__code">404</p>
-    </div>
-    <h1 class="not-found__title" id="not-found-title">Page not found</h1>
-    <p class="not-found__lede">
-      That link does not match anything here—maybe the page moved, ended, or
-      never existed. If you typed the URL, double-check it and try again.
-    </p>
-    <p class="muted not-found__path">
-      <span class="visually-hidden">Requested path: </span>
-      <code class="not-found__path-value" data-not-found-path></code>
-    </p>
-    <div class="not-found__actions hero__actions">
-      <a class="btn btn--primary" href="/">Back to about</a>
-      <a class="btn btn--outlined" href="/events">Browse events</a>
-      <OpenInApp href={appHomeUrl()} label="Open the app" />
+    <figure class="not-found__shrine">
+      <div class="not-found__frame">
+        <picture>
+          <source
+            type="image/webp"
+            srcset="/spots/vauxhall-maze.webp"
+          />
+          <img
+            class="not-found__photo"
+            src="/spots/vauxhall-maze.jpg"
+            alt={shrineAlt}
+            width="800"
+            height="600"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+          />
+        </picture>
+      </div>
+      <figcaption class="not-found__plaque">
+        <span class="not-found__plaque-mark">RIP</span>
+        <span class="not-found__plaque-name">Vauxhall Maze</span>
+        <span class="not-found__plaque-meta">London · demolished 2015</span>
+      </figcaption>
+    </figure>
+
+    <div class="not-found__message">
+      <p class="not-found__code" aria-hidden="true">404</p>
+      <h1 class="not-found__title" id="not-found-title">
+        This page does not exist
+      </h1>
+      <p class="not-found__lede">
+        Maybe it was demolished by the city council? That link isn’t on
+        about.parkour.spot—or never was. Keep exploring from here.
+      </p>
+      <p class="muted not-found__path">
+        <span class="visually-hidden">Requested path: </span>
+        <code class="not-found__path-value" data-not-found-path>/</code>
+      </p>
+      <div class="not-found__actions hero__actions">
+        <a class="btn btn--primary" href="/">Back to about</a>
+        <a class="btn btn--outlined" href="/events">Browse events</a>
+        <OpenInApp
+          href={appHomeUrl()}
+          label="Open the app"
+          variant="outlined"
+        />
+      </div>
     </div>
   </section>
   <script is:inline>
