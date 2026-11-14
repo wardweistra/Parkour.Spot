@@ -1236,9 +1236,13 @@ class CommunityActivityCard extends StatelessWidget {
     CommunityActivityKind.eventEnded => actor,
   };
 
-  /// Trailing relative time (when the activity was posted / happened).
+  /// Trailing relative time: past kinds from [CommunityActivityItem.occurredAt],
+  /// planned sessions from [CommunityActivityItem.startAt] (same as events).
   String _trailingTime(AppLocalizations l10n) {
-    return communityStreamRelativeTime(item.occurredAt, l10n, now: now);
+    final when = item.kind == CommunityActivityKind.spotTrainingPlan
+        ? (item.startAt ?? item.occurredAt)
+        : item.occurredAt;
+    return communityStreamRelativeTime(when, l10n, now: now);
   }
 
   String? _scheduleLine(AppLocalizations l10n) {

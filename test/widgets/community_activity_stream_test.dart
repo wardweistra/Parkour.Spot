@@ -339,6 +339,7 @@ void main() {
     expect(rated, findsOneWidget);
     expect(checkedIn, findsOneWidget);
     expect(planning, findsOneWidget);
+    expect(find.text('in 3 hours'), findsOneWidget);
     expect(eventUpcoming, findsOneWidget);
     expect(find.text('3 people are going'), findsOneWidget);
     expect(find.textContaining('Here until'), findsOneWidget);
@@ -893,7 +894,7 @@ void main() {
     );
     await _pump(tester, feed);
 
-    expect(find.text('just now'), findsOneWidget);
+    expect(find.text('in 3 days'), findsOneWidget);
     expect(find.text('in 2 hours'), findsOneWidget);
     expect(find.text('in 1 week'), findsOneWidget);
 
