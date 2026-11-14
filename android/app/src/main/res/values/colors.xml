@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- Brand teal, same as theme_color in web/manifest.json. -->
+    <color name="notification_accent">#186584</color>
+</resources>

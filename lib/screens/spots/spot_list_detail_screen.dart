@@ -1412,6 +1412,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       child: PageScaffold(
         title: _isEditing ? editingTitle : _list!.name,
         onBack: _handleBack,
+        handleSystemBack: !_isEditing,
         scrollable: false,
         actions: _isEditing
             ? [

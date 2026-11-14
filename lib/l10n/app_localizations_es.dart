@@ -337,12 +337,20 @@ class AppLocalizationsEs extends AppLocalizations {
       'Recibe alertas en este navegador';
 
   @override
+  String get notificationsPushPromptListTitleDevice =>
+      'Recibe alertas en este dispositivo';
+
+  @override
   String get notificationsPushPromptListBody =>
       'Entérate de la actividad cercana aunque no estés en la app.';
 
   @override
   String get notificationsPushPromptTurnOnEmpty =>
       'Activar alertas en este navegador';
+
+  @override
+  String get notificationsPushPromptTurnOnEmptyDevice =>
+      'Activar alertas en este dispositivo';
 
   @override
   String get notificationsPushPromptTurnOn => 'Activar';
@@ -355,12 +363,24 @@ class AppLocalizationsEs extends AppLocalizations {
       'Las notificaciones push están bloqueadas en este navegador';
 
   @override
+  String get notificationsPushPromptBlockedTitleDevice =>
+      'Las notificaciones push están bloqueadas en este dispositivo';
+
+  @override
   String get notificationsPushPromptBlockedBody =>
       'Permite las notificaciones de Parkour·Spot en la configuración del navegador para recibir alertas cuando no estés en la app.';
 
   @override
+  String get notificationsPushPromptBlockedBodyDevice =>
+      'Permite las notificaciones de Parkour·Spot en los ajustes del dispositivo para recibir alertas cuando no estés en la app.';
+
+  @override
   String get notificationsPushPromptEnabledSnackbar =>
       'Las alertas están activadas en este navegador.';
+
+  @override
+  String get notificationsPushPromptEnabledSnackbarDevice =>
+      'Las alertas están activadas en este dispositivo.';
 
   @override
   String get notificationsTimeUnknown => 'Recientemente';
@@ -516,6 +536,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Las alertas se quedan en este navegador. Los demás dispositivos con sesión iniciada conservan su propia configuración.';
 
   @override
+  String get profileNotificationSettingsThisDeviceGroupHelperDevice =>
+      'Las alertas se quedan en este dispositivo. Los demás dispositivos con sesión iniciada conservan su propia configuración.';
+
+  @override
   String get profileNotificationSettingsEveryDeviceGroupTitle =>
       'En todos los dispositivos';
 
@@ -531,6 +555,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Las notificaciones push no son compatibles con este navegador.';
 
   @override
+  String get profilePushNotificationsUnsupportedDevice =>
+      'Las notificaciones push no son compatibles con este dispositivo.';
+
+  @override
   String get profilePushNotificationsLoading =>
       'Comprobando el estado de las notificaciones push en este dispositivo…';
 
@@ -539,16 +567,32 @@ class AppLocalizationsEs extends AppLocalizations {
       'El permiso push está bloqueado en la configuración del navegador para este sitio.';
 
   @override
+  String get profilePushNotificationsPermissionDeniedDevice =>
+      'El permiso push está bloqueado en los ajustes del dispositivo para esta app.';
+
+  @override
   String get profilePushNotificationsPermissionNotDetermined =>
       'Actívalo para solicitar permiso y suscribir este navegador.';
+
+  @override
+  String get profilePushNotificationsPermissionNotDeterminedDevice =>
+      'Actívalo para solicitar permiso y suscribir este dispositivo.';
 
   @override
   String get profilePushNotificationsEnabled =>
       'Este navegador está suscrito y puede recibir alertas push.';
 
   @override
+  String get profilePushNotificationsEnabledDevice =>
+      'Este dispositivo está suscrito y puede recibir alertas push.';
+
+  @override
   String get profilePushNotificationsPermissionGrantedButOff =>
       'El permiso está concedido, pero este navegador no está suscrito actualmente.';
+
+  @override
+  String get profilePushNotificationsPermissionGrantedButOffDevice =>
+      'El permiso está concedido, pero este dispositivo no está suscrito actualmente.';
 
   @override
   String get profilePushNotificationsUnknown =>
@@ -559,12 +603,20 @@ class AppLocalizationsEs extends AppLocalizations {
       'No pudimos actualizar las notificaciones push en este navegador. Inténtalo de nuevo.';
 
   @override
+  String get profilePushNotificationsErrorDevice =>
+      'No pudimos actualizar las notificaciones push en este dispositivo. Inténtalo de nuevo.';
+
+  @override
   String get profilePushNotificationsDisableTitle =>
       '¿Desactivar las notificaciones push?';
 
   @override
   String get profilePushNotificationsDisableMessage =>
       'Dejarás de recibir banners en este navegador. Las notificaciones en la app seguirán apareciendo.';
+
+  @override
+  String get profilePushNotificationsDisableMessageDevice =>
+      'Dejarás de recibir banners en este dispositivo. Las notificaciones en la app seguirán apareciendo.';
 
   @override
   String get profilePushNotificationsDisableConfirm => 'Desactivar';

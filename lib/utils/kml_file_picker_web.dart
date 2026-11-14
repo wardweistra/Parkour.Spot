@@ -4,9 +4,9 @@ import 'dart:typed_data';
 
 import 'package:web/web.dart' as web;
 
-import 'kml_file_picker_stub.dart';
+import 'picked_kml_file.dart';
 
-export 'kml_file_picker_stub.dart' show PickedKmlFile;
+export 'picked_kml_file.dart' show PickedKmlFile;
 
 Future<PickedKmlFile?> pickKmlFile() async {
   final input = web.HTMLInputElement()

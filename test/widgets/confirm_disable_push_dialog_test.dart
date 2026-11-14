@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parkour_spot/l10n/app_localizations.dart';
+import 'package:parkour_spot/utils/push_copy.dart';
 import 'package:parkour_spot/widgets/confirm_disable_push_dialog.dart';
 
 void main() {
@@ -30,7 +31,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.text(l10n.profilePushNotificationsDisableMessage),
+      find.text(PushCopy(l10n).disableMessage),
       findsOneWidget,
     );
 

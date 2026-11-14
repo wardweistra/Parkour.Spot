@@ -14,6 +14,7 @@ import '../../widgets/confirm_disable_push_dialog.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
+import '../../utils/push_copy.dart';
 
 class AccountSettingsScreen extends StatelessWidget {
   const AccountSettingsScreen({super.key});
@@ -351,7 +352,7 @@ class AccountSettingsScreen extends StatelessWidget {
                       title:
                           l10n.profileNotificationSettingsThisDeviceGroupTitle,
                       helper:
-                          l10n.profileNotificationSettingsThisDeviceGroupHelper,
+                          PushCopy(l10n).thisDeviceGroupHelper,
                     ),
                     const SizedBox(height: 8),
                     ListTile(
@@ -392,7 +393,7 @@ class AccountSettingsScreen extends StatelessWidget {
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            l10n.profilePushNotificationsError,
+                            PushCopy(l10n).error,
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: Theme.of(context).colorScheme.error,
@@ -536,20 +537,20 @@ class AccountSettingsScreen extends StatelessWidget {
     WebPushSubscriptionService pushService,
   ) {
     if (!pushService.isSupported) {
-      return l10n.profilePushNotificationsUnsupported;
+      return PushCopy(l10n).unsupported;
     }
     if (pushService.isBusy) {
       return l10n.profilePushNotificationsLoading;
     }
     switch (pushService.permissionState) {
       case WebPushPermissionState.denied:
-        return l10n.profilePushNotificationsPermissionDenied;
+        return PushCopy(l10n).permissionDenied;
       case WebPushPermissionState.notDetermined:
-        return l10n.profilePushNotificationsPermissionNotDetermined;
+        return PushCopy(l10n).permissionNotDetermined;
       case WebPushPermissionState.authorized:
         return pushService.isSubscribed
-            ? l10n.profilePushNotificationsEnabled
-            : l10n.profilePushNotificationsPermissionGrantedButOff;
+            ? PushCopy(l10n).enabled
+            : PushCopy(l10n).permissionGrantedButOff;
       case WebPushPermissionState.unknown:
         return l10n.profilePushNotificationsUnknown;
     }

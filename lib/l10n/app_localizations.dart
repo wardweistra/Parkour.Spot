@@ -640,6 +640,12 @@ abstract class AppLocalizations {
   /// **'Get alerts on this browser'**
   String get notificationsPushPromptListTitle;
 
+  /// Native app variant (this device instead of this browser). Inbox list callout title when this browser is not subscribed to push
+  ///
+  /// In en, this message translates to:
+  /// **'Get alerts on this device'**
+  String get notificationsPushPromptListTitleDevice;
+
   /// Inbox list callout body when this browser is not subscribed to push
   ///
   /// In en, this message translates to:
@@ -651,6 +657,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Turn on alerts for this browser'**
   String get notificationsPushPromptTurnOnEmpty;
+
+  /// Native app variant (this device instead of this browser). Empty inbox primary CTA to subscribe this browser to push
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on alerts for this device'**
+  String get notificationsPushPromptTurnOnEmptyDevice;
 
   /// Inbox list callout primary CTA to subscribe this browser to push
   ///
@@ -670,17 +682,35 @@ abstract class AppLocalizations {
   /// **'Push notifications are blocked in this browser'**
   String get notificationsPushPromptBlockedTitle;
 
+  /// Native app variant (this device instead of this browser). Inbox prompt title when the browser has denied notification permission
+  ///
+  /// In en, this message translates to:
+  /// **'Push notifications are blocked on this device'**
+  String get notificationsPushPromptBlockedTitleDevice;
+
   /// Inbox prompt body when the browser has denied notification permission
   ///
   /// In en, this message translates to:
   /// **'Allow notifications for Parkour·Spot in your browser settings to get alerts when you\'re not in the app.'**
   String get notificationsPushPromptBlockedBody;
 
+  /// Native app variant (this device instead of this browser). Inbox prompt body when the browser has denied notification permission
+  ///
+  /// In en, this message translates to:
+  /// **'Allow notifications for Parkour·Spot in your device settings to get alerts when you\'re not in the app.'**
+  String get notificationsPushPromptBlockedBodyDevice;
+
   /// Snack bar after push is successfully enabled from the notifications inbox
   ///
   /// In en, this message translates to:
   /// **'Alerts are on for this browser.'**
   String get notificationsPushPromptEnabledSnackbar;
+
+  /// Native app variant (this device instead of this browser). Snack bar after push is successfully enabled from the notifications inbox
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts are on for this device.'**
+  String get notificationsPushPromptEnabledSnackbarDevice;
 
   /// Fallback timestamp when createdAt is missing
   ///
@@ -916,6 +946,12 @@ abstract class AppLocalizations {
   /// **'Alerts stay on this browser. Other signed-in devices keep their own setting.'**
   String get profileNotificationSettingsThisDeviceGroupHelper;
 
+  /// Native app variant (this device instead of this browser). Account settings: explains that push subscription does not sync across devices
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts stay on this device. Other signed-in devices keep their own setting.'**
+  String get profileNotificationSettingsThisDeviceGroupHelperDevice;
+
   /// Account settings: heading for account-wide notification preference toggles
   ///
   /// In en, this message translates to:
@@ -940,6 +976,12 @@ abstract class AppLocalizations {
   /// **'Push notifications are not supported on this browser.'**
   String get profilePushNotificationsUnsupported;
 
+  /// Native app variant (this device instead of this browser). Account settings: status text when push API/FCM is unavailable
+  ///
+  /// In en, this message translates to:
+  /// **'Push notifications are not supported on this device.'**
+  String get profilePushNotificationsUnsupportedDevice;
+
   /// Account settings: temporary status while push subscription state is loading
   ///
   /// In en, this message translates to:
@@ -952,11 +994,23 @@ abstract class AppLocalizations {
   /// **'Push permission is blocked in your browser settings for this site.'**
   String get profilePushNotificationsPermissionDenied;
 
+  /// Native app variant (this device instead of this browser). Account settings: status text when browser notification permission is denied
+  ///
+  /// In en, this message translates to:
+  /// **'Push permission is blocked in your device settings for this app.'**
+  String get profilePushNotificationsPermissionDeniedDevice;
+
   /// Account settings: status text before permission has been requested
   ///
   /// In en, this message translates to:
   /// **'Turn this on to ask for permission and subscribe this browser.'**
   String get profilePushNotificationsPermissionNotDetermined;
+
+  /// Native app variant (this device instead of this browser). Account settings: status text before permission has been requested
+  ///
+  /// In en, this message translates to:
+  /// **'Turn this on to ask for permission and subscribe this device.'**
+  String get profilePushNotificationsPermissionNotDeterminedDevice;
 
   /// Account settings: status text when current device is subscribed
   ///
@@ -964,11 +1018,23 @@ abstract class AppLocalizations {
   /// **'This browser is subscribed and can receive push alerts.'**
   String get profilePushNotificationsEnabled;
 
+  /// Native app variant (this device instead of this browser). Account settings: status text when current device is subscribed
+  ///
+  /// In en, this message translates to:
+  /// **'This device is subscribed and can receive push alerts.'**
+  String get profilePushNotificationsEnabledDevice;
+
   /// Account settings: status text when permission is granted but no active token/subscription
   ///
   /// In en, this message translates to:
   /// **'Permission is granted, but this browser is currently unsubscribed.'**
   String get profilePushNotificationsPermissionGrantedButOff;
+
+  /// Native app variant (this device instead of this browser). Account settings: status text when permission is granted but no active token/subscription
+  ///
+  /// In en, this message translates to:
+  /// **'Permission is granted, but this device is currently unsubscribed.'**
+  String get profilePushNotificationsPermissionGrantedButOffDevice;
 
   /// Account settings: fallback status text for unknown permission/subscription state
   ///
@@ -982,6 +1048,12 @@ abstract class AppLocalizations {
   /// **'We couldn\'t update push notifications on this browser. Please try again.'**
   String get profilePushNotificationsError;
 
+  /// Native app variant (this device instead of this browser). Account settings: generic error shown under push subscription toggle
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t update push notifications on this device. Please try again.'**
+  String get profilePushNotificationsErrorDevice;
+
   /// Confirm dialog title when turning off this-browser push
   ///
   /// In en, this message translates to:
@@ -993,6 +1065,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You\'ll stop getting banners on this browser. In-app notifications will still appear.'**
   String get profilePushNotificationsDisableMessage;
+
+  /// Native app variant (this device instead of this browser). Confirm dialog body when turning off this-browser push
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll stop getting banners on this device. In-app notifications will still appear.'**
+  String get profilePushNotificationsDisableMessageDevice;
 
   /// Confirm dialog button to disable this-browser push
   ///

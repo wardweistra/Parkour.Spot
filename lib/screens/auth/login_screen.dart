@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/system_back_handler.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -386,23 +387,29 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _goBack() {
+    // Check if we can pop back to a previous page
+    if (Navigator.canPop(context)) {
+      // If there's a previous page, go back to it
+      Navigator.pop(context);
+    } else {
+      // If no previous page (direct link), use intended destination or default to explore
+      final destination = _intendedDestination ?? '/explore';
+      context.go(destination);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    return SystemBackHandler(onBack: _goBack, child: _buildPage(context));
+  }
+
+  Widget _buildPage(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            // Check if we can pop back to a previous page
-            if (Navigator.canPop(context)) {
-              // If there's a previous page, go back to it
-              Navigator.pop(context);
-            } else {
-              // If no previous page (direct link), use intended destination or default to explore
-              final destination = _intendedDestination ?? '/explore';
-              context.go(destination);
-            }
-          },
+          onPressed: _goBack,
         ),
         elevation: 0,
         backgroundColor: Theme.of(context).colorScheme.surface,

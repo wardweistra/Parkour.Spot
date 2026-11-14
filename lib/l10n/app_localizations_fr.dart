@@ -338,12 +338,20 @@ class AppLocalizationsFr extends AppLocalizations {
       'Recevoir des alertes sur ce navigateur';
 
   @override
+  String get notificationsPushPromptListTitleDevice =>
+      'Recevoir des alertes sur cet appareil';
+
+  @override
   String get notificationsPushPromptListBody =>
       'Soyez informé de l\'activité à proximité même lorsque vous n\'êtes pas dans l\'appli.';
 
   @override
   String get notificationsPushPromptTurnOnEmpty =>
       'Activer les alertes sur ce navigateur';
+
+  @override
+  String get notificationsPushPromptTurnOnEmptyDevice =>
+      'Activer les alertes sur cet appareil';
 
   @override
   String get notificationsPushPromptTurnOn => 'Activer';
@@ -356,12 +364,24 @@ class AppLocalizationsFr extends AppLocalizations {
       'Les notifications push sont bloquées dans ce navigateur';
 
   @override
+  String get notificationsPushPromptBlockedTitleDevice =>
+      'Les notifications push sont bloquées sur cet appareil';
+
+  @override
   String get notificationsPushPromptBlockedBody =>
       'Autorisez les notifications pour Parkour·Spot dans les paramètres du navigateur afin de recevoir des alertes lorsque vous n\'êtes pas dans l\'appli.';
 
   @override
+  String get notificationsPushPromptBlockedBodyDevice =>
+      'Autorisez les notifications pour Parkour·Spot dans les paramètres de l\'appareil afin de recevoir des alertes lorsque vous n\'êtes pas dans l\'appli.';
+
+  @override
   String get notificationsPushPromptEnabledSnackbar =>
       'Les alertes sont activées sur ce navigateur.';
+
+  @override
+  String get notificationsPushPromptEnabledSnackbarDevice =>
+      'Les alertes sont activées sur cet appareil.';
 
   @override
   String get notificationsTimeUnknown => 'Récemment';
@@ -515,6 +535,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Les alertes restent sur ce navigateur. Les autres appareils connectés conservent leur propre réglage.';
 
   @override
+  String get profileNotificationSettingsThisDeviceGroupHelperDevice =>
+      'Les alertes restent sur cet appareil. Les autres appareils connectés conservent leur propre réglage.';
+
+  @override
   String get profileNotificationSettingsEveryDeviceGroupTitle =>
       'Sur tous les appareils';
 
@@ -530,6 +554,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Les notifications push ne sont pas prises en charge par ce navigateur.';
 
   @override
+  String get profilePushNotificationsUnsupportedDevice =>
+      'Les notifications push ne sont pas prises en charge par cet appareil.';
+
+  @override
   String get profilePushNotificationsLoading =>
       'Vérification de l’état des notifications push sur cet appareil…';
 
@@ -538,16 +566,32 @@ class AppLocalizationsFr extends AppLocalizations {
       'L’autorisation push est bloquée dans les paramètres du navigateur pour ce site.';
 
   @override
+  String get profilePushNotificationsPermissionDeniedDevice =>
+      'L’autorisation push est bloquée dans les paramètres de l’appareil pour cette appli.';
+
+  @override
   String get profilePushNotificationsPermissionNotDetermined =>
       'Activez cette option pour demander l’autorisation et abonner ce navigateur.';
+
+  @override
+  String get profilePushNotificationsPermissionNotDeterminedDevice =>
+      'Activez cette option pour demander l’autorisation et abonner cet appareil.';
 
   @override
   String get profilePushNotificationsEnabled =>
       'Ce navigateur est abonné et peut recevoir des alertes push.';
 
   @override
+  String get profilePushNotificationsEnabledDevice =>
+      'Cet appareil est abonné et peut recevoir des alertes push.';
+
+  @override
   String get profilePushNotificationsPermissionGrantedButOff =>
       'L’autorisation est accordée, mais ce navigateur n’est pas abonné actuellement.';
+
+  @override
+  String get profilePushNotificationsPermissionGrantedButOffDevice =>
+      'L’autorisation est accordée, mais cet appareil n’est pas abonné actuellement.';
 
   @override
   String get profilePushNotificationsUnknown =>
@@ -558,12 +602,20 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de mettre à jour les notifications push sur ce navigateur. Réessayez.';
 
   @override
+  String get profilePushNotificationsErrorDevice =>
+      'Impossible de mettre à jour les notifications push sur cet appareil. Réessayez.';
+
+  @override
   String get profilePushNotificationsDisableTitle =>
       'Désactiver les notifications push ?';
 
   @override
   String get profilePushNotificationsDisableMessage =>
       'Vous ne recevrez plus de bannières sur ce navigateur. Les notifications dans l\'appli continueront d\'apparaître.';
+
+  @override
+  String get profilePushNotificationsDisableMessageDevice =>
+      'Vous ne recevrez plus de bannières sur cet appareil. Les notifications dans l\'appli continueront d\'apparaître.';
 
   @override
   String get profilePushNotificationsDisableConfirm => 'Désactiver';

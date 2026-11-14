@@ -74,6 +74,7 @@ import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import '../../widgets/brand_mark_icon.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/system_back_handler.dart';
 
 String _spotDetailReportCategoryLabel(AppLocalizations l10n, String category) {
   switch (category) {
@@ -2472,6 +2473,10 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return SystemBackHandler(onBack: _goBack, child: _buildPage(context));
+  }
+
+  Widget _buildPage(BuildContext context) {
     final contentInset = SpotDetailUi.contentHorizontalInset(context);
 
     return Focus(

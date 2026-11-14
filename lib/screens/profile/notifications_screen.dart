@@ -14,6 +14,7 @@ import '../../services/user_notification_service.dart';
 import '../../services/web_push_subscription_service.dart';
 import '../../utils/user_notification_localization.dart';
 import '../../widgets/page_scaffold.dart';
+import '../../utils/push_copy.dart';
 
 /// Corner radius for notification rows (matches common controls in the app).
 const BorderRadius _kNotificationRowRadius = BorderRadius.all(
@@ -141,13 +142,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (!context.mounted) return;
     if (ok) {
       messenger.showSnackBar(
-        SnackBar(content: Text(l10n.notificationsPushPromptEnabledSnackbar)),
+        SnackBar(content: Text(PushCopy(l10n).promptEnabledSnackbar)),
       );
       return;
     }
     if (push.permissionState != WebPushPermissionState.denied) {
       messenger.showSnackBar(
-        SnackBar(content: Text(l10n.profilePushNotificationsError)),
+        SnackBar(content: Text(PushCopy(l10n).error)),
       );
     }
   }
@@ -249,13 +250,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   const SizedBox(height: 20),
                   if (pushBlocked) ...[
                     Text(
-                      l10n.notificationsPushPromptBlockedTitle,
+                      PushCopy(l10n).promptBlockedTitle,
                       style: Theme.of(context).textTheme.titleSmall,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      l10n.notificationsPushPromptBlockedBody,
+                      PushCopy(l10n).promptBlockedBody,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(
                           context,
@@ -287,7 +288,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     child: Text(
                       pushBlocked
                           ? l10n.profileNotificationSettingsTitle
-                          : l10n.notificationsPushPromptTurnOnEmpty,
+                          : PushCopy(l10n).promptTurnOnEmpty,
                     ),
                   ),
                   TextButton(
@@ -602,10 +603,10 @@ class _InboxPushListCallout extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final title = blocked
-        ? l10n.notificationsPushPromptBlockedTitle
-        : l10n.notificationsPushPromptListTitle;
+        ? PushCopy(l10n).promptBlockedTitle
+        : PushCopy(l10n).promptListTitle;
     final body = blocked
-        ? l10n.notificationsPushPromptBlockedBody
+        ? PushCopy(l10n).promptBlockedBody
         : l10n.notificationsPushPromptListBody;
     final actionLabel = blocked
         ? l10n.profileNotificationSettingsTitle
