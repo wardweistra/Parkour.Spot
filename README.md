@@ -139,6 +139,15 @@ That browser key is restricted in [Google Cloud credentials](https://console.clo
 
 Keep Maps on the separate browser key in `web/index.html` / `functions/html-template.js`, the Android Maps key (`GOOGLE_MAPS_ANDROID_API_KEY`), and the Functions secret `GOOGLE_MAPS_API_KEY`. Native Android Firebase uses the key in `google-services.json`, not the web key.
 
+### **Android App Check**
+
+The Android app activates App Check on startup (`lib/main.dart`), matching the web app's reCAPTCHA Enterprise setup, so callables that spend Maps quota can be enforced for both clients (`ENFORCE_PLACES_APP_CHECK` in `functions/index.js`). It is skipped when `USE_EMULATOR=true`.
+
+- **Release builds** use **Play Integrity**. In Firebase Console → App Check → Apps, register the Android app `parkour.spot` with the SHA-256 of the Play **App signing** certificate (and the upload key for locally installed release builds).
+- **Debug/profile builds** use the debug provider. The first run prints a debug token to logcat (`adb logcat | grep -i "debug secret"`); add it under App Check → Apps → `parkour.spot` → Manage debug tokens.
+
+Until the app is registered, token requests fail and the app keeps working as long as enforcement is off. Do not switch enforcement on before `placesAppCheck.missing` stops appearing for Android in the Functions logs.
+
 ### **Android cleartext (debug/profile only)**
 
 `android/app/src/debug/AndroidManifest.xml` and `profile/` set `usesCleartextTraffic="true"` so debug/profile builds can talk to local Firebase emulators over HTTP (`10.0.2.2`). The release manifest does not allow cleartext and does not disable TLS certificate validation. Scanner findings that call this "improper SSL certificate validation" should be accepted as a local-emulator exception.
@@ -152,7 +161,11 @@ flutter build apk --config-only
 cd android && ./gradlew :app:assembleDebug :app:assembleRelease --write-locks
 ```
 
-Use Java 17 or 21 (`flutter config --jdk-dir` / `JAVA_HOME`). Gradle 8.14 cannot compile Kotlin DSL on newer JDKs.
+Use Java 17 or 21 (`flutter config --jdk-dir` / `JAVA_HOME`).
+
+### **Android build toolchain**
+
+The Android project follows the versions in the current Flutter stable template: Gradle 9.5.0 (`android/gradle/wrapper/gradle-wrapper.properties`), Android Gradle Plugin 9.3.1 and Kotlin 2.4.20 (`android/settings.gradle.kts`). Flutter 3.50 refuses to build with anything below Gradle 9.3.1 / AGP 9.1.1 / Kotlin 2.4.10, and older Flutter releases do not support AGP 9, so Android builds need current Flutter **stable** (same as CI and Cloud Agents). `android.builtInKotlin=false` and `android.newDsl=false` in `android/gradle.properties` are set by the Flutter tool; leave them in place. When a later Flutter stable raises its minimums, bump these three versions together and regenerate the lockfiles.
 
 ### **Common Workflows**
 

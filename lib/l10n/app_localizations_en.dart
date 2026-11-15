@@ -333,12 +333,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsPushPromptListTitle => 'Get alerts on this browser';
 
   @override
+  String get notificationsPushPromptListTitleDevice =>
+      'Get alerts on this device';
+
+  @override
   String get notificationsPushPromptListBody =>
       'Hear about nearby activity even when you\'re not in the app.';
 
   @override
   String get notificationsPushPromptTurnOnEmpty =>
       'Turn on alerts for this browser';
+
+  @override
+  String get notificationsPushPromptTurnOnEmptyDevice =>
+      'Turn on alerts for this device';
 
   @override
   String get notificationsPushPromptTurnOn => 'Turn on';
@@ -351,12 +359,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Push notifications are blocked in this browser';
 
   @override
+  String get notificationsPushPromptBlockedTitleDevice =>
+      'Push notifications are blocked on this device';
+
+  @override
   String get notificationsPushPromptBlockedBody =>
       'Allow notifications for Parkour·Spot in your browser settings to get alerts when you\'re not in the app.';
 
   @override
+  String get notificationsPushPromptBlockedBodyDevice =>
+      'Allow notifications for Parkour·Spot in your device settings to get alerts when you\'re not in the app.';
+
+  @override
   String get notificationsPushPromptEnabledSnackbar =>
       'Alerts are on for this browser.';
+
+  @override
+  String get notificationsPushPromptEnabledSnackbarDevice =>
+      'Alerts are on for this device.';
 
   @override
   String get notificationsTimeUnknown => 'Recently';
@@ -510,6 +530,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Alerts stay on this browser. Other signed-in devices keep their own setting.';
 
   @override
+  String get profileNotificationSettingsThisDeviceGroupHelperDevice =>
+      'Alerts stay on this device. Other signed-in devices keep their own setting.';
+
+  @override
   String get profileNotificationSettingsEveryDeviceGroupTitle =>
       'On every device';
 
@@ -525,6 +549,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Push notifications are not supported on this browser.';
 
   @override
+  String get profilePushNotificationsUnsupportedDevice =>
+      'Push notifications are not supported on this device.';
+
+  @override
   String get profilePushNotificationsLoading =>
       'Checking push notification status for this device...';
 
@@ -533,16 +561,32 @@ class AppLocalizationsEn extends AppLocalizations {
       'Push permission is blocked in your browser settings for this site.';
 
   @override
+  String get profilePushNotificationsPermissionDeniedDevice =>
+      'Push permission is blocked in your device settings for this app.';
+
+  @override
   String get profilePushNotificationsPermissionNotDetermined =>
       'Turn this on to ask for permission and subscribe this browser.';
+
+  @override
+  String get profilePushNotificationsPermissionNotDeterminedDevice =>
+      'Turn this on to ask for permission and subscribe this device.';
 
   @override
   String get profilePushNotificationsEnabled =>
       'This browser is subscribed and can receive push alerts.';
 
   @override
+  String get profilePushNotificationsEnabledDevice =>
+      'This device is subscribed and can receive push alerts.';
+
+  @override
   String get profilePushNotificationsPermissionGrantedButOff =>
       'Permission is granted, but this browser is currently unsubscribed.';
+
+  @override
+  String get profilePushNotificationsPermissionGrantedButOffDevice =>
+      'Permission is granted, but this device is currently unsubscribed.';
 
   @override
   String get profilePushNotificationsUnknown =>
@@ -553,12 +597,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'We couldn\'t update push notifications on this browser. Please try again.';
 
   @override
+  String get profilePushNotificationsErrorDevice =>
+      'We couldn\'t update push notifications on this device. Please try again.';
+
+  @override
   String get profilePushNotificationsDisableTitle =>
       'Turn off push notifications?';
 
   @override
   String get profilePushNotificationsDisableMessage =>
       'You\'ll stop getting banners on this browser. In-app notifications will still appear.';
+
+  @override
+  String get profilePushNotificationsDisableMessageDevice =>
+      'You\'ll stop getting banners on this device. In-app notifications will still appear.';
 
   @override
   String get profilePushNotificationsDisableConfirm => 'Turn off';

@@ -2860,6 +2860,35 @@ class SearchScreenState extends State<SearchScreen>
     }
   }
 
+  /// Android system back: dismisses the topmost overlay on the map (filters,
+  /// expanded sheet, selected pin card, list preview, long-press marker).
+  /// Returns false when nothing was open, so the caller can leave the app.
+  bool handleSystemBack() {
+    if (_showFiltersDialog) {
+      _closeFiltersDialog();
+      return true;
+    }
+    if (_isBottomSheetOpen) {
+      _toggleBottomSheet();
+      return true;
+    }
+    if (_selectedSpot != null ||
+        _selectedEventPin != null ||
+        _showListPreview ||
+        _longPressedLocation != null) {
+      setState(() {
+        _selectedSpot = null;
+        _selectedEventPin = null;
+        _showListPreview = false;
+        _longPressedLocation = null;
+        _longPressHandled = false;
+        _markers = _rebuildMarkers();
+      });
+      return true;
+    }
+    return false;
+  }
+
   // Public API to check if spot detail is open
   bool get isSpotDetailOpen => _selectedSpot != null;
 

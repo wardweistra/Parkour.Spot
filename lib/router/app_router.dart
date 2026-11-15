@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import 'package:provider/provider.dart';
 import 'package:sealed_countries/sealed_countries.dart';
+import '../utils/app_link_paths.dart';
 import '../utils/browser_location.dart';
 import '../screens/splash_screen.dart';
 import '../screens/explore_screen.dart';
@@ -225,6 +226,14 @@ class AppRouter {
       initialLocation: '/',
       observers: [_titleObserver, _gaObserver],
       redirect: (context, state) {
+        // Native: App Links deliver every parkour.spot URL, including ones the
+        // app has no screen for (auth email actions, API, calendar feeds).
+        // main.dart opens those in a web view; keep the router on Explore
+        // instead of showing "Page not found" behind it.
+        if (!kIsWeb && isNonAppLinkPath(state.uri.path)) {
+          return '/explore';
+        }
+
         // If we're already on a spot detail page, don't redirect
         if (_isSpotUrl(state.matchedLocation)) {
           return null;

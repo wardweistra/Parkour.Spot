@@ -339,12 +339,20 @@ class AppLocalizationsDe extends AppLocalizations {
       'Alerts in diesem Browser erhalten';
 
   @override
+  String get notificationsPushPromptListTitleDevice =>
+      'Alerts auf diesem Gerät erhalten';
+
+  @override
   String get notificationsPushPromptListBody =>
       'Erfahre von Aktivität in der Nähe, auch wenn du nicht in der App bist.';
 
   @override
   String get notificationsPushPromptTurnOnEmpty =>
       'Alerts für diesen Browser aktivieren';
+
+  @override
+  String get notificationsPushPromptTurnOnEmptyDevice =>
+      'Alerts für dieses Gerät aktivieren';
 
   @override
   String get notificationsPushPromptTurnOn => 'Aktivieren';
@@ -357,12 +365,24 @@ class AppLocalizationsDe extends AppLocalizations {
       'Push-Benachrichtigungen sind in diesem Browser blockiert';
 
   @override
+  String get notificationsPushPromptBlockedTitleDevice =>
+      'Push-Benachrichtigungen sind auf diesem Gerät blockiert';
+
+  @override
   String get notificationsPushPromptBlockedBody =>
       'Erlaube Benachrichtigungen für Parkour·Spot in den Browser-Einstellungen, um Alerts zu erhalten, wenn du nicht in der App bist.';
 
   @override
+  String get notificationsPushPromptBlockedBodyDevice =>
+      'Erlaube Benachrichtigungen für Parkour·Spot in den Geräteeinstellungen, um Alerts zu erhalten, wenn du nicht in der App bist.';
+
+  @override
   String get notificationsPushPromptEnabledSnackbar =>
       'Alerts sind in diesem Browser aktiv.';
+
+  @override
+  String get notificationsPushPromptEnabledSnackbarDevice =>
+      'Alerts sind auf diesem Gerät aktiv.';
 
   @override
   String get notificationsTimeUnknown => 'Kürzlich';
@@ -517,6 +537,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Meldungen bleiben in diesem Browser. Andere angemeldete Geräte behalten ihre eigene Einstellung.';
 
   @override
+  String get profileNotificationSettingsThisDeviceGroupHelperDevice =>
+      'Meldungen bleiben auf diesem Gerät. Andere angemeldete Geräte behalten ihre eigene Einstellung.';
+
+  @override
   String get profileNotificationSettingsEveryDeviceGroupTitle =>
       'Auf jedem Gerät';
 
@@ -533,6 +557,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Push-Benachrichtigungen werden in diesem Browser nicht unterstützt.';
 
   @override
+  String get profilePushNotificationsUnsupportedDevice =>
+      'Push-Benachrichtigungen werden auf diesem Gerät nicht unterstützt.';
+
+  @override
   String get profilePushNotificationsLoading =>
       'Push-Benachrichtigungsstatus für dieses Gerät wird geprüft…';
 
@@ -541,16 +569,32 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Push-Berechtigung ist in den Browser-Einstellungen für diese Website blockiert.';
 
   @override
+  String get profilePushNotificationsPermissionDeniedDevice =>
+      'Die Push-Berechtigung ist in den Geräteeinstellungen für diese App blockiert.';
+
+  @override
   String get profilePushNotificationsPermissionNotDetermined =>
       'Aktiviere dies, um die Berechtigung anzufragen und diesen Browser anzumelden.';
+
+  @override
+  String get profilePushNotificationsPermissionNotDeterminedDevice =>
+      'Aktiviere dies, um die Berechtigung anzufragen und dieses Gerät anzumelden.';
 
   @override
   String get profilePushNotificationsEnabled =>
       'Dieser Browser ist angemeldet und kann Push-Benachrichtigungen erhalten.';
 
   @override
+  String get profilePushNotificationsEnabledDevice =>
+      'Dieses Gerät ist angemeldet und kann Push-Benachrichtigungen erhalten.';
+
+  @override
   String get profilePushNotificationsPermissionGrantedButOff =>
       'Die Berechtigung ist erteilt, aber dieser Browser ist derzeit abgemeldet.';
+
+  @override
+  String get profilePushNotificationsPermissionGrantedButOffDevice =>
+      'Die Berechtigung ist erteilt, aber dieses Gerät ist derzeit abgemeldet.';
 
   @override
   String get profilePushNotificationsUnknown =>
@@ -561,12 +605,20 @@ class AppLocalizationsDe extends AppLocalizations {
       'Push-Benachrichtigungen konnten in diesem Browser nicht aktualisiert werden. Bitte erneut versuchen.';
 
   @override
+  String get profilePushNotificationsErrorDevice =>
+      'Push-Benachrichtigungen konnten auf diesem Gerät nicht aktualisiert werden. Bitte erneut versuchen.';
+
+  @override
   String get profilePushNotificationsDisableTitle =>
       'Push-Benachrichtigungen ausschalten?';
 
   @override
   String get profilePushNotificationsDisableMessage =>
       'Auf diesem Browser erhältst du keine Banner mehr. Benachrichtigungen in der App erscheinen weiterhin.';
+
+  @override
+  String get profilePushNotificationsDisableMessageDevice =>
+      'Auf diesem Gerät erhältst du keine Banner mehr. Benachrichtigungen in der App erscheinen weiterhin.';
 
   @override
   String get profilePushNotificationsDisableConfirm => 'Ausschalten';

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -425,7 +426,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final scaffold = Scaffold(
       // On Explore tab (mobile): don't resize when keyboard opens - the bottom sheet
       // and search bar would be pushed around. Let the keyboard overlay instead.
       // On Add Spot/Account: keep default resize so text fields scroll into view.
@@ -501,5 +502,35 @@ class _ExploreScreenState extends State<ExploreScreen> {
         ],
       ),
     );
+
+    if (kIsWeb) return scaffold;
+
+    // Explore is the bottom of the stack, so system back would close the app
+    // from any tab. Unwind in-page state first, like the browser back button
+    // does on web.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _onSystemBack();
+      },
+      child: scaffold,
+    );
+  }
+
+  void _onSystemBack() {
+    if (_currentIndex != 0) {
+      _onTabTapped(0);
+      return;
+    }
+    if (_searchKey.currentState?.handleSystemBack() ?? false) {
+      return;
+    }
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+    } else {
+      SystemNavigator.pop();
+    }
   }
 }

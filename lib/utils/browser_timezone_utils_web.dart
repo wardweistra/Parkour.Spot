@@ -14,3 +14,8 @@ extension type _JSResolvedDateTimeFormatOptions._(JSObject _) implements JSObjec
 String? readBrowserTimeZoneRaw() {
   return _JSDateTimeFormat().resolvedOptions().timeZone;
 }
+
+/// Web: the browser answers synchronously, nothing to load up front.
+Future<void> primeLocalTimeZone() async {}
+
+void debugSetDeviceTimeZone(String? value) {}

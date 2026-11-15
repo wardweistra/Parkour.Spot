@@ -63,6 +63,7 @@ import '../../widgets/detail_external_link_tile.dart';
 import '../../widgets/spot_detail_quick_action_chip.dart';
 import '../../widgets/resized_spot_image.dart';
 import '../../utils/web_meta_utils.dart';
+import '../../widgets/system_back_handler.dart';
 
 /// Event detail page; loads the document from Firestore by [eventId].
 class EventDetailScreen extends StatefulWidget {
@@ -935,6 +936,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return SystemBackHandler(onBack: _goBack, child: _buildPage(context));
+  }
+
+  Widget _buildPage(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
     if (_loading) {

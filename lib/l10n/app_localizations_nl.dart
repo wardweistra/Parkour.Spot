@@ -337,12 +337,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get notificationsPushPromptListTitle => 'Meldingen in deze browser';
 
   @override
+  String get notificationsPushPromptListTitleDevice =>
+      'Meldingen op dit apparaat';
+
+  @override
   String get notificationsPushPromptListBody =>
       'Hoor over activiteit in de buurt, ook als je niet in de app bent.';
 
   @override
   String get notificationsPushPromptTurnOnEmpty =>
       'Meldingen in deze browser inschakelen';
+
+  @override
+  String get notificationsPushPromptTurnOnEmptyDevice =>
+      'Meldingen op dit apparaat inschakelen';
 
   @override
   String get notificationsPushPromptTurnOn => 'Inschakelen';
@@ -355,12 +363,24 @@ class AppLocalizationsNl extends AppLocalizations {
       'Pushmeldingen zijn geblokkeerd in deze browser';
 
   @override
+  String get notificationsPushPromptBlockedTitleDevice =>
+      'Pushmeldingen zijn geblokkeerd op dit apparaat';
+
+  @override
   String get notificationsPushPromptBlockedBody =>
       'Sta meldingen voor Parkour·Spot toe in je browserinstellingen om alerts te krijgen wanneer je niet in de app bent.';
 
   @override
+  String get notificationsPushPromptBlockedBodyDevice =>
+      'Sta meldingen voor Parkour·Spot toe in de instellingen van je apparaat om alerts te krijgen wanneer je niet in de app bent.';
+
+  @override
   String get notificationsPushPromptEnabledSnackbar =>
       'Meldingen staan aan in deze browser.';
+
+  @override
+  String get notificationsPushPromptEnabledSnackbarDevice =>
+      'Meldingen staan aan op dit apparaat.';
 
   @override
   String get notificationsTimeUnknown => 'Recent';
@@ -512,6 +532,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Meldingen blijven in deze browser. Andere ingelogde apparaten behouden hun eigen instelling.';
 
   @override
+  String get profileNotificationSettingsThisDeviceGroupHelperDevice =>
+      'Meldingen blijven op dit apparaat. Andere ingelogde apparaten behouden hun eigen instelling.';
+
+  @override
   String get profileNotificationSettingsEveryDeviceGroupTitle =>
       'Op elk apparaat';
 
@@ -527,6 +551,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Pushmeldingen worden niet ondersteund in deze browser.';
 
   @override
+  String get profilePushNotificationsUnsupportedDevice =>
+      'Pushmeldingen worden niet ondersteund op dit apparaat.';
+
+  @override
   String get profilePushNotificationsLoading =>
       'Pushmeldingsstatus voor dit apparaat controleren…';
 
@@ -535,16 +563,32 @@ class AppLocalizationsNl extends AppLocalizations {
       'Pushmachtiging is geblokkeerd in de browserinstellingen voor deze site.';
 
   @override
+  String get profilePushNotificationsPermissionDeniedDevice =>
+      'Pushmachtiging is geblokkeerd in de apparaatinstellingen voor deze app.';
+
+  @override
   String get profilePushNotificationsPermissionNotDetermined =>
       'Schakel dit in om toestemming te vragen en deze browser te abonneren.';
+
+  @override
+  String get profilePushNotificationsPermissionNotDeterminedDevice =>
+      'Schakel dit in om toestemming te vragen en dit apparaat te abonneren.';
 
   @override
   String get profilePushNotificationsEnabled =>
       'Deze browser is geabonneerd en kan pushmeldingen ontvangen.';
 
   @override
+  String get profilePushNotificationsEnabledDevice =>
+      'Dit apparaat is geabonneerd en kan pushmeldingen ontvangen.';
+
+  @override
   String get profilePushNotificationsPermissionGrantedButOff =>
       'Toestemming is verleend, maar deze browser is momenteel niet geabonneerd.';
+
+  @override
+  String get profilePushNotificationsPermissionGrantedButOffDevice =>
+      'Toestemming is verleend, maar dit apparaat is momenteel niet geabonneerd.';
 
   @override
   String get profilePushNotificationsUnknown =>
@@ -555,11 +599,19 @@ class AppLocalizationsNl extends AppLocalizations {
       'Pushmeldingen konden niet worden bijgewerkt in deze browser. Probeer het opnieuw.';
 
   @override
+  String get profilePushNotificationsErrorDevice =>
+      'Pushmeldingen konden niet worden bijgewerkt op dit apparaat. Probeer het opnieuw.';
+
+  @override
   String get profilePushNotificationsDisableTitle => 'Pushmeldingen uitzetten?';
 
   @override
   String get profilePushNotificationsDisableMessage =>
       'Je krijgt geen banners meer in deze browser. Meldingen in de app blijven verschijnen.';
+
+  @override
+  String get profilePushNotificationsDisableMessageDevice =>
+      'Je krijgt geen banners meer op dit apparaat. Meldingen in de app blijven verschijnen.';
 
   @override
   String get profilePushNotificationsDisableConfirm => 'Uitzetten';

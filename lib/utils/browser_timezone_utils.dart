@@ -11,12 +11,21 @@ String resolveDetectedTimeZone(String? raw, {String fallback = 'UTC'}) {
   return EventScheduleUtils.normalizeTimeZone(raw) ?? fallback;
 }
 
-/// Detects the browser's IANA timezone (web only), validated against the IANA database.
+/// Loads the device timezone on native so [detectIanaTimeZone] can answer
+/// synchronously. Call once before `runApp`; a no-op on web.
+Future<void> primeLocalTimeZone() => impl.primeLocalTimeZone();
+
+@visibleForTesting
+void debugSetDeviceTimeZone(String? value) =>
+    impl.debugSetDeviceTimeZone(value);
+
+/// Detects the user's IANA timezone, validated against the IANA database:
+/// the browser's zone on web, the device's zone on native (after
+/// [primeLocalTimeZone]).
 ///
-/// Returns [fallback] when not on web, when detection fails, or when the browser
-/// reports an unknown zone id.
+/// Returns [fallback] when detection fails or the platform reports an unknown
+/// zone id.
 String detectIanaTimeZone({String fallback = 'UTC'}) {
-  if (!kIsWeb) return fallback;
   try {
     final raw = impl.readBrowserTimeZoneRaw()?.trim();
     if (raw == null || raw.isEmpty) return fallback;

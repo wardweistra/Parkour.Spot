@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform, kIsWeb;
+    show TargetPlatform, defaultTargetPlatform, kIsWeb, kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:parkour_spot/l10n/app_localizations.dart';
 import 'package:parkour_spot/utils/web_meta_utils.dart';
@@ -51,8 +51,10 @@ import 'package:parkour_spot/config/app_config.dart';
 import 'package:parkour_spot/analytics/web_analytics.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:parkour_spot/utils/app_link_paths.dart';
 import 'package:parkour_spot/utils/auth_emulator_origin.dart';
 import 'package:parkour_spot/utils/browser_location.dart';
+import 'package:parkour_spot/utils/browser_timezone_utils.dart';
 import 'package:parkour_spot/utils/path_url_strategy.dart';
 
 String? _fcmPayloadString(Object? value) {
@@ -64,6 +66,23 @@ bool _isParkourSpotHost(String? host) {
   if (host == null || host.isEmpty) return false;
   final h = host.toLowerCase();
   return h == 'parkour.spot' || h == 'www.parkour.spot';
+}
+
+/// Opens a parkour.spot URL that the Flutter router cannot render (see
+/// [isNonAppLinkPath]).
+///
+/// On native the app is the verified App Links handler for the host, so
+/// handing the URL to the browser would bounce straight back here; load it in
+/// an in-app web view instead.
+Future<void> _openNonAppLink(Uri uri) async {
+  try {
+    await launchUrl(
+      uri,
+      mode: kIsWeb ? LaunchMode.platformDefault : LaunchMode.inAppWebView,
+    );
+  } catch (e, st) {
+    debugPrint('open non-app link: $e\n$st');
+  }
 }
 
 /// Opens the push / deep-link URL: in-app route when same host, else external.
@@ -81,6 +100,10 @@ Future<void> _openAppLink(String url) async {
 
     if (_isParkourSpotHost(uri.host) ||
         (kIsWeb && browserHostname() != null && uri.host == browserHostname())) {
+      if (isNonAppLinkPath(uri.path)) {
+        await _openNonAppLink(uri);
+        return;
+      }
       final path = uri.path.isEmpty ? '/' : uri.path;
       final q = uri.hasQuery ? '?${uri.query}' : '';
       AppRouter.router.go('$path$q');
@@ -161,16 +184,29 @@ void main() async {
     await Firebase.initializeApp();
   }
 
-  // App Check (web): lets Cloud Functions that spend Google Maps quota verify
-  // that calls come from this app. Skipped against the emulators and when no
-  // RECAPTCHA_SITE_KEY is passed at build time. On localhost, web/index.html
-  // switches the SDK to debug-token mode instead of reCAPTCHA.
+  // App Check: lets Cloud Functions that spend Google Maps quota verify that
+  // calls come from this app. Skipped against the emulators.
+  // Web: reCAPTCHA Enterprise, only when RECAPTCHA_SITE_KEY is passed at build
+  // time. On localhost, web/index.html switches the SDK to debug-token mode.
+  // Android: Play Integrity in release builds; debug/profile builds use the
+  // debug provider, whose token is printed to logcat on first run and has to
+  // be registered in the Firebase console.
   const recaptchaSiteKey = String.fromEnvironment('RECAPTCHA_SITE_KEY');
-  if (kIsWeb && !useEmulator && recaptchaSiteKey.isNotEmpty) {
+  if (!useEmulator) {
     try {
-      await FirebaseAppCheck.instance.activate(
-        providerWeb: ReCaptchaEnterpriseProvider(recaptchaSiteKey),
-      );
+      if (kIsWeb) {
+        if (recaptchaSiteKey.isNotEmpty) {
+          await FirebaseAppCheck.instance.activate(
+            providerWeb: ReCaptchaEnterpriseProvider(recaptchaSiteKey),
+          );
+        }
+      } else if (defaultTargetPlatform == TargetPlatform.android) {
+        await FirebaseAppCheck.instance.activate(
+          providerAndroid: kReleaseMode
+              ? const AndroidPlayIntegrityProvider()
+              : const AndroidDebugProvider(),
+        );
+      }
     } catch (e) {
       debugPrint('App Check activation failed: $e');
     }
@@ -182,6 +218,10 @@ void main() async {
   }
 
   _setupFcmListeners();
+
+  // Native: event forms default to the device timezone, which has to be
+  // fetched from the OS before the first form opens.
+  await primeLocalTimeZone();
 
   runApp(const ParkourSpotApp());
 
@@ -283,6 +323,12 @@ class _ParkourSpotAppState extends State<ParkourSpotApp> {
     if (uri.hasScheme &&
         uri.scheme == 'https' &&
         !_isParkourSpotHost(uri.host)) {
+      return;
+    }
+    if (isNonAppLinkPath(uri.path)) {
+      if (uri.hasScheme) {
+        unawaited(_openNonAppLink(uri));
+      }
       return;
     }
     final path = uri.path.isEmpty ? '/' : uri.path;

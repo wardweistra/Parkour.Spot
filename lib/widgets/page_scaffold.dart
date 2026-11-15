@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'emoji_text.dart';
+import 'system_back_handler.dart';
 
 /// A reusable scaffold widget that provides consistent layout across pages.
 /// 
@@ -39,6 +40,11 @@ class PageScaffold extends StatelessWidget {
   /// Maximum width constraint (default: 1200)
   final double maxWidth;
 
+  /// Whether Android system back runs the back button action when this page
+  /// is the only one on the stack (default: true). Set false while the page
+  /// handles back in its own PopScope.
+  final bool handleSystemBack;
+
   const PageScaffold({
     super.key,
     this.title,
@@ -50,13 +56,24 @@ class PageScaffold extends StatelessWidget {
     this.padding,
     this.centerContent = true,
     this.maxWidth = 1200,
+    this.handleSystemBack = true,
   });
 
   @override
   Widget build(BuildContext context) {
     // Determine padding to use
     final effectivePadding = padding ?? const EdgeInsets.all(16.0);
-    
+
+    final VoidCallback effectiveOnBack =
+        onBack ??
+        () {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          } else {
+            context.go('/explore');
+          }
+        };
+
     final PreferredSizeWidget? appBar =
         title != null || actions != null || showBackButton
         ? AppBar(
@@ -77,16 +94,7 @@ class PageScaffold extends StatelessWidget {
                   child: Row(
                     children: [
                       if (showBackButton)
-                        BackButton(
-                          onPressed: onBack ??
-                              () {
-                                if (Navigator.canPop(context)) {
-                                  Navigator.pop(context);
-                                } else {
-                                  context.go('/explore');
-                                }
-                              },
-                        ),
+                        BackButton(onPressed: effectiveOnBack),
                       if (title != null)
                         Expanded(
                           child: Align(
@@ -144,9 +152,13 @@ class PageScaffold extends StatelessWidget {
       );
     }
 
-    return Scaffold(
-      appBar: appBar,
-      body: content,
+    return SystemBackHandler(
+      enabled: showBackButton && handleSystemBack,
+      onBack: effectiveOnBack,
+      child: Scaffold(
+        appBar: appBar,
+        body: content,
+      ),
     );
   }
 }

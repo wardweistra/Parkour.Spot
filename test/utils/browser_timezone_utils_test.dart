@@ -25,9 +25,21 @@ void main() {
       );
     });
 
-    test('detectIanaTimeZone returns fallback when not on web', () {
+    test('detectIanaTimeZone falls back until the device zone is known', () {
       if (kIsWeb) return;
+      debugSetDeviceTimeZone(null);
       expect(detectIanaTimeZone(), 'UTC');
+      expect(detectIanaTimeZone(fallback: 'Europe/Berlin'), 'Europe/Berlin');
+    });
+
+    test('detectIanaTimeZone uses the device zone on native', () {
+      if (kIsWeb) return;
+      addTearDown(() => debugSetDeviceTimeZone(null));
+
+      debugSetDeviceTimeZone('Europe/Amsterdam');
+      expect(detectIanaTimeZone(), 'Europe/Amsterdam');
+
+      debugSetDeviceTimeZone('Not/AZone');
       expect(detectIanaTimeZone(fallback: 'Europe/Berlin'), 'Europe/Berlin');
     });
   });

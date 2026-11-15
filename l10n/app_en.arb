@@ -395,6 +395,10 @@
   "@notificationsPushPromptListTitle": {
     "description": "Inbox list callout title when this browser is not subscribed to push"
   },
+  "notificationsPushPromptListTitleDevice": "Get alerts on this device",
+  "@notificationsPushPromptListTitleDevice": {
+    "description": "Native app variant (this device instead of this browser). Inbox list callout title when this browser is not subscribed to push"
+  },
   "notificationsPushPromptListBody": "Hear about nearby activity even when you're not in the app.",
   "@notificationsPushPromptListBody": {
     "description": "Inbox list callout body when this browser is not subscribed to push"
@@ -402,6 +406,10 @@
   "notificationsPushPromptTurnOnEmpty": "Turn on alerts for this browser",
   "@notificationsPushPromptTurnOnEmpty": {
     "description": "Empty inbox primary CTA to subscribe this browser to push"
+  },
+  "notificationsPushPromptTurnOnEmptyDevice": "Turn on alerts for this device",
+  "@notificationsPushPromptTurnOnEmptyDevice": {
+    "description": "Native app variant (this device instead of this browser). Empty inbox primary CTA to subscribe this browser to push"
   },
   "notificationsPushPromptTurnOn": "Turn on",
   "@notificationsPushPromptTurnOn": {
@@ -415,13 +423,25 @@
   "@notificationsPushPromptBlockedTitle": {
     "description": "Inbox prompt title when the browser has denied notification permission"
   },
+  "notificationsPushPromptBlockedTitleDevice": "Push notifications are blocked on this device",
+  "@notificationsPushPromptBlockedTitleDevice": {
+    "description": "Native app variant (this device instead of this browser). Inbox prompt title when the browser has denied notification permission"
+  },
   "notificationsPushPromptBlockedBody": "Allow notifications for Parkour·Spot in your browser settings to get alerts when you're not in the app.",
   "@notificationsPushPromptBlockedBody": {
     "description": "Inbox prompt body when the browser has denied notification permission"
   },
+  "notificationsPushPromptBlockedBodyDevice": "Allow notifications for Parkour·Spot in your device settings to get alerts when you're not in the app.",
+  "@notificationsPushPromptBlockedBodyDevice": {
+    "description": "Native app variant (this device instead of this browser). Inbox prompt body when the browser has denied notification permission"
+  },
   "notificationsPushPromptEnabledSnackbar": "Alerts are on for this browser.",
   "@notificationsPushPromptEnabledSnackbar": {
     "description": "Snack bar after push is successfully enabled from the notifications inbox"
+  },
+  "notificationsPushPromptEnabledSnackbarDevice": "Alerts are on for this device.",
+  "@notificationsPushPromptEnabledSnackbarDevice": {
+    "description": "Native app variant (this device instead of this browser). Snack bar after push is successfully enabled from the notifications inbox"
   },
   "notificationsTimeUnknown": "Recently",
   "@notificationsTimeUnknown": {
@@ -630,6 +650,10 @@
   "@profileNotificationSettingsThisDeviceGroupHelper": {
     "description": "Account settings: explains that push subscription does not sync across devices"
   },
+  "profileNotificationSettingsThisDeviceGroupHelperDevice": "Alerts stay on this device. Other signed-in devices keep their own setting.",
+  "@profileNotificationSettingsThisDeviceGroupHelperDevice": {
+    "description": "Native app variant (this device instead of this browser). Account settings: explains that push subscription does not sync across devices"
+  },
   "profileNotificationSettingsEveryDeviceGroupTitle": "On every device",
   "@profileNotificationSettingsEveryDeviceGroupTitle": {
     "description": "Account settings: heading for account-wide notification preference toggles"
@@ -646,6 +670,10 @@
   "@profilePushNotificationsUnsupported": {
     "description": "Account settings: status text when push API/FCM is unavailable"
   },
+  "profilePushNotificationsUnsupportedDevice": "Push notifications are not supported on this device.",
+  "@profilePushNotificationsUnsupportedDevice": {
+    "description": "Native app variant (this device instead of this browser). Account settings: status text when push API/FCM is unavailable"
+  },
   "profilePushNotificationsLoading": "Checking push notification status for this device...",
   "@profilePushNotificationsLoading": {
     "description": "Account settings: temporary status while push subscription state is loading"
@@ -654,17 +682,33 @@
   "@profilePushNotificationsPermissionDenied": {
     "description": "Account settings: status text when browser notification permission is denied"
   },
+  "profilePushNotificationsPermissionDeniedDevice": "Push permission is blocked in your device settings for this app.",
+  "@profilePushNotificationsPermissionDeniedDevice": {
+    "description": "Native app variant (this device instead of this browser). Account settings: status text when browser notification permission is denied"
+  },
   "profilePushNotificationsPermissionNotDetermined": "Turn this on to ask for permission and subscribe this browser.",
   "@profilePushNotificationsPermissionNotDetermined": {
     "description": "Account settings: status text before permission has been requested"
+  },
+  "profilePushNotificationsPermissionNotDeterminedDevice": "Turn this on to ask for permission and subscribe this device.",
+  "@profilePushNotificationsPermissionNotDeterminedDevice": {
+    "description": "Native app variant (this device instead of this browser). Account settings: status text before permission has been requested"
   },
   "profilePushNotificationsEnabled": "This browser is subscribed and can receive push alerts.",
   "@profilePushNotificationsEnabled": {
     "description": "Account settings: status text when current device is subscribed"
   },
+  "profilePushNotificationsEnabledDevice": "This device is subscribed and can receive push alerts.",
+  "@profilePushNotificationsEnabledDevice": {
+    "description": "Native app variant (this device instead of this browser). Account settings: status text when current device is subscribed"
+  },
   "profilePushNotificationsPermissionGrantedButOff": "Permission is granted, but this browser is currently unsubscribed.",
   "@profilePushNotificationsPermissionGrantedButOff": {
     "description": "Account settings: status text when permission is granted but no active token/subscription"
+  },
+  "profilePushNotificationsPermissionGrantedButOffDevice": "Permission is granted, but this device is currently unsubscribed.",
+  "@profilePushNotificationsPermissionGrantedButOffDevice": {
+    "description": "Native app variant (this device instead of this browser). Account settings: status text when permission is granted but no active token/subscription"
   },
   "profilePushNotificationsUnknown": "Push status is currently unavailable. Try again shortly.",
   "@profilePushNotificationsUnknown": {
@@ -674,6 +718,10 @@
   "@profilePushNotificationsError": {
     "description": "Account settings: generic error shown under push subscription toggle"
   },
+  "profilePushNotificationsErrorDevice": "We couldn't update push notifications on this device. Please try again.",
+  "@profilePushNotificationsErrorDevice": {
+    "description": "Native app variant (this device instead of this browser). Account settings: generic error shown under push subscription toggle"
+  },
   "profilePushNotificationsDisableTitle": "Turn off push notifications?",
   "@profilePushNotificationsDisableTitle": {
     "description": "Confirm dialog title when turning off this-browser push"
@@ -681,6 +729,10 @@
   "profilePushNotificationsDisableMessage": "You'll stop getting banners on this browser. In-app notifications will still appear.",
   "@profilePushNotificationsDisableMessage": {
     "description": "Confirm dialog body when turning off this-browser push"
+  },
+  "profilePushNotificationsDisableMessageDevice": "You'll stop getting banners on this device. In-app notifications will still appear.",
+  "@profilePushNotificationsDisableMessageDevice": {
+    "description": "Native app variant (this device instead of this browser). Confirm dialog body when turning off this-browser push"
   },
   "profilePushNotificationsDisableConfirm": "Turn off",
   "@profilePushNotificationsDisableConfirm": {

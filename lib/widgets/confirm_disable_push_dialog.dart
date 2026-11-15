@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../utils/push_copy.dart';
 
 /// Confirm turning off this-browser push. Returns true only if the user agrees.
 Future<bool> confirmDisablePushNotifications(BuildContext context) async {
@@ -10,7 +11,7 @@ Future<bool> confirmDisablePushNotifications(BuildContext context) async {
     builder: (dialogContext) {
       return AlertDialog(
         title: Text(l10n.profilePushNotificationsDisableTitle),
-        content: Text(l10n.profilePushNotificationsDisableMessage),
+        content: Text(PushCopy(l10n).disableMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
