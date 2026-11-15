@@ -162,6 +162,13 @@ class AdminHomeScreen extends StatelessWidget {
                     'View device detection and PWA install service status',
                 onTap: () => context.push('/admin/device-detection'),
               ),
+              AdminToolTile(
+                icon: Icons.wifi_tethering_error,
+                title: 'Firebase connectivity',
+                subtitle:
+                    'Auth, Firestore, and callable probes for idle/resume issues',
+                onTap: () => context.push('/admin/firebase-connectivity'),
+              ),
             ],
           ),
         ],

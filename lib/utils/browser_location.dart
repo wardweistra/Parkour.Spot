@@ -28,6 +28,10 @@ bool? hasManifestLink() => impl.queryManifestLinkPresent();
 
 bool? browserMatchMedia(String query) => impl.matchMediaMatches(query);
 
+String? browserVisibilityState() => impl.readBrowserVisibilityState();
+
+bool? browserNavigatorOnLine() => impl.readBrowserNavigatorOnLine();
+
 void updateBrowserPageMeta(String title, String description) =>
     impl.updateBrowserPageMeta(title, description);
 

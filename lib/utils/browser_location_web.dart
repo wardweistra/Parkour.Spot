@@ -34,6 +34,10 @@ bool? queryManifestLinkPresent() =>
 bool? matchMediaMatches(String query) =>
     web.window.matchMedia(query).matches;
 
+String? readBrowserVisibilityState() => web.document.visibilityState;
+
+bool? readBrowserNavigatorOnLine() => web.window.navigator.onLine;
+
 void updateBrowserPageMeta(String title, String description) {
   web.document.title = title;
 

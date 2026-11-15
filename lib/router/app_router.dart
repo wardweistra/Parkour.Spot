@@ -27,6 +27,7 @@ import '../screens/admin/duplicate_spots_screen.dart';
 import '../screens/admin/duplicate_spots_results_screen.dart';
 import '../screens/admin/duplicate_spots_pair_review_screen.dart';
 import '../screens/admin/device_detection_screen.dart';
+import '../screens/admin/firebase_connectivity_screen.dart';
 import '../screens/debug/support_debug_screen.dart';
 import '../screens/admin/api_clients_screen.dart';
 import '../screens/moderator/moderator_tools_screen.dart';
@@ -551,6 +552,10 @@ class AppRouter {
         GoRoute(
           path: '/admin/device-detection',
           builder: (context, state) => const DeviceDetectionScreen(),
+        ),
+        GoRoute(
+          path: '/admin/firebase-connectivity',
+          builder: (context, state) => const FirebaseConnectivityScreen(),
         ),
         GoRoute(
           path: '/admin/api-clients',

@@ -25,6 +25,10 @@ bool? queryManifestLinkPresent() => null;
 
 bool? matchMediaMatches(String query) => null;
 
+String? readBrowserVisibilityState() => null;
+
+bool? readBrowserNavigatorOnLine() => null;
+
 void updateBrowserPageMeta(String title, String description) {}
 
 Future<void> awaitServiceWorkerReady({
