@@ -101,12 +101,13 @@ Gaps found by auditing every web-only branch (`kIsWeb`, conditional-import stubs
 | No App Check tokens, so Android would break when `ENFORCE_PLACES_APP_CHECK` is switched on | Play Integrity (release) / debug provider (debug) in `main()`. **Console:** register the app in App Check (see README) |
 | App Links cover the whole host, so `https://parkour.spot/__/auth/action` (email verification, password reset), `/api/…`, `/calendar/…` opened the app and hit "Page not found" | [app_link_paths.dart](../lib/utils/app_link_paths.dart): those paths open in an in-app web view and the router stays on Explore |
 | System back closed the app from the Add/Account tabs and from any page opened via deep link or push | Explore unwinds tab → open sheet/card → exit; [SystemBackHandler](../lib/widgets/system_back_handler.dart) runs the page's own back action when nothing is underneath (PageScaffold, spot, event, login) |
+| The Android project did not build at all on current Flutter stable (3.50 rejects Gradle 8.14 / AGP 8.11 / Kotlin 2.2, and its Gradle plugin is binary-incompatible with AGP 8) | Gradle 9.5.0, AGP 9.3.1, Kotlin 2.4.20, matching the Flutter 3.50 template; `kotlinOptions` → `kotlin { compilerOptions }`; lockfiles regenerated |
 | Push settings and prompts said "this browser" | `…Device` strings in all six languages, picked by [PushCopy](../lib/utils/push_copy.dart) |
 | Admin KML/KMZ upload threw `UnsupportedError` | `file_selector` system picker in [kml_file_picker_stub.dart](../lib/utils/kml_file_picker_stub.dart) |
 
 Still web-only by design: PWA install prompts, document title / meta tags, the admin device-detection diagnostics screen, and gtag Consent Mode.
 
-Not verified on a device: this pass was checked with `flutter analyze`, `flutter test`, `flutter build web --wasm` and `flutter build apk --debug`. External links, the in-app web view for auth emails, back navigation, the timezone default, icons and App Check need a run on a device or emulator.
+Not verified on a device: this pass was checked with `flutter analyze`, `flutter test`, `flutter build web --wasm`, `flutter build apk --debug` (Flutter 3.50.0) and by inspecting the built APK (manifest queries, FCM meta-data, adaptive icon, plugin classes). External links, the in-app web view for auth emails, back navigation, the timezone default, icons and App Check need a run on a device or emulator.
 
 ## Verification
 

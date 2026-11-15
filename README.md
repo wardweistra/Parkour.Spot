@@ -161,7 +161,11 @@ flutter build apk --config-only
 cd android && ./gradlew :app:assembleDebug :app:assembleRelease --write-locks
 ```
 
-Use Java 17 or 21 (`flutter config --jdk-dir` / `JAVA_HOME`). Gradle 8.14 cannot compile Kotlin DSL on newer JDKs.
+Use Java 17 or 21 (`flutter config --jdk-dir` / `JAVA_HOME`).
+
+### **Android build toolchain**
+
+The Android project follows the versions in the current Flutter stable template: Gradle 9.5.0 (`android/gradle/wrapper/gradle-wrapper.properties`), Android Gradle Plugin 9.3.1 and Kotlin 2.4.20 (`android/settings.gradle.kts`). Flutter 3.50 refuses to build with anything below Gradle 9.3.1 / AGP 9.1.1 / Kotlin 2.4.10, and older Flutter releases do not support AGP 9, so Android builds need current Flutter **stable** (same as CI and Cloud Agents). `android.builtInKotlin=false` and `android.newDsl=false` in `android/gradle.properties` are set by the Flutter tool; leave them in place. When a later Flutter stable raises its minimums, bump these three versions together and regenerate the lockfiles.
 
 ### **Common Workflows**
 
