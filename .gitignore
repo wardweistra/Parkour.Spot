@@ -127,3 +127,4 @@ skills-lock.json
 
 # Temp files
 temp/
+.vscode/settings.json
