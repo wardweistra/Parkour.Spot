@@ -3099,19 +3099,30 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       _spot.youtubeVideoIds ?? [];
                                   final jumpflixVideos =
                                       jumpflixSnapshot.data ?? [];
-                                  final youtubeItems = youtubeIds
-                                      .map(
-                                        (id) => _CarouselVideoItem(
-                                          thumbnailUrl:
-                                              'https://img.youtube.com/vi/$id/hqdefault.jpg',
-                                          launchUrl:
-                                              'https://www.youtube.com/watch?v=$id',
-                                          useYoutubeIcon: true,
-                                          brandLabel:
-                                              l10n.spotDetailBrandYoutube,
-                                        ),
-                                      )
-                                      .toList();
+                                  final youtubeItems = youtubeIds.map((id) {
+                                    final meta = _spot.youtubeVideoMeta?[id];
+                                    final hasTitle =
+                                        meta != null && meta.hasDisplayTitle;
+                                    return _CarouselVideoItem(
+                                      thumbnailUrl:
+                                          'https://img.youtube.com/vi/$id/hqdefault.jpg',
+                                      launchUrl:
+                                          'https://www.youtube.com/watch?v=$id',
+                                      useYoutubeIcon: true,
+                                      brandLabel: hasTitle
+                                          ? meta.title
+                                          : l10n.spotDetailBrandYoutube,
+                                      brandSubtitle: hasTitle
+                                          ? l10n.spotDetailBrandAsSeenIn
+                                          : null,
+                                      brandDescription: hasTitle &&
+                                              meta.channelTitle
+                                                  .trim()
+                                                  .isNotEmpty
+                                          ? meta.channelTitle.trim()
+                                          : null,
+                                    );
+                                  }).toList();
                                   final jumpflixItems = jumpflixVideos.map((v) {
                                     final baseUri = Uri.tryParse(v.url);
                                     final launchUrl = baseUri != null
@@ -7981,6 +7992,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                 const SizedBox(height: 16),
                 SpotYoutubeSection(
                   controllers: _youtubeControllers,
+                  videoMeta: widget.spot.youtubeVideoMeta,
                   onAdd: _isSubmitting ? () {} : _addYoutubeRow,
                   onRemove: _isSubmitting ? (_) {} : _removeYoutubeRow,
                   onReorder: _isSubmitting

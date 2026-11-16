@@ -137,6 +137,7 @@ const {
   sleep: youtubeAvailabilitySleep,
   normalizeYoutubeVideoId,
   checkYoutubeVideoOembedAvailability,
+  fetchYoutubeVideoOembedMetaBatch,
 } = require("./lib/youtube-availability");
 const {
   pickSpotIdsForTitleSearch,
@@ -9716,6 +9717,215 @@ exports.fetchYoutubeThumbnails = onCall(
           success: false,
           error: error.message,
           thumbnails: [],
+        };
+      }
+    },
+);
+
+/**
+ * Resolves YouTube oEmbed title + channel for video IDs.
+ * Moderator or admin only. Used when links are added/approved.
+ */
+exports.fetchYoutubeVideoMeta = onCall(
+    {region: "europe-west1", memory: "256MiB", timeoutSeconds: 120},
+    async (request) => {
+      try {
+        await ensureModerator(request);
+        const {videoIds} = request.data || {};
+        if (!Array.isArray(videoIds) || videoIds.length === 0) {
+          return {success: true, videos: []};
+        }
+        const videos = await fetchYoutubeVideoOembedMetaBatch(videoIds, {
+          delayMs: 150,
+          limit: 20,
+        });
+        return {success: true, videos};
+      } catch (error) {
+        console.error("Error fetching YouTube video meta:", error);
+        return {
+          success: false,
+          error: error.message,
+          videos: [],
+        };
+      }
+    },
+);
+
+/**
+ * Backfills youtubeVideoMeta on spots that have youtubeVideoIds missing titles.
+ * Resumable via lastDocId (last *fully* processed spot; next call uses
+ * startAfter). Admin only.
+ */
+exports.backfillYoutubeVideoMeta = onCall(
+    {
+      region: "europe-west1",
+      memory: "512MiB",
+      timeoutSeconds: 540,
+    },
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+
+        const SCAN_PAGE_SIZE = 40;
+        const CHECKS_PER_INVOCATION = 18;
+        const DELAY_BETWEEN_CHECKS_MS = 250;
+
+        const rawLastDocId = request.data && request.data.lastDocId;
+        let lastCompletedDocId =
+          typeof rawLastDocId === "string" && rawLastDocId.trim() ?
+            rawLastDocId.trim() :
+            null;
+
+        let spotsScanned = 0;
+        let spotsUpdated = 0;
+        let videosResolved = 0;
+        let oembedChecks = 0;
+        let hasMore = true;
+        let stopForBudget = false;
+        const rateLimited = false;
+
+        while (hasMore && !stopForBudget && !rateLimited) {
+          let query = db.collection("spots")
+              .orderBy(FieldPath.documentId())
+              .limit(SCAN_PAGE_SIZE);
+          if (lastCompletedDocId) {
+            const startDoc = await db.collection("spots")
+                .doc(lastCompletedDocId)
+                .get();
+            if (!startDoc.exists) {
+              throw new Error(`lastDocId not found: ${lastCompletedDocId}`);
+            }
+            query = query.startAfter(startDoc);
+          }
+          const snap = await query.get();
+          if (snap.empty) {
+            hasMore = false;
+            break;
+          }
+
+          for (const doc of snap.docs) {
+            spotsScanned += 1;
+            const data = doc.data() || {};
+            const rawIds = Array.isArray(data.youtubeVideoIds) ?
+              data.youtubeVideoIds :
+              [];
+            const ids = [];
+            const seen = new Set();
+            for (const raw of rawIds) {
+              const id = normalizeYoutubeVideoId(
+                  typeof raw === "string" ? raw : String(raw || ""),
+              );
+              if (!id || seen.has(id)) continue;
+              seen.add(id);
+              ids.push(id);
+            }
+            if (ids.length === 0) {
+              lastCompletedDocId = doc.id;
+              continue;
+            }
+
+            const existingMeta =
+              data.youtubeVideoMeta &&
+              typeof data.youtubeVideoMeta === "object" &&
+              !Array.isArray(data.youtubeVideoMeta) ?
+                {...data.youtubeVideoMeta} :
+                {};
+
+            const needing = ids.filter((id) => {
+              const entry = existingMeta[id];
+              const title = entry && typeof entry.title === "string" ?
+                entry.title.trim() :
+                "";
+              return !title;
+            });
+
+            // Defer this spot when the remaining oEmbed budget cannot cover
+            // every missing title (always process at least one check).
+            if (
+              needing.length > 0 &&
+              oembedChecks > 0 &&
+              oembedChecks + needing.length > CHECKS_PER_INVOCATION
+            ) {
+              stopForBudget = true;
+              hasMore = true;
+              break;
+            }
+
+            // Always prune stale keys even when nothing to fetch.
+            let changed = false;
+            const nextMeta = {};
+            for (const id of ids) {
+              if (existingMeta[id]) {
+                nextMeta[id] = existingMeta[id];
+              }
+            }
+            if (Object.keys(existingMeta).length !==
+                Object.keys(nextMeta).length) {
+              changed = true;
+            }
+
+            let spotFullyResolved = true;
+            for (const videoId of needing) {
+              if (oembedChecks >= CHECKS_PER_INVOCATION) {
+                stopForBudget = true;
+                spotFullyResolved = false;
+                hasMore = true;
+                break;
+              }
+              if (oembedChecks > 0) {
+                await youtubeAvailabilitySleep(DELAY_BETWEEN_CHECKS_MS);
+              }
+              oembedChecks += 1;
+              const batch = await fetchYoutubeVideoOembedMetaBatch(
+                  [videoId],
+                  {delayMs: 0, limit: 1},
+              );
+              if (batch.length === 1 && batch[0].title) {
+                nextMeta[videoId] = {
+                  title: batch[0].title,
+                  channelTitle: batch[0].channelTitle || "",
+                };
+                videosResolved += 1;
+                changed = true;
+              }
+            }
+
+            if (changed) {
+              await doc.ref.update({
+                youtubeVideoMeta: nextMeta,
+              });
+              spotsUpdated += 1;
+            }
+
+            // Only advance the resume cursor past spots that finished every
+            // missing title; otherwise the next batch re-includes this spot.
+            if (spotFullyResolved) {
+              lastCompletedDocId = doc.id;
+            }
+
+            if (stopForBudget) break;
+          }
+
+          if (!stopForBudget) {
+            hasMore = snap.size === SCAN_PAGE_SIZE;
+          }
+        }
+
+        return {
+          success: true,
+          spotsScanned,
+          spotsUpdated,
+          videosResolved,
+          oembedChecks,
+          hasMore: hasMore || stopForBudget,
+          lastDocId: lastCompletedDocId,
+          rateLimited,
+        };
+      } catch (error) {
+        console.error("Error backfilling YouTube video meta:", error);
+        return {
+          success: false,
+          error: error.message,
         };
       }
     },

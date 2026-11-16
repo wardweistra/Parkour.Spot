@@ -88,6 +88,16 @@ class SpotImagesScreen extends StatelessWidget {
                     SpotDataActions.rehostYoutubeCdnSpotImages(context),
               ),
               AdminToolTile(
+                icon: Icons.closed_caption_outlined,
+                title: 'Backfill YouTube video titles',
+                subtitle:
+                    'Cache title and channel for spot YouTube links missing '
+                    'metadata (batched oEmbed)',
+                showChevron: false,
+                onTap: () =>
+                    SpotDataActions.backfillYoutubeVideoMeta(context),
+              ),
+              AdminToolTile(
                 icon: Icons.video_library_outlined,
                 title: 'Find unavailable YouTube videos',
                 subtitle:

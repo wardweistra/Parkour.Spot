@@ -998,6 +998,90 @@ class SyncSourceService extends ChangeNotifier {
     }
   }
 
+  /// Resolves missing YouTube title/channel meta on spots (batched oEmbed).
+  Future<Map<String, dynamic>?> backfillYoutubeVideoMeta({
+    void Function(String status)? onProgress,
+  }) async {
+    try {
+      final callable = _functions.httpsCallable(
+        'backfillYoutubeVideoMeta',
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
+      );
+
+      String? lastDocId;
+      var spotsScanned = 0;
+      var spotsUpdated = 0;
+      var videosResolved = 0;
+      var oembedChecks = 0;
+      var hasMore = true;
+      var batches = 0;
+
+      while (hasMore) {
+        batches += 1;
+        onProgress?.call(
+          lastDocId == null
+              ? 'Resolving YouTube titles (batch $batches)...'
+              : 'Continuing YouTube title backfill (batch $batches)...',
+        );
+
+        final result = await callable.call({
+          'lastDocId': ?lastDocId,
+        });
+        final data = result.data;
+        if (data == null) return null;
+        final map = _callableResponseAsMap(data);
+        if (map['success'] != true) {
+          _error = map['error']?.toString() ??
+              'Failed to backfill YouTube video meta';
+          notifyListeners();
+          return map;
+        }
+
+        spotsScanned += (map['spotsScanned'] as num?)?.toInt() ?? 0;
+        spotsUpdated += (map['spotsUpdated'] as num?)?.toInt() ?? 0;
+        videosResolved += (map['videosResolved'] as num?)?.toInt() ?? 0;
+        oembedChecks += (map['oembedChecks'] as num?)?.toInt() ?? 0;
+
+        hasMore = map['hasMore'] == true;
+        final nextCursor = map['lastDocId']?.toString();
+        if (hasMore) {
+          if (nextCursor == null ||
+              nextCursor.isEmpty ||
+              (nextCursor == lastDocId && batches > 1)) {
+            _error =
+                'YouTube video meta backfill stalled (cursor did not advance)';
+            notifyListeners();
+            return {
+              'success': false,
+              'message': _error,
+              'spotsScanned': spotsScanned,
+              'spotsUpdated': spotsUpdated,
+              'videosResolved': videosResolved,
+              'oembedChecks': oembedChecks,
+              'batches': batches,
+            };
+          }
+          lastDocId = nextCursor;
+        }
+      }
+
+      return {
+        'success': true,
+        'message': 'YouTube video meta backfill complete',
+        'spotsScanned': spotsScanned,
+        'spotsUpdated': spotsUpdated,
+        'videosResolved': videosResolved,
+        'oembedChecks': oembedChecks,
+        'batches': batches,
+      };
+    } catch (e) {
+      _error = 'Failed to backfill YouTube video meta: $e';
+      debugPrint(_error);
+      notifyListeners();
+      return null;
+    }
+  }
+
   /// Rehosts YouTube CDN URLs in spot imageUrls into Firebase Storage.
   /// Loops the resumable callable until [hasMore] is false.
   Future<Map<String, dynamic>?> rehostYoutubeCdnSpotImages() async {

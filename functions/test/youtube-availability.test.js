@@ -2,6 +2,8 @@ const https = require("https");
 const {
   normalizeYoutubeVideoId,
   checkYoutubeVideoOembedAvailability,
+  fetchYoutubeVideoOembedMeta,
+  fetchYoutubeVideoOembedMetaBatch,
 } = require("../lib/youtube-availability");
 
 describe("normalizeYoutubeVideoId", () => {
@@ -97,5 +99,70 @@ describe("checkYoutubeVideoOembedAvailability", () => {
     const result = await checkYoutubeVideoOembedAvailability("abc123xyz01");
     expect(result.available).toBeNull();
     expect(result.rateLimited).toBe(true);
+  });
+});
+
+describe("fetchYoutubeVideoOembedMeta", () => {
+  let originalGet;
+
+  beforeEach(() => {
+    originalGet = https.get;
+  });
+
+  afterEach(() => {
+    https.get = originalGet;
+  });
+
+  it("parses title and author_name from oEmbed JSON", async () => {
+    https.get = jest.fn((url, options, callback) => {
+      const body = JSON.stringify({
+        title: "Parkour jam",
+        author_name: "Traceurs United",
+      });
+      const response = {
+        statusCode: 200,
+        resume: jest.fn(),
+        on: (event, handler) => {
+          if (event === "data") handler(Buffer.from(body));
+          if (event === "end") handler();
+        },
+      };
+      callback(response);
+      return {
+        on: jest.fn(),
+        setTimeout: jest.fn(),
+        destroy: jest.fn(),
+      };
+    });
+
+    const result = await fetchYoutubeVideoOembedMeta("dQw4w9WgXcQ");
+    expect(result.title).toBe("Parkour jam");
+    expect(result.channelTitle).toBe("Traceurs United");
+    expect(result.available).toBe(true);
+  });
+
+  it("batch skips videos without a title", async () => {
+    https.get = jest.fn((url, options, callback) => {
+      const response = {
+        statusCode: 404,
+        resume: jest.fn(),
+        on: (event, handler) => {
+          if (event === "data") handler(Buffer.from(""));
+          if (event === "end") handler();
+        },
+      };
+      callback(response);
+      return {
+        on: jest.fn(),
+        setTimeout: jest.fn(),
+        destroy: jest.fn(),
+      };
+    });
+
+    const videos = await fetchYoutubeVideoOembedMetaBatch(
+        ["00000000000"],
+        {delayMs: 0},
+    );
+    expect(videos).toEqual([]);
   });
 });

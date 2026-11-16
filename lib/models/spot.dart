@@ -13,6 +13,9 @@ class Spot {
   final List<String>? imageUrls;
   bool get hasImages => imageUrls?.isNotEmpty ?? false;
   final List<String>? youtubeVideoIds;
+
+  /// Title + channel for [youtubeVideoIds], keyed by video id (oEmbed cache).
+  final Map<String, YoutubeVideoMeta>? youtubeVideoMeta;
   final String? folderName;
   final String? createdBy;
   final String? createdByName;
@@ -85,6 +88,7 @@ class Spot {
     this.countryCode,
     this.imageUrls,
     this.youtubeVideoIds,
+    this.youtubeVideoMeta,
     this.folderName,
     this.createdBy,
     this.createdByName,
@@ -128,6 +132,8 @@ class Spot {
           ? List<String>.from(data['imageUrls'])
           : (data['imageUrl'] != null ? [data['imageUrl']] : null),
       youtubeVideoIds: extractYoutubeVideoIdsFromValue(data['youtubeVideoIds']),
+      youtubeVideoMeta:
+          extractYoutubeVideoMetaFromValue(data['youtubeVideoMeta']),
       folderName: data['folderName'],
       createdBy: data['createdBy'],
       createdByName: data['createdByName'],
@@ -214,6 +220,8 @@ class Spot {
           ? List<String>.from(data['imageUrls'])
           : (data['imageUrl'] != null ? [data['imageUrl'] as String] : null),
       youtubeVideoIds: extractYoutubeVideoIdsFromValue(data['youtubeVideoIds']),
+      youtubeVideoMeta:
+          extractYoutubeVideoMetaFromValue(data['youtubeVideoMeta']),
       folderName: data['folderName'] as String?,
       createdBy: data['createdBy'] as String?,
       createdByName: data['createdByName'] as String?,
@@ -264,6 +272,7 @@ class Spot {
   }
 
   Map<String, dynamic> toFirestore({bool isUpdate = false}) {
+    final metaPayload = youtubeVideoMetaToFirestore(youtubeVideoMeta);
     return {
       'name': name,
       'description': description,
@@ -278,6 +287,10 @@ class Spot {
         'youtubeVideoIds': (youtubeVideoIds!.isEmpty && isUpdate)
             ? FieldValue.delete()
             : (youtubeVideoIds!.isEmpty ? null : youtubeVideoIds),
+      // Explicit empty map clears cached titles when all links are removed.
+      if (youtubeVideoMeta != null)
+        'youtubeVideoMeta': metaPayload ??
+            (isUpdate ? FieldValue.delete() : null),
       'folderName': folderName,
       'createdBy': createdBy,
       'createdByName': createdByName,
@@ -321,6 +334,7 @@ class Spot {
     String? countryCode,
     List<String>? imageUrls,
     Object? youtubeVideoIds = _unset,
+    Object? youtubeVideoMeta = _unset,
     String? folderName,
     String? createdBy,
     String? createdByName,
@@ -361,6 +375,9 @@ class Spot {
       youtubeVideoIds: identical(youtubeVideoIds, _unset)
           ? this.youtubeVideoIds
           : youtubeVideoIds as List<String>?,
+      youtubeVideoMeta: identical(youtubeVideoMeta, _unset)
+          ? this.youtubeVideoMeta
+          : youtubeVideoMeta as Map<String, YoutubeVideoMeta>?,
       folderName: folderName ?? this.folderName,
       createdBy: createdBy ?? this.createdBy,
       createdByName: createdByName ?? this.createdByName,

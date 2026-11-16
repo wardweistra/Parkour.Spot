@@ -780,6 +780,7 @@ class _EditSuggestionApprovalDialogState
                         const SizedBox(height: 8),
                         YoutubeSuggestionReview(
                           existingVideoIds: spot.youtubeVideoIds,
+                          existingVideoMeta: spot.youtubeVideoMeta,
                           suggestedVideoIds:
                               report.suggestedYoutubeVideoIds!,
                         ),

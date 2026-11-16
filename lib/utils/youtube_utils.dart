@@ -63,6 +63,123 @@ List<String>? extractYoutubeVideoIdsFromValue(dynamic value) {
   return null;
 }
 
+/// Title + channel for a linked YouTube video (from oEmbed, stored on the spot).
+class YoutubeVideoMeta {
+  const YoutubeVideoMeta({
+    required this.title,
+    required this.channelTitle,
+  });
+
+  final String title;
+  final String channelTitle;
+
+  bool get hasDisplayTitle => title.trim().isNotEmpty;
+
+  Map<String, dynamic> toMap() => {
+        'title': title,
+        'channelTitle': channelTitle,
+      };
+
+  factory YoutubeVideoMeta.fromMap(Map<String, dynamic> map) {
+    return YoutubeVideoMeta(
+      title: map['title']?.toString() ?? '',
+      channelTitle: map['channelTitle']?.toString() ??
+          map['author_name']?.toString() ??
+          '',
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is YoutubeVideoMeta &&
+          title == other.title &&
+          channelTitle == other.channelTitle;
+
+  @override
+  int get hashCode => Object.hash(title, channelTitle);
+}
+
+/// Parses Firestore `youtubeVideoMeta` (map of videoId → {title, channelTitle}).
+Map<String, YoutubeVideoMeta>? extractYoutubeVideoMetaFromValue(dynamic value) {
+  if (value == null || value is! Map) return null;
+  final result = <String, YoutubeVideoMeta>{};
+  value.forEach((key, raw) {
+    final id = key?.toString().trim() ?? '';
+    if (id.isEmpty || raw is! Map) return;
+    final meta = YoutubeVideoMeta.fromMap(Map<String, dynamic>.from(raw));
+    if (!meta.hasDisplayTitle && meta.channelTitle.trim().isEmpty) return;
+    result[id] = meta;
+  });
+  return result.isEmpty ? null : result;
+}
+
+/// Keeps only meta entries whose keys are in [videoIds].
+Map<String, YoutubeVideoMeta> pruneYoutubeVideoMeta({
+  required Map<String, YoutubeVideoMeta>? meta,
+  required List<String> videoIds,
+}) {
+  if (meta == null || meta.isEmpty) return const {};
+  final keep = videoIds.map((id) => id.trim()).where((id) => id.isNotEmpty).toSet();
+  final result = <String, YoutubeVideoMeta>{};
+  for (final entry in meta.entries) {
+    if (keep.contains(entry.key)) {
+      result[entry.key] = entry.value;
+    }
+  }
+  return result;
+}
+
+/// Video IDs that still need title/channel resolution.
+List<String> youtubeIdsNeedingMeta({
+  required List<String> videoIds,
+  Map<String, YoutubeVideoMeta>? existingMeta,
+}) {
+  final seen = <String>{};
+  final result = <String>[];
+  for (final rawId in videoIds) {
+    final id = rawId.trim();
+    if (id.isEmpty || !seen.add(id)) continue;
+    final meta = existingMeta?[id];
+    if (meta == null || !meta.hasDisplayTitle) {
+      result.add(id);
+    }
+  }
+  return result;
+}
+
+/// Serializes [meta] for Firestore (or null when empty).
+Map<String, dynamic>? youtubeVideoMetaToFirestore(
+  Map<String, YoutubeVideoMeta>? meta,
+) {
+  if (meta == null || meta.isEmpty) return null;
+  return {
+    for (final entry in meta.entries) entry.key: entry.value.toMap(),
+  };
+}
+
+/// Parses `fetchYoutubeVideoMeta` callable [rawData] into videoId → meta.
+Map<String, YoutubeVideoMeta> parseFetchYoutubeVideoMetaResponse(
+  dynamic rawData,
+) {
+  if (rawData is! Map) return const {};
+  final data = Map<String, dynamic>.from(rawData);
+  final rawMetas = data['videos'] ?? data['meta'];
+  if (rawMetas == null || rawMetas is! Iterable) return const {};
+
+  final resolved = <String, YoutubeVideoMeta>{};
+  for (final item in rawMetas) {
+    if (item is! Map) continue;
+    final map = Map<String, dynamic>.from(item);
+    final id = map['videoId']?.toString().trim() ?? '';
+    if (id.isEmpty) continue;
+    final meta = YoutubeVideoMeta.fromMap(map);
+    if (!meta.hasDisplayTitle) continue;
+    resolved[id] = meta;
+  }
+  return resolved;
+}
+
 /// YouTube thumbnail URL for [videoId]. Import uses `maxresdefault`.
 String youtubeThumbnailUrl(
   String videoId, {

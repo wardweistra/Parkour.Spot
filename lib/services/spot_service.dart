@@ -251,6 +251,7 @@ class SpotService extends ChangeNotifier {
         countryCode: sourceSpot.countryCode,
         imageUrls: sourceSpot.imageUrls, // Preserve existing image URLs
         youtubeVideoIds: sourceSpot.youtubeVideoIds, // Preserve YouTube links
+        youtubeVideoMeta: sourceSpot.youtubeVideoMeta,
         createdBy: createdBy,
         createdByName: createdByName,
         createdAt: DateTime.now(),
@@ -421,8 +422,34 @@ class SpotService extends ChangeNotifier {
         );
       }
 
+      final youtubeIds = spot.youtubeVideoIds ?? const <String>[];
+      final baseMeta = <String, YoutubeVideoMeta>{
+        ...?oldSpot?.youtubeVideoMeta,
+        ...?spot.youtubeVideoMeta,
+      };
+      var youtubeVideoMeta = pruneYoutubeVideoMeta(
+        meta: baseMeta,
+        videoIds: youtubeIds,
+      );
+      final idsNeedingMeta = youtubeIdsNeedingMeta(
+        videoIds: youtubeIds,
+        existingMeta: youtubeVideoMeta,
+      );
+      if (idsNeedingMeta.isNotEmpty) {
+        final resolvedMeta = await _fetchYoutubeVideoMeta(idsNeedingMeta);
+        if (resolvedMeta.isNotEmpty) {
+          youtubeVideoMeta = {
+            ...youtubeVideoMeta,
+            ...resolvedMeta,
+          };
+        }
+      }
+
       final updatedSpot = spot.copyWith(
         imageUrls: imageUrls,
+        youtubeVideoMeta: youtubeIds.isEmpty
+            ? <String, YoutubeVideoMeta>{}
+            : youtubeVideoMeta,
         updatedAt: DateTime.now(),
         hidden: spot.hidden, // Preserve existing hidden field
       );
@@ -896,6 +923,34 @@ class SpotService extends ChangeNotifier {
       return resolved;
     } catch (e) {
       debugPrint('Error fetching YouTube thumbnails: $e');
+      return const {};
+    }
+  }
+
+  /// Resolves YouTube title + channel via Cloud Function oEmbed.
+  Future<Map<String, YoutubeVideoMeta>> _fetchYoutubeVideoMeta(
+    List<String> videoIds,
+  ) async {
+    if (videoIds.isEmpty) return const {};
+    try {
+      final functions = FirebaseFunctions.instanceFor(region: 'europe-west1');
+      final callable = functions.httpsCallable(
+        'fetchYoutubeVideoMeta',
+        options: HttpsCallableOptions(timeout: const Duration(minutes: 2)),
+      );
+      final result = await callable.call({'videoIds': videoIds});
+      final resolved = parseFetchYoutubeVideoMetaResponse(result.data);
+      if (resolved.isEmpty && result.data is Map) {
+        final data = Map<String, dynamic>.from(result.data as Map);
+        if (data['success'] == false) {
+          debugPrint(
+            'fetchYoutubeVideoMeta failed: ${data['error'] ?? 'unknown'}',
+          );
+        }
+      }
+      return resolved;
+    } catch (e) {
+      debugPrint('Error fetching YouTube video meta: $e');
       return const {};
     }
   }
@@ -2555,6 +2610,7 @@ class SpotService extends ChangeNotifier {
           countryCode: previewSpot.countryCode,
           imageUrls: previewSpot.imageUrls,
           youtubeVideoIds: previewSpot.youtubeVideoIds,
+          youtubeVideoMeta: previewSpot.youtubeVideoMeta,
           spotAccess: previewSpot.spotAccess,
           spotFeatures: previewSpot.spotFeatures,
           spotFacilities: previewSpot.spotFacilities,
@@ -2580,6 +2636,7 @@ class SpotService extends ChangeNotifier {
           countryCode: previewSpot.countryCode,
           imageUrls: previewSpot.imageUrls,
           youtubeVideoIds: previewSpot.youtubeVideoIds,
+          youtubeVideoMeta: previewSpot.youtubeVideoMeta,
           createdBy: userId,
           createdByName: userName,
           createdAt: now,
@@ -2654,6 +2711,7 @@ class SpotService extends ChangeNotifier {
           countryCode: previewSpot.countryCode,
           imageUrls: previewSpot.imageUrls,
           youtubeVideoIds: previewSpot.youtubeVideoIds,
+          youtubeVideoMeta: previewSpot.youtubeVideoMeta,
           spotAccess: previewSpot.spotAccess,
           spotFeatures: previewSpot.spotFeatures,
           spotFacilities: previewSpot.spotFacilities,

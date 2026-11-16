@@ -284,4 +284,81 @@ void main() {
       );
     });
   });
+
+  group('youtubeVideoMeta helpers', () {
+    test('extractYoutubeVideoMetaFromValue parses map entries', () {
+      final meta = extractYoutubeVideoMetaFromValue({
+        'dQw4w9WgXcQ': {
+          'title': 'Never Gonna Give You Up',
+          'channelTitle': 'Rick Astley',
+        },
+        'skip': {'title': '', 'channelTitle': ''},
+      });
+      expect(meta, isNotNull);
+      expect(meta!['dQw4w9WgXcQ']?.title, 'Never Gonna Give You Up');
+      expect(meta['dQw4w9WgXcQ']?.channelTitle, 'Rick Astley');
+      expect(meta.containsKey('skip'), isFalse);
+    });
+
+    test('accepts author_name as channelTitle alias', () {
+      final meta = YoutubeVideoMeta.fromMap({
+        'title': 'Clip',
+        'author_name': 'Channel',
+      });
+      expect(meta.channelTitle, 'Channel');
+    });
+
+    test('pruneYoutubeVideoMeta drops removed ids', () {
+      final pruned = pruneYoutubeVideoMeta(
+        meta: {
+          'keep': const YoutubeVideoMeta(title: 'A', channelTitle: 'C'),
+          'drop': const YoutubeVideoMeta(title: 'B', channelTitle: 'D'),
+        },
+        videoIds: const ['keep'],
+      );
+      expect(pruned.keys, ['keep']);
+    });
+
+    test('youtubeIdsNeedingMeta skips ids that already have a title', () {
+      expect(
+        youtubeIdsNeedingMeta(
+          videoIds: const ['a', 'b', 'a'],
+          existingMeta: {
+            'a': const YoutubeVideoMeta(title: 'Title', channelTitle: 'Ch'),
+          },
+        ),
+        ['b'],
+      );
+    });
+
+    test('parseFetchYoutubeVideoMetaResponse parses videos list', () {
+      final resolved = parseFetchYoutubeVideoMetaResponse({
+        'success': true,
+        'videos': [
+          {
+            'videoId': 'abc123xyz01',
+            'title': 'Parkour run',
+            'channelTitle': 'Tracer',
+          },
+          {'videoId': 'no-title', 'title': '', 'channelTitle': 'X'},
+        ],
+      });
+      expect(resolved['abc123xyz01']?.title, 'Parkour run');
+      expect(resolved['abc123xyz01']?.channelTitle, 'Tracer');
+      expect(resolved.containsKey('no-title'), isFalse);
+    });
+
+    test('youtubeVideoMetaToFirestore returns null for empty', () {
+      expect(youtubeVideoMetaToFirestore(null), isNull);
+      expect(youtubeVideoMetaToFirestore(const {}), isNull);
+      expect(
+        youtubeVideoMetaToFirestore({
+          'id1': const YoutubeVideoMeta(title: 'T', channelTitle: 'C'),
+        }),
+        {
+          'id1': {'title': 'T', 'channelTitle': 'C'},
+        },
+      );
+    });
+  });
 }

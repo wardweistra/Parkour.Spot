@@ -11,10 +11,12 @@ class YoutubeSuggestionReview extends StatelessWidget {
     super.key,
     required this.existingVideoIds,
     required this.suggestedVideoIds,
+    this.existingVideoMeta,
   });
 
   final List<String>? existingVideoIds;
   final List<String> suggestedVideoIds;
+  final Map<String, YoutubeVideoMeta>? existingVideoMeta;
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +61,10 @@ class YoutubeSuggestionReview extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           for (final id in toAdd) ...[
-            _SuggestedYoutubeCard(videoId: id),
+            _SuggestedYoutubeCard(
+              videoId: id,
+              meta: existingVideoMeta?[id],
+            ),
             const SizedBox(height: 8),
           ],
         ],
@@ -77,7 +82,11 @@ class YoutubeSuggestionReview extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final id in existing) _ExistingYoutubeThumb(videoId: id),
+              for (final id in existing)
+                _ExistingYoutubeThumb(
+                  videoId: id,
+                  meta: existingVideoMeta?[id],
+                ),
             ],
           ),
         ],
@@ -87,9 +96,10 @@ class YoutubeSuggestionReview extends StatelessWidget {
 }
 
 class _SuggestedYoutubeCard extends StatelessWidget {
-  const _SuggestedYoutubeCard({required this.videoId});
+  const _SuggestedYoutubeCard({required this.videoId, this.meta});
 
   final String videoId;
+  final YoutubeVideoMeta? meta;
 
   Future<void> _open() async {
     final uri = Uri.parse(youtubeWatchUrl(videoId));
@@ -165,6 +175,30 @@ class _SuggestedYoutubeCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (meta != null && meta!.hasDisplayTitle) ...[
+                      Text(
+                        meta!.title,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: scheme.onSurface,
+                          fontWeight: FontWeight.w600,
+                          height: 1.3,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (meta!.channelTitle.trim().isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          meta!.channelTitle.trim(),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      const SizedBox(height: 4),
+                    ],
                     Text(
                       l10n.editSuggestionYoutubeOutcomes,
                       style: theme.textTheme.bodyMedium?.copyWith(
@@ -203,9 +237,10 @@ class _SuggestedYoutubeCard extends StatelessWidget {
 }
 
 class _ExistingYoutubeThumb extends StatelessWidget {
-  const _ExistingYoutubeThumb({required this.videoId});
+  const _ExistingYoutubeThumb({required this.videoId, this.meta});
 
   final String videoId;
+  final YoutubeVideoMeta? meta;
 
   Future<void> _open() async {
     final uri = Uri.parse(youtubeWatchUrl(videoId));
@@ -217,14 +252,21 @@ class _ExistingYoutubeThumb extends StatelessWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context)!;
     final scheme = theme.colorScheme;
+    final title = meta != null && meta!.hasDisplayTitle ? meta!.title : null;
+    final channel = meta?.channelTitle.trim();
+    final tooltip = [
+      ?title,
+      if (channel != null && channel.isNotEmpty) channel,
+      l10n.editSuggestionYoutubeOpenLink,
+    ].join('\n');
 
     return Tooltip(
-      message: l10n.editSuggestionYoutubeOpenLink,
+      message: tooltip,
       child: InkWell(
         onTap: _open,
         borderRadius: BorderRadius.circular(8),
         child: Semantics(
-          label: l10n.editSpotYoutubeThumbnailSemanticLabel,
+          label: title ?? l10n.editSpotYoutubeThumbnailSemanticLabel,
           button: true,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(8),

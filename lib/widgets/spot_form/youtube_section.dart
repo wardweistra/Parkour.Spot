@@ -12,6 +12,9 @@ class SpotYoutubeSection extends StatelessWidget {
   final VoidCallback? onChanged;
   final String? hintText;
 
+  /// Resolved title/channel keyed by video id (from the spot).
+  final Map<String, YoutubeVideoMeta>? videoMeta;
+
   /// Compact layout without reorderable list — for nested dialogs.
   final bool forDialog;
 
@@ -23,8 +26,15 @@ class SpotYoutubeSection extends StatelessWidget {
     required this.onReorder,
     this.onChanged,
     this.hintText,
+    this.videoMeta,
     this.forDialog = false,
   });
+
+  YoutubeVideoMeta? _metaForController(TextEditingController controller) {
+    final id = extractYoutubeVideoId(controller.text);
+    if (id == null || id.isEmpty) return null;
+    return videoMeta?[id];
+  }
 
   Widget _linkFields(BuildContext context, AppLocalizations l10n) {
     if (controllers.isEmpty) {
@@ -54,6 +64,7 @@ class SpotYoutubeSection extends StatelessWidget {
               reorderTooltip: l10n.editSpotYoutubeReorderTooltip,
               thumbnailSemanticLabel:
                   l10n.editSpotYoutubeThumbnailSemanticLabel,
+              meta: _metaForController(controllers[index]),
               onRemove: () => onRemove(index),
               onChanged: onChanged,
               showReorderHandle: false,
@@ -90,6 +101,7 @@ class SpotYoutubeSection extends StatelessWidget {
           removeTooltip: l10n.editSpotYoutubeRemoveTooltip,
           reorderTooltip: l10n.editSpotYoutubeReorderTooltip,
           thumbnailSemanticLabel: l10n.editSpotYoutubeThumbnailSemanticLabel,
+          meta: _metaForController(controllers[index]),
           onRemove: () => onRemove(index),
           onChanged: onChanged,
         );
@@ -153,6 +165,7 @@ class _YoutubeLinkRow extends StatelessWidget {
   final String removeTooltip;
   final String reorderTooltip;
   final String thumbnailSemanticLabel;
+  final YoutubeVideoMeta? meta;
   final VoidCallback onRemove;
   final VoidCallback? onChanged;
   final bool showReorderHandle;
@@ -167,22 +180,27 @@ class _YoutubeLinkRow extends StatelessWidget {
     required this.reorderTooltip,
     required this.thumbnailSemanticLabel,
     required this.onRemove,
+    this.meta,
     this.onChanged,
     this.showReorderHandle = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final videoId = extractYoutubeVideoId(controller.text);
     final hasPreview = videoId != null &&
         videoId.isNotEmpty &&
         !videoId.contains('/') &&
         !videoId.contains(' ');
+    final hasTitle = meta != null && meta!.hasDisplayTitle;
+    final channel = meta?.channelTitle.trim() ?? '';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (showReorderHandle)
             ReorderableDragStartListener(
@@ -197,7 +215,7 @@ class _YoutubeLinkRow extends StatelessWidget {
                       horizontal: 8,
                       vertical: 12,
                     ),
-                    margin: const EdgeInsets.only(right: 8),
+                    margin: const EdgeInsets.only(right: 8, top: 8),
                     decoration: BoxDecoration(
                       color: scheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
@@ -210,31 +228,62 @@ class _YoutubeLinkRow extends StatelessWidget {
                 ),
               ),
             ),
-          Semantics(
-            label: thumbnailSemanticLabel,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: SizedBox(
-                width: 56,
-                height: 56,
-                child: hasPreview
-                    ? Image.network(
-                        youtubePreviewThumbnailUrl(videoId),
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            _ThumbnailPlaceholder(color: scheme.onSurfaceVariant),
-                      )
-                    : _ThumbnailPlaceholder(color: scheme.onSurfaceVariant),
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Semantics(
+              label: thumbnailSemanticLabel,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: 56,
+                  height: 56,
+                  child: hasPreview
+                      ? Image.network(
+                          youtubePreviewThumbnailUrl(videoId),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              _ThumbnailPlaceholder(
+                                color: scheme.onSurfaceVariant,
+                              ),
+                        )
+                      : _ThumbnailPlaceholder(color: scheme.onSurfaceVariant),
+                ),
               ),
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: CustomTextField(
-              controller: controller,
-              labelText: labelText,
-              hintText: hintText,
-              onChanged: (_) => onChanged?.call(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                CustomTextField(
+                  controller: controller,
+                  labelText: labelText,
+                  hintText: hintText,
+                  onChanged: (_) => onChanged?.call(),
+                ),
+                if (hasTitle) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    meta!.title,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (channel.isNotEmpty)
+                    Text(
+                      channel,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ],
             ),
           ),
           IconButton(

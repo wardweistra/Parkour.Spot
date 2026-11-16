@@ -566,6 +566,93 @@ class SpotDataActions {
     }
   }
 
+  static Future<void> backfillYoutubeVideoMeta(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Backfill YouTube video titles'),
+        content: const Text(
+          'Fetches title and channel for spot YouTube links that are missing '
+          'cached metadata (via YouTube oEmbed). Safe to run again; existing '
+          'titles are kept. Large databases can take several minutes.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Run'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !context.mounted) return;
+
+    final syncService = context.read<SyncSourceService>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    late NavigatorState progressNavigator;
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) {
+        progressNavigator = Navigator.of(c);
+        return const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'Resolving YouTube titles in batches (this may take several '
+                  'minutes)...',
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    try {
+      final result = await syncService.backfillYoutubeVideoMeta();
+      progressNavigator.pop();
+      if (!context.mounted) return;
+
+      if (result != null && result['success'] == true) {
+        final message =
+            'Backfill completed. Spots scanned: '
+            '${_formatStatInt(result['spotsScanned'])}, updated: '
+            '${_formatStatInt(result['spotsUpdated'])}, videos resolved: '
+            '${_formatStatInt(result['videosResolved'])}.';
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: Colors.green),
+        );
+      } else {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              result?['message']?.toString() ??
+                  syncService.error ??
+                  'Backfill failed',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      progressNavigator.pop();
+      if (!context.mounted) return;
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Backfill failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   static Future<void> findUnavailableYoutubeVideos(BuildContext context) async {
     final confirm = await showDialog<bool>(
       context: context,

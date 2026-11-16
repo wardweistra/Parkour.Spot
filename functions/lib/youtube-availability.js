@@ -62,13 +62,30 @@ function normalizeYoutubeVideoId(raw) {
 }
 
 /**
+ * @param {*} response HTTP response stream
+ * @return {Promise<string>}
+ */
+function readResponseBody(response) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    response.on("data", (chunk) => chunks.push(chunk));
+    response.on("end", () => {
+      resolve(Buffer.concat(chunks).toString("utf8"));
+    });
+    response.on("error", reject);
+  });
+}
+
+/**
  * @param {string} videoId
  * @param {Object=} options
  * @param {string=} options.userAgent
- * @return {Promise<Object>} availability result
+ * @param {boolean=} options.includeBody Parse oEmbed JSON for title/channel.
+ * @return {Promise<Object>} availability result (and meta when includeBody)
  */
 function checkYoutubeVideoOembedAvailability(videoId, options = {}) {
   const userAgent = options.userAgent || DEFAULT_USER_AGENT;
+  const includeBody = options.includeBody === true;
   const watchUrl =
     `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
   const oembedUrl = new URL(OEMBED_BASE);
@@ -85,54 +102,93 @@ function checkYoutubeVideoOembedAvailability(videoId, options = {}) {
           },
         },
         (response) => {
-          response.resume();
           const statusCode = response.statusCode || 0;
-          if (statusCode === 200) {
-            resolve({
-              videoId,
-              available: true,
-              statusCode,
-              reason: null,
-              rateLimited: false,
-            });
-            return;
-          }
-          if (statusCode === 429) {
+          const finish = (extra = {}) => {
+            if (statusCode === 200) {
+              resolve({
+                videoId,
+                available: true,
+                statusCode,
+                reason: null,
+                rateLimited: false,
+                ...extra,
+              });
+              return;
+            }
+            if (statusCode === 429) {
+              resolve({
+                videoId,
+                available: null,
+                statusCode,
+                reason: "rate_limited",
+                rateLimited: true,
+                ...extra,
+              });
+              return;
+            }
+            if (statusCode === 401 ||
+                statusCode === 403 ||
+                statusCode === 404) {
+              resolve({
+                videoId,
+                available: false,
+                statusCode,
+                reason: "not_found_or_private",
+                rateLimited: false,
+                ...extra,
+              });
+              return;
+            }
+            if (statusCode === 400) {
+              resolve({
+                videoId,
+                available: false,
+                statusCode,
+                reason: "invalid_video_id",
+                rateLimited: false,
+                ...extra,
+              });
+              return;
+            }
             resolve({
               videoId,
               available: null,
               statusCode,
-              reason: "rate_limited",
-              rateLimited: true,
-            });
-            return;
-          }
-          if (statusCode === 401 || statusCode === 403 || statusCode === 404) {
-            resolve({
-              videoId,
-              available: false,
-              statusCode,
-              reason: "not_found_or_private",
+              reason: "unexpected_status",
               rateLimited: false,
+              ...extra,
             });
+          };
+
+          if (!includeBody) {
+            response.resume();
+            finish();
             return;
           }
-          if (statusCode === 400) {
-            resolve({
-              videoId,
-              available: false,
-              statusCode,
-              reason: "invalid_video_id",
-              rateLimited: false,
+
+          readResponseBody(response).then((raw) => {
+            let title = "";
+            let channelTitle = "";
+            if (statusCode === 200 && raw) {
+              try {
+                const parsed = JSON.parse(raw);
+                title = typeof parsed.title === "string" ?
+                  parsed.title.trim() :
+                  "";
+                channelTitle = typeof parsed.author_name === "string" ?
+                  parsed.author_name.trim() :
+                  "";
+              } catch (_) {
+                // ignore JSON parse errors
+              }
+            }
+            finish({title, channelTitle});
+          }).catch((err) => {
+            finish({
+              title: "",
+              channelTitle: "",
+              reason: err && err.message ? err.message : "body_read_error",
             });
-            return;
-          }
-          resolve({
-            videoId,
-            available: null,
-            statusCode,
-            reason: "unexpected_status",
-            rateLimited: false,
           });
         },
     );
@@ -143,6 +199,8 @@ function checkYoutubeVideoOembedAvailability(videoId, options = {}) {
         statusCode: 0,
         reason: err && err.message ? err.message : "network_error",
         rateLimited: false,
+        title: "",
+        channelTitle: "",
       });
     });
     request.setTimeout(15000, () => {
@@ -153,14 +211,81 @@ function checkYoutubeVideoOembedAvailability(videoId, options = {}) {
         statusCode: 0,
         reason: "timeout",
         rateLimited: false,
+        title: "",
+        channelTitle: "",
       });
     });
   });
+}
+
+/**
+ * Fetches oEmbed title + channel for [videoId].
+ * @param {string} videoId
+ * @param {Object=} options
+ * @return {Promise<Object>} meta with title, channelTitle, available
+ */
+async function fetchYoutubeVideoOembedMeta(videoId, options = {}) {
+  const result = await checkYoutubeVideoOembedAvailability(videoId, {
+    ...options,
+    includeBody: true,
+  });
+  return {
+    videoId: result.videoId,
+    title: typeof result.title === "string" ? result.title : "",
+    channelTitle: typeof result.channelTitle === "string" ?
+      result.channelTitle :
+      "",
+    available: result.available,
+    rateLimited: result.rateLimited === true,
+    statusCode: result.statusCode,
+    reason: result.reason || null,
+  };
+}
+
+/**
+ * @param {string[]} videoIds
+ * @param {Object=} options
+ * @param {number=} options.delayMs
+ * @param {number=} options.limit
+ * @return {Promise<Object[]>}
+ */
+async function fetchYoutubeVideoOembedMetaBatch(videoIds, options = {}) {
+  const delayMs = typeof options.delayMs === "number" ? options.delayMs : 200;
+  const limit = typeof options.limit === "number" ? options.limit : 20;
+  const unique = [];
+  const seen = new Set();
+  for (const raw of videoIds || []) {
+    const id = normalizeYoutubeVideoId(
+      typeof raw === "string" ? raw : String(raw || ""),
+    );
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    unique.push(id);
+    if (unique.length >= limit) break;
+  }
+
+  const videos = [];
+  for (let i = 0; i < unique.length; i++) {
+    if (i > 0 && delayMs > 0) {
+      await sleep(delayMs);
+    }
+    const meta = await fetchYoutubeVideoOembedMeta(unique[i], options);
+    if (meta.title) {
+      videos.push({
+        videoId: meta.videoId,
+        title: meta.title,
+        channelTitle: meta.channelTitle || "",
+      });
+    }
+  }
+  return videos;
 }
 
 module.exports = {
   sleep,
   normalizeYoutubeVideoId,
   checkYoutubeVideoOembedAvailability,
+  fetchYoutubeVideoOembedMeta,
+  fetchYoutubeVideoOembedMetaBatch,
   DEFAULT_USER_AGENT,
 };

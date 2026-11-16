@@ -850,6 +850,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                   // YouTube links section
                   SpotYoutubeSection(
                     controllers: _youtubeControllers,
+                    videoMeta: widget.spot.youtubeVideoMeta,
                     onAdd: _addYoutubeLink,
                     onRemove: _removeYoutubeLink,
                     onReorder: _reorderYoutubeLink,
