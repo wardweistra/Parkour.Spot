@@ -15,6 +15,21 @@ class FirebaseConnectivityProbeResult {
   final String? error;
 }
 
+/// How to read probe outcomes; shown on the screen and in the copied dump.
+const firebaseConnectivityInterpretation = <String>[
+  'Raw fetch fails → the network itself, not Firebase.',
+  'Raw IndexedDB times out → browser storage is wedged; Firebase waits on it.',
+  'Raw checks OK, but App Check, Auth and the callable time out and Firestore '
+      'is unavailable → Firebase token pipeline wedged (App Check exchange '
+      'stuck after resume). The resume watchdog should reload the app; see '
+      'watchdog.* in the snapshot.',
+  'Auth refresh fails, Firestore OK → Auth/session after resume.',
+  'Auth OK, Firestore OK, callable fails (unauthenticated / '
+      'deadline-exceeded / network) → callable transport or token attachment.',
+  'Auth OK, Firestore fails too → broader offline/session problem.',
+  'App Check fails alone → ignore unless only Places callables break.',
+];
+
 /// Plain-text dump for clipboard when idle/resume callables stop working.
 String formatFirebaseConnectivityDiagnostics({
   required Map<String, String> snapshot,
@@ -41,18 +56,8 @@ String formatFirebaseConnectivityDiagnostics({
   }
   b.writeln();
   b.writeln('--- Interpretation ---');
-  b.writeln(
-    'Auth refresh fails, Firestore OK → Auth/session after resume.',
-  );
-  b.writeln(
-    'Auth OK, Firestore OK, callable fails (unauthenticated / '
-    'deadline-exceeded / network) → callable transport or token attachment.',
-  );
-  b.writeln(
-    'Auth OK, Firestore fails too → broader offline/session problem.',
-  );
-  b.writeln(
-    'App Check fails alone → ignore unless only Places callables break.',
-  );
+  for (final line in firebaseConnectivityInterpretation) {
+    b.writeln(line);
+  }
   return b.toString();
 }
