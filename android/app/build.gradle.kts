@@ -83,5 +83,11 @@ dependencyLocking {
     // AGP/Kotlin resolve slightly different graphs per task; lenient keeps
     // versions pinned without failing the build on extra/missing modules.
     lockMode.set(LockMode.LENIENT)
+    // The Flutter engine artifacts (io.flutter:flutter_embedding_*, *_debug,
+    // *_release) are versioned by the engine revision of the installed Flutter
+    // SDK and must match it exactly. A pinned revision from another SDK version
+    // gets packaged instead and the app dies on launch with
+    // "Invalid kernel binary format version".
+    ignoredDependencies.add("io.flutter:*")
 }
 

@@ -163,9 +163,11 @@ cd android && ./gradlew :app:assembleDebug :app:assembleRelease --write-locks
 
 Use Java 17 or 21 (`flutter config --jdk-dir` / `JAVA_HOME`).
 
+The Flutter engine artifacts (`io.flutter:*`) are deliberately **not** locked (`ignoredDependencies` in `android/app/build.gradle.kts`). Their version is the engine revision of the installed Flutter SDK. If the lockfile pins a revision from another SDK version, Gradle packages that engine with Dart code compiled by yours, and the app shows a blank screen on launch with `Invalid kernel binary format version` in logcat.
+
 ### **Android build toolchain**
 
-The Android project follows the versions in the current Flutter stable template: Gradle 9.5.0 (`android/gradle/wrapper/gradle-wrapper.properties`), Android Gradle Plugin 9.3.1 and Kotlin 2.4.20 (`android/settings.gradle.kts`). Flutter 3.50 refuses to build with anything below Gradle 9.3.1 / AGP 9.1.1 / Kotlin 2.4.10, and older Flutter releases do not support AGP 9, so Android builds need current Flutter **stable** (same as CI and Cloud Agents). `android.builtInKotlin=false` and `android.newDsl=false` in `android/gradle.properties` are set by the Flutter tool; leave them in place. When a later Flutter stable raises its minimums, bump these three versions together and regenerate the lockfiles.
+The Android project follows the versions in the current Flutter stable template: Gradle 9.5.0 (`android/gradle/wrapper/gradle-wrapper.properties`), Android Gradle Plugin 9.3.1 and Kotlin 2.4.20 (`android/settings.gradle.kts`). Flutter 3.50 refuses to build with anything below Gradle 9.3.1 / AGP 9.1.1 / Kotlin 2.4.10, so keep these at or above the minimums of the Flutter stable you build with (same channel as CI and Cloud Agents). `android.builtInKotlin=false` and `android.newDsl=false` in `android/gradle.properties` are set by the Flutter tool; leave them in place. When a later Flutter stable raises its minimums, bump these three versions together and regenerate the lockfiles.
 
 ### **Common Workflows**
 
