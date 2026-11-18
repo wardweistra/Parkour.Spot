@@ -32,6 +32,18 @@ String? browserVisibilityState() => impl.readBrowserVisibilityState();
 
 bool? browserNavigatorOnLine() => impl.readBrowserNavigatorOnLine();
 
+/// Calls [onChange] with `true` when the page becomes visible and `false` when
+/// it is hidden. Returns a function that removes the listener. No-op off web.
+void Function() listenBrowserVisibility(void Function(bool visible) onChange) =>
+    impl.listenBrowserVisibility(onChange);
+
+/// `sessionStorage` read; null off web or when storage is unavailable.
+String? browserSessionStorageGet(String key) => impl.sessionStorageGet(key);
+
+/// `sessionStorage` write; ignored off web or when storage is unavailable.
+void browserSessionStorageSet(String key, String value) =>
+    impl.sessionStorageSet(key, value);
+
 void updateBrowserPageMeta(String title, String description) =>
     impl.updateBrowserPageMeta(title, description);
 

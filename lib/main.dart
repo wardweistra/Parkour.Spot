@@ -44,6 +44,7 @@ import 'package:parkour_spot/services/user_locations_of_interest_service.dart';
 import 'package:parkour_spot/services/user_notification_service.dart';
 import 'package:parkour_spot/services/locale_preferences_service.dart';
 import 'package:parkour_spot/services/web_push_subscription_service.dart';
+import 'package:parkour_spot/services/firebase_resume_watchdog.dart';
 import 'package:parkour_spot/widgets/inbox_notification_open_handler.dart';
 import 'package:parkour_spot/router/app_router.dart';
 import 'package:parkour_spot/firebase_options.dart';
@@ -192,6 +193,7 @@ void main() async {
   // debug provider, whose token is printed to logcat on first run and has to
   // be registered in the Firebase console.
   const recaptchaSiteKey = String.fromEnvironment('RECAPTCHA_SITE_KEY');
+  var webAppCheckActive = false;
   if (!useEmulator) {
     try {
       if (kIsWeb) {
@@ -199,6 +201,7 @@ void main() async {
           await FirebaseAppCheck.instance.activate(
             providerWeb: ReCaptchaEnterpriseProvider(recaptchaSiteKey),
           );
+          webAppCheckActive = true;
         }
       } else if (defaultTargetPlatform == TargetPlatform.android) {
         await FirebaseAppCheck.instance.activate(
@@ -224,6 +227,9 @@ void main() async {
   await primeLocalTimeZone();
 
   runApp(const ParkourSpotApp());
+
+  // Web: reload when Auth / App Check tokens hang after the PWA resumes.
+  FirebaseResumeWatchdog.start(appCheckActive: webAppCheckActive);
 
   // Initialize Google Analytics / Firebase Analytics
   WebAnalytics.init();

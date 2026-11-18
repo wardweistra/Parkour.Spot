@@ -8,7 +8,9 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/auth_service.dart';
+import '../../services/firebase_resume_watchdog.dart';
 import '../../utils/browser_location.dart';
+import '../../utils/browser_network_probes.dart';
 import '../../utils/firebase_connectivity_diagnostics.dart';
 
 /// Admin page to diagnose idle/resume failures of Auth, Firestore, and callables.
@@ -68,7 +70,35 @@ class _FirebaseConnectivityScreenState
           : user.providerData.map((p) => p.providerId).join(', '),
       'USE_EMULATOR': useEmulator.toString(),
       'RECAPTCHA_SITE_KEY_present': recaptchaSiteKey.isNotEmpty.toString(),
+      ...FirebaseResumeWatchdog.diagnostics(),
     };
+  }
+
+  /// Checks below the Firebase SDKs: can the page reach Google at all, and
+  /// does IndexedDB (which Auth, App Check and heartbeats use) still answer?
+  Future<FirebaseConnectivityProbeResult> _probeRaw(
+    String name,
+    Future<String> Function() run,
+  ) async {
+    final sw = Stopwatch()..start();
+    try {
+      final result = await run().timeout(_probeTimeout);
+      sw.stop();
+      return FirebaseConnectivityProbeResult(
+        name: name,
+        passed: true,
+        durationMs: sw.elapsedMilliseconds,
+        details: {'result': result},
+      );
+    } catch (e) {
+      sw.stop();
+      return FirebaseConnectivityProbeResult(
+        name: name,
+        passed: false,
+        durationMs: sw.elapsedMilliseconds,
+        error: e.toString(),
+      );
+    }
   }
 
   Future<FirebaseConnectivityProbeResult> _probeAuthCached() async {
@@ -286,12 +316,28 @@ class _FirebaseConnectivityScreenState
       _lastFormatted = null;
     });
 
+    final rawProbes = await Future.wait([
+      _probeRaw(
+        'Raw fetch securetoken.googleapis.com',
+        () => browserProbeFetch('https://securetoken.googleapis.com/'),
+      ),
+      _probeRaw(
+        'Raw fetch content-firebaseappcheck.googleapis.com',
+        () => browserProbeFetch(
+          'https://content-firebaseappcheck.googleapis.com/',
+        ),
+      ),
+      _probeRaw('Raw IndexedDB write', browserProbeIndexedDb),
+    ]);
+
+    // App Check first: Auth refreshes, Firestore and callables all wait on it.
     final probes = <FirebaseConnectivityProbeResult>[
+      ...rawProbes,
+      await _probeAppCheck(),
       await _probeAuthCached(),
       await _probeAuthForceRefresh(),
       await _probeFirestore(),
       await _probeCallable(),
-      await _probeAppCheck(),
     ];
 
     if (!mounted) return;
@@ -437,14 +483,7 @@ class _FirebaseConnectivityScreenState
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Auth refresh fails, Firestore OK → Auth/session after '
-                      'resume.\n'
-                      'Auth OK, Firestore OK, callable fails → callable '
-                      'transport or token attachment.\n'
-                      'Auth OK, Firestore fails too → broader offline/session '
-                      'problem.\n'
-                      'App Check fails alone → ignore unless only Places '
-                      'callables break.',
+                      firebaseConnectivityInterpretation.join('\n'),
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],

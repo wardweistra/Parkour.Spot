@@ -38,6 +38,30 @@ String? readBrowserVisibilityState() => web.document.visibilityState;
 
 bool? readBrowserNavigatorOnLine() => web.window.navigator.onLine;
 
+void Function() listenBrowserVisibility(void Function(bool visible) onChange) {
+  final listener = ((web.Event _) {
+    onChange(web.document.visibilityState == 'visible');
+  }).toJS;
+  web.document.addEventListener('visibilitychange', listener);
+  return () => web.document.removeEventListener('visibilitychange', listener);
+}
+
+String? sessionStorageGet(String key) {
+  try {
+    return web.window.sessionStorage.getItem(key);
+  } catch (_) {
+    return null;
+  }
+}
+
+void sessionStorageSet(String key, String value) {
+  try {
+    web.window.sessionStorage.setItem(key, value);
+  } catch (_) {
+    // Storage can be disabled (private mode, quota); best-effort only.
+  }
+}
+
 void updateBrowserPageMeta(String title, String description) {
   web.document.title = title;
 

@@ -29,6 +29,13 @@ String? readBrowserVisibilityState() => null;
 
 bool? readBrowserNavigatorOnLine() => null;
 
+void Function() listenBrowserVisibility(void Function(bool visible) onChange) =>
+    () {};
+
+String? sessionStorageGet(String key) => null;
+
+void sessionStorageSet(String key, String value) {}
+
 void updateBrowserPageMeta(String title, String description) {}
 
 Future<void> awaitServiceWorkerReady({
