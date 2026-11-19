@@ -8273,7 +8273,7 @@ class _SpotSaveMenu extends StatelessWidget {
                         Icon(
                           inWantToVisit
                               ? Icons.bookmark
-                              : Icons.bookmark_outlined,
+                              : Icons.bookmark_border,
                           size: 20,
                           color: inWantToVisit
                               ? primary

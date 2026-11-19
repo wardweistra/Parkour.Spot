@@ -133,7 +133,7 @@ class _SpotListsHubScreenState extends State<SpotListsHubScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _HubTrackingRow(
-                icon: Icons.bookmark_outlined,
+                icon: Icons.bookmark_border,
                 title: _l10n.spotDetailWantToVisit,
                 count: wantCount,
                 onTap: () => context.push('/profile/want-to-visit'),
