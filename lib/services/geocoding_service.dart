@@ -260,10 +260,10 @@ class GeocodingService extends ChangeNotifier {
 
       if (result.data['success'] == true &&
           result.data['suggestions'] is List) {
-        final list = List<Map<String, dynamic>>.from(
-          result.data['suggestions'],
-        );
-        return list;
+        // Native platforms return Map<Object?, Object?>; convert each entry.
+        return (result.data['suggestions'] as List)
+            .map((s) => Map<String, dynamic>.from(s as Map))
+            .toList();
       }
       return [];
     } catch (e) {
