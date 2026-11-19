@@ -2,6 +2,14 @@
   "mcpServers": {
     "Astro docs": {
       "url": "https://mcp.docs.astro.build/mcp"
+    },
+    "firebase": {
+      "command": "firebase",
+      "args": ["mcp", "--dir", "."]
+    },
+    "dart": {
+      "command": "dart",
+      "args": ["mcp-server", "--disable", "create_project,flutter_driver"]
     }
   }
 }
