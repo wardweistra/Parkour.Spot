@@ -471,6 +471,9 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                                           ? colorScheme.onPrimaryContainer
                                           : colorScheme.onSurface,
                                       minimumSize: const Size(36, 32),
+                                      padding: const EdgeInsets.all(6),
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
                                     ),
                                     tooltip: 'Accept',
                                   ),
@@ -493,6 +496,9 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                                           ? colorScheme.onErrorContainer
                                           : colorScheme.onSurface,
                                       minimumSize: const Size(36, 32),
+                                      padding: const EdgeInsets.all(6),
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
                                     ),
                                     tooltip: 'Reject',
                                   ),

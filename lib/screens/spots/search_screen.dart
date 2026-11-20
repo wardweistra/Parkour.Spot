@@ -3952,12 +3952,8 @@ class SearchScreenState extends State<SearchScreen>
                     mapType: _isSatelliteView ? MapType.hybrid : MapType.normal,
                     markers: _markers,
                     myLocationEnabled: true,
-                    myLocationButtonEnabled:
-                        !_isBottomSheetOpen &&
-                        _selectedSpot == null &&
-                        _selectedEventPin == null &&
-                        !_showListPreview &&
-                        !_showFiltersDialog, // Disable location button when expanded, map card is open, list preview is open, or filters dialog is open
+                    // The map has its own locate button; hide the SDK one.
+                    myLocationButtonEnabled: false,
                     zoomControlsEnabled: false,
                     zoomGesturesEnabled:
                         !_isBottomSheetOpen &&

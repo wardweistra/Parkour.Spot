@@ -296,11 +296,16 @@ class _ModeSegment extends StatelessWidget {
       height: 1.2,
     );
     // Reserve two text lines so pill height is stable; center when only
-    // the primary label is shown.
+    // the primary label is shown. Apply the system text scale, and use it as
+    // a minimum so font metrics that run taller than fontSize * height can
+    // still grow the pill instead of overflowing.
+    final textScaler = MediaQuery.textScalerOf(context);
     final labelLineHeight =
-        (labelStyle.fontSize ?? 14) * (labelStyle.height ?? 1.2);
+        textScaler.scale(labelStyle.fontSize ?? 14) *
+        (labelStyle.height ?? 1.2);
     final suffixLineHeight =
-        (suffixStyle?.fontSize ?? 11) * (suffixStyle?.height ?? 1.2);
+        textScaler.scale(suffixStyle?.fontSize ?? 11) *
+        (suffixStyle?.height ?? 1.2);
     final glyphWidth = MarkerIconUtils.mapPinLogicalWidthForHeight(
       _pinLogicalHeight,
     );
@@ -340,9 +345,12 @@ class _ModeSegment extends StatelessWidget {
                 ),
                 const SizedBox(width: 5),
                 Flexible(
-                  child: SizedBox(
-                    height: labelLineHeight + suffixLineHeight,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: labelLineHeight + suffixLineHeight,
+                    ),
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [

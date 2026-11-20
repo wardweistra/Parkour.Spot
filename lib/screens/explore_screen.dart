@@ -458,45 +458,52 @@ class _ExploreScreenState extends State<ExploreScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           const PwaInstallPrompt(),
-          SafeArea(
-            child: StreamBuilder<int>(
-              initialData: Provider.of<UserNotificationService>(
-                context,
-                listen: false,
-              ).unreadCount,
-              stream: Provider.of<UserNotificationService>(
-                context,
-                listen: false,
-              ).watchUnreadCount(),
-              builder: (context, snapshot) {
-                final unread = snapshot.data ?? 0;
-                final l10n = AppLocalizations.of(context)!;
-                return BottomNavigationBar(
-                  type: BottomNavigationBarType.fixed,
-                  currentIndex: _currentIndex,
-                  onTap: _onTabTapped,
-                  selectedItemColor: Theme.of(context).colorScheme.primary,
-                  unselectedItemColor: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.6),
-                  backgroundColor: Theme.of(context).colorScheme.surface,
-                  elevation: 8,
-                  items: [
-                    BottomNavigationBarItem(
-                      icon: const Icon(Icons.explore),
-                      label: l10n.tabExplore,
-                    ),
-                    BottomNavigationBarItem(
-                      icon: const Icon(Icons.add),
-                      label: l10n.tabAdd,
-                    ),
-                    BottomNavigationBarItem(
-                      icon: _accountBottomNavIcon(context, unread),
-                      label: l10n.tabAccount,
-                    ),
-                  ],
-                );
-              },
+          // One surface for the bar and the system inset below it, so the
+          // shadow sits above the bar only.
+          Material(
+            color: Theme.of(context).colorScheme.surface,
+            elevation: 8,
+            child: SafeArea(
+              top: false,
+              child: StreamBuilder<int>(
+                initialData: Provider.of<UserNotificationService>(
+                  context,
+                  listen: false,
+                ).unreadCount,
+                stream: Provider.of<UserNotificationService>(
+                  context,
+                  listen: false,
+                ).watchUnreadCount(),
+                builder: (context, snapshot) {
+                  final unread = snapshot.data ?? 0;
+                  final l10n = AppLocalizations.of(context)!;
+                  return BottomNavigationBar(
+                    type: BottomNavigationBarType.fixed,
+                    currentIndex: _currentIndex,
+                    onTap: _onTabTapped,
+                    selectedItemColor: Theme.of(context).colorScheme.primary,
+                    unselectedItemColor: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+                    backgroundColor: Theme.of(context).colorScheme.surface,
+                    elevation: 0,
+                    items: [
+                      BottomNavigationBarItem(
+                        icon: const Icon(Icons.explore),
+                        label: l10n.tabExplore,
+                      ),
+                      BottomNavigationBarItem(
+                        icon: const Icon(Icons.add),
+                        label: l10n.tabAdd,
+                      ),
+                      BottomNavigationBarItem(
+                        icon: _accountBottomNavIcon(context, unread),
+                        label: l10n.tabAccount,
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ],
