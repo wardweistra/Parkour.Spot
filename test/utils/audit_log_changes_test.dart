@@ -70,7 +70,10 @@ void main() {
           'to': <String>['OF32ZeuXTK8'],
         },
         'imageUrls': {
-          'from': <String>['https://a.example/1.jpg', 'https://a.example/2.jpg'],
+          'from': <String>[
+            'https://a.example/1.jpg',
+            'https://a.example/2.jpg',
+          ],
           'to': <String>['https://a.example/2.jpg'],
         },
       });
@@ -81,7 +84,10 @@ void main() {
     test('drops list membership no-ops including reorder-only', () {
       final filtered = filterMeaningfulAuditChanges({
         'imageUrls': {
-          'from': <String>['https://a.example/1.jpg', 'https://a.example/2.jpg'],
+          'from': <String>[
+            'https://a.example/1.jpg',
+            'https://a.example/2.jpg',
+          ],
           'to': <String>['https://a.example/2.jpg', 'https://a.example/1.jpg'],
         },
       });

@@ -802,9 +802,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
 
             final eventStatsMap =
                 eventSyncMetadata['stats'] is Map<String, dynamic>
-                ? Map<String, dynamic>.from(
-                    eventSyncMetadata['stats'] as Map,
-                  )
+                ? Map<String, dynamic>.from(eventSyncMetadata['stats'] as Map)
                 : eventSyncMetadata['stats'] is Map
                 ? Map<String, dynamic>.from(eventSyncMetadata['stats'] as Map)
                 : null;
@@ -1072,11 +1070,8 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
             details = _spotListCrudDetails(auditLog);
             break;
           case AuditLogAction.spotListFeatured:
-            final featuredTo =
-                auditLog.changes?['featured']?['to'] == true;
-            title = featuredTo
-                ? 'Spot list featured'
-                : 'Spot list unfeatured';
+            final featuredTo = auditLog.changes?['featured']?['to'] == true;
+            title = featuredTo ? 'Spot list featured' : 'Spot list unfeatured';
             subtitle = auditLog.userName != null
                 ? 'By ${auditLog.userName}'
                 : auditLog.userId != null
@@ -1556,7 +1551,8 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
     final added = toList.where((item) => !fromList.contains(item)).toList();
 
     final hasNullTransition =
-        (fromWasNull && toList.isNotEmpty) || (toWasNull && fromList.isNotEmpty);
+        (fromWasNull && toList.isNotEmpty) ||
+        (toWasNull && fromList.isNotEmpty);
     if (!hasNullTransition && removed.isEmpty && added.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -2040,9 +2036,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.access_time),
-            onPressed: _isLoading || _isExtending
-                ? null
-                : _selectDateTimeRange,
+            onPressed: _isLoading || _isExtending ? null : _selectDateTimeRange,
             tooltip: 'Select date and time range',
           ),
           IconButton(
@@ -2126,8 +2120,8 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
             'for the selected date range',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 24),
           _buildExtendControl(
@@ -2201,10 +2195,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
         final eventIds = _getEventIdsFromEntry(entry);
 
         return Card(
-          margin: const EdgeInsets.symmetric(
-            horizontal: 8,
-            vertical: 4,
-          ),
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: ListTile(
             leading: CircleAvatar(
               backgroundColor: _getColorForType(
@@ -2216,10 +2207,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                 size: 20,
               ),
             ),
-            title: Text(
-              entry.title ?? 'Unknown',
-              style: const TextStyle(),
-            ),
+            title: Text(entry.title ?? 'Unknown', style: const TextStyle()),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -2246,26 +2234,19 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                     ).isNotEmpty) ...[
                   const SizedBox(height: 8),
                   _buildChangesWidget(
-                    entry.metadata!['changes']
-                        as Map<String, dynamic>,
+                    entry.metadata!['changes'] as Map<String, dynamic>,
                   ),
                 ] else if (entry.details != null) ...[
                   const SizedBox(height: 4),
                   SelectableText(
                     entry.details!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
                 const SizedBox(height: 4),
                 Text(
                   formattedDate,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[500],
-                  ),
+                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                 ),
               ],
             ),
@@ -2283,8 +2264,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                     children: [
                       // Spot buttons
                       ...spotIds.asMap().entries.map((spotEntry) {
-                        final isLast =
-                            spotEntry.key == spotIds.length - 1;
+                        final isLast = spotEntry.key == spotIds.length - 1;
                         final hasOtherButtons =
                             eventIds.isNotEmpty ||
                             _isSpotReportStatusChange(entry) ||
@@ -2304,15 +2284,12 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                   : Icons.open_in_new,
                               size: 20,
                             ),
-                            tooltip:
-                                spotIds.length > 1 &&
-                                    spotEntry.key == 0
+                            tooltip: spotIds.length > 1 && spotEntry.key == 0
                                 ? 'Open original spot'
                                 : spotIds.length > 1
                                 ? 'Open duplicate spot'
                                 : 'Open spot',
-                            onPressed: () =>
-                                _navigateToSpot(spotEntry.value),
+                            onPressed: () => _navigateToSpot(spotEntry.value),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                           ),
@@ -2320,10 +2297,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                       }),
                       ...eventIds.map(
                         (eventId) => IconButton(
-                          icon: const Icon(
-                            Icons.event_outlined,
-                            size: 20,
-                          ),
+                          icon: const Icon(Icons.event_outlined, size: 20),
                           tooltip: 'Open event',
                           onPressed: () => _navigateToEvent(eventId),
                           padding: EdgeInsets.zero,
@@ -2336,39 +2310,27 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                           _hasReportId(entry) ||
                           _isSpotEdit(entry))
                         IconButton(
-                          icon: const Icon(
-                            Icons.report_problem,
-                            size: 20,
-                          ),
+                          icon: const Icon(Icons.report_problem, size: 20),
                           tooltip: 'Open spot report queue',
-                          onPressed: () =>
-                              context.push('/moderator/reports'),
+                          onPressed: () => context.push('/moderator/reports'),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                         ),
                       // User Management button
                       if (_isUserCreation(entry))
                         IconButton(
-                          icon: const Icon(
-                            Icons.people_outline,
-                            size: 20,
-                          ),
+                          icon: const Icon(Icons.people_outline, size: 20),
                           tooltip: 'Open User Management',
-                          onPressed: () =>
-                              context.push('/admin/users'),
+                          onPressed: () => context.push('/admin/users'),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                         ),
                       if (syncRunIdFromAuditLogEntry(entry) != null)
                         IconButton(
-                          icon: const Icon(
-                            Icons.article_outlined,
-                            size: 20,
-                          ),
+                          icon: const Icon(Icons.article_outlined, size: 20),
                           tooltip: l10n.auditLogViewSyncRun,
                           onPressed: () {
-                            final runId =
-                                syncRunIdFromAuditLogEntry(entry);
+                            final runId = syncRunIdFromAuditLogEntry(entry);
                             if (runId != null) {
                               _openSyncRunReport(runId);
                             }
@@ -2400,18 +2362,17 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                           SelectableText('ID: ${entry.id}'),
                         ],
                         // Show changes widget for spot/event edited entries
-                        if (entry.type ==
-                                AuditLogEntryType.auditLogAction &&
+                        if (entry.type == AuditLogEntryType.auditLogAction &&
                             entry.metadata?['action'] != null &&
-                            (entry.metadata!['action']
-                                    .toString()
-                                    .contains('spotEdit') ||
-                                entry.metadata!['action']
-                                    .toString()
-                                    .contains('eventEdit') ||
-                                entry.metadata!['action']
-                                    .toString()
-                                    .contains('spotListEdit')) &&
+                            (entry.metadata!['action'].toString().contains(
+                                  'spotEdit',
+                                ) ||
+                                entry.metadata!['action'].toString().contains(
+                                  'eventEdit',
+                                ) ||
+                                entry.metadata!['action'].toString().contains(
+                                  'spotListEdit',
+                                )) &&
                             entry.metadata?['changes'] != null &&
                             filterMeaningfulAuditChanges(
                               entry.metadata!['changes']
@@ -2421,17 +2382,15 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                           const Text('Changes:', style: TextStyle()),
                           const SizedBox(height: 8),
                           _buildChangesWidget(
-                            entry.metadata!['changes']
-                                as Map<String, dynamic>,
+                            entry.metadata!['changes'] as Map<String, dynamic>,
                           ),
                         ],
                         // Show report link and notes for Spot Edited entries
-                        if (entry.type ==
-                                AuditLogEntryType.auditLogAction &&
+                        if (entry.type == AuditLogEntryType.auditLogAction &&
                             entry.metadata?['action'] != null &&
-                            entry.metadata!['action']
-                                .toString()
-                                .contains('spotEdit')) ...[
+                            entry.metadata!['action'].toString().contains(
+                              'spotEdit',
+                            )) ...[
                           if (entry.metadata?['reportId'] != null ||
                               entry.metadata?['metadata']?['notes'] !=
                                   null) ...[
@@ -2443,26 +2402,17 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                             const SizedBox(height: 8),
                             if (entry.metadata?['reportId'] != null)
                               Padding(
-                                padding: const EdgeInsets.only(
-                                  bottom: 4,
-                                ),
+                                padding: const EdgeInsets.only(bottom: 4),
                                 child: SelectableText(
                                   'Linked to report: ${entry.metadata!['reportId']}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                  ),
+                                  style: const TextStyle(fontSize: 12),
                                 ),
                               ),
-                            if (entry
-                                    .metadata?['metadata']?['notes'] !=
-                                null)
+                            if (entry.metadata?['metadata']?['notes'] != null)
                               Padding(
-                                padding: const EdgeInsets.only(
-                                  bottom: 4,
-                                ),
+                                padding: const EdgeInsets.only(bottom: 4),
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     const Text(
                                       'Notes:',
@@ -2472,9 +2422,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                     SelectableText(
                                       entry.metadata!['metadata']!['notes']
                                           as String,
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                      ),
+                                      style: const TextStyle(fontSize: 12),
                                     ),
                                   ],
                                 ),
@@ -2483,16 +2431,11 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                         ],
                         if (dialogSpotIds.isNotEmpty) ...[
                           const SizedBox(height: 16),
-                          const Text(
-                            'Related Spots:',
-                            style: TextStyle(),
-                          ),
+                          const Text('Related Spots:', style: TextStyle()),
                           const SizedBox(height: 8),
                           ...dialogSpotIds.asMap().entries.map(
                             (spotEntry) => Padding(
-                              padding: const EdgeInsets.only(
-                                bottom: 8,
-                              ),
+                              padding: const EdgeInsets.only(bottom: 8),
                               child: Row(
                                 children: [
                                   Expanded(
@@ -2503,9 +2446,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                           : dialogSpotIds.length > 1
                                           ? 'Duplicate: ${spotEntry.value}'
                                           : 'Spot: ${spotEntry.value}',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                      ),
+                                      style: const TextStyle(fontSize: 12),
                                     ),
                                   ),
                                   IconButton(
@@ -2516,13 +2457,10 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                                     tooltip: 'Open spot',
                                     onPressed: () {
                                       Navigator.of(context).pop();
-                                      _navigateToSpot(
-                                        spotEntry.value,
-                                      );
+                                      _navigateToSpot(spotEntry.value);
                                     },
                                     padding: EdgeInsets.zero,
-                                    constraints:
-                                        const BoxConstraints(),
+                                    constraints: const BoxConstraints(),
                                   ),
                                 ],
                               ),
@@ -2531,13 +2469,11 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                         ],
                         if (entry.metadata != null &&
                             entry.metadata!.isNotEmpty &&
-                            !(entry.type ==
-                                    AuditLogEntryType
-                                        .auditLogAction &&
+                            !(entry.type == AuditLogEntryType.auditLogAction &&
                                 entry.metadata?['action'] != null &&
-                                entry.metadata!['action']
-                                    .toString()
-                                    .contains('spotEdit'))) ...[
+                                entry.metadata!['action'].toString().contains(
+                                  'spotEdit',
+                                ))) ...[
                           const SizedBox(height: 16),
                           const Text('Metadata:', style: TextStyle()),
                           const SizedBox(height: 8),
@@ -2547,14 +2483,10 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                               ) // Exclude changes as it's shown separately
                               .map(
                                 (e) => Padding(
-                                  padding: const EdgeInsets.only(
-                                    bottom: 4,
-                                  ),
+                                  padding: const EdgeInsets.only(bottom: 4),
                                   child: SelectableText(
                                     '${e.key}: ${e.value}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                    ),
+                                    style: const TextStyle(fontSize: 12),
                                   ),
                                 ),
                               ),
@@ -2567,15 +2499,13 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                       ...dialogSpotIds.asMap().entries.map(
                         (spotEntry) => TextButton.icon(
                           icon: Icon(
-                            dialogSpotIds.length > 1 &&
-                                    spotEntry.key == 0
+                            dialogSpotIds.length > 1 && spotEntry.key == 0
                                 ? Icons.location_on
                                 : Icons.open_in_new,
                             size: 18,
                           ),
                           label: Text(
-                            dialogSpotIds.length > 1 &&
-                                    spotEntry.key == 0
+                            dialogSpotIds.length > 1 && spotEntry.key == 0
                                 ? 'Open Original'
                                 : dialogSpotIds.length > 1
                                 ? 'Open Duplicate'
@@ -2594,10 +2524,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                         _hasReportId(entry) ||
                         _isSpotEdit(entry))
                       TextButton.icon(
-                        icon: const Icon(
-                          Icons.report_problem,
-                          size: 18,
-                        ),
+                        icon: const Icon(Icons.report_problem, size: 18),
                         label: const Text('Open Report Queue'),
                         onPressed: () {
                           Navigator.of(context).pop();
@@ -2606,10 +2533,7 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                       ),
                     if (_isUserCreation(entry))
                       TextButton.icon(
-                        icon: const Icon(
-                          Icons.people_outline,
-                          size: 18,
-                        ),
+                        icon: const Icon(Icons.people_outline, size: 18),
                         label: const Text('Open User Management'),
                         onPressed: () {
                           Navigator.of(context).pop();
@@ -2618,14 +2542,10 @@ class _AuditLogViewerScreenState extends State<AuditLogViewerScreen> {
                       ),
                     if (syncRunIdFromAuditLogEntry(entry) != null)
                       TextButton.icon(
-                        icon: const Icon(
-                          Icons.article_outlined,
-                          size: 18,
-                        ),
+                        icon: const Icon(Icons.article_outlined, size: 18),
                         label: Text(l10n.auditLogViewSyncRun),
                         onPressed: () {
-                          final runId =
-                              syncRunIdFromAuditLogEntry(entry);
+                          final runId = syncRunIdFromAuditLogEntry(entry);
                           Navigator.of(context).pop();
                           if (runId != null) {
                             _openSyncRunReport(runId);

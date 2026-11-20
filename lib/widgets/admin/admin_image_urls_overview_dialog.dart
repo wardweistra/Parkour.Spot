@@ -84,9 +84,7 @@ class _AdminImageUrlsOverviewDialogState
   Future<void> _copyText(String text) async {
     await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
-    SnackbarService.showClipboardCopied(
-      _l10n.adminImageUrlsCopiedToClipboard,
-    );
+    SnackbarService.showClipboardCopied(_l10n.adminImageUrlsCopiedToClipboard);
   }
 
   String _buildFullReport() {
@@ -108,7 +106,9 @@ class _AdminImageUrlsOverviewDialogState
         );
       }
       if (d.actualResizedDownloadUrl != null) {
-        buffer.writeln('Actual resized download: ${d.actualResizedDownloadUrl}');
+        buffer.writeln(
+          'Actual resized download: ${d.actualResizedDownloadUrl}',
+        );
       }
       if (widget.showSpotsApiUrls) {
         buffer.writeln('Spots API: ${d.spotsApiUrl}');
@@ -160,7 +160,10 @@ class _AdminImageUrlsOverviewDialogState
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
+                      Text(
+                        _error!,
+                        style: TextStyle(color: theme.colorScheme.error),
+                      ),
                       const SizedBox(height: 12),
                       TextButton(
                         onPressed: _load,
@@ -345,7 +348,7 @@ class _PreviewRow extends StatelessWidget {
           label: l10n.adminImageUrlsPreview1200,
           url: diagnostic.exists1200x1200
               ? (diagnostic.actualResizedDownloadUrl ??
-                  diagnostic.expected1200x1200Url)
+                    diagnostic.expected1200x1200Url)
               : diagnostic.expected1200x1200Url,
           missing: diagnostic.isResizable && !diagnostic.exists1200x1200,
         ),
@@ -397,7 +400,9 @@ class _PreviewTile extends StatelessWidget {
                       color: theme.colorScheme.surfaceContainerHighest,
                       child: Icon(
                         Icons.image_not_supported_outlined,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.4,
+                        ),
                       ),
                     )
                   : Stack(
@@ -410,8 +415,9 @@ class _PreviewTile extends StatelessWidget {
                             color: theme.colorScheme.surfaceContainerHighest,
                             child: Icon(
                               Icons.broken_image_outlined,
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.4),
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.4,
+                              ),
                             ),
                           ),
                         ),
@@ -420,8 +426,9 @@ class _PreviewTile extends StatelessWidget {
                             color: Colors.black.withValues(alpha: 0.45),
                             alignment: Alignment.center,
                             child: Text(
-                              AppLocalizations.of(context)!
-                                  .adminImageUrlsStatusMissing,
+                              AppLocalizations.of(
+                                context,
+                              )!.adminImageUrlsStatusMissing,
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: Colors.white,
                                 fontSize: 9,
@@ -475,7 +482,10 @@ class _UrlRow extends StatelessWidget {
               ),
               if (status != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: status == l10n.adminImageUrlsStatusExists
                         ? Colors.green.withValues(alpha: 0.15)

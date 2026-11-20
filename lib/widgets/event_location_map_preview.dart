@@ -31,12 +31,14 @@ class EventLocationMapPreview extends StatefulWidget {
   final ParkourEvent event;
   final ValueNotifier<bool> isSatelliteViewNotifier;
   final VoidCallback onTap;
+
   /// When non-null, preview pins come from this list only.
   final String? spotListId;
   final String mapHeroTagPrefix;
 
   @override
-  State<EventLocationMapPreview> createState() => _EventLocationMapPreviewState();
+  State<EventLocationMapPreview> createState() =>
+      _EventLocationMapPreviewState();
 }
 
 class _EventLocationMapPreviewState extends State<EventLocationMapPreview> {
@@ -210,7 +212,9 @@ class _EventLocationMapPreviewState extends State<EventLocationMapPreview> {
               height: 200,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
-                border: Border.all(color: colors.outline.withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: colors.outline.withValues(alpha: 0.3),
+                ),
               ),
               clipBehavior: Clip.antiAlias,
               child: Stack(
@@ -273,12 +277,15 @@ class _EventLocationMapPreviewState extends State<EventLocationMapPreview> {
                                 widget.isSatelliteViewNotifier.value,
                               );
                             },
-                            heroTag: '${widget.mapHeroTagPrefix}MapTypeToggleFab',
+                            heroTag:
+                                '${widget.mapHeroTagPrefix}MapTypeToggleFab',
                             mini: true,
                             tooltip: isSatellite
                                 ? l10n.spotDetailMapSwitchToMap
                                 : l10n.spotDetailMapSwitchToSatellite,
-                            child: Icon(isSatellite ? Icons.map : Icons.terrain),
+                            child: Icon(
+                              isSatellite ? Icons.map : Icons.terrain,
+                            ),
                           );
                         },
                       ),

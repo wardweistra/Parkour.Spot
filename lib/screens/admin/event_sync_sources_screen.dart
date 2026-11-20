@@ -322,15 +322,15 @@ class _EventSyncSourcesScreenState extends State<EventSyncSourcesScreen> {
                         if (source.lastError != null) ...[
                           const SizedBox(height: 4),
                           Chip(
-                            backgroundColor: Theme.of(context)
-                                .colorScheme
-                                .errorContainer,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.errorContainer,
                             label: Text(
                               'Last error: ${source.lastError!.message}',
                               style: _kEventSyncChipLabelText.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onErrorContainer,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onErrorContainer,
                               ),
                             ),
                           ),
@@ -748,20 +748,16 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                       _icsUrlCtrl.text = 'https://www.streemparkour.com/';
                     }
                     if ((value ==
-                                EventSyncSource
-                                    .sourceTypeSquarespaceCalendar ||
+                                EventSyncSource.sourceTypeSquarespaceCalendar ||
                             value ==
                                 EventSyncSource.sourceTypeWixEventsCalendar ||
+                            value == EventSyncSource.sourceTypeJumpEventsNl ||
                             value ==
-                                EventSyncSource.sourceTypeJumpEventsNl ||
-                            value ==
-                                EventSyncSource
-                                    .sourceTypeMomenceHostSchedule ||
+                                EventSyncSource.sourceTypeMomenceHostSchedule ||
                             value ==
                                 EventSyncSource
                                     .sourceTypeEventbriteCollection ||
-                            value ==
-                                EventSyncSource.sourceTypeStreemParkour) &&
+                            value == EventSyncSource.sourceTypeStreemParkour) &&
                         _publicUrlCtrl.text.trim().isEmpty &&
                         _icsUrlCtrl.text.trim().isNotEmpty) {
                       _publicUrlCtrl.text = _pagePublicUrlFromFeed(
@@ -826,17 +822,20 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                 SourceLogoEditor(
                   sourceId: widget.source?.id,
                   logoUrl: widget.source?.logoUrl,
-                  onUpload: ({
-                    required sourceId,
-                    required imageBytes,
-                    required contentType,
-                  }) {
-                    return context.read<EventSyncSourceService>().uploadSourceLogo(
-                      sourceId: sourceId,
-                      imageBytes: imageBytes,
-                      contentType: contentType,
-                    );
-                  },
+                  onUpload:
+                      ({
+                        required sourceId,
+                        required imageBytes,
+                        required contentType,
+                      }) {
+                        return context
+                            .read<EventSyncSourceService>()
+                            .uploadSourceLogo(
+                              sourceId: sourceId,
+                              imageBytes: imageBytes,
+                              contentType: contentType,
+                            );
+                      },
                   onRemove: (sourceId) => context
                       .read<EventSyncSourceService>()
                       .removeSourceLogo(sourceId),

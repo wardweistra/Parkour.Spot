@@ -94,9 +94,7 @@ class SpotListInvite {
     final raw = doc.data();
     final data = raw is Map<String, dynamic>
         ? raw
-        : (raw is Map
-              ? Map<String, dynamic>.from(raw)
-              : <String, dynamic>{});
+        : (raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{});
     return SpotListInvite.fromMap(doc.id, data);
   }
 

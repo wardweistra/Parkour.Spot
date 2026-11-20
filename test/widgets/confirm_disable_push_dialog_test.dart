@@ -30,10 +30,7 @@ void main() {
       find.text(l10n.profilePushNotificationsDisableTitle),
       findsOneWidget,
     );
-    expect(
-      find.text(PushCopy(l10n).disableMessage),
-      findsOneWidget,
-    );
+    expect(find.text(PushCopy(l10n).disableMessage), findsOneWidget);
 
     await tester.tap(find.text(l10n.profileCancel));
     await tester.pumpAndSettle();

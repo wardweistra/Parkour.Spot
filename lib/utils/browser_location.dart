@@ -1,5 +1,6 @@
 import 'browser_location_stub.dart'
-    if (dart.library.js_interop) 'browser_location_web.dart' as impl;
+    if (dart.library.js_interop) 'browser_location_web.dart'
+    as impl;
 
 /// Browser `location.href`, or null when not on web.
 String? browserHref() => impl.readBrowserHref();
@@ -49,5 +50,4 @@ void updateBrowserPageMeta(String title, String description) =>
 
 Future<void> awaitBrowserServiceWorkerReady({
   Duration timeout = const Duration(seconds: 6),
-}) =>
-    impl.awaitServiceWorkerReady(timeout: timeout);
+}) => impl.awaitServiceWorkerReady(timeout: timeout);

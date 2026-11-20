@@ -46,7 +46,9 @@ String formatFirebaseConnectivityDiagnostics({
   b.writeln('--- Probes ---');
   for (final probe in probes) {
     b.writeln();
-    b.writeln('[${probe.passed ? 'PASS' : 'FAIL'}] ${probe.name} (${probe.durationMs}ms)');
+    b.writeln(
+      '[${probe.passed ? 'PASS' : 'FAIL'}] ${probe.name} (${probe.durationMs}ms)',
+    );
     for (final entry in probe.details.entries) {
       b.writeln('  ${entry.key}: ${entry.value}');
     }

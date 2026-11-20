@@ -3,13 +3,8 @@ import 'package:parkour_spot/models/spot.dart';
 import 'package:parkour_spot/widgets/explore_entity_picker/explore_entity_picker_config.dart';
 import 'package:parkour_spot/widgets/explore_entity_picker/explore_entity_picker_screen.dart';
 
-Spot _spot(String id) => Spot(
-  id: id,
-  name: id,
-  description: '',
-  latitude: 1,
-  longitude: 2,
-);
+Spot _spot(String id) =>
+    Spot(id: id, name: id, description: '', latitude: 1, longitude: 2);
 
 void main() {
   test('multi-spot spotsOnly seeds initialSpots', () {

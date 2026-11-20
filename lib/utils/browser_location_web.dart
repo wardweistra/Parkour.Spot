@@ -31,8 +31,7 @@ String? readBrowserDocumentTitle() => web.document.title;
 bool? queryManifestLinkPresent() =>
     web.document.querySelector('link[rel="manifest"]') != null;
 
-bool? matchMediaMatches(String query) =>
-    web.window.matchMedia(query).matches;
+bool? matchMediaMatches(String query) => web.window.matchMedia(query).matches;
 
 String? readBrowserVisibilityState() => web.document.visibilityState;
 
@@ -65,8 +64,9 @@ void sessionStorageSet(String key, String value) {
 void updateBrowserPageMeta(String title, String description) {
   web.document.title = title;
 
-  final metaDescription =
-      web.document.querySelector('meta[name="description"]');
+  final metaDescription = web.document.querySelector(
+    'meta[name="description"]',
+  );
   if (metaDescription != null) {
     metaDescription.setAttribute('content', description);
   } else {
@@ -76,14 +76,16 @@ void updateBrowserPageMeta(String title, String description) {
     web.document.head?.appendChild(meta);
   }
 
-  final ogDescription =
-      web.document.querySelector('meta[property="og:description"]');
+  final ogDescription = web.document.querySelector(
+    'meta[property="og:description"]',
+  );
   if (ogDescription != null) {
     ogDescription.setAttribute('content', description);
   }
 
-  final twitterDescription =
-      web.document.querySelector('meta[name="twitter:description"]');
+  final twitterDescription = web.document.querySelector(
+    'meta[name="twitter:description"]',
+  );
   if (twitterDescription != null) {
     twitterDescription.setAttribute('content', description);
   }
@@ -93,8 +95,7 @@ void updateBrowserPageMeta(String title, String description) {
     ogTitle.setAttribute('content', title);
   }
 
-  final twitterTitle =
-      web.document.querySelector('meta[name="twitter:title"]');
+  final twitterTitle = web.document.querySelector('meta[name="twitter:title"]');
   if (twitterTitle != null) {
     twitterTitle.setAttribute('content', title);
   }

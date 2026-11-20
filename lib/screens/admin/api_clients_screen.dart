@@ -112,9 +112,7 @@ class _ApiClientsScreenState extends State<ApiClientsScreen> {
                       Expanded(
                         child: Text(
                           warning,
-                          style: TextStyle(
-                            color: Colors.amber.shade900,
-                          ),
+                          style: TextStyle(color: Colors.amber.shade900),
                         ),
                       ),
                     ],
@@ -122,17 +120,11 @@ class _ApiClientsScreenState extends State<ApiClientsScreen> {
                 ),
                 const SizedBox(height: 16),
               ],
-              const Text(
-                'API Key:',
-                style: TextStyle(),
-              ),
+              const Text('API Key:', style: TextStyle()),
               const SizedBox(height: 8),
               SelectableText(
                 apiKey,
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 14,
-                ),
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
               ),
               const SizedBox(height: 12),
               Row(
@@ -201,7 +193,8 @@ class _ApiClientsScreenState extends State<ApiClientsScreen> {
         context: context,
         title: 'New API Key',
         apiKey: apiKey ?? '',
-        warning: 'Save this API key. It will not be shown again. Previous key is now invalid.',
+        warning:
+            'Save this API key. It will not be shown again. Previous key is now invalid.',
       );
     } catch (e) {
       if (!mounted) return;
@@ -241,7 +234,10 @@ class _ApiClientsScreenState extends State<ApiClientsScreen> {
       await apiClientService.deleteClient(client.id);
       if (!mounted) return;
       scaffoldMessenger.showSnackBar(
-        const SnackBar(content: Text('API client deleted'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('API client deleted'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -285,7 +281,9 @@ class _ApiClientsScreenState extends State<ApiClientsScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.refresh),
-              onPressed: service.isLoading ? null : () => service.fetchClients(),
+              onPressed: service.isLoading
+                  ? null
+                  : () => service.fetchClients(),
             ),
           ),
           IconButton(
@@ -307,7 +305,11 @@ class _ApiClientsScreenState extends State<ApiClientsScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.redAccent,
+                    ),
                     const SizedBox(height: 12),
                     Text(service.error!, textAlign: TextAlign.center),
                   ],
@@ -418,7 +420,9 @@ class _ApiClientsScreenState extends State<ApiClientsScreen> {
                         value: 'toggle',
                         child: Row(
                           children: [
-                            Icon(client.active ? Icons.block : Icons.check_circle),
+                            Icon(
+                              client.active ? Icons.block : Icons.check_circle,
+                            ),
                             const SizedBox(width: 8),
                             Text(client.active ? 'Deactivate' : 'Activate'),
                           ],

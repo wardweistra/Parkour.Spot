@@ -147,9 +147,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return;
     }
     if (push.permissionState != WebPushPermissionState.denied) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(PushCopy(l10n).error)),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(PushCopy(l10n).error)));
     }
   }
 
@@ -401,8 +399,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   l10n,
                                 ),
                                 inviteStatus: status,
-                                onOpen: () =>
-                                    _openNotification(context, item),
+                                onOpen: () => _openNotification(context, item),
                                 onAcceptInvite: pending
                                     ? () => unawaited(
                                         _respondSpotListInvite(
@@ -423,10 +420,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                     : null,
                                 onLongPress: item.read
                                     ? () => unawaited(
-                                        _markNotificationUnread(
-                                          context,
-                                          item,
-                                        ),
+                                        _markNotificationUnread(context, item),
                                       )
                                     : () => unawaited(
                                         _markNotificationReadOnly(
@@ -793,8 +787,7 @@ class _NotificationListTile extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final isUnread = !item.read;
-    final showInviteActions =
-        onAcceptInvite != null && onDeclineInvite != null;
+    final showInviteActions = onAcceptInvite != null && onDeclineInvite != null;
     final resolvedBody = _inviteBody(l10n) ?? copy.body;
     final statusLabel = _inviteStatusLabel(l10n);
 

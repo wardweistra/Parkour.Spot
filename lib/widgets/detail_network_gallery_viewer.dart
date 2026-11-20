@@ -22,7 +22,8 @@ class DetailNetworkGalleryViewer extends StatefulWidget {
       _DetailNetworkGalleryViewerState();
 }
 
-class _DetailNetworkGalleryViewerState extends State<DetailNetworkGalleryViewer> {
+class _DetailNetworkGalleryViewerState
+    extends State<DetailNetworkGalleryViewer> {
   late PageController _pageController;
   late int _currentIndex;
   static const int _virtualPageMultiplier = 1000;
@@ -54,7 +55,9 @@ class _DetailNetworkGalleryViewerState extends State<DetailNetworkGalleryViewer>
     final upperBound = _virtualPageMultiplier * 2 - 100;
     if (virtualIndex < lowerBound || virtualIndex > upperBound) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || !_pageController.hasClients || widget.imageUrls.isEmpty) {
+        if (!mounted ||
+            !_pageController.hasClients ||
+            widget.imageUrls.isEmpty) {
           return;
         }
         final length = widget.imageUrls.length;
@@ -137,8 +140,7 @@ class _DetailNetworkGalleryViewerState extends State<DetailNetworkGalleryViewer>
                 child: CircularProgressIndicator(
                   value: event == null
                       ? 0
-                      : event.cumulativeBytesLoaded /
-                            event.expectedTotalBytes!,
+                      : event.cumulativeBytesLoaded / event.expectedTotalBytes!,
                 ),
               ),
               pageController: _pageController,

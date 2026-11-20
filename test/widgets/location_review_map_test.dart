@@ -12,9 +12,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          body: LocationReviewMap(
-            suggested: const LatLng(52.1, 4.3),
-          ),
+          body: LocationReviewMap(suggested: const LatLng(52.1, 4.3)),
         ),
       ),
     );

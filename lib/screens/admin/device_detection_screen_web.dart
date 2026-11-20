@@ -45,18 +45,19 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
 
   Future<void> _checkServiceWorkerStatus() async {
     if (!kIsWeb) return;
-    
+
     setState(() {
       _isLoadingServiceWorker = true;
     });
 
     try {
       final diagnostics = Map<String, dynamic>.from(_pwaDiagnostics ?? {});
-      
+
       // Check service worker registration using eval (WASM-compatible)
       try {
         // Store result in window object temporarily, then read it back
-        final checkCode = '''
+        final checkCode =
+            '''
           (async function() {
             try {
               const registrations = await navigator.serviceWorker.getRegistrations();
@@ -84,63 +85,71 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
               return false;
             }
           })()
-        '''.toJS;
-        
+        '''
+                .toJS;
+
         _eval(checkCode);
-        
+
         // Wait a bit for async operation, then read result
         await Future.delayed(const Duration(milliseconds: 500));
-        
+
         final readCode = 'window._pwaDiagnosticsSW || "{}"'.toJS;
         final resultJsonJS = _eval(readCode);
         final resultJson = (resultJsonJS as JSString).toDart;
-        
+
         // Parse JSON using dart:convert
         final result = jsonDecode(resultJson) as Map<String, dynamic>;
-        
+
         // Access properties from result
         final registered = result['registered'] as bool? ?? false;
         diagnostics['serviceWorkerRegistered'] = registered;
-        
+
         if (registered) {
-          diagnostics['serviceWorkerRegistrationsCount'] = result['count'] as int? ?? 0;
-          diagnostics['serviceWorkerScope'] = result['scope'] as String? ?? 'unknown';
-          
+          diagnostics['serviceWorkerRegistrationsCount'] =
+              result['count'] as int? ?? 0;
+          diagnostics['serviceWorkerScope'] =
+              result['scope'] as String? ?? 'unknown';
+
           final active = result['active'];
           if (active != null) {
             diagnostics['serviceWorkerActive'] = true;
             final activeMap = active as Map<String, dynamic>;
-            diagnostics['serviceWorkerActiveState'] = activeMap['state'] as String? ?? 'unknown';
-            diagnostics['serviceWorkerActiveScriptURL'] = activeMap['scriptURL'] as String? ?? 'unknown';
+            diagnostics['serviceWorkerActiveState'] =
+                activeMap['state'] as String? ?? 'unknown';
+            diagnostics['serviceWorkerActiveScriptURL'] =
+                activeMap['scriptURL'] as String? ?? 'unknown';
           } else {
             diagnostics['serviceWorkerActive'] = false;
           }
-          
+
           final installing = result['installing'];
           diagnostics['serviceWorkerInstalling'] = installing != null;
           if (installing != null) {
             final installingMap = installing as Map<String, dynamic>;
-            diagnostics['serviceWorkerInstallingState'] = installingMap['state'] as String? ?? 'unknown';
+            diagnostics['serviceWorkerInstallingState'] =
+                installingMap['state'] as String? ?? 'unknown';
           }
-          
+
           final waiting = result['waiting'];
           diagnostics['serviceWorkerWaiting'] = waiting != null;
           if (waiting != null) {
             final waitingMap = waiting as Map<String, dynamic>;
-            diagnostics['serviceWorkerWaitingState'] = waitingMap['state'] as String? ?? 'unknown';
+            diagnostics['serviceWorkerWaitingState'] =
+                waitingMap['state'] as String? ?? 'unknown';
           }
         } else {
           final error = result['error'];
           if (error != null) {
             diagnostics['serviceWorkerError'] = error.toString();
           } else {
-            diagnostics['serviceWorkerError'] = 'No service worker registrations found';
+            diagnostics['serviceWorkerError'] =
+                'No service worker registrations found';
           }
         }
       } catch (e) {
         diagnostics['serviceWorkerCheckError'] = e.toString();
       }
-      
+
       // Check manifest validity using eval (WASM-compatible)
       try {
         final manifestLink = web.document.querySelector('link[rel="manifest"]');
@@ -148,8 +157,9 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
           final manifestHref = (manifestLink as web.HTMLLinkElement).href;
           // Escape quotes in href for use in JS string
           final escapedHref = manifestHref.replaceAll('"', '\\"');
-          
-          final checkCode = '''
+
+          final checkCode =
+              '''
             (async function() {
               try {
                 const response = await fetch("$escapedHref");
@@ -174,32 +184,41 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
                 window._pwaDiagnosticsManifest = JSON.stringify({ accessible: false, error: e.toString() });
               }
             })()
-          '''.toJS;
-          
+          '''
+                  .toJS;
+
           _eval(checkCode);
-          
+
           // Wait a bit for async operation, then read result
           await Future.delayed(const Duration(milliseconds: 500));
-          
+
           final readCode = 'window._pwaDiagnosticsManifest || "{}"'.toJS;
           final resultJsonJS = _eval(readCode);
           final resultJson = (resultJsonJS as JSString).toDart;
-          
+
           // Parse JSON using dart:convert
           final result = jsonDecode(resultJson) as Map<String, dynamic>;
-          
+
           final accessible = result['accessible'] as bool? ?? false;
           diagnostics['manifestAccessible'] = accessible;
-          
+
           if (accessible) {
-            diagnostics['manifestSize'] = '${result['size'] as int? ?? 0} bytes';
-            diagnostics['manifestValidJSON'] = result['validJSON'] as bool? ?? false;
-            diagnostics['manifestHasName'] = result['hasName'] as bool? ?? false;
-            diagnostics['manifestHasIcons'] = result['hasIcons'] as bool? ?? false;
-            diagnostics['manifestDisplayMode'] = result['displayMode'] as String? ?? 'not set';
-            diagnostics['manifestIconsCount'] = result['iconsCount'] as int? ?? 0;
-            diagnostics['manifestHas192Icon'] = result['has192Icon'] as bool? ?? false;
-            diagnostics['manifestHas512Icon'] = result['has512Icon'] as bool? ?? false;
+            diagnostics['manifestSize'] =
+                '${result['size'] as int? ?? 0} bytes';
+            diagnostics['manifestValidJSON'] =
+                result['validJSON'] as bool? ?? false;
+            diagnostics['manifestHasName'] =
+                result['hasName'] as bool? ?? false;
+            diagnostics['manifestHasIcons'] =
+                result['hasIcons'] as bool? ?? false;
+            diagnostics['manifestDisplayMode'] =
+                result['displayMode'] as String? ?? 'not set';
+            diagnostics['manifestIconsCount'] =
+                result['iconsCount'] as int? ?? 0;
+            diagnostics['manifestHas192Icon'] =
+                result['has192Icon'] as bool? ?? false;
+            diagnostics['manifestHas512Icon'] =
+                result['has512Icon'] as bool? ?? false;
           } else {
             final status = result['status'];
             final error = result['error'];
@@ -214,7 +233,7 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
       } catch (e) {
         diagnostics['manifestCheckError'] = e.toString();
       }
-      
+
       setState(() {
         _pwaDiagnostics = diagnostics;
         _isLoadingServiceWorker = false;
@@ -244,9 +263,9 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
 
   void _testInstallInstructions() {
     if (!kIsWeb) return;
-    
+
     final pwaService = PwaInstallService();
-    
+
     if (pwaService.isInstalled) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -259,27 +278,32 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
       }
       return;
     }
-    
+
     // Always show instructions dialog (platform-specific)
     final instructions = MobileDetectionService.isIOS
         ? pwaService.getIOSInstallInstructions()
         : pwaService.getAndroidInstallInstructions();
-    
-    final platformName = MobileDetectionService.isIOS ? 'iPhone' : 'Android device';
-    
+
+    final platformName = MobileDetectionService.isIOS
+        ? 'iPhone'
+        : 'Android device';
+
     _showInstallInstructionsDialog(instructions, platformName);
   }
 
   void _testIOSInstructions() {
     if (!kIsWeb) return;
-    
+
     final pwaService = PwaInstallService();
     final instructions = pwaService.getIOSInstallInstructions();
-    
+
     _showInstallInstructionsDialog(instructions, 'iPhone');
   }
 
-  void _showInstallInstructionsDialog(Map<String, String> instructions, String platformName) {
+  void _showInstallInstructionsDialog(
+    Map<String, String> instructions,
+    String platformName,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -341,10 +365,7 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            text,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
         ),
       ],
     );
@@ -354,9 +375,11 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
     try {
       final buffer = StringBuffer();
       buffer.writeln('=== Device Detection Diagnostics ===');
-      buffer.writeln('Generated: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now())}');
+      buffer.writeln(
+        'Generated: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now())}',
+      );
       buffer.writeln('');
-      
+
       // Mobile Detection Service Info
       buffer.writeln('--- Mobile Detection Service ---');
       if (_deviceInfo != null) {
@@ -365,38 +388,50 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
         }
       }
       buffer.writeln('');
-      
+
       // PWA Install Service Info
       buffer.writeln('--- PWA Install Service ---');
       if (_pwaInfo != null) {
         for (final entry in _pwaInfo!.entries) {
-          buffer.writeln('${entry.key}: ${_formatValueForCopy(entry.key, entry.value)}');
+          buffer.writeln(
+            '${entry.key}: ${_formatValueForCopy(entry.key, entry.value)}',
+          );
         }
       }
       buffer.writeln('');
-      
+
       // PWA Diagnostics
       buffer.writeln('--- PWA Diagnostics ---');
       if (_pwaDiagnostics != null) {
         for (final entry in _pwaDiagnostics!.entries) {
-          buffer.writeln('${entry.key}: ${_formatValueForCopy(entry.key, entry.value)}');
+          buffer.writeln(
+            '${entry.key}: ${_formatValueForCopy(entry.key, entry.value)}',
+          );
         }
       }
       buffer.writeln('');
-      
+
       // Quick Status
       buffer.writeln('--- Quick Status ---');
-      buffer.writeln('Is Mobile Device: ${MobileDetectionService.isMobileDevice}');
+      buffer.writeln(
+        'Is Mobile Device: ${MobileDetectionService.isMobileDevice}',
+      );
       buffer.writeln('Is iOS: ${MobileDetectionService.isIOS}');
       buffer.writeln('Is Android: ${MobileDetectionService.isAndroid}');
-      buffer.writeln('Running as PWA: ${MobileDetectionService.isRunningAsPWA}');
-      buffer.writeln('Running in Browser: ${MobileDetectionService.isRunningInBrowser}');
+      buffer.writeln(
+        'Running as PWA: ${MobileDetectionService.isRunningAsPWA}',
+      );
+      buffer.writeln(
+        'Running in Browser: ${MobileDetectionService.isRunningInBrowser}',
+      );
       if (kIsWeb) {
-        buffer.writeln('PWA Install Prompt Should Show: ${PwaInstallService().shouldShowPrompt}');
+        buffer.writeln(
+          'PWA Install Prompt Should Show: ${PwaInstallService().shouldShowPrompt}',
+        );
       }
-      
+
       await Clipboard.setData(ClipboardData(text: buffer.toString()));
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -430,17 +465,17 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
         return value.toString();
       }
     }
-    
+
     // Format booleans
     if (value is bool) {
       return value ? 'Yes' : 'No';
     }
-    
+
     // Format null
     if (value == null) {
       return 'null';
     }
-    
+
     return value.toString();
   }
 
@@ -451,17 +486,18 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
 
     try {
       final diagnostics = <String, dynamic>{};
-      
+
       // Check HTTPS
       final isHttps = web.window.location.protocol == 'https:';
-      final isLocalhost = web.window.location.hostname == 'localhost' || 
-                         web.window.location.hostname == '127.0.0.1';
+      final isLocalhost =
+          web.window.location.hostname == 'localhost' ||
+          web.window.location.hostname == '127.0.0.1';
       diagnostics['isHTTPS'] = isHttps;
       diagnostics['isLocalhost'] = isLocalhost;
       diagnostics['protocol'] = web.window.location.protocol;
       diagnostics['hostname'] = web.window.location.hostname;
       diagnostics['fullURL'] = web.window.location.href;
-      
+
       // Check if service worker is supported
       try {
         // Access serviceWorker to verify API exists (will throw if not available)
@@ -474,31 +510,34 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
         diagnostics['serviceWorkerAPIAvailable'] = false;
         diagnostics['serviceWorkerError'] = e.toString();
       }
-      
+
       // Check manifest
       try {
         final manifestLink = web.document.querySelector('link[rel="manifest"]');
         diagnostics['manifestLinkExists'] = manifestLink != null;
         if (manifestLink != null) {
-          diagnostics['manifestHref'] = (manifestLink as web.HTMLLinkElement).href;
+          diagnostics['manifestHref'] =
+              (manifestLink as web.HTMLLinkElement).href;
         }
       } catch (e) {
         diagnostics['manifestLinkError'] = e.toString();
       }
-      
+
       // Check standalone display mode support
       try {
-        final standaloneMatch = web.window.matchMedia('(display-mode: standalone)');
+        final standaloneMatch = web.window.matchMedia(
+          '(display-mode: standalone)',
+        );
         diagnostics['standaloneDisplayModeSupported'] = true;
         diagnostics['standaloneDisplayModeMatches'] = standaloneMatch.matches;
       } catch (e) {
         diagnostics['standaloneDisplayModeSupported'] = false;
       }
-      
+
       // Check if app is installable (heuristic based on common requirements)
       final meetsBasicRequirements = isHttps || isLocalhost;
       diagnostics['meetsBasicRequirements'] = meetsBasicRequirements;
-      
+
       return diagnostics;
     } catch (e) {
       return {'error': e.toString()};
@@ -538,12 +577,12 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context);
-          } else {
-            context.go('/admin');
-          }
-        },
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              context.go('/admin');
+            }
+          },
         ),
       ),
       body: RefreshIndicator(
@@ -565,7 +604,10 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
                     icon: const Icon(Icons.copy, size: 18),
                     label: const Text('Copy Diagnostics'),
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -577,7 +619,7 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              
+
               // Mobile Detection Service Info
               Card(
                 child: Padding(
@@ -600,17 +642,19 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
                       ),
                       const SizedBox(height: 16),
                       if (_deviceInfo != null)
-                        ..._deviceInfo!.entries.map((entry) => _buildInfoRow(
-                          context,
-                          entry.key,
-                          entry.value.toString(),
-                        )),
+                        ..._deviceInfo!.entries.map(
+                          (entry) => _buildInfoRow(
+                            context,
+                            entry.key,
+                            entry.value.toString(),
+                          ),
+                        ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // PWA Install Service Info
               Card(
                 child: Padding(
@@ -639,11 +683,16 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
                             child: ElevatedButton.icon(
                               onPressed: _testInstallInstructions,
                               icon: const Icon(Icons.info_outline, size: 18),
-                              label: Text(MobileDetectionService.isIOS 
-                                  ? 'Test iOS Instructions'
-                                  : 'Test Android Instructions'),
+                              label: Text(
+                                MobileDetectionService.isIOS
+                                    ? 'Test iOS Instructions'
+                                    : 'Test Android Instructions',
+                              ),
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
                               ),
                             ),
                           ),
@@ -654,7 +703,10 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
                               icon: const Icon(Icons.phone_iphone, size: 18),
                               label: const Text('Test iOS Instructions'),
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
                               ),
                             ),
                           ),
@@ -662,17 +714,19 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
                       ),
                       const SizedBox(height: 16),
                       if (_pwaInfo != null)
-                        ..._pwaInfo!.entries.map((entry) => _buildInfoRow(
-                          context,
-                          entry.key,
-                          _formatValue(entry.key, entry.value),
-                        )),
+                        ..._pwaInfo!.entries.map(
+                          (entry) => _buildInfoRow(
+                            context,
+                            entry.key,
+                            _formatValue(entry.key, entry.value),
+                          ),
+                        ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // PWA Diagnostics
               Card(
                 child: Padding(
@@ -697,16 +751,16 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
                       if (_isLoadingServiceWorker)
                         const Padding(
                           padding: EdgeInsets.all(16.0),
-                          child: Center(
-                            child: CircularProgressIndicator(),
-                          ),
+                          child: Center(child: CircularProgressIndicator()),
                         )
                       else if (_pwaDiagnostics != null)
-                        ..._pwaDiagnostics!.entries.map((entry) => _buildInfoRow(
-                          context,
-                          entry.key,
-                          _formatValue(entry.key, entry.value),
-                        )),
+                        ..._pwaDiagnostics!.entries.map(
+                          (entry) => _buildInfoRow(
+                            context,
+                            entry.key,
+                            _formatValue(entry.key, entry.value),
+                          ),
+                        ),
                       const SizedBox(height: 16),
                       const Divider(),
                       const SizedBox(height: 8),
@@ -715,17 +769,37 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
                         style: Theme.of(context).textTheme.titleSmall,
                       ),
                       const SizedBox(height: 8),
-                      _buildDiagnosticTip(context, 'iOS', 'Users see manual install instructions via Share button'),
-                      _buildDiagnosticTip(context, 'Android', 'Users see manual install instructions via More menu'),
-                      _buildDiagnosticTip(context, 'Chrome install button', 'Chrome may show its own install button in the address bar if installability criteria are met'),
-                      _buildDiagnosticTip(context, 'Profile banner', 'Install banner always shows on Profile tab for mobile users not on PWA'),
-                      _buildDiagnosticTip(context, 'Explore banner', 'Install banner shows on Explore tab after user engagement (page views, time)'),
+                      _buildDiagnosticTip(
+                        context,
+                        'iOS',
+                        'Users see manual install instructions via Share button',
+                      ),
+                      _buildDiagnosticTip(
+                        context,
+                        'Android',
+                        'Users see manual install instructions via More menu',
+                      ),
+                      _buildDiagnosticTip(
+                        context,
+                        'Chrome install button',
+                        'Chrome may show its own install button in the address bar if installability criteria are met',
+                      ),
+                      _buildDiagnosticTip(
+                        context,
+                        'Profile banner',
+                        'Install banner always shows on Profile tab for mobile users not on PWA',
+                      ),
+                      _buildDiagnosticTip(
+                        context,
+                        'Explore banner',
+                        'Install banner shows on Explore tab after user engagement (page views, time)',
+                      ),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // Quick Status Summary
               Card(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -793,8 +867,9 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
           ),
@@ -816,16 +891,11 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
         children: [
           Icon(
             value ? Icons.check_circle : Icons.cancel,
-            color: value
-                ? Colors.green
-                : Theme.of(context).colorScheme.error,
+            color: value ? Colors.green : Theme.of(context).colorScheme.error,
             size: 20,
           ),
           const SizedBox(width: 8),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          Text(label, style: Theme.of(context).textTheme.bodyMedium),
         ],
       ),
     );
@@ -841,22 +911,22 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
         return value.toString();
       }
     }
-    
+
     // Format durations
     if (key.contains('Time') && value != null && value is int) {
       return '${value}s';
     }
-    
+
     // Format booleans
     if (value is bool) {
       return value ? 'Yes' : 'No';
     }
-    
+
     // Format null
     if (value == null) {
       return 'null';
     }
-    
+
     return value.toString();
   }
 
@@ -872,7 +942,11 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
     }
   }
 
-  Widget _buildDiagnosticTip(BuildContext context, String title, String description) {
+  Widget _buildDiagnosticTip(
+    BuildContext context,
+    String title,
+    String description,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -888,14 +962,13 @@ class _DeviceDetectionScreenState extends State<DeviceDetectionScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
+                Text(title, style: Theme.of(context).textTheme.bodyMedium),
                 Text(
                   description,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
               ],

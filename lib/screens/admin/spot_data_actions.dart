@@ -338,9 +338,7 @@ class SpotDataActions {
             children: [
               CircularProgressIndicator(),
               SizedBox(width: 16),
-              Expanded(
-                child: Text('Recomputing spot training stats...'),
-              ),
+              Expanded(child: Text('Recomputing spot training stats...')),
             ],
           ),
         );
@@ -723,9 +721,9 @@ class SpotDataActions {
       final findingsRaw = result['findings'];
       final findings = findingsRaw is List
           ? findingsRaw
-              .whereType<Map>()
-              .map((e) => Map<String, dynamic>.from(e))
-              .toList()
+                .whereType<Map>()
+                .map((e) => Map<String, dynamic>.from(e))
+                .toList()
           : <Map<String, dynamic>>[];
 
       final rateLimited = result['rateLimited'] == true;
@@ -746,7 +744,9 @@ class SpotDataActions {
       if (findings.isEmpty && result['success'] == true) {
         scaffoldMessenger.showSnackBar(
           const SnackBar(
-            content: Text('All YouTube videos on spots appear to be available.'),
+            content: Text(
+              'All YouTube videos on spots appear to be available.',
+            ),
             backgroundColor: Colors.green,
           ),
         );

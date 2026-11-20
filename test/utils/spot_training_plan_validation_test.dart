@@ -37,7 +37,9 @@ void main() {
 
     test('rejects window longer than 12 hours', () {
       final start = now.add(const Duration(minutes: 30));
-      final end = start.add(SpotCheckIn.maxSessionDuration + const Duration(minutes: 1));
+      final end = start.add(
+        SpotCheckIn.maxSessionDuration + const Duration(minutes: 1),
+      );
       expect(
         SpotTrainingPlanValidation.validateWindow(
           plannedStartAt: start,
@@ -50,7 +52,9 @@ void main() {
     });
 
     test('rejects start more than 30 days out', () {
-      final start = now.add(SpotTrainingPlan.maxAdvanceHorizon + const Duration(days: 1));
+      final start = now.add(
+        SpotTrainingPlan.maxAdvanceHorizon + const Duration(days: 1),
+      );
       final end = start.add(const Duration(hours: 1));
       expect(
         SpotTrainingPlanValidation.validateWindow(

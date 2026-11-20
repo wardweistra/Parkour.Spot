@@ -27,11 +27,12 @@ class AdminNotificationEntry {
 /// rule denies the entire query.
 class AdminNotificationsService extends ChangeNotifier {
   AdminNotificationsService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
-  final FirebaseFunctions _functions =
-      FirebaseFunctions.instanceFor(region: 'europe-west1');
+  final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(
+    region: 'europe-west1',
+  );
 
   final List<AdminNotificationEntry> _entries = <AdminNotificationEntry>[];
   bool _isLoading = false;
@@ -60,7 +61,10 @@ class AdminNotificationsService extends ChangeNotifier {
   String? get lastDiagnostics => _lastDiagnostics;
 
   /// Loads the first page (newest [createdAt] first).
-  Future<void> fetchInitial({bool forceRefresh = false, int pageSize = _defaultPageSize}) async {
+  Future<void> fetchInitial({
+    bool forceRefresh = false,
+    int pageSize = _defaultPageSize,
+  }) async {
     if (_isLoading && !forceRefresh) {
       return;
     }
@@ -96,7 +100,10 @@ class AdminNotificationsService extends ChangeNotifier {
 
   /// Appends the next page using the server cursor.
   Future<void> loadMore({int pageSize = _defaultPageSize}) async {
-    if (!_hasMore || _isLoading || _isLoadingMore || _nextPageCursorPath == null) {
+    if (!_hasMore ||
+        _isLoading ||
+        _isLoadingMore ||
+        _nextPageCursorPath == null) {
       return;
     }
 
@@ -130,7 +137,8 @@ class AdminNotificationsService extends ChangeNotifier {
     final callable = _functions.httpsCallable('listInAppNotificationsForAdmin');
     final payload = <String, dynamic>{
       'pageSize': pageSize,
-      if (cursorDocPath != null) 'cursor': <String, dynamic>{'docPath': cursorDocPath},
+      if (cursorDocPath != null)
+        'cursor': <String, dynamic>{'docPath': cursorDocPath},
     };
     final result = await callable.call(payload);
     final raw = result.data;
@@ -146,7 +154,9 @@ class AdminNotificationsService extends ChangeNotifier {
   }) {
     final rawList = data['notifications'];
     if (rawList is! List) {
-      throw StateError('listInAppNotificationsForAdmin: missing notifications list');
+      throw StateError(
+        'listInAppNotificationsForAdmin: missing notifications list',
+      );
     }
 
     if (replaceExisting) {
@@ -160,8 +170,9 @@ class AdminNotificationsService extends ChangeNotifier {
       if (path == null || path.isEmpty) continue;
       final recipientUserId = m['recipientUserId'] as String? ?? '';
       final payload = m['data'];
-      final dataMap =
-          payload is Map ? Map<String, dynamic>.from(payload) : <String, dynamic>{};
+      final dataMap = payload is Map
+          ? Map<String, dynamic>.from(payload)
+          : <String, dynamic>{};
       final id = path.split('/').last;
       _entries.add(
         AdminNotificationEntry(
@@ -191,7 +202,9 @@ class AdminNotificationsService extends ChangeNotifier {
     _error = null;
     try {
       await entry.documentReference.delete();
-      _entries.removeWhere((e) => e.documentReference.path == entry.documentReference.path);
+      _entries.removeWhere(
+        (e) => e.documentReference.path == entry.documentReference.path,
+      );
       notifyListeners();
       return true;
     } catch (e, st) {

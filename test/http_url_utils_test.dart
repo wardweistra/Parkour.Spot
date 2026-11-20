@@ -16,14 +16,8 @@ void main() {
     });
 
     test('accepts explicit http and https URLs', () {
-      expect(
-        normalizeHttpOrHttpsUrl('https://example.com/'),
-        isNotNull,
-      );
-      expect(
-        normalizeHttpOrHttpsUrl('http://example.com/foo?x=1'),
-        isNotNull,
-      );
+      expect(normalizeHttpOrHttpsUrl('https://example.com/'), isNotNull);
+      expect(normalizeHttpOrHttpsUrl('http://example.com/foo?x=1'), isNotNull);
     });
 
     test('normalizes scheme casing for validators', () {
@@ -48,10 +42,7 @@ void main() {
 
   group('displayHttpUrlHost', () {
     test('returns host for standard https URL', () {
-      expect(
-        displayHttpUrlHost('https://example.com/path'),
-        'example.com',
-      );
+      expect(displayHttpUrlHost('https://example.com/path'), 'example.com');
     });
 
     test('includes non-default port', () {
@@ -62,17 +53,11 @@ void main() {
     });
 
     test('omits default https port', () {
-      expect(
-        displayHttpUrlHost('https://example.com:443/foo'),
-        'example.com',
-      );
+      expect(displayHttpUrlHost('https://example.com:443/foo'), 'example.com');
     });
 
     test('brackets IPv6 host for display', () {
-      expect(
-        displayHttpUrlHost('http://[::1]:8080/'),
-        '[::1]:8080',
-      );
+      expect(displayHttpUrlHost('http://[::1]:8080/'), '[::1]:8080');
     });
 
     test('falls back to full string when parse fails', () {

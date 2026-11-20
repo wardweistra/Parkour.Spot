@@ -155,10 +155,7 @@ void main() {
     });
 
     test('empty selection yields empty list', () {
-      expect(
-        filterAuditLogEntriesByCategories(entries, {}),
-        isEmpty,
-      );
+      expect(filterAuditLogEntriesByCategories(entries, {}), isEmpty);
     });
 
     test('default all categories keeps everything', () {
@@ -197,15 +194,9 @@ void main() {
 
     test('canExtendAuditLogRangeNewer respects epsilon', () {
       final now = DateTime.utc(2026, 10, 1, 12, 0, 30);
+      expect(canExtendAuditLogRangeNewer(range, now: now), isFalse);
       expect(
-        canExtendAuditLogRangeNewer(range, now: now),
-        isFalse,
-      );
-      expect(
-        canExtendAuditLogRangeNewer(
-          range,
-          now: DateTime.utc(2026, 10, 1, 13),
-        ),
+        canExtendAuditLogRangeNewer(range, now: DateTime.utc(2026, 10, 1, 13)),
         isTrue,
       );
     });

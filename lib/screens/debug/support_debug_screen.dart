@@ -72,22 +72,23 @@ class SupportDebugScreen extends StatelessWidget {
                       children: [
                         Text(
                           section.title,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 12),
                         for (final row in section.rows) ...[
                           Text(
                             row.key,
-                            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            style: Theme.of(context).textTheme.labelMedium
+                                ?.copyWith(
                                   color: Theme.of(context).colorScheme.primary,
                                 ),
                           ),
                           const SizedBox(height: 4),
                           SelectableText(
                             row.value,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
                                   fontFamily: 'monospace',
                                   fontSize: 12,
                                 ),

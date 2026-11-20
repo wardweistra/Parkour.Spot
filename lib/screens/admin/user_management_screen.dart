@@ -45,7 +45,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isAdmin = context.select<AuthService, bool>((service) => service.isAdmin);
+    final bool isAdmin = context.select<AuthService, bool>(
+      (service) => service.isAdmin,
+    );
     if (!isAdmin) {
       return Scaffold(
         appBar: AppBar(title: const Text('User management')),
@@ -59,12 +61,12 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context);
-          } else {
-            context.go('/admin');
-          }
-        },
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              context.go('/admin');
+            }
+          },
         ),
         actions: [
           Consumer<UserManagementService>(
@@ -96,7 +98,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   } else if (value == 'sync_spot_display_names_dry_run') {
                     await _syncSpotDisplayNames(context, service, dryRun: true);
                   } else if (value == 'sync_spot_display_names') {
-                    await _syncSpotDisplayNames(context, service, dryRun: false);
+                    await _syncSpotDisplayNames(
+                      context,
+                      service,
+                      dryRun: false,
+                    );
                   }
                 },
                 itemBuilder: (context) => [
@@ -233,7 +239,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+                          const Icon(
+                            Icons.error_outline,
+                            size: 48,
+                            color: Colors.redAccent,
+                          ),
                           const SizedBox(height: 12),
                           Text(service.error!, textAlign: TextAlign.center),
                         ],
@@ -242,21 +252,25 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   );
                 }
 
-                final List<app_user.User> filteredUsers = (_searchTerm.isEmpty
-                    ? List<app_user.User>.from(service.users)
-                    : service.users.where((user) {
-                        final name = user.displayName?.toLowerCase() ?? '';
-                        final email = user.email.toLowerCase();
-                        return name.contains(_searchTerm) || email.contains(_searchTerm);
-                      }).toList())
-                  ..sort((a, b) {
-                    // Sort by createdAt in reverse chronological order (newest first)
-                    // Users without createdAt go to the end
-                    if (a.createdAt == null && b.createdAt == null) return 0;
-                    if (a.createdAt == null) return 1;
-                    if (b.createdAt == null) return -1;
-                    return b.createdAt!.compareTo(a.createdAt!);
-                  });
+                final List<app_user.User> filteredUsers =
+                    (_searchTerm.isEmpty
+                          ? List<app_user.User>.from(service.users)
+                          : service.users.where((user) {
+                              final name =
+                                  user.displayName?.toLowerCase() ?? '';
+                              final email = user.email.toLowerCase();
+                              return name.contains(_searchTerm) ||
+                                  email.contains(_searchTerm);
+                            }).toList())
+                      ..sort((a, b) {
+                        // Sort by createdAt in reverse chronological order (newest first)
+                        // Users without createdAt go to the end
+                        if (a.createdAt == null && b.createdAt == null)
+                          return 0;
+                        if (a.createdAt == null) return 1;
+                        if (b.createdAt == null) return -1;
+                        return b.createdAt!.compareTo(a.createdAt!);
+                      });
 
                 if (filteredUsers.isEmpty && !service.hasMoreUsers) {
                   return RefreshIndicator(
@@ -268,7 +282,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           padding: const EdgeInsets.only(top: 120),
                           child: Column(
                             children: const [
-                              Icon(Icons.people_outline, size: 64, color: Colors.grey),
+                              Icon(
+                                Icons.people_outline,
+                                size: 64,
+                                color: Colors.grey,
+                              ),
                               SizedBox(height: 16),
                               Text('No users found'),
                             ],
@@ -290,7 +308,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           padding: const EdgeInsets.only(top: 80),
                           child: Column(
                             children: [
-                              const Icon(Icons.search_off, size: 64, color: Colors.grey),
+                              const Icon(
+                                Icons.search_off,
+                                size: 64,
+                                color: Colors.grey,
+                              ),
                               const SizedBox(height: 16),
                               Text(
                                 _searchTerm.isEmpty
@@ -315,7 +337,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 }
 
                 final bool showLoadMoreFooter = service.hasMoreUsers;
-                final int itemCount = filteredUsers.length + (showLoadMoreFooter ? 1 : 0);
+                final int itemCount =
+                    filteredUsers.length + (showLoadMoreFooter ? 1 : 0);
 
                 return RefreshIndicator(
                   onRefresh: () => service.fetchUsers(forceRefresh: true),
@@ -332,7 +355,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       return Card(
                         child: ListTile(
                           leading: _UserAvatar(user: user),
-                          title: SelectableText(user.displayName?.isNotEmpty == true ? user.displayName! : user.email),
+                          title: SelectableText(
+                            user.displayName?.isNotEmpty == true
+                                ? user.displayName!
+                                : user.email,
+                          ),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -346,11 +373,17 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                 onTap: () => _openUserProfile(user),
                                 borderRadius: BorderRadius.circular(4),
                                 child: Padding(
-                                  padding: const EdgeInsets.only(top: 2, bottom: 2),
+                                  padding: const EdgeInsets.only(
+                                    top: 2,
+                                    bottom: 2,
+                                  ),
                                   child: Text(
                                     profilePath,
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          color: Theme.of(context).colorScheme.primary,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
                                           decoration: TextDecoration.underline,
                                         ),
                                   ),
@@ -409,7 +442,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               builder: (context, userService, _) {
                 app_user.User user;
                 try {
-                  user = userService.users.firstWhere((candidate) => candidate.id == initialUser.id);
+                  user = userService.users.firstWhere(
+                    (candidate) => candidate.id == initialUser.id,
+                  );
                 } catch (_) {
                   user = initialUser;
                 }
@@ -417,8 +452,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 final stats = userService.getStats(user.id);
                 final statsError = userService.statsError(user.id);
                 final bool statsLoading = userService.isLoadingStats(user.id);
-                final bool updatingModerator = userService.isUpdatingModerator(user.id);
-                final bool updatingFeatureAccess = userService.isUpdatingFeatureAccess(user.id);
+                final bool updatingModerator = userService.isUpdatingModerator(
+                  user.id,
+                );
+                final bool updatingFeatureAccess = userService
+                    .isUpdatingFeatureAccess(user.id);
 
                 return SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
@@ -435,8 +473,12 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 SelectableText(
-                                  user.displayName?.isNotEmpty == true ? user.displayName! : user.email,
-                                  style: Theme.of(sheetContext).textTheme.titleLarge,
+                                  user.displayName?.isNotEmpty == true
+                                      ? user.displayName!
+                                      : user.email,
+                                  style: Theme.of(
+                                    sheetContext,
+                                  ).textTheme.titleLarge,
                                 ),
                                 const SizedBox(height: 4),
                                 SelectableText(user.email),
@@ -457,10 +499,16 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(statsError, style: const TextStyle(color: Colors.redAccent)),
+                            Text(
+                              statsError,
+                              style: const TextStyle(color: Colors.redAccent),
+                            ),
                             const SizedBox(height: 8),
                             OutlinedButton.icon(
-                              onPressed: () => userService.loadUserStats(user.id, forceRefresh: true),
+                              onPressed: () => userService.loadUserStats(
+                                user.id,
+                                forceRefresh: true,
+                              ),
                               icon: const Icon(Icons.refresh),
                               label: const Text('Retry'),
                             ),
@@ -500,7 +548,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                             const Text('No statistics available.'),
                             const SizedBox(height: 8),
                             OutlinedButton.icon(
-                              onPressed: () => userService.loadUserStats(user.id, forceRefresh: true),
+                              onPressed: () => userService.loadUserStats(
+                                user.id,
+                                forceRefresh: true,
+                              ),
                               icon: const Icon(Icons.refresh),
                               label: const Text('Load stats'),
                             ),
@@ -515,30 +566,43 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       SwitchListTile(
                         value: user.isModerator,
                         title: const Text('Moderator access'),
-                        subtitle: const Text('Allow this user to manage spot reports and moderation tools.'),
+                        subtitle: const Text(
+                          'Allow this user to manage spot reports and moderation tools.',
+                        ),
                         secondary: const Icon(Icons.security),
                         contentPadding: EdgeInsets.zero,
                         onChanged: updatingModerator
                             ? null
                             : (value) async {
-                                final bool success = await userService.updateModeratorStatus(user.id, value);
+                                final bool success = await userService
+                                    .updateModeratorStatus(user.id, value);
                                 if (!mounted) return;
 
                                 if (success) {
                                   if (!mounted) return;
-                                  ScaffoldMessenger.of(rootContext).showSnackBar(
+                                  ScaffoldMessenger.of(
+                                    rootContext,
+                                  ).showSnackBar(
                                     SnackBar(
-                                      content: Text(value
-                                          ? 'Moderator access granted to ${user.displayName ?? user.email}'
-                                          : 'Moderator access removed from ${user.displayName ?? user.email}'),
-                                      backgroundColor: value ? Colors.green : Colors.orange,
+                                      content: Text(
+                                        value
+                                            ? 'Moderator access granted to ${user.displayName ?? user.email}'
+                                            : 'Moderator access removed from ${user.displayName ?? user.email}',
+                                      ),
+                                      backgroundColor: value
+                                          ? Colors.green
+                                          : Colors.orange,
                                     ),
                                   );
                                 } else {
                                   if (!mounted) return;
-                                  ScaffoldMessenger.of(rootContext).showSnackBar(
+                                  ScaffoldMessenger.of(
+                                    rootContext,
+                                  ).showSnackBar(
                                     SnackBar(
-                                      content: const Text('Failed to update moderator status'),
+                                      content: const Text(
+                                        'Failed to update moderator status',
+                                      ),
                                       backgroundColor: Colors.red,
                                     ),
                                   );
@@ -581,7 +645,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   String _profilePathForUser(app_user.User user) {
     final username = user.username?.trim();
-    final identifier = username != null && username.isNotEmpty ? username : user.id;
+    final identifier = username != null && username.isNotEmpty
+        ? username
+        : user.id;
     return '/user/$identifier';
   }
 
@@ -638,9 +704,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(dryRun
-            ? 'Previewing sync of user createdAt...'
-            : 'Syncing user createdAt from Auth...'),
+        content: Text(
+          dryRun
+              ? 'Previewing sync of user createdAt...'
+              : 'Syncing user createdAt from Auth...',
+        ),
       ),
     );
 
@@ -681,67 +749,81 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           shrinkWrap: true,
                           itemCount: changes.length,
                           itemBuilder: (context, index) {
-                          final change = changes[index] as Map<String, dynamic>;
-                          final from = change['from'] as String?;
-                          final to = change['to'] as String?;
-                          final email = change['email'] as String? ?? 'N/A';
-                          final displayName = change['displayName'] as String?;
-                          final uid = change['uid'] as String? ?? 'Unknown';
+                            final change =
+                                changes[index] as Map<String, dynamic>;
+                            final from = change['from'] as String?;
+                            final to = change['to'] as String?;
+                            final email = change['email'] as String? ?? 'N/A';
+                            final displayName =
+                                change['displayName'] as String?;
+                            final uid = change['uid'] as String? ?? 'Unknown';
 
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    displayName != null && displayName.isNotEmpty
-                                        ? '$displayName ($email)'
-                                        : email,
-                                    style: Theme.of(ctx).textTheme.titleSmall,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  if (from != null) ...[
+                            return Card(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      displayName != null &&
+                                              displayName.isNotEmpty
+                                          ? '$displayName ($email)'
+                                          : email,
+                                      style: Theme.of(ctx).textTheme.titleSmall,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    if (from != null) ...[
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Text('From: '),
+                                          Expanded(
+                                            child: Text(
+                                              _formatTimestamp(from),
+                                              style: const TextStyle(
+                                                color: Colors.red,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                    ] else
+                                      const Text(
+                                        'From: (not set)',
+                                        style: TextStyle(
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                      ),
                                     Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        const Text('From: '),
+                                        const Text('To:   '),
                                         Expanded(
                                           child: Text(
-                                            _formatTimestamp(from),
-                                            style: const TextStyle(color: Colors.red),
+                                            _formatTimestamp(to ?? ''),
+                                            style: const TextStyle(
+                                              color: Colors.green,
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
                                     const SizedBox(height: 4),
-                                  ] else
-                                    const Text('From: (not set)', style: TextStyle(fontStyle: FontStyle.italic)),
-                                  Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text('To:   '),
-                                      Expanded(
-                                        child: Text(
-                                          _formatTimestamp(to ?? ''),
-                                          style: const TextStyle(color: Colors.green),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'UID: $uid',
-                                    style: Theme.of(ctx).textTheme.bodySmall,
-                                  ),
-                                ],
+                                    Text(
+                                      'UID: $uid',
+                                      style: Theme.of(ctx).textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
-                    ),
                     ],
                   ),
                 ),
@@ -761,9 +843,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             content: Text(
               dryRun
                   ? 'Preview: Would update $totalUpdated of $totalProcessed users '
-                      '($totalSkipped skipped, $totalErrors errors)'
+                        '($totalSkipped skipped, $totalErrors errors)'
                   : 'Sync complete: Updated $totalUpdated of $totalProcessed users '
-                      '($totalSkipped skipped, $totalErrors errors)',
+                        '($totalSkipped skipped, $totalErrors errors)',
             ),
             backgroundColor: totalErrors > 0 ? Colors.orange : Colors.green,
             duration: const Duration(seconds: 5),
@@ -815,10 +897,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -863,9 +942,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(dryRun
-            ? 'Previewing Google avatars to copy...'
-            : 'Copying Google avatars to Storage (this may take a while)...'),
+        content: Text(
+          dryRun
+              ? 'Previewing Google avatars to copy...'
+              : 'Copying Google avatars to Storage (this may take a while)...',
+        ),
       ),
     );
 
@@ -903,8 +984,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       ...changes.take(20).map((c) {
                         final change = c as Map<String, dynamic>;
                         final email = change['email'] as String? ?? 'N/A';
-                        final displayName =
-                            change['displayName'] as String?;
+                        final displayName = change['displayName'] as String?;
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 8),
                           child: Text(
@@ -939,9 +1019,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             content: Text(
               dryRun
                   ? 'Preview: Would copy $totalCopied of $totalProcessed users '
-                      '($totalSkipped skipped, $totalErrors errors)'
+                        '($totalSkipped skipped, $totalErrors errors)'
                   : 'Copy complete: Copied $totalCopied, updated $totalUpdated of $totalProcessed '
-                      '($totalSkipped skipped, $totalErrors errors)',
+                        '($totalSkipped skipped, $totalErrors errors)',
             ),
             backgroundColor: totalErrors > 0 ? Colors.orange : Colors.green,
             duration: const Duration(seconds: 5),
@@ -980,8 +1060,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           );
         }
       } else {
-        final errorMsg =
-            service.copyGoogleAvatarsError ?? 'Unknown error';
+        final errorMsg = service.copyGoogleAvatarsError ?? 'Unknown error';
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -993,10 +1072,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -1008,9 +1084,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Making profile pictures public...'),
-      ),
+      const SnackBar(content: Text('Making profile pictures public...')),
     );
 
     try {
@@ -1079,10 +1153,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -1123,9 +1194,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(dryRun
-            ? 'Previewing spot display name sync...'
-            : 'Syncing spot display names (this may take a while)...'),
+        content: Text(
+          dryRun
+              ? 'Previewing spot display name sync...'
+              : 'Syncing spot display names (this may take a while)...',
+        ),
       ),
     );
 
@@ -1197,9 +1270,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             content: Text(
               dryRun
                   ? 'Preview: Would update $spotsUpdated spots '
-                      '($spotsSkipped already match)'
+                        '($spotsSkipped already match)'
                   : 'Sync complete: Updated $spotsUpdated spots '
-                      '($spotsSkipped already matched)',
+                        '($spotsSkipped already matched)',
             ),
             backgroundColor: totalErrors > 0 ? Colors.orange : Colors.green,
             duration: const Duration(seconds: 5),
@@ -1238,8 +1311,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           );
         }
       } else {
-        final errorMsg =
-            service.syncSpotDisplayNamesError ?? 'Unknown error';
+        final errorMsg = service.syncSpotDisplayNamesError ?? 'Unknown error';
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1251,10 +1323,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -1279,10 +1348,7 @@ class _UserAvatar extends StatelessWidget {
     }
 
     final String initials = _computeInitials(displayName ?? user.email);
-    return CircleAvatar(
-      radius: radius,
-      child: Text(initials.toUpperCase()),
-    );
+    return CircleAvatar(radius: radius, child: Text(initials.toUpperCase()));
   }
 
   String _computeInitials(String value) {
@@ -1302,7 +1368,11 @@ class _UserAvatar extends StatelessWidget {
 }
 
 class _StatTile extends StatelessWidget {
-  const _StatTile({required this.label, required this.value, required this.icon});
+  const _StatTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
 
   final String label;
   final String value;
@@ -1314,17 +1384,16 @@ class _StatTile extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: Theme.of(context).colorScheme.primary),
           const SizedBox(height: 12),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
+          Text(value, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 4),
           Text(label, style: Theme.of(context).textTheme.bodyMedium),
         ],
@@ -1408,9 +1477,11 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
       if (!mounted) return;
       ScaffoldMessenger.of(widget.rootContext).showSnackBar(
         SnackBar(
-          content: Text(hasAccess
-              ? 'Access granted to "$featureName"'
-              : 'Access removed from "$featureName"'),
+          content: Text(
+            hasAccess
+                ? 'Access granted to "$featureName"'
+                : 'Access removed from "$featureName"',
+          ),
           backgroundColor: hasAccess ? Colors.green : Colors.orange,
         ),
       );
@@ -1527,8 +1598,10 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
             child: Text(
               'No feature access configured',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
             ),
           )
         else
@@ -1580,7 +1653,9 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
             IconButton(
               icon: const Icon(Icons.add),
               tooltip: 'Add feature access',
-              onPressed: widget.updatingFeatureAccess ? null : _addFeatureAccess,
+              onPressed: widget.updatingFeatureAccess
+                  ? null
+                  : _addFeatureAccess,
             ),
           ],
         ),

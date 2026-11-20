@@ -38,19 +38,28 @@ void main() {
     test('true when planned end is after now but within 12h', () {
       final now = DateTime(2025, 6, 1, 10, 0);
       final end = now.add(const Duration(hours: 3));
-      expect(trainingPlanEligibleForLinkedCheckIn(planEnding(end), now), isTrue);
+      expect(
+        trainingPlanEligibleForLinkedCheckIn(planEnding(end), now),
+        isTrue,
+      );
     });
 
     test('false when planned end is in the past', () {
       final now = DateTime(2025, 6, 1, 10, 0);
       final end = now.subtract(const Duration(minutes: 1));
-      expect(trainingPlanEligibleForLinkedCheckIn(planEnding(end), now), isFalse);
+      expect(
+        trainingPlanEligibleForLinkedCheckIn(planEnding(end), now),
+        isFalse,
+      );
     });
 
     test('false when planned end is more than 12h away', () {
       final now = DateTime(2025, 6, 1, 10, 0);
       final end = now.add(const Duration(hours: 13));
-      expect(trainingPlanEligibleForLinkedCheckIn(planEnding(end), now), isFalse);
+      expect(
+        trainingPlanEligibleForLinkedCheckIn(planEnding(end), now),
+        isFalse,
+      );
     });
   });
 }

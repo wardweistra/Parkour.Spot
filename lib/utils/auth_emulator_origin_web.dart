@@ -4,6 +4,8 @@ import 'package:web/web.dart' as web;
 const _defaultAppEmulatorOriginKey = '[DEFAULT]-firebaseEmulatorOrigin';
 
 void preconfigureAuthEmulatorOrigin(String host, int port) {
-  web.window.sessionStorage
-      .setItem(_defaultAppEmulatorOriginKey, 'http://$host:$port');
+  web.window.sessionStorage.setItem(
+    _defaultAppEmulatorOriginKey,
+    'http://$host:$port',
+  );
 }

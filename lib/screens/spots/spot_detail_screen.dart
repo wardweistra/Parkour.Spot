@@ -1201,9 +1201,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                         );
                                       },
                                       icon: Icon(
-                                        filled
-                                            ? Icons.star
-                                            : Icons.star_border,
+                                        filled ? Icons.star : Icons.star_border,
                                         color: Colors.amber,
                                         size: 40,
                                       ),
@@ -3115,7 +3113,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       brandSubtitle: hasTitle
                                           ? l10n.spotDetailBrandAsSeenIn
                                           : null,
-                                      brandDescription: hasTitle &&
+                                      brandDescription:
+                                          hasTitle &&
                                               meta.channelTitle
                                                   .trim()
                                                   .isNotEmpty
@@ -7735,8 +7734,9 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
         suggestedSpotFacilities = Map.from(_selectedFacilities);
       }
       final suggestedYoutubeVideoIds = _suggestedYoutubeVideoIds();
-      final List<String>? suggestedYoutubeIds =
-          suggestedYoutubeVideoIds.isEmpty ? null : suggestedYoutubeVideoIds;
+      final List<String>? suggestedYoutubeIds = suggestedYoutubeVideoIds.isEmpty
+          ? null
+          : suggestedYoutubeVideoIds;
 
       final hasAny =
           suggestedName != null ||
@@ -7997,9 +7997,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                   videoMeta: widget.spot.youtubeVideoMeta,
                   onAdd: _isSubmitting ? () {} : _addYoutubeRow,
                   onRemove: _isSubmitting ? (_) {} : _removeYoutubeRow,
-                  onReorder: _isSubmitting
-                      ? (_, __) {}
-                      : _reorderYoutubeRows,
+                  onReorder: _isSubmitting ? (_, __) {} : _reorderYoutubeRows,
                   onChanged: _isSubmitting ? null : () => setState(() {}),
                   hintText: l10n.spotDetailSuggestEditYoutubeHint,
                   forDialog: true,

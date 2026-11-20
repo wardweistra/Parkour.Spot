@@ -23,10 +23,7 @@ void main() {
               DateTime.utc(2026, 11, 1, 12),
             ),
           },
-          {
-            'userId': ' ',
-            'displayName': 'Skip',
-          },
+          {'userId': ' ', 'displayName': 'Skip'},
         ],
       });
 

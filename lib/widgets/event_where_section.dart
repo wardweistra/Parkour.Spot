@@ -93,6 +93,7 @@ class EventWhereSection extends StatelessWidget {
   final ValueChanged<EventWhereUiMode> onModeChanged;
   final List<Spot> mapDisplaySpots;
   final LatLng? currentLocation;
+
   /// True when an exact-location pin is set (not merely GPS map center).
   final bool hasSelectedPin;
   final bool isGettingLocation;

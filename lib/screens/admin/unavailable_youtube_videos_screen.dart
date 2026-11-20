@@ -33,8 +33,9 @@ class UnavailableYoutubeVideosScreen extends StatelessWidget {
         final nameB = (b['spotName'] as String? ?? '').toLowerCase();
         final byName = nameA.compareTo(nameB);
         if (byName != 0) return byName;
-        return (a['videoId'] as String? ?? '')
-            .compareTo(b['videoId'] as String? ?? '');
+        return (a['videoId'] as String? ?? '').compareTo(
+          b['videoId'] as String? ?? '',
+        );
       });
 
     return Scaffold(
@@ -70,7 +71,9 @@ class UnavailableYoutubeVideosScreen extends StatelessWidget {
           ),
           Expanded(
             child: sorted.isEmpty
-                ? const Center(child: Text('No unavailable YouTube videos found.'))
+                ? const Center(
+                    child: Text('No unavailable YouTube videos found.'),
+                  )
                 : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     itemCount: sorted.length,
@@ -103,7 +106,8 @@ class UnavailableYoutubeVideosScreen extends StatelessWidget {
                             onSelected: (value) {
                               if (value == 'spot' && spotId.isNotEmpty) {
                                 _openSpot(context, spotId);
-                              } else if (value == 'video' && videoId.isNotEmpty) {
+                              } else if (value == 'video' &&
+                                  videoId.isNotEmpty) {
                                 _openVideo(videoId);
                               }
                             },

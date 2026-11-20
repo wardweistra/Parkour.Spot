@@ -79,8 +79,10 @@ void showSpotCommunityActivityDialog(
   );
   final checkSvc = Provider.of<SpotCheckInService>(context, listen: false);
   final planSvc = Provider.of<SpotTrainingPlanService>(context, listen: false);
-  final statsSvc =
-      Provider.of<SpotTrainingStatsService>(context, listen: false);
+  final statsSvc = Provider.of<SpotTrainingStatsService>(
+    context,
+    listen: false,
+  );
   final checkStream = watchCheckInAvatarEntriesForSpot(checkSvc, spotId);
   final planStream = watchTrainingPlanAvatarEntriesForSpot(planSvc, spotId);
   final statsStream = statsSvc.watchStats(spotId);
@@ -148,20 +150,19 @@ void showSpotCommunityActivityDialog(
                         return const Center(child: CircularProgressIndicator());
                       }
 
-                      final checkEntries = List<CheckInAvatarEntry>.from(
-                        checkSnap.data!,
-                      )..sort(
-                          (a, b) => b.checkIn.checkedInAt.compareTo(
-                            a.checkIn.checkedInAt,
-                          ),
-                        );
-                      final planEntries = List<TrainingPlanAvatarEntry>.from(
-                        planSnap.data!,
-                      )..sort(
-                          (a, b) => b.plan.plannedStartAt.compareTo(
-                            a.plan.plannedStartAt,
-                          ),
-                        );
+                      final checkEntries =
+                          List<CheckInAvatarEntry>.from(checkSnap.data!)..sort(
+                            (a, b) => b.checkIn.checkedInAt.compareTo(
+                              a.checkIn.checkedInAt,
+                            ),
+                          );
+                      final planEntries =
+                          List<TrainingPlanAvatarEntry>.from(planSnap.data!)
+                            ..sort(
+                              (a, b) => b.plan.plannedStartAt.compareTo(
+                                a.plan.plannedStartAt,
+                              ),
+                            );
                       final recentPeople =
                           (statsSnap.data ?? SpotTrainingStats.empty)
                               .recentPeople;

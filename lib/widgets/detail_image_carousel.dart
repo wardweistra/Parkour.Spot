@@ -42,7 +42,8 @@ class DetailImageCarouselState extends State<DetailImageCarousel> {
   void previousImage() {
     if (widget.imageUrls.isEmpty) return;
     setState(() {
-      _currentIndex = (_currentIndex - 1 + widget.imageUrls.length) %
+      _currentIndex =
+          (_currentIndex - 1 + widget.imageUrls.length) %
           widget.imageUrls.length;
     });
   }
@@ -265,9 +266,7 @@ class _CarouselNavButton extends StatelessWidget {
           height: 48,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.3),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
           ),
           child: Icon(icon, color: Colors.white, size: 32),
         ),

@@ -403,12 +403,10 @@ class SpotService extends ChangeNotifier {
           videoIds: newYoutubeIds,
           spotName: spot.name,
         );
-        final failedIds = newYoutubeIds
-            .where((id) {
-              final url = resolvedThumbnails[id];
-              return url == null || url.isEmpty;
-            })
-            .toList();
+        final failedIds = newYoutubeIds.where((id) {
+          final url = resolvedThumbnails[id];
+          return url == null || url.isEmpty;
+        }).toList();
         if (failedIds.isNotEmpty) {
           _lastUpdateWarning =
               'Spot updated, but ${failedIds.length} YouTube '
@@ -438,10 +436,7 @@ class SpotService extends ChangeNotifier {
       if (idsNeedingMeta.isNotEmpty) {
         final resolvedMeta = await _fetchYoutubeVideoMeta(idsNeedingMeta);
         if (resolvedMeta.isNotEmpty) {
-          youtubeVideoMeta = {
-            ...youtubeVideoMeta,
-            ...resolvedMeta,
-          };
+          youtubeVideoMeta = {...youtubeVideoMeta, ...resolvedMeta};
         }
       }
 
@@ -1417,7 +1412,9 @@ class SpotService extends ChangeNotifier {
         'displayName': (trimmedName != null && trimmedName.isNotEmpty)
             ? trimmedName
             : null,
-        'photoURL': photoURL?.trim().isNotEmpty == true ? photoURL!.trim() : null,
+        'photoURL': photoURL?.trim().isNotEmpty == true
+            ? photoURL!.trim()
+            : null,
       };
 
       final batch = _firestore.batch();
@@ -1556,7 +1553,8 @@ class SpotService extends ChangeNotifier {
       final latestBySpot = <String, List<Rating>>{
         for (final id in cluster) id: const [],
       };
-      final subscriptions = <StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>[];
+      final subscriptions =
+          <StreamSubscription<QuerySnapshot<Map<String, dynamic>>>>[];
 
       Future<void> emit() async {
         final merged = <Rating>[
@@ -1576,14 +1574,12 @@ class SpotService extends ChangeNotifier {
             .collection('ratings')
             .where('spotId', isEqualTo: id)
             .snapshots()
-            .listen(
-              (snap) {
-                latestBySpot[id] =
-                    snap.docs.map(Rating.fromFirestore).toList(growable: false);
-                unawaited(emit());
-              },
-              onError: controller.addError,
-            );
+            .listen((snap) {
+              latestBySpot[id] = snap.docs
+                  .map(Rating.fromFirestore)
+                  .toList(growable: false);
+              unawaited(emit());
+            }, onError: controller.addError);
         subscriptions.add(sub);
       }
 
@@ -1623,7 +1619,9 @@ class SpotService extends ChangeNotifier {
             displayName: (displayName != null && displayName.isNotEmpty)
                 ? displayName
                 : null,
-            photoURL: (photoURL != null && photoURL.isNotEmpty) ? photoURL : null,
+            photoURL: (photoURL != null && photoURL.isNotEmpty)
+                ? photoURL
+                : null,
           );
         } catch (e) {
           // Private profiles are not readable by other clients; leave placeholder.

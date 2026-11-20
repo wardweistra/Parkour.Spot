@@ -303,9 +303,7 @@ class _AddToSpotListDialogState extends State<AddToSpotListDialog> {
           leading: Icon(Icons.add, color: theme.colorScheme.primary),
           title: Text(l10n.spotDetailCreateNewList),
           enabled: !_isBusy,
-          onTap: _isBusy
-              ? null
-              : () => setState(() => _showCreateForm = true),
+          onTap: _isBusy ? null : () => setState(() => _showCreateForm = true),
         ),
       ],
     );

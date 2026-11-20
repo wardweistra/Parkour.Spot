@@ -2,10 +2,7 @@ import 'dart:async';
 
 /// Forwards [source] to a broadcast stream and replays the latest event to late
 /// subscribers (Firestore snapshot streams do not replay by default).
-Stream<T> replayLatest<T>(
-  Stream<T> source, {
-  void Function(T value)? onValue,
-}) {
+Stream<T> replayLatest<T>(Stream<T> source, {void Function(T value)? onValue}) {
   T? lastValue;
   Object? lastError;
   StackTrace? lastStackTrace;

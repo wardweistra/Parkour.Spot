@@ -1,12 +1,7 @@
 import 'community_activity.dart';
 
 /// Single-select Explore activities lens (All / Events / Sessions / Contributions).
-enum CommunityActivityLens {
-  all,
-  events,
-  sessions,
-  contributions,
-}
+enum CommunityActivityLens { all, events, sessions, contributions }
 
 extension CommunityActivityLensQuery on CommunityActivityLens {
   /// Firestore `kind` values for `getCommunityActivityInBounds`, or null for All.
@@ -78,14 +73,10 @@ CommunityActivityFeed filterCommunityActivityFeed(
     case CommunityActivityLens.sessions:
       return feed.copyWith(
         past: feed.past
-            .where(
-              (item) => communityActivityKindMatchesLens(item.kind, lens),
-            )
+            .where((item) => communityActivityKindMatchesLens(item.kind, lens))
             .toList(),
         upcoming: feed.upcoming
-            .where(
-              (item) => communityActivityKindMatchesLens(item.kind, lens),
-            )
+            .where((item) => communityActivityKindMatchesLens(item.kind, lens))
             .toList(),
         pastEvents: const [],
         events: const [],
@@ -93,9 +84,7 @@ CommunityActivityFeed filterCommunityActivityFeed(
     case CommunityActivityLens.contributions:
       return feed.copyWith(
         past: feed.past
-            .where(
-              (item) => communityActivityKindMatchesLens(item.kind, lens),
-            )
+            .where((item) => communityActivityKindMatchesLens(item.kind, lens))
             .toList(),
         upcoming: const [],
         pastEvents: const [],

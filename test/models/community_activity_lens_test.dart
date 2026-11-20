@@ -80,7 +80,10 @@ void main() {
     test('all returns the same feed instance', () {
       final feed = _mixedFeed();
       expect(
-        identical(filterCommunityActivityFeed(feed, CommunityActivityLens.all), feed),
+        identical(
+          filterCommunityActivityFeed(feed, CommunityActivityLens.all),
+          feed,
+        ),
         isTrue,
       );
     });
@@ -104,14 +107,12 @@ void main() {
         _mixedFeed(),
         CommunityActivityLens.sessions,
       );
-      expect(
-        filtered.past.map((e) => e.kind),
-        [CommunityActivityKind.spotCheckIn],
-      );
-      expect(
-        filtered.upcoming.map((e) => e.kind),
-        [CommunityActivityKind.spotTrainingPlan],
-      );
+      expect(filtered.past.map((e) => e.kind), [
+        CommunityActivityKind.spotCheckIn,
+      ]);
+      expect(filtered.upcoming.map((e) => e.kind), [
+        CommunityActivityKind.spotTrainingPlan,
+      ]);
       expect(filtered.pastEvents, isEmpty);
       expect(filtered.events, isEmpty);
     });
@@ -121,33 +122,33 @@ void main() {
         _mixedFeed(),
         CommunityActivityLens.contributions,
       );
-      expect(
-        filtered.past.map((e) => e.kind).toList(),
-        [
-          CommunityActivityKind.spotAdded,
-          CommunityActivityKind.spotPhotoAdded,
-          CommunityActivityKind.spotRated,
-        ],
-      );
+      expect(filtered.past.map((e) => e.kind).toList(), [
+        CommunityActivityKind.spotAdded,
+        CommunityActivityKind.spotPhotoAdded,
+        CommunityActivityKind.spotRated,
+      ]);
       expect(filtered.upcoming, isEmpty);
       expect(filtered.pastEvents, isEmpty);
       expect(filtered.events, isEmpty);
     });
 
-    test('lens with no matches yields empty itemCount but keeps paging flags', () {
-      final feed = CommunityActivityFeed(
-        past: [_item('checkin', CommunityActivityKind.spotCheckIn)],
-        hasMorePast: true,
-        pastTotal: 5,
-      );
-      final filtered = filterCommunityActivityFeed(
-        feed,
-        CommunityActivityLens.events,
-      );
-      expect(filtered.isEmpty, isTrue);
-      expect(filtered.hasMorePast, isTrue);
-      expect(filtered.pastTotal, 5);
-    });
+    test(
+      'lens with no matches yields empty itemCount but keeps paging flags',
+      () {
+        final feed = CommunityActivityFeed(
+          past: [_item('checkin', CommunityActivityKind.spotCheckIn)],
+          hasMorePast: true,
+          pastTotal: 5,
+        );
+        final filtered = filterCommunityActivityFeed(
+          feed,
+          CommunityActivityLens.events,
+        );
+        expect(filtered.isEmpty, isTrue);
+        expect(filtered.hasMorePast, isTrue);
+        expect(filtered.pastTotal, 5);
+      },
+    );
   });
 
   group('communityActivityKindMatchesLens', () {

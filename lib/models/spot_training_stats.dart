@@ -26,7 +26,8 @@ class SpotRecentTrainer {
       userId: userId,
       displayName: _trimmed(data['displayName']),
       photoURL: _trimmed(data['photoURL']),
-      lastCheckedInAt: _parseDate(data['lastCheckedInAt']) ??
+      lastCheckedInAt:
+          _parseDate(data['lastCheckedInAt']) ??
           DateTime.fromMillisecondsSinceEpoch(0),
     );
   }

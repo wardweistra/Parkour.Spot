@@ -179,40 +179,35 @@ void main() {
     expect(find.text('Suggested changes'), findsNothing);
   });
 
-  testWidgets(
-    'shows unified diffs against the current event when provided',
-    (tester) async {
-      final report = EventReport(
-        id: 'report-1',
-        title: 'Jam session',
-        status: 'New',
-        startAt: DateTime.utc(2026, 5, 28, 18),
-        suggestedTitle: 'Evening jam',
-        suggestedDescription: 'Bring shoes',
-        targetEventId: 'event-1',
-      );
-      final currentEvent = ParkourEvent(
-        id: 'event-1',
-        title: 'Jam session',
-        description: 'Casual training',
-        startAt: DateTime.utc(2026, 5, 28, 18),
-      );
+  testWidgets('shows unified diffs against the current event when provided', (
+    tester,
+  ) async {
+    final report = EventReport(
+      id: 'report-1',
+      title: 'Jam session',
+      status: 'New',
+      startAt: DateTime.utc(2026, 5, 28, 18),
+      suggestedTitle: 'Evening jam',
+      suggestedDescription: 'Bring shoes',
+      targetEventId: 'event-1',
+    );
+    final currentEvent = ParkourEvent(
+      id: 'event-1',
+      title: 'Jam session',
+      description: 'Casual training',
+      startAt: DateTime.utc(2026, 5, 28, 18),
+    );
 
-      await pumpSummary(
-        tester,
-        report: report,
-        currentEvent: currentEvent,
-      );
+    await pumpSummary(tester, report: report, currentEvent: currentEvent);
 
-      expect(find.byType(TextDiffView), findsNWidgets(2));
-      expect(find.byType(ValueBeforeAfterView), findsNothing);
-      expect(find.textContaining('Jam session'), findsWidgets);
-      expect(find.textContaining('Evening jam'), findsOneWidget);
-      expect(find.textContaining('Casual training'), findsOneWidget);
-      expect(find.textContaining('Bring shoes'), findsOneWidget);
-      expect(find.text('Title: Evening jam'), findsNothing);
-    },
-  );
+    expect(find.byType(TextDiffView), findsNWidgets(2));
+    expect(find.byType(ValueBeforeAfterView), findsNothing);
+    expect(find.textContaining('Jam session'), findsWidgets);
+    expect(find.textContaining('Evening jam'), findsOneWidget);
+    expect(find.textContaining('Casual training'), findsOneWidget);
+    expect(find.textContaining('Bring shoes'), findsOneWidget);
+    expect(find.text('Title: Evening jam'), findsNothing);
+  });
 
   testWidgets('location review shows linked spot names in the summary', (
     tester,
@@ -272,11 +267,7 @@ void main() {
       startAt: DateTime.utc(2026, 5, 28, 18),
     );
 
-    await pumpSummary(
-      tester,
-      report: report,
-      currentEvent: currentEvent,
-    );
+    await pumpSummary(tester, report: report, currentEvent: currentEvent);
 
     expect(find.byType(TextDiffView), findsNothing);
     expect(find.byType(ValueBeforeAfterView), findsOneWidget);

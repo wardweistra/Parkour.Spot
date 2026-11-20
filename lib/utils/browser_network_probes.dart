@@ -1,5 +1,6 @@
 import 'browser_network_probes_stub.dart'
-    if (dart.library.js_interop) 'browser_network_probes_web.dart' as impl;
+    if (dart.library.js_interop) 'browser_network_probes_web.dart'
+    as impl;
 
 /// Plain `fetch` (no-cors) to [url], bypassing the Firebase SDKs. Returns a
 /// short description of the response; throws when the request fails.

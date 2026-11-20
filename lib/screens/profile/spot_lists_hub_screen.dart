@@ -416,8 +416,7 @@ class _SharedWithMeSection extends StatelessWidget {
               final roleLabel = invite.role == SpotListInviteRole.edit
                   ? l10n.spotListAccessRoleEdit
                   : l10n.spotListAccessRoleView;
-              final isPending =
-                  invite.status == SpotListInviteStatus.pending;
+              final isPending = invite.status == SpotListInviteStatus.pending;
               return Material(
                 color: scheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(12),
@@ -609,10 +608,7 @@ class _FeaturedListsSection extends StatelessWidget {
                     (list) => SpotListSummaryTile(
                       list: list,
                       showCreator: true,
-                      leading: Icon(
-                        Icons.star,
-                        color: scheme.primary,
-                      ),
+                      leading: Icon(Icons.star, color: scheme.primary),
                       onTap: () => onOpenList(list),
                     ),
                   )

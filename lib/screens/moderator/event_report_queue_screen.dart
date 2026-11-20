@@ -340,8 +340,7 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
 
     final approvedEventId = await showDialog<String?>(
       context: context,
-      builder: (dialogContext) =>
-          EventDuplicateApprovalDialog(report: report),
+      builder: (dialogContext) => EventDuplicateApprovalDialog(report: report),
     );
 
     if (!mounted) return;
@@ -612,9 +611,8 @@ class _EventReportCard extends StatelessWidget {
                 report.duplicateOfEventId?.trim().isNotEmpty == true) ...[
               const SizedBox(height: 12),
               TextButton.icon(
-                onPressed: () => context.push(
-                  '/event/${report.duplicateOfEventId!.trim()}',
-                ),
+                onPressed: () =>
+                    context.push('/event/${report.duplicateOfEventId!.trim()}'),
                 icon: const Icon(Icons.open_in_new, size: 18),
                 label: Text(l10n.eventReportQueueOpenOriginalEvent),
               ),
@@ -644,10 +642,7 @@ class _EventReportCard extends StatelessWidget {
             ],
             if (hasSuggestedEdits) ...[
               const SizedBox(height: 12),
-              EventSuggestedEditsSummary(
-                report: report,
-                compactMap: true,
-              ),
+              EventSuggestedEditsSummary(report: report, compactMap: true),
             ],
             if (!isSuggestion &&
                 report.latitude != null &&

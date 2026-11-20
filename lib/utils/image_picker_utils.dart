@@ -6,7 +6,8 @@ export 'package:image_picker/image_picker.dart' show ImageSource, XFile;
 import 'image_preparation.dart';
 import 'ui_yield.dart';
 import 'web_image_preparation_stub.dart'
-    if (dart.library.js_interop) 'web_image_preparation_web.dart' as web_image;
+    if (dart.library.js_interop) 'web_image_preparation_web.dart'
+    as web_image;
 
 /// Default longest-edge cap for user-selected photos.
 const int kDefaultMaxImageDimension = 2048;
@@ -16,11 +17,12 @@ const int kDefaultJpegQuality = 85;
 
 enum ImagePickPhase { reading, processing }
 
-typedef ImagePickProgressCallback = void Function({
-  required int current,
-  required int total,
-  required ImagePickPhase phase,
-});
+typedef ImagePickProgressCallback =
+    void Function({
+      required int current,
+      required int total,
+      required ImagePickPhase phase,
+    });
 
 /// Picks multiple gallery images without triggering browser canvas re-encoding
 /// on web (which breaks under Firefox/LibreWolf fingerprinting protection).

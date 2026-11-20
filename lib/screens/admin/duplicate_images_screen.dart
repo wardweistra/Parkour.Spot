@@ -38,7 +38,7 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
     try {
       final spotService = Provider.of<SpotService>(context, listen: false);
       final spots = await spotService.findSpotsWithDuplicateImageUrls();
-      
+
       setState(() {
         _spots = spots;
         _isLoading = false;
@@ -56,10 +56,10 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
     if (spot.imageUrls == null || spot.imageUrls!.isEmpty) {
       return [];
     }
-    
+
     final seen = <String>{};
     final duplicates = <String>[];
-    
+
     for (final url in spot.imageUrls!) {
       if (seen.contains(url)) {
         if (!duplicates.contains(url)) {
@@ -69,7 +69,7 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
         seen.add(url);
       }
     }
-    
+
     return duplicates;
   }
 
@@ -79,9 +79,17 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
   }
 
   /// Opens the spot: new tab when in browser, in-app nav when PWA/native.
-  Future<void> _openSpot(String spotId, {String? countryCode, String? city}) async {
+  Future<void> _openSpot(
+    String spotId, {
+    String? countryCode,
+    String? city,
+  }) async {
     if (MobileDetectionService.isRunningInBrowser) {
-      final url = UrlService.generateSpotUrl(spotId, countryCode: countryCode, city: city);
+      final url = UrlService.generateSpotUrl(
+        spotId,
+        countryCode: countryCode,
+        city: city,
+      );
       final uri = Uri.parse(url);
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -104,9 +112,7 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
     if (!authService.isAdmin) {
       return Scaffold(
         appBar: AppBar(title: const Text('Duplicate images')),
-        body: const Center(
-          child: Text('Administrator access required'),
-        ),
+        body: const Center(child: Text('Administrator access required')),
       );
     }
 
@@ -125,10 +131,7 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                 ),
                 child: Text(
                   '${_spots.length}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                  ),
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ),
             ],
@@ -137,12 +140,12 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context);
-          } else {
-            context.go('/admin');
-          }
-        },
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              context.go('/admin');
+            }
+          },
         ),
         actions: [
           IconButton(
@@ -185,9 +188,7 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
     }
 
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_spots.isEmpty) {
@@ -220,17 +221,12 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                   children: [
                     Text(
                       'Found ${_spots.length} spot${_spots.length == 1 ? '' : 's'} with duplicate image URLs',
-                      style: const TextStyle(
-                        fontSize: 16,
-                      ),
+                      style: const TextStyle(fontSize: 16),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Total count: ${_spots.length}',
-                      style: TextStyle(
-                        color: Colors.grey[700],
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.grey[700], fontSize: 12),
                     ),
                   ],
                 ),
@@ -238,7 +234,7 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
             ],
           ),
         ),
-        
+
         // Spots list
         Expanded(
           child: ListView.builder(
@@ -248,13 +244,17 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
               final duplicateUrls = _getDuplicateUrls(spot);
               final totalImages = spot.imageUrls?.length ?? 0;
               final uniqueImages = spot.imageUrls?.toSet().length ?? 0;
-              
+
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: InkWell(
                   onTap: () {
                     if (spot.id != null) {
-                      _openSpot(spot.id!, countryCode: spot.countryCode, city: spot.city);
+                      _openSpot(
+                        spot.id!,
+                        countryCode: spot.countryCode,
+                        city: spot.city,
+                      );
                     }
                   },
                   child: Padding(
@@ -267,9 +267,7 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                             Expanded(
                               child: Text(
                                 spot.name,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                ),
+                                style: const TextStyle(fontSize: 16),
                               ),
                             ),
                             if (spot.id != null)
@@ -284,32 +282,51 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                         ),
                         const SizedBox(height: 8),
                         // Spot source information
-                        if (spot.spotSource != null || spot.spotSourceName != null)
+                        if (spot.spotSource != null ||
+                            spot.spotSourceName != null)
                           Row(
                             children: [
-                              Icon(Icons.source, size: 16, color: Colors.grey[600]),
+                              Icon(
+                                Icons.source,
+                                size: 16,
+                                color: Colors.grey[600],
+                              ),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  spot.spotSourceName ?? spot.spotSource ?? 'Unknown source',
-                                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                  spot.spotSourceName ??
+                                      spot.spotSource ??
+                                      'Unknown source',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                        if (spot.spotSource != null || spot.spotSourceName != null)
+                        if (spot.spotSource != null ||
+                            spot.spotSourceName != null)
                           const SizedBox(height: 4),
                         // Link to spot
                         if (spot.id != null)
                           InkWell(
                             onTap: () {
-                              _openSpot(spot.id!, countryCode: spot.countryCode, city: spot.city);
+                              _openSpot(
+                                spot.id!,
+                                countryCode: spot.countryCode,
+                                city: spot.city,
+                              );
                             },
                             child: Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),
                               child: Row(
                                 children: [
-                                  Icon(Icons.link, size: 16, color: Theme.of(context).primaryColor),
+                                  Icon(
+                                    Icons.link,
+                                    size: 16,
+                                    color: Theme.of(context).primaryColor,
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     'View spot',
@@ -319,16 +336,20 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                                       decoration: TextDecoration.underline,
                                     ),
                                   ),
-                                  if (MobileDetectionService.isRunningInBrowser) ...[
+                                  if (MobileDetectionService
+                                      .isRunningInBrowser) ...[
                                     const SizedBox(width: 6),
-                                    Icon(Icons.open_in_new, size: 14, color: Theme.of(context).primaryColor),
+                                    Icon(
+                                      Icons.open_in_new,
+                                      size: 14,
+                                      color: Theme.of(context).primaryColor,
+                                    ),
                                   ],
                                 ],
                               ),
                             ),
                           ),
-                        if (spot.id != null)
-                          const SizedBox(height: 8),
+                        if (spot.id != null) const SizedBox(height: 8),
                         if (spot.description.isNotEmpty)
                           Text(
                             spot.description,
@@ -340,12 +361,20 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                           const SizedBox(height: 8),
                         Row(
                           children: [
-                            Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                            Icon(
+                              Icons.location_on,
+                              size: 16,
+                              color: Colors.grey[600],
+                            ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                spot.address ?? '${spot.latitude.toStringAsFixed(4)}, ${spot.longitude.toStringAsFixed(4)}',
-                                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                spot.address ??
+                                    '${spot.latitude.toStringAsFixed(4)}, ${spot.longitude.toStringAsFixed(4)}',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                           ],
@@ -363,13 +392,15 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.warning_amber, size: 20, color: Colors.orange[700]),
+                                  Icon(
+                                    Icons.warning_amber,
+                                    size: 20,
+                                    color: Colors.orange[700],
+                                  ),
                                   const SizedBox(width: 8),
                                   Text(
                                     'Duplicate Image URLs Detected',
-                                    style: TextStyle(
-                                      color: Colors.orange[900],
-                                    ),
+                                    style: TextStyle(color: Colors.orange[900]),
                                   ),
                                 ],
                               ),
@@ -383,12 +414,19 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                               ),
                               const SizedBox(height: 8),
                               ...duplicateUrls.map((url) {
-                                final count = _countOccurrences(spot.imageUrls!, url);
+                                final count = _countOccurrences(
+                                  spot.imageUrls!,
+                                  url,
+                                );
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 4),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.image, size: 16, color: Colors.orange[700]),
+                                      Icon(
+                                        Icons.image,
+                                        size: 16,
+                                        color: Colors.orange[700],
+                                      ),
                                       const SizedBox(width: 4),
                                       Expanded(
                                         child: Text(
@@ -405,7 +443,10 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                               }),
                               ...duplicateUrls.take(2).map((url) {
                                 return Padding(
-                                  padding: const EdgeInsets.only(left: 20, top: 2),
+                                  padding: const EdgeInsets.only(
+                                    left: 20,
+                                    top: 2,
+                                  ),
                                   child: Text(
                                     url,
                                     style: TextStyle(
@@ -420,7 +461,10 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                               }),
                               if (duplicateUrls.length > 2)
                                 Padding(
-                                  padding: const EdgeInsets.only(left: 20, top: 2),
+                                  padding: const EdgeInsets.only(
+                                    left: 20,
+                                    top: 2,
+                                  ),
                                   child: Text(
                                     '... and ${duplicateUrls.length - 2} more duplicate URL${duplicateUrls.length - 2 == 1 ? '' : 's'}',
                                     style: TextStyle(
@@ -447,7 +491,10 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                                   margin: const EdgeInsets.only(right: 8),
                                   decoration: BoxDecoration(
                                     border: isDuplicate
-                                        ? Border.all(color: Colors.orange, width: 3)
+                                        ? Border.all(
+                                            color: Colors.orange,
+                                            width: 3,
+                                          )
                                         : null,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -460,14 +507,17 @@ class _DuplicateImagesScreenState extends State<DuplicateImagesScreen> {
                                           width: 80,
                                           height: 80,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return Container(
-                                              width: 80,
-                                              height: 80,
-                                              color: Colors.grey[300],
-                                              child: const Icon(Icons.image_not_supported),
-                                            );
-                                          },
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                                return Container(
+                                                  width: 80,
+                                                  height: 80,
+                                                  color: Colors.grey[300],
+                                                  child: const Icon(
+                                                    Icons.image_not_supported,
+                                                  ),
+                                                );
+                                              },
                                         ),
                                         if (isDuplicate)
                                           Positioned(

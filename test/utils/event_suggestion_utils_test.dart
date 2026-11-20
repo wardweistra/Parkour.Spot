@@ -46,9 +46,15 @@ void main() {
   group('isNativeEventData', () {
     test('returns true when eventSourceId is missing or empty', () {
       expect(isNativeEventData(<String, dynamic>{}), isTrue);
-      expect(isNativeEventData(<String, dynamic>{'eventSourceId': null}), isTrue);
+      expect(
+        isNativeEventData(<String, dynamic>{'eventSourceId': null}),
+        isTrue,
+      );
       expect(isNativeEventData(<String, dynamic>{'eventSourceId': ''}), isTrue);
-      expect(isNativeEventData(<String, dynamic>{'eventSourceId': '   '}), isTrue);
+      expect(
+        isNativeEventData(<String, dynamic>{'eventSourceId': '   '}),
+        isTrue,
+      );
     });
 
     test('returns false when eventSourceId is set', () {

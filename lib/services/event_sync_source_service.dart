@@ -106,8 +106,7 @@ class EventSyncSource {
     final rawSourceType = data['sourceType']?.toString();
     final String sourceType;
     if (rawSourceType == EventSyncSource.sourceTypeBoomTechPublishedCalendar ||
-        rawSourceType ==
-            EventSyncSource.sourceTypeWixPublishedCalendarLegacy) {
+        rawSourceType == EventSyncSource.sourceTypeWixPublishedCalendarLegacy) {
       sourceType = EventSyncSource.sourceTypeBoomTechPublishedCalendar;
     } else if (rawSourceType == EventSyncSource.sourceTypeWixEventsCalendar) {
       sourceType = EventSyncSource.sourceTypeWixEventsCalendar;
@@ -115,8 +114,7 @@ class EventSyncSource {
       sourceType = EventSyncSource.sourceTypeSquarespaceCalendar;
     } else if (rawSourceType == EventSyncSource.sourceTypeJumpEventsNl) {
       sourceType = EventSyncSource.sourceTypeJumpEventsNl;
-    } else if (rawSourceType ==
-        EventSyncSource.sourceTypeMomenceHostSchedule) {
+    } else if (rawSourceType == EventSyncSource.sourceTypeMomenceHostSchedule) {
       sourceType = EventSyncSource.sourceTypeMomenceHostSchedule;
     } else if (rawSourceType ==
         EventSyncSource.sourceTypeEventbriteCollection) {
@@ -161,13 +159,11 @@ class EventSyncSource {
 
   bool get isWixEventsCalendar => sourceType == sourceTypeWixEventsCalendar;
 
-  bool get isSquarespaceCalendar =>
-      sourceType == sourceTypeSquarespaceCalendar;
+  bool get isSquarespaceCalendar => sourceType == sourceTypeSquarespaceCalendar;
 
   bool get isJumpEventsNl => sourceType == sourceTypeJumpEventsNl;
 
-  bool get isMomenceHostSchedule =>
-      sourceType == sourceTypeMomenceHostSchedule;
+  bool get isMomenceHostSchedule => sourceType == sourceTypeMomenceHostSchedule;
 
   bool get isEventbriteCollection =>
       sourceType == sourceTypeEventbriteCollection;

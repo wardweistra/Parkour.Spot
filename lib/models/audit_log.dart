@@ -49,8 +49,10 @@ class AuditLog {
   final String? userId;
   final String? userName;
   final DateTime timestamp;
-  final Map<String, dynamic>? changes; // Field changes: {field: {from: value, to: value}}
-  final Map<String, dynamic>? metadata; // Additional metadata (e.g., originalSpotId for duplicates)
+  final Map<String, dynamic>?
+  changes; // Field changes: {field: {from: value, to: value}}
+  final Map<String, dynamic>?
+  metadata; // Additional metadata (e.g., originalSpotId for duplicates)
 
   AuditLog({
     this.id,

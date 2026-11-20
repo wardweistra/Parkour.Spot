@@ -58,7 +58,10 @@ class SpotTrackingService extends ChangeNotifier {
       // Update local profile cache
       final wantToVisit = List<String>.from(getWantToVisit())..add(spotId);
       final visited = List<String>.from(getVisited())..remove(spotId);
-      _authService.updateUserSpotTracking(wantToVisit: wantToVisit, visited: visited);
+      _authService.updateUserSpotTracking(
+        wantToVisit: wantToVisit,
+        visited: visited,
+      );
 
       _isLoading = false;
       notifyListeners();
@@ -91,7 +94,10 @@ class SpotTrackingService extends ChangeNotifier {
       });
 
       final wantToVisit = List<String>.from(getWantToVisit())..remove(spotId);
-      _authService.updateUserSpotTracking(wantToVisit: wantToVisit, visited: getVisited());
+      _authService.updateUserSpotTracking(
+        wantToVisit: wantToVisit,
+        visited: getVisited(),
+      );
 
       _isLoading = false;
       notifyListeners();
@@ -132,7 +138,10 @@ class SpotTrackingService extends ChangeNotifier {
 
       final wantToVisit = List<String>.from(getWantToVisit())..remove(spotId);
       final visited = List<String>.from(getVisited())..add(spotId);
-      _authService.updateUserSpotTracking(wantToVisit: wantToVisit, visited: visited);
+      _authService.updateUserSpotTracking(
+        wantToVisit: wantToVisit,
+        visited: visited,
+      );
 
       _isLoading = false;
       notifyListeners();
@@ -165,7 +174,10 @@ class SpotTrackingService extends ChangeNotifier {
       });
 
       final visited = List<String>.from(getVisited())..remove(spotId);
-      _authService.updateUserSpotTracking(wantToVisit: getWantToVisit(), visited: visited);
+      _authService.updateUserSpotTracking(
+        wantToVisit: getWantToVisit(),
+        visited: visited,
+      );
 
       _isLoading = false;
       notifyListeners();

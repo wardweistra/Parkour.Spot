@@ -5,10 +5,7 @@ import 'package:parkour_spot/utils/browser_timezone_utils.dart';
 void main() {
   group('BrowserTimezoneUtils', () {
     test('resolveDetectedTimeZone normalizes known ids', () {
-      expect(
-        resolveDetectedTimeZone('Europe/Paris'),
-        'Europe/Paris',
-      );
+      expect(resolveDetectedTimeZone('Europe/Paris'), 'Europe/Paris');
       expect(
         resolveDetectedTimeZone('  America/New_York  '),
         'America/New_York',

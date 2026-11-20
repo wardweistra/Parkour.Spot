@@ -339,9 +339,7 @@ class EventBackfillActions {
             children: [
               CircularProgressIndicator(),
               SizedBox(width: 16),
-              Expanded(
-                child: Text('Recomputing going / interested totals...'),
-              ),
+              Expanded(child: Text('Recomputing going / interested totals...')),
             ],
           ),
         );

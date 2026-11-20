@@ -111,10 +111,6 @@ Map<String, dynamic> detailedDeviceInfo() {
           : (isAndroid() ? 'google_maps' : 'google_maps'),
     };
   } catch (e) {
-    return {
-      'platform': 'web',
-      'error': e.toString(),
-      'isMobileDevice': false,
-    };
+    return {'platform': 'web', 'error': e.toString(), 'isMobileDevice': false};
   }
 }

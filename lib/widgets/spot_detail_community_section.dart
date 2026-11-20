@@ -35,6 +35,7 @@ class SpotDetailCommunitySection extends StatefulWidget {
   });
 
   final String spotId;
+
   /// For share links in the Community dialog (SEO path when set).
   final String? spotDisplayName;
   final String? countryCode;
@@ -51,9 +52,11 @@ class SpotDetailCommunitySection extends StatefulWidget {
       _SpotDetailCommunitySectionState();
 }
 
-class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection> {
+class _SpotDetailCommunitySectionState
+    extends State<SpotDetailCommunitySection> {
   static const double _avatarRadius = 20;
   static const double _avatarOverlap = _avatarRadius * (23.0 / 20.0);
+
   /// Distinct from [null] uid so signed-out users still refresh `_myStream` after spot changes.
   static const Object _uidUnset = Object();
 
@@ -112,7 +115,10 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
   void didChangeDependencies() {
     super.didChangeDependencies();
     final svc = Provider.of<SpotCheckInService>(context, listen: false);
-    final planSvc = Provider.of<SpotTrainingPlanService>(context, listen: false);
+    final planSvc = Provider.of<SpotTrainingPlanService>(
+      context,
+      listen: false,
+    );
     final auth = Provider.of<AuthService>(context);
     final uid = auth.currentUser?.uid;
     if (_cachedSpotId != widget.spotId) {
@@ -222,10 +228,7 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
       target = ringed;
     }
 
-    return Tooltip(
-      message: _plainTooltipFor(entry),
-      child: target,
-    );
+    return Tooltip(message: _plainTooltipFor(entry), child: target);
   }
 
   Widget _avatarStackRow(
@@ -244,7 +247,9 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          width: shown.isEmpty ? 0 : (shown.length - 1) * _avatarOverlap + _avatarRadius * 2,
+          width: shown.isEmpty
+              ? 0
+              : (shown.length - 1) * _avatarOverlap + _avatarRadius * 2,
           height: _avatarRadius * 2,
           child: Stack(
             clipBehavior: Clip.none,
@@ -274,7 +279,8 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
     final l10n = AppLocalizations.of(context)!;
     final p = entry.plan;
     final now = DateTime.now();
-    final inActiveWindow = now.toUtc().isAfter(p.plannedStartAt.toUtc()) &&
+    final inActiveWindow =
+        now.toUtc().isAfter(p.plannedStartAt.toUtc()) &&
         p.plannedEndAt.toUtc().isAfter(now.toUtc());
 
     final String head;
@@ -378,10 +384,7 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
       target = ringed;
     }
 
-    return Tooltip(
-      message: _trainingTooltipFor(entry),
-      child: target,
-    );
+    return Tooltip(message: _trainingTooltipFor(entry), child: target);
   }
 
   Widget _avatarStackRowTraining(
@@ -400,7 +403,9 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          width: shown.isEmpty ? 0 : (shown.length - 1) * _avatarOverlap + _avatarRadius * 2,
+          width: shown.isEmpty
+              ? 0
+              : (shown.length - 1) * _avatarOverlap + _avatarRadius * 2,
           height: _avatarRadius * 2,
           child: Stack(
             clipBehavior: Clip.none,
@@ -449,8 +454,8 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
     final label = !authenticated
         ? l10n.spotDetailCommunitySignInToPlanButton
         : (myPlan != null
-            ? l10n.spotDetailCommunityEditTrainingPlanButton
-            : l10n.spotDetailCommunityPlanningVisitButton);
+              ? l10n.spotDetailCommunityEditTrainingPlanButton
+              : l10n.spotDetailCommunityPlanningVisitButton);
 
     final IconData planIcon;
     if (!authenticated) {
@@ -544,11 +549,7 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          Icons.groups_2_outlined,
-          size: 20,
-          color: cs.primary,
-        ),
+        Icon(Icons.groups_2_outlined, size: 20, color: cs.primary),
         const SizedBox(width: 8),
         Expanded(
           child: Column(
@@ -582,17 +583,13 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
   Widget _socialStripSkeleton(ColorScheme cs) {
     final placeholder = cs.surfaceContainerHighest.withValues(alpha: 0.85);
     const skeletonCount = 3;
-    final stackWidth =
-        (skeletonCount - 1) * _avatarOverlap + _avatarRadius * 2;
+    final stackWidth = (skeletonCount - 1) * _avatarOverlap + _avatarRadius * 2;
 
     Widget circle() => Container(
-          width: _avatarRadius * 2,
-          height: _avatarRadius * 2,
-          decoration: BoxDecoration(
-            color: placeholder,
-            shape: BoxShape.circle,
-          ),
-        );
+      width: _avatarRadius * 2,
+      height: _avatarRadius * 2,
+      decoration: BoxDecoration(color: placeholder, shape: BoxShape.circle),
+    );
 
     return SizedBox(
       height: _avatarRadius * 2,
@@ -605,10 +602,7 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
               clipBehavior: Clip.none,
               children: [
                 for (var i = 0; i < skeletonCount; i++)
-                  Positioned(
-                    left: i * _avatarOverlap,
-                    child: circle(),
-                  ),
+                  Positioned(left: i * _avatarOverlap, child: circle()),
               ],
             ),
           ),
@@ -742,11 +736,7 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
             children: [
               Tooltip(
                 message: l10n.spotDetailCommunityRecentTrainersTooltip,
-                child: Icon(
-                  Icons.history,
-                  size: 17,
-                  color: cs.primary,
-                ),
+                child: Icon(Icons.history, size: 17, color: cs.primary),
               ),
               const SizedBox(width: 5),
               _recentAvatarStackRow(context, theme, people),
@@ -762,11 +752,7 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: cs.primary,
-              ),
+              Icon(Icons.chevron_right, size: 20, color: cs.primary),
             ],
           ),
         ),
@@ -806,7 +792,9 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                       final name = shown[i].displayName?.trim();
                       return (name != null && name.isNotEmpty)
                           ? name
-                          : AppLocalizations.of(context)!.spotCheckInUnnamedPerson;
+                          : AppLocalizations.of(
+                              context,
+                            )!.spotCheckInUnnamedPerson;
                     }(),
                     child: CircleAvatar(
                       radius: _avatarRadius,
@@ -900,15 +888,12 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
         _myStream == null ||
         _publicPlansStream == null ||
         _myPlanStream == null) {
-      body = _loadingPanel(
-        theme: theme,
-        cs: cs,
-        l10n: l10n,
-        auth: auth,
-      );
+      body = _loadingPanel(theme: theme, cs: cs, l10n: l10n, auth: auth);
     } else {
-      final statsSvc =
-          Provider.of<SpotTrainingStatsService>(context, listen: false);
+      final statsSvc = Provider.of<SpotTrainingStatsService>(
+        context,
+        listen: false,
+      );
       body = StreamBuilder<List<SpotCheckIn>>(
         stream: _publicStream,
         builder: (context, publicSnap) {
@@ -924,187 +909,193 @@ class _SpotDetailCommunitySectionState extends State<SpotDetailCommunitySection>
                       return StreamBuilder<SpotTrainingStats>(
                         stream: statsSvc.watchStats(widget.spotId),
                         builder: (context, statsSnap) {
-                      // Until every stream has emitted, avoid flashing empty
-                      // presence then jumping to avatars (moves the buttons).
-                      final anyWaiting = [
-                        publicSnap,
-                        mySnap,
-                        plansPublicSnap,
-                        myPlanSnap,
-                        statsSnap,
-                      ].any(
-                        (snap) =>
-                            snap.connectionState == ConnectionState.waiting &&
-                            !snap.hasData,
-                      );
-                      if (anyWaiting) {
-                        return _loadingPanel(
-                          theme: theme,
-                          cs: cs,
-                          l10n: l10n,
-                          auth: auth,
-                        );
-                      }
-
-                      final stats =
-                          statsSnap.data ?? SpotTrainingStats.empty;
-                      final entries = buildCheckInAvatarEntries(
-                        publicSnap.data ?? [],
-                        mySnap.data,
-                      );
-                      final hasPeople = entries.isNotEmpty;
-                      final mine = mySnap.data;
-
-                      final planningEntries = buildTrainingPlanAvatarEntries(
-                        plansPublicSnap.data ?? [],
-                        myPlanSnap.data,
-                      );
-                      final hasPlanningPresence = planningEntries.isNotEmpty;
-                      final myPlan = myPlanSnap.data;
-                      final hasRecentTrainers = stats.hasRecentPeople;
-                      final volumeCaption =
-                          _volumeCaption(theme, cs, l10n, stats);
-
-                      final Widget unifiedSocialStrip;
-                      if (!hasPeople && !hasPlanningPresence) {
-                        unifiedSocialStrip = hasRecentTrainers
-                            ? _recentTrainersStrip(
-                                context,
-                                theme,
-                                cs,
-                                l10n,
-                                stats.recentPeople,
-                              )
-                            : Text(
-                                l10n.spotDetailCommunityNobodySocialShort,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  height: 1.3,
-                                  color:
-                                      cs.onSurface.withValues(alpha: 0.75),
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                          // Until every stream has emitted, avoid flashing empty
+                          // presence then jumping to avatars (moves the buttons).
+                          final anyWaiting =
+                              [
+                                publicSnap,
+                                mySnap,
+                                plansPublicSnap,
+                                myPlanSnap,
+                                statsSnap,
+                              ].any(
+                                (snap) =>
+                                    snap.connectionState ==
+                                        ConnectionState.waiting &&
+                                    !snap.hasData,
                               );
-                      } else {
-                        unifiedSocialStrip = Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () => showSpotCommunityActivityDialog(
-                                      context,
-                                      theme,
-                                      widget.spotId,
-                                      spotDisplayName: widget.spotDisplayName,
-                                      countryCode: widget.countryCode,
-                                      city: widget.city,
-                                      onJoinTrainingPlan:
-                                          widget.onJoinTrainingPlan,
-                                      onLoginRequired: widget.onLoginRequired,
-                                    ),
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 2,
+                          if (anyWaiting) {
+                            return _loadingPanel(
+                              theme: theme,
+                              cs: cs,
+                              l10n: l10n,
+                              auth: auth,
+                            );
+                          }
+
+                          final stats =
+                              statsSnap.data ?? SpotTrainingStats.empty;
+                          final entries = buildCheckInAvatarEntries(
+                            publicSnap.data ?? [],
+                            mySnap.data,
+                          );
+                          final hasPeople = entries.isNotEmpty;
+                          final mine = mySnap.data;
+
+                          final planningEntries =
+                              buildTrainingPlanAvatarEntries(
+                                plansPublicSnap.data ?? [],
+                                myPlanSnap.data,
+                              );
+                          final hasPlanningPresence =
+                              planningEntries.isNotEmpty;
+                          final myPlan = myPlanSnap.data;
+                          final hasRecentTrainers = stats.hasRecentPeople;
+                          final volumeCaption = _volumeCaption(
+                            theme,
+                            cs,
+                            l10n,
+                            stats,
+                          );
+
+                          final Widget unifiedSocialStrip;
+                          if (!hasPeople && !hasPlanningPresence) {
+                            unifiedSocialStrip = hasRecentTrainers
+                                ? _recentTrainersStrip(
+                                    context,
+                                    theme,
+                                    cs,
+                                    l10n,
+                                    stats.recentPeople,
+                                  )
+                                : Text(
+                                    l10n.spotDetailCommunityNobodySocialShort,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      height: 1.3,
+                                      color: cs.onSurface.withValues(
+                                        alpha: 0.75,
                                       ),
-                                      child: Row(
-                                        children: [
-                                          if (hasPeople) ...[
-                                            Tooltip(
-                                              message:
-                                                  l10n.spotDetailPresenceHereNow,
-                                              child: Icon(
-                                                Icons.place_outlined,
-                                                size: 17,
-                                                color: cs.primary,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 5),
-                                            _avatarStackRow(
-                                              context,
-                                              theme,
-                                              entries,
-                                            ),
-                                          ],
-                                          if (hasPeople &&
-                                              hasPlanningPresence)
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 8,
-                                              ),
-                                              child: Text(
-                                                '·',
-                                                style: theme
-                                                    .textTheme.titleMedium
-                                                    ?.copyWith(
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  );
+                          } else {
+                            unifiedSocialStrip = Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () => showSpotCommunityActivityDialog(
+                                  context,
+                                  theme,
+                                  widget.spotId,
+                                  spotDisplayName: widget.spotDisplayName,
+                                  countryCode: widget.countryCode,
+                                  city: widget.city,
+                                  onJoinTrainingPlan: widget.onJoinTrainingPlan,
+                                  onLoginRequired: widget.onLoginRequired,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 2,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      if (hasPeople) ...[
+                                        Tooltip(
+                                          message:
+                                              l10n.spotDetailPresenceHereNow,
+                                          child: Icon(
+                                            Icons.place_outlined,
+                                            size: 17,
+                                            color: cs.primary,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 5),
+                                        _avatarStackRow(
+                                          context,
+                                          theme,
+                                          entries,
+                                        ),
+                                      ],
+                                      if (hasPeople && hasPlanningPresence)
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                          ),
+                                          child: Text(
+                                            '·',
+                                            style: theme.textTheme.titleMedium
+                                                ?.copyWith(
                                                   color: cs.onSurface
                                                       .withValues(alpha: 0.35),
                                                   height: 1,
                                                 ),
-                                              ),
-                                            ),
-                                          if (hasPlanningPresence) ...[
-                                            Tooltip(
-                                              message: l10n
-                                                  .spotDetailCommunityPlanningToTrain,
-                                              child: Icon(
-                                                Icons.event_available_outlined,
-                                                size: 17,
-                                                color: cs.secondary,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 5),
-                                            _avatarStackRowTraining(
-                                              context,
-                                              theme,
-                                              planningEntries,
-                                            ),
-                                          ],
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              l10n.spotDetailCommunityViewAll,
-                                              style: theme.textTheme.labelLarge
-                                                  ?.copyWith(
+                                          ),
+                                        ),
+                                      if (hasPlanningPresence) ...[
+                                        Tooltip(
+                                          message: l10n
+                                              .spotDetailCommunityPlanningToTrain,
+                                          child: Icon(
+                                            Icons.event_available_outlined,
+                                            size: 17,
+                                            color: cs.secondary,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 5),
+                                        _avatarStackRowTraining(
+                                          context,
+                                          theme,
+                                          planningEntries,
+                                        ),
+                                      ],
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          l10n.spotDetailCommunityViewAll,
+                                          style: theme.textTheme.labelLarge
+                                              ?.copyWith(
                                                 color: cs.primary,
                                                 fontWeight: FontWeight.w600,
                                               ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                          Icon(
-                                            Icons.chevron_right,
-                                            size: 20,
-                                            color: cs.primary,
-                                          ),
-                                        ],
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
-                                    ),
+                                      Icon(
+                                        Icons.chevron_right,
+                                        size: 20,
+                                        color: cs.primary,
+                                      ),
+                                    ],
                                   ),
-                                );
-                      }
+                                ),
+                              ),
+                            );
+                          }
 
-                      return _panelColumn(
-                        theme: theme,
-                        cs: cs,
-                        l10n: l10n,
-                        showSubtitle: hasPeople ||
-                            hasPlanningPresence ||
-                            hasRecentTrainers,
-                        socialStrip: unifiedSocialStrip,
-                        volumeCaption: volumeCaption,
-                        checkIn: _checkInButton(
-                          l10n: l10n,
-                          authenticated: auth.isAuthenticated,
-                          mine: mine,
-                        ),
-                        planning: _planningControl(
-                          theme: theme,
-                          l10n: l10n,
-                          authenticated: auth.isAuthenticated,
-                          myPlan: myPlan,
-                        ),
-                      );
+                          return _panelColumn(
+                            theme: theme,
+                            cs: cs,
+                            l10n: l10n,
+                            showSubtitle:
+                                hasPeople ||
+                                hasPlanningPresence ||
+                                hasRecentTrainers,
+                            socialStrip: unifiedSocialStrip,
+                            volumeCaption: volumeCaption,
+                            checkIn: _checkInButton(
+                              l10n: l10n,
+                              authenticated: auth.isAuthenticated,
+                              mine: mine,
+                            ),
+                            planning: _planningControl(
+                              theme: theme,
+                              l10n: l10n,
+                              authenticated: auth.isAuthenticated,
+                              myPlan: myPlan,
+                            ),
+                          );
                         },
                       );
                     },

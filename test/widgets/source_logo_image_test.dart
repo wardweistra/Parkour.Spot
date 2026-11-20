@@ -7,11 +7,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(
-          body: SourceLogoImage(logoUrl: null),
-        ),
-      ),
+      const MaterialApp(home: Scaffold(body: SourceLogoImage(logoUrl: null))),
     );
 
     expect(find.byIcon(Icons.public), findsOneWidget);

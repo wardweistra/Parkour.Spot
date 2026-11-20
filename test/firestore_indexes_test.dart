@@ -8,18 +8,25 @@ void main() {
     'notifications.createdAt has collection-group and collection field overrides',
     () {
       final file = File('firestore.indexes.json');
-      expect(file.existsSync(), isTrue, reason: 'run flutter test from repo root');
+      expect(
+        file.existsSync(),
+        isTrue,
+        reason: 'run flutter test from repo root',
+      );
 
       final json = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
       final overrides = json['fieldOverrides'];
       expect(overrides, isA<List>());
 
-      final createdAt = (overrides as List).cast<dynamic>().whereType<Map>().firstWhere(
-        (override) =>
-            override['collectionGroup'] == 'notifications' &&
-            override['fieldPath'] == 'createdAt',
-        orElse: () => <String, dynamic>{},
-      );
+      final createdAt = (overrides as List)
+          .cast<dynamic>()
+          .whereType<Map>()
+          .firstWhere(
+            (override) =>
+                override['collectionGroup'] == 'notifications' &&
+                override['fieldPath'] == 'createdAt',
+            orElse: () => <String, dynamic>{},
+          );
       expect(
         createdAt,
         isNotEmpty,
@@ -29,7 +36,9 @@ void main() {
             'in the same override so per-user inboxes keep working.',
       );
 
-      final indexes = (createdAt['indexes'] as List).cast<dynamic>().whereType<Map>();
+      final indexes = (createdAt['indexes'] as List)
+          .cast<dynamic>()
+          .whereType<Map>();
       expect(
         indexes.any(
           (index) =>
@@ -41,7 +50,8 @@ void main() {
       expect(
         indexes.any(
           (index) =>
-              index['order'] == 'DESCENDING' && index['queryScope'] == 'COLLECTION',
+              index['order'] == 'DESCENDING' &&
+              index['queryScope'] == 'COLLECTION',
         ),
         isTrue,
         reason:

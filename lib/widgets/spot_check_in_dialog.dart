@@ -42,12 +42,15 @@ class SpotCheckInDialogExtendInstead extends SpotCheckInDialogOutcome {
 Future<SpotCheckInDialogOutcome?> showSpotCheckInDialog(
   BuildContext context, {
   SpotCheckIn? existingCheckIn,
+
   /// When true, show “Still here” (prefill end = now + 1h). Set from
   /// [SpotCheckInService.stillHereEligibleForUser] so it’s only true for the user’s
   /// latest check-in within the time window.
   bool stillHereEligible = false,
+
   /// Active check-ins at other spots (new check-in only); shown as a notice before saving.
   List<SpotCheckIn> activeElsewhere = const [],
+
   /// New check-in only: recent session at this spot that can be extended instead of duplicating.
   SpotCheckIn? extendableAtSameSpot,
 
@@ -137,7 +140,8 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
     } else {
       _sharePublicly = true;
       final link = widget.linkedTrainingPlan;
-      final eligible = link != null &&
+      final eligible =
+          link != null &&
           trainingPlanEligibleForLinkedCheckIn(link, DateTime.now());
       String planCommentPrefill = '';
       if (eligible) {
@@ -160,12 +164,11 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
   /// Keep end after start and within max duration (edit mode).
   void _reconcileEditSessionBounds() {
     if (!_checkedInAt.isBefore(_expectedEndAt)) {
-      _expectedEndAt = roundToNearest15Minutes(
-        _checkedInAt.add(_quarterStep),
-      );
+      _expectedEndAt = roundToNearest15Minutes(_checkedInAt.add(_quarterStep));
       return;
     }
-    if (_expectedEndAt.difference(_checkedInAt) > SpotCheckIn.maxSessionDuration) {
+    if (_expectedEndAt.difference(_checkedInAt) >
+        SpotCheckIn.maxSessionDuration) {
       _expectedEndAt = _checkedInAt.add(SpotCheckIn.maxSessionDuration);
     }
   }
@@ -238,8 +241,9 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
   /// Sets end to now (or just after start if the clock is behind) and saves.
   void _endNowAndSave() {
     final now = DateTime.now();
-    final end =
-        now.isAfter(_checkedInAt) ? now : _checkedInAt.add(const Duration(seconds: 1));
+    final end = now.isAfter(_checkedInAt)
+        ? now
+        : _checkedInAt.add(const Duration(seconds: 1));
     _popSaved(expectedEndAt: end);
   }
 
@@ -348,15 +352,13 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
       title: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(
-            Icons.place_outlined,
-            color: cs.primary,
-            size: 28,
-          ),
+          Icon(Icons.place_outlined, color: cs.primary, size: 28),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              _isEdit ? l10n.spotCheckInDialogTitleEdit : l10n.spotCheckInDialogTitle,
+              _isEdit
+                  ? l10n.spotCheckInDialogTitleEdit
+                  : l10n.spotCheckInDialogTitle,
               style: theme.textTheme.titleLarge,
             ),
           ),
@@ -389,11 +391,7 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.history_outlined,
-                        size: 22,
-                        color: cs.primary,
-                      ),
+                      Icon(Icons.history_outlined, size: 22, color: cs.primary),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -417,9 +415,12 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
                                 style: TextButton.styleFrom(
                                   padding: const EdgeInsets.only(top: 4),
                                   minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
-                                child: Text(l10n.spotCheckInDialogExtendInstead),
+                                child: Text(
+                                  l10n.spotCheckInDialogExtendInstead,
+                                ),
                               ),
                             ),
                           ],

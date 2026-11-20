@@ -36,7 +36,8 @@ void main() {
     });
 
     test('trims trailing space before ellipsis', () {
-      final text = '${'word ' * 60}x'; // ~301 chars, last word boundary before 70%
+      final text =
+          '${'word ' * 60}x'; // ~301 chars, last word boundary before 70%
       final result = clipForMetaImpl(text, maxLength: 100);
       expect(result.endsWith('…'), true);
       expect(result.endsWith(' …'), false);

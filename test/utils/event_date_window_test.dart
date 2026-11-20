@@ -203,10 +203,10 @@ void main() {
         countryCode: 'BE',
       );
 
-      final filtered = filterEventsByDuplicateCountry(
-        [sameCountry, otherCountry],
-        referenceCountryCode: 'nl',
-      );
+      final filtered = filterEventsByDuplicateCountry([
+        sameCountry,
+        otherCountry,
+      ], referenceCountryCode: 'nl');
 
       expect(filtered.map((e) => e.id).toList(), ['nl']);
     });
@@ -218,10 +218,9 @@ void main() {
         countryCode: 'DE',
       );
 
-      final filtered = filterEventsByDuplicateCountry(
-        [withCountry],
-        referenceCountryCode: null,
-      );
+      final filtered = filterEventsByDuplicateCountry([
+        withCountry,
+      ], referenceCountryCode: null);
 
       expect(filtered, [withCountry]);
     });
@@ -232,10 +231,9 @@ void main() {
         startAt: DateTime.utc(2026, 6, 10),
       );
 
-      final filtered = filterEventsByDuplicateCountry(
-        [noCountry],
-        referenceCountryCode: 'NL',
-      );
+      final filtered = filterEventsByDuplicateCountry([
+        noCountry,
+      ], referenceCountryCode: 'NL');
 
       expect(filtered, [noCountry]);
     });

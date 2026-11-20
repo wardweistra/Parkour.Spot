@@ -218,7 +218,9 @@ class SpotReport {
       suggestedSpotFeatures: parseStringList(data['suggestedSpotFeatures']),
       suggestedSpotAccess: data['suggestedSpotAccess'] as String?,
       suggestedSpotFacilities: parseStringMap(data['suggestedSpotFacilities']),
-      suggestedYoutubeVideoIds: parseStringList(data['suggestedYoutubeVideoIds']),
+      suggestedYoutubeVideoIds: parseStringList(
+        data['suggestedYoutubeVideoIds'],
+      ),
       acceptedEditFields: parseStringList(data['acceptedEditFields']),
       rejectedEditFields: parseStringList(data['rejectedEditFields']),
       moderatorNotes: data['moderatorNotes'] as String?,
@@ -229,15 +231,17 @@ class SpotReport {
   }
 
   /// Convenience method with defensive copying for categories.
-  List<String> get displayCategories =>
-      List<String>.unmodifiable(<String>[...categories, if (otherCategory?.isNotEmpty == true) otherCategory!]);
+  List<String> get displayCategories => List<String>.unmodifiable(<String>[
+    ...categories,
+    if (otherCategory?.isNotEmpty == true) otherCategory!,
+  ]);
 
   /// Primary contact address to reach the reporter, when available.
   String? get primaryContact => contactEmail?.isNotEmpty == true
       ? contactEmail
       : reporterEmail?.isNotEmpty == true
-          ? reporterEmail
-          : null;
+      ? reporterEmail
+      : null;
 
   /// Whether this report contains edit suggestions (location, name, description, or attributes).
   bool get hasEditSuggestions =>
@@ -247,12 +251,15 @@ class SpotReport {
       (suggestedGoodFor != null && suggestedGoodFor!.isNotEmpty) ||
       (suggestedSpotFeatures != null && suggestedSpotFeatures!.isNotEmpty) ||
       suggestedSpotAccess != null ||
-      (suggestedSpotFacilities != null && suggestedSpotFacilities!.isNotEmpty) ||
-      (suggestedYoutubeVideoIds != null && suggestedYoutubeVideoIds!.isNotEmpty);
+      (suggestedSpotFacilities != null &&
+          suggestedSpotFacilities!.isNotEmpty) ||
+      (suggestedYoutubeVideoIds != null &&
+          suggestedYoutubeVideoIds!.isNotEmpty);
 
   /// Human readable location string when city/country are available.
   String? get locationSummary {
-    if ((spotCity?.isNotEmpty ?? false) && (spotCountryCode?.isNotEmpty ?? false)) {
+    if ((spotCity?.isNotEmpty ?? false) &&
+        (spotCountryCode?.isNotEmpty ?? false)) {
       return '${spotCity!}, ${spotCountryCode!.toUpperCase()}';
     }
     if (spotCity?.isNotEmpty ?? false) {

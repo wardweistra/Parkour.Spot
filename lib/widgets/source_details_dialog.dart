@@ -14,12 +14,11 @@ class SourceDetailsDialog extends StatefulWidget {
   final SyncSource? source;
   final String? sourceId;
 
-  const SourceDetailsDialog({
-    super.key,
-    this.source,
-    this.sourceId,
-  }) : assert(source != null || sourceId != null,
-       'Either source or sourceId must be provided');
+  const SourceDetailsDialog({super.key, this.source, this.sourceId})
+    : assert(
+        source != null || sourceId != null,
+        'Either source or sourceId must be provided',
+      );
 
   @override
   State<SourceDetailsDialog> createState() => _SourceDetailsDialogState();
@@ -97,8 +96,7 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
 
   Widget _buildContent(SyncSource source) {
     // Callable/JSON numbers are often double at runtime; normalize for display.
-    final spotCount =
-        (source.lastSyncStats?['total'] as num?)?.toInt() ?? 0;
+    final spotCount = (source.lastSyncStats?['total'] as num?)?.toInt() ?? 0;
 
     return AlertDialog(
       title: Row(
@@ -117,7 +115,8 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (source.description != null && source.description!.isNotEmpty) ...[
+            if (source.description != null &&
+                source.description!.isNotEmpty) ...[
               Text(
                 _l10n.spotDetailFieldDescription,
                 style: TextStyle(fontWeight: FontWeight.bold),
@@ -154,12 +153,17 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
                     runSpacing: 8,
                     children: source.allFolders!.map((folder) {
                       return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
@@ -169,13 +173,17 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
                             Icon(
                               Icons.folder,
                               size: 16,
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onPrimaryContainer,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               folder,
                               style: TextStyle(
-                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onPrimaryContainer,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -201,7 +209,8 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
                 ),
               ),
             ],
-            if (source.instagramHandle != null && source.instagramHandle!.isNotEmpty) ...[
+            if (source.instagramHandle != null &&
+                source.instagramHandle!.isNotEmpty) ...[
               const SizedBox(height: 16),
               PointerInterceptor(
                 child: InstagramButton(handle: source.instagramHandle!),

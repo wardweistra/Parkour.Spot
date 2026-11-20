@@ -684,8 +684,7 @@ class SyncSourceService extends ChangeNotifier {
       final callable = _functions.httpsCallable(callableName);
       final result = await callable.call({
         'sourceId': sourceId,
-        if (updateImagesForExistingSpots)
-          'updateImagesForExistingSpots': true,
+        if (updateImagesForExistingSpots) 'updateImagesForExistingSpots': true,
       });
 
       _syncingSources.remove(sourceId);
@@ -852,9 +851,7 @@ class SyncSourceService extends ChangeNotifier {
   }) async {
     try {
       final callable = _functions.httpsCallable('updateSpotSourceNames');
-      final result = await callable.call({
-        'sourceId': ?sourceId,
-      });
+      final result = await callable.call({'sourceId': ?sourceId});
       return result.data;
     } catch (e) {
       _error = 'Failed to update spot source names: $e';
@@ -917,7 +914,8 @@ class SyncSourceService extends ChangeNotifier {
         if (data == null) return null;
         final map = _callableResponseAsMap(data);
         if (map['success'] != true) {
-          _error = map['message']?.toString() ??
+          _error =
+              map['message']?.toString() ??
               'Failed to find unavailable YouTube videos';
           notifyListeners();
           return map;
@@ -965,7 +963,8 @@ class SyncSourceService extends ChangeNotifier {
           if (nextCursor == null ||
               nextCursor.isEmpty ||
               (nextCursor == lastDocId && batches > 1)) {
-            _error = 'YouTube availability scan stalled (cursor did not advance)';
+            _error =
+                'YouTube availability scan stalled (cursor did not advance)';
             notifyListeners();
             return {
               'success': false,
@@ -1024,14 +1023,13 @@ class SyncSourceService extends ChangeNotifier {
               : 'Continuing YouTube title backfill (batch $batches)...',
         );
 
-        final result = await callable.call({
-          'lastDocId': ?lastDocId,
-        });
+        final result = await callable.call({'lastDocId': ?lastDocId});
         final data = result.data;
         if (data == null) return null;
         final map = _callableResponseAsMap(data);
         if (map['success'] != true) {
-          _error = map['error']?.toString() ??
+          _error =
+              map['error']?.toString() ??
               'Failed to backfill YouTube video meta';
           notifyListeners();
           return map;
@@ -1103,14 +1101,13 @@ class SyncSourceService extends ChangeNotifier {
 
       while (hasMore) {
         batches += 1;
-        final result = await callable.call({
-          'lastDocId': ?lastDocId,
-        });
+        final result = await callable.call({'lastDocId': ?lastDocId});
         final data = result.data;
         if (data == null) return null;
         final map = _callableResponseAsMap(data);
         if (map['success'] != true) {
-          _error = map['message']?.toString() ??
+          _error =
+              map['message']?.toString() ??
               'Failed to rehost YouTube CDN spot images';
           notifyListeners();
           return map;
@@ -1134,8 +1131,7 @@ class SyncSourceService extends ChangeNotifier {
           if (nextCursor == null ||
               nextCursor.isEmpty ||
               nextCursor == lastDocId) {
-            _error =
-                'YouTube CDN rehost stalled (cursor did not advance)';
+            _error = 'YouTube CDN rehost stalled (cursor did not advance)';
             notifyListeners();
             return {
               'success': false,
@@ -1210,9 +1206,7 @@ class SyncSourceService extends ChangeNotifier {
         'backfillSourceSpotAttributes',
         options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
       );
-      final result = await callable.call({
-        'sourceId': ?sourceId,
-      });
+      final result = await callable.call({'sourceId': ?sourceId});
       return result.data;
     } catch (e) {
       _error = 'Failed to backfill source spot attributes: $e';

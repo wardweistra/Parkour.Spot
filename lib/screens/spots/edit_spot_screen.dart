@@ -29,16 +29,14 @@ import '../../utils/youtube_utils.dart';
 class EditSpotScreen extends StatefulWidget {
   final Spot spot;
 
-  const EditSpotScreen({
-    super.key,
-    required this.spot,
-  });
+  const EditSpotScreen({super.key, required this.spot});
 
   @override
   State<EditSpotScreen> createState() => _EditSpotScreenState();
 }
 
-class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixin {
+class _EditSpotScreenState extends State<EditSpotScreen>
+    with MapRecenteringMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -75,7 +73,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
   bool _isLoading = false;
   bool _isPreparingImages = false;
   String? _imageProcessingMessage;
-  
+
   // Warning banner state (for admin editing spot-source spots)
   bool _warningDismissed = false;
 
@@ -93,13 +91,16 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
   void initState() {
     super.initState();
     _initializeForm();
-    
+
     // Check permission status on initialization to show correct icon
     _checkLocationPermission();
-    
+
     // Initialize satellite view from SearchStateService
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _searchStateServiceRef = Provider.of<SearchStateService>(context, listen: false);
+      _searchStateServiceRef = Provider.of<SearchStateService>(
+        context,
+        listen: false,
+      );
       _searchStateServiceRef!.addListener(_onSearchStateChanged);
       setState(() {
         _isSatelliteView = _searchStateServiceRef!.isSatellite;
@@ -111,7 +112,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
     if (!mounted) return;
     final searchState = _searchStateServiceRef;
     if (searchState == null) return;
-    
+
     setState(() {
       _isSatelliteView = searchState.isSatellite;
     });
@@ -173,7 +174,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
     final permission = await Geolocator.checkPermission();
     // Only show as denied if it's permanently denied, not if it's just not asked yet
     final isDenied = permission == LocationPermission.deniedForever;
-    
+
     if (mounted) {
       setState(() {
         _isLocationPermissionDenied = isDenied;
@@ -191,9 +192,11 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
       context: context,
       showErrorMessages: true,
     );
-    
-    final isPermissionGranted = LocationPermissionUtils.isPermissionGranted(permission);
-    
+
+    final isPermissionGranted = LocationPermissionUtils.isPermissionGranted(
+      permission,
+    );
+
     if (mounted) {
       setState(() {
         _isLocationPermissionDenied = !isPermissionGranted;
@@ -222,7 +225,9 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
           _isLocationPermissionDenied = false;
         });
         // Center the map on the new current location with a small delay to ensure controller is ready
-        centerMapOnLocationWithDelay(LatLng(position.latitude, position.longitude));
+        centerMapOnLocationWithDelay(
+          LatLng(position.latitude, position.longitude),
+        );
         await _geocodeLocation(position.latitude, position.longitude);
       }
     } catch (e) {
@@ -249,8 +254,14 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
         _isGeocoding = true;
       });
 
-      final geocodingService = Provider.of<GeocodingService>(context, listen: false);
-      final result = await geocodingService.geocodeCoordinatesDetails(latitude, longitude);
+      final geocodingService = Provider.of<GeocodingService>(
+        context,
+        listen: false,
+      );
+      final result = await geocodingService.geocodeCoordinatesDetails(
+        latitude,
+        longitude,
+      );
 
       if (mounted) {
         setState(() {
@@ -373,7 +384,9 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
     await yieldToUi();
 
     try {
-      final preparedImages = await preparePickedFiles([pickedFile], maxImages: 1);
+      final preparedImages = await preparePickedFiles([
+        pickedFile,
+      ], maxImages: 1);
       if (preparedImages.isNotEmpty && mounted) {
         setState(() => _selectedImageBytes.add(preparedImages.first.bytes));
       }
@@ -415,7 +428,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
     setState(() {
       final imageUrl = _existingImageUrls[index];
       _existingImageUrls.removeAt(index);
-      
+
       // Only add to _imagesToDelete if this URL no longer exists in the remaining list
       // This prevents removing all duplicates when we only want to remove one instance
       if (!_existingImageUrls.contains(imageUrl)) {
@@ -437,7 +450,6 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
       _selectedImageBytes.insert(newIndex, imageBytes);
     });
   }
-
 
   void _toggleSatelliteView(bool value) {
     setState(() {
@@ -505,16 +517,18 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
     }
 
     if (_currentLocation == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a location')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please select a location')));
       return;
     }
 
     // Only require images for non-moderators (moderators can save spots without images)
     final authService = Provider.of<AuthService>(context, listen: false);
     final isModeratorOrAdmin = authService.isModerator || authService.isAdmin;
-    if (!isModeratorOrAdmin && _existingImageUrls.isEmpty && _selectedImageBytes.every((bytes) => bytes == null)) {
+    if (!isModeratorOrAdmin &&
+        _existingImageUrls.isEmpty &&
+        _selectedImageBytes.every((bytes) => bytes == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please add at least one image')),
       );
@@ -558,18 +572,28 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
       );
 
       // Filter out null values for images
-      final validNewImageBytes = _selectedImageBytes.where((bytes) => bytes != null).cast<Uint8List>().toList();
+      final validNewImageBytes = _selectedImageBytes
+          .where((bytes) => bytes != null)
+          .cast<Uint8List>()
+          .toList();
 
       // Get user info for audit logging (moderator edits)
       final authService = Provider.of<AuthService>(context, listen: false);
       final userId = authService.currentUser?.uid;
-      final userName = authService.userProfile?.displayName ?? authService.currentUser?.displayName ?? authService.currentUser?.email;
-      final notes = _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
+      final userName =
+          authService.userProfile?.displayName ??
+          authService.currentUser?.displayName ??
+          authService.currentUser?.email;
+      final notes = _notesController.text.trim().isEmpty
+          ? null
+          : _notesController.text.trim();
 
       final success = await spotService.updateSpot(
         updatedSpot,
         newImageFiles: null,
-        newImageBytesList: validNewImageBytes.isNotEmpty ? validNewImageBytes : null,
+        newImageBytesList: validNewImageBytes.isNotEmpty
+            ? validNewImageBytes
+            : null,
         imagesToDelete: _imagesToDelete.isNotEmpty ? _imagesToDelete : null,
         userId: userId,
         userName: userName,
@@ -581,11 +605,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
         if (success) {
           final warning = spotService.lastUpdateWarning;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                warning ?? 'Spot updated successfully!',
-              ),
-            ),
+            SnackBar(content: Text(warning ?? 'Spot updated successfully!')),
           );
           final currentPath = GoRouterState.of(context).uri.path;
           final detailPath = _deriveDetailPathFromEditPath(currentPath);
@@ -603,9 +623,9 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
     } catch (e) {
       debugPrint('Error updating spot: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating spot: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error updating spot: $e')));
       }
     } finally {
       if (mounted) {
@@ -623,21 +643,17 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
         // Check if user is moderator or admin
         if (!authService.isModerator && !authService.isAdmin) {
           return Scaffold(
-            appBar: AppBar(
-              title: const Text('Access Denied'),
-            ),
-            body: const Center(
-              child: Text('Only moderators can edit spots'),
-            ),
+            appBar: AppBar(title: const Text('Access Denied')),
+            body: const Center(child: Text('Only moderators can edit spots')),
           );
         }
 
         // Check if spot is from a source and user is moderator (not admin)
-        if (widget.spot.spotSource != null && authService.isModerator && !authService.isAdmin) {
+        if (widget.spot.spotSource != null &&
+            authService.isModerator &&
+            !authService.isAdmin) {
           return Scaffold(
-            appBar: AppBar(
-              title: const Text('Cannot Edit Spot'),
-            ),
+            appBar: AppBar(title: const Text('Cannot Edit Spot')),
             body: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
@@ -669,7 +685,10 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                         padding: const EdgeInsets.all(16.0),
                         child: Row(
                           children: [
-                            Icon(Icons.source, color: Theme.of(context).colorScheme.primary),
+                            Icon(
+                              Icons.source,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
@@ -677,11 +696,15 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                                 children: [
                                   Text(
                                     'Source',
-                                    style: Theme.of(context).textTheme.labelSmall,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.labelSmall,
                                   ),
                                   Text(
                                     widget.spot.spotSourceName!,
-                                    style: Theme.of(context).textTheme.bodyMedium,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium,
                                   ),
                                 ],
                               ),
@@ -703,9 +726,7 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
         }
 
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('Edit Spot'),
-          ),
+          appBar: AppBar(title: const Text('Edit Spot')),
           body: Form(
             key: _formKey,
             child: SingleChildScrollView(
@@ -716,187 +737,200 @@ class _EditSpotScreenState extends State<EditSpotScreen> with MapRecenteringMixi
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                  // Warning banner for admins editing spot-source spots
-                  if (widget.spot.spotSource != null && authService.isAdmin && !_warningDismissed)
-                    Card(
-                      color: Colors.orange.shade50,
-                      elevation: 2,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              Icons.warning_amber_rounded,
-                              color: Colors.orange.shade700,
-                              size: 28,
+                      // Warning banner for admins editing spot-source spots
+                      if (widget.spot.spotSource != null &&
+                          authService.isAdmin &&
+                          !_warningDismissed)
+                        Card(
+                          color: Colors.orange.shade50,
+                          elevation: 2,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.warning_amber_rounded,
+                                  color: Colors.orange.shade700,
+                                  size: 28,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Warning: Editing Spot from External Source',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleSmall
+                                            ?.copyWith(
+                                              color: Colors.orange.shade900,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'This spot is imported from an external source (${widget.spot.spotSourceName ?? 'unknown source'}). '
+                                        'Any changes you make may be overwritten when the source syncs again. '
+                                        'Consider creating a native spot instead if you want to make permanent changes.',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color: Colors.orange.shade900,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close),
+                                  color: Colors.orange.shade700,
+                                  onPressed: () {
+                                    setState(() {
+                                      _warningDismissed = true;
+                                    });
+                                  },
+                                  tooltip: 'Dismiss warning',
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Warning: Editing Spot from External Source',
-                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                      color: Colors.orange.shade900,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'This spot is imported from an external source (${widget.spot.spotSourceName ?? 'unknown source'}). '
-                                    'Any changes you make may be overwritten when the source syncs again. '
-                                    'Consider creating a native spot instead if you want to make permanent changes.',
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: Colors.orange.shade900,
-                                    ),
-                                  ),
-                                ],
+                          ),
+                        ),
+                      // Location Section
+                      SpotLocationSection(
+                        currentLocation: _currentLocation,
+                        address: _currentAddress,
+                        countryCode: _currentCountryCode,
+                        isGettingLocation: _isGettingLocation,
+                        isGeocoding: _isGeocoding,
+                        isSatelliteView: _isSatelliteView,
+                        isLocationPermissionDenied: _isLocationPermissionDenied,
+                        onRefreshLocation: _getCurrentLocation,
+                        onPickOnMap: _pickOnMap,
+                        onToggleSatellite: _toggleSatelliteView,
+                        onMapCreated: onMapCreated,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Image Section
+                      SpotImageSection(
+                        selectedImageBytes: _selectedImageBytes,
+                        existingImageUrls: _existingImageUrls,
+                        onPickFromGallery: _pickFromGallery,
+                        onTakePhoto: _takePhoto,
+                        onRemoveSelectedAt: _removeSelectedImageAt,
+                        onRemoveExistingAt: _removeExistingImageAt,
+                        onReorderExisting: _reorderExistingImage,
+                        onReorderSelected: _reorderSelectedImage,
+                        isProcessingImages: _isPreparingImages,
+                        processingMessage: _imageProcessingMessage,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Name and Description
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CustomTextField(
+                                controller: _nameController,
+                                labelText: 'Spot name *',
+                                hintText: 'Enter the name of the spot',
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Please enter a spot name';
+                                  }
+                                  if (value.trim().length < 3) {
+                                    return 'Spot name must be at least 3 characters';
+                                  }
+                                  return null;
+                                },
                               ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.close),
-                              color: Colors.orange.shade700,
-                              onPressed: () {
-                                setState(() {
-                                  _warningDismissed = true;
-                                });
-                              },
-                              tooltip: 'Dismiss warning',
-                            ),
-                          ],
+                              const SizedBox(height: 16),
+                              CustomTextField(
+                                controller: _descriptionController,
+                                labelText: 'Description',
+                                hintText:
+                                    'Describe the spot, what makes it special, etc.',
+                                maxLines: 4,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  // Location Section
-                  SpotLocationSection(
-                    currentLocation: _currentLocation,
-                    address: _currentAddress,
-                    countryCode: _currentCountryCode,
-                    isGettingLocation: _isGettingLocation,
-                    isGeocoding: _isGeocoding,
-                    isSatelliteView: _isSatelliteView,
-                    isLocationPermissionDenied: _isLocationPermissionDenied,
-                    onRefreshLocation: _getCurrentLocation,
-                    onPickOnMap: _pickOnMap,
-                    onToggleSatellite: _toggleSatelliteView,
-                    onMapCreated: onMapCreated,
-                  ),
-                  const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                  // Image Section
-                  SpotImageSection(
-                    selectedImageBytes: _selectedImageBytes,
-                    existingImageUrls: _existingImageUrls,
-                    onPickFromGallery: _pickFromGallery,
-                    onTakePhoto: _takePhoto,
-                    onRemoveSelectedAt: _removeSelectedImageAt,
-                    onRemoveExistingAt: _removeExistingImageAt,
-                    onReorderExisting: _reorderExistingImage,
-                    onReorderSelected: _reorderSelectedImage,
-                    isProcessingImages: _isPreparingImages,
-                    processingMessage: _imageProcessingMessage,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Name and Description
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CustomTextField(
-                            controller: _nameController,
-                            labelText: 'Spot name *',
-                            hintText: 'Enter the name of the spot',
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Please enter a spot name';
-                              }
-                              if (value.trim().length < 3) {
-                                return 'Spot name must be at least 3 characters';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          CustomTextField(
-                            controller: _descriptionController,
-                            labelText: 'Description',
-                            hintText: 'Describe the spot, what makes it special, etc.',
-                            maxLines: 4,
-                          ),
-                        ],
+                      // Attributes Section
+                      SpotAttributesSection(
+                        selectedAccess: _selectedAccess,
+                        selectedFeatures: _selectedFeatures,
+                        selectedFacilities: _selectedFacilities,
+                        selectedGoodFor: _selectedGoodFor,
+                        onAccessChanged: _onAccessChanged,
+                        onToggleFeature: _toggleFeature,
+                        onFacilityChanged: _onFacilityChanged,
+                        onToggleGoodFor: _toggleGoodFor,
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                  // Attributes Section
-                  SpotAttributesSection(
-                    selectedAccess: _selectedAccess,
-                    selectedFeatures: _selectedFeatures,
-                    selectedFacilities: _selectedFacilities,
-                    selectedGoodFor: _selectedGoodFor,
-                    onAccessChanged: _onAccessChanged,
-                    onToggleFeature: _toggleFeature,
-                    onFacilityChanged: _onFacilityChanged,
-                    onToggleGoodFor: _toggleGoodFor,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // YouTube links section
-                  SpotYoutubeSection(
-                    controllers: _youtubeControllers,
-                    videoMeta: widget.spot.youtubeVideoMeta,
-                    onAdd: _addYoutubeLink,
-                    onRemove: _removeYoutubeLink,
-                    onReorder: _reorderYoutubeLink,
-                    onChanged: () => setState(() {}),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Moderator Action Fields
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Moderator Notes',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Optionally link this edit to a spot report and add notes for the audit log.',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
-                          const SizedBox(height: 16),
-                          ModeratorActionFields(
-                            spotId: widget.spot.id,
-                            notesController: _notesController,
-                            showReportSelector: true,
-                            onReportSelected: (reportId) {
-                              setState(() {
-                                _selectedReportId = reportId;
-                              });
-                            },
-                          ),
-                        ],
+                      // YouTube links section
+                      SpotYoutubeSection(
+                        controllers: _youtubeControllers,
+                        videoMeta: widget.spot.youtubeVideoMeta,
+                        onAdd: _addYoutubeLink,
+                        onRemove: _removeYoutubeLink,
+                        onReorder: _reorderYoutubeLink,
+                        onChanged: () => setState(() {}),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                  // Save Button
-                  CustomButton(
-                    onPressed: _isLoading ? null : _saveSpot,
-                    text: _isLoading ? 'Saving...' : 'Update Spot',
-                    icon: Icons.save,
-                  ),
+                      // Moderator Action Fields
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Moderator Notes',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Optionally link this edit to a spot report and add notes for the audit log.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              ModeratorActionFields(
+                                spotId: widget.spot.id,
+                                notesController: _notesController,
+                                showReportSelector: true,
+                                onReportSelected: (reportId) {
+                                  setState(() {
+                                    _selectedReportId = reportId;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Save Button
+                      CustomButton(
+                        onPressed: _isLoading ? null : _saveSpot,
+                        text: _isLoading ? 'Saving...' : 'Update Spot',
+                        icon: Icons.save,
+                      ),
                     ],
                   ),
                 ),

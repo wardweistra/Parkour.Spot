@@ -3,12 +3,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:parkour_spot/models/spot.dart';
 import 'package:parkour_spot/utils/map_bounds_utils.dart';
 
-Spot _spot(double lat, double lng) => Spot(
-      name: 'Spot',
-      description: '',
-      latitude: lat,
-      longitude: lng,
-    );
+Spot _spot(double lat, double lng) =>
+    Spot(name: 'Spot', description: '', latitude: lat, longitude: lng);
 
 void main() {
   group('calculateBoundsForLatLngs', () {
@@ -45,10 +41,7 @@ void main() {
     });
 
     test('returns bounds with 5% margin for multiple spots', () {
-      final spots = [
-        _spot(50.0, 4.0),
-        _spot(52.0, 6.0),
-      ];
+      final spots = [_spot(50.0, 4.0), _spot(52.0, 6.0)];
       final bounds = calculateBoundsForSpots(spots);
       expect(bounds, isNotNull);
       // Lat range 2.0, margin 0.1 each side
@@ -60,10 +53,7 @@ void main() {
     });
 
     test('handles all spots at same location with fixed margin', () {
-      final spots = [
-        _spot(51.5, 4.9),
-        _spot(51.5, 4.9),
-      ];
+      final spots = [_spot(51.5, 4.9), _spot(51.5, 4.9)];
       final bounds = calculateBoundsForSpots(spots);
       expect(bounds, isNotNull);
       expect(bounds!.southwest.latitude, closeTo(51.49, 0.001));

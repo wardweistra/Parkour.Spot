@@ -37,11 +37,7 @@ Future<void> pumpYoutubeSection(
 void main() {
   testWidgets('shows empty state and add button', (tester) async {
     var addCount = 0;
-    await pumpYoutubeSection(
-      tester,
-      controllers: [],
-      onAdd: () => addCount++,
-    );
+    await pumpYoutubeSection(tester, controllers: [], onAdd: () => addCount++);
 
     expect(find.text('YouTube links'), findsOneWidget);
     expect(

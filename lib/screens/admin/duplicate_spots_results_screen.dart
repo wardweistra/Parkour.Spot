@@ -220,8 +220,7 @@ class _DuplicateSpotsResultsScreenState
         final spot2 = firestoreMap(pair['spot2']);
         final distanceMeters = firestoreInt(pair['distanceMeters']);
         final isResolved = isPairResolvedToNative(pairResolutions, index);
-        final isChecked =
-            firestoreCollapsedPairs.contains(index) || isResolved;
+        final isChecked = firestoreCollapsedPairs.contains(index) || isResolved;
         final colorScheme = Theme.of(context).colorScheme;
 
         return Card(
@@ -239,17 +238,20 @@ class _DuplicateSpotsResultsScreenState
                       onChanged: isResolved
                           ? null
                           : (value) {
-                        final newCollapsedPairs = Set<int>.from(
-                          firestoreCollapsedPairs,
-                        );
-                        if (value == true) {
-                          newCollapsedPairs.add(index);
-                        } else {
-                          newCollapsedPairs.remove(index);
-                        }
+                              final newCollapsedPairs = Set<int>.from(
+                                firestoreCollapsedPairs,
+                              );
+                              if (value == true) {
+                                newCollapsedPairs.add(index);
+                              } else {
+                                newCollapsedPairs.remove(index);
+                              }
 
-                        _updateCollapsedPairs(widget.runId, newCollapsedPairs);
-                      },
+                              _updateCollapsedPairs(
+                                widget.runId,
+                                newCollapsedPairs,
+                              );
+                            },
                     ),
                     Expanded(
                       child: Container(

@@ -351,8 +351,7 @@ class AccountSettingsScreen extends StatelessWidget {
                     _NotificationSettingsGroupHeader(
                       title:
                           l10n.profileNotificationSettingsThisDeviceGroupTitle,
-                      helper:
-                          PushCopy(l10n).thisDeviceGroupHelper,
+                      helper: PushCopy(l10n).thisDeviceGroupHelper,
                     ),
                     const SizedBox(height: 8),
                     ListTile(

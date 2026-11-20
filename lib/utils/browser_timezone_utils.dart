@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'event_schedule_utils.dart';
 
 import 'browser_timezone_utils_stub.dart'
-    if (dart.library.js_interop) 'browser_timezone_utils_web.dart' as impl;
+    if (dart.library.js_interop) 'browser_timezone_utils_web.dart'
+    as impl;
 
 /// Resolves a raw IANA timezone id to a known zone, falling back to [fallback].
 @visibleForTesting

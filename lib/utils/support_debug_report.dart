@@ -13,10 +13,13 @@ class SupportReportSection {
 }
 
 /// Collects platform, locale, and web details for support (e.g. map rendering differences).
-List<SupportReportSection> buildSupportDebugReportSections(BuildContext context) {
+List<SupportReportSection> buildSupportDebugReportSections(
+  BuildContext context,
+) {
   final mq = MediaQuery.maybeOf(context);
   final appLocale = Localizations.maybeLocaleOf(context);
-  final pd = View.maybeOf(context)?.platformDispatcher ??
+  final pd =
+      View.maybeOf(context)?.platformDispatcher ??
       WidgetsBinding.instance.platformDispatcher;
   final systemLocale = pd.locale;
   final systemLocales = pd.locales;
@@ -27,14 +30,23 @@ List<SupportReportSection> buildSupportDebugReportSections(BuildContext context)
       rows: [
         MapEntry('kIsWeb', '$kIsWeb'),
         MapEntry('defaultTargetPlatform', '$defaultTargetPlatform'),
-        MapEntry('logicalSize (dp)', mq == null ? 'unknown' : '${mq.size.width} x ${mq.size.height}'),
-        MapEntry('devicePixelRatio', mq == null ? 'unknown' : '${mq.devicePixelRatio}'),
+        MapEntry(
+          'logicalSize (dp)',
+          mq == null ? 'unknown' : '${mq.size.width} x ${mq.size.height}',
+        ),
+        MapEntry(
+          'devicePixelRatio',
+          mq == null ? 'unknown' : '${mq.devicePixelRatio}',
+        ),
       ],
     ),
     SupportReportSection(
       title: 'Locale',
       rows: [
-        MapEntry('MaterialApp locale (resolved)', appLocale?.toLanguageTag() ?? 'null'),
+        MapEntry(
+          'MaterialApp locale (resolved)',
+          appLocale?.toLanguageTag() ?? 'null',
+        ),
         MapEntry('PlatformDispatcher.locale', systemLocale.toLanguageTag()),
         MapEntry(
           'PlatformDispatcher.locales (ordered)',
@@ -46,7 +58,10 @@ List<SupportReportSection> buildSupportDebugReportSections(BuildContext context)
       title: 'Time zone',
       rows: [
         MapEntry('DateTime.timeZoneName', DateTime.now().timeZoneName),
-        MapEntry('DateTime.timeZoneOffset', DateTime.now().timeZoneOffset.toString()),
+        MapEntry(
+          'DateTime.timeZoneOffset',
+          DateTime.now().timeZoneOffset.toString(),
+        ),
       ],
     ),
     SupportReportSection(
@@ -56,7 +71,10 @@ List<SupportReportSection> buildSupportDebugReportSections(BuildContext context)
         MapEntry('isIOS', '${MobileDetectionService.isIOS}'),
         MapEntry('isAndroid', '${MobileDetectionService.isAndroid}'),
         MapEntry('isRunningAsPWA', '${MobileDetectionService.isRunningAsPWA}'),
-        MapEntry('isRunningInBrowser', '${MobileDetectionService.isRunningInBrowser}'),
+        MapEntry(
+          'isRunningInBrowser',
+          '${MobileDetectionService.isRunningInBrowser}',
+        ),
         MapEntry('preferredMapsApp', MobileDetectionService.preferredMapsApp),
       ],
     ),
@@ -66,9 +84,7 @@ List<SupportReportSection> buildSupportDebugReportSections(BuildContext context)
   sections.add(
     SupportReportSection(
       title: 'MobileDetectionService.detailedDeviceInfo',
-      rows: [
-        for (final e in deviceMap.entries) MapEntry(e.key, '${e.value}'),
-      ],
+      rows: [for (final e in deviceMap.entries) MapEntry(e.key, '${e.value}')],
     ),
   );
 
@@ -78,10 +94,7 @@ List<SupportReportSection> buildSupportDebugReportSections(BuildContext context)
         title: 'Web browser',
         rows: [
           MapEntry('navigator.language', browserLanguage() ?? ''),
-          MapEntry(
-            'navigator.languages',
-            browserLanguages().join(', '),
-          ),
+          MapEntry('navigator.languages', browserLanguages().join(', ')),
           MapEntry('navigator.userAgent', browserUserAgent() ?? ''),
           MapEntry('location.href', browserHref() ?? ''),
         ],
@@ -124,7 +137,9 @@ List<SupportReportSection> buildSupportDebugReportSections(BuildContext context)
 String buildSupportDebugReportText(BuildContext context) {
   final buffer = StringBuffer();
   buffer.writeln('=== Parkour·Spot support debug ===');
-  buffer.writeln('Generated: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now())}');
+  buffer.writeln(
+    'Generated: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now())}',
+  );
   buffer.writeln('');
   for (final section in buildSupportDebugReportSections(context)) {
     buffer.writeln('--- ${section.title} ---');

@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../utils/emoji_display.dart';
 import 'browser_emoji_span_stub.dart'
-    if (dart.library.js_interop) 'browser_emoji_span_web.dart' as browser_emoji;
+    if (dart.library.js_interop) 'browser_emoji_span_web.dart'
+    as browser_emoji;
 
 /// [Text] that keeps emoji (especially keycaps) intact on Flutter web.
 ///
@@ -101,10 +102,7 @@ class EmojiText extends StatelessWidget {
     }
 
     return Text.rich(
-      TextSpan(
-        style: baseStyle.copyWith(inherit: false),
-        children: children,
-      ),
+      TextSpan(style: baseStyle.copyWith(inherit: false), children: children),
       maxLines: maxLines,
       overflow: overflow,
       textAlign: textAlign,

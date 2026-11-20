@@ -25,7 +25,10 @@ class SpotReportQueueScreen extends StatefulWidget {
 
 class _SpotReportQueueScreenState extends State<SpotReportQueueScreen> {
   static const String _allFilter = 'All';
-  late final List<String> _filters = <String>[_allFilter, ...SpotReportService.statuses];
+  late final List<String> _filters = <String>[
+    _allFilter,
+    ...SpotReportService.statuses,
+  ];
   String _selectedFilter = SpotReportService.statuses.first;
   final Set<String> _updatingReportIds = <String>{};
 
@@ -48,129 +51,142 @@ class _SpotReportQueueScreenState extends State<SpotReportQueueScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-            Text(
-              'Review user-submitted spot reports here. Mark reports as "Reviewing" when you start working on them to prevent duplicate efforts, and mark them as "Done" when complete.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-              ),
+          Text(
+            'Review user-submitted spot reports here. Mark reports as "Reviewing" when you start working on them to prevent duplicate efforts, and mark them as "Done" when complete.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
-            const SizedBox(height: 16),
-            StreamBuilder<List<SpotReport>>(
+          ),
+          const SizedBox(height: 16),
+          StreamBuilder<List<SpotReport>>(
+            initialData: spotReportService.latestSpotReports,
+            stream: spotReportService.watchSpotReports(),
+            builder: (context, snapshot) {
+              final allReports = snapshot.data ?? <SpotReport>[];
+              final statusCounts = <String, int>{
+                _allFilter: allReports.length,
+                for (var status in SpotReportService.statuses)
+                  status: allReports.where((r) => r.status == status).length,
+              };
+
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _filters.map((filter) {
+                  final isSelected = _selectedFilter == filter;
+                  final count = statusCounts[filter] ?? 0;
+                  return ChoiceChip(
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(filter),
+                        if (count > 0) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? theme.colorScheme.onSecondaryContainer
+                                  : theme.colorScheme.secondaryContainer,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              count.toString(),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: isSelected
+                                    ? theme.colorScheme.secondaryContainer
+                                    : theme.colorScheme.onSecondaryContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() => _selectedFilter = filter);
+                      }
+                    },
+                  );
+                }).toList(),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: StreamBuilder<List<SpotReport>>(
               initialData: spotReportService.latestSpotReports,
               stream: spotReportService.watchSpotReports(),
               builder: (context, snapshot) {
-                final allReports = snapshot.data ?? <SpotReport>[];
-                final statusCounts = <String, int>{
-                  _allFilter: allReports.length,
-                  for (var status in SpotReportService.statuses)
-                    status: allReports.where((r) => r.status == status).length,
-                };
+                if (snapshot.hasError) {
+                  return _buildMessage(
+                    context,
+                    icon: Icons.error_outline,
+                    title: 'Failed to load reports',
+                    message: 'Please try again shortly.',
+                  );
+                }
 
-                return Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _filters.map((filter) {
-                    final isSelected = _selectedFilter == filter;
-                    final count = statusCounts[filter] ?? 0;
-                    return ChoiceChip(
-                      label: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(filter),
-                          if (count > 0) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? theme.colorScheme.onSecondaryContainer
-                                    : theme.colorScheme.secondaryContainer,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                count.toString(),
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: isSelected
-                                      ? theme.colorScheme.secondaryContainer
-                                      : theme.colorScheme.onSecondaryContainer,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() => _selectedFilter = filter);
-                        }
-                      },
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    !snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final reports =
+                    (snapshot.data ?? <SpotReport>[])
+                        .where(
+                          (report) =>
+                              _selectedFilter == _allFilter ||
+                              report.status == _selectedFilter,
+                        )
+                        .toList()
+                      ..sort((a, b) {
+                        final aTime =
+                            a.createdAt ??
+                            DateTime.fromMillisecondsSinceEpoch(0);
+                        final bTime =
+                            b.createdAt ??
+                            DateTime.fromMillisecondsSinceEpoch(0);
+                        return bTime.compareTo(aTime);
+                      });
+
+                if (reports.isEmpty) {
+                  return _buildMessage(
+                    context,
+                    icon: Icons.inbox_outlined,
+                    title: _selectedFilter == SpotReportService.statuses.first
+                        ? 'No new reports'
+                        : 'Nothing to review',
+                    message: _selectedFilter == SpotReportService.statuses.first
+                        ? 'Incoming spot reports will appear here.'
+                        : 'Try switching filters to see other reports.',
+                  );
+                }
+
+                return ListView.separated(
+                  itemCount: reports.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final report = reports[index];
+                    final isUpdating = _updatingReportIds.contains(report.id);
+                    return _ReportCard(
+                      report: report,
+                      dateFormat: dateFormat,
+                      isUpdating: isUpdating,
+                      onChangeStatus: (status) =>
+                          _changeReportStatus(report, status),
                     );
-                  }).toList(),
+                  },
                 );
               },
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: StreamBuilder<List<SpotReport>>(
-                initialData: spotReportService.latestSpotReports,
-                stream: spotReportService.watchSpotReports(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return _buildMessage(
-                      context,
-                      icon: Icons.error_outline,
-                      title: 'Failed to load reports',
-                      message: 'Please try again shortly.',
-                    );
-                  }
-
-                  if (snapshot.connectionState == ConnectionState.waiting &&
-                      !snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  final reports = (snapshot.data ?? <SpotReport>[])
-                      .where((report) => _selectedFilter == _allFilter || report.status == _selectedFilter)
-                      .toList()
-                    ..sort((a, b) {
-                      final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-                      final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-                      return bTime.compareTo(aTime);
-                    });
-
-                  if (reports.isEmpty) {
-                    return _buildMessage(
-                      context,
-                      icon: Icons.inbox_outlined,
-                      title: _selectedFilter == SpotReportService.statuses.first
-                          ? 'No new reports'
-                          : 'Nothing to review',
-                      message: _selectedFilter == SpotReportService.statuses.first
-                          ? 'Incoming spot reports will appear here.'
-                          : 'Try switching filters to see other reports.',
-                    );
-                  }
-
-                  return ListView.separated(
-                    itemCount: reports.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final report = reports[index];
-                      final isUpdating = _updatingReportIds.contains(report.id);
-                      return _ReportCard(
-                        report: report,
-                        dateFormat: dateFormat,
-                        isUpdating: isUpdating,
-                        onChangeStatus: (status) => _changeReportStatus(report, status),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -182,7 +198,7 @@ class _SpotReportQueueScreenState extends State<SpotReportQueueScreen> {
     final authService = context.read<AuthService>();
     final user = authService.currentUser;
     final userProfile = authService.userProfile;
-    
+
     final success = await service.updateReportStatus(
       reportId: report.id,
       status: status,
@@ -257,7 +273,6 @@ class _ReportCard extends StatefulWidget {
 }
 
 class _ReportCardState extends State<_ReportCard> {
-
   String _formatRelativeTime(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
@@ -288,12 +303,13 @@ class _ReportCardState extends State<_ReportCard> {
     }
   }
 
-  Future<void> _handleReviewPhotos(BuildContext context, SpotReport report) async {
+  Future<void> _handleReviewPhotos(
+    BuildContext context,
+    SpotReport report,
+  ) async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => PhotoApprovalDialog(
-        report: report,
-      ),
+      builder: (dialogContext) => PhotoApprovalDialog(report: report),
     );
 
     if (result == true) {
@@ -308,12 +324,12 @@ class _ReportCardState extends State<_ReportCard> {
   }
 
   Future<void> _handleApplyEditSuggestions(
-      BuildContext context, SpotReport report) async {
+    BuildContext context,
+    SpotReport report,
+  ) async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => EditSuggestionApprovalDialog(
-        report: report,
-      ),
+      builder: (dialogContext) => EditSuggestionApprovalDialog(report: report),
     );
 
     if (result == true && mounted) {
@@ -326,12 +342,17 @@ class _ReportCardState extends State<_ReportCard> {
     }
   }
 
-  Future<void> _handleUndoRejection(BuildContext context, SpotReport report) async {
+  Future<void> _handleUndoRejection(
+    BuildContext context,
+    SpotReport report,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Undo Rejection'),
-        content: const Text('This will restore the rejected photos back to suggestions. They will appear in the queue again for review.'),
+        content: const Text(
+          'This will restore the rejected photos back to suggestions. They will appear in the queue again for review.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -351,15 +372,22 @@ class _ReportCardState extends State<_ReportCard> {
     if (confirmed == true) {
       if (!mounted) return;
       final spotService = Provider.of<SpotService>(context, listen: false);
-      final reportService = Provider.of<SpotReportService>(context, listen: false);
+      final reportService = Provider.of<SpotReportService>(
+        context,
+        listen: false,
+      );
       final authService = Provider.of<AuthService>(context, listen: false);
 
       // Move photos from /rejected/ back to /suggestions/
-      if (report.rejectedPhotoUrls != null && report.rejectedPhotoUrls!.isNotEmpty) {
+      if (report.rejectedPhotoUrls != null &&
+          report.rejectedPhotoUrls!.isNotEmpty) {
         // Store original rejected URLs before moving
-        final originalRejectedUrls = List<String>.from(report.rejectedPhotoUrls!);
-        final restoredUrls = await spotService.movePhotosFromRejectedToSuggestions(originalRejectedUrls);
-        
+        final originalRejectedUrls = List<String>.from(
+          report.rejectedPhotoUrls!,
+        );
+        final restoredUrls = await spotService
+            .movePhotosFromRejectedToSuggestions(originalRejectedUrls);
+
         if (restoredUrls.isNotEmpty) {
           // Update report to move photos back to suggestedPhotoUrls
           // Pass both original rejected URLs (to remove from rejectedPhotoUrls) and new suggested URLs (to add to suggestedPhotoUrls)
@@ -368,7 +396,9 @@ class _ReportCardState extends State<_ReportCard> {
             originalRejectedUrls: originalRejectedUrls,
             restoredPhotoUrls: restoredUrls,
             userId: authService.currentUser?.uid,
-            userName: authService.userProfile?.displayName ?? authService.currentUser?.email,
+            userName:
+                authService.userProfile?.displayName ??
+                authService.currentUser?.email,
           );
         }
       }
@@ -401,151 +431,153 @@ class _ReportCardState extends State<_ReportCard> {
         ),
       ),
       child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-              // Spot name (clickable) at top left
-              InkWell(
-                onTap: () {
-                  final url = UrlService.generateNavigationUrl(
-                    widget.report.spotId,
-                    countryCode: widget.report.spotCountryCode,
-                    city: widget.report.spotCity,
-                  );
-                  context.push(url);
-                },
-                borderRadius: BorderRadius.circular(4),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          widget.report.spotName,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: colorScheme.primary,
-                          ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Spot name (clickable) at top left
+            InkWell(
+              onTap: () {
+                final url = UrlService.generateNavigationUrl(
+                  widget.report.spotId,
+                  countryCode: widget.report.spotCountryCode,
+                  city: widget.report.spotCity,
+                );
+                context.push(url);
+              },
+              borderRadius: BorderRadius.circular(4),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        widget.report.spotName,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: colorScheme.primary,
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      Icon(
-                        Icons.open_in_new,
-                        size: 18,
-                        color: colorScheme.primary,
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      Icons.open_in_new,
+                      size: 18,
+                      color: colorScheme.primary,
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              // Metadata row: category, reporter, time, location, report ID
-              Wrap(
-                spacing: 16,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  // Report type/category first
-                  if (widget.report.displayCategories.isNotEmpty)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.flag_outlined,
-                          size: 16,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          widget.report.displayCategories.first,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  if (widget.report.reporterName?.isNotEmpty ?? false)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.person_outline,
-                          size: 16,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          widget.report.reporterName!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  if (widget.report.createdAt != null)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.schedule_outlined,
-                          size: 16,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _formatRelativeTime(widget.report.createdAt!),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  if (widget.report.locationSummary != null)
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 16,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          widget.report.locationSummary!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  // Report ID (selectable, last)
+            ),
+            const SizedBox(height: 12),
+            // Metadata row: category, reporter, time, location, report ID
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                // Report type/category first
+                if (widget.report.displayCategories.isNotEmpty)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.description_outlined,
+                        Icons.flag_outlined,
                         size: 16,
                         color: colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 4),
-                      SelectableText(
-                        'ID: ${widget.report.id}',
+                      Text(
+                        widget.report.displayCategories.first,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
+                if (widget.report.reporterName?.isNotEmpty ?? false)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.person_outline,
+                        size: 16,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        widget.report.reporterName!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                if (widget.report.createdAt != null)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.schedule_outlined,
+                        size: 16,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatRelativeTime(widget.report.createdAt!),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                if (widget.report.locationSummary != null)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 16,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        widget.report.locationSummary!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                // Report ID (selectable, last)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.description_outlined,
+                      size: 16,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 4),
+                    SelectableText(
+                      'ID: ${widget.report.id}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
             if (widget.report.duplicateOfSpotId != null) ...[
               const SizedBox(height: 12),
               TextButton.icon(
                 onPressed: () {
                   // For duplicate spots, we don't have countryCode/city info,
                   // so this will fall back to /spot/<id> format
-                  final url = UrlService.generateNavigationUrl(widget.report.duplicateOfSpotId!);
+                  final url = UrlService.generateNavigationUrl(
+                    widget.report.duplicateOfSpotId!,
+                  );
                   context.push(url);
                 },
                 icon: const Icon(Icons.open_in_new, size: 18),
@@ -558,12 +590,8 @@ class _ReportCardState extends State<_ReportCard> {
                 TextSpan(
                   style: theme.textTheme.bodyMedium,
                   children: [
-                    const TextSpan(
-                      text: 'Issue Description: ',
-                    ),
-                    TextSpan(
-                      text: widget.report.otherCategory!,
-                    ),
+                    const TextSpan(text: 'Issue Description: '),
+                    TextSpan(text: widget.report.otherCategory!),
                   ],
                 ),
               ),
@@ -576,13 +604,9 @@ class _ReportCardState extends State<_ReportCard> {
                   children: [
                     TextSpan(
                       text: 'Additional Details: ',
-                      style: TextStyle(
-                        color: colorScheme.secondary,
-                      ),
+                      style: TextStyle(color: colorScheme.secondary),
                     ),
-                    TextSpan(
-                      text: widget.report.details!,
-                    ),
+                    TextSpan(text: widget.report.details!),
                   ],
                 ),
               ),
@@ -595,19 +619,16 @@ class _ReportCardState extends State<_ReportCard> {
                   children: [
                     TextSpan(
                       text: 'Moderator Comment: ',
-                      style: TextStyle(
-                        color: colorScheme.secondary,
-                      ),
+                      style: TextStyle(color: colorScheme.secondary),
                     ),
-                    TextSpan(
-                      text: widget.report.moderatorNotes!,
-                    ),
+                    TextSpan(text: widget.report.moderatorNotes!),
                   ],
                 ),
               ),
             ],
             // Accepted photos (if any)
-            if (widget.report.acceptedPhotoUrls != null && widget.report.acceptedPhotoUrls!.isNotEmpty) ...[
+            if (widget.report.acceptedPhotoUrls != null &&
+                widget.report.acceptedPhotoUrls!.isNotEmpty) ...[
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -642,7 +663,8 @@ class _ReportCardState extends State<_ReportCard> {
                                 child: CachedNetworkImage(
                                   imageUrl: photoUrl,
                                   fit: BoxFit.contain,
-                                  imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
+                                  imageRenderMethodForWeb:
+                                      ImageRenderMethodForWeb.HttpGet,
                                 ),
                               ),
                               Positioned(
@@ -675,18 +697,23 @@ class _ReportCardState extends State<_ReportCard> {
                             CachedNetworkImage(
                               imageUrl: photoUrl,
                               fit: BoxFit.cover,
-                              imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
+                              imageRenderMethodForWeb:
+                                  ImageRenderMethodForWeb.HttpGet,
                               placeholder: (context, url) => Container(
                                 color: colorScheme.surfaceContainerHighest,
                                 child: const Center(
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 ),
                               ),
                               errorWidget: (context, url, error) => Container(
                                 color: colorScheme.surfaceContainerHighest,
                                 child: Icon(
                                   Icons.image_not_supported,
-                                  color: colorScheme.onSurface.withValues(alpha: 0.5),
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.5,
+                                  ),
                                 ),
                               ),
                             ),
@@ -772,7 +799,8 @@ class _ReportCardState extends State<_ReportCard> {
               const SizedBox(height: 12),
             ],
             // Photo suggestions
-            if (widget.report.suggestedPhotoUrls != null && widget.report.suggestedPhotoUrls!.isNotEmpty) ...[
+            if (widget.report.suggestedPhotoUrls != null &&
+                widget.report.suggestedPhotoUrls!.isNotEmpty) ...[
               const SizedBox(height: 12),
               Text(
                 'Suggested Photos',
@@ -797,7 +825,8 @@ class _ReportCardState extends State<_ReportCard> {
                                 child: CachedNetworkImage(
                                   imageUrl: photoUrl,
                                   fit: BoxFit.contain,
-                                  imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
+                                  imageRenderMethodForWeb:
+                                      ImageRenderMethodForWeb.HttpGet,
                                 ),
                               ),
                               Positioned(
@@ -818,16 +847,15 @@ class _ReportCardState extends State<_ReportCard> {
                       height: 100,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: colorScheme.outline,
-                        ),
+                        border: Border.all(color: colorScheme.outline),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: CachedNetworkImage(
                           imageUrl: photoUrl,
                           fit: BoxFit.cover,
-                          imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
+                          imageRenderMethodForWeb:
+                              ImageRenderMethodForWeb.HttpGet,
                           placeholder: (context, url) => Container(
                             color: colorScheme.surfaceContainerHighest,
                             child: const Center(
@@ -838,7 +866,9 @@ class _ReportCardState extends State<_ReportCard> {
                             color: colorScheme.surfaceContainerHighest,
                             child: Icon(
                               Icons.image_not_supported,
-                              color: colorScheme.onSurface.withValues(alpha: 0.5),
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.5,
+                              ),
                             ),
                           ),
                         ),
@@ -849,7 +879,8 @@ class _ReportCardState extends State<_ReportCard> {
               ),
             ],
             // Rejected photos (if any)
-            if (widget.report.rejectedPhotoUrls != null && widget.report.rejectedPhotoUrls!.isNotEmpty) ...[
+            if (widget.report.rejectedPhotoUrls != null &&
+                widget.report.rejectedPhotoUrls!.isNotEmpty) ...[
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -884,7 +915,8 @@ class _ReportCardState extends State<_ReportCard> {
                                 child: CachedNetworkImage(
                                   imageUrl: photoUrl,
                                   fit: BoxFit.contain,
-                                  imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
+                                  imageRenderMethodForWeb:
+                                      ImageRenderMethodForWeb.HttpGet,
                                 ),
                               ),
                               Positioned(
@@ -905,10 +937,7 @@ class _ReportCardState extends State<_ReportCard> {
                       height: 100,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: colorScheme.error,
-                          width: 2,
-                        ),
+                        border: Border.all(color: colorScheme.error, width: 2),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
@@ -917,18 +946,23 @@ class _ReportCardState extends State<_ReportCard> {
                             CachedNetworkImage(
                               imageUrl: photoUrl,
                               fit: BoxFit.cover,
-                              imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
+                              imageRenderMethodForWeb:
+                                  ImageRenderMethodForWeb.HttpGet,
                               placeholder: (context, url) => Container(
                                 color: colorScheme.surfaceContainerHighest,
                                 child: const Center(
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 ),
                               ),
                               errorWidget: (context, url, error) => Container(
                                 color: colorScheme.surfaceContainerHighest,
                                 child: Icon(
                                   Icons.image_not_supported,
-                                  color: colorScheme.onSurface.withValues(alpha: 0.5),
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.5,
+                                  ),
                                 ),
                               ),
                             ),
@@ -957,21 +991,28 @@ class _ReportCardState extends State<_ReportCard> {
                     child: TextButton.icon(
                       onPressed: () async {
                         // Build email subject
-                        final subject = 'Re: Spot Report - ${widget.report.spotName}';
-                        
+                        final subject =
+                            'Re: Spot Report - ${widget.report.spotName}';
+
                         // Build email body with report details
                         final bodyParts = <String>[];
                         bodyParts.add('Hello,');
                         bodyParts.add('');
-                        bodyParts.add('Thank you for your spot report. Here are the details:');
+                        bodyParts.add(
+                          'Thank you for your spot report. Here are the details:',
+                        );
                         bodyParts.add('');
                         bodyParts.add('Spot: ${widget.report.spotName}');
                         if (widget.report.locationSummary != null) {
-                          bodyParts.add('Location: ${widget.report.locationSummary}');
+                          bodyParts.add(
+                            'Location: ${widget.report.locationSummary}',
+                          );
                         }
                         bodyParts.add('Report ID: ${widget.report.id}');
                         if (widget.report.displayCategories.isNotEmpty) {
-                          bodyParts.add('Category: ${widget.report.displayCategories.join(", ")}');
+                          bodyParts.add(
+                            'Category: ${widget.report.displayCategories.join(", ")}',
+                          );
                         }
                         if (widget.report.otherCategory?.isNotEmpty ?? false) {
                           bodyParts.add('');
@@ -990,19 +1031,16 @@ class _ReportCardState extends State<_ReportCard> {
                         }
                         bodyParts.add('');
                         bodyParts.add('Best regards,');
-                        
+
                         final body = bodyParts.join('\n');
-                        
+
                         // Create mailto URI with subject and body
                         final emailUri = Uri(
                           scheme: 'mailto',
                           path: widget.report.primaryContact,
-                          queryParameters: {
-                            'subject': subject,
-                            'body': body,
-                          },
+                          queryParameters: {'subject': subject, 'body': body},
                         );
-                        
+
                         if (await canLaunchUrl(emailUri)) {
                           await launchUrl(emailUri);
                         }
@@ -1013,7 +1051,9 @@ class _ReportCardState extends State<_ReportCard> {
                   ),
                   IconButton(
                     onPressed: () {
-                      Clipboard.setData(ClipboardData(text: widget.report.primaryContact!));
+                      Clipboard.setData(
+                        ClipboardData(text: widget.report.primaryContact!),
+                      );
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Email address copied to clipboard'),
@@ -1040,7 +1080,8 @@ class _ReportCardState extends State<_ReportCard> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: () => _handleApplyEditSuggestions(context, widget.report),
+                        onPressed: () =>
+                            _handleApplyEditSuggestions(context, widget.report),
                         icon: const Icon(Icons.edit_note),
                         label: const Text('Review Edit Suggestions'),
                         style: ElevatedButton.styleFrom(
@@ -1052,9 +1093,11 @@ class _ReportCardState extends State<_ReportCard> {
                     const SizedBox(height: 8),
                   ],
                   // Photo suggestion actions
-                  if (widget.report.suggestedPhotoUrls != null && widget.report.suggestedPhotoUrls!.isNotEmpty) ...[
+                  if (widget.report.suggestedPhotoUrls != null &&
+                      widget.report.suggestedPhotoUrls!.isNotEmpty) ...[
                     ElevatedButton.icon(
-                      onPressed: () => _handleReviewPhotos(context, widget.report),
+                      onPressed: () =>
+                          _handleReviewPhotos(context, widget.report),
                       icon: const Icon(Icons.photo_library),
                       label: const Text('Review Suggested Photos'),
                       style: ElevatedButton.styleFrom(
@@ -1065,9 +1108,11 @@ class _ReportCardState extends State<_ReportCard> {
                     const SizedBox(height: 8),
                   ],
                   // Undo rejection button (if photos were rejected)
-                  if (widget.report.rejectedPhotoUrls != null && widget.report.rejectedPhotoUrls!.isNotEmpty) ...[
+                  if (widget.report.rejectedPhotoUrls != null &&
+                      widget.report.rejectedPhotoUrls!.isNotEmpty) ...[
                     ElevatedButton.icon(
-                      onPressed: () => _handleUndoRejection(context, widget.report),
+                      onPressed: () =>
+                          _handleUndoRejection(context, widget.report),
                       icon: const Icon(Icons.undo),
                       label: const Text('Undo Rejection'),
                       style: ElevatedButton.styleFrom(
@@ -1100,5 +1145,3 @@ class _ReportCardState extends State<_ReportCard> {
     );
   }
 }
-
-

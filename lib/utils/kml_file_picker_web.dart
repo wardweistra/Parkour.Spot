@@ -11,7 +11,8 @@ export 'picked_kml_file.dart' show PickedKmlFile;
 Future<PickedKmlFile?> pickKmlFile() async {
   final input = web.HTMLInputElement()
     ..type = 'file'
-    ..accept = '.kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz';
+    ..accept =
+        '.kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz';
   input.style.display = 'none';
   web.document.body?.appendChild(input);
 
@@ -30,10 +31,7 @@ Future<PickedKmlFile?> pickKmlFile() async {
       }
       final buffer = await file.arrayBuffer().toDart;
       completer.complete(
-        PickedKmlFile(
-          name: file.name,
-          bytes: Uint8List.view(buffer.toDart),
-        ),
+        PickedKmlFile(name: file.name, bytes: Uint8List.view(buffer.toDart)),
       );
     } catch (error) {
       if (!completer.isCompleted) {

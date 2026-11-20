@@ -36,8 +36,9 @@ class JumpflixService extends ChangeNotifier {
   static const String _videosCollection = 'jumpflixVideos';
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseFunctions _functions =
-      FirebaseFunctions.instanceFor(region: 'europe-west1');
+  final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(
+    region: 'europe-west1',
+  );
 
   /// Returns Jumpflix video IDs linked to the given spot, or null if none.
   Future<List<int>?> getJumpflixIdsForSpot(String spotId) async {
@@ -83,9 +84,7 @@ class JumpflixService extends ChangeNotifier {
     final result = await callable.call();
     final data = result.data as Map<String, dynamic>?;
     if (data == null || data['success'] != true) {
-      throw Exception(
-        data?['error'] ?? 'Jumpflix import failed',
-      );
+      throw Exception(data?['error'] ?? 'Jumpflix import failed');
     }
     return {
       'spotsUpdated': data['spotsUpdated'] as int? ?? 0,

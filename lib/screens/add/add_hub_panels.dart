@@ -52,11 +52,7 @@ class AddHubPanelLayout extends StatelessWidget {
         }
 
         return Column(
-          children: [
-            spotPanel,
-            const SizedBox(height: 16),
-            eventPanel,
-          ],
+          children: [spotPanel, const SizedBox(height: 16), eventPanel],
         );
       },
     );
@@ -64,11 +60,7 @@ class AddHubPanelLayout extends StatelessWidget {
 }
 
 class AddHubSpotPanel extends StatelessWidget {
-  const AddHubSpotPanel({
-    super.key,
-    this.onPressed,
-    this.fillHeight = false,
-  });
+  const AddHubSpotPanel({super.key, this.onPressed, this.fillHeight = false});
 
   final VoidCallback? onPressed;
   final bool fillHeight;
@@ -104,11 +96,7 @@ class AddHubSpotPanel extends StatelessWidget {
 }
 
 class AddHubEventPanel extends StatelessWidget {
-  const AddHubEventPanel({
-    super.key,
-    this.onPressed,
-    this.fillHeight = false,
-  });
+  const AddHubEventPanel({super.key, this.onPressed, this.fillHeight = false});
 
   final VoidCallback? onPressed;
   final bool fillHeight;

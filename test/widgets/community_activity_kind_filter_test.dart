@@ -143,11 +143,7 @@ void main() {
   ) async {
     var lens = CommunityActivityLens.all;
 
-    await _pumpHarness(
-      tester,
-      lens: lens,
-      onChanged: (next) => lens = next,
-    );
+    await _pumpHarness(tester, lens: lens, onChanged: (next) => lens = next);
 
     await _openLensMenu(tester);
     await tester.tap(find.byKey(CommunityActivityKindFilter.chipKeyEvents));

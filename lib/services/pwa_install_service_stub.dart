@@ -23,12 +23,12 @@ class PwaInstallService extends ChangeNotifier {
   bool get isInstallSupported => false;
 
   Map<String, dynamic> get debugInfo => {
-        'chromeInstallButtonAvailable': false,
-        'isInstalled': false,
-        'isInstallSupported': false,
-        'shouldShowPrompt': false,
-        'platform': 'native',
-      };
+    'chromeInstallButtonAvailable': false,
+    'isInstalled': false,
+    'isInstallSupported': false,
+    'shouldShowPrompt': false,
+    'platform': 'native',
+  };
 
   Future<void> initialize() async {}
 
@@ -39,20 +39,20 @@ class PwaInstallService extends ChangeNotifier {
   Future<void> dismissPrompt() async {}
 
   Map<String, String> getIOSInstallInstructions() => const {
-        'title': 'Install Parkour·Spot',
-        'step1': '',
-        'step2': '',
-        'step3': '',
-        'step4': '',
-      };
+    'title': 'Install Parkour·Spot',
+    'step1': '',
+    'step2': '',
+    'step3': '',
+    'step4': '',
+  };
 
   Map<String, String> getAndroidInstallInstructions() => const {
-        'title': 'Install Parkour·Spot',
-        'step1': '',
-        'step2': '',
-        'step3': '',
-        'step4': '',
-      };
+    'title': 'Install Parkour·Spot',
+    'step1': '',
+    'step2': '',
+    'step3': '',
+    'step4': '',
+  };
 
   @override
   void dispose() {

@@ -51,8 +51,9 @@ class EventInterestPanel extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     // Counts live on the people strip / dialog — buttons are actions only.
-    final goingLabel =
-        isPast ? l10n.eventInterestAttended : l10n.eventInterestGoing;
+    final goingLabel = isPast
+        ? l10n.eventInterestAttended
+        : l10n.eventInterestGoing;
     final interestedLabel = l10n.eventInterestInterested;
     final disclaimer = isPast
         ? l10n.eventInterestDisclaimerPast
@@ -170,9 +171,7 @@ class _EventInterestPeopleStrip extends StatelessWidget {
         child: Ink(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
-            border: Border.all(
-              color: colors.primary.withValues(alpha: 0.22),
-            ),
+            border: Border.all(color: colors.primary.withValues(alpha: 0.22)),
           ),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
@@ -226,8 +225,9 @@ class _EventInterestCrewStack extends StatelessWidget {
     final shown = people.take(maxShown).toList(growable: false);
     final extra = people.length - shown.length;
     final overlap = radius * _overlapFactor;
-    final stackWidth =
-        shown.isEmpty ? 0.0 : (shown.length - 1) * overlap + radius * 2;
+    final stackWidth = shown.isEmpty
+        ? 0.0
+        : (shown.length - 1) * overlap + radius * 2;
     final theme = Theme.of(context);
 
     return Row(
@@ -266,10 +266,7 @@ class _EventInterestCrewStack extends StatelessWidget {
 }
 
 class _EventInterestRingAvatar extends StatelessWidget {
-  const _EventInterestRingAvatar({
-    required this.person,
-    required this.radius,
-  });
+  const _EventInterestRingAvatar({required this.person, required this.radius});
 
   final EventInterestPerson person;
   final double radius;
@@ -401,9 +398,11 @@ void showEventInterestPeopleDialog(
   final title = isPast
       ? l10n.eventInterestPeopleTitlePast
       : l10n.eventInterestPeopleTitle;
-  final going = goingCount ??
+  final going =
+      goingCount ??
       people.where((p) => p.status == EventInterestStatus.going).length;
-  final interested = interestedCount ??
+  final interested =
+      interestedCount ??
       people.where((p) => p.status == EventInterestStatus.interested).length;
   final subtitle = isPast
       ? l10n.eventInterestPeopleSubtitlePast(going, interested)
@@ -416,9 +415,7 @@ void showEventInterestPeopleDialog(
       return AlertDialog(
         backgroundColor: cs.surface,
         surfaceTintColor: cs.primaryContainer.withValues(alpha: 0.35),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         titlePadding: const EdgeInsets.fromLTRB(20, 18, 8, 0),
         contentPadding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
         title: Row(
@@ -431,11 +428,7 @@ void showEventInterestPeopleDialog(
                 color: cs.primaryContainer.withValues(alpha: 0.55),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                Icons.groups_2_rounded,
-                color: cs.primary,
-                size: 22,
-              ),
+              child: Icon(Icons.groups_2_rounded, color: cs.primary, size: 22),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -488,10 +481,7 @@ void showEventInterestPeopleDialog(
                   isPast: isPast,
                   onPersonTap: (person) {
                     Navigator.of(ctx).pop();
-                    navigateToUserProfileForCheckIn(
-                      hostContext,
-                      person.userId,
-                    );
+                    navigateToUserProfileForCheckIn(hostContext, person.userId);
                   },
                 ),
         ),
@@ -583,10 +573,7 @@ class _EventInterestRosterListState extends State<_EventInterestRosterList>
 }
 
 class _EventInterestStatusBadge extends StatelessWidget {
-  const _EventInterestStatusBadge({
-    required this.status,
-    required this.isPast,
-  });
+  const _EventInterestStatusBadge({required this.status, required this.isPast});
 
   final EventInterestStatus status;
   final bool isPast;
@@ -883,8 +870,9 @@ class _EventInterestSectionState extends State<EventInterestSection> {
                     final liveStatus = interestSnap.data;
                     final useOptimistic =
                         _isBusy || _statsStillAtBaseline(liveStats);
-                    final status =
-                        useOptimistic ? _optimisticStatus : liveStatus;
+                    final status = useOptimistic
+                        ? _optimisticStatus
+                        : liveStatus;
                     final stats = useOptimistic
                         ? (_optimisticStats ?? liveStats)
                         : liveStats;

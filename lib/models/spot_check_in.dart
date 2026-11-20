@@ -88,6 +88,7 @@ class SpotCheckIn {
       if (t is Timestamp) return t.toDate();
       return null;
     }
+
     return SpotCheckIn(
       id: doc.id,
       userId: data['userId'] as String? ?? '',

@@ -95,9 +95,9 @@ class _SpotListAccessSheetState extends State<SpotListAccessSheet> {
     setState(() => _isInviting = false);
     if (ok) {
       _inviteeController.clear();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.spotListAccessInviteSent)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.spotListAccessInviteSent)));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -310,9 +310,9 @@ class _SpotListAccessSheetState extends State<SpotListAccessSheet> {
               ] else
                 Expanded(
                   child: StreamBuilder<SpotListInvite?>(
-                    stream: context.read<SpotListService>().watchMyInviteForList(
-                      listId,
-                    ),
+                    stream: context
+                        .read<SpotListService>()
+                        .watchMyInviteForList(listId),
                     builder: (context, snapshot) {
                       final invite = snapshot.data;
                       if (invite == null) {
@@ -335,23 +335,21 @@ class _SpotListAccessSheetState extends State<SpotListAccessSheet> {
                             style: textTheme.bodyLarge,
                           ),
                           const SizedBox(height: 16),
-                          if (invite.status == SpotListInviteStatus.pending) ...[
+                          if (invite.status ==
+                              SpotListInviteStatus.pending) ...[
                             CustomButton(
-                              onPressed: () =>
-                                  _respond(invite, accept: true),
+                              onPressed: () => _respond(invite, accept: true),
                               text: l10n.spotListAccessAccept,
                               width: double.infinity,
                             ),
                             const SizedBox(height: 8),
                             OutlinedButton(
-                              onPressed: () =>
-                                  _respond(invite, accept: false),
+                              onPressed: () => _respond(invite, accept: false),
                               child: Text(l10n.spotListAccessDecline),
                             ),
                           ] else
                             OutlinedButton(
-                              onPressed: () =>
-                                  _remove(invite, isSelf: true),
+                              onPressed: () => _remove(invite, isSelf: true),
                               child: Text(l10n.spotListAccessLeave),
                             ),
                         ],

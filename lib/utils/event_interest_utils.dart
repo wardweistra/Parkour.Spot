@@ -34,8 +34,10 @@ int compareEventInterestPeople(EventInterestPerson a, EventInterestPerson b) {
     if (a.status == EventInterestStatus.going) return -1;
     if (b.status == EventInterestStatus.going) return 1;
   }
-  final aAt = a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
-  final bAt = b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+  final aAt =
+      a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+  final bAt =
+      b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
   final byTime = bAt.compareTo(aAt);
   if (byTime != 0) return byTime;
   return a.userId.compareTo(b.userId);

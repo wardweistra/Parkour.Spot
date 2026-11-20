@@ -5,7 +5,8 @@ import 'package:heic_to_png_jpg/heic_to_png_jpg.dart';
 import 'package:image/image.dart' as img;
 
 import 'web_image_preparation_stub.dart'
-    if (dart.library.js_interop) 'web_image_preparation_web.dart' as web_image;
+    if (dart.library.js_interop) 'web_image_preparation_web.dart'
+    as web_image;
 
 /// Result of preparing an image for upload.
 /// Contains validated/converted bytes and the correct MIME type.
@@ -31,8 +32,10 @@ class ImagePreparationException implements Exception {
 bool isHeic(Uint8List bytes) {
   if (bytes.length < 12) return false;
   // ftyp at offset 4
-  if (bytes[4] != 0x66 || bytes[5] != 0x74 ||
-      bytes[6] != 0x79 || bytes[7] != 0x70) {
+  if (bytes[4] != 0x66 ||
+      bytes[5] != 0x74 ||
+      bytes[6] != 0x79 ||
+      bytes[7] != 0x70) {
     return false;
   }
   // Major brand at offset 8: heic, mif1, heix, hevx, msf1
@@ -61,23 +64,31 @@ String detectContentType(Uint8List bytes) {
   }
 
   // PNG
-  if (bytes[0] == 0x89 && bytes[1] == 0x50 &&
-      bytes[2] == 0x4E && bytes[3] == 0x47) {
+  if (bytes[0] == 0x89 &&
+      bytes[1] == 0x50 &&
+      bytes[2] == 0x4E &&
+      bytes[3] == 0x47) {
     return 'image/png';
   }
 
   // GIF
   if (bytes.length >= 3 &&
-      bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46) {
+      bytes[0] == 0x47 &&
+      bytes[1] == 0x49 &&
+      bytes[2] == 0x46) {
     return 'image/gif';
   }
 
   // WebP
   if (bytes.length >= 12 &&
-      bytes[0] == 0x52 && bytes[1] == 0x49 &&
-      bytes[2] == 0x46 && bytes[3] == 0x46 &&
-      bytes[8] == 0x57 && bytes[9] == 0x45 &&
-      bytes[10] == 0x42 && bytes[11] == 0x50) {
+      bytes[0] == 0x52 &&
+      bytes[1] == 0x49 &&
+      bytes[2] == 0x46 &&
+      bytes[3] == 0x46 &&
+      bytes[8] == 0x57 &&
+      bytes[9] == 0x45 &&
+      bytes[10] == 0x42 &&
+      bytes[11] == 0x50) {
     return 'image/webp';
   }
 
@@ -174,10 +185,10 @@ PreparedImage _prepareFromDecoded({
     return PreparedImage(bytes: originalBytes, contentType: contentType);
   }
 
-  final needsResize = maxDimension > 0 &&
+  final needsResize =
+      maxDimension > 0 &&
       (decoded.width > maxDimension || decoded.height > maxDimension);
-  final needsJpegReencode =
-      jpegQuality > 0 && contentType == 'image/jpeg';
+  final needsJpegReencode = jpegQuality > 0 && contentType == 'image/jpeg';
 
   if (!needsResize && !needsJpegReencode) {
     return PreparedImage(bytes: originalBytes, contentType: contentType);
@@ -249,7 +260,9 @@ PreparedImage _prepareImageForUploadSync(_PrepareImageRequest request) {
   );
 }
 
-Map<String, Object?> _prepareImageForUploadWorker(Map<String, Object?> message) {
+Map<String, Object?> _prepareImageForUploadWorker(
+  Map<String, Object?> message,
+) {
   try {
     final result = _prepareImageForUploadSync(
       _PrepareImageRequest(
@@ -258,16 +271,11 @@ Map<String, Object?> _prepareImageForUploadWorker(Map<String, Object?> message) 
         jpegQuality: message['jpegQuality']! as int,
       ),
     );
-    return {
-      'bytes': result.bytes,
-      'contentType': result.contentType,
-    };
+    return {'bytes': result.bytes, 'contentType': result.contentType};
   } on ImagePreparationException catch (e) {
     return {'error': e.message};
   } catch (_) {
-    return {
-      'error': 'Failed to process image. Please try a different photo.',
-    };
+    return {'error': 'Failed to process image. Please try a different photo.'};
   }
 }
 
@@ -322,9 +330,7 @@ Future<PreparedImage> prepareImageForUpload(
   int jpegQuality = 0,
 }) async {
   if (bytes.isEmpty) {
-    throw ImagePreparationException(
-      'Image data is empty.',
-    );
+    throw ImagePreparationException('Image data is empty.');
   }
 
   // HEIC: convert to JPEG, then continue through the normal pipeline.

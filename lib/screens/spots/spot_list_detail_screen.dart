@@ -657,7 +657,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     }
 
     setState(() => _isUpdatingFeatured = true);
-    final spotListService = Provider.of<SpotListService>(context, listen: false);
+    final spotListService = Provider.of<SpotListService>(
+      context,
+      listen: false,
+    );
     final ok = await spotListService.setSpotListFeatured(
       list.id!,
       featured: makeFeatured,
@@ -1124,9 +1127,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                         ),
                         onTap: _isUpdatingFeatured ? null : _toggleFeatured,
                         child: SpotDetailQuickActionChip(
-                          icon: isFeatured
-                              ? Icons.star
-                              : Icons.star_outline,
+                          icon: isFeatured ? Icons.star : Icons.star_outline,
                           iconColor: Theme.of(context).colorScheme.primary,
                           label: actionLabel,
                           showSpinner: _isUpdatingFeatured,

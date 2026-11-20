@@ -182,8 +182,8 @@ class SpotList {
     this.aboutSlug,
     List<String>? editorIds,
     List<String>? viewerIds,
-  })  : editorIds = editorIds ?? const [],
-        viewerIds = viewerIds ?? const [];
+  }) : editorIds = editorIds ?? const [],
+       viewerIds = viewerIds ?? const [];
 
   bool isOwner(String? uid) =>
       uid != null && uid.isNotEmpty && createdBy == uid;
@@ -196,8 +196,7 @@ class SpotList {
 
   bool canEditContent(String? uid) => isOwner(uid) || isEditor(uid);
 
-  bool canAccessAsMember(String? uid) =>
-      canEditContent(uid) || isViewer(uid);
+  bool canAccessAsMember(String? uid) => canEditContent(uid) || isViewer(uid);
 
   /// When sections exist and are non-empty, returns ordered unique spot IDs.
   /// Otherwise returns spotIds.

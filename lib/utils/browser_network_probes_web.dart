@@ -5,10 +5,7 @@ import 'package:web/web.dart' as web;
 
 Future<String> probeFetch(String url) async {
   final response = await web.window
-      .fetch(
-        url.toJS,
-        web.RequestInit(mode: 'no-cors', cache: 'no-store'),
-      )
+      .fetch(url.toJS, web.RequestInit(mode: 'no-cors', cache: 'no-store'))
       .toDart;
   return 'type=${response.type} status=${response.status}';
 }
@@ -37,10 +34,9 @@ Future<String> probeIndexedDb() {
     final db = request.result as web.IDBDatabase;
     try {
       final tx = db.transaction(_storeName.toJS, 'readwrite');
-      tx.objectStore(_storeName).put(
-            DateTime.now().toUtc().toIso8601String().toJS,
-            'lastProbe'.toJS,
-          );
+      tx
+          .objectStore(_storeName)
+          .put(DateTime.now().toUtc().toIso8601String().toJS, 'lastProbe'.toJS);
       tx.oncomplete = ((web.Event _) {
         db.close();
         if (!completer.isCompleted) completer.complete('write ok');

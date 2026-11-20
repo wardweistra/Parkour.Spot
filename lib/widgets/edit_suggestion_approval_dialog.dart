@@ -781,8 +781,7 @@ class _EditSuggestionApprovalDialogState
                         YoutubeSuggestionReview(
                           existingVideoIds: spot.youtubeVideoIds,
                           existingVideoMeta: spot.youtubeVideoMeta,
-                          suggestedVideoIds:
-                              report.suggestedYoutubeVideoIds!,
+                          suggestedVideoIds: report.suggestedYoutubeVideoIds!,
                         ),
                       ],
                     ),

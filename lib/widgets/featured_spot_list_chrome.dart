@@ -76,20 +76,14 @@ class SpotFeaturedListsSection extends StatelessWidget {
             decoration: BoxDecoration(
               color: scheme.primaryContainer.withValues(alpha: 0.35),
               borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius),
-              border: Border.all(
-                color: scheme.primary.withValues(alpha: 0.25),
-              ),
+              border: Border.all(color: scheme.primary.withValues(alpha: 0.25)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Row(
                   children: [
-                    Icon(
-                      Icons.star_outline,
-                      size: 20,
-                      color: scheme.primary,
-                    ),
+                    Icon(Icons.star_outline, size: 20, color: scheme.primary),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(

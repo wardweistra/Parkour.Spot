@@ -104,10 +104,10 @@ class MarkerIconUtils {
 
   /// Selected normal pin for single-spot maps (detail, add/edit, location picker).
   static Future<BitmapDescriptor> loadNormalSelectedMapPin() => loadMapPinPng(
-        mapPinNormalSelectedAsset,
-        fallbackFill: mapPinNormalFallbackFill,
-        logicalHeight: mapPinSingleSpotLogicalHeight,
-      );
+    mapPinNormalSelectedAsset,
+    fallbackFill: mapPinNormalFallbackFill,
+    logicalHeight: mapPinSingleSpotLogicalHeight,
+  );
 
   /// Loads a marker PNG from the asset bundle.
   ///
@@ -144,10 +144,10 @@ class MarkerIconUtils {
   }
 
   /// Creates a custom circular marker icon with a white ring and colored fill.
-  /// 
+  ///
   /// [size] - The size of the icon in pixels (default: 22)
   /// [fillColor] - The color of the inner fill circle (default: Colors.black)
-  /// 
+  ///
   /// Returns a [BitmapDescriptor] that can be used for map markers.
   static Future<BitmapDescriptor> createMarkerIcon({
     double size = 22,
@@ -158,7 +158,8 @@ class MarkerIconUtils {
     final double radius = size / 2;
     final Offset center = Offset(radius, radius);
 
-    final Paint shadowPaint = Paint()..color = Colors.black.withValues(alpha: 0.2);
+    final Paint shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.2);
     final Paint ringPaint = Paint()..color = Colors.white;
     final Paint fillPaint = Paint()..color = fillColor;
 
@@ -173,21 +174,32 @@ class MarkerIconUtils {
     // Inner fill
     canvas.drawCircle(center, innerRadius - borderThickness * 2, fillPaint);
 
-    final ui.Image image = await recorder.endRecording().toImage(size.toInt(), size.toInt());
-    final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    final ui.Image image = await recorder.endRecording().toImage(
+      size.toInt(),
+      size.toInt(),
+    );
+    final ByteData? byteData = await image.toByteData(
+      format: ui.ImageByteFormat.png,
+    );
     final Uint8List bytes = byteData!.buffer.asUint8List();
     return BitmapDescriptor.bytes(bytes);
   }
 
   /// Creates a set of standard spot marker icons used throughout the app.
-  /// 
+  ///
   /// Returns a map with keys: 'default', 'selected', 'highlighted', 'selectedHighlighted'
   static Future<Map<String, BitmapDescriptor>> createSpotMarkerIcons() async {
     return {
       'default': await createMarkerIcon(size: 22, fillColor: Colors.red),
-      'selected': await createMarkerIcon(size: 22, fillColor: Color(0xFFFF8A80)),
+      'selected': await createMarkerIcon(
+        size: 22,
+        fillColor: Color(0xFFFF8A80),
+      ),
       'highlighted': await createMarkerIcon(size: 22, fillColor: Colors.black),
-      'selectedHighlighted': await createMarkerIcon(size: 22, fillColor: Colors.grey.shade400),
+      'selectedHighlighted': await createMarkerIcon(
+        size: 22,
+        fillColor: Colors.grey.shade400,
+      ),
     };
   }
 
@@ -203,9 +215,7 @@ class MarkerIconUtils {
   }
 
   /// Event pin on Explore (venue and spot-linked events).
-  static Future<BitmapDescriptor> loadEventMapPin({
-    double? logicalHeight,
-  }) =>
+  static Future<BitmapDescriptor> loadEventMapPin({double? logicalHeight}) =>
       loadMapPinPng(
         mapPinEventAsset,
         fallbackFill: mapPinEventFallbackFill,
@@ -215,11 +225,9 @@ class MarkerIconUtils {
   /// Selected event pin on Explore.
   static Future<BitmapDescriptor> loadEventSelectedMapPin({
     double? logicalHeight,
-  }) =>
-      loadMapPinPng(
-        mapPinEventSelectedAsset,
-        fallbackFill: mapPinEventSelectedFallbackFill,
-        logicalHeight: logicalHeight,
-      );
+  }) => loadMapPinPng(
+    mapPinEventSelectedAsset,
+    fallbackFill: mapPinEventSelectedFallbackFill,
+    logicalHeight: logicalHeight,
+  );
 }
-

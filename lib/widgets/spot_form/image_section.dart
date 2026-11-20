@@ -55,8 +55,8 @@ class SpotImageSection extends StatelessWidget {
                   Text(
                     '*',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ],
               ],
@@ -80,7 +80,9 @@ class SpotImageSection extends StatelessWidget {
                     return Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: List.generate(existingImageUrls.length, (index) {
+                      children: List.generate(existingImageUrls.length, (
+                        index,
+                      ) {
                         final url = existingImageUrls[index];
                         final isDuplicate = duplicateUrls.contains(url);
                         return Container(
@@ -129,7 +131,11 @@ class SpotImageSection extends StatelessWidget {
                                     onTap: () => onRemoveExistingAt(index),
                                     child: const Padding(
                                       padding: EdgeInsets.all(4.0),
-                                      child: Icon(Icons.delete, size: 18, color: Colors.white),
+                                      child: Icon(
+                                        Icons.delete,
+                                        size: 18,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -221,11 +227,7 @@ class SpotImageSection extends StatelessWidget {
     if (bytes == null) return const SizedBox.shrink();
     return Stack(
       children: [
-        MemoryImagePreview(
-          bytes: bytes,
-          size: 120,
-          borderRadius: 12,
-        ),
+        MemoryImagePreview(bytes: bytes, size: 120, borderRadius: 12),
         Positioned(
           top: 6,
           right: 6,
@@ -250,7 +252,7 @@ class SpotImageSection extends StatelessWidget {
   Set<String> _findDuplicateUrls(List<String> urls) {
     final seen = <String>{};
     final duplicates = <String>{};
-    
+
     for (final url in urls) {
       if (seen.contains(url)) {
         duplicates.add(url);
@@ -258,7 +260,7 @@ class SpotImageSection extends StatelessWidget {
         seen.add(url);
       }
     }
-    
+
     return duplicates;
   }
 
@@ -273,7 +275,7 @@ class SpotImageSection extends StatelessWidget {
     final duplicateUrls = isExisting && items.isNotEmpty
         ? _findDuplicateUrls(items.cast<String>())
         : <String>{};
-    
+
     return SizedBox(
       height: 120,
       child: ReorderableListView(
@@ -295,7 +297,8 @@ class SpotImageSection extends StatelessWidget {
           final key = isExisting
               ? ValueKey<String>('existing_$index')
               : ValueKey<String>('selected_$index');
-          final isDuplicate = isExisting && duplicateUrls.contains(item as String);
+          final isDuplicate =
+              isExisting && duplicateUrls.contains(item as String);
           return _buildReorderableImageItem(
             context,
             key: key,
@@ -345,12 +348,12 @@ class SpotImageSection extends StatelessWidget {
                     fit: BoxFit.cover,
                   )
                 : item != null
-                    ? MemoryImagePreview(
-                        bytes: item as Uint8List,
-                        size: 120,
-                        borderRadius: 12,
-                      )
-                    : const SizedBox.shrink(),
+                ? MemoryImagePreview(
+                    bytes: item as Uint8List,
+                    size: 120,
+                    borderRadius: 12,
+                  )
+                : const SizedBox.shrink(),
           ),
           // Duplicate warning indicator
           if (isDuplicate)
@@ -363,11 +366,7 @@ class SpotImageSection extends StatelessWidget {
                   color: Colors.orange,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.warning,
-                  size: 16,
-                  color: Colors.white,
-                ),
+                child: const Icon(Icons.warning, size: 16, color: Colors.white),
               ),
             ),
           // Delete button
@@ -422,5 +421,3 @@ class SpotImageSection extends StatelessWidget {
     );
   }
 }
-
-

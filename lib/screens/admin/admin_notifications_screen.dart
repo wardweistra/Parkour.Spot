@@ -12,7 +12,8 @@ class AdminNotificationsScreen extends StatefulWidget {
   const AdminNotificationsScreen({super.key});
 
   @override
-  State<AdminNotificationsScreen> createState() => _AdminNotificationsScreenState();
+  State<AdminNotificationsScreen> createState() =>
+      _AdminNotificationsScreenState();
 }
 
 class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
@@ -105,7 +106,11 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.redAccent,
+                    ),
                     const SizedBox(height: 12),
                     Text(service.error!, textAlign: TextAlign.center),
                     if (service.lastDiagnostics != null) ...[
@@ -124,7 +129,8 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                           child: SingleChildScrollView(
                             child: SelectableText(
                               service.lastDiagnostics!,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
                                     fontFamily: 'monospace',
                                     height: 1.35,
                                   ),
@@ -158,7 +164,9 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                         Icon(
                           Icons.notifications_none_outlined,
                           size: 64,
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.45),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -275,8 +283,10 @@ class _AdminNotificationCard extends StatelessWidget {
                     Text(
                       copy.body!,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.75),
-                          ),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.75),
+                      ),
                     ),
                   ],
                   const SizedBox(height: 8),
@@ -288,8 +298,10 @@ class _AdminNotificationCard extends StatelessWidget {
                   Text(
                     '${n.deeplinkKind.name} · ${n.deeplinkId}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
-                        ),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.65),
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Wrap(
@@ -301,15 +313,23 @@ class _AdminNotificationCard extends StatelessWidget {
                         timeLabel,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
-                      if (n.notificationKind != null && n.notificationKind!.isNotEmpty)
+                      if (n.notificationKind != null &&
+                          n.notificationKind!.isNotEmpty)
                         Chip(
-                          label: Text(n.notificationKind!, style: const TextStyle(fontSize: 12)),
+                          label: Text(
+                            n.notificationKind!,
+                            style: const TextStyle(fontSize: 12),
+                          ),
                           visualDensity: VisualDensity.compact,
                           padding: EdgeInsets.zero,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
                         ),
                       Chip(
-                        label: Text(n.read ? 'Read' : 'Unread', style: const TextStyle(fontSize: 12)),
+                        label: Text(
+                          n.read ? 'Read' : 'Unread',
+                          style: const TextStyle(fontSize: 12),
+                        ),
                         visualDensity: VisualDensity.compact,
                         padding: EdgeInsets.zero,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,

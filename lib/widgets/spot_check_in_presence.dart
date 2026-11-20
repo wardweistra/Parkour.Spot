@@ -63,20 +63,14 @@ Stream<List<CheckInAvatarEntry>> watchCheckInAvatarEntriesForSpot(
 
     late final StreamSubscription<List<SpotCheckIn>> sub1;
     late final StreamSubscription<SpotCheckIn?> sub2;
-    sub1 = svc.watchPublicCheckIns(spotId).listen(
-      (p) {
-        latestPublic = p;
-        emit();
-      },
-      onError: controller.addError,
-    );
-    sub2 = svc.watchMyCheckIn(spotId).listen(
-      (m) {
-        latestMine = m;
-        emit();
-      },
-      onError: controller.addError,
-    );
+    sub1 = svc.watchPublicCheckIns(spotId).listen((p) {
+      latestPublic = p;
+      emit();
+    }, onError: controller.addError);
+    sub2 = svc.watchMyCheckIn(spotId).listen((m) {
+      latestMine = m;
+      emit();
+    }, onError: controller.addError);
 
     controller.onCancel = () {
       sub1.cancel();
@@ -133,6 +127,7 @@ class SpotCheckInPresenceStrip extends StatefulWidget {
     super.key,
     required this.spotId,
     this.variant = SpotCheckInPresenceVariant.detail,
+
     /// Shown below the avatar stack on [SpotCheckInPresenceVariant.detail] when non-null.
     this.detailLeadingLabel,
   });
@@ -267,8 +262,9 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
     final isCard = widget.variant == SpotCheckInPresenceVariant.spotCard;
     // Detail page: slightly under 44×44 action buttons; spot cards: compact on imagery.
     final double radius = isCard ? 14.0 : _kSpotDetailAvatarRadius;
-    final double overlap =
-        isCard ? 16.0 : _kSpotDetailAvatarRadius * (23.0 / 20.0);
+    final double overlap = isCard
+        ? 16.0
+        : _kSpotDetailAvatarRadius * (23.0 / 20.0);
     final shown = entries.take(maxShown).toList();
     final extra = entries.length - shown.length;
     final extraStyle = isCard
@@ -447,7 +443,9 @@ class _SpotCheckInPresenceStripState extends State<SpotCheckInPresenceStrip> {
   ) {
     final l10n = AppLocalizations.of(context)!;
     final name = c.displayName?.trim();
-    final who = (name != null && name.isNotEmpty) ? name : l10n.spotCheckInUnnamedPerson;
+    final who = (name != null && name.isNotEmpty)
+        ? name
+        : l10n.spotCheckInUnnamedPerson;
     final comment = c.comment?.trim();
     final until = communityFriendlyCheckInUntil(c.expectedEndAt, l10n);
     final headline = l10n.spotCheckInTooltipPublic(who, until);
@@ -661,9 +659,7 @@ class CheckInCommentBlock extends StatelessWidget {
         '💬 $comment',
         style: theme.textTheme.bodyMedium?.copyWith(
           fontStyle: FontStyle.italic,
-          color: theme.colorScheme.onSurface.withValues(
-            alpha: 0.8,
-          ),
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
         ),
       ),
     );
@@ -681,6 +677,7 @@ class CheckInUserCard extends StatelessWidget {
 
   final CheckInAvatarEntry entry;
   final BuildContext hostContext;
+
   /// When non-null (Community dialog), the owner can share a narrative + spot link.
   final CommunitySpotShareContext? shareContext;
 
@@ -688,7 +685,10 @@ class CheckInUserCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = entry.checkIn;
-    final uid = Provider.of<AuthService>(context, listen: false).currentUser?.uid;
+    final uid = Provider.of<AuthService>(
+      context,
+      listen: false,
+    ).currentUser?.uid;
     final isMine = uid != null && uid == c.userId;
     final name = c.displayName?.trim();
     final title = (name != null && name.isNotEmpty) ? name : 'Someone here';
@@ -750,10 +750,8 @@ class CheckInUserCard extends StatelessWidget {
                                 c.spotName,
                                 l10n,
                               );
-                              final narrative = l10n.communityShareCheckInNarrative(
-                                label,
-                                until,
-                              );
+                              final narrative = l10n
+                                  .communityShareCheckInNarrative(label, until);
                               await shareCommunitySpotMessage(
                                 context,
                                 shareContext: ctx,
@@ -779,8 +777,8 @@ class CheckInUserCard extends StatelessWidget {
                                 context,
                                 listen: false,
                               );
-                              final stillHereEligible =
-                                  await svc.stillHereEligibleForUser(c);
+                              final stillHereEligible = await svc
+                                  .stillHereEligibleForUser(c);
                               if (!context.mounted) return;
                               final result = await showSpotCheckInDialog(
                                 context,
@@ -801,7 +799,8 @@ class CheckInUserCard extends StatelessWidget {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        svc.error ?? 'Could not delete check-in',
+                                        svc.error ??
+                                            'Could not delete check-in',
                                       ),
                                     ),
                                   );

@@ -142,30 +142,31 @@ void main() {
     expect(result.overwriteName, isFalse);
   });
 
-  testWidgets('shows updated duplicate change and omits matching original value', (
-    tester,
-  ) async {
-    await pumpDialog(
-      tester,
-      changedGroups: const [SpotDuplicateFieldGroup.name],
-      duplicateReviewBaseline: const {'name': 'Central Rails'},
-      originalSpot: Spot(
-        name: 'Central Rails',
-        description: '',
-        latitude: 0,
-        longitude: 0,
-      ),
-      interact: (tester) async {},
-    );
+  testWidgets(
+    'shows updated duplicate change and omits matching original value',
+    (tester) async {
+      await pumpDialog(
+        tester,
+        changedGroups: const [SpotDuplicateFieldGroup.name],
+        duplicateReviewBaseline: const {'name': 'Central Rails'},
+        originalSpot: Spot(
+          name: 'Central Rails',
+          description: '',
+          latitude: 0,
+          longitude: 0,
+        ),
+        interact: (tester) async {},
+      );
 
-    expect(find.text('Updated on duplicate'), findsOneWidget);
-    expect(find.text('Central Rails'), findsOneWidget);
-    expect(find.text('Updated name'), findsOneWidget);
-    expect(find.text('−'), findsOneWidget);
-    expect(find.text('+'), findsOneWidget);
-    expect(find.text('Current on original'), findsOneWidget);
-    expect(find.text('Same as previous on duplicate'), findsOneWidget);
-  });
+      expect(find.text('Updated on duplicate'), findsOneWidget);
+      expect(find.text('Central Rails'), findsOneWidget);
+      expect(find.text('Updated name'), findsOneWidget);
+      expect(find.text('−'), findsOneWidget);
+      expect(find.text('+'), findsOneWidget);
+      expect(find.text('Current on original'), findsOneWidget);
+      expect(find.text('Same as previous on duplicate'), findsOneWidget);
+    },
+  );
 
   testWidgets('shows when the original value differs from the previous one', (
     tester,

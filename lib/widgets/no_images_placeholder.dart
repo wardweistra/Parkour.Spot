@@ -29,18 +29,15 @@ class NoImagesPlaceholder extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          Icons.image_not_supported,
-          size: isDetail ? 64 : 48,
-          color: muted,
-        ),
+        Icon(Icons.image_not_supported, size: isDetail ? 64 : 48, color: muted),
         SizedBox(height: isDetail ? 16 : 8),
         Text(
           label,
-          style: (isDetail
-                  ? Theme.of(context).textTheme.titleMedium
-                  : Theme.of(context).textTheme.bodySmall)
-              ?.copyWith(color: muted),
+          style:
+              (isDetail
+                      ? Theme.of(context).textTheme.titleMedium
+                      : Theme.of(context).textTheme.bodySmall)
+                  ?.copyWith(color: muted),
           textAlign: TextAlign.center,
         ),
       ],

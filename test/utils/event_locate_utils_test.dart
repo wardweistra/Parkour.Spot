@@ -238,51 +238,50 @@ void main() {
       expect(pins, materialized);
     });
 
-    test('builds venue and linked spot pins when materialized list is empty',
-        () async {
-      final event = ParkourEvent(
-        id: 'e-fallback',
-        title: 'Fallback',
-        startAt: start,
-        latitude: 52.1,
-        longitude: 5.1,
-        spotIds: const ['spot-b', 'spot-c'],
-      );
+    test(
+      'builds venue and linked spot pins when materialized list is empty',
+      () async {
+        final event = ParkourEvent(
+          id: 'e-fallback',
+          title: 'Fallback',
+          startAt: start,
+          latitude: 52.1,
+          longitude: 5.1,
+          spotIds: const ['spot-b', 'spot-c'],
+        );
 
-      final pins = await resolveEventDetailMapPins(
-        event: event,
-        getMapPinsForEvent: (_) async => const [],
-        loadEligibleSpots: ({
-          required spotIds,
-          required spotListIds,
-        }) async {
-          expect(spotIds, ['spot-b', 'spot-c']);
-          return [
-            Spot(
-              id: 'spot-b',
-              name: 'B',
-              description: '',
-              latitude: 52.2,
-              longitude: 5.2,
-            ),
-            Spot(
-              id: 'spot-c',
-              name: 'C',
-              description: '',
-              latitude: 52.3,
-              longitude: 5.3,
-            ),
-          ];
-        },
-      );
+        final pins = await resolveEventDetailMapPins(
+          event: event,
+          getMapPinsForEvent: (_) async => const [],
+          loadEligibleSpots: ({required spotIds, required spotListIds}) async {
+            expect(spotIds, ['spot-b', 'spot-c']);
+            return [
+              Spot(
+                id: 'spot-b',
+                name: 'B',
+                description: '',
+                latitude: 52.2,
+                longitude: 5.2,
+              ),
+              Spot(
+                id: 'spot-c',
+                name: 'C',
+                description: '',
+                latitude: 52.3,
+                longitude: 5.3,
+              ),
+            ];
+          },
+        );
 
-      expect(pins, hasLength(3));
-      expect(pins.first.kind, EventMapPinKind.venue);
-      expect(pins.first.latitude, 52.1);
-      expect(pins[1].kind, EventMapPinKind.spot);
-      expect(pins[1].spotId, 'spot-b');
-      expect(pins[2].spotId, 'spot-c');
-    });
+        expect(pins, hasLength(3));
+        expect(pins.first.kind, EventMapPinKind.venue);
+        expect(pins.first.latitude, 52.1);
+        expect(pins[1].kind, EventMapPinKind.spot);
+        expect(pins[1].spotId, 'spot-b');
+        expect(pins[2].spotId, 'spot-c');
+      },
+    );
   });
 
   group('resolveEventDetailMapPinsForSpotList', () {
@@ -335,14 +334,18 @@ void main() {
       final target = await resolveEventLocateTarget(
         event: event,
         getMapPinsForEvent: (_) async => const [],
-        loadEligibleLinkedSpot: ({required spotIds, required spotListIds}) async {
-          return null;
-        },
+        loadEligibleLinkedSpot:
+            ({required spotIds, required spotListIds}) async {
+              return null;
+            },
         resolveLocatableSpotListId:
-            ({FirebaseFirestore? firestore, required List<String> spotListIds}) async {
-          expect(spotListIds, ['list-1']);
-          return 'list-1';
-        },
+            ({
+              FirebaseFirestore? firestore,
+              required List<String> spotListIds,
+            }) async {
+              expect(spotListIds, ['list-1']);
+              return 'list-1';
+            },
       );
 
       expect(target?.isSpotList, isTrue);
@@ -363,15 +366,19 @@ void main() {
       final target = await resolveEventLocateTarget(
         event: event,
         getMapPinsForEvent: (_) async => const [],
-        loadEligibleLinkedSpot: ({required spotIds, required spotListIds}) async {
-          return null;
-        },
+        loadEligibleLinkedSpot:
+            ({required spotIds, required spotListIds}) async {
+              return null;
+            },
         resolveLocatableSpotListId:
-            ({FirebaseFirestore? firestore, required List<String> spotListIds}) async {
-          // Production helper returns null when more than one list is locatable.
-          expect(spotListIds, ['list-day-1', 'list-day-2']);
-          return null;
-        },
+            ({
+              FirebaseFirestore? firestore,
+              required List<String> spotListIds,
+            }) async {
+              // Production helper returns null when more than one list is locatable.
+              expect(spotListIds, ['list-day-1', 'list-day-2']);
+              return null;
+            },
       );
 
       expect(target?.isSpotList, isFalse);
@@ -391,13 +398,17 @@ void main() {
       final target = await resolveEventLocateTarget(
         event: event,
         getMapPinsForEvent: (_) async => const [],
-        loadEligibleLinkedSpot: ({required spotIds, required spotListIds}) async {
-          return null;
-        },
+        loadEligibleLinkedSpot:
+            ({required spotIds, required spotListIds}) async {
+              return null;
+            },
         resolveLocatableSpotListId:
-            ({FirebaseFirestore? firestore, required List<String> spotListIds}) async {
-          return null;
-        },
+            ({
+              FirebaseFirestore? firestore,
+              required List<String> spotListIds,
+            }) async {
+              return null;
+            },
       );
 
       expect(target?.isSpotList, isFalse);
@@ -427,10 +438,11 @@ void main() {
           pinsQueried = true;
           return const [];
         },
-        loadEligibleLinkedSpot: ({required spotIds, required spotListIds}) async {
-          linkedLoaded = true;
-          return null;
-        },
+        loadEligibleLinkedSpot:
+            ({required spotIds, required spotListIds}) async {
+              linkedLoaded = true;
+              return null;
+            },
       );
 
       expect(pin?.latitude, 52.1);
@@ -439,49 +451,53 @@ void main() {
       expect(linkedLoaded, isFalse);
     });
 
-    test('uses representative materialized pin when no direct coords', () async {
-      final event = ParkourEvent(
-        id: 'e-pins',
-        title: 'Pinned',
-        startAt: start,
-        spotIds: const ['spot-a'],
-      );
-      final pins = [
-        EventMapPin(
-          id: 'e-pins_spot_a',
-          eventId: 'e-pins',
-          kind: EventMapPinKind.spot,
-          latitude: 40.0,
-          longitude: -74.0,
+    test(
+      'uses representative materialized pin when no direct coords',
+      () async {
+        final event = ParkourEvent(
+          id: 'e-pins',
           title: 'Pinned',
           startAt: start,
-          spotId: 'spot-a',
-        ),
-        EventMapPin(
-          id: 'e-pins_venue',
-          eventId: 'e-pins',
-          kind: EventMapPinKind.venue,
-          latitude: 41.0,
-          longitude: -73.0,
-          title: 'Pinned',
-          startAt: start,
-        ),
-      ];
+          spotIds: const ['spot-a'],
+        );
+        final pins = [
+          EventMapPin(
+            id: 'e-pins_spot_a',
+            eventId: 'e-pins',
+            kind: EventMapPinKind.spot,
+            latitude: 40.0,
+            longitude: -74.0,
+            title: 'Pinned',
+            startAt: start,
+            spotId: 'spot-a',
+          ),
+          EventMapPin(
+            id: 'e-pins_venue',
+            eventId: 'e-pins',
+            kind: EventMapPinKind.venue,
+            latitude: 41.0,
+            longitude: -73.0,
+            title: 'Pinned',
+            startAt: start,
+          ),
+        ];
 
-      var linkedLoaded = false;
-      final pin = await resolveEventMapPinForLocate(
-        event: event,
-        getMapPinsForEvent: (_) async => pins,
-        loadEligibleLinkedSpot: ({required spotIds, required spotListIds}) async {
-          linkedLoaded = true;
-          return null;
-        },
-      );
+        var linkedLoaded = false;
+        final pin = await resolveEventMapPinForLocate(
+          event: event,
+          getMapPinsForEvent: (_) async => pins,
+          loadEligibleLinkedSpot:
+              ({required spotIds, required spotListIds}) async {
+                linkedLoaded = true;
+                return null;
+              },
+        );
 
-      expect(pin?.kind, EventMapPinKind.venue);
-      expect(pin?.latitude, 41.0);
-      expect(linkedLoaded, isFalse);
-    });
+        expect(pin?.kind, EventMapPinKind.venue);
+        expect(pin?.latitude, 41.0);
+        expect(linkedLoaded, isFalse);
+      },
+    );
 
     test('falls back to first eligible linked spot', () async {
       final event = ParkourEvent(
@@ -503,10 +519,11 @@ void main() {
       final pin = await resolveEventMapPinForLocate(
         event: event,
         getMapPinsForEvent: (_) async => const [],
-        loadEligibleLinkedSpot: ({required spotIds, required spotListIds}) async {
-          expect(spotIds, ['spot-b']);
-          return linked;
-        },
+        loadEligibleLinkedSpot:
+            ({required spotIds, required spotListIds}) async {
+              expect(spotIds, ['spot-b']);
+              return linked;
+            },
       );
 
       expect(pin?.kind, EventMapPinKind.spot);
@@ -526,9 +543,10 @@ void main() {
       final pin = await resolveEventMapPinForLocate(
         event: event,
         getMapPinsForEvent: (_) async => const [],
-        loadEligibleLinkedSpot: ({required spotIds, required spotListIds}) async {
-          return null;
-        },
+        loadEligibleLinkedSpot:
+            ({required spotIds, required spotListIds}) async {
+              return null;
+            },
       );
 
       expect(pin, isNull);

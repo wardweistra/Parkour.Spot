@@ -7,7 +7,8 @@ extension type _JSDateTimeFormat._(JSObject _) implements JSObject {
 }
 
 @JS()
-extension type _JSResolvedDateTimeFormatOptions._(JSObject _) implements JSObject {
+extension type _JSResolvedDateTimeFormatOptions._(JSObject _)
+    implements JSObject {
   external String get timeZone;
 }
 

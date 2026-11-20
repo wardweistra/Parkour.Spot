@@ -67,10 +67,9 @@ class StackedUserAvatarsSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     if (count <= 0) return const SizedBox.shrink();
 
-    final placeholder = Theme.of(context)
-        .colorScheme
-        .surfaceContainerHighest
-        .withValues(alpha: 0.85);
+    final placeholder = Theme.of(
+      context,
+    ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.85);
     final overlap = radius * overlapFactor;
     final shown = count;
 

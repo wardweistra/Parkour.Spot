@@ -19,7 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _displayNameController = TextEditingController();
-  
+
   bool _isLogin = true;
   bool _isLoading = false;
   bool _isGoogleSignInLoading = false;
@@ -29,62 +29,71 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _hasSetMode = false;
 
   Future<void> _showForgotPasswordDialog() async {
-    final emailController = TextEditingController(text: _emailController.text.trim());
+    final emailController = TextEditingController(
+      text: _emailController.text.trim(),
+    );
     final formKey = GlobalKey<FormState>();
 
     await showDialog<void>(
       context: context,
       builder: (context) {
-            return AlertDialog(
-              title: const Text('Reset password'),
-              content: Form(
-                key: formKey,
-                child: TextFormField(
-                  controller: emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  autofillHints: const [AutofillHints.email],
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) async {
-                    if (!formKey.currentState!.validate()) return;
-                    final scaffoldMessenger = ScaffoldMessenger.of(context);
-                    try {
-                      final authService = Provider.of<AuthService>(context, listen: false);
-                      final navigator = Navigator.of(context);
-                      await authService.resetPassword(emailController.text.trim());
-                      if (!mounted) return;
-                      navigator.pop();
-                      if (!mounted) return;
-                      scaffoldMessenger.showSnackBar(
-                        const SnackBar(
-                          content: Text('Password reset email sent if the address exists.'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    } catch (e) {
-                      if (!mounted) return;
-                      scaffoldMessenger.showSnackBar(
-                        SnackBar(
-                          content: Text('Failed to send reset email: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  },
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.email),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                      return 'Please enter a valid email';
-                    }
-                    return null;
-                  },
-                ),
+        return AlertDialog(
+          title: const Text('Reset password'),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              autofillHints: const [AutofillHints.email],
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) async {
+                if (!formKey.currentState!.validate()) return;
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                try {
+                  final authService = Provider.of<AuthService>(
+                    context,
+                    listen: false,
+                  );
+                  final navigator = Navigator.of(context);
+                  await authService.resetPassword(emailController.text.trim());
+                  if (!mounted) return;
+                  navigator.pop();
+                  if (!mounted) return;
+                  scaffoldMessenger.showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Password reset email sent if the address exists.',
+                      ),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } catch (e) {
+                  if (!mounted) return;
+                  scaffoldMessenger.showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to send reset email: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                prefixIcon: Icon(Icons.email),
               ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Please enter your email';
+                }
+                if (!RegExp(
+                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                ).hasMatch(value)) {
+                  return 'Please enter a valid email';
+                }
+                return null;
+              },
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -95,7 +104,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 if (!formKey.currentState!.validate()) return;
                 final scaffoldMessenger = ScaffoldMessenger.of(context);
                 try {
-                  final authService = Provider.of<AuthService>(context, listen: false);
+                  final authService = Provider.of<AuthService>(
+                    context,
+                    listen: false,
+                  );
                   final navigator = Navigator.of(context);
                   await authService.resetPassword(emailController.text.trim());
                   if (!mounted) return;
@@ -103,7 +115,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   if (!mounted) return;
                   scaffoldMessenger.showSnackBar(
                     const SnackBar(
-                      content: Text('Password reset email sent if the address exists.'),
+                      content: Text(
+                        'Password reset email sent if the address exists.',
+                      ),
                       backgroundColor: Colors.green,
                     ),
                   );
@@ -129,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // Try to get the intended destination from the router state
     try {
       final routerState = GoRouterState.of(context);
-      
+
       // Check if there's a redirectTo query parameter or if we came from a protected route
       final redirectTo = routerState.uri.queryParameters['redirectTo'];
       if (redirectTo != null && redirectTo.isNotEmpty) {
@@ -149,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     // Listen to auth state changes to handle navigation
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authService = Provider.of<AuthService>(context, listen: false);
@@ -165,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _captureIntendedDestination();
       _hasCapturedDestination = true;
     }
-    
+
     // Check for mode query parameter to set sign up mode (only once)
     if (!_hasSetMode) {
       try {
@@ -189,7 +203,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _displayNameController.dispose();
-    
+
     // Remove auth listener
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
@@ -197,7 +211,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       // Ignore errors during disposal
     }
-    
+
     super.dispose();
   }
 
@@ -234,7 +248,10 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (success && mounted) {
-        final isVerifiedAndAuthed = Provider.of<AuthService>(context, listen: false).isAuthenticated;
+        final isVerifiedAndAuthed = Provider.of<AuthService>(
+          context,
+          listen: false,
+        ).isAuthenticated;
 
         if (_isLogin) {
           if (isVerifiedAndAuthed) {
@@ -253,10 +270,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   label: 'Resend',
                   onPressed: () async {
                     try {
-                      await Provider.of<AuthService>(context, listen: false).sendEmailVerification();
+                      await Provider.of<AuthService>(
+                        context,
+                        listen: false,
+                      ).sendEmailVerification();
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Verification email sent')),
+                          const SnackBar(
+                            content: Text('Verification email sent'),
+                          ),
                         );
                       }
                     } catch (_) {}
@@ -269,7 +291,9 @@ class _LoginScreenState extends State<LoginScreen> {
           // Signup flow
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Account created! Verification email sent to ${_emailController.text.trim()}. Please verify to continue.'),
+              content: Text(
+                'Account created! Verification email sent to ${_emailController.text.trim()}. Please verify to continue.',
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -285,10 +309,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -305,12 +326,12 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_hasRedirected) {
       return;
     }
-    
+
     // Navigate to the intended destination or explore
     final destination = _intendedDestination ?? '/explore';
-    
+
     _hasRedirected = true;
-    
+
     // Use a small delay to ensure the auth state change has propagated
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
@@ -343,8 +364,11 @@ class _LoginScreenState extends State<LoginScreen> {
       final success = await authService.signInWithGoogle();
 
       if (success && mounted) {
-        final isAuthenticated = Provider.of<AuthService>(context, listen: false).isAuthenticated;
-        
+        final isAuthenticated = Provider.of<AuthService>(
+          context,
+          listen: false,
+        ).isAuthenticated;
+
         if (isAuthenticated) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -372,10 +396,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -446,182 +467,218 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 32),
-                      
+
                       Text(
                         _isLogin ? 'Welcome back!' : 'Create your account',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 32),
-                      
+
                       // Google Sign-In Button
                       ElevatedButton.icon(
-                        onPressed: (_isLoading || _isGoogleSignInLoading) ? null : _signInWithGoogle,
+                        onPressed: (_isLoading || _isGoogleSignInLoading)
+                            ? null
+                            : _signInWithGoogle,
                         icon: _isGoogleSignInLoading
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
                                 ),
                               )
-                            : const Icon(Icons.g_mobiledata, size: 24, color: Colors.white),
+                            : const Icon(
+                                Icons.g_mobiledata,
+                                size: 24,
+                                color: Colors.white,
+                              ),
                         label: Text(
-                          _isGoogleSignInLoading ? 'Signing in...' : 'Continue with Google',
-                          style: const TextStyle(fontSize: 16, color: Colors.white),
+                          _isGoogleSignInLoading
+                              ? 'Signing in...'
+                              : 'Continue with Google',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFEA4335), // Google red
+                          backgroundColor: const Color(
+                            0xFFEA4335,
+                          ), // Google red
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 16,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                           elevation: 2,
                         ),
                       ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Divider with "OR" text
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Divider(
-                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          'OR',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+
+                      const SizedBox(height: 24),
+
+                      // Divider with "OR" text
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Divider(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outline.withValues(alpha: 0.3),
+                            ),
                           ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'OR',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.6),
+                                  ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Divider(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outline.withValues(alpha: 0.3),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Display Name Field (only for sign up)
+                      if (!_isLogin) ...[
+                        CustomTextField(
+                          controller: _displayNameController,
+                          labelText: 'Display Name',
+                          prefixIcon: Icons.person,
+                          textCapitalization: TextCapitalization.words,
+                          autofillHints: const [AutofillHints.name],
+                          textInputAction: TextInputAction.next,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter your display name';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // Email Field
+                      CustomTextField(
+                        controller: _emailController,
+                        labelText: 'Email',
+                        prefixIcon: Icons.email,
+                        keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.email],
+                        textInputAction: TextInputAction.next,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter your email';
+                          }
+                          if (!RegExp(
+                            r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                          ).hasMatch(value)) {
+                            return 'Please enter a valid email';
+                          }
+                          return null;
+                        },
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Password Field
+                      CustomTextField(
+                        controller: _passwordController,
+                        labelText: 'Password',
+                        prefixIcon: Icons.lock,
+                        obscureText: true,
+                        autofillHints: _isLogin
+                            ? const [AutofillHints.password]
+                            : const [AutofillHints.newPassword],
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: (_) {
+                          if (!_isLoading && !_isGoogleSignInLoading) {
+                            _submitForm();
+                          }
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your password';
+                          }
+                          if (!_isLogin && value.length < 8) {
+                            return 'Password must be at least 8 characters';
+                          }
+                          return null;
+                        },
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Submit Button
+                      CustomButton(
+                        onPressed: (_isLoading || _isGoogleSignInLoading)
+                            ? null
+                            : _submitForm,
+                        text: _isLoading
+                            ? 'Please wait...'
+                            : (_isLogin ? 'Login' : 'Sign Up'),
+                        isLoading: _isLoading,
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Toggle Mode Button
+                      TextButton(
+                        onPressed: (_isLoading || _isGoogleSignInLoading)
+                            ? null
+                            : _toggleMode,
+                        child: Text(
+                          _isLogin
+                              ? 'Don\'t have an account? Sign Up'
+                              : 'Already have an account? Login',
                         ),
                       ),
-                      Expanded(
-                        child: Divider(
-                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+
+                      // Forgot Password (only for login)
+                      if (_isLogin) ...[
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: (_isLoading || _isGoogleSignInLoading)
+                              ? null
+                              : () {
+                                  _showForgotPasswordDialog();
+                                },
+                          child: const Text('Forgot Password?'),
                         ),
-                      ),
+                      ],
                     ],
                   ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Display Name Field (only for sign up)
-                  if (!_isLogin) ...[
-                    CustomTextField(
-                      controller: _displayNameController,
-                      labelText: 'Display Name',
-                      prefixIcon: Icons.person,
-                      textCapitalization: TextCapitalization.words,
-                      autofillHints: const [AutofillHints.name],
-                      textInputAction: TextInputAction.next,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your display name';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  
-                  // Email Field
-                  CustomTextField(
-                    controller: _emailController,
-                    labelText: 'Email',
-                    prefixIcon: Icons.email,
-                    keyboardType: TextInputType.emailAddress,
-                    autofillHints: const [AutofillHints.email],
-                    textInputAction: TextInputAction.next,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
-                    },
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Password Field
-                  CustomTextField(
-                    controller: _passwordController,
-                    labelText: 'Password',
-                    prefixIcon: Icons.lock,
-                    obscureText: true,
-                    autofillHints: _isLogin 
-                        ? const [AutofillHints.password]
-                        : const [AutofillHints.newPassword],
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) {
-                      if (!_isLoading && !_isGoogleSignInLoading) {
-                        _submitForm();
-                      }
-                    },
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
-                      }
-                      if (!_isLogin && value.length < 8) {
-                        return 'Password must be at least 8 characters';
-                      }
-                      return null;
-                    },
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Submit Button
-                  CustomButton(
-                    onPressed: (_isLoading || _isGoogleSignInLoading) ? null : _submitForm,
-                    text: _isLoading 
-                        ? 'Please wait...' 
-                        : (_isLogin ? 'Login' : 'Sign Up'),
-                    isLoading: _isLoading,
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Toggle Mode Button
-                  TextButton(
-                    onPressed: (_isLoading || _isGoogleSignInLoading) ? null : _toggleMode,
-                    child: Text(
-                      _isLogin 
-                          ? 'Don\'t have an account? Sign Up' 
-                          : 'Already have an account? Login',
-                    ),
-                  ),
-                  
-                  // Forgot Password (only for login)
-                  if (_isLogin) ...[
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: (_isLoading || _isGoogleSignInLoading) ? null : () {
-                        _showForgotPasswordDialog();
-                      },
-                      child: const Text('Forgot Password?'),
-                    ),
-                  ],
-                ],
-              ),
+                ),
               ),
             ),
           ),
         ),
-      ),
       ),
     );
   }

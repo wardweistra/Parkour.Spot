@@ -23,9 +23,7 @@ class ResizedSpotImageProvider extends ImageProvider<ResizedSpotImageProvider> {
 
   /// Creates from an original Firebase Storage spot URL.
   factory ResizedSpotImageProvider.fromUrl(String originalUrl) {
-    return ResizedSpotImageProvider(
-      getResizedImageUrlCandidates(originalUrl),
-    );
+    return ResizedSpotImageProvider(getResizedImageUrlCandidates(originalUrl));
   }
 
   @override

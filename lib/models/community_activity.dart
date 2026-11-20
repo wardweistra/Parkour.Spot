@@ -217,9 +217,7 @@ class CommunityEventItem {
         spotId: data['spotId'] as String?,
         description: data['description'] as String?,
         imageUrls: data['imageUrls'] is List
-            ? List<String>.from(
-                (data['imageUrls'] as List).whereType<String>(),
-              )
+            ? List<String>.from((data['imageUrls'] as List).whereType<String>())
             : const [],
         city: data['city'] as String?,
         countryCode: data['countryCode'] as String?,

@@ -9,10 +9,7 @@ void main() {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
-          body: TextDiffView(
-            before: 'Old title',
-            after: 'New title',
-          ),
+          body: TextDiffView(before: 'Old title', after: 'New title'),
         ),
       ),
     );
@@ -27,10 +24,7 @@ void main() {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
-          body: TextDiffView(
-            before: 'Same value',
-            after: 'Same value',
-          ),
+          body: TextDiffView(before: 'Same value', after: 'Same value'),
         ),
       ),
     );

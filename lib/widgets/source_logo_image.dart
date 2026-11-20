@@ -57,9 +57,7 @@ class SourceLogoImage extends StatelessWidget {
         placeholder: (_, _) => SizedBox(
           width: size,
           height: size,
-          child: const Center(
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
+          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
         ),
       ),
     );

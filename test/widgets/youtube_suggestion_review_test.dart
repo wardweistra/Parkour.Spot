@@ -30,10 +30,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(
-      find.text('Adds video link and spot thumbnail'),
-      findsOneWidget,
-    );
+    expect(find.text('Adds video link and spot thumbnail'), findsOneWidget);
     expect(find.text('Open on YouTube'), findsOneWidget);
     expect(find.text('dQw4w9WgXcQ'), findsOneWidget);
   });

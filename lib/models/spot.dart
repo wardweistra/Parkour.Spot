@@ -132,8 +132,9 @@ class Spot {
           ? List<String>.from(data['imageUrls'])
           : (data['imageUrl'] != null ? [data['imageUrl']] : null),
       youtubeVideoIds: extractYoutubeVideoIdsFromValue(data['youtubeVideoIds']),
-      youtubeVideoMeta:
-          extractYoutubeVideoMetaFromValue(data['youtubeVideoMeta']),
+      youtubeVideoMeta: extractYoutubeVideoMetaFromValue(
+        data['youtubeVideoMeta'],
+      ),
       folderName: data['folderName'],
       createdBy: data['createdBy'],
       createdByName: data['createdByName'],
@@ -220,8 +221,9 @@ class Spot {
           ? List<String>.from(data['imageUrls'])
           : (data['imageUrl'] != null ? [data['imageUrl'] as String] : null),
       youtubeVideoIds: extractYoutubeVideoIdsFromValue(data['youtubeVideoIds']),
-      youtubeVideoMeta:
-          extractYoutubeVideoMetaFromValue(data['youtubeVideoMeta']),
+      youtubeVideoMeta: extractYoutubeVideoMetaFromValue(
+        data['youtubeVideoMeta'],
+      ),
       folderName: data['folderName'] as String?,
       createdBy: data['createdBy'] as String?,
       createdByName: data['createdByName'] as String?,
@@ -289,8 +291,8 @@ class Spot {
             : (youtubeVideoIds!.isEmpty ? null : youtubeVideoIds),
       // Explicit empty map clears cached titles when all links are removed.
       if (youtubeVideoMeta != null)
-        'youtubeVideoMeta': metaPayload ??
-            (isUpdate ? FieldValue.delete() : null),
+        'youtubeVideoMeta':
+            metaPayload ?? (isUpdate ? FieldValue.delete() : null),
       'folderName': folderName,
       'createdBy': createdBy,
       'createdByName': createdByName,

@@ -540,11 +540,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             ),
           ),
           child: InkWell(
-            onTap: () => _showProfileSettingsSheet(
-              context,
-              user,
-              openBioEditor: true,
-            ),
+            onTap: () =>
+                _showProfileSettingsSheet(context, user, openBioEditor: true),
             borderRadius: BorderRadius.circular(16),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -1408,9 +1405,7 @@ class _ProfileSettingsSheetContentState
     _instagramUrlController = TextEditingController(
       text: widget.user.instagramUrl?.trim() ?? '',
     );
-    _bioController = TextEditingController(
-      text: widget.user.bio?.trim() ?? '',
-    );
+    _bioController = TextEditingController(text: widget.user.bio?.trim() ?? '');
     _isEditingBio = widget.openBioEditorOnStart;
   }
 
@@ -1824,9 +1819,9 @@ class _ProfileSettingsSheetContentState
                 child: hasBio
                     ? Text(
                         currentBio,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          height: 1.4,
-                        ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyLarge?.copyWith(height: 1.4),
                       )
                     : Text(
                         _l10n.publicProfileNoBioSet,

@@ -44,7 +44,8 @@ void main() {
       final source = SyncSource.fromMap({
         'id': 'with-logo',
         'name': 'Community map',
-        'logoUrl': 'https://storage.googleapis.com/bucket/sourceLogos/spot/x/logo.png',
+        'logoUrl':
+            'https://storage.googleapis.com/bucket/sourceLogos/spot/x/logo.png',
         'logoStoragePath': 'sourceLogos/spot/x/logo.png',
       });
       expect(source.logoUrl, contains('logo.png'));

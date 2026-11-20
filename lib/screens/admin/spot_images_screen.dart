@@ -94,8 +94,7 @@ class SpotImagesScreen extends StatelessWidget {
                     'Cache title and channel for spot YouTube links missing '
                     'metadata (batched oEmbed)',
                 showChevron: false,
-                onTap: () =>
-                    SpotDataActions.backfillYoutubeVideoMeta(context),
+                onTap: () => SpotDataActions.backfillYoutubeVideoMeta(context),
               ),
               AdminToolTile(
                 icon: Icons.video_library_outlined,

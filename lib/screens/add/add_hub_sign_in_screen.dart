@@ -26,14 +26,15 @@ class AddHubSignInScreen extends StatelessWidget {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: SpotDetailUi.maxContentWidth),
+          constraints: const BoxConstraints(
+            maxWidth: SpotDetailUi.maxContentWidth,
+          ),
           child: ListView(
-            padding: const EdgeInsets.all(SpotDetailUi.contentHorizontalPadding),
+            padding: const EdgeInsets.all(
+              SpotDetailUi.contentHorizontalPadding,
+            ),
             children: [
-              Text(
-                l10n.addHubHeading,
-                style: theme.textTheme.titleLarge,
-              ),
+              Text(l10n.addHubHeading, style: theme.textTheme.titleLarge),
               const SizedBox(height: 8),
               Text(
                 l10n.addHubSubtitle,
@@ -70,10 +71,7 @@ class AddHubSignInScreen extends StatelessWidget {
 }
 
 class _SignInCallout extends StatelessWidget {
-  const _SignInCallout({
-    required this.onSignIn,
-    required this.onCreateAccount,
-  });
+  const _SignInCallout({required this.onSignIn, required this.onCreateAccount});
 
   final VoidCallback onSignIn;
   final VoidCallback onCreateAccount;
@@ -125,9 +123,7 @@ class _SignInCallout extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Divider(
-                    color: scheme.outline.withValues(alpha: 0.3),
-                  ),
+                  child: Divider(color: scheme.outline.withValues(alpha: 0.3)),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -139,9 +135,7 @@ class _SignInCallout extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: Divider(
-                    color: scheme.outline.withValues(alpha: 0.3),
-                  ),
+                  child: Divider(color: scheme.outline.withValues(alpha: 0.3)),
                 ),
               ],
             ),

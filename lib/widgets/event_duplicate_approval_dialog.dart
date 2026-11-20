@@ -177,9 +177,7 @@ class _EventDuplicateApprovalDialogState
           nativeOriginalEventId: resolvedId,
           adminEventsService: context.read<AdminEventsService>(),
           approverName:
-              auth.userProfile?.displayName ??
-              user?.displayName ??
-              user?.email,
+              auth.userProfile?.displayName ?? user?.displayName ?? user?.email,
           moderatorNotes: transferResult.notes,
           transferPhotos: transferResult.transferPhotos,
           transferLinkedSpots: transferResult.transferLinkedSpots,
@@ -258,7 +256,9 @@ class _EventDuplicateApprovalDialogState
                         OutlinedButton.icon(
                           onPressed: _approving ? null : _pickNativeOriginal,
                           icon: const Icon(Icons.event_outlined),
-                          label: Text(l10n.eventDetailMarkDuplicatePickNativeTitle),
+                          label: Text(
+                            l10n.eventDetailMarkDuplicatePickNativeTitle,
+                          ),
                         )
                       else
                         ListTile(
@@ -269,7 +269,9 @@ class _EventDuplicateApprovalDialogState
                           ),
                           trailing: TextButton(
                             onPressed: _approving ? null : _pickNativeOriginal,
-                            child: Text(l10n.eventDetailMarkDuplicatePickNativeTitle),
+                            child: Text(
+                              l10n.eventDetailMarkDuplicatePickNativeTitle,
+                            ),
                           ),
                         ),
                     ],
@@ -292,7 +294,9 @@ class _EventDuplicateApprovalDialogState
           child: Text(l10n.profileCancel),
         ),
         FilledButton(
-          onPressed: _loading || _approving || resolved == null ? null : _approve,
+          onPressed: _loading || _approving || resolved == null
+              ? null
+              : _approve,
           child: _approving
               ? const SizedBox(
                   width: 20,

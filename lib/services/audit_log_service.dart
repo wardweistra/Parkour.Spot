@@ -526,8 +526,10 @@ class AuditLogService {
   }) async {
     try {
       await _firestore.collection('auditLog').add({
-        'action':
-            AuditLogAction.eventDuplicateCleared.toString().split('.').last,
+        'action': AuditLogAction.eventDuplicateCleared
+            .toString()
+            .split('.')
+            .last,
         'eventId': eventId,
         'userId': userId,
         'userName': userName,
@@ -546,15 +548,14 @@ class AuditLogService {
   }) async {
     try {
       await _firestore.collection('auditLog').add({
-        'action':
-            AuditLogAction.userModeratorChanged.toString().split('.').last,
+        'action': AuditLogAction.userModeratorChanged
+            .toString()
+            .split('.')
+            .last,
         'userId': userId,
         'userName': userName,
         'timestamp': FieldValue.serverTimestamp(),
-        'metadata': {
-          'targetUserId': targetUserId,
-          'isModerator': isModerator,
-        },
+        'metadata': {'targetUserId': targetUserId, 'isModerator': isModerator},
       });
     } catch (e) {
       debugPrint('Error logging user moderator change: $e');

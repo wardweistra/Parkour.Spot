@@ -3280,9 +3280,7 @@ class SearchScreenState extends State<SearchScreen>
     final authService = Provider.of<AuthService>(context, listen: false);
 
     if (!authService.isAuthenticated) {
-      context.go(
-        '/login?redirectTo=${Uri.encodeComponent(addUri.toString())}',
-      );
+      context.go('/login?redirectTo=${Uri.encodeComponent(addUri.toString())}');
     } else if (!authService.isProfileReady) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -4759,15 +4757,12 @@ class SearchScreenState extends State<SearchScreen>
                                                   ? l10n.exploreSpotCountShort(
                                                       _exploreSpotCountForHeader(),
                                                     )
-                                                  : l10n
-                                                        .exploreSpotsLoadingLabel,
+                                                  : l10n.exploreSpotsLoadingLabel,
                                               communityLabel: _hasLoadedMapData
-                                                  ? l10n
-                                                        .exploreCommunityCountShort(
-                                                          _exploreCommunityCountForHeader(),
-                                                        )
-                                                  : l10n
-                                                        .exploreCommunityLoadingLabel,
+                                                  ? l10n.exploreCommunityCountShort(
+                                                      _exploreCommunityCountForHeader(),
+                                                    )
+                                                  : l10n.exploreCommunityLoadingLabel,
                                               spotsLoading:
                                                   _isLoadingSpotsForView ||
                                                   !_hasLoadedMapData,

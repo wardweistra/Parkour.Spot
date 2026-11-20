@@ -28,8 +28,7 @@ Future<void> openDialog(
   required List<SpotList> lists,
   List<SpotList> listsWithSpot = const [],
   required Future<bool> Function(String listId, {String? sectionId}) addSpot,
-  Future<bool> Function(String listId, {String? sectionTitle})?
-  addToNewSection,
+  Future<bool> Function(String listId, {String? sectionTitle})? addToNewSection,
   Future<String?> Function({
     required String name,
     required SpotListVisibility visibility,
@@ -51,8 +50,7 @@ Future<void> openDialog(
                   listsWithSpot: listsWithSpot,
                   addSpot: addSpot,
                   addToNewSection:
-                      addToNewSection ??
-                      (listId, {sectionTitle}) async => true,
+                      addToNewSection ?? (listId, {sectionTitle}) async => true,
                   createList:
                       createList ??
                       ({required name, required visibility}) async =>

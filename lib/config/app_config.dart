@@ -68,8 +68,7 @@ class AppConfig {
 
   // Validation
   static bool get isConfigured {
-    final hasCore =
-        firebaseApiKey.isNotEmpty && firebaseProjectId.isNotEmpty;
+    final hasCore = firebaseApiKey.isNotEmpty && firebaseProjectId.isNotEmpty;
     if (!hasCore) return false;
     if (kIsWeb) return firebaseAppIdWeb.isNotEmpty;
     return firebaseAppIdAndroid.isNotEmpty;

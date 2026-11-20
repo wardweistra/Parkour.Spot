@@ -42,8 +42,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('shows transfer and overwrite options when duplicate has data',
-      (tester) async {
+  testWidgets('shows transfer and overwrite options when duplicate has data', (
+    tester,
+  ) async {
     await pumpDialog(
       tester,
       duplicate: ParkourEvent(
@@ -68,8 +69,9 @@ void main() {
     expect(find.text('Website'), findsOneWidget);
   });
 
-  testWidgets('hides add options when duplicate has no photos or spots',
-      (tester) async {
+  testWidgets('hides add options when duplicate has no photos or spots', (
+    tester,
+  ) async {
     await pumpDialog(
       tester,
       duplicate: ParkourEvent(

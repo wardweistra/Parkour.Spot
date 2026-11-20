@@ -16,15 +16,14 @@ enum WebPushPermissionState { unknown, notDetermined, denied, authorized }
 
 class WebPushSubscriptionService extends ChangeNotifier {
   WebPushSubscriptionService() {
-    _isSupported =
-        kIsWeb || defaultTargetPlatform == TargetPlatform.android;
+    _isSupported = kIsWeb || defaultTargetPlatform == TargetPlatform.android;
     _platform = kIsWeb
         ? 'web'
         : (defaultTargetPlatform == TargetPlatform.android
-            ? 'android'
-            : (defaultTargetPlatform == TargetPlatform.iOS
-                ? 'ios'
-                : defaultTargetPlatform.name));
+              ? 'android'
+              : (defaultTargetPlatform == TargetPlatform.iOS
+                    ? 'ios'
+                    : defaultTargetPlatform.name));
   }
 
   static const _installationIdPrefsKey = 'web_push_installation_id';

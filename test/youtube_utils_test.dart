@@ -110,27 +110,30 @@ void main() {
   });
 
   group('resolveYoutubeThumbnailUrl', () {
-    test('skips unavailable qualities and returns the first HTTP 200', () async {
-      final client = MockClient((request) async {
-        if (request.url.path.endsWith('/maxresdefault.jpg')) {
+    test(
+      'skips unavailable qualities and returns the first HTTP 200',
+      () async {
+        final client = MockClient((request) async {
+          if (request.url.path.endsWith('/maxresdefault.jpg')) {
+            return http.Response('', 404);
+          }
+          if (request.url.path.endsWith('/sddefault.jpg')) {
+            return http.Response('', 200);
+          }
           return http.Response('', 404);
-        }
-        if (request.url.path.endsWith('/sddefault.jpg')) {
-          return http.Response('', 200);
-        }
-        return http.Response('', 404);
-      });
+        });
 
-      final resolved = await resolveYoutubeThumbnailUrl(
-        'pjJ2XwoSmx8',
-        client: client,
-      );
+        final resolved = await resolveYoutubeThumbnailUrl(
+          'pjJ2XwoSmx8',
+          client: client,
+        );
 
-      expect(
-        resolved,
-        'https://img.youtube.com/vi/pjJ2XwoSmx8/sddefault.jpg',
-      );
-    });
+        expect(
+          resolved,
+          'https://img.youtube.com/vi/pjJ2XwoSmx8/sddefault.jpg',
+        );
+      },
+    );
 
     test('returns null when no qualities are available', () async {
       final client = MockClient((request) async => http.Response('', 404));
@@ -186,9 +189,7 @@ void main() {
     test('skips IDs that already have a CDN thumbnail in imageUrls', () {
       expect(
         appendYoutubeThumbnails(
-          imageUrls: const [
-            'https://img.youtube.com/vi/bbb/maxresdefault.jpg',
-          ],
+          imageUrls: const ['https://img.youtube.com/vi/bbb/maxresdefault.jpg'],
           videoIds: const ['bbb'],
           resolvedUrls: const {
             'bbb': 'https://storage.googleapis.com/bucket/spots/thumb.jpg',
@@ -227,10 +228,7 @@ void main() {
             },
           ],
         }),
-        {
-          'gfYtZ6aNo9A':
-              'https://storage.googleapis.com/bucket/spots/a.jpg',
-        },
+        {'gfYtZ6aNo9A': 'https://storage.googleapis.com/bucket/spots/a.jpg'},
       );
     });
 
@@ -250,10 +248,7 @@ void main() {
           'success': true,
           'thumbnails': thumbnails,
         }),
-        {
-          'gfYtZ6aNo9A':
-              'https://storage.googleapis.com/bucket/spots/a.jpg',
-        },
+        {'gfYtZ6aNo9A': 'https://storage.googleapis.com/bucket/spots/a.jpg'},
       );
     });
 
@@ -265,7 +260,10 @@ void main() {
         isEmpty,
       );
       expect(
-        parseFetchYoutubeThumbnailsResponse({'success': false, 'thumbnails': []}),
+        parseFetchYoutubeThumbnailsResponse({
+          'success': false,
+          'thumbnails': [],
+        }),
         isEmpty,
       );
     });

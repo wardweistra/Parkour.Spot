@@ -7,11 +7,7 @@ class AboutSiteButton extends StatelessWidget {
   final String url;
   final String label;
 
-  const AboutSiteButton({
-    super.key,
-    required this.url,
-    required this.label,
-  });
+  const AboutSiteButton({super.key, required this.url, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -21,12 +17,12 @@ class AboutSiteButton extends StatelessWidget {
       width: double.infinity,
       child: FilledButton.tonalIcon(
         onPressed: () => launchExternalUri(context, Uri.parse(url)),
-        icon: Icon(Icons.open_in_new, size: 18, color: scheme.onPrimaryContainer),
-        label: Text(
-          label,
-          softWrap: true,
-          textAlign: TextAlign.center,
+        icon: Icon(
+          Icons.open_in_new,
+          size: 18,
+          color: scheme.onPrimaryContainer,
         ),
+        label: Text(label, softWrap: true, textAlign: TextAlign.center),
         style: FilledButton.styleFrom(
           foregroundColor: scheme.onPrimaryContainer,
           backgroundColor: scheme.primaryContainer,

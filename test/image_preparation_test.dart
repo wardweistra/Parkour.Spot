@@ -17,7 +17,10 @@ Uint8List _minimalPngBytes() {
 void main() {
   group('isHeic', () {
     test('returns false for short bytes', () {
-      expect(isHeic(Uint8List.fromList([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])), false);
+      expect(
+        isHeic(Uint8List.fromList([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])),
+        false,
+      );
     });
 
     test('returns false when ftyp is missing', () {
@@ -103,7 +106,10 @@ void main() {
     });
 
     test('returns empty for unknown format', () {
-      expect(detectContentType(Uint8List.fromList([0x00, 0x00, 0x00, 0x00])), '');
+      expect(
+        detectContentType(Uint8List.fromList([0x00, 0x00, 0x00, 0x00])),
+        '',
+      );
     });
   });
 
@@ -127,7 +133,10 @@ void main() {
     });
 
     test('returns false for unknown format', () {
-      expect(isValidImageFormat(Uint8List.fromList([0x00, 0x00, 0x00, 0x00])), false);
+      expect(
+        isValidImageFormat(Uint8List.fromList([0x00, 0x00, 0x00, 0x00])),
+        false,
+      );
     });
   });
 
@@ -148,7 +157,9 @@ void main() {
 
     test('throws for JPEG header without decodable image data', () {
       final bytes = Uint8List.fromList([
-        0xFF, 0xD8, 0xFF,
+        0xFF,
+        0xD8,
+        0xFF,
         ...List.filled(10, 0x00),
       ]);
       expect(
@@ -173,12 +184,15 @@ void main() {
       expect(img.decodeImage(result.bytes), isNotNull);
     });
 
-    test('keeps small PNG unchanged when no resize or quality requested', () async {
-      final bytes = _minimalPngBytes();
-      final result = await prepareImageForUpload(bytes);
-      expect(result.contentType, 'image/png');
-      expect(result.bytes, bytes);
-    });
+    test(
+      'keeps small PNG unchanged when no resize or quality requested',
+      () async {
+        final bytes = _minimalPngBytes();
+        final result = await prepareImageForUpload(bytes);
+        expect(result.contentType, 'image/png');
+        expect(result.bytes, bytes);
+      },
+    );
 
     test('resizes large images to maxDimension', () async {
       final large = img.Image(width: 3000, height: 1500);
@@ -210,20 +224,28 @@ void main() {
   });
 
   group('prepareImageForSpotPromotion fast path', () {
-    test('returns original JPEG bytes when already within max dimension', () async {
-      final bytes = Uint8List.fromList(
-        img.encodeJpg(img.Image(width: 1200, height: 900), quality: 90),
-      );
-      final result = await prepareImageForSpotPromotion(bytes, maxDimension: 2048);
-      expect(result.bytes, bytes);
-      expect(result.contentType, 'image/jpeg');
-    });
+    test(
+      'returns original JPEG bytes when already within max dimension',
+      () async {
+        final bytes = Uint8List.fromList(
+          img.encodeJpg(img.Image(width: 1200, height: 900), quality: 90),
+        );
+        final result = await prepareImageForSpotPromotion(
+          bytes,
+          maxDimension: 2048,
+        );
+        expect(result.bytes, bytes);
+        expect(result.contentType, 'image/jpeg');
+      },
+    );
   });
 
   group('resizeImageForSpotUpload', () {
     test('returns null for corrupt JPEG header', () {
       final bytes = Uint8List.fromList([
-        0xFF, 0xD8, 0xFF,
+        0xFF,
+        0xD8,
+        0xFF,
         ...List.filled(10, 0x00),
       ]);
       expect(resizeImageForSpotUpload(bytes), isNull);

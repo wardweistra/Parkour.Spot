@@ -49,14 +49,14 @@ class FirebaseResumeWatchdog {
 
   /// State for the admin Firebase connectivity page.
   static Map<String, String> diagnostics() => {
-        'watchdog.active': _started.toString(),
-        'watchdog.appCheckChecked': _appCheckActive.toString(),
-        'watchdog.lastCheck': _lastCheck ?? '(none since load)',
-        'watchdog.lastReloadAt':
-            browserSessionStorageGet(_lastReloadAtKey) ?? '(none)',
-        'watchdog.lastReloadReason':
-            browserSessionStorageGet(_lastReloadReasonKey) ?? '(none)',
-      };
+    'watchdog.active': _started.toString(),
+    'watchdog.appCheckChecked': _appCheckActive.toString(),
+    'watchdog.lastCheck': _lastCheck ?? '(none since load)',
+    'watchdog.lastReloadAt':
+        browserSessionStorageGet(_lastReloadAtKey) ?? '(none)',
+    'watchdog.lastReloadReason':
+        browserSessionStorageGet(_lastReloadReasonKey) ?? '(none)',
+  };
 
   static void _onVisibilityChange(bool visible) {
     final now = DateTime.now();

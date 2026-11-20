@@ -153,8 +153,7 @@ class _ModeratorActionFieldsState extends State<ModeratorActionFields> {
                             'MMM d, y',
                           ).format(report.createdAt!.toLocal())
                         : '';
-                    final reporterInfo =
-                        report.reporterName?.isNotEmpty == true
+                    final reporterInfo = report.reporterName?.isNotEmpty == true
                         ? report.reporterName!
                         : report.reporterEmail?.isNotEmpty == true
                         ? report.reporterEmail!
@@ -212,8 +211,9 @@ class _ModeratorActionFieldsState extends State<ModeratorActionFields> {
                               Icon(
                                 Icons.person_outline,
                                 size: 14,
-                                color: Theme.of(context).colorScheme.onSurface
-                                    .withValues(alpha: 0.6),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.6),
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -268,8 +268,7 @@ class _ModeratorActionFieldsState extends State<ModeratorActionFields> {
                             'MMM d, y',
                           ).format(report.createdAt!.toLocal())
                         : '';
-                    final reporterInfo =
-                        report.reporterName?.isNotEmpty == true
+                    final reporterInfo = report.reporterName?.isNotEmpty == true
                         ? report.reporterName!
                         : report.reporterEmail?.isNotEmpty == true
                         ? report.reporterEmail!
@@ -327,8 +326,9 @@ class _ModeratorActionFieldsState extends State<ModeratorActionFields> {
                               Icon(
                                 Icons.person_outline,
                                 size: 14,
-                                color: Theme.of(context).colorScheme.onSurface
-                                    .withValues(alpha: 0.6),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.6),
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -415,8 +415,7 @@ class _ModeratorActionFieldsState extends State<ModeratorActionFields> {
                   ...spotReportsList.map((report) {
                     final categories =
                         report.displayCategories.firstOrNull ?? 'Report';
-                    final reporterInfo =
-                        report.reporterName?.isNotEmpty == true
+                    final reporterInfo = report.reporterName?.isNotEmpty == true
                         ? report.reporterName!
                         : report.reporterEmail?.isNotEmpty == true
                         ? report.reporterEmail!

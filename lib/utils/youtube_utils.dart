@@ -9,11 +9,7 @@ final _youtubeThumbnailUrlPattern = RegExp(
 );
 
 /// Thumbnail qualities to try, highest resolution first.
-const youtubeThumbnailQualities = [
-  'maxresdefault',
-  'sddefault',
-  'hqdefault',
-];
+const youtubeThumbnailQualities = ['maxresdefault', 'sddefault', 'hqdefault'];
 
 /// Extracts a YouTube video ID from a raw ID or watch/embed/shorts/youtu.be URL.
 ///
@@ -65,10 +61,7 @@ List<String>? extractYoutubeVideoIdsFromValue(dynamic value) {
 
 /// Title + channel for a linked YouTube video (from oEmbed, stored on the spot).
 class YoutubeVideoMeta {
-  const YoutubeVideoMeta({
-    required this.title,
-    required this.channelTitle,
-  });
+  const YoutubeVideoMeta({required this.title, required this.channelTitle});
 
   final String title;
   final String channelTitle;
@@ -76,14 +69,15 @@ class YoutubeVideoMeta {
   bool get hasDisplayTitle => title.trim().isNotEmpty;
 
   Map<String, dynamic> toMap() => {
-        'title': title,
-        'channelTitle': channelTitle,
-      };
+    'title': title,
+    'channelTitle': channelTitle,
+  };
 
   factory YoutubeVideoMeta.fromMap(Map<String, dynamic> map) {
     return YoutubeVideoMeta(
       title: map['title']?.toString() ?? '',
-      channelTitle: map['channelTitle']?.toString() ??
+      channelTitle:
+          map['channelTitle']?.toString() ??
           map['author_name']?.toString() ??
           '',
     );
@@ -120,7 +114,10 @@ Map<String, YoutubeVideoMeta> pruneYoutubeVideoMeta({
   required List<String> videoIds,
 }) {
   if (meta == null || meta.isEmpty) return const {};
-  final keep = videoIds.map((id) => id.trim()).where((id) => id.isNotEmpty).toSet();
+  final keep = videoIds
+      .map((id) => id.trim())
+      .where((id) => id.isNotEmpty)
+      .toSet();
   final result = <String, YoutubeVideoMeta>{};
   for (final entry in meta.entries) {
     if (keep.contains(entry.key)) {
@@ -153,9 +150,7 @@ Map<String, dynamic>? youtubeVideoMetaToFirestore(
   Map<String, YoutubeVideoMeta>? meta,
 ) {
   if (meta == null || meta.isEmpty) return null;
-  return {
-    for (final entry in meta.entries) entry.key: entry.value.toMap(),
-  };
+  return {for (final entry in meta.entries) entry.key: entry.value.toMap()};
 }
 
 /// Parses `fetchYoutubeVideoMeta` callable [rawData] into videoId → meta.
@@ -181,10 +176,7 @@ Map<String, YoutubeVideoMeta> parseFetchYoutubeVideoMetaResponse(
 }
 
 /// YouTube thumbnail URL for [videoId]. Import uses `maxresdefault`.
-String youtubeThumbnailUrl(
-  String videoId, {
-  String quality = 'maxresdefault',
-}) {
+String youtubeThumbnailUrl(String videoId, {String quality = 'maxresdefault'}) {
   return 'https://img.youtube.com/vi/$videoId/$quality.jpg';
 }
 

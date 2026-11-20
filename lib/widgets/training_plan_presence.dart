@@ -66,10 +66,7 @@ Future<void> _editCheckInAfterExtendFromPlanCard(
 }
 
 class TrainingPlanAvatarEntry {
-  const TrainingPlanAvatarEntry(
-    this.plan, {
-    this.showPrivateBadge = false,
-  });
+  const TrainingPlanAvatarEntry(this.plan, {this.showPrivateBadge = false});
 
   final SpotTrainingPlan plan;
   final bool showPrivateBadge;
@@ -79,9 +76,7 @@ List<TrainingPlanAvatarEntry> buildTrainingPlanAvatarEntries(
   List<SpotTrainingPlan> public,
   SpotTrainingPlan? mine,
 ) {
-  final entries = public
-      .map((p) => TrainingPlanAvatarEntry(p))
-      .toList();
+  final entries = public.map((p) => TrainingPlanAvatarEntry(p)).toList();
   if (mine != null && mine.isPrivate) {
     final already = public.any((p) => p.userId == mine.userId);
     if (!already) {
@@ -105,20 +100,14 @@ Stream<List<TrainingPlanAvatarEntry>> watchTrainingPlanAvatarEntriesForSpot(
 
     late final StreamSubscription<List<SpotTrainingPlan>> sub1;
     late final StreamSubscription<SpotTrainingPlan?> sub2;
-    sub1 = svc.watchPublicPlansForSpot(spotId).listen(
-      (p) {
-        latestPublic = p;
-        emit();
-      },
-      onError: controller.addError,
-    );
-    sub2 = svc.watchMyPlanForSpot(spotId).listen(
-      (m) {
-        latestMine = m;
-        emit();
-      },
-      onError: controller.addError,
-    );
+    sub1 = svc.watchPublicPlansForSpot(spotId).listen((p) {
+      latestPublic = p;
+      emit();
+    }, onError: controller.addError);
+    sub2 = svc.watchMyPlanForSpot(spotId).listen((m) {
+      latestMine = m;
+      emit();
+    }, onError: controller.addError);
 
     controller.onCancel = () {
       sub1.cancel();
@@ -153,7 +142,9 @@ class TrainingPlanUserCard extends StatelessWidget {
     final isAuthenticated = auth.isAuthenticated;
     final isMine = uid != null && uid == p.userId;
     final name = p.displayName?.trim();
-    final title = (name != null && name.isNotEmpty) ? name : l10n.spotTrainingPlanUnnamedPerson;
+    final title = (name != null && name.isNotEmpty)
+        ? name
+        : l10n.spotTrainingPlanUnnamedPerson;
     final range = communityFriendlyTrainingWindow(
       p.plannedStartAt,
       p.plannedEndAt,
@@ -214,17 +205,19 @@ class TrainingPlanUserCard extends StatelessWidget {
                                 nowLocal,
                                 l10n,
                               );
-                              final startTime = DateFormat.jm().format(startLocal);
+                              final startTime = DateFormat.jm().format(
+                                startLocal,
+                              );
                               final label = ctx.resolveSpotLabel(
                                 p.spotName,
                                 l10n,
                               );
-                              final narrative =
-                                  l10n.communityShareTrainingPlanNarrative(
-                                label,
-                                relDay,
-                                startTime,
-                              );
+                              final narrative = l10n
+                                  .communityShareTrainingPlanNarrative(
+                                    label,
+                                    relDay,
+                                    startTime,
+                                  );
                               await shareCommunitySpotMessage(
                                 context,
                                 shareContext: ctx,
@@ -273,17 +266,13 @@ class TrainingPlanUserCard extends StatelessWidget {
                                       ),
                                   showSuccess: (m) => ScaffoldMessenger.of(
                                     hostContext,
-                                  ).showSnackBar(
-                                    SnackBar(content: Text(m)),
-                                  ),
+                                  ).showSnackBar(SnackBar(content: Text(m))),
                                   showError: (m) => ScaffoldMessenger.of(
                                     hostContext,
-                                  ).showSnackBar(
-                                    SnackBar(content: Text(m)),
-                                  ),
-                                  successMessage:
-                                      AppLocalizations.of(hostContext)!
-                                          .spotDetailCheckInSuccess,
+                                  ).showSnackBar(SnackBar(content: Text(m))),
+                                  successMessage: AppLocalizations.of(
+                                    hostContext,
+                                  )!.spotDetailCheckInSuccess,
                                 );
                                 return;
                               }
@@ -291,21 +280,27 @@ class TrainingPlanUserCard extends StatelessWidget {
                                 final ok = await svc.deletePlan(p.id);
                                 if (!hostContext.mounted) return;
                                 if (ok) {
-                                  ScaffoldMessenger.of(hostContext).showSnackBar(
+                                  ScaffoldMessenger.of(
+                                    hostContext,
+                                  ).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        AppLocalizations.of(hostContext)!
-                                            .spotDetailTrainingPlanRemoved,
+                                        AppLocalizations.of(
+                                          hostContext,
+                                        )!.spotDetailTrainingPlanRemoved,
                                       ),
                                     ),
                                   );
                                 } else {
-                                  ScaffoldMessenger.of(hostContext).showSnackBar(
+                                  ScaffoldMessenger.of(
+                                    hostContext,
+                                  ).showSnackBar(
                                     SnackBar(
                                       content: Text(
                                         svc.error ??
-                                            AppLocalizations.of(hostContext)!
-                                                .spotDetailTrainingPlanDeleteFailed,
+                                            AppLocalizations.of(
+                                              hostContext,
+                                            )!.spotDetailTrainingPlanDeleteFailed,
                                       ),
                                     ),
                                   );
@@ -328,8 +323,9 @@ class TrainingPlanUserCard extends StatelessWidget {
                                 ScaffoldMessenger.of(hostContext).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      AppLocalizations.of(hostContext)!
-                                          .spotDetailTrainingPlanUpdated,
+                                      AppLocalizations.of(
+                                        hostContext,
+                                      )!.spotDetailTrainingPlanUpdated,
                                     ),
                                   ),
                                 );
@@ -338,8 +334,9 @@ class TrainingPlanUserCard extends StatelessWidget {
                                   SnackBar(
                                     content: Text(
                                       svc.error ??
-                                          AppLocalizations.of(hostContext)!
-                                              .spotDetailTrainingPlanFailed,
+                                          AppLocalizations.of(
+                                            hostContext,
+                                          )!.spotDetailTrainingPlanFailed,
                                     ),
                                   ),
                                 );
@@ -359,9 +356,11 @@ class TrainingPlanUserCard extends StatelessWidget {
                                   listen: false,
                                 ).watchMyPlanForSpot(p.spotId),
                                 builder: (context, myPlanSnap) {
-                                  final hasMyCheckIn = myCheckInSnap.data != null;
+                                  final hasMyCheckIn =
+                                      myCheckInSnap.data != null;
                                   final hasMyPlan = myPlanSnap.data != null;
-                                  final showJoin = !hasMyCheckIn &&
+                                  final showJoin =
+                                      !hasMyCheckIn &&
                                       !hasMyPlan &&
                                       onJoinTrainingPlan != null;
                                   if (!showJoin) {
@@ -370,7 +369,8 @@ class TrainingPlanUserCard extends StatelessWidget {
                                   return FilledButton.tonal(
                                     onPressed: () async {
                                       if (!isAuthenticated) {
-                                        final onLoginRequired = this.onLoginRequired;
+                                        final onLoginRequired =
+                                            this.onLoginRequired;
                                         if (onLoginRequired != null) {
                                           onLoginRequired();
                                         }

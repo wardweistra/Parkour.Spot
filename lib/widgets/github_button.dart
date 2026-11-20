@@ -17,15 +17,8 @@ class GitHubButton extends StatelessWidget {
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: () => launchExternalUri(context, Uri.parse(url)),
-        icon: BrandMarkIcon(
-          asset: BrandMarkIcon.github,
-          color: scheme.primary,
-        ),
-        label: Text(
-          label,
-          softWrap: true,
-          textAlign: TextAlign.center,
-        ),
+        icon: BrandMarkIcon(asset: BrandMarkIcon.github, color: scheme.primary),
+        label: Text(label, softWrap: true, textAlign: TextAlign.center),
         style: OutlinedButton.styleFrom(
           foregroundColor: scheme.primary,
           side: BorderSide(color: scheme.primary.withValues(alpha: 0.55)),

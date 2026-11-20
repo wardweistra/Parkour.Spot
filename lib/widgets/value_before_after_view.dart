@@ -70,11 +70,7 @@ class ValueBeforeAfterView extends StatelessWidget {
         if (stack) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              currentPanel,
-              const SizedBox(height: 8),
-              suggestedPanel,
-            ],
+            children: [currentPanel, const SizedBox(height: 8), suggestedPanel],
           );
         }
 
@@ -156,11 +152,7 @@ class ListLabelChangeView extends StatelessWidget {
         if (stack) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              currentPanel,
-              const SizedBox(height: 8),
-              suggestedPanel,
-            ],
+            children: [currentPanel, const SizedBox(height: 8), suggestedPanel],
           );
         }
 

@@ -31,8 +31,7 @@ class YoutubeSuggestionReview extends StatelessWidget {
     final existingSet = existing.toSet();
     final toAdd = [
       for (final id in suggestedVideoIds)
-        if (id.trim().isNotEmpty && !existingSet.contains(id.trim()))
-          id.trim(),
+        if (id.trim().isNotEmpty && !existingSet.contains(id.trim())) id.trim(),
     ];
 
     if (toAdd.isEmpty && existing.isEmpty) {
@@ -61,10 +60,7 @@ class YoutubeSuggestionReview extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           for (final id in toAdd) ...[
-            _SuggestedYoutubeCard(
-              videoId: id,
-              meta: existingVideoMeta?[id],
-            ),
+            _SuggestedYoutubeCard(videoId: id, meta: existingVideoMeta?[id]),
             const SizedBox(height: 8),
           ],
         ],

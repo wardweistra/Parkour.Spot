@@ -39,7 +39,8 @@ Future<void> runSpotCheckInFlow(
 
   final activeElsewhere = results[0] as List<SpotCheckIn>?;
   final extendableAtSameSpot = results[1] as SpotCheckIn?;
-  final planForLink = fixedTrainingPlan ??
+  final planForLink =
+      fixedTrainingPlan ??
       (results.length > 2 ? results[2] as SpotTrainingPlan? : null);
 
   if (activeElsewhere == null) {
@@ -47,7 +48,8 @@ Future<void> runSpotCheckInFlow(
     return;
   }
 
-  final linked = planForLink != null &&
+  final linked =
+      planForLink != null &&
           trainingPlanEligibleForLinkedCheckIn(planForLink, DateTime.now())
       ? planForLink
       : null;

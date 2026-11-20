@@ -112,10 +112,7 @@ class SpotListService extends ChangeNotifier {
         listId: docRef.id,
         userId: userId,
         userName: _actorName(),
-        metadata: {
-          'name': spotList.name,
-          'visibility': visibility.name,
-        },
+        metadata: {'name': spotList.name, 'visibility': visibility.name},
       );
 
       _isLoading = false;
@@ -281,10 +278,20 @@ class SpotListService extends ChangeNotifier {
         );
       }
       if (visibility != null) {
-        _trackChange(changes, 'visibility', list.visibility.name, visibility.name);
+        _trackChange(
+          changes,
+          'visibility',
+          list.visibility.name,
+          visibility.name,
+        );
       }
       if (moreInfoUrl != null) {
-        _trackChange(changes, 'moreInfoUrl', list.moreInfoUrl, moreInfoUrl.trim());
+        _trackChange(
+          changes,
+          'moreInfoUrl',
+          list.moreInfoUrl,
+          moreInfoUrl.trim(),
+        );
       }
       if (changes.isNotEmpty) {
         await _auditLogService.logSpotListEdit(
@@ -379,10 +386,7 @@ class SpotListService extends ChangeNotifier {
         },
         userId: userId,
         userName: _actorName(),
-        metadata: {
-          'name': list.name,
-          'addedSpotId': spotId,
-        },
+        metadata: {'name': list.name, 'addedSpotId': spotId},
       );
 
       _isLoading = false;
@@ -453,10 +457,7 @@ class SpotListService extends ChangeNotifier {
         },
         userId: userId,
         userName: _actorName(),
-        metadata: {
-          'name': list.name,
-          'removedSpotId': spotId,
-        },
+        metadata: {'name': list.name, 'removedSpotId': spotId},
       );
 
       _isLoading = false;
@@ -538,9 +539,24 @@ class SpotListService extends ChangeNotifier {
 
       final changes = <String, dynamic>{};
       _trackChange(changes, 'name', list.name, name.trim());
-      _trackChange(changes, 'description', list.description, description.trim());
-      _trackChange(changes, 'visibility', list.visibility.name, visibility.name);
-      _trackChange(changes, 'moreInfoUrl', list.moreInfoUrl, moreInfoUrl.trim());
+      _trackChange(
+        changes,
+        'description',
+        list.description,
+        description.trim(),
+      );
+      _trackChange(
+        changes,
+        'visibility',
+        list.visibility.name,
+        visibility.name,
+      );
+      _trackChange(
+        changes,
+        'moreInfoUrl',
+        list.moreInfoUrl,
+        moreInfoUrl.trim(),
+      );
       _trackChange(
         changes,
         'spotIds',
@@ -972,10 +988,7 @@ class SpotListService extends ChangeNotifier {
         listId: listId,
         userId: userId,
         userName: _actorName(),
-        metadata: {
-          'name': list.name,
-          'visibility': list.visibility.name,
-        },
+        metadata: {'name': list.name, 'visibility': list.visibility.name},
       );
 
       _isLoading = false;
@@ -1024,7 +1037,10 @@ class SpotListService extends ChangeNotifier {
   }
 
   /// Admin-only: promote or remove a list from featured via Cloud Function.
-  Future<bool> setSpotListFeatured(String listId, {required bool featured}) async {
+  Future<bool> setSpotListFeatured(
+    String listId, {
+    required bool featured,
+  }) async {
     if (!_isAuthenticated()) {
       _error = 'You must be signed in';
       notifyListeners();
@@ -1090,10 +1106,7 @@ class SpotListService extends ChangeNotifier {
         .where('inviteeUid', isEqualTo: userId)
         .where('status', whereIn: ['pending', 'accepted'])
         .snapshots()
-        .map(
-          (snap) =>
-              snap.docs.map(SpotListInvite.fromFirestore).toList(),
-        );
+        .map((snap) => snap.docs.map(SpotListInvite.fromFirestore).toList());
   }
 
   /// Active invites for a list the current user owns.
@@ -1103,10 +1116,7 @@ class SpotListService extends ChangeNotifier {
         .where('listId', isEqualTo: listId)
         .where('status', whereIn: ['pending', 'accepted'])
         .snapshots()
-        .map(
-          (snap) =>
-              snap.docs.map(SpotListInvite.fromFirestore).toList(),
-        );
+        .map((snap) => snap.docs.map(SpotListInvite.fromFirestore).toList());
   }
 
   /// Current user's active invite for a list (if any).
@@ -1220,9 +1230,7 @@ class SpotListService extends ChangeNotifier {
     }
     try {
       final callable = _functions.httpsCallable('removeSpotListMember');
-      await callable.call(<String, dynamic>{
-        'inviteId': inviteId,
-      });
+      await callable.call(<String, dynamic>{'inviteId': inviteId});
       return true;
     } on FirebaseFunctionsException catch (e) {
       _error = e.message ?? 'Failed to update access';

@@ -33,12 +33,12 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context);
-          } else {
-            context.go('/admin');
-          }
-        },
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              context.go('/admin');
+            }
+          },
         ),
         actions: [
           TextButton.icon(
@@ -67,8 +67,12 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                   children: const [
                     Text('What this does', style: TextStyle()),
                     SizedBox(height: 8),
-                    Text('• Finds all spots where any of address, city, or country are empty'),
-                    Text('• Reverse geocodes coordinates to get address, city, country code'),
+                    Text(
+                      '• Finds all spots where any of address, city, or country are empty',
+                    ),
+                    Text(
+                      '• Reverse geocodes coordinates to get address, city, country code',
+                    ),
                     Text('• Updates each spot with the fetched values'),
                   ],
                 ),
@@ -93,7 +97,7 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Last run', style: TextStyle( fontSize: 18)),
+                      const Text('Last run', style: TextStyle(fontSize: 18)),
                       const SizedBox(height: 12),
                       Text(
                         _lastResult!['message']?.toString() ?? '',
@@ -111,14 +115,20 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Overview', style: TextStyle( fontSize: 16)),
+                              const Text(
+                                'Overview',
+                                style: TextStyle(fontSize: 16),
+                              ),
                               const SizedBox(height: 8),
                               Row(
                                 children: [
                                   Expanded(
                                     child: _StatCard(
                                       label: 'Total Spots',
-                                      value: _lastResult!['stats']['totalSpots']?.toString() ?? '0',
+                                      value:
+                                          _lastResult!['stats']['totalSpots']
+                                              ?.toString() ??
+                                          '0',
                                       color: Colors.blue,
                                     ),
                                   ),
@@ -126,7 +136,10 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                                   Expanded(
                                     child: _StatCard(
                                       label: 'Candidates',
-                                      value: _lastResult!['stats']['totalCandidates']?.toString() ?? '0',
+                                      value:
+                                          _lastResult!['stats']['totalCandidates']
+                                              ?.toString() ??
+                                          '0',
                                       color: Colors.orange,
                                     ),
                                   ),
@@ -146,7 +159,10 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Processing Results', style: TextStyle( fontSize: 16)),
+                              const Text(
+                                'Processing Results',
+                                style: TextStyle(fontSize: 16),
+                              ),
                               const SizedBox(height: 8),
                               Wrap(
                                 spacing: 12,
@@ -154,31 +170,44 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
                                 children: [
                                   _StatChip(
                                     label: 'Processed',
-                                    value: _lastResult!['stats']['processed']?.toString() ?? '0',
+                                    value:
+                                        _lastResult!['stats']['processed']
+                                            ?.toString() ??
+                                        '0',
                                     color: Colors.blue,
                                   ),
                                   _StatChip(
                                     label: 'Updated',
-                                    value: _lastResult!['stats']['updated']?.toString() ?? '0',
+                                    value:
+                                        _lastResult!['stats']['updated']
+                                            ?.toString() ??
+                                        '0',
                                     color: Colors.green,
                                   ),
                                   _StatChip(
                                     label: 'Failed',
-                                    value: _lastResult!['stats']['failed']?.toString() ?? '0',
+                                    value:
+                                        _lastResult!['stats']['failed']
+                                            ?.toString() ??
+                                        '0',
                                     color: Colors.red,
                                   ),
                                   _StatChip(
                                     label: 'Skipped',
-                                    value: _lastResult!['stats']['skipped']?.toString() ?? '0',
+                                    value:
+                                        _lastResult!['stats']['skipped']
+                                            ?.toString() ??
+                                        '0',
                                     color: Colors.orange,
                                   ),
                                 ],
                               ),
-                              if (_lastResult!['stats']['successRate'] != null) ...[
+                              if (_lastResult!['stats']['successRate'] !=
+                                  null) ...[
                                 const SizedBox(height: 8),
                                 Text(
                                   'Success Rate: ${_lastResult!['stats']['successRate']}',
-                                  style: const TextStyle( fontSize: 14),
+                                  style: const TextStyle(fontSize: 14),
                                 ),
                               ],
                             ],
@@ -239,7 +268,9 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Test failed: ${result?['error'] ?? 'Unknown error'}'),
+            content: Text(
+              'Test failed: ${result?['error'] ?? 'Unknown error'}',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -263,14 +294,18 @@ class _GeocodingAdminScreenState extends State<GeocodingAdminScreen> {
       _running = true;
     });
     try {
-      final result = await context.read<GeocodingService>().geocodeMissingSpotAddresses();
+      final result = await context
+          .read<GeocodingService>()
+          .geocodeMissingSpotAddresses();
       if (!mounted) return;
       setState(() {
         _lastResult = result;
       });
       if (result != null && result['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Geocoding started/completed successfully')),
+          const SnackBar(
+            content: Text('Geocoding started/completed successfully'),
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -308,9 +343,7 @@ class _StatChip extends StatelessWidget {
       backgroundColor: color?.withValues(alpha: 0.2),
       label: Text(
         '$label: ${value ?? '-'}',
-        style: TextStyle(
-          color: color ?? Colors.black87,
-        ),
+        style: TextStyle(color: color ?? Colors.black87),
       ),
     );
   }
@@ -338,20 +371,11 @@ class _StatCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              color: color,
-            ),
-          ),
+          Text(value, style: TextStyle(fontSize: 24, color: color)),
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color: color.withValues(alpha: 0.8),
-            ),
+            style: TextStyle(fontSize: 12, color: color.withValues(alpha: 0.8)),
             textAlign: TextAlign.center,
           ),
         ],
@@ -359,4 +383,3 @@ class _StatCard extends StatelessWidget {
     );
   }
 }
-

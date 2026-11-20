@@ -13,10 +13,8 @@ Future<void> showSyncRunReportDialog(
   return showDialog<void>(
     context: context,
     barrierDismissible: true,
-    builder: (dialogContext) => SyncRunReportDialog(
-      runId: runId,
-      syncRunService: syncRunService,
-    ),
+    builder: (dialogContext) =>
+        SyncRunReportDialog(runId: runId, syncRunService: syncRunService),
   );
 }
 
@@ -83,9 +81,9 @@ class _SyncRunReportDialogState extends State<SyncRunReportDialog> {
     await Clipboard.setData(ClipboardData(text: run.toReportText()));
     if (!mounted) return;
     setState(() => _copied = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Report copied')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Report copied')));
   }
 
   Color _statusColor(ColorScheme scheme, SyncRun run) {
@@ -101,9 +99,7 @@ class _SyncRunReportDialogState extends State<SyncRunReportDialog> {
 
     return AlertDialog(
       title: Text(
-        run == null
-            ? 'Sync run'
-            : '${run.sourceName} · ${run.syncType}',
+        run == null ? 'Sync run' : '${run.sourceName} · ${run.syncType}',
       ),
       content: SizedBox(
         width: 520,
@@ -113,10 +109,7 @@ class _SyncRunReportDialogState extends State<SyncRunReportDialog> {
                 child: Center(child: CircularProgressIndicator()),
               )
             : _error != null
-            ? SelectableText(
-                _error!,
-                style: TextStyle(color: scheme.error),
-              )
+            ? SelectableText(_error!, style: TextStyle(color: scheme.error))
             : run == null
             ? const Text('No data')
             : SingleChildScrollView(

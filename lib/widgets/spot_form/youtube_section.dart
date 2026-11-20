@@ -80,10 +80,7 @@ class SpotYoutubeSection extends StatelessWidget {
       itemCount: controllers.length,
       proxyDecorator: (child, index, animation) {
         // Drag overlay is outside the Card's Material; TextField needs one.
-        return Material(
-          type: MaterialType.transparency,
-          child: child,
-        );
+        return Material(type: MaterialType.transparency, child: child);
       },
       onReorder: (oldIndex, newIndex) {
         if (newIndex > oldIndex) {
@@ -112,7 +109,7 @@ class SpotYoutubeSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-  final body = Column(
+    final body = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
@@ -149,10 +146,7 @@ class SpotYoutubeSection extends StatelessWidget {
     }
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: body,
-      ),
+      child: Padding(padding: const EdgeInsets.all(16.0), child: body),
     );
   }
 }
@@ -190,7 +184,8 @@ class _YoutubeLinkRow extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final videoId = extractYoutubeVideoId(controller.text);
-    final hasPreview = videoId != null &&
+    final hasPreview =
+        videoId != null &&
         videoId.isNotEmpty &&
         !videoId.contains('/') &&
         !videoId.contains(' ');

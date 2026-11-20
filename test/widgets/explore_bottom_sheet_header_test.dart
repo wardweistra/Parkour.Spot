@@ -74,14 +74,8 @@ void main() {
     await tester.tap(find.text('7 activities'));
     await tester.pump();
 
-    expect(
-      _legendSvg(MarkerIconUtils.mapPinEventLegendAsset),
-      findsOneWidget,
-    );
-    expect(
-      _legendSvg(MarkerIconUtils.mapPinSpotLegendAsset),
-      findsOneWidget,
-    );
+    expect(_legendSvg(MarkerIconUtils.mapPinEventLegendAsset), findsOneWidget);
+    expect(_legendSvg(MarkerIconUtils.mapPinSpotLegendAsset), findsOneWidget);
     expect(find.byIcon(Icons.expand_more), findsOneWidget);
   });
 
@@ -221,10 +215,7 @@ void main() {
       ),
     );
 
-    expect(
-      _legendSvg(MarkerIconUtils.mapPinEventLegendAsset),
-      findsOneWidget,
-    );
+    expect(_legendSvg(MarkerIconUtils.mapPinEventLegendAsset), findsOneWidget);
     await tester.tap(find.text('7 activities'));
     await tester.pump();
 

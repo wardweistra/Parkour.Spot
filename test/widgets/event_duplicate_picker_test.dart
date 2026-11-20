@@ -4,10 +4,7 @@ import 'package:parkour_spot/widgets/event_duplicate_picker.dart';
 
 void main() {
   group('isValidNativeDuplicateOriginal', () {
-    ParkourEvent event({
-      String? eventSourceId,
-      String? duplicateOf,
-    }) {
+    ParkourEvent event({String? eventSourceId, String? duplicateOf}) {
       return ParkourEvent(
         id: 'event-1',
         title: 'Jam',

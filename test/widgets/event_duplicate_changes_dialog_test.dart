@@ -142,28 +142,29 @@ void main() {
     expect(result.overwriteTitle, isFalse);
   });
 
-  testWidgets('shows updated duplicate change and omits matching original value', (
-    tester,
-  ) async {
-    await pumpDialog(
-      tester,
-      changedGroups: const [EventDuplicateFieldGroup.title],
-      duplicateReviewBaseline: const {'title': 'Jam Session'},
-      originalEvent: ParkourEvent(
-        title: 'Jam Session',
-        startAt: DateTime.utc(2026, 7, 2),
-      ),
-      interact: (tester) async {},
-    );
+  testWidgets(
+    'shows updated duplicate change and omits matching original value',
+    (tester) async {
+      await pumpDialog(
+        tester,
+        changedGroups: const [EventDuplicateFieldGroup.title],
+        duplicateReviewBaseline: const {'title': 'Jam Session'},
+        originalEvent: ParkourEvent(
+          title: 'Jam Session',
+          startAt: DateTime.utc(2026, 7, 2),
+        ),
+        interact: (tester) async {},
+      );
 
-    expect(find.text('Updated on duplicate'), findsOneWidget);
-    expect(find.text('Jam Session'), findsOneWidget);
-    expect(find.text('Updated title'), findsOneWidget);
-    expect(find.text('−'), findsOneWidget);
-    expect(find.text('+'), findsOneWidget);
-    expect(find.text('Current on original'), findsOneWidget);
-    expect(find.text('Same as previous on duplicate'), findsOneWidget);
-  });
+      expect(find.text('Updated on duplicate'), findsOneWidget);
+      expect(find.text('Jam Session'), findsOneWidget);
+      expect(find.text('Updated title'), findsOneWidget);
+      expect(find.text('−'), findsOneWidget);
+      expect(find.text('+'), findsOneWidget);
+      expect(find.text('Current on original'), findsOneWidget);
+      expect(find.text('Same as previous on duplicate'), findsOneWidget);
+    },
+  );
 
   testWidgets('shows when the original value differs from the previous one', (
     tester,

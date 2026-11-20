@@ -13,7 +13,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -32,21 +33,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeIn,
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+    );
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
+    );
 
     _animationController.forward();
 
@@ -55,13 +48,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   List<String> _messages(AppLocalizations l10n) => [
-        l10n.splashSloganStartTogether,
-        l10n.splashSloganLeaveSpotBetter,
-        l10n.splashSloganStrongToBeUseful,
-        l10n.splashSloganTrainToLast,
-        l10n.splashSloganStrongBodyStrongMind,
-        l10n.splashSloganObstaclesIntoPaths,
-      ];
+    l10n.splashSloganStartTogether,
+    l10n.splashSloganLeaveSpotBetter,
+    l10n.splashSloganStrongToBeUseful,
+    l10n.splashSloganTrainToLast,
+    l10n.splashSloganStrongBodyStrongMind,
+    l10n.splashSloganObstaclesIntoPaths,
+  ];
 
   Future<void> _checkAuthStatus() async {
     await Future.delayed(const Duration(seconds: 2));
@@ -124,9 +117,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   bool _isSpotUrl(String path) {
     // Format: /nl/amsterdam/&lt;spot-id&gt; or any /&lt;xx&gt;/&lt;anything&gt;/&lt;spot-id&gt;
     if (path.split('/').where((segment) => segment.isNotEmpty).length == 3) {
-      final segments = path.split('/').where((segment) => segment.isNotEmpty).toList();
+      final segments = path
+          .split('/')
+          .where((segment) => segment.isNotEmpty)
+          .toList();
       final countryCode = segments[0];
-      return countryCode.length == 2 && RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode);
+      return countryCode.length == 2 &&
+          RegExp(r'^[a-zA-Z]{2}$').hasMatch(countryCode);
     }
 
     return false;
@@ -173,9 +170,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     // App Name
                     Text(
                       'Parkour·Spot',
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                      style: Theme.of(context).textTheme.headlineLarge
+                          ?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                     ),
 
                     const SizedBox(height: 20),
@@ -183,9 +181,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     // Header
                     Text(
                       'Parkour·Spot',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: Colors.white,
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.headlineMedium?.copyWith(color: Colors.white),
                     ),
 
                     const SizedBox(height: 10),

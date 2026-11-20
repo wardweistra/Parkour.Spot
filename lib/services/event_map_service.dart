@@ -59,9 +59,12 @@ class EventMapService extends ChangeNotifier {
     final rawPins = responseData['pins'];
     final pins = rawPins is List
         ? rawPins
-            .whereType<Map>()
-            .map((e) => EventMapPin.fromCallableMap(Map<String, dynamic>.from(e)))
-            .toList()
+              .whereType<Map>()
+              .map(
+                (e) =>
+                    EventMapPin.fromCallableMap(Map<String, dynamic>.from(e)),
+              )
+              .toList()
         : <EventMapPin>[];
 
     return EventsInBoundsResult(
@@ -118,9 +121,7 @@ class EventMapService extends ChangeNotifier {
   }
 
   /// Resolves spot list vs single-pin locate for an event.
-  Future<EventLocateTarget?> resolveLocateTargetForEvent(
-    ParkourEvent event,
-  ) {
+  Future<EventLocateTarget?> resolveLocateTargetForEvent(ParkourEvent event) {
     return resolveEventLocateTarget(
       event: event,
       firestore: _firestore,

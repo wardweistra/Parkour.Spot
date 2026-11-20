@@ -359,7 +359,9 @@ class _SpotTrainingPlanDialogState extends State<SpotTrainingPlanDialog> {
                             ),
                           ),
                           icon: const Icon(Icons.place_outlined),
-                          label: Text(l10n.spotTrainingPlanDialogCheckInCtaButton),
+                          label: Text(
+                            l10n.spotTrainingPlanDialogCheckInCtaButton,
+                          ),
                         ),
                       ),
                     ],

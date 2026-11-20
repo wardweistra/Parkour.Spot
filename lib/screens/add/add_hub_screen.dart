@@ -23,14 +23,15 @@ class AddHubScreen extends StatelessWidget {
       ),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: SpotDetailUi.maxContentWidth),
+          constraints: const BoxConstraints(
+            maxWidth: SpotDetailUi.maxContentWidth,
+          ),
           child: ListView(
-            padding: const EdgeInsets.all(SpotDetailUi.contentHorizontalPadding),
+            padding: const EdgeInsets.all(
+              SpotDetailUi.contentHorizontalPadding,
+            ),
             children: [
-              Text(
-                l10n.addHubHeading,
-                style: theme.textTheme.titleLarge,
-              ),
+              Text(l10n.addHubHeading, style: theme.textTheme.titleLarge),
               const SizedBox(height: 8),
               Text(
                 l10n.addHubSubtitle,

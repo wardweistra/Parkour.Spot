@@ -5,7 +5,9 @@ import 'package:parkour_spot/models/spot_list.dart';
 import 'package:parkour_spot/widgets/spot_list_visibility_selector.dart';
 
 void main() {
-  testWidgets('keeps a stable height when switching visibility', (tester) async {
+  testWidgets('keeps a stable height when switching visibility', (
+    tester,
+  ) async {
     var visibility = SpotListVisibility.public;
 
     await tester.pumpWidget(
@@ -34,16 +36,10 @@ void main() {
 
     await tester.tap(find.text('Unlisted'));
     await tester.pump();
-    expect(
-      tester.getSize(find.byType(SpotListVisibilitySelector)),
-      publicSize,
-    );
+    expect(tester.getSize(find.byType(SpotListVisibilitySelector)), publicSize);
 
     await tester.tap(find.text('Private'));
     await tester.pump();
-    expect(
-      tester.getSize(find.byType(SpotListVisibilitySelector)),
-      publicSize,
-    );
+    expect(tester.getSize(find.byType(SpotListVisibilitySelector)), publicSize);
   });
 }

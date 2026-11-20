@@ -13,10 +13,7 @@ import 'image_processing_banner.dart';
 class PhotoApprovalDialog extends StatefulWidget {
   final SpotReport report;
 
-  const PhotoApprovalDialog({
-    super.key,
-    required this.report,
-  });
+  const PhotoApprovalDialog({super.key, required this.report});
 
   @override
   State<PhotoApprovalDialog> createState() => _PhotoApprovalDialogState();
@@ -55,7 +52,7 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
     try {
       final spotService = Provider.of<SpotService>(context, listen: false);
       final spot = await spotService.getSpotById(widget.report.spotId);
-      
+
       if (spot == null) {
         if (mounted) {
           setState(() {
@@ -68,7 +65,8 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
       if (mounted) {
         setState(() {
           _currentSpot = spot;
-          _isSpotFromSource = spot.spotSource != null && spot.spotSource!.isNotEmpty;
+          _isSpotFromSource =
+              spot.spotSource != null && spot.spotSource!.isNotEmpty;
           _isLoadingOriginalSpot = true;
         });
       }
@@ -76,7 +74,7 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
       // If spot is a duplicate, load the original spot
       if (spot.duplicateOf != null) {
         final originalSpot = await spotService.getSpotById(spot.duplicateOf!);
-        
+
         if (mounted) {
           setState(() {
             _originalSpot = originalSpot;
@@ -102,8 +100,11 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
 
   bool get _isTargetSpotFromSource {
     // If target spot is the original spot, check if it's from a source
-    if (_targetSpotId != null && _targetSpotId != widget.report.spotId && _originalSpot != null) {
-      return _originalSpot!.spotSource != null && _originalSpot!.spotSource!.isNotEmpty;
+    if (_targetSpotId != null &&
+        _targetSpotId != widget.report.spotId &&
+        _originalSpot != null) {
+      return _originalSpot!.spotSource != null &&
+          _originalSpot!.spotSource!.isNotEmpty;
     }
     // Otherwise check the current spot
     return _isSpotFromSource;
@@ -112,20 +113,24 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
   bool get _isTargetSpotDuplicate {
     // If target spot is the current spot, check if it's a duplicate
     if (_targetSpotId == widget.report.spotId) {
-      return _currentSpot?.duplicateOf != null && _currentSpot!.duplicateOf!.isNotEmpty;
+      return _currentSpot?.duplicateOf != null &&
+          _currentSpot!.duplicateOf!.isNotEmpty;
     }
     // If target spot is the original spot, it's not a duplicate
     return false;
   }
 
   Spot? get _targetSpot {
-    if (_targetSpotId != null && _targetSpotId != widget.report.spotId && _originalSpot != null) {
+    if (_targetSpotId != null &&
+        _targetSpotId != widget.report.spotId &&
+        _originalSpot != null) {
       return _originalSpot;
     }
     return _currentSpot;
   }
 
-  List<String> get _suggestedPhotoUrls => widget.report.suggestedPhotoUrls ?? const <String>[];
+  List<String> get _suggestedPhotoUrls =>
+      widget.report.suggestedPhotoUrls ?? const <String>[];
 
   List<int> get _acceptedIndices =>
       _accepted.entries.where((e) => e.value).map((e) => e.key).toList();
@@ -211,10 +216,14 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
 
     try {
       final spotService = Provider.of<SpotService>(context, listen: false);
-      final reportService = Provider.of<SpotReportService>(context, listen: false);
+      final reportService = Provider.of<SpotReportService>(
+        context,
+        listen: false,
+      );
       final authService = Provider.of<AuthService>(context, listen: false);
       final userId = authService.currentUser?.uid;
-      final userName = authService.userProfile?.displayName ??
+      final userName =
+          authService.userProfile?.displayName ??
           authService.currentUser?.displayName ??
           authService.currentUser?.email;
 
@@ -222,7 +231,9 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
       final rejectedIndices = _rejectedIndices;
 
       // 1. Approved: add to spot
-      if (approvedIndices.isNotEmpty && !_isTargetSpotFromSource && !_isTargetSpotDuplicate) {
+      if (approvedIndices.isNotEmpty &&
+          !_isTargetSpotFromSource &&
+          !_isTargetSpotDuplicate) {
         final sortedApproved = approvedIndices.toList()..sort();
         final approvedOriginalUrls = sortedApproved
             .map((i) => suggestedPhotoUrls[i])
@@ -279,8 +290,9 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
 
       // 2. Rejected: move to rejected folder
       if (rejectedIndices.isNotEmpty) {
-        final rejectedOriginalUrls =
-            rejectedIndices.map((i) => suggestedPhotoUrls[i]).toList();
+        final rejectedOriginalUrls = rejectedIndices
+            .map((i) => suggestedPhotoUrls[i])
+            .toList();
         setState(() {
           _approvalPhase = 'Rejecting photo';
           _approvalProgress = null;
@@ -416,7 +428,8 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                               onTap: () => _showPhotoPreview(photoUrl),
                               child: ClipRRect(
                                 borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(6)),
+                                  top: Radius.circular(6),
+                                ),
                                 child: SizedBox(
                                   width: 100,
                                   height: 100,
@@ -426,29 +439,33 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                                     imageRenderMethodForWeb:
                                         ImageRenderMethodForWeb.HttpGet,
                                     placeholder: (context, url) => Container(
-                                      color: colorScheme.surfaceContainerHighest,
+                                      color:
+                                          colorScheme.surfaceContainerHighest,
                                       child: const Center(
                                         child: CircularProgressIndicator(
-                                            strokeWidth: 2),
+                                          strokeWidth: 2,
+                                        ),
                                       ),
                                     ),
                                     errorWidget: (context, url, error) =>
                                         Container(
-                                      color:
-                                          colorScheme.surfaceContainerHighest,
-                                      child: Icon(
-                                        Icons.image_not_supported,
-                                        color: colorScheme.onSurface
-                                            .withValues(alpha: 0.5),
-                                      ),
-                                    ),
+                                          color: colorScheme
+                                              .surfaceContainerHighest,
+                                          child: Icon(
+                                            Icons.image_not_supported,
+                                            color: colorScheme.onSurface
+                                                .withValues(alpha: 0.5),
+                                          ),
+                                        ),
                                   ),
                                 ),
                               ),
                             ),
                             Padding(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 4, vertical: 4),
+                                horizontal: 4,
+                                vertical: 4,
+                              ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -458,8 +475,9 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                                         ? null
                                         : () {
                                             if (!isAccepted) {
-                                              setState(() =>
-                                                  _accepted[index] = true);
+                                              setState(
+                                                () => _accepted[index] = true,
+                                              );
                                             }
                                           },
                                     icon: const Icon(Icons.check, size: 18),
@@ -483,8 +501,9 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                                         ? null
                                         : () {
                                             if (isAccepted) {
-                                              setState(() =>
-                                                  _accepted[index] = false);
+                                              setState(
+                                                () => _accepted[index] = false,
+                                              );
                                             }
                                           },
                                     icon: const Icon(Icons.close, size: 18),
@@ -519,10 +538,7 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                     decoration: BoxDecoration(
                       color: colorScheme.errorContainer,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: colorScheme.error,
-                        width: 1,
-                      ),
+                      border: Border.all(color: colorScheme.error, width: 1),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -569,10 +585,7 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                     decoration: BoxDecoration(
                       color: colorScheme.errorContainer,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: colorScheme.error,
-                        width: 1,
-                      ),
+                      border: Border.all(color: colorScheme.error, width: 1),
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -626,16 +639,25 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                     groupValue: _targetSpotId,
                     onChanged: (String? value) {
                       // Check if the selected value should be disabled
-                      final isCurrentSpotDisabled = _isApproving || _isSpotFromSource || (_currentSpot?.duplicateOf != null && _currentSpot!.duplicateOf!.isNotEmpty);
-                      final isOriginalSpotDisabled = _isApproving || (_originalSpot!.spotSource != null && _originalSpot!.spotSource!.isNotEmpty);
-                      
-                      if (value == widget.report.spotId && isCurrentSpotDisabled) {
+                      final isCurrentSpotDisabled =
+                          _isApproving ||
+                          _isSpotFromSource ||
+                          (_currentSpot?.duplicateOf != null &&
+                              _currentSpot!.duplicateOf!.isNotEmpty);
+                      final isOriginalSpotDisabled =
+                          _isApproving ||
+                          (_originalSpot!.spotSource != null &&
+                              _originalSpot!.spotSource!.isNotEmpty);
+
+                      if (value == widget.report.spotId &&
+                          isCurrentSpotDisabled) {
                         return; // Don't allow selection of disabled current spot
                       }
-                      if (value == _originalSpot!.id && isOriginalSpotDisabled) {
+                      if (value == _originalSpot!.id &&
+                          isOriginalSpotDisabled) {
                         return; // Don't allow selection of disabled original spot
                       }
-                      
+
                       setState(() {
                         _targetSpotId = value;
                       });
@@ -643,23 +665,41 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                     child: Column(
                       children: [
                         RadioListTile<String>(
-                          title: Text('Current spot: ${widget.report.spotName}'),
-                          subtitle: (_currentSpot?.duplicateOf != null && _currentSpot!.duplicateOf!.isNotEmpty)
-                              ? Text('The reported spot (duplicate of ${_originalSpot?.name ?? "another spot"})')
+                          title: Text(
+                            'Current spot: ${widget.report.spotName}',
+                          ),
+                          subtitle:
+                              (_currentSpot?.duplicateOf != null &&
+                                  _currentSpot!.duplicateOf!.isNotEmpty)
+                              ? Text(
+                                  'The reported spot (duplicate of ${_originalSpot?.name ?? "another spot"})',
+                                )
                               : _isSpotFromSource
-                                  ? Text('The reported spot (from ${_currentSpot?.spotSourceName ?? "external source"})')
-                                  : const Text('The reported spot'),
+                              ? Text(
+                                  'The reported spot (from ${_currentSpot?.spotSourceName ?? "external source"})',
+                                )
+                              : const Text('The reported spot'),
                           value: widget.report.spotId,
-                          enabled: !(_isApproving || _isSpotFromSource || (_currentSpot?.duplicateOf != null && _currentSpot!.duplicateOf!.isNotEmpty)),
+                          enabled:
+                              !(_isApproving ||
+                                  _isSpotFromSource ||
+                                  (_currentSpot?.duplicateOf != null &&
+                                      _currentSpot!.duplicateOf!.isNotEmpty)),
                           contentPadding: EdgeInsets.zero,
                         ),
                         RadioListTile<String>(
                           title: Text('Original spot: ${_originalSpot!.name}'),
-                          subtitle: Text(_originalSpot!.spotSource != null && _originalSpot!.spotSource!.isNotEmpty
-                              ? 'The original spot (from ${_originalSpot!.spotSourceName ?? "external source"})'
-                              : 'The original spot (recommended)'),
+                          subtitle: Text(
+                            _originalSpot!.spotSource != null &&
+                                    _originalSpot!.spotSource!.isNotEmpty
+                                ? 'The original spot (from ${_originalSpot!.spotSourceName ?? "external source"})'
+                                : 'The original spot (recommended)',
+                          ),
                           value: _originalSpot!.id!,
-                          enabled: !(_isApproving || (_originalSpot!.spotSource != null && _originalSpot!.spotSource!.isNotEmpty)),
+                          enabled:
+                              !(_isApproving ||
+                                  (_originalSpot!.spotSource != null &&
+                                      _originalSpot!.spotSource!.isNotEmpty)),
                           contentPadding: EdgeInsets.zero,
                         ),
                       ],
@@ -679,7 +719,8 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                   controller: _notesController,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    hintText: 'Document why you accepted or rejected these suggestions...',
+                    hintText:
+                        'Document why you accepted or rejected these suggestions...',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -703,7 +744,9 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
         ),
         actions: [
           TextButton(
-            onPressed: _isApproving ? null : () => Navigator.of(context).pop(false),
+            onPressed: _isApproving
+                ? null
+                : () => Navigator.of(context).pop(false),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
@@ -721,13 +764,14 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
                       Text(_approvalPhase ?? 'Submitting...'),
                     ],
                   )
-                : Text(_isRejectAll()
-                    ? 'Submit Review'
-                    : 'Submit Review (${_acceptedIndices.length} accepted)'),
+                : Text(
+                    _isRejectAll()
+                        ? 'Submit Review'
+                        : 'Submit Review (${_acceptedIndices.length} accepted)',
+                  ),
           ),
         ],
       ),
     );
   }
 }
-

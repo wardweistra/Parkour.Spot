@@ -5,18 +5,15 @@ import 'package:parkour_spot/services/mobile_detection_service.dart';
 import 'package:parkour_spot/widgets/custom_button.dart';
 
 /// A widget that shows a PWA install prompt banner
-/// 
+///
 /// This widget automatically detects if installation is available and shows
 /// an appropriate prompt. It respects user dismissal and only shows after
 /// the user has engaged with the app.
 class PwaInstallPrompt extends StatefulWidget {
   /// Whether to show as a banner (true) or dialog (false)
   final bool showAsBanner;
-  
-  const PwaInstallPrompt({
-    super.key,
-    this.showAsBanner = true,
-  });
+
+  const PwaInstallPrompt({super.key, this.showAsBanner = true});
 
   @override
   State<PwaInstallPrompt> createState() => _PwaInstallPromptState();
@@ -52,20 +49,32 @@ class _PwaInstallPromptState extends State<PwaInstallPrompt> {
   void _showInstallInstructions() {
     final l10n = AppLocalizations.of(context)!;
     final isIos = MobileDetectionService.isIOS;
-    final deviceLabel =
-        isIos ? l10n.profileInstallDeviceIphone : l10n.profileInstallDeviceAndroid;
+    final deviceLabel = isIos
+        ? l10n.profileInstallDeviceIphone
+        : l10n.profileInstallDeviceAndroid;
     final browserLabel = isIos ? 'Safari' : 'Chrome';
-    final step1 = isIos ? l10n.profileInstallIosStep1 : l10n.profileInstallAndroidStep1;
-    final step2 = isIos ? l10n.profileInstallIosStep2 : l10n.profileInstallAndroidStep2;
-    final step3 = isIos ? l10n.profileInstallIosStep3 : l10n.profileInstallAndroidStep3;
-    final step4 = isIos ? l10n.profileInstallIosStep4 : l10n.profileInstallAndroidStep4;
+    final step1 = isIos
+        ? l10n.profileInstallIosStep1
+        : l10n.profileInstallAndroidStep1;
+    final step2 = isIos
+        ? l10n.profileInstallIosStep2
+        : l10n.profileInstallAndroidStep2;
+    final step3 = isIos
+        ? l10n.profileInstallIosStep3
+        : l10n.profileInstallAndroidStep3;
+    final step4 = isIos
+        ? l10n.profileInstallIosStep4
+        : l10n.profileInstallAndroidStep4;
 
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.get_app, color: Theme.of(dialogContext).colorScheme.primary),
+            Icon(
+              Icons.get_app,
+              color: Theme.of(dialogContext).colorScheme.primary,
+            ),
             const SizedBox(width: 8),
             Expanded(child: Text(l10n.profileInstallDialogTitle)),
           ],
@@ -98,7 +107,11 @@ class _PwaInstallPromptState extends State<PwaInstallPrompt> {
     );
   }
 
-  Widget _buildInstructionStep(BuildContext context, String number, String text) {
+  Widget _buildInstructionStep(
+    BuildContext context,
+    String number,
+    String text,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -122,10 +135,7 @@ class _PwaInstallPromptState extends State<PwaInstallPrompt> {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            text,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
+          child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
         ),
       ],
     );
@@ -155,7 +165,7 @@ class _PwaInstallPromptState extends State<PwaInstallPrompt> {
   Widget _buildBanner() {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -172,11 +182,7 @@ class _PwaInstallPromptState extends State<PwaInstallPrompt> {
         top: false,
         child: Row(
           children: [
-            Icon(
-              Icons.get_app,
-              color: theme.colorScheme.primary,
-              size: 24,
-            ),
+            Icon(Icons.get_app, color: theme.colorScheme.primary, size: 24),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

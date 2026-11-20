@@ -72,7 +72,8 @@ class SpotTrainingPlanService extends ChangeNotifier {
 
     final trimmed = comment?.trim();
     final commentOut = (trimmed == null || trimmed.isEmpty) ? null : trimmed;
-    if (commentOut != null && commentOut.length > SpotTrainingPlan.maxCommentLength) {
+    if (commentOut != null &&
+        commentOut.length > SpotTrainingPlan.maxCommentLength) {
       _error = 'Comment is too long';
       notifyListeners();
       return false;
@@ -165,7 +166,10 @@ class SpotTrainingPlanService extends ChangeNotifier {
     try {
       final snap = await _col
           .where('userId', isEqualTo: userId)
-          .where('plannedEndAt', isGreaterThanOrEqualTo: Timestamp.fromDate(now))
+          .where(
+            'plannedEndAt',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(now),
+          )
           .orderBy('plannedEndAt', descending: false)
           .limit(_queryLimit)
           .get();
@@ -190,7 +194,10 @@ class SpotTrainingPlanService extends ChangeNotifier {
       final snap = await _col
           .where('spotId', isEqualTo: spotId)
           .where('userId', isEqualTo: userId)
-          .where('plannedEndAt', isGreaterThanOrEqualTo: Timestamp.fromDate(now))
+          .where(
+            'plannedEndAt',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(now),
+          )
           .orderBy('plannedEndAt', descending: true)
           .limit(_queryLimit)
           .get();
@@ -266,8 +273,9 @@ class SpotTrainingPlanService extends ChangeNotifier {
             .snapshots()
             .listen((snap) {
               final nowInner = DateTime.now();
-              final raw =
-                  snap.docs.map(SpotTrainingPlan.fromFirestore).toList();
+              final raw = snap.docs
+                  .map(SpotTrainingPlan.fromFirestore)
+                  .toList();
               controller.add(_dedupePublicByUserNewestStart(raw, nowInner));
             }, onError: controller.addError);
       }
@@ -308,8 +316,9 @@ class SpotTrainingPlanService extends ChangeNotifier {
                 controller.add(null);
                 return;
               }
-              final candidates =
-                  snap.docs.map(SpotTrainingPlan.fromFirestore).toList();
+              final candidates = snap.docs
+                  .map(SpotTrainingPlan.fromFirestore)
+                  .toList();
               SpotTrainingPlan? best;
               for (final p in candidates) {
                 if (!p.isUpcomingAt(nowInner)) continue;

@@ -100,7 +100,9 @@ Future<void> _openAppLink(String url) async {
     }
 
     if (_isParkourSpotHost(uri.host) ||
-        (kIsWeb && browserHostname() != null && uri.host == browserHostname())) {
+        (kIsWeb &&
+            browserHostname() != null &&
+            uri.host == browserHostname())) {
       if (isNonAppLinkPath(uri.path)) {
         await _openNonAppLink(uri);
         return;
@@ -243,8 +245,8 @@ const _authEmulatorPort = 9099;
 /// Web / desktop / iOS simulator: localhost. Android emulator: host loopback.
 String _emulatorHost() =>
     (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
-        ? '10.0.2.2'
-        : '127.0.0.1';
+    ? '10.0.2.2'
+    : '127.0.0.1';
 
 /// Connect Firebase services to local emulators
 Future<void> _connectToEmulators() async {
@@ -613,8 +615,7 @@ class _EagerWebPushInitState extends State<_EagerWebPushInit> {
   @override
   void initState() {
     super.initState();
-    final supported =
-        kIsWeb || defaultTargetPlatform == TargetPlatform.android;
+    final supported = kIsWeb || defaultTargetPlatform == TargetPlatform.android;
     if (supported) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;

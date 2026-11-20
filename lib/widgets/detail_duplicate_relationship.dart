@@ -102,7 +102,9 @@ class DetailDuplicateOfCallout extends StatelessWidget {
               const SizedBox(height: 14),
               Material(
                 color: colors.surface.withValues(alpha: 0.72),
-                borderRadius: BorderRadius.circular(SpotDetailUi.surfaceRadius - 2),
+                borderRadius: BorderRadius.circular(
+                  SpotDetailUi.surfaceRadius - 2,
+                ),
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   onTap: canOpen ? onOpenOriginal : null,
@@ -182,18 +184,17 @@ class DetailLinkedDuplicatesSection extends StatelessWidget {
           else ...[
             ListTile(
               leading: Icon(Icons.copy_all, color: accent),
-              title: Text(
-                heading,
-                style: theme.textTheme.titleSmall,
-              ),
+              title: Text(heading, style: theme.textTheme.titleSmall),
               contentPadding: EdgeInsets.zero,
               dense: true,
             ),
-            ...items.map((item) => _DuplicateSourceRow(
-                  item: item,
-                  accent: accent,
-                  onOpenItem: onOpenItem,
-                )),
+            ...items.map(
+              (item) => _DuplicateSourceRow(
+                item: item,
+                accent: accent,
+                onOpenItem: onOpenItem,
+              ),
+            ),
           ],
         ],
       ),
@@ -221,15 +222,8 @@ class _DuplicateSourceRow extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.only(left: 48),
         child: ListTile(
-          leading: Icon(
-            Icons.arrow_right,
-            size: 16,
-            color: accent,
-          ),
-          title: Text(
-            item.title,
-            style: TextStyle(color: accent),
-          ),
+          leading: Icon(Icons.arrow_right, size: 16, color: accent),
+          title: Text(item.title, style: TextStyle(color: accent)),
           subtitle: subtitle != null && subtitle.isNotEmpty
               ? Text(
                   subtitle,
@@ -240,11 +234,7 @@ class _DuplicateSourceRow extends StatelessWidget {
                 )
               : null,
           contentPadding: EdgeInsets.zero,
-          trailing: Icon(
-            Icons.open_in_new,
-            size: 16,
-            color: accent,
-          ),
+          trailing: Icon(Icons.open_in_new, size: 16, color: accent),
         ),
       ),
     );

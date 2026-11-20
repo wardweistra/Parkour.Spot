@@ -154,10 +154,12 @@ class SpotCheckInService extends ChangeNotifier {
       };
       if (consumeId != null && consumedPlan != null) {
         payload['convertedFromTrainingPlanId'] = consumeId;
-        payload['convertedPlanPlannedStartAt'] =
-            Timestamp.fromDate(consumedPlan.plannedStartAt);
-        payload['convertedPlanPlannedEndAt'] =
-            Timestamp.fromDate(consumedPlan.plannedEndAt);
+        payload['convertedPlanPlannedStartAt'] = Timestamp.fromDate(
+          consumedPlan.plannedStartAt,
+        );
+        payload['convertedPlanPlannedEndAt'] = Timestamp.fromDate(
+          consumedPlan.plannedEndAt,
+        );
         final planComment = consumedPlan.comment?.trim();
         if (planComment != null && planComment.isNotEmpty) {
           payload['convertedPlanComment'] = planComment;
@@ -388,8 +390,9 @@ class SpotCheckInService extends ChangeNotifier {
   /// existing check-in owned by the current user.
   Future<bool> endCheckInNow(SpotCheckIn c) async {
     final now = DateTime.now();
-    final end =
-        now.isAfter(c.checkedInAt) ? now : c.checkedInAt.add(const Duration(seconds: 1));
+    final end = now.isAfter(c.checkedInAt)
+        ? now
+        : c.checkedInAt.add(const Duration(seconds: 1));
     return updateCheckIn(
       c.id,
       checkedInAt: c.checkedInAt,
@@ -504,13 +507,13 @@ class SpotCheckInService extends ChangeNotifier {
                 controller.add(null);
                 return;
               }
-              final candidates =
-                  snap.docs.map(SpotCheckIn.fromFirestore).toList();
+              final candidates = snap.docs
+                  .map(SpotCheckIn.fromFirestore)
+                  .toList();
               SpotCheckIn? best;
               for (final c in candidates) {
                 if (!c.isActiveAt(nowInner)) continue;
-                if (best == null ||
-                    c.checkedInAt.isAfter(best.checkedInAt)) {
+                if (best == null || c.checkedInAt.isAfter(best.checkedInAt)) {
                   best = c;
                 }
               }

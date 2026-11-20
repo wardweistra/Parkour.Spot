@@ -28,6 +28,7 @@ class SpotLocationSection extends StatefulWidget {
   final bool showSelectedPin;
   final bool showLocationDetails;
   final List<Spot> linkedSpots;
+
   /// When true, covers the map with a [PointerInterceptor] so platform-view
   /// links (e.g. Google Maps "Keyboard shortcuts") cannot receive clicks while
   /// a Flutter dialog/picker is open above the map on web.
@@ -135,11 +136,8 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final title =
-        widget.sectionTitle ?? l10n.addSpotLocationSectionTitle;
-    final showTitle = widget.embedded
-        ? widget.sectionTitle != null
-        : true;
+    final title = widget.sectionTitle ?? l10n.addSpotLocationSectionTitle;
+    final showTitle = widget.embedded ? widget.sectionTitle != null : true;
 
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,198 +169,206 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
           const SizedBox(height: 12),
         ],
         if (widget.isGettingLocation)
-              Row(
-                children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(width: 12),
-                  Text(l10n.addSpotGettingLocation),
-                ],
-              )
-            else if (widget.currentLocation == null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.error.withValues(alpha: 0.2),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.location_off,
-                      color: Theme.of(context).colorScheme.error,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      l10n.addSpotLocationNotAvailable,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
+          Row(
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(width: 12),
+              Text(l10n.addSpotGettingLocation),
             ],
-
-            if (widget.currentLocation != null) ...[
-              const SizedBox(height: 16),
-              Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-                  ),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Stack(
-                  children: [
-                    GoogleMap(
-                      initialCameraPosition: CameraPosition(
-                        target: widget.currentLocation!,
-                        zoom: 16,
-                      ),
-                      mapType: widget.isSatelliteView ? MapType.hybrid : MapType.normal,
-                      onMapCreated: widget.onMapCreated,
-                      markers: _buildMarkers(),
-                      zoomControlsEnabled: false,
-                      myLocationButtonEnabled: false,
-                      mapToolbarEnabled: false,
-                      liteModeEnabled: kIsWeb,
-                      compassEnabled: false,
-                      zoomGesturesEnabled: false,
-                      scrollGesturesEnabled: false,
-                      tiltGesturesEnabled: false,
-                      rotateGesturesEnabled: false,
-                      onTap: widget.blockMapPointers
-                          ? null
-                          : (_) => widget.onPickOnMap(),
-                    ),
-                    // Pick Location hint
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: PointerInterceptor(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.7),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                MobileDetectionService.isMobileDevice
-                                    ? Icons.phone_android
-                                    : Icons.touch_app,
-                                color: Colors.white,
-                                size: 14,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                widget.pickOnMapHint ?? l10n.addSpotPickLocationHint,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Map Type Toggle Button - Floating Action Button
-                    Positioned(
-                      bottom: 88,
-                      right: 10,
-                      child: PointerInterceptor(
-                        child: FloatingActionButton(
-                          onPressed: widget.blockMapPointers
-                              ? null
-                              : () {
-                                  widget.onToggleSatellite(!widget.isSatelliteView);
-                                },
-                          heroTag: '${widget.mapHeroTagPrefix}_mapTypeToggleFab',
-                          mini: true,
-                          tooltip: widget.isSatelliteView
-                              ? l10n.exploreSwitchToMap
-                              : l10n.exploreSwitchToSatellite,
-                          child: Icon(
-                            widget.isSatelliteView ? Icons.map : Icons.terrain,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Center on my location button - Floating Action Button
-                    Positioned(
-                      bottom: 24,
-                      right: 10,
-                      child: PointerInterceptor(
-                        child: FloatingActionButton(
-                          onPressed: widget.blockMapPointers || widget.isGettingLocation
-                              ? null
-                              : widget.onRefreshLocation,
-                          heroTag: '${widget.mapHeroTagPrefix}_currentLocationFab',
-                          mini: true,
-                          tooltip: widget.isLocationPermissionDenied
-                              ? l10n.exploreLocationPermissionDenied
-                              : l10n.exploreCenterOnMyLocation,
-                          child: widget.isGettingLocation
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
-                              : Icon(widget.isLocationPermissionDenied 
-                                  ? Icons.location_disabled 
-                                  : Icons.my_location),
-                        ),
-                      ),
-                    ),
-                    // Must be last so it covers map HTML links and map FABs while
-                    // Flutter dialogs/pickers are open above this platform view.
-                    if (widget.blockMapPointers)
-                      Positioned.fill(
-                        child: PointerInterceptor(
-                          child: const SizedBox.expand(),
-                        ),
-                      ),
-                  ],
-                ),
+          )
+        else if (widget.currentLocation == null) ...[
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.errorContainer.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Theme.of(
+                  context,
+                ).colorScheme.error.withValues(alpha: 0.2),
+                width: 1,
               ),
-              if (widget.showLocationDetails) ...[
-                const SizedBox(height: 16),
-                LocationInfoBox(
-                  latitude: widget.currentLocation!.latitude,
-                  longitude: widget.currentLocation!.longitude,
-                  address: widget.address,
-                  countryCode: widget.countryCode,
-                  isGeocoding: widget.isGeocoding,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.location_off,
+                  color: Theme.of(context).colorScheme.error,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.addSpotLocationNotAvailable,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
                 ),
               ],
-            ],
+            ),
+          ),
+        ],
+
+        if (widget.currentLocation != null) ...[
+          const SizedBox(height: 16),
+          Container(
+            height: 200,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.3),
+              ),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              children: [
+                GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: widget.currentLocation!,
+                    zoom: 16,
+                  ),
+                  mapType: widget.isSatelliteView
+                      ? MapType.hybrid
+                      : MapType.normal,
+                  onMapCreated: widget.onMapCreated,
+                  markers: _buildMarkers(),
+                  zoomControlsEnabled: false,
+                  myLocationButtonEnabled: false,
+                  mapToolbarEnabled: false,
+                  liteModeEnabled: kIsWeb,
+                  compassEnabled: false,
+                  zoomGesturesEnabled: false,
+                  scrollGesturesEnabled: false,
+                  tiltGesturesEnabled: false,
+                  rotateGesturesEnabled: false,
+                  onTap: widget.blockMapPointers
+                      ? null
+                      : (_) => widget.onPickOnMap(),
+                ),
+                // Pick Location hint
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: PointerInterceptor(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            MobileDetectionService.isMobileDevice
+                                ? Icons.phone_android
+                                : Icons.touch_app,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            widget.pickOnMapHint ??
+                                l10n.addSpotPickLocationHint,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Map Type Toggle Button - Floating Action Button
+                Positioned(
+                  bottom: 88,
+                  right: 10,
+                  child: PointerInterceptor(
+                    child: FloatingActionButton(
+                      onPressed: widget.blockMapPointers
+                          ? null
+                          : () {
+                              widget.onToggleSatellite(!widget.isSatelliteView);
+                            },
+                      heroTag: '${widget.mapHeroTagPrefix}_mapTypeToggleFab',
+                      mini: true,
+                      tooltip: widget.isSatelliteView
+                          ? l10n.exploreSwitchToMap
+                          : l10n.exploreSwitchToSatellite,
+                      child: Icon(
+                        widget.isSatelliteView ? Icons.map : Icons.terrain,
+                      ),
+                    ),
+                  ),
+                ),
+                // Center on my location button - Floating Action Button
+                Positioned(
+                  bottom: 24,
+                  right: 10,
+                  child: PointerInterceptor(
+                    child: FloatingActionButton(
+                      onPressed:
+                          widget.blockMapPointers || widget.isGettingLocation
+                          ? null
+                          : widget.onRefreshLocation,
+                      heroTag: '${widget.mapHeroTagPrefix}_currentLocationFab',
+                      mini: true,
+                      tooltip: widget.isLocationPermissionDenied
+                          ? l10n.exploreLocationPermissionDenied
+                          : l10n.exploreCenterOnMyLocation,
+                      child: widget.isGettingLocation
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : Icon(
+                              widget.isLocationPermissionDenied
+                                  ? Icons.location_disabled
+                                  : Icons.my_location,
+                            ),
+                    ),
+                  ),
+                ),
+                // Must be last so it covers map HTML links and map FABs while
+                // Flutter dialogs/pickers are open above this platform view.
+                if (widget.blockMapPointers)
+                  Positioned.fill(
+                    child: PointerInterceptor(child: const SizedBox.expand()),
+                  ),
+              ],
+            ),
+          ),
+          if (widget.showLocationDetails) ...[
+            const SizedBox(height: 16),
+            LocationInfoBox(
+              latitude: widget.currentLocation!.latitude,
+              longitude: widget.currentLocation!.longitude,
+              address: widget.address,
+              countryCode: widget.countryCode,
+              isGeocoding: widget.isGeocoding,
+            ),
+          ],
+        ],
       ],
     );
 
     if (widget.embedded) return content;
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: content,
-      ),
+      child: Padding(padding: const EdgeInsets.all(16.0), child: content),
     );
   }
 }
-

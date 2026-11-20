@@ -1,5 +1,6 @@
 import 'auth_emulator_origin_stub.dart'
-    if (dart.library.js_interop) 'auth_emulator_origin_web.dart' as impl;
+    if (dart.library.js_interop) 'auth_emulator_origin_web.dart'
+    as impl;
 
 /// Pre-registers the Auth emulator origin for the web Auth plugin.
 ///

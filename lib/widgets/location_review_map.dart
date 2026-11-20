@@ -130,10 +130,10 @@ class _LocationReviewMapState extends State<LocationReviewMap> {
     final markers = <Marker>{};
     final currentPins = _currentPins;
     final suggestedPins = _suggestedPins;
-    final showCurrent = currentPins.isNotEmpty &&
-        (_isComparison || suggestedPins.isEmpty);
-    final showSuggested = suggestedPins.isNotEmpty &&
-        (_isComparison || currentPins.isEmpty);
+    final showCurrent =
+        currentPins.isNotEmpty && (_isComparison || suggestedPins.isEmpty);
+    final showSuggested =
+        suggestedPins.isNotEmpty && (_isComparison || currentPins.isEmpty);
 
     if (showCurrent) {
       for (var i = 0; i < currentPins.length; i++) {
@@ -142,9 +142,7 @@ class _LocationReviewMapState extends State<LocationReviewMap> {
             markerId: MarkerId('current_$i'),
             position: currentPins[i],
             infoWindow: InfoWindow(
-              title: currentPins.length == 1
-                  ? 'Current'
-                  : 'Current ${i + 1}',
+              title: currentPins.length == 1 ? 'Current' : 'Current ${i + 1}',
               snippet: 'Existing location',
             ),
             icon: _currentPinIcon ?? BitmapDescriptor.defaultMarker,
@@ -223,10 +221,10 @@ class _LocationReviewMapState extends State<LocationReviewMap> {
                   heroTag:
                       'locationReviewMapType_${_cameraTarget.latitude}_${_cameraTarget.longitude}',
                   mini: true,
-                  tooltip: _isSatelliteView ? 'Switch to Map' : 'Switch to Hybrid',
-                  child: Icon(
-                    _isSatelliteView ? Icons.map : Icons.terrain,
-                  ),
+                  tooltip: _isSatelliteView
+                      ? 'Switch to Map'
+                      : 'Switch to Hybrid',
+                  child: Icon(_isSatelliteView ? Icons.map : Icons.terrain),
                 ),
               ),
             if (_isComparison)

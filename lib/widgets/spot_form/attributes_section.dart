@@ -28,7 +28,9 @@ class SpotAttributesSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+        color: Theme.of(
+          context,
+        ).colorScheme.primaryContainer.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
@@ -108,55 +110,65 @@ class SpotAttributesSection extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: SpotAttributes.getKeys('goodFor').map((key) {
-                  final label = SpotAttributes.getLabel('goodFor', key);
-                  final icon = SpotAttributes.getIcon('goodFor', key);
-                  final description = SpotAttributes.getDescription('goodFor', key);
-                  final selected = selectedGoodFor.contains(key);
-                  return Tooltip(
-                    message: description,
-                    child: GestureDetector(
-                      onTap: () => onToggleGoodFor(key, !selected),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: selected 
-                              ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
-                              : Theme.of(context).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: selected 
-                                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
-                                : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              icon, 
-                              size: 16, 
-                              color: selected 
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              label,
-                              style: TextStyle(
-                                color: selected 
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                fontWeight: FontWeight.normal,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+        final label = SpotAttributes.getLabel('goodFor', key);
+        final icon = SpotAttributes.getIcon('goodFor', key);
+        final description = SpotAttributes.getDescription('goodFor', key);
+        final selected = selectedGoodFor.contains(key);
+        return Tooltip(
+          message: description,
+          child: GestureDetector(
+            onTap: () => onToggleGoodFor(key, !selected),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: selected
+                    ? Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer.withValues(alpha: 0.3)
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: selected
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.5)
+                      : Theme.of(
+                          context,
+                        ).colorScheme.outline.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 16,
+                    color: selected
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: selected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.6),
+                      fontWeight: FontWeight.normal,
+                      fontSize: 14,
                     ),
-                  );
-                }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
 
     return Card(
@@ -173,14 +185,14 @@ class SpotAttributesSection extends StatelessWidget {
             Text(
               l10n.addSpotGoodForSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 12),
             if (isWide)
-              Expanded(
-                child: SingleChildScrollView(child: wrapContent),
-              )
+              Expanded(child: SingleChildScrollView(child: wrapContent))
             else
               wrapContent,
             if (!isWide) ...[
@@ -199,55 +211,65 @@ class SpotAttributesSection extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: SpotAttributes.getKeys('features').map((key) {
-                  final label = SpotAttributes.getLabel('features', key);
-                  final icon = SpotAttributes.getIcon('features', key);
-                  final description = SpotAttributes.getDescription('features', key);
-                  final selected = selectedFeatures.contains(key);
-                  return Tooltip(
-                    message: description,
-                    child: GestureDetector(
-                      onTap: () => onToggleFeature(key, !selected),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: selected 
-                              ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
-                              : Theme.of(context).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: selected 
-                                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
-                                : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              icon, 
-                              size: 16, 
-                              color: selected 
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              label,
-                              style: TextStyle(
-                                color: selected 
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                fontWeight: FontWeight.normal,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+        final label = SpotAttributes.getLabel('features', key);
+        final icon = SpotAttributes.getIcon('features', key);
+        final description = SpotAttributes.getDescription('features', key);
+        final selected = selectedFeatures.contains(key);
+        return Tooltip(
+          message: description,
+          child: GestureDetector(
+            onTap: () => onToggleFeature(key, !selected),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: selected
+                    ? Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer.withValues(alpha: 0.3)
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: selected
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.5)
+                      : Theme.of(
+                          context,
+                        ).colorScheme.outline.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 16,
+                    color: selected
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: selected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.6),
+                      fontWeight: FontWeight.normal,
+                      fontSize: 14,
                     ),
-                  );
-                }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
 
     return Card(
@@ -264,14 +286,14 @@ class SpotAttributesSection extends StatelessWidget {
             Text(
               l10n.addSpotFeaturesSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 12),
             if (isWide)
-              Expanded(
-                child: SingleChildScrollView(child: wrapContent),
-              )
+              Expanded(child: SingleChildScrollView(child: wrapContent))
             else
               wrapContent,
             if (!isWide) ...[
@@ -301,8 +323,10 @@ class SpotAttributesSection extends StatelessWidget {
             Text(
               l10n.addSpotAccessSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -311,13 +335,16 @@ class SpotAttributesSection extends StatelessWidget {
               children: keys.map((key) {
                 final label = SpotAttributes.getLabel('access', key);
                 final icon = SpotAttributes.getIcon('access', key);
-                final description = SpotAttributes.getDescription('access', key);
+                final description = SpotAttributes.getDescription(
+                  'access',
+                  key,
+                );
                 final selected = selectedAccess == key;
-                
+
                 // Use same colors as Spot Detail Screen
                 Color backgroundColor;
                 Color textColor;
-                
+
                 if (selected) {
                   switch (key) {
                     case 'public':
@@ -333,20 +360,29 @@ class SpotAttributesSection extends StatelessWidget {
                       textColor = Colors.blue.shade700;
                       break;
                     default:
-                      backgroundColor = Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3);
+                      backgroundColor = Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer.withValues(alpha: 0.3);
                       textColor = Theme.of(context).colorScheme.primary;
                   }
                 } else {
-                  backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
-                  textColor = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
+                  backgroundColor = Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest;
+                  textColor = Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6);
                 }
-                
+
                 return Tooltip(
                   message: description,
                   child: GestureDetector(
                     onTap: () => onAccessChanged(selected ? null : key),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: backgroundColor,
                         borderRadius: BorderRadius.circular(20),
@@ -358,11 +394,7 @@ class SpotAttributesSection extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            icon, 
-                            size: 16, 
-                            color: textColor,
-                          ),
+                          Icon(icon, size: 16, color: textColor),
                           const SizedBox(width: 6),
                           Text(
                             label,
@@ -386,7 +418,7 @@ class SpotAttributesSection extends StatelessWidget {
                   // Use same colors as Spot Detail Screen for description container
                   Color backgroundColor;
                   Color textColor;
-                  
+
                   switch (selectedAccess!) {
                     case 'public':
                       backgroundColor = Colors.green.withValues(alpha: 0.1);
@@ -401,10 +433,12 @@ class SpotAttributesSection extends StatelessWidget {
                       textColor = Colors.blue.shade700;
                       break;
                     default:
-                      backgroundColor = Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1);
+                      backgroundColor = Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer.withValues(alpha: 0.1);
                       textColor = Theme.of(context).colorScheme.primary;
                   }
-                  
+
                   return Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -425,10 +459,13 @@ class SpotAttributesSection extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            SpotAttributes.getDescription('access', selectedAccess!),
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: textColor,
+                            SpotAttributes.getDescription(
+                              'access',
+                              selectedAccess!,
                             ),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(color: textColor),
                           ),
                         ),
                       ],
@@ -450,70 +487,76 @@ class SpotAttributesSection extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: entries.keys.map((key) {
-                  final label = SpotAttributes.getLabel('facilities', key);
-                  final icon = SpotAttributes.getIcon('facilities', key);
-                  final description = SpotAttributes.getDescription('facilities', key);
-                  final current = selectedFacilities[key] ?? 'unknown';
-                  
-                  Color backgroundColor;
-                  Color textColor;
-                  IconData statusIcon;
-                  
-                  // Set colors and status icon based on status
-                  if (current == 'yes') {
-                    backgroundColor = Colors.green.withValues(alpha: 0.1);
-                    textColor = Colors.green.shade700;
-                    statusIcon = Icons.check;
-                  } else if (current == 'no') {
-                    backgroundColor = Colors.red.withValues(alpha: 0.1);
-                    textColor = Colors.red.shade700;
-                    statusIcon = Icons.close;
-                  } else {
-                    backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
-                    textColor = Theme.of(context).colorScheme.onSurface;
-                    statusIcon = Icons.help_outline;
-                  }
-                  
-                  return Tooltip(
-                    message: description,
-                    child: GestureDetector(
-                      onTap: () {
-                        final next = current == 'yes' ? 'no' : current == 'no' ? 'unknown' : 'yes';
-                        onFacilityChanged(key, next);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: backgroundColor,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: textColor.withValues(alpha: 0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(icon, size: 16, color: textColor),
-                            const SizedBox(width: 6),
-                            Text(
-                              label,
-                              style: TextStyle(
-                                color: textColor,
-                                fontWeight: FontWeight.normal,
-                                fontSize: 14,
-                              ),
-                            ),
-                            if (current != 'unknown') ...[
-                              const SizedBox(width: 4),
-                              Icon(statusIcon, size: 14, color: textColor),
-                            ],
-                          ],
-                        ),
-                      ),
+        final label = SpotAttributes.getLabel('facilities', key);
+        final icon = SpotAttributes.getIcon('facilities', key);
+        final description = SpotAttributes.getDescription('facilities', key);
+        final current = selectedFacilities[key] ?? 'unknown';
+
+        Color backgroundColor;
+        Color textColor;
+        IconData statusIcon;
+
+        // Set colors and status icon based on status
+        if (current == 'yes') {
+          backgroundColor = Colors.green.withValues(alpha: 0.1);
+          textColor = Colors.green.shade700;
+          statusIcon = Icons.check;
+        } else if (current == 'no') {
+          backgroundColor = Colors.red.withValues(alpha: 0.1);
+          textColor = Colors.red.shade700;
+          statusIcon = Icons.close;
+        } else {
+          backgroundColor = Theme.of(
+            context,
+          ).colorScheme.surfaceContainerHighest;
+          textColor = Theme.of(context).colorScheme.onSurface;
+          statusIcon = Icons.help_outline;
+        }
+
+        return Tooltip(
+          message: description,
+          child: GestureDetector(
+            onTap: () {
+              final next = current == 'yes'
+                  ? 'no'
+                  : current == 'no'
+                  ? 'unknown'
+                  : 'yes';
+              onFacilityChanged(key, next);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: textColor.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 16, color: textColor),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: textColor,
+                      fontWeight: FontWeight.normal,
+                      fontSize: 14,
                     ),
-                  );
-                }).toList(),
+                  ),
+                  if (current != 'unknown') ...[
+                    const SizedBox(width: 4),
+                    Icon(statusIcon, size: 14, color: textColor),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
 
     return Card(
@@ -530,14 +573,14 @@ class SpotAttributesSection extends StatelessWidget {
             Text(
               l10n.addSpotFacilitiesSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
             ),
             const SizedBox(height: 12),
             if (isWide)
-              Expanded(
-                child: SingleChildScrollView(child: wrapContent),
-              )
+              Expanded(child: SingleChildScrollView(child: wrapContent))
             else
               wrapContent,
             if (!isWide) ...[

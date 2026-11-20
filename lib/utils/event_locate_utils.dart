@@ -118,7 +118,8 @@ EventMapPin? pickRepresentativePinForLocate(List<EventMapPin> pins) {
 /// eligible linked spot / expandable spot list.
 Future<EventMapPin?> resolveEventMapPinForLocate({
   required ParkourEvent event,
-  required Future<List<EventMapPin>> Function(String eventId) getMapPinsForEvent,
+  required Future<List<EventMapPin>> Function(String eventId)
+  getMapPinsForEvent,
   required Future<Spot?> Function({
     required List<String> spotIds,
     required List<String> spotListIds,
@@ -154,7 +155,8 @@ Future<EventMapPin?> resolveEventMapPinForLocate({
 Future<EventLocateTarget?> resolveEventLocateTarget({
   required ParkourEvent event,
   FirebaseFirestore? firestore,
-  required Future<List<EventMapPin>> Function(String eventId) getMapPinsForEvent,
+  required Future<List<EventMapPin>> Function(String eventId)
+  getMapPinsForEvent,
   required Future<Spot?> Function({
     required List<String> spotIds,
     required List<String> spotListIds,
@@ -234,7 +236,8 @@ Future<List<EventMapPin>> resolveEventDetailMapPinsForSpotList({
 Future<List<EventMapPin>> resolveEventDetailMapPins({
   required ParkourEvent event,
   FirebaseFirestore? firestore,
-  required Future<List<EventMapPin>> Function(String eventId) getMapPinsForEvent,
+  required Future<List<EventMapPin>> Function(String eventId)
+  getMapPinsForEvent,
   Future<List<Spot>> Function({
     required List<String> spotIds,
     required List<String> spotListIds,

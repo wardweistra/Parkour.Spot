@@ -14,7 +14,7 @@ class WebAnalytics {
       return;
     }
     _initialized = true;
-    
+
     if (!_hasGtag) {
       return;
     }
@@ -31,7 +31,7 @@ class WebAnalytics {
     final pagePath = path ?? _pathname;
     // Construct page_location from the path if provided, otherwise use current href
     // This ensures page_location matches page_path
-    final pageLocation = path != null 
+    final pageLocation = path != null
         ? '${web.window.location.origin}$path'
         : _href;
 
@@ -81,13 +81,17 @@ class WebAnalytics {
       if (a2 == null) {
         // Call gtag using eval (WASM-compatible)
         // Wrap in IIFE that returns true to avoid null/undefined type errors in dev mode
-        final code = '(function() { window.gtag("$command", "$a1"); return true; })()'.toJS;
+        final code =
+            '(function() { window.gtag("$command", "$a1"); return true; })()'
+                .toJS;
         _eval(code);
       } else {
         // Convert params to JSON and call gtag
         // Wrap in IIFE that returns true to avoid null/undefined type errors in dev mode
         final jsonParams = _mapToJson(a2);
-        final code = '(function() { window.gtag("$command", "$a1", $jsonParams); return true; })()'.toJS;
+        final code =
+            '(function() { window.gtag("$command", "$a1", $jsonParams); return true; })()'
+                .toJS;
         _eval(code);
       }
     } catch (e) {
@@ -119,5 +123,3 @@ class WebAnalytics {
     return buffer.toString();
   }
 }
-
-

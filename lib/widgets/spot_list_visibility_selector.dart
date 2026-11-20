@@ -58,10 +58,7 @@ class SpotListVisibilitySelector extends StatelessWidget {
                 excluding: visibility != value,
                 child: Opacity(
                   opacity: visibility == value ? 1 : 0,
-                  child: Text(
-                    visibility.localizedHelp(l10n),
-                    style: helpStyle,
-                  ),
+                  child: Text(visibility.localizedHelp(l10n), style: helpStyle),
                 ),
               ),
           ],

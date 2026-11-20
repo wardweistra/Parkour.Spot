@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
 
 import 'mobile_detection_service_web_impl.dart'
-    if (dart.library.js_interop) 'mobile_detection_service_web.dart' as web_impl;
+    if (dart.library.js_interop) 'mobile_detection_service_web.dart'
+    as web_impl;
 
 class MobileDetectionService {
   /// Mobile / tablet browser user agent (web only).

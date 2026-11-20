@@ -5,7 +5,7 @@ import 'emoji_text.dart';
 import 'system_back_handler.dart';
 
 /// A reusable scaffold widget that provides consistent layout across pages.
-/// 
+///
 /// Features:
 /// - Consistent AppBar with back button
 /// - Consistent max width (1200px)
@@ -15,28 +15,28 @@ import 'system_back_handler.dart';
 class PageScaffold extends StatelessWidget {
   /// The title to display in the AppBar
   final String? title;
-  
+
   /// Optional actions to display in the AppBar
   final List<Widget>? actions;
-  
+
   /// The body content of the page
   final Widget body;
-  
+
   /// Whether to show the back button (default: true)
   final bool showBackButton;
-  
+
   /// Custom back button action (default: navigates back)
   final VoidCallback? onBack;
-  
+
   /// Whether the body should be scrollable (default: true)
   final bool scrollable;
-  
+
   /// Custom padding for the body (default: EdgeInsets.all(16.0))
   final EdgeInsets? padding;
-  
+
   /// Whether to center the content (default: true)
   final bool centerContent;
-  
+
   /// Maximum width constraint (default: 1200)
   final double maxWidth;
 
@@ -116,11 +116,8 @@ class PageScaffold extends StatelessWidget {
             ),
           )
         : null;
-    
-    Widget content = Padding(
-      padding: effectivePadding,
-      child: body,
-    );
+
+    Widget content = Padding(padding: effectivePadding, child: body);
 
     // Apply max width constraint
     if (centerContent) {
@@ -137,28 +134,20 @@ class PageScaffold extends StatelessWidget {
             ? Center(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: maxWidth),
-                  child: Padding(
-                    padding: effectivePadding,
-                    child: body,
-                  ),
+                  child: Padding(padding: effectivePadding, child: body),
                 ),
               )
             : content,
       );
     } else if (centerContent) {
       // For non-scrollable content, wrap in Center
-      content = Center(
-        child: content,
-      );
+      content = Center(child: content);
     }
 
     return SystemBackHandler(
       enabled: showBackButton && handleSystemBack,
       onBack: effectiveOnBack,
-      child: Scaffold(
-        appBar: appBar,
-        body: content,
-      ),
+      child: Scaffold(appBar: appBar, body: content),
     );
   }
 }

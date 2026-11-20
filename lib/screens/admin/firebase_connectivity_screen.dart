@@ -176,8 +176,10 @@ class _FirebaseConnectivityScreenState
       'signInProvider': result.signInProvider ?? '(null)',
     };
     if (expiration != null) {
-      details['expiresInSeconds'] =
-          expiration.difference(now).inSeconds.toString();
+      details['expiresInSeconds'] = expiration
+          .difference(now)
+          .inSeconds
+          .toString();
     }
     return details;
   }
@@ -228,13 +230,15 @@ class _FirebaseConnectivityScreenState
       final callable = FirebaseFunctions.instanceFor(
         region: 'europe-west1',
       ).httpsCallable('getTopSpotsInBounds');
-      final result = await callable.call(<String, dynamic>{
-        'minLat': _pingMinLat,
-        'maxLat': _pingMaxLat,
-        'minLng': _pingMinLng,
-        'maxLng': _pingMaxLng,
-        'limit': 1,
-      }).timeout(_probeTimeout);
+      final result = await callable
+          .call(<String, dynamic>{
+            'minLat': _pingMinLat,
+            'maxLat': _pingMaxLat,
+            'minLng': _pingMinLng,
+            'maxLng': _pingMaxLng,
+            'limit': 1,
+          })
+          .timeout(_probeTimeout);
       sw.stop();
       final raw = result.data;
       final data = raw is Map ? Map<String, dynamic>.from(raw) : null;
@@ -281,9 +285,9 @@ class _FirebaseConnectivityScreenState
   Future<FirebaseConnectivityProbeResult> _probeAppCheck() async {
     final sw = Stopwatch()..start();
     try {
-      final token = await FirebaseAppCheck.instance
-          .getToken()
-          .timeout(_probeTimeout);
+      final token = await FirebaseAppCheck.instance.getToken().timeout(
+        _probeTimeout,
+      );
       sw.stop();
       final present = token != null && token.isNotEmpty;
       return FirebaseConnectivityProbeResult(
@@ -294,7 +298,9 @@ class _FirebaseConnectivityScreenState
           'tokenPresent': present.toString(),
           'tokenLength': present ? '${token.length}' : '0',
         },
-        error: present ? null : 'No App Check token (may be inactive in this build)',
+        error: present
+            ? null
+            : 'No App Check token (may be inactive in this build)',
       );
     } catch (e) {
       sw.stop();
@@ -379,7 +385,8 @@ class _FirebaseConnectivityScreenState
   }
 
   Future<void> _copyDiagnostics() async {
-    final text = _lastFormatted ??
+    final text =
+        _lastFormatted ??
         formatFirebaseConnectivityDiagnostics(
           snapshot: _snapshot.isEmpty ? _buildSnapshot() : _snapshot,
           probes: _probes,
@@ -505,9 +512,7 @@ class _FirebaseConnectivityScreenState
             _SectionCard(
               title: 'Probes',
               child: _probes.isEmpty
-                  ? Text(
-                      _running ? 'Running probes…' : 'No probe results yet',
-                    )
+                  ? Text(_running ? 'Running probes…' : 'No probe results yet')
                   : Column(
                       children: [
                         for (var i = 0; i < _probes.length; i++) ...[
@@ -565,9 +570,9 @@ class _InfoRow extends StatelessWidget {
             width: 160,
             child: Text(
               label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
           Expanded(

@@ -96,10 +96,7 @@ class EntityNotFoundView extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _Shrine(
-                    shrine: memorial,
-                    reduceMotion: reduceMotion,
-                  ),
+                  _Shrine(shrine: memorial, reduceMotion: reduceMotion),
                   const SizedBox(height: 20),
                   Text(
                     '404',
@@ -169,10 +166,7 @@ class EntityNotFoundView extends StatelessWidget {
                       TextButton(
                         onPressed: () => launchExternalUri(
                           context,
-                          Uri(
-                            scheme: 'mailto',
-                            path: _contactEmail,
-                          ),
+                          Uri(scheme: 'mailto', path: _contactEmail),
                         ),
                         style: TextButton.styleFrom(
                           foregroundColor: scheme.primary,
@@ -205,10 +199,7 @@ class _Shrine extends StatelessWidget {
   final NotFoundShrine shrine;
   final bool reduceMotion;
 
-  const _Shrine({
-    required this.shrine,
-    required this.reduceMotion,
-  });
+  const _Shrine({required this.shrine, required this.reduceMotion});
 
   @override
   Widget build(BuildContext context) {
@@ -222,7 +213,9 @@ class _Shrine extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(9, 9, 9, 14),
             decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(2),
+              ),
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,

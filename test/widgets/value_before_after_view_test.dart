@@ -28,10 +28,7 @@ void main() {
   ) async {
     await pump(
       tester,
-      child: const ValueBeforeAfterView(
-        before: 'Public',
-        after: 'Private',
-      ),
+      child: const ValueBeforeAfterView(before: 'Public', after: 'Private'),
     );
 
     expect(find.text('Current'), findsOneWidget);

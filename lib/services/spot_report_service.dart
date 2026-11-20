@@ -98,9 +98,11 @@ class SpotReportService {
           'suggestedSpotFeatures': suggestedSpotFeatures,
         if (suggestedSpotAccess != null && suggestedSpotAccess.isNotEmpty)
           'suggestedSpotAccess': suggestedSpotAccess,
-        if (suggestedSpotFacilities != null && suggestedSpotFacilities.isNotEmpty)
+        if (suggestedSpotFacilities != null &&
+            suggestedSpotFacilities.isNotEmpty)
           'suggestedSpotFacilities': suggestedSpotFacilities,
-        if (suggestedYoutubeVideoIds != null && suggestedYoutubeVideoIds.isNotEmpty)
+        if (suggestedYoutubeVideoIds != null &&
+            suggestedYoutubeVideoIds.isNotEmpty)
           'suggestedYoutubeVideoIds': suggestedYoutubeVideoIds,
         'status': statuses.first, // default "New"
         'createdAt': FieldValue.serverTimestamp(),
@@ -124,16 +126,21 @@ class SpotReportService {
   }) async {
     try {
       // Get the current report
-      final reportDoc = await _firestore.collection('spotReports').doc(reportId).get();
+      final reportDoc = await _firestore
+          .collection('spotReports')
+          .doc(reportId)
+          .get();
       if (!reportDoc.exists) {
         debugPrint('Report $reportId does not exist');
         return false;
       }
 
       final reportData = reportDoc.data()!;
-      final currentSuggestedUrls = (reportData['suggestedPhotoUrls'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList() ?? <String>[];
+      final currentSuggestedUrls =
+          (reportData['suggestedPhotoUrls'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          <String>[];
 
       // Remove original photos from suggestedPhotoUrls (using original URLs)
       final updatedSuggestedUrls = currentSuggestedUrls
@@ -141,14 +148,21 @@ class SpotReportService {
           .toList();
 
       // Get existing accepted URLs and add new ones
-      final currentAcceptedUrls = (reportData['acceptedPhotoUrls'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList() ?? <String>[];
-      final updatedAcceptedUrls = <String>[...currentAcceptedUrls, ...approvedPhotoUrls];
+      final currentAcceptedUrls =
+          (reportData['acceptedPhotoUrls'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          <String>[];
+      final updatedAcceptedUrls = <String>[
+        ...currentAcceptedUrls,
+        ...approvedPhotoUrls,
+      ];
 
       // Update the report
       await _firestore.collection('spotReports').doc(reportId).update({
-        'suggestedPhotoUrls': updatedSuggestedUrls.isEmpty ? FieldValue.delete() : updatedSuggestedUrls,
+        'suggestedPhotoUrls': updatedSuggestedUrls.isEmpty
+            ? FieldValue.delete()
+            : updatedSuggestedUrls,
         'acceptedPhotoUrls': updatedAcceptedUrls,
         if (moderatorNotes != null && moderatorNotes.isNotEmpty)
           'moderatorNotes': moderatorNotes,
@@ -175,7 +189,10 @@ class SpotReportService {
 
     try {
       // Get the current report to retrieve old status and spotId
-      final reportDoc = await _firestore.collection('spotReports').doc(reportId).get();
+      final reportDoc = await _firestore
+          .collection('spotReports')
+          .doc(reportId)
+          .get();
       if (!reportDoc.exists) {
         debugPrint('Report $reportId does not exist');
         return false;
@@ -220,16 +237,21 @@ class SpotReportService {
   }) async {
     try {
       // Get the current report
-      final reportDoc = await _firestore.collection('spotReports').doc(reportId).get();
+      final reportDoc = await _firestore
+          .collection('spotReports')
+          .doc(reportId)
+          .get();
       if (!reportDoc.exists) {
         debugPrint('Report $reportId does not exist');
         return false;
       }
 
       final reportData = reportDoc.data()!;
-      final currentSuggestedUrls = (reportData['suggestedPhotoUrls'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList() ?? <String>[];
+      final currentSuggestedUrls =
+          (reportData['suggestedPhotoUrls'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          <String>[];
 
       // Remove original photos from suggestedPhotoUrls (using original URLs, not new rejected URLs)
       final updatedSuggestedUrls = currentSuggestedUrls
@@ -237,14 +259,21 @@ class SpotReportService {
           .toList();
 
       // Get existing rejected URLs and add new ones
-      final currentRejectedUrls = (reportData['rejectedPhotoUrls'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList() ?? <String>[];
-      final updatedRejectedUrls = <String>[...currentRejectedUrls, ...rejectedPhotoUrls];
+      final currentRejectedUrls =
+          (reportData['rejectedPhotoUrls'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          <String>[];
+      final updatedRejectedUrls = <String>[
+        ...currentRejectedUrls,
+        ...rejectedPhotoUrls,
+      ];
 
       // Update the report
       await _firestore.collection('spotReports').doc(reportId).update({
-        'suggestedPhotoUrls': updatedSuggestedUrls.isEmpty ? FieldValue.delete() : updatedSuggestedUrls,
+        'suggestedPhotoUrls': updatedSuggestedUrls.isEmpty
+            ? FieldValue.delete()
+            : updatedSuggestedUrls,
         'rejectedPhotoUrls': updatedRejectedUrls,
         if (moderatorNotes != null && moderatorNotes.isNotEmpty)
           'moderatorNotes': moderatorNotes,
@@ -282,7 +311,10 @@ class SpotReportService {
     String? userName,
   }) async {
     try {
-      final reportDoc = await _firestore.collection('spotReports').doc(reportId).get();
+      final reportDoc = await _firestore
+          .collection('spotReports')
+          .doc(reportId)
+          .get();
       if (!reportDoc.exists) {
         debugPrint('Report $reportId does not exist');
         return false;
@@ -313,22 +345,32 @@ class SpotReportService {
   }) async {
     try {
       // Get the current report
-      final reportDoc = await _firestore.collection('spotReports').doc(reportId).get();
+      final reportDoc = await _firestore
+          .collection('spotReports')
+          .doc(reportId)
+          .get();
       if (!reportDoc.exists) {
         debugPrint('Report $reportId does not exist');
         return false;
       }
 
       final reportData = reportDoc.data()!;
-      final currentSuggestedUrls = (reportData['suggestedPhotoUrls'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList() ?? <String>[];
-      final currentRejectedUrls = (reportData['rejectedPhotoUrls'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList() ?? <String>[];
+      final currentSuggestedUrls =
+          (reportData['suggestedPhotoUrls'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          <String>[];
+      final currentRejectedUrls =
+          (reportData['rejectedPhotoUrls'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          <String>[];
 
       // Add restored photos back to suggestedPhotoUrls (using new URLs from /suggestions/)
-      final updatedSuggestedUrls = <String>[...currentSuggestedUrls, ...restoredPhotoUrls];
+      final updatedSuggestedUrls = <String>[
+        ...currentSuggestedUrls,
+        ...restoredPhotoUrls,
+      ];
 
       // Remove original rejected photos from rejectedPhotoUrls (using original URLs, not new suggested URLs)
       final updatedRejectedUrls = currentRejectedUrls
@@ -338,7 +380,9 @@ class SpotReportService {
       // Update the report
       await _firestore.collection('spotReports').doc(reportId).update({
         'suggestedPhotoUrls': updatedSuggestedUrls,
-        'rejectedPhotoUrls': updatedRejectedUrls.isEmpty ? FieldValue.delete() : updatedRejectedUrls,
+        'rejectedPhotoUrls': updatedRejectedUrls.isEmpty
+            ? FieldValue.delete()
+            : updatedRejectedUrls,
         'status': 'New', // Reset status to New so it appears in the queue again
         'updatedAt': FieldValue.serverTimestamp(),
       });

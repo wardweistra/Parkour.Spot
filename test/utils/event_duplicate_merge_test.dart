@@ -63,10 +63,7 @@ void main() {
     test('appends unique photos only', () {
       final original = _event(imageUrls: ['https://example.com/a.jpg']);
       final duplicate = _event(
-        imageUrls: [
-          'https://example.com/a.jpg',
-          'https://example.com/b.jpg',
-        ],
+        imageUrls: ['https://example.com/a.jpg', 'https://example.com/b.jpg'],
       );
 
       final updates = buildEventDuplicateMergeUpdates(
@@ -97,10 +94,7 @@ void main() {
 
     test('unions linked spots and spot lists', () {
       final original = _event(spotIds: ['s1'], spotListIds: ['l1']);
-      final duplicate = _event(
-        spotIds: ['s1', 's2'],
-        spotListIds: ['l2'],
-      );
+      final duplicate = _event(spotIds: ['s1', 's2'], spotListIds: ['l2']);
 
       final updates = buildEventDuplicateMergeUpdates(
         original: original,
@@ -112,57 +106,65 @@ void main() {
       expect(updates['spotListIds'], ['l1', 'l2']);
     });
 
-    test('overwrites title description location schedule website when flagged',
-        () {
-      final original = _event(
-        title: 'Original',
-        description: 'Old',
-        websiteUrl: 'https://old.example',
-        latitude: 1,
-        longitude: 2,
-        address: 'Old St',
-        startAt: DateTime.utc(2026, 1, 1),
-      );
-      final duplicate = _event(
-        title: 'Duplicate Title',
-        description: 'New desc',
-        websiteUrl: 'https://new.example',
-        latitude: 50.1,
-        longitude: 4.2,
-        address: 'New St',
-        city: 'Brussels',
-        countryCode: 'BE',
-        startAt: DateTime.utc(2026, 8, 15, 9),
-        endAt: DateTime.utc(2026, 8, 15, 17),
-        isDateOnly: true,
-        timeZone: 'Europe/Brussels',
-        timeZoneSource: 'feed',
-      );
+    test(
+      'overwrites title description location schedule website when flagged',
+      () {
+        final original = _event(
+          title: 'Original',
+          description: 'Old',
+          websiteUrl: 'https://old.example',
+          latitude: 1,
+          longitude: 2,
+          address: 'Old St',
+          startAt: DateTime.utc(2026, 1, 1),
+        );
+        final duplicate = _event(
+          title: 'Duplicate Title',
+          description: 'New desc',
+          websiteUrl: 'https://new.example',
+          latitude: 50.1,
+          longitude: 4.2,
+          address: 'New St',
+          city: 'Brussels',
+          countryCode: 'BE',
+          startAt: DateTime.utc(2026, 8, 15, 9),
+          endAt: DateTime.utc(2026, 8, 15, 17),
+          isDateOnly: true,
+          timeZone: 'Europe/Brussels',
+          timeZoneSource: 'feed',
+        );
 
-      final updates = buildEventDuplicateMergeUpdates(
-        original: original,
-        duplicate: duplicate,
-        overwriteTitle: true,
-        overwriteDescription: true,
-        overwriteLocation: true,
-        overwriteSchedule: true,
-        overwriteWebsite: true,
-      );
+        final updates = buildEventDuplicateMergeUpdates(
+          original: original,
+          duplicate: duplicate,
+          overwriteTitle: true,
+          overwriteDescription: true,
+          overwriteLocation: true,
+          overwriteSchedule: true,
+          overwriteWebsite: true,
+        );
 
-      expect(updates['title'], 'Duplicate Title');
-      expect(updates['description'], 'New desc');
-      expect(updates['websiteUrl'], 'https://new.example');
-      expect(updates['latitude'], 50.1);
-      expect(updates['longitude'], 4.2);
-      expect(updates['address'], 'New St');
-      expect(updates['city'], 'Brussels');
-      expect(updates['countryCode'], 'BE');
-      expect(updates['startAt'], Timestamp.fromDate(DateTime.utc(2026, 8, 15, 9)));
-      expect(updates['endAt'], Timestamp.fromDate(DateTime.utc(2026, 8, 15, 17)));
-      expect(updates['isDateOnly'], isTrue);
-      expect(updates['timeZone'], 'Europe/Brussels');
-      expect(updates['timeZoneSource'], 'feed');
-    });
+        expect(updates['title'], 'Duplicate Title');
+        expect(updates['description'], 'New desc');
+        expect(updates['websiteUrl'], 'https://new.example');
+        expect(updates['latitude'], 50.1);
+        expect(updates['longitude'], 4.2);
+        expect(updates['address'], 'New St');
+        expect(updates['city'], 'Brussels');
+        expect(updates['countryCode'], 'BE');
+        expect(
+          updates['startAt'],
+          Timestamp.fromDate(DateTime.utc(2026, 8, 15, 9)),
+        );
+        expect(
+          updates['endAt'],
+          Timestamp.fromDate(DateTime.utc(2026, 8, 15, 17)),
+        );
+        expect(updates['isDateOnly'], isTrue);
+        expect(updates['timeZone'], 'Europe/Brussels');
+        expect(updates['timeZoneSource'], 'feed');
+      },
+    );
 
     test('skips overwrite fields when duplicate lacks values', () {
       final original = _event(title: 'Original', description: 'Keep');

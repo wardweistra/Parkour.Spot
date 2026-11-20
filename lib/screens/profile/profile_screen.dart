@@ -455,23 +455,27 @@ class _ProfileScreenState extends State<ProfileScreen>
                                               context,
                                               listen: false,
                                             ).watchDuplicatePendingChangesCount(),
-                                            builder:
-                                                (context, spotDupSnapshot) {
+                                            builder: (context, spotDupSnapshot) {
                                               final spotDup =
                                                   spotDupSnapshot.data ?? 0;
                                               return StreamBuilder<int>(
-                                                initialData: Provider.of<
-                                                    AdminEventsService>(
-                                                  context,
-                                                  listen: false,
-                                                ).duplicatePendingChangesCount,
-                                                stream: Provider.of<
-                                                    AdminEventsService>(
-                                                  context,
-                                                  listen: false,
-                                                ).watchDuplicatePendingChangesCount(),
-                                                builder:
-                                                    (context, eventDupSnapshot) {
+                                                initialData:
+                                                    Provider.of<
+                                                          AdminEventsService
+                                                        >(
+                                                          context,
+                                                          listen: false,
+                                                        )
+                                                        .duplicatePendingChangesCount,
+                                                stream:
+                                                    Provider.of<
+                                                          AdminEventsService
+                                                        >(
+                                                          context,
+                                                          listen: false,
+                                                        )
+                                                        .watchDuplicatePendingChangesCount(),
+                                                builder: (context, eventDupSnapshot) {
                                                   final totalNew =
                                                       spotNew +
                                                       eventReportNew +
@@ -482,10 +486,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                   return _buildActionTile(
                                                     context,
                                                     Icons.shield,
-                                                    l10n
-                                                        .profileModeratorToolsTitle,
-                                                    l10n
-                                                        .profileModeratorToolsSubtitle,
+                                                    l10n.profileModeratorToolsTitle,
+                                                    l10n.profileModeratorToolsSubtitle,
                                                     () {
                                                       // Use go (not push) so Explore/SearchScreen dispose and
                                                       // release Firestore listeners before moderator flows.
@@ -626,9 +628,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildAboutSection(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
-    final textStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
-      color: scheme.onSurfaceVariant,
-    );
+    final textStyle = Theme.of(
+      context,
+    ).textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant);
 
     return LayoutBuilder(
       builder: (context, constraints) {

@@ -86,7 +86,8 @@ class _EventDuplicateTransferDialogState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final hasTransferOptions = _hasPhotos || _hasLinkedSpots;
-    final hasOverwriteOptions = _hasTitle ||
+    final hasOverwriteOptions =
+        _hasTitle ||
         _hasDescription ||
         _hasLocation ||
         _hasSchedule ||
@@ -100,9 +101,7 @@ class _EventDuplicateTransferDialogState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              l10n.eventDetailMarkDuplicateBody(widget.originalTitle),
-            ),
+            Text(l10n.eventDetailMarkDuplicateBody(widget.originalTitle)),
             if (hasTransferOptions || hasOverwriteOptions) ...[
               const SizedBox(height: 16),
               if (hasTransferOptions) ...[

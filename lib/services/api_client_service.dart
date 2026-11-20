@@ -44,8 +44,9 @@ class ApiClient {
 }
 
 class ApiClientService extends ChangeNotifier {
-  final FirebaseFunctions _functions =
-      FirebaseFunctions.instanceFor(region: 'europe-west1');
+  final FirebaseFunctions _functions = FirebaseFunctions.instanceFor(
+    region: 'europe-west1',
+  );
 
   List<ApiClient> _clients = [];
   bool _isLoading = false;

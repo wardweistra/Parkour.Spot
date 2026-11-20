@@ -625,15 +625,15 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                           if (s.lastError != null) ...[
                             const SizedBox(height: 4),
                             Chip(
-                              backgroundColor: Theme.of(context)
-                                  .colorScheme
-                                  .errorContainer,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.errorContainer,
                               label: Text(
                                 'Last error: ${s.lastError!.message}',
                                 style: _kSyncChipLabelText.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onErrorContainer,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onErrorContainer,
                                 ),
                               ),
                               labelStyle: _kSyncChipLabelText,
@@ -649,9 +649,8 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                               children: [
                                 if (s.currentSyncRunId != null)
                                   TextButton.icon(
-                                    onPressed: () => _openSyncRunReport(
-                                      s.currentSyncRunId!,
-                                    ),
+                                    onPressed: () =>
+                                        _openSyncRunReport(s.currentSyncRunId!),
                                     icon: const Icon(
                                       Icons.pending_actions,
                                       size: 18,
@@ -672,9 +671,8 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                                 if (s.lastFailedRunId != null &&
                                     s.lastFailedRunId != s.lastCompletedRunId)
                                   TextButton.icon(
-                                    onPressed: () => _openSyncRunReport(
-                                      s.lastFailedRunId!,
-                                    ),
+                                    onPressed: () =>
+                                        _openSyncRunReport(s.lastFailedRunId!),
                                     icon: const Icon(
                                       Icons.error_outline,
                                       size: 18,
@@ -2088,19 +2086,21 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
               SourceLogoEditor(
                 sourceId: widget.source?.id,
                 logoUrl: widget.source?.logoUrl,
-                onUpload: ({
-                  required sourceId,
-                  required imageBytes,
-                  required contentType,
-                }) {
-                  return context.read<SyncSourceService>().uploadSourceLogo(
-                    sourceId: sourceId,
-                    imageBytes: imageBytes,
-                    contentType: contentType,
-                  );
-                },
-                onRemove: (sourceId) =>
-                    context.read<SyncSourceService>().removeSourceLogo(sourceId),
+                onUpload:
+                    ({
+                      required sourceId,
+                      required imageBytes,
+                      required contentType,
+                    }) {
+                      return context.read<SyncSourceService>().uploadSourceLogo(
+                        sourceId: sourceId,
+                        imageBytes: imageBytes,
+                        contentType: contentType,
+                      );
+                    },
+                onRemove: (sourceId) => context
+                    .read<SyncSourceService>()
+                    .removeSourceLogo(sourceId),
               ),
               const SizedBox(height: 8),
               Align(

@@ -13,14 +13,11 @@ class EventSourceDetailsDialog extends StatefulWidget {
   final EventSyncSource? source;
   final String? sourceId;
 
-  const EventSourceDetailsDialog({
-    super.key,
-    this.source,
-    this.sourceId,
-  }) : assert(
-         source != null || sourceId != null,
-         'Either source or sourceId must be provided',
-       );
+  const EventSourceDetailsDialog({super.key, this.source, this.sourceId})
+    : assert(
+        source != null || sourceId != null,
+        'Either source or sourceId must be provided',
+      );
 
   @override
   State<EventSourceDetailsDialog> createState() =>
@@ -99,7 +96,8 @@ class _EventSourceDetailsDialogState extends State<EventSourceDetailsDialog> {
 
   Widget _buildContent(EventSyncSource source) {
     final stats = source.lastSyncStats;
-    final eventCount = (stats?['totalUnique'] as num?)?.toInt() ??
+    final eventCount =
+        (stats?['totalUnique'] as num?)?.toInt() ??
         (stats?['created'] as num?)?.toInt() ??
         0;
 

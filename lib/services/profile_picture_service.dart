@@ -18,7 +18,9 @@ class ProfilePictureService {
       // Decode the image
       final originalImage = img.decodeImage(imageBytes);
       if (originalImage == null) {
-        throw Exception('Failed to decode image. The image file may be corrupted or in an unsupported format.');
+        throw Exception(
+          'Failed to decode image. The image file may be corrupted or in an unsupported format.',
+        );
       }
 
       // Validate image dimensions
@@ -57,7 +59,7 @@ class ProfilePictureService {
 
       // Encode as JPEG with 85% quality
       final jpegBytes = img.encodeJpg(resizedImage, quality: 85);
-      
+
       if (jpegBytes.isEmpty) {
         throw Exception('Failed to encode image as JPEG.');
       }
@@ -73,7 +75,6 @@ class ProfilePictureService {
     }
   }
 
-
   /// Upload profile picture from File (mobile)
   /// [onProgress] callback receives progress value 0.0 to 1.0
   Future<String> uploadProfilePicture(
@@ -88,12 +89,12 @@ class ProfilePictureService {
     try {
       // Step 1: Read file as bytes (10% of progress)
       onProgress?.call(0.1);
-      
+
       // Check if file exists
       if (!await imageFile.exists()) {
         throw Exception('Image file does not exist');
       }
-      
+
       final imageBytes = await imageFile.readAsBytes();
 
       // Validate we got bytes
@@ -130,12 +131,12 @@ class ProfilePictureService {
       });
 
       final snapshot = await uploadTask;
-      
+
       // Step 4: Get download URL (90-100% of progress)
       onProgress?.call(0.9);
       final downloadURL = await snapshot.ref.getDownloadURL();
       onProgress?.call(1.0);
-      
+
       return downloadURL;
     } catch (e) {
       debugPrint('Error uploading profile picture: $e');
@@ -189,12 +190,12 @@ class ProfilePictureService {
       });
 
       final snapshot = await uploadTask;
-      
+
       // Step 3: Get download URL (90-100% of progress)
       onProgress?.call(0.9);
       final downloadURL = await snapshot.ref.getDownloadURL();
       onProgress?.call(1.0);
-      
+
       return downloadURL;
     } catch (e) {
       debugPrint('Error uploading profile picture: $e');
@@ -231,10 +232,12 @@ class ProfilePictureService {
     try {
       // Download image from URL
       debugPrint('Downloading profile picture from: $imageUrl');
-      
+
       final response = await http.get(Uri.parse(imageUrl));
       if (response.statusCode != 200) {
-        throw Exception('Failed to download image: HTTP ${response.statusCode}');
+        throw Exception(
+          'Failed to download image: HTTP ${response.statusCode}',
+        );
       }
 
       final imageBytes = response.bodyBytes;
@@ -262,8 +265,10 @@ class ProfilePictureService {
 
       final snapshot = await uploadTask;
       final downloadURL = await snapshot.ref.getDownloadURL();
-      
-      debugPrint('Successfully copied profile picture to Storage: $downloadURL');
+
+      debugPrint(
+        'Successfully copied profile picture to Storage: $downloadURL',
+      );
       return downloadURL;
     } catch (e) {
       debugPrint('Error copying image from URL: $e');
@@ -285,8 +290,8 @@ class ProfilePictureService {
     if (url == null || url.isEmpty) return false;
     final user = _auth.currentUser;
     if (user == null) return false;
-    return url.contains('users/${user.uid}/') && 
-           (url.contains('firebasestorage.googleapis.com') || 
+    return url.contains('users/${user.uid}/') &&
+        (url.contains('firebasestorage.googleapis.com') ||
             url.contains('storage.googleapis.com'));
   }
 }

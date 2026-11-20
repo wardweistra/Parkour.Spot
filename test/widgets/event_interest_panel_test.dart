@@ -63,9 +63,7 @@ void main() {
     expect(find.text('Interested (12)'), findsNothing);
     expect(find.text('1 person · see who\'s coming'), findsOneWidget);
     expect(
-      find.text(
-        'Not a registration — marks show publicly on this event.',
-      ),
+      find.text('Not a registration — marks show publicly on this event.'),
       findsOneWidget,
     );
   });
@@ -122,7 +120,9 @@ void main() {
     expect(goingTaps, 0);
   });
 
-  testWidgets('shows crew strip totals and opens people dialog', (tester) async {
+  testWidgets('shows crew strip totals and opens people dialog', (
+    tester,
+  ) async {
     var peopleTaps = 0;
     await pumpPanel(
       tester,
@@ -197,7 +197,12 @@ void main() {
   });
 
   testWidgets('hides people strip when empty and loaded', (tester) async {
-    await pumpPanel(tester, goingCount: 0, interestedCount: 0, people: const []);
+    await pumpPanel(
+      tester,
+      goingCount: 0,
+      interestedCount: 0,
+      people: const [],
+    );
     expect(find.textContaining('see who\'s coming'), findsNothing);
     expect(find.textContaining('marked interest'), findsNothing);
     expect(find.text('Going'), findsOneWidget);

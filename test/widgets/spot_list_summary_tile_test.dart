@@ -81,10 +81,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('Public list with 3 spots by Ada Vault'),
-      findsOneWidget,
-    );
+    expect(find.text('Public list with 3 spots by Ada Vault'), findsOneWidget);
     expect(find.text('Featured'), findsOneWidget);
   });
 }

@@ -83,9 +83,7 @@ class UserNotificationService extends ChangeNotifier {
     if (_unreadCountStream == null || _unreadCountStreamUid != uid) {
       _unreadCountStreamUid = uid;
       _unreadCountStream = replayLatest(
-        notificationsStream.map(
-          (items) => items.where((n) => !n.read).length,
-        ),
+        notificationsStream.map((items) => items.where((n) => !n.read).length),
       );
     }
     return _unreadCountStream!;

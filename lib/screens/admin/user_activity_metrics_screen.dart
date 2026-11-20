@@ -9,7 +9,8 @@ class UserActivityMetricsScreen extends StatefulWidget {
   const UserActivityMetricsScreen({super.key});
 
   @override
-  State<UserActivityMetricsScreen> createState() => _UserActivityMetricsScreenState();
+  State<UserActivityMetricsScreen> createState() =>
+      _UserActivityMetricsScreenState();
 }
 
 class _UserActivityMetricsScreenState extends State<UserActivityMetricsScreen> {
@@ -46,12 +47,15 @@ class _UserActivityMetricsScreenState extends State<UserActivityMetricsScreen> {
     if (confirmed != true) return;
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Calculating metrics...')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Calculating metrics...')));
 
     try {
-      final userManagementService = Provider.of<UserManagementService>(context, listen: false);
+      final userManagementService = Provider.of<UserManagementService>(
+        context,
+        listen: false,
+      );
       final result = await userManagementService.calculateUserActivityMetrics();
 
       if (!mounted) return;
@@ -85,10 +89,7 @@ class _UserActivityMetricsScreenState extends State<UserActivityMetricsScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -154,10 +155,7 @@ class _UserActivityMetricsScreenState extends State<UserActivityMetricsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
-                  Text(
-                    'What this does',
-                    style: TextStyle( fontSize: 18),
-                  ),
+                  Text('What this does', style: TextStyle(fontSize: 18)),
                   SizedBox(height: 12),
                   Text(
                     '• Calculates Daily Active Users (DAU): Users active in the last 24 hours',
@@ -222,17 +220,14 @@ class _UserActivityMetricsScreenState extends State<UserActivityMetricsScreen> {
                   children: [
                     const Text(
                       'Last Calculation Result',
-                      style: TextStyle( fontSize: 18),
+                      style: TextStyle(fontSize: 18),
                     ),
                     const SizedBox(height: 12),
                     if (lastResult['date'] != null)
                       Text('Date: ${lastResult['date']}'),
                     const SizedBox(height: 8),
                     if (lastResult['metrics'] != null) ...[
-                      const Text(
-                        'Metrics:',
-                        style: TextStyle(),
-                      ),
+                      const Text('Metrics:', style: TextStyle()),
                       const SizedBox(height: 4),
                       Text('  • DAU: ${lastResult['metrics']['dau'] ?? 0}'),
                       Text('  • WAU: ${lastResult['metrics']['wau'] ?? 0}'),
@@ -240,7 +235,9 @@ class _UserActivityMetricsScreenState extends State<UserActivityMetricsScreen> {
                       const SizedBox(height: 8),
                     ],
                     if (lastResult['rowsSynced'] != null)
-                      Text('Rows synced to Google Sheets: ${lastResult['rowsSynced']}'),
+                      Text(
+                        'Rows synced to Google Sheets: ${lastResult['rowsSynced']}',
+                      ),
                     if (lastResult['spotsExported'] != null)
                       Text('Spots exported: ${lastResult['spotsExported']}'),
                     if (lastResult['usersExported'] != null)

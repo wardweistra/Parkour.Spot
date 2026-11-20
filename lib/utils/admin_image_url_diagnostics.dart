@@ -45,7 +45,10 @@ class AdminImageUrlDiagnostic {
       originalUrl: originalUrl,
       spotsApiUrl: getResizedImageUrlForApi(originalUrl),
       pathInfo: pathInfo,
-      expected1200x1200Url: getExpectedResizedImageUrl(originalUrl, '1200x1200'),
+      expected1200x1200Url: getExpectedResizedImageUrl(
+        originalUrl,
+        '1200x1200',
+      ),
       expected1200x630Url: getExpectedResizedImageUrl(originalUrl, '1200x630'),
     );
   }

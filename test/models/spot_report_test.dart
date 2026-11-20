@@ -1,9 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parkour_spot/models/spot_report.dart';
 
-SpotReport _report({
-  List<String>? suggestedYoutubeVideoIds,
-}) {
+SpotReport _report({List<String>? suggestedYoutubeVideoIds}) {
   return SpotReport(
     id: 'r1',
     spotId: 's1',
@@ -18,13 +16,18 @@ void main() {
   group('SpotReport.hasEditSuggestions', () {
     test('is true when YouTube video IDs are suggested', () {
       expect(
-        _report(suggestedYoutubeVideoIds: const ['dQw4w9WgXcQ']).hasEditSuggestions,
+        _report(
+          suggestedYoutubeVideoIds: const ['dQw4w9WgXcQ'],
+        ).hasEditSuggestions,
         isTrue,
       );
     });
 
     test('is false when suggested YouTube list is empty', () {
-      expect(_report(suggestedYoutubeVideoIds: const []).hasEditSuggestions, isFalse);
+      expect(
+        _report(suggestedYoutubeVideoIds: const []).hasEditSuggestions,
+        isFalse,
+      );
     });
   });
 }

@@ -16,9 +16,7 @@ mixin MapRecenteringMixin<T extends StatefulWidget> on State<T> {
     final pending = _pendingCenter;
     if (pending != null) {
       _pendingCenter = null;
-      _mapController!.animateCamera(
-        CameraUpdate.newLatLngZoom(pending, 16),
-      );
+      _mapController!.animateCamera(CameraUpdate.newLatLngZoom(pending, 16));
     }
     onMapControllerReady();
   }
@@ -64,9 +62,7 @@ mixin MapRecenteringMixin<T extends StatefulWidget> on State<T> {
     if (!mounted || generation != _centerGeneration) return;
     if (_mapController != null) {
       _pendingCenter = null;
-      _mapController!.animateCamera(
-        CameraUpdate.newLatLngZoom(location, 16),
-      );
+      _mapController!.animateCamera(CameraUpdate.newLatLngZoom(location, 16));
     } else {
       _pendingCenter = location;
     }

@@ -273,9 +273,8 @@ class _ModeratorEventsReviewScreenState
               );
               return IconButton(
                 tooltip: 'Mark all as reviewed',
-                onPressed: service.isLoading ||
-                        _isMarkingAllReviewed ||
-                        !hasReviewable
+                onPressed:
+                    service.isLoading || _isMarkingAllReviewed || !hasReviewable
                     ? null
                     : _markAllReviewed,
                 icon: _isMarkingAllReviewed

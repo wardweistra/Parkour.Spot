@@ -37,11 +37,7 @@ class ExploreListActionButton extends StatelessWidget {
         customBorder: const CircleBorder(),
         child: Padding(
           padding: const EdgeInsets.all(8),
-          child: Icon(
-            icon,
-            size: 18,
-            color: colorScheme.onSurfaceVariant,
-          ),
+          child: Icon(icon, size: 18, color: colorScheme.onSurfaceVariant),
         ),
       ),
     );

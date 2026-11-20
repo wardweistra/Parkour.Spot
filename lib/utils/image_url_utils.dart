@@ -45,6 +45,7 @@ String cacheBustedImageUrl(String url, {Object? version}) {
     return '$url${separator}v=$versionValue';
   }
 }
+
 /// Result of parsing a Firebase Storage image URL for resized path checking.
 class ResizedPathInfo {
   const ResizedPathInfo({
@@ -86,10 +87,7 @@ ResizedPathInfo? _pathInfoForDecodedPath(String decodedPath) {
   final filename = decodedPath.split('/').last;
   final baseName = filename.split('.').first;
   final resizedPath = '$prefix/resized/${baseName}_1200x1200.webp';
-  final candidates = [
-    resizedPath,
-    '$prefix/resized/${baseName}_1200x630.webp',
-  ];
+  final candidates = [resizedPath, '$prefix/resized/${baseName}_1200x630.webp'];
   return ResizedPathInfo(
     originalPath: decodedPath,
     resizedPath: resizedPath,
@@ -162,8 +160,9 @@ String? _toResizedUrl(String originalUrl, String sizeSuffix) {
         final pathStart = originalUrl.indexOf(encodedPathInUrl);
         if (pathStart != -1) {
           final beforePath = originalUrl.substring(0, pathStart);
-          final afterPath =
-              originalUrl.substring(pathStart + encodedPathInUrl.length);
+          final afterPath = originalUrl.substring(
+            pathStart + encodedPathInUrl.length,
+          );
           return '$beforePath$encodedResizedPath$afterPath';
         }
       }

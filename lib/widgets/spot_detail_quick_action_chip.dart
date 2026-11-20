@@ -8,6 +8,7 @@ class SpotDetailQuickActionChip extends StatelessWidget {
   final IconData icon;
   final Color? iconColor;
   final String label;
+
   /// When non-null, shown instead of [label] (e.g. mixed text styles).
   final Widget? labelWidget;
   final bool showSpinner;
@@ -41,10 +42,7 @@ class SpotDetailQuickActionChip extends StatelessWidget {
           SizedBox(
             width: 20,
             height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: cs.primary,
-            ),
+            child: CircularProgressIndicator(strokeWidth: 2, color: cs.primary),
           )
         else
           Icon(icon, size: 20, color: iconColor),
@@ -64,10 +62,7 @@ class SpotDetailQuickActionChip extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
         ],
-        if (trailing != null) ...[
-          const SizedBox(width: 8),
-          trailing!,
-        ],
+        if (trailing != null) ...[const SizedBox(width: 8), trailing!],
       ],
     );
 
@@ -88,9 +83,6 @@ class SpotDetailQuickActionChip extends StatelessWidget {
     if (showLabel) {
       return chip;
     }
-    return Semantics(
-      label: label,
-      child: chip,
-    );
+    return Semantics(label: label, child: chip);
   }
 }

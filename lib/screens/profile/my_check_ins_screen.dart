@@ -149,7 +149,10 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
       _checkInsError = null;
     });
     final checkInSvc = Provider.of<SpotCheckInService>(context, listen: false);
-    final planSvc = Provider.of<SpotTrainingPlanService>(context, listen: false);
+    final planSvc = Provider.of<SpotTrainingPlanService>(
+      context,
+      listen: false,
+    );
     final plans = await planSvc.fetchMyUpcomingPlans();
     try {
       final page = await checkInSvc.fetchMyCheckInsPage();
@@ -197,18 +200,13 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _loadingMore = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$e')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
     }
   }
 
   Future<void> _manageTrainingPlan(SpotTrainingPlan p) async {
     final svc = Provider.of<SpotTrainingPlanService>(context, listen: false);
-    final result = await showSpotTrainingPlanDialog(
-      context,
-      existingPlan: p,
-    );
+    final result = await showSpotTrainingPlanDialog(context, existingPlan: p);
     if (result == null || !mounted) return;
 
     if (result is SpotTrainingPlanDialogOpenCheckIn) {
@@ -219,12 +217,12 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
         spotName: result.plan.spotName ?? '',
         fixedTrainingPlan: result.plan,
         onExtendInsteadEdit: _manageCheckIn,
-        showSuccess: (m) => ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(m)),
-        ),
-        showError: (m) => ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(m)),
-        ),
+        showSuccess: (m) => ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(m))),
+        showError: (m) => ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(m))),
         successMessage: _l10n.spotDetailCheckInSuccess,
       );
       if (!mounted) return;
@@ -422,16 +420,15 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
                       Text(
                         _l10n.myCheckInsCheckInsLoadFailed,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onErrorContainer,
-                            ),
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
                       ),
                       if (_checkInsError != null) ...[
                         const SizedBox(height: 8),
                         Text(
                           _checkInsError!,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
                                 color: Theme.of(context)
                                     .colorScheme
                                     .onErrorContainer
@@ -451,7 +448,8 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
             );
           case _CheckInListSectionTitle(:final title):
             final prev = i > 0 ? rows[i - 1] : null;
-            final tightTop = prev is _CheckInListIntro ||
+            final tightTop =
+                prev is _CheckInListIntro ||
                 prev is _CheckInListCheckInsErrorBanner;
             final theme = Theme.of(context);
             return Padding(
@@ -481,11 +479,10 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
                   _l10n.myCheckInsNoCheckInsYet,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.55),
-                      ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.55),
+                  ),
                 ),
               ),
             );
@@ -779,10 +776,9 @@ class _TrainingPlanHistoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final title =
-        (plan.spotName != null && plan.spotName!.trim().isNotEmpty)
-            ? plan.spotName!.trim()
-            : l10n.myCheckInsSpotFallback;
+    final title = (plan.spotName != null && plan.spotName!.trim().isNotEmpty)
+        ? plan.spotName!.trim()
+        : l10n.myCheckInsSpotFallback;
     final timeRangeStr = _formatPlanTimeLineUnderHeader(plan, l10n);
     final comment = plan.comment?.trim();
 

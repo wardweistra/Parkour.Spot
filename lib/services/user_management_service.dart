@@ -467,10 +467,7 @@ class UserManagementService extends ChangeNotifier {
         options: HttpsCallableOptions(timeout: const Duration(minutes: 9)),
       );
 
-      final result = await callable.call({
-        'dryRun': dryRun,
-        'limit': ?limit,
-      });
+      final result = await callable.call({'dryRun': dryRun, 'limit': ?limit});
       final data = result.data as Map<String, dynamic>?;
 
       _lastSyncCreatedAtResult = data;
@@ -517,10 +514,7 @@ class UserManagementService extends ChangeNotifier {
         options: HttpsCallableOptions(timeout: const Duration(minutes: 15)),
       );
 
-      final result = await callable.call({
-        'dryRun': dryRun,
-        'limit': ?limit,
-      });
+      final result = await callable.call({'dryRun': dryRun, 'limit': ?limit});
       final data = result.data as Map<String, dynamic>?;
 
       _lastCopyGoogleAvatarsResult = data;

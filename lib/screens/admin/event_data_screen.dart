@@ -64,9 +64,8 @@ class EventDataScreen extends StatelessWidget {
                 subtitle:
                     'Include RSVPs from duplicate events in the native event totals',
                 showChevron: false,
-                onTap: () => EventBackfillActions.recomputeEventInterestStats(
-                  context,
-                ),
+                onTap: () =>
+                    EventBackfillActions.recomputeEventInterestStats(context),
               ),
             ],
           ),

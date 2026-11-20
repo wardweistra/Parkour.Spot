@@ -69,7 +69,11 @@ class _MissingResizedImagesScreenState extends State<MissingResizedImagesScreen>
     }
   }
 
-  Future<void> _openSpot(String spotId, {String? countryCode, String? city}) async {
+  Future<void> _openSpot(
+    String spotId, {
+    String? countryCode,
+    String? city,
+  }) async {
     if (MobileDetectionService.isRunningInBrowser) {
       final url = UrlService.generateSpotUrl(
         spotId,
@@ -212,7 +216,8 @@ class _MissingResizedImagesScreenState extends State<MissingResizedImagesScreen>
                 emptyMessage: l10n.adminResizedImagesEmptyNone,
                 l10n: l10n,
                 accent: Colors.orange,
-                countLabel: (count) => l10n.adminResizedImagesMissingCount(count),
+                countLabel: (count) =>
+                    l10n.adminResizedImagesMissingCount(count),
                 showImageUrls: true,
                 onOpenSpot: _openSpot,
                 onOpenEvent: _openEvent,
@@ -253,20 +258,26 @@ class _SummaryHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(l10n.adminResizedImagesSummaryNone(
-            totals.none.images,
-            totals.none.entities,
-          )),
+          Text(
+            l10n.adminResizedImagesSummaryNone(
+              totals.none.images,
+              totals.none.entities,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(l10n.adminResizedImagesSummaryOnly630(
-            totals.only630.images,
-            totals.only630.entities,
-          )),
+          Text(
+            l10n.adminResizedImagesSummaryOnly630(
+              totals.only630.images,
+              totals.only630.entities,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(l10n.adminResizedImagesSummaryHas1200(
-            totals.has1200.images,
-            totals.has1200.entities,
-          )),
+          Text(
+            l10n.adminResizedImagesSummaryHas1200(
+              totals.has1200.images,
+              totals.has1200.entities,
+            ),
+          ),
         ],
       ),
     );
@@ -376,7 +387,8 @@ class _EntityListTab extends StatelessWidget {
     String spotId, {
     String? countryCode,
     String? city,
-  }) onOpenSpot;
+  })
+  onOpenSpot;
   final Future<void> Function(String eventId) onOpenEvent;
 
   @override
@@ -474,8 +486,11 @@ class _EntityListTab extends StatelessWidget {
                     },
                     child: Row(
                       children: [
-                        Icon(Icons.link,
-                            size: 16, color: Theme.of(context).primaryColor),
+                        Icon(
+                          Icons.link,
+                          size: 16,
+                          color: Theme.of(context).primaryColor,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           row.isSpot
@@ -508,7 +523,9 @@ class _EntityListTab extends StatelessWidget {
                         ),
                         if (showImageUrls && row.imageUrls.isNotEmpty) ...[
                           const SizedBox(height: 8),
-                          ...row.imageUrls.take(3).map(
+                          ...row.imageUrls
+                              .take(3)
+                              .map(
                                 (url) => Padding(
                                   padding: const EdgeInsets.only(bottom: 4),
                                   child: Text(
@@ -565,7 +582,9 @@ class _EntityListTab extends StatelessWidget {
                                     width: 80,
                                     height: 80,
                                     color: Colors.grey[300],
-                                    child: const Icon(Icons.image_not_supported),
+                                    child: const Icon(
+                                      Icons.image_not_supported,
+                                    ),
                                   );
                                 },
                               ),

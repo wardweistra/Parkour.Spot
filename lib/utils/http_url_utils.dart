@@ -33,7 +33,8 @@ String? normalizeHttpOrHttpsUrl(String input) {
   final schemeFixed = _lowercaseHttpScheme(withScheme);
   // DNS hosts are case-insensitive; [validators] FQDN checks expect lower-case labels.
   final uri0 = Uri.tryParse(schemeFixed);
-  final forValidation = (uri0 != null &&
+  final forValidation =
+      (uri0 != null &&
           uri0.host.isNotEmpty &&
           (uri0.scheme == 'http' || uri0.scheme == 'https'))
       ? uri0.replace(host: uri0.host.toLowerCase()).toString()

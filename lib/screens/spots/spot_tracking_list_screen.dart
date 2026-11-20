@@ -323,19 +323,18 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
     setState(() => _isUpdatingPublic = true);
     final authService = context.read<AuthService>();
     final success = switch (widget.type) {
-      SpotTrackingListType.added => await authService.updateAddedSpotsListPublic(
-        isPublic,
-      ),
-      SpotTrackingListType.rated => await authService.updateRatedSpotsListPublic(
-        isPublic,
-      ),
-      SpotTrackingListType.wantToVisit ||
-      SpotTrackingListType.visited => false,
+      SpotTrackingListType.added =>
+        await authService.updateAddedSpotsListPublic(isPublic),
+      SpotTrackingListType.rated =>
+        await authService.updateRatedSpotsListPublic(isPublic),
+      SpotTrackingListType.wantToVisit || SpotTrackingListType.visited => false,
     };
     if (!mounted) return;
     setState(() => _isUpdatingPublic = false);
     if (!success) {
-      SnackbarService.showError(_l10n.spotTrackingBuiltInListVisibilityUpdateFailed);
+      SnackbarService.showError(
+        _l10n.spotTrackingBuiltInListVisibilityUpdateFailed,
+      );
     }
   }
 
@@ -494,7 +493,8 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
       builder: (context, authService, _) {
         _checkProfileAndReload(authService);
 
-        final needsSignIn = _isOwnerBuiltInRoute && !authService.isAuthenticated;
+        final needsSignIn =
+            _isOwnerBuiltInRoute && !authService.isAuthenticated;
         if (needsSignIn) {
           return PageScaffold(
             title: _title,

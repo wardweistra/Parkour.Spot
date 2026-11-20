@@ -1,10 +1,6 @@
 import 'package:share_plus/share_plus.dart';
 
-enum WebShareOutcome {
-  shared,
-  cancelled,
-  fallback,
-}
+enum WebShareOutcome { shared, cancelled, fallback }
 
 /// Native (non-web) share via the system share sheet.
 class WebShareService {

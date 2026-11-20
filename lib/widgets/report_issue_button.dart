@@ -21,11 +21,7 @@ class ReportIssueButton extends StatelessWidget {
       child: OutlinedButton.icon(
         onPressed: () => launchExternalUri(context, Uri.parse(url)),
         icon: Icon(Icons.bug_report_outlined, size: 20, color: scheme.primary),
-        label: Text(
-          label,
-          softWrap: true,
-          textAlign: TextAlign.center,
-        ),
+        label: Text(label, softWrap: true, textAlign: TextAlign.center),
         style: OutlinedButton.styleFrom(
           foregroundColor: scheme.primary,
           side: BorderSide(color: scheme.primary.withValues(alpha: 0.55)),

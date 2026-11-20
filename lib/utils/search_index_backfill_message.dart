@@ -6,10 +6,7 @@ String formatSearchIndexBackfillMessage({
   required dynamic searchTermsDeleted,
   required bool purged,
 }) {
-  final parts = <String>[
-    'Backfill completed',
-    '$entityLabel: $totalProcessed',
-  ];
+  final parts = <String>['Backfill completed', '$entityLabel: $totalProcessed'];
   if (purged && searchTermsDeleted != null) {
     parts.add('deleted: $searchTermsDeleted');
   }

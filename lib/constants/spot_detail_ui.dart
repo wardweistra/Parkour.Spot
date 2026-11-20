@@ -27,8 +27,10 @@ abstract final class SpotDetailUi {
   static const double detailLabelGap = 8;
 
   /// Padding inside surfaced detail blocks (when card, location box).
-  static const EdgeInsets detailCardPadding =
-      EdgeInsets.symmetric(horizontal: 16, vertical: 14);
+  static const EdgeInsets detailCardPadding = EdgeInsets.symmetric(
+    horizontal: 16,
+    vertical: 14,
+  );
 
   /// Gap between stacked timeline moments on multi-day events.
   static const double timelineMomentGap = 20;
@@ -49,7 +51,7 @@ abstract final class SpotDetailUi {
   static const double outlineBorderAlpha = 0.35;
 
   static Border outlineBorder(ColorScheme colorScheme) => Border.all(
-        width: 1,
-        color: colorScheme.outline.withValues(alpha: outlineBorderAlpha),
-      );
+    width: 1,
+    color: colorScheme.outline.withValues(alpha: outlineBorderAlpha),
+  );
 }

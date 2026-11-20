@@ -49,9 +49,9 @@ class _MyActivitiesCalendarSectionState
       if (url == null || !mounted) return;
       await Clipboard.setData(ClipboardData(text: url));
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_l10n.myEventsCalendarCopied)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_l10n.myEventsCalendarCopied)));
     } finally {
       if (mounted) setState(() => _calendarBusy = false);
     }
@@ -59,10 +59,7 @@ class _MyActivitiesCalendarSectionState
 
   Future<void> _launchExternal(String url) async {
     final uri = Uri.parse(url);
-    final launched = await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    );
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched && mounted) {
       _showCalendarFailed();
     }
@@ -151,9 +148,9 @@ class _MyActivitiesCalendarSectionState
       final url = await _calendarFeedService.regenerateFeedUrl();
       await Clipboard.setData(ClipboardData(text: url));
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_l10n.myEventsCalendarCopied)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_l10n.myEventsCalendarCopied)));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

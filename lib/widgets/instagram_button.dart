@@ -82,11 +82,7 @@ class InstagramButton extends StatelessWidget {
       child: ElevatedButton.icon(
         onPressed: () => _launchInstagramProfile(context, handle),
         icon: const BrandMarkIcon(asset: BrandMarkIcon.instagram),
-        label: Text(
-          displayLabel,
-          softWrap: true,
-          textAlign: TextAlign.center,
-        ),
+        label: Text(displayLabel, softWrap: true, textAlign: TextAlign.center),
         style: ElevatedButton.styleFrom(
           backgroundColor: _brandPink,
           foregroundColor: Colors.white,

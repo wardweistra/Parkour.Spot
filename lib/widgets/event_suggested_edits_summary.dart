@@ -270,9 +270,7 @@ class _EventSuggestedEditsSummaryState
           spotIds: report.suggestedSpotIds!,
           spotsById: _spotsById,
           fallbackLabel: l10n.eventSuggestionLinkedSpotsCount(
-            report.suggestedSpotIds!
-                .where((id) => id.trim().isNotEmpty)
-                .length,
+            report.suggestedSpotIds!.where((id) => id.trim().isNotEmpty).length,
           ),
         );
       case _SuggestedWhereKind.list:
@@ -282,7 +280,9 @@ class _EventSuggestedEditsSummaryState
           fallbackLabel: l10n.addEventLinkListButton,
         );
       case _SuggestedWhereKind.cleared:
-        return LocationSuggestionSide.cleared(l10n.eventSuggestionLocationRemoved);
+        return LocationSuggestionSide.cleared(
+          l10n.eventSuggestionLocationRemoved,
+        );
       case _SuggestedWhereKind.pin:
         return LocationSuggestionSide.pin(
           latitude: report.suggestedLatitude!,
@@ -339,14 +339,16 @@ class _EventSuggestedEditsSummaryState
                 child: LinearProgressIndicator(minHeight: 2),
               ),
             LocationSuggestionReview(
-              current: _currentLocationSide(l10n) ??
+              current:
+                  _currentLocationSide(l10n) ??
                   LocationSuggestionSide(
                     summaryLines: <String>[l10n.eventDuplicateChangesNoValue],
                   ),
               suggested: _suggestedLocationSide(l10n)!,
               compactMap: widget.compactMap,
               showMap: widget.showLocationMap,
-              hint: widget.showLocationMap &&
+              hint:
+                  widget.showLocationMap &&
                       !widget.compactMap &&
                       (_currentLocationSide(l10n)?.pins.isNotEmpty == true ||
                           _suggestedLocationSide(l10n)?.pins.isNotEmpty == true)
@@ -358,8 +360,8 @@ class _EventSuggestedEditsSummaryState
             _suggestedWhereKind != _SuggestedWhereKind.none) ...[
           const SizedBox(height: 8),
           LocationSuggestionReview(
-            current: _currentLocationSide(l10n) ??
-                const LocationSuggestionSide(),
+            current:
+                _currentLocationSide(l10n) ?? const LocationSuggestionSide(),
             suggested: _suggestedLocationSide(l10n)!,
             compactMap: widget.compactMap,
             showMap: true,
