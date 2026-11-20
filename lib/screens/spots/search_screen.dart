@@ -3106,18 +3106,17 @@ class SearchScreenState extends State<SearchScreen>
       }
     }
 
-    // Focus the spot with fluid zoom-in (no zoom-out). On small screens, the
-    // final pixel scroll keeps the marker visible above the detail card.
+    // Focus the spot with zoom-in (no zoom-out). On small screens the spot
+    // lands above the detail card. One update: chained ones cancel on Android.
     if (_mapController != null) {
-      final updates = selectedSpotCameraUpdates(
-        target: LatLng(spot.latitude, spot.longitude),
-        currentZoom: _lastKnownZoom,
-        viewportWidth: viewport.width,
-        viewportHeight: viewport.height,
+      await _mapController!.animateCamera(
+        selectedSpotCameraUpdate(
+          target: LatLng(spot.latitude, spot.longitude),
+          currentZoom: _lastKnownZoom,
+          viewportWidth: viewport.width,
+          viewportHeight: viewport.height,
+        ),
       );
-      for (final update in updates) {
-        await _mapController!.animateCamera(update);
-      }
     }
 
     // Select the spot and refresh markers to show detail card overlay
@@ -3142,16 +3141,12 @@ class SearchScreenState extends State<SearchScreen>
     }
 
     if (focusMap && _mapController != null) {
-      const double desiredZoom = 15.0;
-      final double targetZoom = _lastKnownZoom < desiredZoom
-          ? desiredZoom
-          : _lastKnownZoom;
       await _mapController!.animateCamera(
-        CameraUpdate.newLatLng(LatLng(pin.latitude, pin.longitude)),
+        focusCameraUpdate(
+          target: LatLng(pin.latitude, pin.longitude),
+          currentZoom: _lastKnownZoom,
+        ),
       );
-      if (_lastKnownZoom < targetZoom) {
-        await _mapController!.animateCamera(CameraUpdate.zoomTo(targetZoom));
-      }
     }
 
     if (mounted) {

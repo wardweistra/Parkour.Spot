@@ -19,6 +19,7 @@ import '../../services/geocoding_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/search_state_service.dart';
 import '../../services/spot_service.dart';
+import '../../utils/map_camera_utils.dart';
 import '../../utils/event_location_utils.dart';
 import '../../utils/explore_events_utils.dart';
 import '../../utils/explore_search_autocomplete.dart';
@@ -544,16 +545,12 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
 
   Future<void> _locateSpot(Spot spot) async {
     if (_mapController != null) {
-      const desiredZoom = 15.0;
-      final targetZoom = _lastKnownZoom < desiredZoom
-          ? desiredZoom
-          : _lastKnownZoom;
       await _mapController!.animateCamera(
-        CameraUpdate.newLatLng(LatLng(spot.latitude, spot.longitude)),
+        focusCameraUpdate(
+          target: LatLng(spot.latitude, spot.longitude),
+          currentZoom: _lastKnownZoom,
+        ),
       );
-      if (_lastKnownZoom < targetZoom) {
-        await _mapController!.animateCamera(CameraUpdate.zoomTo(targetZoom));
-      }
     }
     if (!mounted) return;
     setState(() {
@@ -622,16 +619,12 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
 
   Future<void> _focusEventPin(EventMapPin pin) async {
     if (_mapController != null) {
-      const desiredZoom = 15.0;
-      final targetZoom = _lastKnownZoom < desiredZoom
-          ? desiredZoom
-          : _lastKnownZoom;
       await _mapController!.animateCamera(
-        CameraUpdate.newLatLng(LatLng(pin.latitude, pin.longitude)),
+        focusCameraUpdate(
+          target: LatLng(pin.latitude, pin.longitude),
+          currentZoom: _lastKnownZoom,
+        ),
       );
-      if (_lastKnownZoom < targetZoom) {
-        await _mapController!.animateCamera(CameraUpdate.zoomTo(targetZoom));
-      }
     }
     setState(() {
       _previewEventPin = pin;
