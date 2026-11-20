@@ -88,9 +88,8 @@ class SnackbarService {
         ],
       );
 
-      final closeTooltip = MaterialLocalizations.of(
-        overlayContext,
-      ).closeButtonTooltip;
+      final closeTooltip = MaterialLocalizations.of(overlayContext)
+          .closeButtonTooltip;
       final accent = theme.colorScheme.inversePrimary;
       final textActionStyle = TextButton.styleFrom(
         foregroundColor: accent,

@@ -177,9 +177,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   SelectableText(
                     err.toString(),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.65),
+                      color: Theme.of(context).colorScheme.onSurface
+                          .withValues(alpha: 0.65),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -224,9 +223,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 Icon(
                   Icons.notifications_none_outlined,
                   size: 56,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.45),
+                  color: Theme.of(context).colorScheme.onSurface
+                      .withValues(alpha: 0.45),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -238,9 +236,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 Text(
                   l10n.notificationsEmptyBody,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.7),
+                    color: Theme.of(context).colorScheme.onSurface
+                        .withValues(alpha: 0.7),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -256,9 +253,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     Text(
                       PushCopy(l10n).promptBlockedBody,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: Theme.of(context).colorScheme.onSurface
+                            .withValues(alpha: 0.7),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -266,9 +262,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     Text(
                       l10n.notificationsPushPromptEmptyHelper,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: Theme.of(context).colorScheme.onSurface
+                            .withValues(alpha: 0.7),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -335,9 +330,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               Icon(
                                 Icons.mark_email_read_outlined,
                                 size: 56,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.45),
+                                color: Theme.of(context).colorScheme.onSurface
+                                    .withValues(alpha: 0.45),
                               ),
                               const SizedBox(height: 16),
                               Text(

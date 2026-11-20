@@ -312,9 +312,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                _searchTerm.isEmpty
-                                    ? 'No users loaded'
-                                    : 'No users match your search in the loaded list',
+                                _searchTerm.isEmpty ? 'No users loaded' : 'No users match your search in the loaded list',
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 8),
@@ -378,9 +376,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                     profilePath,
                                     style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
                                           decoration: TextDecoration.underline,
                                         ),
                                   ),
@@ -473,9 +471,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                   user.displayName?.isNotEmpty == true
                                       ? user.displayName!
                                       : user.email,
-                                  style: Theme.of(
-                                    sheetContext,
-                                  ).textTheme.titleLarge,
+                                  style: Theme.of(sheetContext)
+                                      .textTheme
+                                      .titleLarge,
                                 ),
                                 const SizedBox(height: 4),
                                 SelectableText(user.email),
@@ -1377,9 +1375,8 @@ class _StatTile extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Theme.of(
-          context,
-        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest
+            .withValues(alpha: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1594,9 +1591,8 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
             child: Text(
               'No feature access configured',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.6),
+                color: Theme.of(context).colorScheme.onSurface
+                    .withValues(alpha: 0.6),
               ),
             ),
           )

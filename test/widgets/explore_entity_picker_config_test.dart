@@ -28,9 +28,8 @@ void main() {
       isTrue,
     );
     expect(
-      const ExploreEntityPickerConfig(
-        mode: ExploreEntityPickerMode.spotsOnly,
-      ).isMultiSpotSelection,
+      const ExploreEntityPickerConfig(mode: ExploreEntityPickerMode.spotsOnly)
+          .isMultiSpotSelection,
       isFalse,
     );
     expect(

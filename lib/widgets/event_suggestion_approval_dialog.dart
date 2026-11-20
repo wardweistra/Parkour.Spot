@@ -147,9 +147,8 @@ class _EventSuggestionApprovalDialogState
       if (userId == null) {
         if (mounted) {
           setState(() {
-            _error = AppLocalizations.of(
-              context,
-            )!.eventSuggestionApprovalFailed;
+            _error = AppLocalizations.of(context)!
+                .eventSuggestionApprovalFailed;
             _isApproving = false;
           });
         }

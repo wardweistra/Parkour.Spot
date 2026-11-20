@@ -237,9 +237,8 @@ class DetailImageCarouselState extends State<DetailImageCarousel> {
           const SizedBox(height: 8),
           Text(
             widget.failedLabel,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(color: Theme.of(context).colorScheme.onSurface),
           ),
         ],
       ),

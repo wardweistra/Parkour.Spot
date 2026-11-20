@@ -120,11 +120,10 @@ class LinkedUpcomingEventPanel extends StatelessWidget {
                                 Text(
                                   featured.title,
                                   style: compact
-                                      ? Theme.of(
-                                          context,
-                                        ).textTheme.bodyMedium?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                        )
+                                      ? Theme.of(context).textTheme.bodyMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            )
                                       : Theme.of(context).textTheme.titleSmall,
                                   maxLines: compact ? 2 : null,
                                   overflow: compact

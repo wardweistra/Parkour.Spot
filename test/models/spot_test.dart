@@ -133,20 +133,17 @@ void main() {
       expect(spot.hasTrustedUpdatedAt, isTrue);
     });
 
-    test(
-      'hasTrustedUpdatedAt is false for imported spots with only inflated updatedAt',
-      () {
-        final spot = Spot(
-          name: 'Imported',
-          description: 'Desc',
-          latitude: 1,
-          longitude: 2,
-          spotSource: 'source-1',
-          updatedAt: DateTime.utc(2026, 8, 24, 10),
-        );
-        expect(spot.hasTrustedUpdatedAt, isFalse);
-      },
-    );
+    test('hasTrustedUpdatedAt is false for imported spots with only inflated updatedAt', () {
+      final spot = Spot(
+        name: 'Imported',
+        description: 'Desc',
+        latitude: 1,
+        longitude: 2,
+        spotSource: 'source-1',
+        updatedAt: DateTime.utc(2026, 8, 24, 10),
+      );
+      expect(spot.hasTrustedUpdatedAt, isFalse);
+    });
 
     test('hasTrustedUpdatedAt is true after a detected source change', () {
       final spot = Spot(

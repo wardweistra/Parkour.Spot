@@ -607,9 +607,8 @@ class _DuplicateSpotsPairReviewScreenState
             const SizedBox(height: 4),
             Text(
               'Uncheck spots to leave out of the merge. Pick sources per field; facilities, features, and good-for tags each combine across their checked spots.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 12),
             SingleChildScrollView(
@@ -903,9 +902,8 @@ class _DuplicateSpotsPairReviewScreenState
                     const SizedBox(height: 2),
                     Text(
                       _sourceLabel(spot),
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                      style: Theme.of(context).textTheme.labelSmall
+                          ?.copyWith(color: colorScheme.onSurfaceVariant),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1252,9 +1250,8 @@ class _DuplicateSpotsPairReviewScreenState
   Widget _buildTableLabelCell(String label, {String? tooltip}) {
     final text = Text(
       label,
-      style: Theme.of(
-        context,
-      ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+      style: Theme.of(context).textTheme.labelLarge
+          ?.copyWith(fontWeight: FontWeight.w600),
     );
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
@@ -1617,9 +1614,8 @@ class _DuplicateSpotsPairReviewScreenState
             children: [
               Text(
                 label,
-                style: Theme.of(
-                  context,
-                ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                style: Theme.of(context).textTheme.labelLarge
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 6),
               Wrap(spacing: 6, runSpacing: 6, children: chips),
@@ -1643,9 +1639,8 @@ class _DuplicateSpotsPairReviewScreenState
             children: [
               Text(
                 'Access',
-                style: Theme.of(
-                  context,
-                ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                style: Theme.of(context).textTheme.labelLarge
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               _detailLine(Icons.lock_outline, 'No access'),
             ],
@@ -2002,9 +1997,8 @@ class _DuplicateSpotsPairReviewScreenState
   }
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   String _sourceLabel(Spot spot) {

@@ -144,9 +144,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                       Icon(
                         Icons.person_outline,
                         size: 48,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.6),
+                        color: Theme.of(context).colorScheme.primary
+                            .withValues(alpha: 0.6),
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -159,9 +158,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                         l10n.profileSignInSubtitle,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.7),
+                          color: Theme.of(context).colorScheme.onSurface
+                              .withValues(alpha: 0.7),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -185,9 +183,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                         children: [
                           Expanded(
                             child: Divider(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.outline.withValues(alpha: 0.3),
+                              color: Theme.of(context).colorScheme.outline
+                                  .withValues(alpha: 0.3),
                             ),
                           ),
                           Padding(
@@ -205,9 +202,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                           ),
                           Expanded(
                             child: Divider(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.outline.withValues(alpha: 0.3),
+                              color: Theme.of(context).colorScheme.outline
+                                  .withValues(alpha: 0.3),
                             ),
                           ),
                         ],
@@ -285,9 +281,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                               CircleAvatar(
                                 key: ValueKey(user?.photoURL ?? 'no-photo'),
                                 radius: 36,
-                                backgroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.primary,
+                                backgroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .primary,
                                 backgroundImage:
                                     user != null &&
                                         user.photoURL != null &&
@@ -319,9 +315,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                                           l10n.profileDefaultDisplayName,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.titleMedium,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium,
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
@@ -345,9 +341,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                               Icon(
                                 Icons.arrow_forward_ios,
                                 size: 16,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.5),
+                                color: Theme.of(context).colorScheme.onSurface
+                                    .withValues(alpha: 0.5),
                               ),
                             ],
                           ),
@@ -356,9 +351,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                       const SizedBox(height: 8),
                       Divider(
                         height: 1,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                        color: Theme.of(context).colorScheme.outlineVariant
+                            .withValues(alpha: 0.5),
                       ),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -629,9 +623,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget _buildAboutSection(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final scheme = Theme.of(context).colorScheme;
-    final textStyle = Theme.of(
-      context,
-    ).textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant);
+    final textStyle = Theme.of(context).textTheme.bodyLarge
+        ?.copyWith(color: scheme.onSurfaceVariant);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -844,9 +837,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                       Text(
                         l10n.profileInstallBannerSubtitle,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.7),
+                          color: Theme.of(context).colorScheme.onSurface
+                              .withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -855,9 +847,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Icon(
                   Icons.arrow_forward_ios,
                   size: 16,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.5),
+                  color: Theme.of(context).colorScheme.onSurface
+                      .withValues(alpha: 0.5),
                 ),
               ],
             ),

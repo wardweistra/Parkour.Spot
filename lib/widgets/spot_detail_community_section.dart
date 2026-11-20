@@ -792,9 +792,8 @@ class _SpotDetailCommunitySectionState
                       final name = shown[i].displayName?.trim();
                       return (name != null && name.isNotEmpty)
                           ? name
-                          : AppLocalizations.of(
-                              context,
-                            )!.spotCheckInUnnamedPerson;
+                          : AppLocalizations.of(context)!
+                                .spotCheckInUnnamedPerson;
                     }(),
                     child: CircleAvatar(
                       radius: _avatarRadius,

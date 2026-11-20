@@ -1073,9 +1073,8 @@ class _PastHistoryLimitCaption extends StatelessWidget {
       child: Text(
         l10n.communityStreamPastHistoryLimit(retentionDays),
         textAlign: TextAlign.center,
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+        style: Theme.of(context).textTheme.bodySmall
+            ?.copyWith(color: colorScheme.onSurfaceVariant),
       ),
     );
   }

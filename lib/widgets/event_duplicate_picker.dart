@@ -316,10 +316,8 @@ class _EventDuplicatePickerState extends State<EventDuplicatePicker> {
         : colors.onSurfaceVariant;
     return Chip(
       label: Text(label),
-      labelStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
-        color: foreground,
-        fontWeight: FontWeight.w600,
-      ),
+      labelStyle: Theme.of(context).textTheme.labelSmall
+          ?.copyWith(color: foreground, fontWeight: FontWeight.w600),
       backgroundColor: background,
       side: BorderSide.none,
       visualDensity: VisualDensity.compact,

@@ -469,9 +469,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     onTap: _shareEvent,
                     child: SpotDetailQuickActionChip(
                       icon: Icons.share_outlined,
-                      iconColor: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.75),
+                      iconColor: Theme.of(context).colorScheme.onSurface
+                          .withValues(alpha: 0.75),
                       label: l10n.spotDetailQuickActionShare,
                     ),
                   ),
@@ -1055,9 +1054,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                             Expanded(
                               child: SelectableText(
                                 event.title,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.headlineMedium,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium,
                               ),
                             ),
                           ],
@@ -1115,9 +1114,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                                   .withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.error.withValues(alpha: 0.6),
+                                color: Theme.of(context).colorScheme.error
+                                    .withValues(alpha: 0.6),
                                 width: 1,
                               ),
                             ),
@@ -1136,9 +1134,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                                         .textTheme
                                         .bodyMedium
                                         ?.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onErrorContainer,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onErrorContainer,
                                         ),
                                   ),
                                 ),
@@ -1190,9 +1188,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   Widget _detailSectionHeading(BuildContext context, String label) {
     return Text(
       label,
-      style: Theme.of(
-        context,
-      ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+      style: Theme.of(context).textTheme.titleSmall
+          ?.copyWith(fontWeight: FontWeight.w600),
     );
   }
 
@@ -1360,10 +1357,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             onTap: () => _copyAddressToClipboard(event.address!.trim()),
             child: SelectableText(
               event.address!.trim(),
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: colors.onSurface,
-                height: 1.4,
-              ),
+              style: Theme.of(context).textTheme.bodyLarge
+                  ?.copyWith(color: colors.onSurface, height: 1.4),
             ),
           ),
         ),
@@ -3934,9 +3929,8 @@ class _LinkedSpotListsSectionState extends State<_LinkedSpotListsSection> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               widget.emptyLabel,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: colors.onSurface.withValues(alpha: 0.65),
-              ),
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(color: colors.onSurface.withValues(alpha: 0.65)),
             ),
           );
         }
@@ -4011,9 +4005,8 @@ class _EventSpotListCard extends StatelessWidget {
                   children: [
                     Text(
                       list.name,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: Theme.of(context).textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -4176,9 +4169,8 @@ class _LinkedSpotsSectionState extends State<_LinkedSpotsSection> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               widget.emptyLabel,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: colors.onSurface.withValues(alpha: 0.65),
-              ),
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(color: colors.onSurface.withValues(alpha: 0.65)),
             ),
           );
         }
@@ -4291,9 +4283,8 @@ class _EventLinkedSpotCard extends StatelessWidget {
                   children: [
                     Text(
                       spot.name,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: Theme.of(context).textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     if (locationLine != null) ...[
                       const SizedBox(height: 4),

@@ -624,9 +624,8 @@ class _EditSpotScreenState extends State<EditSpotScreen>
     } catch (e) {
       debugPrint('Error updating spot: $e');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error updating spot: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error updating spot: $e')));
       }
     } finally {
       if (mounted) {
@@ -697,15 +696,15 @@ class _EditSpotScreenState extends State<EditSpotScreen>
                                 children: [
                                   Text(
                                     'Source',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.labelSmall,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall,
                                   ),
                                   Text(
                                     widget.spot.spotSourceName!,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodyMedium,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium,
                                   ),
                                 ],
                               ),
@@ -856,8 +855,7 @@ class _EditSpotScreenState extends State<EditSpotScreen>
                               CustomTextField(
                                 controller: _descriptionController,
                                 labelText: 'Description',
-                                hintText:
-                                    'Describe the spot, what makes it special, etc.',
+                                hintText: 'Describe the spot, what makes it special, etc.',
                                 maxLines: 4,
                               ),
                             ],

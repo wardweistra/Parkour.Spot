@@ -426,9 +426,8 @@ class _PreviewTile extends StatelessWidget {
                             color: Colors.black.withValues(alpha: 0.45),
                             alignment: Alignment.center,
                             child: Text(
-                              AppLocalizations.of(
-                                context,
-                              )!.adminImageUrlsStatusMissing,
+                              AppLocalizations.of(context)!
+                                  .adminImageUrlsStatusMissing,
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: Colors.white,
                                 fontSize: 9,

@@ -321,9 +321,9 @@ class _ModeratorEventsReviewScreenState
                       Text(
                         'Review checklist',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimaryContainer,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -333,9 +333,9 @@ class _ModeratorEventsReviewScreenState
                         'and whether the location is set and specific enough '
                         '(can it be linked to a spot?).',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimaryContainer,
                         ),
                       ),
                     ],

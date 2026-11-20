@@ -61,10 +61,8 @@ void main() {
     await pumpTile(
       tester,
       buildList(
-        name:
-            'A very long parkour list name that should wrap or ellipsize instead of overflowing the row',
-        description:
-            'An equally long description that must stay inside two lines so the hub stays scannable on a phone.',
+        name: 'A very long parkour list name that should wrap or ellipsize instead of overflowing the row',
+        description: 'An equally long description that must stay inside two lines so the hub stays scannable on a phone.',
       ),
     );
     await tester.pumpAndSettle();

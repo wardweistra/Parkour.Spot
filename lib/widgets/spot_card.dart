@@ -35,8 +35,7 @@ class SpotCard extends StatefulWidget {
   final VoidCallback? onViewDetails; // For overlay variant
   final double? maxWidth; // For overlay variant
   final VoidCallback? onRemove; // For list variant - shows remove button
-  final Widget?
-  reorderHandle; // For list variant - drag handle (e.g. wrapped in ReorderableDelayedDragStartListener)
+  final Widget? reorderHandle; // For list variant - drag handle (e.g. wrapped in ReorderableDelayedDragStartListener)
   final String?
   spotListId; // ID of the spot list this spot belongs to (for highlighting)
   final String?
@@ -121,9 +120,8 @@ class _SpotCardState extends State<SpotCard> {
               const SizedBox(width: 4),
               Text(
                 (widget.spot.averageRating ?? 0.0).toStringAsFixed(1),
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -183,21 +181,21 @@ class _SpotCardState extends State<SpotCard> {
                                   imageUrl: widget.spot.imageUrls![index],
                                   fit: BoxFit.cover,
                                   placeholder: (context, url) => ColoredBox(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.surfaceContainerHighest,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainerHighest,
                                   ),
                                   errorWidget: (context, url, error) =>
                                       Container(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.surfaceContainerHighest,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .surfaceContainerHighest,
                                         child: Icon(
                                           Icons.image_not_supported,
                                           size: 48,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
                                         ),
                                       ),
                                 );
@@ -318,9 +316,9 @@ class _SpotCardState extends State<SpotCard> {
                       child: AspectRatio(
                         aspectRatio: 16 / 9,
                         child: Container(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
                           child: Center(
                             child: NoImagesPlaceholder(label: l10n.noImagesYet),
                           ),
@@ -330,8 +328,7 @@ class _SpotCardState extends State<SpotCard> {
 
                   // Content Section - Wrapped in SingleChildScrollView to prevent overflow
                   SingleChildScrollView(
-                    physics:
-                        const NeverScrollableScrollPhysics(), // Disable scrolling within card
+                    physics: const NeverScrollableScrollPhysics(), // Disable scrolling within card
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
@@ -409,9 +406,9 @@ class _SpotCardState extends State<SpotCard> {
                                 avatar: Icon(
                                   Icons.list,
                                   size: 16,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onPrimaryContainer,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimaryContainer,
                                 ),
                                 label: Text.rich(
                                   TextSpan(
@@ -420,9 +417,9 @@ class _SpotCardState extends State<SpotCard> {
                                         .textTheme
                                         .labelSmall
                                         ?.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onPrimaryContainer,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onPrimaryContainer,
                                         ),
                                     children: [
                                       TextSpan(
@@ -431,18 +428,18 @@ class _SpotCardState extends State<SpotCard> {
                                             .textTheme
                                             .labelSmall
                                             ?.copyWith(
-                                              color: Theme.of(
-                                                context,
-                                              ).colorScheme.onPrimaryContainer,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onPrimaryContainer,
                                               fontWeight: FontWeight.w600,
                                             ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                backgroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.primaryContainer,
+                                backgroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
                                   vertical: 4,
@@ -508,18 +505,16 @@ class _SpotCardState extends State<SpotCard> {
                       children: [
                         ExploreListActionButton(
                           icon: Icons.share,
-                          tooltip: AppLocalizations.of(
-                            context,
-                          )!.spotDetailShareTooltip,
+                          tooltip: AppLocalizations.of(context)!
+                              .spotDetailShareTooltip,
                           onPressed: () => _shareSpot(context),
                         ),
                         if (widget.onLocate != null) ...[
                           const SizedBox(width: 8),
                           ExploreListActionButton(
                             icon: Icons.my_location,
-                            tooltip: AppLocalizations.of(
-                              context,
-                            )!.spotDetailMapLocateOnMap,
+                            tooltip: AppLocalizations.of(context)!
+                                .spotDetailMapLocateOnMap,
                             onPressed: widget.onLocate!,
                           ),
                         ],
@@ -585,9 +580,9 @@ class _SpotCardState extends State<SpotCard> {
                           tooltip: l10n.spotCardRemoveFromListTooltip,
                           onPressed: widget.onRemove,
                           style: IconButton.styleFrom(
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.surface,
+                            backgroundColor: Theme.of(context)
+                                .colorScheme
+                                .surface,
                           ),
                         ),
                     ],
@@ -668,20 +663,20 @@ class _SpotCardState extends State<SpotCard> {
                                   imageUrl: widget.spot.imageUrls![index],
                                   fit: BoxFit.cover,
                                   placeholder: (context, url) => ColoredBox(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.surfaceContainerHighest,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .surfaceContainerHighest,
                                   ),
                                   errorWidget: (context, url, error) =>
                                       Container(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.surfaceContainerHighest,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .surfaceContainerHighest,
                                         child: Icon(
                                           Icons.image_not_supported,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
                                         ),
                                       ),
                                 );
@@ -794,9 +789,9 @@ class _SpotCardState extends State<SpotCard> {
                             // No images indicator
                             Container(
                               decoration: BoxDecoration(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.surfaceContainerHighest,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
                               ),
                               child: Center(
                                 child: NoImagesPlaceholder(
@@ -812,8 +807,7 @@ class _SpotCardState extends State<SpotCard> {
                               top: 8,
                               left: 8,
                               child: SizedBox(
-                                height:
-                                    32, // match top-right row height for vertical centering
+                                height: 32, // match top-right row height for vertical centering
                                 child: Center(
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
@@ -877,9 +871,8 @@ class _SpotCardState extends State<SpotCard> {
                               : widget.spot.description,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                                color: Theme.of(context).colorScheme.onSurface
+                                    .withValues(alpha: 0.7),
                                 fontStyle:
                                     widget.spot.description.trim().isEmpty
                                     ? FontStyle.italic
@@ -903,18 +896,18 @@ class _SpotCardState extends State<SpotCard> {
                               avatar: Icon(
                                 Icons.list,
                                 size: 16,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onPrimaryContainer,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimaryContainer,
                               ),
                               label: Text.rich(
                                 TextSpan(
                                   text: l10n.spotCardPartOfPrefix,
                                   style: Theme.of(context).textTheme.labelSmall
                                       ?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onPrimaryContainer,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onPrimaryContainer,
                                       ),
                                   children: [
                                     TextSpan(
@@ -923,18 +916,18 @@ class _SpotCardState extends State<SpotCard> {
                                           .textTheme
                                           .labelSmall
                                           ?.copyWith(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onPrimaryContainer,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onPrimaryContainer,
                                             fontWeight: FontWeight.w600,
                                           ),
                                     ),
                                   ],
                                 ),
                               ),
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.primaryContainer,
+                              backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .primaryContainer,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
                                 vertical: 4,
@@ -1099,10 +1092,8 @@ class _SpotCardState extends State<SpotCard> {
   Widget _buildRemovedBadge(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final textStyle =
-        Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-        ) ??
+        Theme.of(context).textTheme.labelSmall
+            ?.copyWith(color: Colors.white, fontWeight: FontWeight.w600) ??
         const TextStyle(
           color: Colors.white,
           fontSize: 10,

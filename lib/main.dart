@@ -269,9 +269,8 @@ Future<void> _connectToEmulators() async {
     FirebaseStorage.instance.useStorageEmulator(host, storagePort);
 
     // Connect Functions emulator
-    FirebaseFunctions.instanceFor(
-      region: 'europe-west1',
-    ).useFunctionsEmulator(host, functionsPort);
+    FirebaseFunctions.instanceFor(region: 'europe-west1')
+        .useFunctionsEmulator(host, functionsPort);
 
     debugPrint('✅ Connected to Firebase Emulators');
     debugPrint('   - Firestore: $host:$firestorePort');

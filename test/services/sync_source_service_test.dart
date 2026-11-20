@@ -12,8 +12,7 @@ void main() {
       final naver = SyncSource.fromMap({
         'id': 'naver-1',
         'name': 'Seoul parkour',
-        'kmzUrl':
-            'https://pages.map.naver.com/save-pages/api/maps-bookmark/v3/shares/3388be4a43592f4a6aef152f4b3f0e29/bookmarks',
+        'kmzUrl': 'https://pages.map.naver.com/save-pages/api/maps-bookmark/v3/shares/3388be4a43592f4a6aef152f4b3f0e29/bookmarks',
         'sourceType': 'navermap',
       });
       final googleEarth = SyncSource.fromMap({

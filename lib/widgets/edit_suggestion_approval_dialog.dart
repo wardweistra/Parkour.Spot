@@ -798,8 +798,7 @@ class _EditSuggestionApprovalDialogState
                   controller: _notesController,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    hintText:
-                        'Document why you accepted or rejected these suggestions...',
+                    hintText: 'Document why you accepted or rejected these suggestions...',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),

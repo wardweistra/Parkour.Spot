@@ -37,9 +37,8 @@ class _CreateSpotListDialogState extends State<CreateSpotListDialog> {
     final l10n = AppLocalizations.of(context)!;
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.spotDetailListNameEmpty)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.spotDetailListNameEmpty)));
       return;
     }
 
@@ -59,9 +58,8 @@ class _CreateSpotListDialogState extends State<CreateSpotListDialog> {
     setState(() => _isSubmitting = false);
     final error = spotListService.error;
     if (error != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
     }
   }
 

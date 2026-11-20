@@ -714,10 +714,8 @@ class _EventStatusChip extends StatelessWidget {
     return Chip(
       avatar: Icon(icon, size: 16, color: foreground),
       label: Text(label),
-      labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-        color: foreground,
-        fontWeight: FontWeight.w600,
-      ),
+      labelStyle: Theme.of(context).textTheme.labelLarge
+          ?.copyWith(color: foreground, fontWeight: FontWeight.w600),
       backgroundColor: background,
       side: outlined
           ? BorderSide(color: outlineColor ?? foreground, width: 1)

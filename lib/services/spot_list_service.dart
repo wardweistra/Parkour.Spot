@@ -625,8 +625,7 @@ class SpotListService extends ChangeNotifier {
       } else {
         final normalized = http_url.normalizeHttpOrHttpsUrl(trimmed);
         if (normalized == null) {
-          _error =
-              'Enter a valid URL (http or https), e.g. example.com or https://example.com/page';
+          _error = 'Enter a valid URL (http or https), e.g. example.com or https://example.com/page';
           return null;
         }
         updates['moreInfoUrl'] = normalized;

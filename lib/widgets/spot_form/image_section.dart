@@ -56,9 +56,8 @@ class SpotImageSection extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     '*',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                    style: Theme.of(context).textTheme.titleMedium
+                        ?.copyWith(color: Theme.of(context).colorScheme.error),
                   ),
                 ],
               ],

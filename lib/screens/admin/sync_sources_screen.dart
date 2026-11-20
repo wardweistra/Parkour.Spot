@@ -627,15 +627,15 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
                           if (s.lastError != null) ...[
                             const SizedBox(height: 4),
                             Chip(
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.errorContainer,
+                              backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .errorContainer,
                               label: Text(
                                 'Last error: ${s.lastError!.message}',
                                 style: _kSyncChipLabelText.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onErrorContainer,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onErrorContainer,
                                 ),
                               ),
                               labelStyle: _kSyncChipLabelText,
@@ -1976,8 +1976,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                   controller: urlCtrl,
                   decoration: const InputDecoration(
                     labelText: 'Source URL (KMZ/KML/GeoJSON)',
-                    helperText:
-                        'Paste Google My Maps KMZ/KML or OpenStreetMap uMap GeoJSON URL',
+                    helperText: 'Paste Google My Maps KMZ/KML or OpenStreetMap uMap GeoJSON URL',
                   ),
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Required' : null,
@@ -2082,8 +2081,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 controller: instagramHandleCtrl,
                 decoration: const InputDecoration(
                   labelText: 'Instagram Handle (optional)',
-                  helperText:
-                      'Instagram username without @ symbol (e.g., parkour_spots)',
+                  helperText: 'Instagram username without @ symbol (e.g., parkour_spots)',
                 ),
               ),
               const SizedBox(height: 12),
@@ -2145,8 +2143,7 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                   controller: excludeFoldersCtrl,
                   decoration: const InputDecoration(
                     labelText: 'Exclude Folders (optional)',
-                    helperText:
-                        'One top-level folder name per line. These folders and their subfolders are skipped.',
+                    helperText: 'One top-level folder name per line. These folders and their subfolders are skipped.',
                   ),
                   maxLines: 5,
                   minLines: 3,
@@ -2380,16 +2377,14 @@ class _SyncSourceEditDialogState extends State<SyncSourceEditDialog> {
                 controller: lightSyncScheduleCtrl,
                 decoration: const InputDecoration(
                   labelText: 'Light Sync Schedule (Cron)',
-                  helperText:
-                      'Cron expression for light sync (e.g., "0 2 */3 * *" for every 3 days at 2 AM UTC). Leave empty to disable.',
+                  helperText: 'Cron expression for light sync (e.g., "0 2 */3 * *" for every 3 days at 2 AM UTC). Leave empty to disable.',
                 ),
               ),
               TextFormField(
                 controller: fullSyncScheduleCtrl,
                 decoration: const InputDecoration(
                   labelText: 'Full Sync Schedule (Cron)',
-                  helperText:
-                      'Cron expression for full sync (e.g., "0 3 * * 0" for weekly on Sunday at 3 AM UTC). Leave empty to disable.',
+                  helperText: 'Cron expression for full sync (e.g., "0 3 * * 0" for weekly on Sunday at 3 AM UTC). Leave empty to disable.',
                 ),
               ),
               if (widget.source != null) ...[

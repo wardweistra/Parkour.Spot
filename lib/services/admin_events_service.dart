@@ -1136,8 +1136,7 @@ class AdminEventsService extends ChangeNotifier {
       }
       final original = ParkourEvent.fromFirestore(originalSnap);
       if (!original.isNativeEvent) {
-        _error =
-            'The original must be a native parkour.spot event, not from an external source';
+        _error = 'The original must be a native parkour.spot event, not from an external source';
         notifyListeners();
         return false;
       }
@@ -1168,8 +1167,7 @@ class AdminEventsService extends ChangeNotifier {
 
       final dependents = await getEventsDuplicating(trimmedDup);
       if (dependents.isNotEmpty) {
-        _error =
-            'Cannot mark this event as a duplicate because other events are already marked as duplicates of it';
+        _error = 'Cannot mark this event as a duplicate because other events are already marked as duplicates of it';
         notifyListeners();
         return false;
       }
@@ -1447,8 +1445,7 @@ class AdminEventsService extends ChangeNotifier {
       }
       final original = ParkourEvent.fromFirestore(originalSnap);
       if (!original.isNativeEvent) {
-        _error =
-            'The original must be a native parkour.spot event, not from an external source';
+        _error = 'The original must be a native parkour.spot event, not from an external source';
         notifyListeners();
         return false;
       }

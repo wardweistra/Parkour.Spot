@@ -193,8 +193,7 @@ class _ApiClientsScreenState extends State<ApiClientsScreen> {
         context: context,
         title: 'New API Key',
         apiKey: apiKey ?? '',
-        warning:
-            'Save this API key. It will not be shown again. Previous key is now invalid.',
+        warning: 'Save this API key. It will not be shown again. Previous key is now invalid.',
       );
     } catch (e) {
       if (!mounted) return;

@@ -367,9 +367,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   error,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.9),
+                    color: Theme.of(context).colorScheme.onSurface
+                        .withValues(alpha: 0.9),
                   ),
                 ),
               ),
@@ -400,9 +399,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
               Text(
                 l10n.exploreLoadingProfile,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                  color: Theme.of(context).colorScheme.onSurface
+                      .withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -482,9 +480,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     currentIndex: _currentIndex,
                     onTap: _onTabTapped,
                     selectedItemColor: Theme.of(context).colorScheme.primary,
-                    unselectedItemColor: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+                    unselectedItemColor: Theme.of(context).colorScheme.onSurface
+                        .withValues(alpha: 0.6),
                     backgroundColor: Theme.of(context).colorScheme.surface,
                     elevation: 0,
                     items: [

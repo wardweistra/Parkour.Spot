@@ -29,9 +29,8 @@ class SpotAttributesSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(
-          context,
-        ).colorScheme.primaryContainer.withValues(alpha: 0.1),
+        color: Theme.of(context).colorScheme.primaryContainer
+            .withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
@@ -49,9 +48,8 @@ class SpotAttributesSection extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-              ),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: Theme.of(context).colorScheme.primary),
             ),
           ),
         ],
@@ -123,19 +121,16 @@ class SpotAttributesSection extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: selected
-                    ? Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer.withValues(alpha: 0.3)
+                    ? Theme.of(context).colorScheme.primaryContainer
+                          .withValues(alpha: 0.3)
                     : Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: selected
-                      ? Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.5)
-                      : Theme.of(
-                          context,
-                        ).colorScheme.outline.withValues(alpha: 0.3),
+                      ? Theme.of(context).colorScheme.primary
+                            .withValues(alpha: 0.5)
+                      : Theme.of(context).colorScheme.outline
+                            .withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),
@@ -147,9 +142,8 @@ class SpotAttributesSection extends StatelessWidget {
                     size: 16,
                     color: selected
                         ? Theme.of(context).colorScheme.primary
-                        : Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.6),
+                        : Theme.of(context).colorScheme.onSurface
+                              .withValues(alpha: 0.6),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -157,9 +151,8 @@ class SpotAttributesSection extends StatelessWidget {
                     style: TextStyle(
                       color: selected
                           ? Theme.of(context).colorScheme.primary
-                          : Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.6),
+                          : Theme.of(context).colorScheme.onSurface
+                                .withValues(alpha: 0.6),
                       fontWeight: FontWeight.normal,
                       fontSize: 14,
                     ),
@@ -186,9 +179,8 @@ class SpotAttributesSection extends StatelessWidget {
             Text(
               l10n.addSpotGoodForSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(context).colorScheme.onSurface
+                    .withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 12),
@@ -224,19 +216,16 @@ class SpotAttributesSection extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: selected
-                    ? Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer.withValues(alpha: 0.3)
+                    ? Theme.of(context).colorScheme.primaryContainer
+                          .withValues(alpha: 0.3)
                     : Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: selected
-                      ? Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.5)
-                      : Theme.of(
-                          context,
-                        ).colorScheme.outline.withValues(alpha: 0.3),
+                      ? Theme.of(context).colorScheme.primary
+                            .withValues(alpha: 0.5)
+                      : Theme.of(context).colorScheme.outline
+                            .withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),
@@ -248,9 +237,8 @@ class SpotAttributesSection extends StatelessWidget {
                     size: 16,
                     color: selected
                         ? Theme.of(context).colorScheme.primary
-                        : Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.6),
+                        : Theme.of(context).colorScheme.onSurface
+                              .withValues(alpha: 0.6),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -258,9 +246,8 @@ class SpotAttributesSection extends StatelessWidget {
                     style: TextStyle(
                       color: selected
                           ? Theme.of(context).colorScheme.primary
-                          : Theme.of(
-                              context,
-                            ).colorScheme.onSurface.withValues(alpha: 0.6),
+                          : Theme.of(context).colorScheme.onSurface
+                                .withValues(alpha: 0.6),
                       fontWeight: FontWeight.normal,
                       fontSize: 14,
                     ),
@@ -287,9 +274,8 @@ class SpotAttributesSection extends StatelessWidget {
             Text(
               l10n.addSpotFeaturesSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(context).colorScheme.onSurface
+                    .withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 12),
@@ -324,9 +310,8 @@ class SpotAttributesSection extends StatelessWidget {
             Text(
               l10n.addSpotAccessSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(context).colorScheme.onSurface
+                    .withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 12),
@@ -361,18 +346,18 @@ class SpotAttributesSection extends StatelessWidget {
                       textColor = Colors.blue.shade700;
                       break;
                     default:
-                      backgroundColor = Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer.withValues(alpha: 0.3);
+                      backgroundColor = Theme.of(context)
+                          .colorScheme
+                          .primaryContainer
+                          .withValues(alpha: 0.3);
                       textColor = Theme.of(context).colorScheme.primary;
                   }
                 } else {
-                  backgroundColor = Theme.of(
-                    context,
-                  ).colorScheme.surfaceContainerHighest;
-                  textColor = Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.6);
+                  backgroundColor = Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest;
+                  textColor = Theme.of(context).colorScheme.onSurface
+                      .withValues(alpha: 0.6);
                 }
 
                 return Tooltip(
@@ -434,9 +419,10 @@ class SpotAttributesSection extends StatelessWidget {
                       textColor = Colors.blue.shade700;
                       break;
                     default:
-                      backgroundColor = Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer.withValues(alpha: 0.1);
+                      backgroundColor = Theme.of(context)
+                          .colorScheme
+                          .primaryContainer
+                          .withValues(alpha: 0.1);
                       textColor = Theme.of(context).colorScheme.primary;
                   }
 
@@ -464,9 +450,8 @@ class SpotAttributesSection extends StatelessWidget {
                               'access',
                               selectedAccess!,
                             ),
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodyMedium?.copyWith(color: textColor),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: textColor),
                           ),
                         ),
                       ],
@@ -507,9 +492,9 @@ class SpotAttributesSection extends StatelessWidget {
           textColor = Colors.red.shade700;
           statusIcon = Icons.close;
         } else {
-          backgroundColor = Theme.of(
-            context,
-          ).colorScheme.surfaceContainerHighest;
+          backgroundColor = Theme.of(context)
+              .colorScheme
+              .surfaceContainerHighest;
           textColor = Theme.of(context).colorScheme.onSurface;
           statusIcon = Icons.help_outline;
         }
@@ -574,9 +559,8 @@ class SpotAttributesSection extends StatelessWidget {
             Text(
               l10n.addSpotFacilitiesSubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(context).colorScheme.onSurface
+                    .withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 12),

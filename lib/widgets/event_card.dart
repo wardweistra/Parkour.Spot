@@ -99,9 +99,8 @@ class _EventCardState extends State<EventCard> {
             final descriptionText = Text(
               description.isEmpty ? l10n.spotCardNoDescription : description,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(context).colorScheme.onSurface
+                    .withValues(alpha: 0.7),
                 height: 1.4,
                 fontStyle: description.isEmpty
                     ? FontStyle.italic
@@ -329,9 +328,8 @@ class _EventCardState extends State<EventCard> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(context).colorScheme.onSurface
+                    .withValues(alpha: 0.7),
                 fontWeight: FontWeight.w500,
               ),
             ),

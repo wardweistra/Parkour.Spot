@@ -93,9 +93,8 @@ class _HubDestinationRow extends StatelessWidget {
       title: Text(title, style: Theme.of(context).textTheme.titleMedium),
       subtitle: Text(
         subtitle,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: scheme.onSurface.withValues(alpha: 0.6),
-        ),
+        style: Theme.of(context).textTheme.bodySmall
+            ?.copyWith(color: scheme.onSurface.withValues(alpha: 0.6)),
       ),
       trailing: Icon(
         Icons.arrow_forward_ios,

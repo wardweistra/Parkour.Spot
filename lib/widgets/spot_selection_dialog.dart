@@ -139,8 +139,7 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
       );
       if (mounted && existingDuplicates.isNotEmpty) {
         setState(() {
-          _error =
-              'Cannot mark this spot as a duplicate because other spots are already marked as duplicates of it.';
+          _error = 'Cannot mark this spot as a duplicate because other spots are already marked as duplicates of it.';
           _isCheckingDuplicates = false;
         });
       } else if (mounted) {
@@ -325,8 +324,7 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
       // Only enforce this for moderator actions, not for user reports
       if (!widget.allowExternalSources && spot.spotSource != null) {
         setState(() {
-          _error =
-              'Original spot must be a native parkour.spot spot, not from an external source';
+          _error = 'Original spot must be a native parkour.spot spot, not from an external source';
           _foundSpot = null;
           _isLoading = false;
         });
@@ -369,9 +367,8 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
                   Expanded(
                     child: Text(
                       'Select Original Spot',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: Theme.of(context).textTheme.titleLarge
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ),
                   IconButton(
@@ -392,9 +389,8 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
                 children: [
                   Text(
                     'Enter spot ID or URL',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: Theme.of(context).textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -409,9 +405,9 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             filled: true,
-                            fillColor: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
+                            fillColor: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
                             errorText: _error,
                           ),
                           onSubmitted: (_) => _searchSpot(),
@@ -440,9 +436,8 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
                   Text(
                     'Paste the text copied when sharing a spot, a spot URL, or enter the spot ID directly',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.6),
+                      color: Theme.of(context).colorScheme.onSurface
+                          .withValues(alpha: 0.6),
                     ),
                   ),
                   if (!widget.allowExternalSources) ...[
@@ -450,14 +445,12 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                        color: Theme.of(context).colorScheme.primaryContainer
+                            .withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.3),
+                          color: Theme.of(context).colorScheme.primary
+                              .withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
@@ -538,9 +531,8 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(
               'Nearby spots (within ~50m)',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
           Expanded(
@@ -580,17 +572,15 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
             Icon(
               Icons.search,
               size: 64,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.3),
+              color: Theme.of(context).colorScheme.onSurface
+                  .withValues(alpha: 0.3),
             ),
             const SizedBox(height: 16),
             Text(
               'Enter a spot ID or URL to search',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(context).colorScheme.onSurface
+                    .withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -619,9 +609,8 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
                 _error!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                ),
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(color: Theme.of(context).colorScheme.error),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -639,9 +628,8 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
           children: [
             Text(
               'Found Spot',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             _buildSpotItem(_foundSpot!, isSelectable: true),
@@ -679,9 +667,9 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
                             placeholder: (context, url) => Container(
                               width: 100,
                               height: 100,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHighest,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
                               child: const Center(
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
@@ -691,28 +679,26 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
                             errorWidget: (context, url, error) => Container(
                               width: 100,
                               height: 100,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHighest,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
                               child: Icon(
                                 Icons.image_not_supported,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.5),
+                                color: Theme.of(context).colorScheme.onSurface
+                                    .withValues(alpha: 0.5),
                               ),
                             ),
                           )
                         : Container(
                             width: 100,
                             height: 100,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
                             child: Icon(
                               Icons.image_not_supported,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.5),
+                              color: Theme.of(context).colorScheme.onSurface
+                                  .withValues(alpha: 0.5),
                             ),
                           ),
                   ),
@@ -735,9 +721,8 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
                           spot.description,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                                color: Theme.of(context).colorScheme.onSurface
+                                    .withValues(alpha: 0.7),
                               ),
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
@@ -749,9 +734,8 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
                               Icon(
                                 Icons.location_on,
                                 size: 16,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.6),
+                                color: Theme.of(context).colorScheme.onSurface
+                                    .withValues(alpha: 0.6),
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -793,9 +777,8 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
                     const SizedBox(width: 8),
                     Icon(
                       Icons.chevron_right,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.5),
+                      color: Theme.of(context).colorScheme.onSurface
+                          .withValues(alpha: 0.5),
                     ),
                   ],
                 ],

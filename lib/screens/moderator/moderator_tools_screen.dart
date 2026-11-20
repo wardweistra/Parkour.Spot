@@ -135,8 +135,7 @@ class ModeratorToolsScreen extends StatelessWidget {
                   return AdminToolTile(
                     icon: Icons.report_problem,
                     title: 'Spot report queue',
-                    subtitle:
-                        'Work through new spot reports, keeping moderators aligned on progress',
+                    subtitle: 'Work through new spot reports, keeping moderators aligned on progress',
                     badgeCount: newCount > 0 ? newCount : null,
                     onTap: () => context.go('/moderator/reports'),
                   );
@@ -145,8 +144,7 @@ class ModeratorToolsScreen extends StatelessWidget {
               AdminToolTile(
                 icon: Icons.compare_arrows,
                 title: 'Duplicate spot detection',
-                subtitle:
-                    'Find potential duplicate spots within 50m from different sources',
+                subtitle: 'Find potential duplicate spots within 50m from different sources',
                 onTap: () => context.go('/moderator/duplicate-spots'),
               ),
               StreamBuilder<int>(
@@ -185,8 +183,7 @@ class ModeratorToolsScreen extends StatelessWidget {
                   return AdminToolTile(
                     icon: Icons.event_note_outlined,
                     title: 'Event report queue',
-                    subtitle:
-                        'Review user-submitted event proposals and publish approved events',
+                    subtitle: 'Review user-submitted event proposals and publish approved events',
                     badgeCount: newCount > 0 ? newCount : null,
                     onTap: () => context.go('/moderator/event-reports'),
                   );
@@ -204,8 +201,7 @@ class ModeratorToolsScreen extends StatelessWidget {
                   return AdminToolTile(
                     icon: Icons.event_available_outlined,
                     title: 'Event review',
-                    subtitle:
-                        'Review newly synced events for duplicates and location quality',
+                    subtitle: 'Review newly synced events for duplicates and location quality',
                     badgeCount: reviewCount > 0 ? reviewCount : null,
                     onTap: () => context.go('/moderator/events'),
                   );

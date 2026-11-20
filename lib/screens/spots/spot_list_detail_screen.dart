@@ -350,26 +350,23 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
             Icon(
               Icons.location_off,
               size: 64,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.3),
+              color: Theme.of(context).colorScheme.onSurface
+                  .withValues(alpha: 0.3),
             ),
             const SizedBox(height: 16),
             Text(
               _l10n.spotListDetailNoSpotsInThisList,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.6),
+                color: Theme.of(context).colorScheme.onSurface
+                    .withValues(alpha: 0.6),
               ),
             ),
             const SizedBox(height: 8),
             Text(
               _l10n.publicProfileAddSpotsFromSpotDetailPages,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.5),
+                color: Theme.of(context).colorScheme.onSurface
+                    .withValues(alpha: 0.5),
               ),
             ),
           ],
@@ -1250,9 +1247,8 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                 },
                 child: SpotDetailQuickActionChip(
                   icon: Icons.edit_outlined,
-                  iconColor: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.75),
+                  iconColor: Theme.of(context).colorScheme.onSurface
+                      .withValues(alpha: 0.75),
                   label: _l10n.spotDetailQuickActionEdit,
                 ),
               ),
@@ -1280,9 +1276,8 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
                     onTap: _copyListToClipboard,
                     child: SpotDetailQuickActionChip(
                       icon: Icons.share_outlined,
-                      iconColor: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.75),
+                      iconColor: Theme.of(context).colorScheme.onSurface
+                          .withValues(alpha: 0.75),
                       label: _l10n.spotDetailQuickActionShare,
                     ),
                   ),

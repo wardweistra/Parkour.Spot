@@ -405,8 +405,7 @@ class SearchScreenState extends State<SearchScreen>
   // Filters
   bool _hasImagesOnly = false;
   String? _filterArea; // "amenities" | "source" | null (default = amenities)
-  String?
-  _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
+  String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
   List<String> _spotAccess =
       []; // when amenities: ["public", "restricted", "paid"] for OR query
   bool? _spotFacilitiesCovered; // when amenities: true = "yes"
@@ -1789,9 +1788,8 @@ class SearchScreenState extends State<SearchScreen>
           Text(
             l10n.exploreFilterBy,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.7),
+              color: Theme.of(context).colorScheme.onSurface
+                  .withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 8),
@@ -1877,9 +1875,8 @@ class SearchScreenState extends State<SearchScreen>
           children: [
             Text(
               l10n.exploreSpotPhotosTitle,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             SwitchListTile(
@@ -1913,9 +1910,8 @@ class SearchScreenState extends State<SearchScreen>
           children: [
             Text(
               l10n.exploreSpotAccessTitle,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -2039,17 +2035,15 @@ class SearchScreenState extends State<SearchScreen>
           children: [
             Text(
               l10n.exploreSpotFacilitiesTitle,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Text(
               l10n.exploreFacilitiesMatchAllHint,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(context).colorScheme.onSurface
+                    .withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 12),
@@ -2145,9 +2139,8 @@ class SearchScreenState extends State<SearchScreen>
             Text(
               l10n.exploreAttributesMatchAnyHint,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(context).colorScheme.onSurface
+                    .withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 12),
@@ -2236,9 +2229,8 @@ class SearchScreenState extends State<SearchScreen>
         Text(
           l10n.exploreSpotSourceLabel,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.7),
+            color: Theme.of(context).colorScheme.onSurface
+                .withValues(alpha: 0.7),
           ),
         ),
         const SizedBox(height: 8),
@@ -2259,9 +2251,8 @@ class SearchScreenState extends State<SearchScreen>
                 Expanded(
                   child: Text(
                     l10n.exploreSourcesLoadError,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                    style: Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(color: Theme.of(context).colorScheme.error),
                   ),
                 ),
                 TextButton(
@@ -2346,9 +2337,9 @@ class SearchScreenState extends State<SearchScreen>
                                     child: Icon(
                                       Icons.info_outline,
                                       size: 16,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
                                     ),
                                   ),
                                 ),
@@ -2388,17 +2379,17 @@ class SearchScreenState extends State<SearchScreen>
                                             }
                                           }
                                         },
-                                        selectedColor: Theme.of(
-                                          context,
-                                        ).colorScheme.primaryContainer,
-                                        checkmarkColor: Theme.of(
-                                          context,
-                                        ).colorScheme.onPrimaryContainer,
+                                        selectedColor: Theme.of(context)
+                                            .colorScheme
+                                            .primaryContainer,
+                                        checkmarkColor: Theme.of(context)
+                                            .colorScheme
+                                            .onPrimaryContainer,
                                         labelStyle: TextStyle(
                                           color: isAllSelected
-                                              ? Theme.of(
-                                                  context,
-                                                ).colorScheme.onPrimaryContainer
+                                              ? Theme.of(context)
+                                                    .colorScheme
+                                                    .onPrimaryContainer
                                               : null,
                                         ),
                                       );
@@ -2422,17 +2413,17 @@ class SearchScreenState extends State<SearchScreen>
                                           _loadMapDataForCurrentView();
                                         }
                                       },
-                                      selectedColor: Theme.of(
-                                        context,
-                                      ).colorScheme.primaryContainer,
-                                      checkmarkColor: Theme.of(
-                                        context,
-                                      ).colorScheme.onPrimaryContainer,
+                                      selectedColor: Theme.of(context)
+                                          .colorScheme
+                                          .primaryContainer,
+                                      checkmarkColor: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimaryContainer,
                                       labelStyle: TextStyle(
                                         color: isFolderSelected
-                                            ? Theme.of(
-                                                context,
-                                              ).colorScheme.onPrimaryContainer
+                                            ? Theme.of(context)
+                                                  .colorScheme
+                                                  .onPrimaryContainer
                                             : null,
                                       ),
                                     );
@@ -3854,9 +3845,8 @@ class SearchScreenState extends State<SearchScreen>
                             _showListPreview = false;
                           });
                         },
-                        tooltip: AppLocalizations.of(
-                          context,
-                        )!.exploreCloseTooltip,
+                        tooltip: AppLocalizations.of(context)!
+                            .exploreCloseTooltip,
                       ),
                     ],
                   ),
@@ -4144,8 +4134,7 @@ class SearchScreenState extends State<SearchScreen>
                     Positioned.fill(
                       child: PointerInterceptor(
                         child: GestureDetector(
-                          onTap:
-                              _toggleBottomSheet, // Collapse sheet when map is tapped
+                          onTap: _toggleBottomSheet, // Collapse sheet when map is tapped
                           child: Container(color: Colors.transparent),
                         ),
                       ),
@@ -4205,9 +4194,8 @@ class SearchScreenState extends State<SearchScreen>
 
                                 // Get the screen size
                                 if (!mounted) return;
-                                final screenSize = MediaQuery.of(
-                                  this.context,
-                                ).size;
+                                final screenSize = MediaQuery.of(this.context)
+                                    .size;
 
                                 // Calculate the offset from center (in pixels)
                                 final offsetX =
@@ -4312,9 +4300,8 @@ class SearchScreenState extends State<SearchScreen>
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  AppLocalizations.of(
-                                    context,
-                                  )!.exploreFindingLocation,
+                                  AppLocalizations.of(context)!
+                                      .exploreFindingLocation,
                                 ),
                               ],
                             ),
@@ -4538,9 +4525,9 @@ class SearchScreenState extends State<SearchScreen>
                                       children: [
                                         Text(
                                           'Add at this location',
-                                          style: Theme.of(
-                                            context,
-                                          ).textTheme.titleMedium,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium,
                                         ),
                                         const SizedBox(height: 12),
                                         Row(
@@ -4556,9 +4543,8 @@ class SearchScreenState extends State<SearchScreen>
                                                 });
                                               },
                                               child: Text(
-                                                AppLocalizations.of(
-                                                  context,
-                                                )!.profileCancel,
+                                                AppLocalizations.of(context)!
+                                                    .profileCancel,
                                               ),
                                             ),
                                             const SizedBox(width: 8),
@@ -4726,9 +4712,9 @@ class SearchScreenState extends State<SearchScreen>
                                 child: Container(
                                   clipBehavior: Clip.hardEdge,
                                   decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.surface,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .surface,
                                     borderRadius: const BorderRadius.vertical(
                                       top: Radius.circular(20),
                                     ),
@@ -4836,11 +4822,7 @@ class SearchScreenState extends State<SearchScreen>
                             ? (screenWidth - 1200) / 2 + 16
                             : 16.0;
                         return Positioned(
-                          top:
-                              MediaQuery.of(context).padding.top +
-                              16 +
-                              64 +
-                              8, // Below search bar (16 top padding + 16 margin + ~64 search bar height + 8 spacing)
+                          top: MediaQuery.of(context).padding.top + 16 + 64 + 8, // Below search bar (16 top padding + 16 margin + ~64 search bar height + 8 spacing)
                           right: rightPosition,
                           child: PointerInterceptor(
                             child: InkWell(
@@ -4871,9 +4853,9 @@ class SearchScreenState extends State<SearchScreen>
                               child: Chip(
                                 label: Text(_selectedListName!),
                                 avatar: Icon(Icons.list, size: 18),
-                                backgroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.surface,
+                                backgroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .surface,
                                 elevation: 2,
                                 onDeleted: () {
                                   _clearSpotListSelection();
@@ -4920,9 +4902,8 @@ class SearchScreenState extends State<SearchScreen>
                                     },
                               heroTag: 'refreshSpotsFab',
                               mini: true,
-                              tooltip: AppLocalizations.of(
-                                context,
-                              )!.exploreRefreshMapTooltip,
+                              tooltip: AppLocalizations.of(context)!
+                                  .exploreRefreshMapTooltip,
                               child: _isLoadingMapData
                                   ? const SizedBox(
                                       width: 20,
@@ -4976,12 +4957,10 @@ class SearchScreenState extends State<SearchScreen>
                               heroTag: 'mapTypeToggleFab',
                               mini: true,
                               tooltip: _isSatelliteView
-                                  ? AppLocalizations.of(
-                                      context,
-                                    )!.exploreSwitchToMap
-                                  : AppLocalizations.of(
-                                      context,
-                                    )!.exploreSwitchToSatellite,
+                                  ? AppLocalizations.of(context)!
+                                        .exploreSwitchToMap
+                                  : AppLocalizations.of(context)!
+                                        .exploreSwitchToSatellite,
                               child: ReliableIcon(
                                 icon: _isSatelliteView
                                     ? Icons.map
@@ -5017,12 +4996,10 @@ class SearchScreenState extends State<SearchScreen>
                               heroTag: 'currentLocationFab',
                               mini: true,
                               tooltip: _isLocationPermissionDenied
-                                  ? AppLocalizations.of(
-                                      context,
-                                    )!.exploreLocationPermissionDenied
-                                  : AppLocalizations.of(
-                                      context,
-                                    )!.exploreCenterOnMyLocation,
+                                  ? AppLocalizations.of(context)!
+                                        .exploreLocationPermissionDenied
+                                  : AppLocalizations.of(context)!
+                                        .exploreCenterOnMyLocation,
                               child: _isGettingLocation
                                   ? const SizedBox(
                                       width: 20,
@@ -5063,9 +5040,9 @@ class SearchScreenState extends State<SearchScreen>
                               children: [
                                 Container(
                                   decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.surface,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .surface,
                                     borderRadius: BorderRadius.circular(12),
                                     boxShadow: [
                                       BoxShadow(
@@ -5093,9 +5070,8 @@ class SearchScreenState extends State<SearchScreen>
                                       controller: _searchController,
                                       focusNode: _searchFocusNode,
                                       decoration: InputDecoration(
-                                        hintText: AppLocalizations.of(
-                                          context,
-                                        )!.exploreSearchHint,
+                                        hintText: AppLocalizations.of(context)!
+                                            .exploreSearchHint,
                                         prefixIcon: const Padding(
                                           padding: EdgeInsets.only(left: 6),
                                           child: Icon(Icons.search),
@@ -5118,9 +5094,9 @@ class SearchScreenState extends State<SearchScreen>
                                                         AlwaysStoppedAnimation<
                                                           Color
                                                         >(
-                                                          Theme.of(
-                                                            context,
-                                                          ).colorScheme.primary,
+                                                          Theme.of(context)
+                                                              .colorScheme
+                                                              .primary,
                                                         ),
                                                   ),
                                                 ),
@@ -5284,9 +5260,9 @@ class SearchScreenState extends State<SearchScreen>
                             children: [
                               Text(
                                 l10n.exploreFiltersDialogTitle,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.headlineSmall,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall,
                               ),
                               IconButton(
                                 onPressed: _closeFiltersDialog,

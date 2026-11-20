@@ -92,11 +92,9 @@ class SyncSource {
   final bool isActive;
   final List<String>?
   includeFolders; // Optional whitelist of folders to include
-  final List<String>?
-  excludeFolders; // Optional blacklist of folders to exclude (mutually exclusive with includeFolders)
+  final List<String>? excludeFolders; // Optional blacklist of folders to exclude (mutually exclusive with includeFolders)
   final bool? recordFolderName; // Whether to store folder name on spots
-  final List<String>?
-  allFolders; // List of all folders found during sync (when recordFolderName is true)
+  final List<String>? allFolders; // List of all folders found during sync (when recordFolderName is true)
   final Map<String, dynamic>?
   defaultSpotAttributes; // Defaults for all new spots in this source
   final Map<String, Map<String, dynamic>>?
@@ -112,8 +110,7 @@ class SyncSource {
   final DateTime? lastFullSyncAt;
   final bool? syncInProgress; // Whether a sync is currently in progress
   final String? syncType; // "light" or "full" - type of sync in progress
-  final Map<String, dynamic>?
-  syncProgress; // Progress tracking: {processedCount, totalCount, lastProcessedIndex}
+  final Map<String, dynamic>? syncProgress; // Progress tracking: {processedCount, totalCount, lastProcessedIndex}
   final String? currentSyncRunId;
   final String? lastCompletedRunId;
   final String? lastFailedRunId;

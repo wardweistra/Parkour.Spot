@@ -234,9 +234,8 @@ class _SpotListsHubScreenState extends State<SpotListsHubScreen> {
                           Text(
                             _l10n.spotDetailNoListsYet,
                             textAlign: TextAlign.center,
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodyMedium?.copyWith(color: muted),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: muted),
                           ),
                           const SizedBox(height: 16),
                           CustomButton(
@@ -317,9 +316,8 @@ class _HubTrackingRow extends StatelessWidget {
       title: Text(title, style: Theme.of(context).textTheme.titleMedium),
       subtitle: Text(
         l10n.exploreSpotCountShort(count),
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: scheme.onSurface.withValues(alpha: 0.6),
-        ),
+        style: Theme.of(context).textTheme.bodySmall
+            ?.copyWith(color: scheme.onSurface.withValues(alpha: 0.6)),
       ),
       trailing: Icon(
         Icons.arrow_forward_ios,
@@ -346,9 +344,8 @@ class _HubInlineError extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.error,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(color: Theme.of(context).colorScheme.error),
           ),
           const SizedBox(height: 12),
           FilledButton(
@@ -505,9 +502,8 @@ class _SavedListsSection extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final savedSpotListService = context.watch<SavedSpotListService>();
     final spotListService = context.read<SpotListService>();
-    final muted = Theme.of(
-      context,
-    ).colorScheme.onSurface.withValues(alpha: 0.6);
+    final muted = Theme.of(context).colorScheme.onSurface
+        .withValues(alpha: 0.6);
 
     return StreamBuilder<List<String>>(
       stream: savedSpotListService.watchSavedListIdsOrdered(),
@@ -546,9 +542,8 @@ class _SavedListsSection extends StatelessWidget {
                     ),
                     child: Text(
                       l10n.publicProfileSavedListsUnavailable,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: muted),
+                      style: Theme.of(context).textTheme.bodyMedium
+                          ?.copyWith(color: muted),
                     ),
                   );
                 }

@@ -280,17 +280,15 @@ class TrainingPlanUserCard extends StatelessWidget {
                                 final ok = await svc.deletePlan(p.id);
                                 if (!hostContext.mounted) return;
                                 if (ok) {
-                                  ScaffoldMessenger.of(
-                                    hostContext,
-                                  ).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        AppLocalizations.of(
-                                          hostContext,
-                                        )!.spotDetailTrainingPlanRemoved,
-                                      ),
-                                    ),
-                                  );
+                                  ScaffoldMessenger.of(hostContext)
+                                      .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            AppLocalizations.of(hostContext)!
+                                                .spotDetailTrainingPlanRemoved,
+                                          ),
+                                        ),
+                                      );
                                 } else {
                                   ScaffoldMessenger.of(
                                     hostContext,
@@ -323,9 +321,8 @@ class TrainingPlanUserCard extends StatelessWidget {
                                 ScaffoldMessenger.of(hostContext).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      AppLocalizations.of(
-                                        hostContext,
-                                      )!.spotDetailTrainingPlanUpdated,
+                                      AppLocalizations.of(hostContext)!
+                                          .spotDetailTrainingPlanUpdated,
                                     ),
                                   ),
                                 );
@@ -334,9 +331,8 @@ class TrainingPlanUserCard extends StatelessWidget {
                                   SnackBar(
                                     content: Text(
                                       svc.error ??
-                                          AppLocalizations.of(
-                                            hostContext,
-                                          )!.spotDetailTrainingPlanFailed,
+                                          AppLocalizations.of(hostContext)!
+                                              .spotDetailTrainingPlanFailed,
                                     ),
                                   ),
                                 );

@@ -8,12 +8,11 @@ import '../../utils/image_picker_utils.dart';
 import '../../utils/image_preparation.dart';
 import '../source_logo_image.dart';
 
-typedef SourceLogoUploadFn =
-    Future<String?> Function({
-      required String sourceId,
-      required Uint8List imageBytes,
-      required String contentType,
-    });
+typedef SourceLogoUploadFn = Future<String?> Function({
+  required String sourceId,
+  required Uint8List imageBytes,
+  required String contentType,
+});
 
 typedef SourceLogoRemoveFn = Future<bool> Function(String sourceId);
 
@@ -133,19 +132,16 @@ class _SourceLogoEditorState extends State<SourceLogoEditor> {
         if (!mounted) return;
         setState(() => _displayLogoUrl = newUrl);
         widget.onLogoChanged?.call();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Logo uploaded')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Logo uploaded')));
       } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Logo upload failed')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Logo upload failed')));
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Logo upload failed: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Logo upload failed: $e')));
     } finally {
       if (mounted) {
         setState(() => _isWorking = false);
@@ -164,9 +160,8 @@ class _SourceLogoEditorState extends State<SourceLogoEditor> {
       if (ok) {
         setState(() => _displayLogoUrl = null);
         widget.onLogoChanged?.call();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Logo removed')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Logo removed')));
       } else {
         ScaffoldMessenger.of(
           context,

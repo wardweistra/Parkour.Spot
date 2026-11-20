@@ -137,9 +137,8 @@ class _ModeratorActionFieldsState extends State<ModeratorActionFields> {
                     ? null
                     : 'No $reportLabel reports available',
                 hintStyle: TextStyle(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.5),
+                  color: Theme.of(context).colorScheme.onSurface
+                      .withValues(alpha: 0.5),
                 ),
               ),
               items: [
@@ -150,9 +149,8 @@ class _ModeratorActionFieldsState extends State<ModeratorActionFields> {
                 if (_usesEventReports && hasReports)
                   ...eventReportsList.map((report) {
                     final dateStr = report.createdAt != null
-                        ? DateFormat(
-                            'MMM d, y',
-                          ).format(report.createdAt!.toLocal())
+                        ? DateFormat('MMM d, y')
+                              .format(report.createdAt!.toLocal())
                         : '';
                     final reporterInfo = report.reporterName?.isNotEmpty == true
                         ? report.reporterName!
@@ -187,9 +185,9 @@ class _ModeratorActionFieldsState extends State<ModeratorActionFields> {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.secondaryContainer,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .secondaryContainer,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
@@ -197,9 +195,9 @@ class _ModeratorActionFieldsState extends State<ModeratorActionFields> {
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w500,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSecondaryContainer,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSecondaryContainer,
                                     ),
                                   ),
                                 ),
@@ -212,9 +210,8 @@ class _ModeratorActionFieldsState extends State<ModeratorActionFields> {
                               Icon(
                                 Icons.person_outline,
                                 size: 14,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.6),
+                                color: Theme.of(context).colorScheme.onSurface
+                                    .withValues(alpha: 0.6),
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -265,9 +262,8 @@ class _ModeratorActionFieldsState extends State<ModeratorActionFields> {
                   ...spotReportsList.map((report) {
                     final categories = report.displayCategories.join(', ');
                     final dateStr = report.createdAt != null
-                        ? DateFormat(
-                            'MMM d, y',
-                          ).format(report.createdAt!.toLocal())
+                        ? DateFormat('MMM d, y')
+                              .format(report.createdAt!.toLocal())
                         : '';
                     final reporterInfo = report.reporterName?.isNotEmpty == true
                         ? report.reporterName!
@@ -302,9 +298,9 @@ class _ModeratorActionFieldsState extends State<ModeratorActionFields> {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.secondaryContainer,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .secondaryContainer,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
@@ -312,9 +308,9 @@ class _ModeratorActionFieldsState extends State<ModeratorActionFields> {
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w500,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSecondaryContainer,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSecondaryContainer,
                                     ),
                                   ),
                                 ),
@@ -327,9 +323,8 @@ class _ModeratorActionFieldsState extends State<ModeratorActionFields> {
                               Icon(
                                 Icons.person_outline,
                                 size: 14,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.6),
+                                color: Theme.of(context).colorScheme.onSurface
+                                    .withValues(alpha: 0.6),
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -383,9 +378,8 @@ class _ModeratorActionFieldsState extends State<ModeratorActionFields> {
                     Text(
                       'No reports available',
                       style: TextStyle(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.5),
+                        color: Theme.of(context).colorScheme.onSurface
+                            .withValues(alpha: 0.5),
                       ),
                     ),
                   ];

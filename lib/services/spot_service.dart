@@ -1005,8 +1005,7 @@ class SpotService extends ChangeNotifier {
     required String? userName,
     String? reportId,
     String? notes,
-    String?
-    targetSpotId, // Optional: if spot is duplicate, add to original spot instead
+    String? targetSpotId, // Optional: if spot is duplicate, add to original spot instead
     String?
     approvedByUserId, // Optional: userId of the approver (for audit log)
     String?
@@ -1831,12 +1830,10 @@ class SpotService extends ChangeNotifier {
     int limit = 100,
     bool hasImages = false, // true = only spots with images
     String? filterArea, // "amenities" | "source" | null (null = source)
-    String?
-    spotSource, // when source: null = all, "" = native, string = specific source
+    String? spotSource, // when source: null = all, "" = native, string = specific source
     List<String>?
     folders, // when source: list of folder names (null = all folders)
-    List<String>?
-    spotAccess, // when amenities: ["public", "restricted", "paid"] for OR query, empty = any
+    List<String>? spotAccess, // when amenities: ["public", "restricted", "paid"] for OR query, empty = any
     bool? spotFacilitiesCovered, // when amenities: true = "yes"
     bool? spotFacilitiesLighting, // when amenities: true = "yes"
     bool? spotFacilitiesWaterTap, // when amenities: true = "yes"
@@ -2160,8 +2157,7 @@ class SpotService extends ChangeNotifier {
       // Prevent marking a spot as duplicate if other spots are already marked as duplicates of it
       final existingDuplicates = await getDuplicatesOfSpot(spotId);
       if (existingDuplicates.isNotEmpty) {
-        _error =
-            'Cannot mark this spot as a duplicate because other spots are already marked as duplicates of it';
+        _error = 'Cannot mark this spot as a duplicate because other spots are already marked as duplicates of it';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -2178,8 +2174,7 @@ class SpotService extends ChangeNotifier {
 
       // Ensure the original spot is a native parkour.spot spot (not from external source)
       if (originalSpot.spotSource != null) {
-        _error =
-            'Original spot must be a native parkour.spot spot, not from an external source';
+        _error = 'Original spot must be a native parkour.spot spot, not from an external source';
         _isLoading = false;
         notifyListeners();
         return false;
@@ -2350,8 +2345,7 @@ class SpotService extends ChangeNotifier {
         return false;
       }
       if (!spotIsNative(original)) {
-        _error =
-            'The original must be a native parkour.spot spot, not from an external source';
+        _error = 'The original must be a native parkour.spot spot, not from an external source';
         notifyListeners();
         return false;
       }
@@ -2566,8 +2560,7 @@ class SpotService extends ChangeNotifier {
     }
 
     if (clusterSpots.any(isSpotAlreadyMarkedAsDuplicate)) {
-      _error =
-          'Cannot merge spots that are already marked as duplicates of another spot';
+      _error = 'Cannot merge spots that are already marked as duplicates of another spot';
       notifyListeners();
       return null;
     }

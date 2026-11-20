@@ -1291,18 +1291,16 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
 
     if (normalizedEndAt != null &&
         normalizedEndAt.isBefore(normalizedStartAt)) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.addEventEndBeforeStart)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.addEventEndBeforeStart)));
       return;
     }
 
     if (!_formKey.currentState!.validate()) return;
 
     if (!_hasValidWebsiteUrl()) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.addEventWebsiteInvalid)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.addEventWebsiteInvalid)));
       return;
     }
 
@@ -1422,9 +1420,8 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
 
       if (!mounted) return;
       if (!success) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.addEventSubmitFailed)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(l10n.addEventSubmitFailed)));
         return;
       }
 

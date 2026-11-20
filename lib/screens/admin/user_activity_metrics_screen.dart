@@ -48,9 +48,8 @@ class _UserActivityMetricsScreenState extends State<UserActivityMetricsScreen> {
     if (confirmed != true) return;
 
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Calculating metrics...')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Calculating metrics...')));
 
     try {
       final userManagementService = Provider.of<UserManagementService>(

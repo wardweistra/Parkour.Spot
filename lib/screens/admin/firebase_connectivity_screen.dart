@@ -227,9 +227,8 @@ class _FirebaseConnectivityScreenState
   Future<FirebaseConnectivityProbeResult> _probeCallable() async {
     final sw = Stopwatch()..start();
     try {
-      final callable = FirebaseFunctions.instanceFor(
-        region: 'europe-west1',
-      ).httpsCallable('getTopSpotsInBounds');
+      final callable = FirebaseFunctions.instanceFor(region: 'europe-west1')
+          .httpsCallable('getTopSpotsInBounds');
       final result = await callable
           .call(<String, dynamic>{
             'minLat': _pingMinLat,
@@ -570,9 +569,8 @@ class _InfoRow extends StatelessWidget {
             width: 160,
             child: Text(
               label,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
           Expanded(

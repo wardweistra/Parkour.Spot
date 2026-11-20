@@ -113,9 +113,8 @@ class _EventDuplicateApprovalDialogState
 
     if (!isValidNativeDuplicateOriginal(event)) {
       setState(() {
-        _error = AppLocalizations.of(
-          context,
-        )!.eventDetailMarkDuplicateTargetNotNative;
+        _error = AppLocalizations.of(context)!
+            .eventDetailMarkDuplicateTargetNotNative;
       });
       return;
     }
@@ -131,9 +130,8 @@ class _EventDuplicateApprovalDialogState
     final resolvedId = resolved?.id?.trim();
     if (resolvedId == null || resolvedId.isEmpty) {
       setState(() {
-        _error = AppLocalizations.of(
-          context,
-        )!.eventDuplicateApprovalPickNativeTitle;
+        _error = AppLocalizations.of(context)!
+            .eventDuplicateApprovalPickNativeTitle;
       });
       return;
     }
@@ -196,9 +194,8 @@ class _EventDuplicateApprovalDialogState
         _approving = false;
         _error =
             adminError ??
-            AppLocalizations.of(
-              context,
-            )!.eventDetailMarkDuplicateNotFoundOrInvalid;
+            AppLocalizations.of(context)!
+                .eventDetailMarkDuplicateNotFoundOrInvalid;
       });
       return;
     }

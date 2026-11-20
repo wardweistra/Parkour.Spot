@@ -111,8 +111,7 @@ class AdminHomeScreen extends StatelessWidget {
               AdminToolTile(
                 icon: Icons.notifications_outlined,
                 title: 'All notifications',
-                subtitle:
-                    'Browse every in-app notification across users (newest first)',
+                subtitle: 'Browse every in-app notification across users (newest first)',
                 onTap: () => context.push('/admin/notifications'),
               ),
               AdminToolTile(
@@ -125,8 +124,7 @@ class AdminHomeScreen extends StatelessWidget {
               AdminToolTile(
                 icon: Icons.analytics,
                 title: 'User activity metrics',
-                subtitle:
-                    'Calculate and sync DAU/WAU/MAU metrics, Spots, Users, and Events to Google Sheets',
+                subtitle: 'Calculate and sync DAU/WAU/MAU metrics, Spots, Users, and Events to Google Sheets',
                 onTap: () => context.push('/admin/user-activity-metrics'),
               ),
             ],
@@ -144,15 +142,13 @@ class AdminHomeScreen extends StatelessWidget {
               AdminToolTile(
                 icon: Icons.history,
                 title: 'Audit log viewer',
-                subtitle:
-                    'View spot creations, user creations, and audit log actions',
+                subtitle: 'View spot creations, user creations, and audit log actions',
                 onTap: () => context.push('/admin/audit-log'),
               ),
               AdminToolTile(
                 icon: Icons.map,
                 title: 'Generate sitemaps',
-                subtitle:
-                    'Regenerate XML sitemaps for search engines (spots, lists, users)',
+                subtitle: 'Regenerate XML sitemaps for search engines (spots, lists, users)',
                 showChevron: false,
                 onTap: () => _generateSitemaps(context),
               ),
@@ -166,8 +162,7 @@ class AdminHomeScreen extends StatelessWidget {
               AdminToolTile(
                 icon: Icons.wifi_tethering_error,
                 title: 'Firebase connectivity',
-                subtitle:
-                    'Auth, Firestore, and callable probes for idle/resume issues',
+                subtitle: 'Auth, Firestore, and callable probes for idle/resume issues',
                 onTap: () => context.push('/admin/firebase-connectivity'),
               ),
             ],
@@ -203,9 +198,8 @@ Future<void> _generateSitemaps(BuildContext context) async {
 
   if (confirmed != true || !context.mounted) return;
 
-  ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(const SnackBar(content: Text('Generating sitemaps...')));
+  ScaffoldMessenger.of(context)
+      .showSnackBar(const SnackBar(content: Text('Generating sitemaps...')));
 
   try {
     final spotService = Provider.of<SpotService>(context, listen: false);
@@ -216,8 +210,7 @@ Future<void> _generateSitemaps(BuildContext context) async {
     );
   } catch (e) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('Error: $e')));
   }
 }

@@ -322,15 +322,15 @@ class _EventSyncSourcesScreenState extends State<EventSyncSourcesScreen> {
                         if (source.lastError != null) ...[
                           const SizedBox(height: 4),
                           Chip(
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.errorContainer,
+                            backgroundColor: Theme.of(context)
+                                .colorScheme
+                                .errorContainer,
                             label: Text(
                               'Last error: ${source.lastError!.message}',
                               style: _kEventSyncChipLabelText.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onErrorContainer,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onErrorContainer,
                               ),
                             ),
                           ),
@@ -890,8 +890,7 @@ class _EventSyncSourceEditDialogState extends State<EventSyncSourceEditDialog> {
                   controller: _syncScheduleCtrl,
                   decoration: const InputDecoration(
                     labelText: 'Sync Schedule (Cron)',
-                    helperText:
-                        'Cron expression (e.g., "0 */6 * * *" every 6 hours in UTC). Leave empty to disable schedule.',
+                    helperText: 'Cron expression (e.g., "0 */6 * * *" every 6 hours in UTC). Leave empty to disable schedule.',
                   ),
                 ),
               ],

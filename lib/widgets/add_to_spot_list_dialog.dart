@@ -75,9 +75,8 @@ class _AddToSpotListDialogState extends State<AddToSpotListDialog> {
       return;
     }
     setState(() => _isBusy = false);
-    Navigator.of(
-      context,
-    ).pop(AddToSpotListDialogResult.error(_fallbackError(l10n)));
+    Navigator.of(context)
+        .pop(AddToSpotListDialogResult.error(_fallbackError(l10n)));
   }
 
   Future<void> _addToNewSection(SpotList list) async {
@@ -96,9 +95,8 @@ class _AddToSpotListDialogState extends State<AddToSpotListDialog> {
       return;
     }
     setState(() => _isBusy = false);
-    Navigator.of(
-      context,
-    ).pop(AddToSpotListDialogResult.error(_fallbackError(l10n)));
+    Navigator.of(context)
+        .pop(AddToSpotListDialogResult.error(_fallbackError(l10n)));
   }
 
   Future<void> _onListTap(SpotList list) async {
@@ -126,9 +124,8 @@ class _AddToSpotListDialogState extends State<AddToSpotListDialog> {
   Future<void> _createListAndAdd() async {
     final l10n = AppLocalizations.of(context)!;
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.spotDetailListNameEmpty)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.spotDetailListNameEmpty)));
       return;
     }
 
@@ -158,9 +155,8 @@ class _AddToSpotListDialogState extends State<AddToSpotListDialog> {
       return;
     }
     setState(() => _isBusy = false);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(_fallbackError(l10n))));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(_fallbackError(l10n))));
   }
 
   String _sectionLabel(SpotListSection section, AppLocalizations l10n) {

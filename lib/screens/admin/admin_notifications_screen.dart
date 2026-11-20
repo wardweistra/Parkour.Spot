@@ -164,9 +164,8 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                         Icon(
                           Icons.notifications_none_outlined,
                           size: 64,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.45),
+                          color: Theme.of(context).colorScheme.onSurface
+                              .withValues(alpha: 0.45),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -283,9 +282,8 @@ class _AdminNotificationCard extends StatelessWidget {
                     Text(
                       copy.body!,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.75),
+                        color: Theme.of(context).colorScheme.onSurface
+                            .withValues(alpha: 0.75),
                       ),
                     ),
                   ],
@@ -298,9 +296,8 @@ class _AdminNotificationCard extends StatelessWidget {
                   Text(
                     '${n.deeplinkKind.name} · ${n.deeplinkId}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.65),
+                      color: Theme.of(context).colorScheme.onSurface
+                          .withValues(alpha: 0.65),
                     ),
                   ),
                   const SizedBox(height: 4),

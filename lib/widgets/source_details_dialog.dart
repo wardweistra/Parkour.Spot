@@ -162,9 +162,8 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
                           color: Theme.of(context).colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.primary.withValues(alpha: 0.3),
+                            color: Theme.of(context).colorScheme.primary
+                                .withValues(alpha: 0.3),
                             width: 1,
                           ),
                         ),
@@ -174,17 +173,17 @@ class _SourceDetailsDialogState extends State<SourceDetailsDialog> {
                             Icon(
                               Icons.folder,
                               size: 16,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onPrimaryContainer,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimaryContainer,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               folder,
                               style: TextStyle(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onPrimaryContainer,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimaryContainer,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),

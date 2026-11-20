@@ -181,14 +181,12 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.errorContainer.withValues(alpha: 0.1),
+              color: Theme.of(context).colorScheme.errorContainer
+                  .withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: Theme.of(
-                  context,
-                ).colorScheme.error.withValues(alpha: 0.2),
+                color: Theme.of(context).colorScheme.error
+                    .withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
@@ -202,9 +200,8 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
                 const SizedBox(width: 8),
                 Text(
                   l10n.addSpotLocationNotAvailable,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+                  style: Theme.of(context).textTheme.bodyMedium
+                      ?.copyWith(color: Theme.of(context).colorScheme.error),
                 ),
               ],
             ),
@@ -218,9 +215,8 @@ class _SpotLocationSectionState extends State<SpotLocationSection> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Theme.of(
-                  context,
-                ).colorScheme.outline.withValues(alpha: 0.3),
+                color: Theme.of(context).colorScheme.outline
+                    .withValues(alpha: 0.3),
               ),
             ),
             clipBehavior: Clip.antiAlias,

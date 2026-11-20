@@ -68,9 +68,8 @@ class AccountSettingsScreen extends StatelessWidget {
                 Text(
                   l10n.profileSettingsLanguageDescription,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.7),
+                    color: Theme.of(context).colorScheme.onSurface
+                        .withValues(alpha: 0.7),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -84,9 +83,8 @@ class AccountSettingsScreen extends StatelessWidget {
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: ButtonTheme.fromButtonThemeData(
-                    data: ButtonTheme.of(
-                      context,
-                    ).copyWith(alignedDropdown: false),
+                    data: ButtonTheme.of(context)
+                        .copyWith(alignedDropdown: false),
                     child: Material(
                       type: MaterialType.transparency,
                       child: Theme(
@@ -184,9 +182,8 @@ class AccountSettingsScreen extends StatelessWidget {
             Text(
               l10n.profileLocationAlertsDescription,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(context).colorScheme.onSurface
+                    .withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(height: 12),
@@ -752,9 +749,8 @@ class AccountSettingsScreen extends StatelessWidget {
                               '${selectedLat!.toStringAsFixed(4)}, ${selectedLng!.toStringAsFixed(4)}',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.7),
+                                color: Theme.of(context).colorScheme.onSurface
+                                    .withValues(alpha: 0.7),
                               ),
                         ),
                       ],
@@ -853,9 +849,8 @@ class _NotificationSettingsGroupHeader extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           helper,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: scheme.onSurface.withValues(alpha: 0.7),
-          ),
+          style: Theme.of(context).textTheme.bodySmall
+              ?.copyWith(color: scheme.onSurface.withValues(alpha: 0.7)),
         ),
       ],
     );
@@ -967,9 +962,8 @@ class _LocationOfInterestRow extends StatelessWidget {
       title: Text(title),
       subtitle: Text(
         subtitle,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: scheme.onSurface.withValues(alpha: 0.65),
-        ),
+        style: Theme.of(context).textTheme.bodySmall
+            ?.copyWith(color: scheme.onSurface.withValues(alpha: 0.65)),
       ),
       trailing: Wrap(
         spacing: 4,

@@ -43,8 +43,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   AppLocalizations get _l10n => AppLocalizations.of(context)!;
 
   Future<app_user.User?>? _profileFuture;
-  String?
-  _lastUserIdOrUsername; // Track the last userIdOrUsername used to create the future
+  String? _lastUserIdOrUsername; // Track the last userIdOrUsername used to create the future
   bool _isUploadingProfilePicture = false;
   final ProfilePictureService _profilePictureService = ProfilePictureService();
   Future<(List<SpotList>, int, int)>? _publicListsFuture;
@@ -262,14 +261,13 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.outline.withValues(alpha: 0.3),
+                              color: Theme.of(context).colorScheme.outline
+                                  .withValues(alpha: 0.3),
                             ),
                           ),
                           child: Row(
@@ -278,9 +276,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                               Icon(
                                 Icons.visibility_off,
                                 size: 16,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                               const SizedBox(width: 6),
                               Text(
@@ -290,9 +288,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                 ),
                                 style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
                                     ),
                               ),
                             ],
@@ -311,9 +309,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             child: CircleAvatar(
                               key: ValueKey(user.photoURL ?? 'no-photo'),
                               radius: 50,
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.primary,
+                              backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .primary,
                               backgroundImage:
                                   user.photoURL != null &&
                                       user.photoURL!.isNotEmpty
@@ -349,9 +347,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                   color: Theme.of(context).colorScheme.primary,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.surface,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .surface,
                                     width: 2,
                                   ),
                                 ),
@@ -359,9 +357,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                 child: Icon(
                                   Icons.camera_alt,
                                   size: 20,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onPrimary,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimary,
                                 ),
                               ),
                             ),
@@ -423,9 +421,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                                       ),
                                     ),
                                     style: TextButton.styleFrom(
-                                      foregroundColor: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
+                                      foregroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
                                       visualDensity: VisualDensity.compact,
                                     ),
                                   );
@@ -444,9 +442,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           ),
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.6),
+                                color: Theme.of(context).colorScheme.onSurface
+                                    .withValues(alpha: 0.6),
                               ),
                         ),
                       ],
@@ -655,9 +652,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: Text(
                   _l10n.spotListsHubCouldNotLoad,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+                  style: Theme.of(context).textTheme.bodyMedium
+                      ?.copyWith(color: Theme.of(context).colorScheme.error),
                 ),
               ),
             ),
@@ -971,9 +967,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     Text(
                       '${(uploadProgress * 100).toInt()}%',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: Theme.of(context).colorScheme.onSurface
+                            .withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -1313,9 +1308,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.7),
+            color: Theme.of(context).colorScheme.onSurface
+                .withValues(alpha: 0.7),
           ),
         ),
       ],
@@ -1485,18 +1479,16 @@ class _ProfileSettingsSheetContentState
         Text(
           widget.user.email,
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.8),
+            color: Theme.of(context).colorScheme.onSurface
+                .withValues(alpha: 0.8),
           ),
         ),
         const SizedBox(height: 4),
         Text(
           _l10n.publicProfileEmailNotShownHint,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.6),
+            color: Theme.of(context).colorScheme.onSurface
+                .withValues(alpha: 0.6),
           ),
         ),
       ],
@@ -1824,9 +1816,8 @@ class _ProfileSettingsSheetContentState
                 child: hasBio
                     ? Text(
                         currentBio,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyLarge?.copyWith(height: 1.4),
+                        style: Theme.of(context).textTheme.bodyLarge
+                            ?.copyWith(height: 1.4),
                       )
                     : Text(
                         _l10n.publicProfileNoBioSet,
@@ -2148,9 +2139,8 @@ class _ProfileSettingsSheetContentState
                         ? _l10n.publicProfilePrivacyPublicDescription
                         : _l10n.publicProfilePrivacyPrivateDescription,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.7),
+                      color: Theme.of(context).colorScheme.onSurface
+                          .withValues(alpha: 0.7),
                     ),
                   ),
                 ],

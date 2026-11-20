@@ -75,15 +75,13 @@ class SpotAttributes {
     'rolls': {
       'label': 'Rolls',
       'icon': Icons.refresh,
-      'description':
-          'This spot is good for rolling techniques on the ground or on obstacles',
+      'description': 'This spot is good for rolling techniques on the ground or on obstacles',
       'filterDescription': 'Spots good for rolls',
     },
     'cats': {
       'label': 'Cat leaps',
       'icon': Icons.pets,
-      'description':
-          'This spot is good for hanging or jumping towards hanging off obstacles',
+      'description': 'This spot is good for hanging or jumping towards hanging off obstacles',
       'filterDescription': 'Spots good for cat leaps',
     },
     'flow': {
@@ -139,8 +137,7 @@ class SpotAttributes {
     'bars_medium': {
       'label': 'Medium bar',
       'icon': Icons.horizontal_rule,
-      'description':
-          'This spot has medium height bars, 1 meter or 3 feet to 2 meters or 7 feet high',
+      'description': 'This spot has medium height bars, 1 meter or 3 feet to 2 meters or 7 feet high',
       'filterDescription': 'Spots with medium bars (1 to 2 m / 3 to 7 ft)',
     },
     'bars_high': {
@@ -164,8 +161,7 @@ class SpotAttributes {
     'soft_landing_pit': {
       'label': 'Soft landing pit',
       'icon': Icons.bed,
-      'description':
-          'This spot has a soft surface for safe landings, like for example a sandpit or foam pit',
+      'description': 'This spot has a soft surface for safe landings, like for example a sandpit or foam pit',
       'filterDescription': 'Spots with a soft landing pit',
     },
     'roof_gap': {
@@ -178,8 +174,7 @@ class SpotAttributes {
     'bouncy_equipment': {
       'label': 'Bouncy equipment',
       'icon': Icons.sports_gymnastics,
-      'description':
-          'This spot has bouncy equipment, like an airtrack, trampoline, spring floor, or similar',
+      'description': 'This spot has bouncy equipment, like an airtrack, trampoline, spring floor, or similar',
       'filterDescription': 'Spots with bouncy equipment',
     },
   };
@@ -195,15 +190,13 @@ class SpotAttributes {
     'restricted': {
       'label': 'Restricted',
       'icon': Icons.lock,
-      'description':
-          'This spot has limited access and may require permission from the owner',
+      'description': 'This spot has limited access and may require permission from the owner',
       'filterDescription': 'Limited access; may need permission',
     },
     'paid': {
       'label': 'Paid',
       'icon': Icons.payments,
-      'description':
-          'This spot requires payment or a membership to access, like for example a commercial parkour gym or park',
+      'description': 'This spot requires payment or a membership to access, like for example a commercial parkour gym or park',
       'filterDescription': 'Requires payment or membership',
     },
   };
@@ -213,15 +206,13 @@ class SpotAttributes {
     'covered': {
       'label': 'Covered',
       'icon': Icons.roofing,
-      'description':
-          'Whether this spot has a roof or cover from the weather, making it possible to train in rain or harsh sunshine',
+      'description': 'Whether this spot has a roof or cover from the weather, making it possible to train in rain or harsh sunshine',
       'filterDescription': 'Has cover from weather',
     },
     'lighting': {
       'label': 'Lighting',
       'icon': Icons.lightbulb,
-      'description':
-          'Whether this spot has artificial lighting, making it possible to train at night',
+      'description': 'Whether this spot has artificial lighting, making it possible to train at night',
       'filterDescription': 'Has lighting for night training',
     },
     'water_tap': {

@@ -42,30 +42,26 @@ class SpotImagesScreen extends StatelessWidget {
               AdminToolTile(
                 icon: Icons.image_search,
                 title: 'Duplicate image URLs',
-                subtitle:
-                    'Find all spots with duplicate image URLs in their image array',
+                subtitle: 'Find all spots with duplicate image URLs in their image array',
                 onTap: () => context.push('/admin/duplicate-images'),
               ),
               AdminToolTile(
                 icon: Icons.image_not_supported,
                 title: 'Resized images',
-                subtitle:
-                    'Classify spot and event images: no resize, only 1200×630, or has 1200×1200',
+                subtitle: 'Classify spot and event images: no resize, only 1200×630, or has 1200×1200',
                 onTap: () => context.push('/admin/missing-resized-images'),
               ),
               AdminToolTile(
                 icon: Icons.cleaning_services,
                 title: 'Cleanup unused images',
-                subtitle:
-                    'Move unreferenced spot images (and resized versions) to trash',
+                subtitle: 'Move unreferenced spot images (and resized versions) to trash',
                 showChevron: false,
                 onTap: () => SpotDataActions.cleanupUnusedImages(context),
               ),
               AdminToolTile(
                 icon: Icons.broken_image,
                 title: 'Find missing images',
-                subtitle:
-                    'Find image files referenced by spots that are missing in storage',
+                subtitle: 'Find image files referenced by spots that are missing in storage',
                 showChevron: false,
                 onTap: () => SpotDataActions.findMissingImages(context),
               ),

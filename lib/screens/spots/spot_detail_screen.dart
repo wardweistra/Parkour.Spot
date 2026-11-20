@@ -242,9 +242,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     try {
-      _exploreDocumentTitle = AppLocalizations.of(
-        context,
-      )!.exploreMetaDefaultTitle;
+      _exploreDocumentTitle = AppLocalizations.of(context)!
+          .exploreMetaDefaultTitle;
     } catch (_) {
       _exploreDocumentTitle = _fallbackDocumentTitle;
     }
@@ -1433,9 +1432,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
             padding: EdgeInsets.only(bottom: bottom),
             child: SpotDetailQuickActionChip(
               icon: Icons.edit_outlined,
-              iconColor: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.38),
+              iconColor: Theme.of(context).colorScheme.onSurface
+                  .withValues(alpha: 0.38),
               label: _l10n.spotDetailLoading,
               showSpinner: true,
               showLabel: showChipLabel,
@@ -2057,9 +2055,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       },
       child: SpotDetailQuickActionChip(
         icon: Icons.edit_outlined,
-        iconColor: Theme.of(
-          context,
-        ).colorScheme.onSurface.withValues(alpha: 0.75),
+        iconColor: Theme.of(context).colorScheme.onSurface
+            .withValues(alpha: 0.75),
         label: _l10n.spotDetailQuickActionEdit,
         showLabel: !compactQuickActions,
       ),
@@ -2548,9 +2545,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             Expanded(
                               child: SelectableText(
                                 _spot.name,
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.headlineMedium,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineMedium,
                               ),
                             ),
                           ],
@@ -2690,9 +2687,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   .withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.error.withValues(alpha: 0.6),
+                                color: Theme.of(context).colorScheme.error
+                                    .withValues(alpha: 0.6),
                                 width: 1,
                               ),
                             ),
@@ -2711,9 +2707,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                         .textTheme
                                         .bodyMedium
                                         ?.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onErrorContainer,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onErrorContainer,
                                         ),
                                   ),
                                 ),
@@ -2733,9 +2729,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   .withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.error.withValues(alpha: 0.6),
+                                color: Theme.of(context).colorScheme.error
+                                    .withValues(alpha: 0.6),
                                 width: 1,
                               ),
                             ),
@@ -2758,9 +2753,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                         .textTheme
                                         .bodyMedium
                                         ?.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onErrorContainer,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onErrorContainer,
                                         ),
                                   ),
                                 ),
@@ -2845,9 +2840,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                     children: [
                                       Text(
                                         _l10n.spotDetailSectionAccess,
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.titleMedium,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium,
                                       ),
                                       const SizedBox(height: 8),
                                       _buildAccessChip(widget.spot.spotAccess!),
@@ -3008,9 +3003,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                   if (widget.spot.spotAccess != null) ...[
                                     Text(
                                       _l10n.spotDetailSectionAccess,
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.titleMedium,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium,
                                     ),
                                     const SizedBox(height: 8),
                                     _buildAccessChip(widget.spot.spotAccess!),
@@ -3216,9 +3211,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                             child: Icon(
                                               Icons.movie,
                                               size: 64,
-                                              color: Theme.of(
-                                                context,
-                                              ).colorScheme.onSurfaceVariant,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
                                             ),
                                           );
                                   }
@@ -3299,13 +3294,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                                         item.brandLogoAsset!,
                                                         height: 20,
                                                         fit: BoxFit.contain,
-                                                        errorBuilder:
-                                                            (
-                                                              _,
-                                                              error,
-                                                              stackTrace,
-                                                            ) =>
-                                                                const SizedBox.shrink(),
+                                                        errorBuilder: (
+                                                          _,
+                                                          error,
+                                                          stackTrace,
+                                                        ) => const SizedBox.shrink(),
                                                       ),
                                                     if ((item.useYoutubeIcon ||
                                                             hasLogo) &&
@@ -3625,9 +3618,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.outline.withValues(alpha: 0.3),
+                              color: Theme.of(context).colorScheme.outline
+                                  .withValues(alpha: 0.3),
                             ),
                           ),
                           clipBehavior: Clip.antiAlias,
@@ -3857,9 +3849,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                             _l10n
                                                 .spotDetailOriginalSpotFallback,
                                         style: TextStyle(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
                                         ),
                                       ),
                                 contentPadding: EdgeInsets.zero,
@@ -3877,9 +3869,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               ListTile(
                                 leading: Icon(
                                   Icons.copy_all,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.secondary,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .secondary,
                                 ),
                                 title: Text(_l10n.spotDetailAlsoBasedOn),
                                 subtitle: Text(_l10n.spotDetailLoading),
@@ -3889,9 +3881,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                               ListTile(
                                 leading: Icon(
                                   Icons.copy_all,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.secondary,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .secondary,
                                 ),
                                 title: Text(
                                   _l10n.spotDetailAlsoBasedOn,
@@ -3917,16 +3909,16 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       leading: Icon(
                                         Icons.arrow_right,
                                         size: 16,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.secondary,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .secondary,
                                       ),
                                       title: Text(
                                         duplicate.name,
                                         style: TextStyle(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.secondary,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .secondary,
                                         ),
                                       ),
                                       subtitle:
@@ -3949,9 +3941,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                                       trailing: Icon(
                                         Icons.open_in_new,
                                         size: 16,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.secondary,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .secondary,
                                       ),
                                     ),
                                   ),
@@ -4068,9 +4060,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   // status bar on edge-to-edge Android.
                   height: double.infinity,
                   placeholder: (context, url) => Container(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .surfaceContainerHighest,
                     child: Center(child: CircularProgressIndicator()),
                   ),
                   errorWidget: (context, url, error) {
@@ -4083,9 +4075,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                     debugPrint('Resized URL (failed to load): $url');
                     debugPrint('Original URL (stored in spot): $originalUrl');
                     return Container(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -4099,9 +4091,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             _l10n.spotDetailImageFailedToLoad,
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurface,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface,
                                 ),
                           ),
                         ],
@@ -5463,9 +5455,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           color: Theme.of(context).colorScheme.primary,
         ),
         label: Text(label),
-        backgroundColor: Theme.of(
-          context,
-        ).colorScheme.primaryContainer.withValues(alpha: 0.1),
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer
+            .withValues(alpha: 0.1),
         labelStyle: TextStyle(
           color: Theme.of(context).colorScheme.onPrimaryContainer,
           fontWeight: FontWeight.normal,
@@ -5565,14 +5556,13 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.outline.withValues(alpha: 0.3),
+                          color: Theme.of(context).colorScheme.outline
+                              .withValues(alpha: 0.3),
                           width: 1,
                         ),
                       ),
@@ -5618,9 +5608,8 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
           color: Theme.of(context).colorScheme.primary,
         ),
         label: Text(label),
-        backgroundColor: Theme.of(
-          context,
-        ).colorScheme.primaryContainer.withValues(alpha: 0.1),
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer
+            .withValues(alpha: 0.1),
         labelStyle: TextStyle(
           color: Theme.of(context).colorScheme.onPrimaryContainer,
           fontWeight: FontWeight.normal,

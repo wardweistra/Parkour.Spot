@@ -648,16 +648,15 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                                   city: spot.city,
                                 );
                                 if (mounted) {
-                                  ScaffoldMessenger.of(
-                                    this.context,
-                                  ).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Spot URL copied to clipboard',
-                                      ),
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
+                                  ScaffoldMessenger.of(this.context)
+                                      .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Spot URL copied to clipboard',
+                                          ),
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
                                 }
                               }
                             : null,

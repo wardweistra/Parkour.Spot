@@ -128,12 +128,10 @@ class PwaInstallService extends ChangeNotifier {
   Map<String, dynamic> get debugInfo {
     return {
       // Note: isInstallPromptAvailable is for diagnostics only - we always show instructions
-      'chromeInstallButtonAvailable':
-          _isInstallPromptAvailable, // Whether Chrome might show its own install button
+      'chromeInstallButtonAvailable': _isInstallPromptAvailable, // Whether Chrome might show its own install button
       'isInstalled': _isInstalled,
       'isInstallSupported': isInstallSupported,
-      'shouldShowPrompt':
-          shouldShowPrompt, // Controls Explore banner visibility (engagement-based)
+      'shouldShowPrompt': shouldShowPrompt, // Controls Explore banner visibility (engagement-based)
       'showCount': _showCount,
       'pageViewCount': _pageViewCount,
       'firstSeenTimestamp': _firstSeenTimestamp,

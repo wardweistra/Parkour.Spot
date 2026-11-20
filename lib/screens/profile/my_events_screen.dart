@@ -159,9 +159,8 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
           Icon(
             Icons.event_outlined,
             size: 56,
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.45),
+            color: Theme.of(context).colorScheme.onSurface
+                .withValues(alpha: 0.45),
           ),
           const SizedBox(height: 16),
           Text(
@@ -174,9 +173,8 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
             _l10n.myEventsEmptyDescription,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurface.withValues(alpha: 0.7),
+              color: Theme.of(context).colorScheme.onSurface
+                  .withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 16),

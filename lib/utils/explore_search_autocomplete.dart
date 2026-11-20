@@ -12,18 +12,19 @@ import '../services/spot_service.dart';
 import '../utils/event_date_window.dart';
 import '../widgets/explore_entity_picker/explore_entity_picker_config.dart';
 
-typedef ExplorePlacesFetcher =
-    Future<List<Map<String, dynamic>>> Function({
-      required String query,
-      String? sessionToken,
-      LatLng? mapCenter,
-    });
+typedef ExplorePlacesFetcher = Future<List<Map<String, dynamic>>> Function({
+  required String query,
+  String? sessionToken,
+  LatLng? mapCenter,
+});
 
-typedef ExploreSpotsFetcher =
-    Future<List<Spot>> Function({required String query});
+typedef ExploreSpotsFetcher = Future<List<Spot>> Function({
+  required String query,
+});
 
-typedef ExploreEventsFetcher =
-    Future<List<Map<String, dynamic>>> Function({required String query});
+typedef ExploreEventsFetcher = Future<List<Map<String, dynamic>>> Function({
+  required String query,
+});
 
 const Duration kExploreAutocompleteDebounce = Duration(milliseconds: 150);
 

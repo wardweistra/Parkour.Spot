@@ -181,9 +181,8 @@ class _SplashScreenState extends State<SplashScreen>
                     // Header
                     Text(
                       'Parkour·Spot',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.headlineMedium?.copyWith(color: Colors.white),
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(color: Colors.white),
                     ),
 
                     const SizedBox(height: 10),

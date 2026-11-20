@@ -118,9 +118,9 @@ class _EventDuplicateChangesDialogState
           child: Text(l10n.profileCancel),
         ),
         TextButton(
-          onPressed: () => Navigator.of(
-            context,
-          ).pop(const EventDuplicateChangesResult(dismissed: true)),
+          onPressed: () =>
+              Navigator.of(context)
+                  .pop(const EventDuplicateChangesResult(dismissed: true)),
           child: Text(l10n.eventDuplicateChangesDismiss),
         ),
         FilledButton(

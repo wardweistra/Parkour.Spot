@@ -341,9 +341,8 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
     final canSubEnd = _isEdit ? _canSubtractEnd() : _canSubtractEndForNew(now);
     final canAddEnd = _isEdit ? _canAddEnd() : _canAddEndForNew(now);
 
-    final untilStr = DateFormat(
-      'MMM d, y • h:mm a',
-    ).format(_expectedEndAt.toLocal());
+    final untilStr = DateFormat('MMM d, y • h:mm a')
+        .format(_expectedEndAt.toLocal());
     final cs = theme.colorScheme;
     final err = cs.error;
 
@@ -516,9 +515,8 @@ class _SpotCheckInDialogState extends State<SpotCheckInDialog> {
                 cs: cs,
                 l10n: l10n,
                 label: l10n.spotCheckInDialogLabelArrived,
-                valueStr: DateFormat(
-                  'MMM d, y • h:mm a',
-                ).format(_checkedInAt.toLocal()),
+                valueStr: DateFormat('MMM d, y • h:mm a')
+                    .format(_checkedInAt.toLocal()),
                 canSub: canSubStart,
                 canAdd: canAddStart,
                 onSub: () => _nudgeStartByQuarter(-1),

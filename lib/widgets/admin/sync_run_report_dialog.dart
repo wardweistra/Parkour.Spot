@@ -81,9 +81,8 @@ class _SyncRunReportDialogState extends State<SyncRunReportDialog> {
     await Clipboard.setData(ClipboardData(text: run.toReportText()));
     if (!mounted) return;
     setState(() => _copied = true);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Report copied')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Report copied')));
   }
 
   Color _statusColor(ColorScheme scheme, SyncRun run) {
@@ -200,9 +199,8 @@ class _SyncRunReportDialogState extends State<SyncRunReportDialog> {
       padding: const EdgeInsets.only(bottom: 2),
       child: SelectableText(
         text,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
+        style: Theme.of(context).textTheme.bodyMedium
+            ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
       ),
     );
   }

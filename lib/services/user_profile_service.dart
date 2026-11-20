@@ -144,15 +144,13 @@ class UserProfileService extends ChangeNotifier {
 
       // Validate username length (max 27 to prevent conflicts with 28-character user IDs)
       if (trimmedUsername.length >= 28) {
-        _error =
-            'Username must be 27 characters or less to avoid conflicts with user IDs';
+        _error = 'Username must be 27 characters or less to avoid conflicts with user IDs';
         _isLoading = false;
         notifyListeners();
         return false;
       }
       if (!RegExp(r'^[a-zA-Z0-9_-]{3,27}$').hasMatch(trimmedUsername)) {
-        _error =
-            'Username must be 3-27 characters and contain only letters, numbers, underscores, and hyphens';
+        _error = 'Username must be 3-27 characters and contain only letters, numbers, underscores, and hyphens';
         _isLoading = false;
         notifyListeners();
         return false;

@@ -95,9 +95,8 @@ class _SpotListAccessSheetState extends State<SpotListAccessSheet> {
     setState(() => _isInviting = false);
     if (ok) {
       _inviteeController.clear();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.spotListAccessInviteSent)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.spotListAccessInviteSent)));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

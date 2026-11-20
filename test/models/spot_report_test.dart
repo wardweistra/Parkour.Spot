@@ -16,9 +16,8 @@ void main() {
   group('SpotReport.hasEditSuggestions', () {
     test('is true when YouTube video IDs are suggested', () {
       expect(
-        _report(
-          suggestedYoutubeVideoIds: const ['dQw4w9WgXcQ'],
-        ).hasEditSuggestions,
+        _report(suggestedYoutubeVideoIds: const ['dQw4w9WgXcQ'])
+            .hasEditSuggestions,
         isTrue,
       );
     });

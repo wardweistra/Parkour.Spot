@@ -29,9 +29,8 @@ class LocationInfoBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Theme.of(
-          context,
-        ).colorScheme.primaryContainer.withValues(alpha: 0.1),
+        color: Theme.of(context).colorScheme.primaryContainer
+            .withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
@@ -53,9 +52,9 @@ class LocationInfoBox extends StatelessWidget {
                         height: 20,
                         width: 30,
                         decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -102,9 +101,9 @@ class LocationInfoBox extends StatelessWidget {
                         height: 20,
                         width: 30,
                         decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -135,17 +134,15 @@ class LocationInfoBox extends StatelessWidget {
               Icon(
                 Icons.gps_fixed,
                 size: 16,
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.6),
+                color: Theme.of(context).colorScheme.onSurface
+                    .withValues(alpha: 0.6),
               ),
               const SizedBox(width: 4),
               SelectableText(
                 '${latitude.toStringAsFixed(6)}, ${longitude.toStringAsFixed(6)}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  color: Theme.of(context).colorScheme.onSurface
+                      .withValues(alpha: 0.6),
                 ),
               ),
             ],
@@ -166,9 +163,8 @@ class LocationInfoBox extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   l10n.addSpotGettingAddress,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: Theme.of(context).colorScheme.primary),
                 ),
               ],
             ),

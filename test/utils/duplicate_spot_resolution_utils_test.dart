@@ -174,88 +174,82 @@ void main() {
       expect(preview.createdFromCreateNative, isTrue);
     });
 
-    test(
-      'buildDuplicateNativeSpotPreview keeps high-precision selected coordinates',
-      () {
-        const selectedLatitude = 48.856614001;
-        const selectedLongitude = 2.352221901;
-        final spotA = Spot(
-          id: 'a',
-          name: 'A',
-          description: '',
-          latitude: 48.86,
-          longitude: 2.35,
-          address: 'Address A',
-        );
-        final spotB = Spot(
-          id: 'b',
-          name: 'B',
-          description: '',
-          latitude: selectedLatitude,
-          longitude: selectedLongitude,
-          address: 'Address B',
-        );
+    test('buildDuplicateNativeSpotPreview keeps high-precision selected coordinates', () {
+      const selectedLatitude = 48.856614001;
+      const selectedLongitude = 2.352221901;
+      final spotA = Spot(
+        id: 'a',
+        name: 'A',
+        description: '',
+        latitude: 48.86,
+        longitude: 2.35,
+        address: 'Address A',
+      );
+      final spotB = Spot(
+        id: 'b',
+        name: 'B',
+        description: '',
+        latitude: selectedLatitude,
+        longitude: selectedLongitude,
+        address: 'Address B',
+      );
 
-        final preview = buildDuplicateNativeSpotPreview(
-          spots: [spotA, spotB],
-          baseSpotId: 'a',
-          titleSpotId: 'a',
-          descriptionSpotId: 'a',
-          locationSpotId: 'b',
-          accessSpotId: 'a',
-          facilitiesSpotIds: const {},
-          featureSpotIds: const {},
-          goodForSpotIds: const {},
-          photoSpotIds: const {},
-          youtubeSpotIds: const {},
-        );
+      final preview = buildDuplicateNativeSpotPreview(
+        spots: [spotA, spotB],
+        baseSpotId: 'a',
+        titleSpotId: 'a',
+        descriptionSpotId: 'a',
+        locationSpotId: 'b',
+        accessSpotId: 'a',
+        facilitiesSpotIds: const {},
+        featureSpotIds: const {},
+        goodForSpotIds: const {},
+        photoSpotIds: const {},
+        youtubeSpotIds: const {},
+      );
 
-        expect(preview.latitude, selectedLatitude);
-        expect(preview.longitude, selectedLongitude);
-        expect(preview.address, 'Address B');
-      },
-    );
+      expect(preview.latitude, selectedLatitude);
+      expect(preview.longitude, selectedLongitude);
+      expect(preview.address, 'Address B');
+    });
 
-    test(
-      'buildDuplicateNativeSpotPreview unions feature and good-for tags separately',
-      () {
-        final spotA = Spot(
-          id: 'a',
-          name: 'A',
-          description: '',
-          latitude: 52,
-          longitude: 4,
-          spotFeatures: const ['walls_low'],
-          goodFor: const ['vaults'],
-        );
-        final spotB = Spot(
-          id: 'b',
-          name: 'B',
-          description: '',
-          latitude: 52.0001,
-          longitude: 4.0001,
-          spotFeatures: const ['bars_low', 'walls_low'],
-          goodFor: const ['precisions'],
-        );
+    test('buildDuplicateNativeSpotPreview unions feature and good-for tags separately', () {
+      final spotA = Spot(
+        id: 'a',
+        name: 'A',
+        description: '',
+        latitude: 52,
+        longitude: 4,
+        spotFeatures: const ['walls_low'],
+        goodFor: const ['vaults'],
+      );
+      final spotB = Spot(
+        id: 'b',
+        name: 'B',
+        description: '',
+        latitude: 52.0001,
+        longitude: 4.0001,
+        spotFeatures: const ['bars_low', 'walls_low'],
+        goodFor: const ['precisions'],
+      );
 
-        final preview = buildDuplicateNativeSpotPreview(
-          spots: [spotA, spotB],
-          baseSpotId: 'a',
-          titleSpotId: 'a',
-          descriptionSpotId: 'a',
-          locationSpotId: 'a',
-          accessSpotId: 'a',
-          facilitiesSpotIds: {'a'},
-          featureSpotIds: {'a', 'b'},
-          goodForSpotIds: {'a', 'b'},
-          photoSpotIds: const {},
-          youtubeSpotIds: const {},
-        );
+      final preview = buildDuplicateNativeSpotPreview(
+        spots: [spotA, spotB],
+        baseSpotId: 'a',
+        titleSpotId: 'a',
+        descriptionSpotId: 'a',
+        locationSpotId: 'a',
+        accessSpotId: 'a',
+        facilitiesSpotIds: {'a'},
+        featureSpotIds: {'a', 'b'},
+        goodForSpotIds: {'a', 'b'},
+        photoSpotIds: const {},
+        youtubeSpotIds: const {},
+      );
 
-        expect(preview.spotFeatures, ['walls_low', 'bars_low']);
-        expect(preview.goodFor, ['vaults', 'precisions']);
-      },
-    );
+      expect(preview.spotFeatures, ['walls_low', 'bars_low']);
+      expect(preview.goodFor, ['vaults', 'precisions']);
+    });
 
     test(
       'buildDuplicateNativeSpotPreview merges facilities across selected spots',
@@ -325,49 +319,46 @@ void main() {
       );
     });
 
-    test(
-      'buildDuplicateClusterMergeDefaults picks richest basis and sole providers',
-      () {
-        final basisCandidate = Spot(
-          id: 'basis',
-          name: 'Basis title',
-          description: 'Shared description',
-          latitude: 52,
-          longitude: 4,
-          imageUrls: const ['photo-a', 'photo-b'],
-          spotAccess: 'public',
-          spotFeatures: const ['walls_low', 'bars_low'],
-          goodFor: const ['vaults'],
-          spotFacilities: const {'parking': 'true'},
-        );
-        final uniqueDetails = Spot(
-          id: 'unique',
-          name: 'Unique title',
-          description: '',
-          latitude: 52.0001,
-          longitude: 4.0001,
-          address: 'Only address',
-          goodFor: const ['precisions'],
-          youtubeVideoIds: const ['video-only'],
-        );
+    test('buildDuplicateClusterMergeDefaults picks richest basis and sole providers', () {
+      final basisCandidate = Spot(
+        id: 'basis',
+        name: 'Basis title',
+        description: 'Shared description',
+        latitude: 52,
+        longitude: 4,
+        imageUrls: const ['photo-a', 'photo-b'],
+        spotAccess: 'public',
+        spotFeatures: const ['walls_low', 'bars_low'],
+        goodFor: const ['vaults'],
+        spotFacilities: const {'parking': 'true'},
+      );
+      final uniqueDetails = Spot(
+        id: 'unique',
+        name: 'Unique title',
+        description: '',
+        latitude: 52.0001,
+        longitude: 4.0001,
+        address: 'Only address',
+        goodFor: const ['precisions'],
+        youtubeVideoIds: const ['video-only'],
+      );
 
-        final defaults = buildDuplicateClusterMergeDefaults([
-          uniqueDetails,
-          basisCandidate,
-        ]);
+      final defaults = buildDuplicateClusterMergeDefaults([
+        uniqueDetails,
+        basisCandidate,
+      ]);
 
-        expect(defaults.basisSpotId, 'basis');
-        expect(defaults.titleSpotId, 'basis');
-        expect(defaults.descriptionSpotId, 'basis');
-        expect(defaults.locationSpotId, 'unique');
-        expect(defaults.accessSpotId, 'basis');
-        expect(defaults.facilitiesSpotIds, {'basis'});
-        expect(defaults.featureSpotIds, {'basis'});
-        expect(defaults.goodForSpotIds, {'basis', 'unique'});
-        expect(defaults.photoSpotIds, {'basis'});
-        expect(defaults.youtubeSpotIds, {'unique'});
-      },
-    );
+      expect(defaults.basisSpotId, 'basis');
+      expect(defaults.titleSpotId, 'basis');
+      expect(defaults.descriptionSpotId, 'basis');
+      expect(defaults.locationSpotId, 'unique');
+      expect(defaults.accessSpotId, 'basis');
+      expect(defaults.facilitiesSpotIds, {'basis'});
+      expect(defaults.featureSpotIds, {'basis'});
+      expect(defaults.goodForSpotIds, {'basis', 'unique'});
+      expect(defaults.photoSpotIds, {'basis'});
+      expect(defaults.youtubeSpotIds, {'unique'});
+    });
 
     test('isParkourSpotNativeSpot treats null spotSource as native', () {
       expect(
@@ -445,33 +436,30 @@ void main() {
       },
     );
 
-    test(
-      'pickDuplicateClusterBasisSpotId falls back to richest external when no natives',
-      () {
-        final sparseExternal = Spot(
-          id: 'sparse-external',
-          name: 'Sparse external',
-          description: '',
-          latitude: 52,
-          longitude: 4,
-          spotSource: 'source-a',
-        );
-        final richExternal = Spot(
-          id: 'rich-external',
-          name: 'Rich external',
-          description: 'Detailed external spot',
-          latitude: 52.0001,
-          longitude: 4.0001,
-          imageUrls: const ['photo-a', 'photo-b'],
-          spotSource: 'source-b',
-        );
+    test('pickDuplicateClusterBasisSpotId falls back to richest external when no natives', () {
+      final sparseExternal = Spot(
+        id: 'sparse-external',
+        name: 'Sparse external',
+        description: '',
+        latitude: 52,
+        longitude: 4,
+        spotSource: 'source-a',
+      );
+      final richExternal = Spot(
+        id: 'rich-external',
+        name: 'Rich external',
+        description: 'Detailed external spot',
+        latitude: 52.0001,
+        longitude: 4.0001,
+        imageUrls: const ['photo-a', 'photo-b'],
+        spotSource: 'source-b',
+      );
 
-        expect(
-          pickDuplicateClusterBasisSpotId([sparseExternal, richExternal]),
-          'rich-external',
-        );
-      },
-    );
+      expect(
+        pickDuplicateClusterBasisSpotId([sparseExternal, richExternal]),
+        'rich-external',
+      );
+    });
 
     test(
       'buildDuplicateClusterMergeDefaults uses native as basis when present',
@@ -506,46 +494,43 @@ void main() {
       },
     );
 
-    test(
-      'buildDuplicateNativeSpotPreview honors separate feature and good-for picks',
-      () {
-        final spotA = Spot(
-          id: 'a',
-          name: 'A',
-          description: '',
-          latitude: 52,
-          longitude: 4,
-          spotFeatures: const ['walls_low'],
-          goodFor: const ['vaults'],
-        );
-        final spotB = Spot(
-          id: 'b',
-          name: 'B',
-          description: '',
-          latitude: 52.0001,
-          longitude: 4.0001,
-          spotFeatures: const ['bars_low'],
-          goodFor: const ['precisions'],
-        );
+    test('buildDuplicateNativeSpotPreview honors separate feature and good-for picks', () {
+      final spotA = Spot(
+        id: 'a',
+        name: 'A',
+        description: '',
+        latitude: 52,
+        longitude: 4,
+        spotFeatures: const ['walls_low'],
+        goodFor: const ['vaults'],
+      );
+      final spotB = Spot(
+        id: 'b',
+        name: 'B',
+        description: '',
+        latitude: 52.0001,
+        longitude: 4.0001,
+        spotFeatures: const ['bars_low'],
+        goodFor: const ['precisions'],
+      );
 
-        final preview = buildDuplicateNativeSpotPreview(
-          spots: [spotA, spotB],
-          baseSpotId: 'a',
-          titleSpotId: 'a',
-          descriptionSpotId: 'a',
-          locationSpotId: 'a',
-          accessSpotId: 'a',
-          facilitiesSpotIds: {'a'},
-          featureSpotIds: {'a'},
-          goodForSpotIds: {'b'},
-          photoSpotIds: const {},
-          youtubeSpotIds: const {},
-        );
+      final preview = buildDuplicateNativeSpotPreview(
+        spots: [spotA, spotB],
+        baseSpotId: 'a',
+        titleSpotId: 'a',
+        descriptionSpotId: 'a',
+        locationSpotId: 'a',
+        accessSpotId: 'a',
+        facilitiesSpotIds: {'a'},
+        featureSpotIds: {'a'},
+        goodForSpotIds: {'b'},
+        photoSpotIds: const {},
+        youtubeSpotIds: const {},
+      );
 
-        expect(preview.spotFeatures, ['walls_low']);
-        expect(preview.goodFor, ['precisions']);
-      },
-    );
+      expect(preview.spotFeatures, ['walls_low']);
+      expect(preview.goodFor, ['precisions']);
+    });
 
     test(
       'buildDuplicateNativeSpotPreview honors empty selected description',
@@ -618,115 +603,106 @@ void main() {
       expect(preview.spotAccess, isNull);
     });
 
-    test(
-      'buildDuplicateClusterMergeDefaults prefers filled description when basis is empty',
-      () {
-        final basis = Spot(
-          id: 'basis',
-          name: 'Native basis',
-          description: '',
-          latitude: 52,
-          longitude: 4,
-          imageUrls: const ['photo-a'],
-        );
-        final describedA = Spot(
-          id: 'described-a',
-          name: 'Described A',
-          description: 'First filled description',
-          latitude: 52.0001,
-          longitude: 4.0001,
-          imageUrls: const ['photo-b', 'photo-c'],
-          spotSource: 'osm',
-        );
-        final describedB = Spot(
-          id: 'described-b',
-          name: 'Described B',
-          description: 'Second filled description',
-          latitude: 52.0002,
-          longitude: 4.0002,
-          spotSource: 'osm',
-        );
+    test('buildDuplicateClusterMergeDefaults prefers filled description when basis is empty', () {
+      final basis = Spot(
+        id: 'basis',
+        name: 'Native basis',
+        description: '',
+        latitude: 52,
+        longitude: 4,
+        imageUrls: const ['photo-a'],
+      );
+      final describedA = Spot(
+        id: 'described-a',
+        name: 'Described A',
+        description: 'First filled description',
+        latitude: 52.0001,
+        longitude: 4.0001,
+        imageUrls: const ['photo-b', 'photo-c'],
+        spotSource: 'osm',
+      );
+      final describedB = Spot(
+        id: 'described-b',
+        name: 'Described B',
+        description: 'Second filled description',
+        latitude: 52.0002,
+        longitude: 4.0002,
+        spotSource: 'osm',
+      );
 
-        final defaults = buildDuplicateClusterMergeDefaults([
-          describedB,
-          describedA,
-          basis,
-        ]);
+      final defaults = buildDuplicateClusterMergeDefaults([
+        describedB,
+        describedA,
+        basis,
+      ]);
 
-        expect(defaults.basisSpotId, 'basis');
-        expect(defaults.descriptionSpotId, 'described-a');
-      },
-    );
+      expect(defaults.basisSpotId, 'basis');
+      expect(defaults.descriptionSpotId, 'described-a');
+    });
 
-    test(
-      'buildDuplicateClusterMergeDefaults prefers filled access when basis is empty',
-      () {
-        final basis = Spot(
-          id: 'basis',
-          name: 'Native basis',
-          description: 'Detailed native write-up',
-          latitude: 52,
-          longitude: 4,
-          imageUrls: const ['photo-a'],
-        );
-        final publicA = Spot(
-          id: 'public-a',
-          name: 'Public A',
-          description: '',
-          latitude: 52.0001,
-          longitude: 4.0001,
-          spotAccess: 'public',
-          imageUrls: const ['photo-b', 'photo-c'],
-          spotSource: 'osm',
-        );
-        final publicB = Spot(
-          id: 'public-b',
-          name: 'Public B',
-          description: '',
-          latitude: 52.0002,
-          longitude: 4.0002,
-          spotAccess: 'public',
-          spotSource: 'osm',
-        );
+    test('buildDuplicateClusterMergeDefaults prefers filled access when basis is empty', () {
+      final basis = Spot(
+        id: 'basis',
+        name: 'Native basis',
+        description: 'Detailed native write-up',
+        latitude: 52,
+        longitude: 4,
+        imageUrls: const ['photo-a'],
+      );
+      final publicA = Spot(
+        id: 'public-a',
+        name: 'Public A',
+        description: '',
+        latitude: 52.0001,
+        longitude: 4.0001,
+        spotAccess: 'public',
+        imageUrls: const ['photo-b', 'photo-c'],
+        spotSource: 'osm',
+      );
+      final publicB = Spot(
+        id: 'public-b',
+        name: 'Public B',
+        description: '',
+        latitude: 52.0002,
+        longitude: 4.0002,
+        spotAccess: 'public',
+        spotSource: 'osm',
+      );
 
-        final defaults = buildDuplicateClusterMergeDefaults([
-          publicB,
-          publicA,
-          basis,
-        ]);
+      final defaults = buildDuplicateClusterMergeDefaults([
+        publicB,
+        publicA,
+        basis,
+      ]);
 
-        expect(defaults.basisSpotId, 'basis');
-        expect(defaults.accessSpotId, 'public-a');
-      },
-    );
+      expect(defaults.basisSpotId, 'basis');
+      expect(defaults.accessSpotId, 'public-a');
+    });
 
-    test(
-      'buildDuplicateClusterMergeDefaults keeps basis exclusive fields when filled',
-      () {
-        final basis = Spot(
-          id: 'basis',
-          name: 'Native basis',
-          description: 'Basis description',
-          latitude: 52,
-          longitude: 4,
-          spotAccess: 'restricted',
-        );
-        final other = Spot(
-          id: 'other',
-          name: 'Other',
-          description: 'Other description',
-          latitude: 52.0001,
-          longitude: 4.0001,
-          spotAccess: 'public',
-        );
+    test('buildDuplicateClusterMergeDefaults keeps basis exclusive fields when filled', () {
+      final basis = Spot(
+        id: 'basis',
+        name: 'Native basis',
+        description: 'Basis description',
+        latitude: 52,
+        longitude: 4,
+        spotAccess: 'restricted',
+      );
+      final other = Spot(
+        id: 'other',
+        name: 'Other',
+        description: 'Other description',
+        latitude: 52.0001,
+        longitude: 4.0001,
+        spotAccess: 'public',
+      );
 
-        final defaults = buildDuplicateClusterMergeDefaults([other, basis]);
+      final defaults = buildDuplicateClusterMergeDefaults([other, basis]);
 
-        expect(defaults.basisSpotId, 'basis');
-        expect(defaults.descriptionSpotId, 'basis');
-        expect(defaults.accessSpotId, 'basis');
-      },
-    );
+      expect(defaults.basisSpotId, 'basis');
+      expect(defaults.descriptionSpotId, 'basis');
+      expect(defaults.accessSpotId, 'basis');
+    });
 
     test('countDuplicateClusterSpots separates already-duplicate spots', () {
       final spots = [

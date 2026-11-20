@@ -58,16 +58,14 @@ class SpotDataScreen extends StatelessWidget {
               AdminToolTile(
                 icon: Icons.groups_2_outlined,
                 title: 'Backfill community activity',
-                subtitle:
-                    'Rebuild the geo-indexed communityActivity stream for Explore',
+                subtitle: 'Rebuild the geo-indexed communityActivity stream for Explore',
                 showChevron: false,
                 onTap: () => SpotDataActions.backfillCommunityActivity(context),
               ),
               AdminToolTile(
                 icon: Icons.fitness_center_outlined,
                 title: 'Recompute spot training stats',
-                subtitle:
-                    'Rebuild 90-day check-in counts and recent trainers per spot',
+                subtitle: 'Rebuild 90-day check-in counts and recent trainers per spot',
                 showChevron: false,
                 onTap: () =>
                     SpotDataActions.recomputeSpotTrainingStats(context),
@@ -75,8 +73,7 @@ class SpotDataScreen extends StatelessWidget {
               AdminToolTile(
                 icon: Icons.star_rate,
                 title: 'Recompute ratings for rated spots',
-                subtitle:
-                    'Recalculate average, count, and Wilson lower bound from ratings',
+                subtitle: 'Recalculate average, count, and Wilson lower bound from ratings',
                 showChevron: false,
                 onTap: () => _recomputeRatings(context),
               ),
@@ -91,8 +88,7 @@ class SpotDataScreen extends StatelessWidget {
               AdminToolTile(
                 icon: Icons.video_library,
                 title: 'Import Jumpflix spot links',
-                subtitle:
-                    'Fetch Jumpflix video-spot mappings and update the database (also runs nightly at 02:00 UTC)',
+                subtitle: 'Fetch Jumpflix video-spot mappings and update the database (also runs nightly at 02:00 UTC)',
                 showChevron: false,
                 onTap: () => _importJumpflixSpotLinks(context),
               ),
@@ -134,15 +130,13 @@ Future<void> _recomputeRatings(BuildContext context) async {
   final confirmed = await _confirmAction(
     context: context,
     title: 'Recompute ratings',
-    content:
-        'This will recompute rating aggregates for all spots that have ratings. Continue?',
+    content: 'This will recompute rating aggregates for all spots that have ratings. Continue?',
     confirmLabel: 'Run',
   );
   if (!confirmed || !context.mounted) return;
 
-  ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(const SnackBar(content: Text('Recomputing ratings...')));
+  ScaffoldMessenger.of(context)
+      .showSnackBar(const SnackBar(content: Text('Recomputing ratings...')));
 
   try {
     final spotService = Provider.of<SpotService>(context, listen: false);
@@ -157,9 +151,8 @@ Future<void> _recomputeRatings(BuildContext context) async {
     );
   } catch (e) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('Error: $e')));
   }
 }
 
@@ -167,8 +160,7 @@ Future<void> _recomputeSpotRankings(BuildContext context) async {
   final confirmed = await _confirmAction(
     context: context,
     title: 'Recompute spot rankings',
-    content:
-        'This will recalculate the ranking field for all spots based on their ratings and the average Wilson score. This is useful after changing the Wilson score threshold in settings. Continue?',
+    content: 'This will recalculate the ranking field for all spots based on their ratings and the average Wilson score. This is useful after changing the Wilson score threshold in settings. Continue?',
     confirmLabel: 'Run',
   );
   if (!confirmed || !context.mounted) return;
@@ -190,9 +182,8 @@ Future<void> _recomputeSpotRankings(BuildContext context) async {
     );
   } catch (e) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('Error: $e')));
   }
 }
 
@@ -229,8 +220,7 @@ Future<void> _importJumpflixSpotLinks(BuildContext context) async {
     );
   } catch (e) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('Error: $e')));
   }
 }

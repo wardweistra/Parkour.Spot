@@ -10,12 +10,10 @@ class SearchStateService extends ChangeNotifier {
   static const String _keyZoom = 'search_zoom';
   static const String _keyIsSatellite = 'search_is_satellite';
   static const String _keyHasImagesOnly = 'search_has_images_only';
-  static const String _keySelectedSpotSource =
-      'search_selected_spot_source'; // null = all, "" = native, string = specific source
+  static const String _keySelectedSpotSource = 'search_selected_spot_source'; // null = all, "" = native, string = specific source
   static const String _keyFilterArea =
       'search_filter_area'; // "amenities" | "source" | null
-  static const String _keySpotAccess =
-      'search_spot_access'; // when amenities: list of "public" | "restricted" | "paid" for OR query
+  static const String _keySpotAccess = 'search_spot_access'; // when amenities: list of "public" | "restricted" | "paid" for OR query
   static const String _keySpotFacilitiesCovered =
       'search_spot_facilities_covered'; // when amenities: "yes"
   static const String _keySpotFacilitiesLighting =
@@ -32,8 +30,7 @@ class SearchStateService extends ChangeNotifier {
       'search_spot_features'; // when amenities: list for array-contains-any
   static const String _keyAttributeFilterMode =
       'search_attribute_filter_mode'; // "goodFor" | "spotFeatures"
-  static const String _keySelectedFolders =
-      'search_selected_folders'; // JSON map of sourceId -> List<String> (multiple folders, empty list = all folders)
+  static const String _keySelectedFolders = 'search_selected_folders'; // JSON map of sourceId -> List<String> (multiple folders, empty list = all folders)
   static const String _keySelectedListId =
       'search_selected_list_id'; // Selected spot list ID for highlighting
   static const String _keyLastKnownUserLat = 'search_last_known_user_lat';
@@ -46,10 +43,8 @@ class SearchStateService extends ChangeNotifier {
   bool _isSatellite = false;
   bool _hasImagesOnly = false;
   String? _filterArea; // "amenities" | "source" | null (default = amenities)
-  String?
-  _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
-  List<String> _spotAccess =
-      []; // when filterArea=amenities: ["public", "restricted", "paid"] for OR query, empty = any
+  String? _selectedSpotSource; // null = all sources, "" = native only, string = specific source ID
+  List<String> _spotAccess = []; // when filterArea=amenities: ["public", "restricted", "paid"] for OR query, empty = any
   bool? _spotFacilitiesCovered; // when filterArea=amenities: true = "yes"
   bool? _spotFacilitiesLighting; // when filterArea=amenities: true = "yes"
   bool? _spotFacilitiesWaterTap; // when filterArea=amenities: true = "yes"
@@ -58,10 +53,8 @@ class SearchStateService extends ChangeNotifier {
   List<String> _goodFor = []; // when filterArea=amenities: array-contains-any
   List<String> _spotFeatures =
       []; // when filterArea=amenities: array-contains-any
-  String _attributeFilterMode =
-      'goodFor'; // "goodFor" | "spotFeatures" - which attribute chip section to show
-  Map<String, List<String>> _selectedFolders =
-      {}; // sourceId -> list of selected folder names (empty list = all folders)
+  String _attributeFilterMode = 'goodFor'; // "goodFor" | "spotFeatures" - which attribute chip section to show
+  Map<String, List<String>> _selectedFolders = {}; // sourceId -> list of selected folder names (empty list = all folders)
   String? _selectedListId; // Selected spot list ID for highlighting
   double? _lastKnownUserLat;
   double? _lastKnownUserLng;

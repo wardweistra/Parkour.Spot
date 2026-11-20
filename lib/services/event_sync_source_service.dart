@@ -268,9 +268,9 @@ class EventSyncSourceService extends ChangeNotifier {
       final result = await callable.call({'includeInactive': includeInactive});
       final data = _callableMap(result.data);
       if (data['success'] == true) {
-        _sources = _callableList(
-          data['sources'],
-        ).map((item) => EventSyncSource.fromMap(_callableMap(item))).toList();
+        _sources = _callableList(data['sources'])
+            .map((item) => EventSyncSource.fromMap(_callableMap(item)))
+            .toList();
       } else {
         _error = 'Failed to fetch event sources';
       }

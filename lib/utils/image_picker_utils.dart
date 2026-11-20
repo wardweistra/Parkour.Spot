@@ -17,12 +17,11 @@ const int kDefaultJpegQuality = 85;
 
 enum ImagePickPhase { reading, processing }
 
-typedef ImagePickProgressCallback =
-    void Function({
-      required int current,
-      required int total,
-      required ImagePickPhase phase,
-    });
+typedef ImagePickProgressCallback = void Function({
+  required int current,
+  required int total,
+  required ImagePickPhase phase,
+});
 
 /// Picks multiple gallery images without triggering browser canvas re-encoding
 /// on web (which breaks under Firefox/LibreWolf fingerprinting protection).

@@ -371,9 +371,8 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
           padding: const EdgeInsets.all(24),
           child: Text(
             _error!,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.error,
-            ),
+            style: Theme.of(context).textTheme.bodyLarge
+                ?.copyWith(color: Theme.of(context).colorScheme.error),
             textAlign: TextAlign.center,
           ),
         ),
@@ -390,17 +389,15 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
               Icon(
                 _emptyIcon,
                 size: 64,
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.3),
+                color: Theme.of(context).colorScheme.onSurface
+                    .withValues(alpha: 0.3),
               ),
               const SizedBox(height: 16),
               Text(
                 _l10n.spotTrackingNoSpotsInList(_title),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  color: Theme.of(context).colorScheme.onSurface
+                      .withValues(alpha: 0.6),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -409,9 +406,8 @@ class _SpotTrackingListScreenState extends State<SpotTrackingListScreen> {
                 Text(
                   hint,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.5),
+                    color: Theme.of(context).colorScheme.onSurface
+                        .withValues(alpha: 0.5),
                   ),
                   textAlign: TextAlign.center,
                 ),

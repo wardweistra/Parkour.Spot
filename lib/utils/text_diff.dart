@@ -125,9 +125,10 @@ bool _sameLines(List<String> before, List<String> after) {
 }
 
 List<String> _tokenize(String input) {
-  return RegExp(
-    r'[ \t]+|[^\s]+',
-  ).allMatches(input).map((match) => match.group(0)!).toList();
+  return RegExp(r'[ \t]+|[^\s]+')
+      .allMatches(input)
+      .map((match) => match.group(0)!)
+      .toList();
 }
 
 List<TextDiffSpan> _diffTokens(

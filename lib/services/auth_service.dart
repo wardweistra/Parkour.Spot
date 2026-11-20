@@ -92,8 +92,7 @@ class AuthService extends ChangeNotifier {
       if (_userProfile?.id != user.uid) {
         _userProfile = null;
       }
-      _isLoading =
-          true; // Stay loading until profile is fetched (fixes refresh on admin routes)
+      _isLoading = true; // Stay loading until profile is fetched (fixes refresh on admin routes)
       _loadUserProfile(user.uid);
     } else {
       _userProfile = null;

@@ -217,12 +217,12 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
         spotName: result.plan.spotName ?? '',
         fixedTrainingPlan: result.plan,
         onExtendInsteadEdit: _manageCheckIn,
-        showSuccess: (m) => ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(m))),
-        showError: (m) => ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(m))),
+        showSuccess: (m) =>
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text(m))),
+        showError: (m) =>
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text(m))),
         successMessage: _l10n.spotDetailCheckInSuccess,
       );
       if (!mounted) return;
@@ -479,9 +479,8 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
                   _l10n.myCheckInsNoCheckInsYet,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.55),
+                    color: Theme.of(context).colorScheme.onSurface
+                        .withValues(alpha: 0.55),
                   ),
                 ),
               ),
@@ -599,9 +598,8 @@ class _MyCheckInsScreenState extends State<MyCheckInsScreen> {
                             Icon(
                               Icons.place_outlined,
                               size: 64,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.3),
+                              color: Theme.of(context).colorScheme.onSurface
+                                  .withValues(alpha: 0.3),
                             ),
                             const SizedBox(height: 16),
                             Text(

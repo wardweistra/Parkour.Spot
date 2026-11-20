@@ -31,8 +31,7 @@ Widget buildBrowserEmojiSpan({
           ..height = '100%'
           // Let ListTile / InkWell receive taps.
           ..pointerEvents = 'none'
-          ..fontFamily =
-              '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+          ..fontFamily = '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
         if (color != null) {
           el.style.color = _cssColor(color);
         }
