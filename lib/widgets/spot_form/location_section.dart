@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:pointer_interceptor/pointer_interceptor.dart';
+
 import '../../models/spot.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../utils/marker_icon_utils.dart';

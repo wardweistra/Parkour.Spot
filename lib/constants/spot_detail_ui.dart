@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shared chrome for spot detail quick actions and the community panel.
 abstract final class SpotDetailUi {

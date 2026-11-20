@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
+
 import 'dart:typed_data';
 import 'dart:math';
+
 import '../../models/spot.dart';
 import '../../services/spot_service.dart';
 import '../../services/auth_service.dart';
@@ -16,10 +18,14 @@ import '../../widgets/form_submit_bar.dart';
 import '../../widgets/spot_form/location_section.dart';
 import '../../widgets/spot_form/image_section.dart';
 import '../../widgets/spot_form/attributes_section.dart';
+
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+
 import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
+
 import 'package:go_router/go_router.dart';
+
 import '../../utils/map_recentering_mixin.dart';
 import '../../utils/image_preparation.dart';
 import '../../utils/image_picker_utils.dart';

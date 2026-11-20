@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'brand_mark_icon.dart';
 import '../utils/external_launch.dart';

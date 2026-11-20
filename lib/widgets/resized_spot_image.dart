@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cached_network_image_platform_interface/cached_network_image_platform_interface.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import '../utils/image_url_utils.dart';
 import '../utils/resized_spot_image_provider.dart';
 import '../utils/youtube_utils.dart';

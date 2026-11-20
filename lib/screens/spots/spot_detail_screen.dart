@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'package:flutter/material.dart';
+
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
+
 import '../../models/rating.dart';
 import '../../models/spot.dart';
 import '../../models/spot_check_in.dart';
@@ -65,13 +67,17 @@ import '../../widgets/memory_image_preview.dart';
 import '../../services/user_profile_service.dart';
 import '../../services/jumpflix_service.dart';
 import '../../utils/relative_date_localization.dart';
+
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../services/audit_log_service.dart';
+
 import 'package:parkour_spot/utils/browser_location.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+
 import '../../widgets/brand_mark_icon.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/system_back_handler.dart';

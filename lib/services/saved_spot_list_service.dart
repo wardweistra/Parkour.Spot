@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/spot_list.dart';
 import '../services/auth_service.dart';
 import '../services/spot_list_service.dart';

@@ -4,14 +4,16 @@ publish_to: 'none'
 version: 0.2.0+2
 
 environment:
-  sdk: ^3.10.0
-  flutter: ">=3.38.1"
+  sdk: ^3.13.0
+  flutter: ">=3.47.0"
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  material_ui: ^1.11.1
+  cupertino_ui: ^1.1.7
 
   # Firebase — pin minors so pub does not pull firebase_core_web
   # versions that break dart2js (`isA` on Object).
@@ -29,11 +31,11 @@ dependencies:
   # UI Components
   cupertino_icons: ^1.0.8
   font_awesome_flutter: ^11.0.0
-  google_fonts: ^7.0.0
+  google_fonts: ^9.0.0
   google_maps_flutter: ^2.12.0
   image_picker: ^1.1.2
-  cached_network_image: ^3.4.1
-  cached_network_image_platform_interface: ^4.1.1
+  cached_network_image: ^4.0.7
+  cached_network_image_platform_interface: ^5.0.4
   flutter_svg: ^2.0.10+1
   lottie: ^3.1.2
   photo_view: ^0.15.0
@@ -53,7 +55,7 @@ dependencies:
   
   # Deep Linking & Navigation
   url_launcher: ^6.3.1
-  go_router: ^17.0.1
+  go_router: ^18.1.4
   
   # Web
   web: ^1.1.0

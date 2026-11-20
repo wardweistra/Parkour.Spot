@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Thumbnail for locally selected image bytes with a capped decode size.
 class MemoryImagePreview extends StatelessWidget {

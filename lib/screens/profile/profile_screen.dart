@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
 import 'package:parkour_spot/utils/browser_location.dart';
+
 import '../../services/auth_service.dart';
 import '../../services/admin_events_service.dart';
 import '../../services/event_report_service.dart';

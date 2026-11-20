@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:web/web.dart' as web;
 
 /// Web: let the browser paint emoji (CanvasKit mishandles keycap VS16 sequences).

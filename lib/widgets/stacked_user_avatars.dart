@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Compact overlapping circle avatars for presence / who-rated chips.
 class StackedUserAvatars extends StatelessWidget {

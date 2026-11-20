@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:uuid/uuid.dart';
+
 import '../models/spot_list.dart';
 import '../models/spot_list_invite.dart';
 import '../services/audit_log_service.dart';

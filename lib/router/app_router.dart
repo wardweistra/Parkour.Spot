@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import 'package:provider/provider.dart';
 import 'package:sealed_countries/sealed_countries.dart';
+
 import '../utils/app_link_paths.dart';
 import '../utils/browser_location.dart';
 import '../screens/splash_screen.dart';

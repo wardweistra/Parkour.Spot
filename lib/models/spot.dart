@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../utils/youtube_utils.dart';
 
 class Spot {

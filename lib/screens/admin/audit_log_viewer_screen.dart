@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../models/audit_log.dart';
 import '../../models/audit_log_entry.dart';
 import '../../models/spot.dart';
@@ -12,6 +13,7 @@ import '../../utils/audit_log_changes.dart';
 import '../../utils/audit_log_feed.dart';
 import '../../widgets/admin/sync_run_report_dialog.dart';
 import '../../widgets/resized_spot_image.dart';
+
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:parkour_spot/l10n/app_localizations.dart';

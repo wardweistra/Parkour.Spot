@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 Color _foregroundOnFill(ColorScheme scheme, Color fill, Color? explicit) {
   if (explicit != null) return explicit;

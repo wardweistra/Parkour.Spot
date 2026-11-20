@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Centralized configuration for spot attributes
 /// Ensures consistency across Add Spot screen, Detail screen, and future features

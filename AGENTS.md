@@ -8,7 +8,7 @@ Parkour Spot is a Flutter web PWA with a Firebase backend (Cloud Functions in `f
 
 ### Prerequisites
 
-- **Flutter ≥ 3.38.1** (Dart ≥ 3.10.0) at `/opt/flutter` (added to PATH via `~/.bashrc`). Current `pubspec.lock` cannot resolve on older SDKs (`share_plus` 13.3.0 needs Dart 3.10+). Use current Flutter **stable** (CI and Cloud Agents track that channel).
+- **Flutter ≥ 3.47.0** (Dart ≥ 3.13.0) at `/opt/flutter` (added to PATH via `~/.bashrc`). The app uses `material_ui` / `cupertino_ui` instead of `package:flutter/material.dart`, which need Dart 3.13+. Use current Flutter **stable** (CI and Cloud Agents track that channel).
 - **Node.js 22** (pre-installed via nvm)
 - **Java 21** (pre-installed; required for Firebase emulators)
 - **Firebase CLI** (`npm install -g firebase-tools`)
@@ -50,7 +50,7 @@ Alternatively, use the shell scripts: `./scripts/start_emulators.sh` and `./scri
 - Hosting is multi-site: targets `app` (Flutter WASM) and `about` (Astro at `about/`). Bind with `firebase target:apply hosting app|about <site-id>` (see README). Deploy with `firebase deploy --only hosting:app` / `hosting:about`.
 - Seed data is at `scripts/seed-data/` and must be copied to `.firebase/emulator-data/` before first emulator run. The `start_emulators.sh` script handles this automatically.
 - **Seed auth test users** (see README **Seed data reference** for full detail): `user@parkour.spot`, `moderator@parkour.spot`, and `admin@parkour.spot` use email/password with password equal to the email address (regular user, moderator, and admin roles). `google@parkour.spot` is set up for Sign in with Google only (not email/password). For any new accounts you create locally, verify email in the Emulator UI at `http://localhost:4000/auth`.
-- `flutter analyze` will show ~119 `info`-level diagnostics (deprecated API usage, `use_build_context_synchronously`). These are not errors and do not block builds or tests.
+- `flutter analyze` shows 2 `info`-level `deprecated_member_use` diagnostics in the generated `lib/l10n/app_localizations.dart`: `gen-l10n` still emits the legacy `flutter_localizations` delegates. The app passes `material_ui`'s `GlobalMaterialLocalizations.delegates` in `lib/main.dart` instead. Import Material from `package:material_ui/material_ui.dart`, not `package:flutter/material.dart`.
 - Web sign-in persistence against the Auth emulator relies on `preconfigureAuthEmulatorOrigin` (`lib/utils/auth_emulator_origin.dart`), which only takes effect in **debug** builds served from `localhost`. Release builds or other hostnames (e.g. `127.0.0.1`) pointed at the emulators still drop the signed-in user on reload.
 - The `run_local_with_emulators.sh` script has a `read -p` prompt. For non-interactive use, run the `flutter run` command directly with the dart-defines shown above.
 - Cloud Functions lint and tests: `cd functions && npm run lint` and `cd functions && npm test`.

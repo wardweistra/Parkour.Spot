@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shared empty-state when a spot or event has no images.
 enum NoImagesPlaceholderLayout {

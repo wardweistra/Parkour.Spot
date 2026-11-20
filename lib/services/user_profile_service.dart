@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/user.dart' as app_user;
 
 class UserProfileService extends ChangeNotifier {

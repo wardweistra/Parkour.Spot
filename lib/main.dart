@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb, kReleaseMode;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:parkour_spot/l10n/app_localizations.dart';
 import 'package:parkour_spot/utils/web_meta_utils.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -526,7 +526,13 @@ class _ParkourSpotAppState extends State<ParkourSpotApp> {
             builder: (context, localePrefs, _) {
               return MaterialApp.router(
                 onGenerateTitle: (_) => WebMetaUtils.defaultTitle,
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                // material_ui's delegates also cover Widgets and Cupertino.
+                // AppLocalizations.localizationsDelegates (generated) still
+                // points at the legacy flutter_localizations classes.
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  ...GlobalMaterialLocalizations.delegates,
+                ],
                 supportedLocales: AppLocalizations.supportedLocales,
                 locale: localePrefs.locale,
                 routerConfig: AppRouter.router,
@@ -550,6 +556,13 @@ class _ParkourSpotAppState extends State<ParkourSpotApp> {
                   ),
                 ),
                 debugShowCheckedModeBanner: false,
+                // photo_view, google_maps_flutter, webview_flutter and
+                // google_sign_in still build on package:flutter/material.dart.
+                // The bridge gives those legacy widgets our theme and
+                // localizations. Remove once they depend on material_ui.
+                builder: (context, child) =>
+                    // ignore: deprecated_member_use
+                    MaterialUiCompatibilityBridge(child: child!),
               );
             },
           ),

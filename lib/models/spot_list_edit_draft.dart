@@ -26,16 +26,12 @@ class SpotListEditDraft {
     required this.moreInfoUrl,
     required this.visibility,
     required this.sections,
-    required String originalName,
-    required String originalDescription,
-    required String originalMoreInfoUrl,
-    required SpotListVisibility originalVisibility,
-    required List<SpotListSection> originalSections,
-  }) : _originalName = originalName,
-       _originalDescription = originalDescription,
-       _originalMoreInfoUrl = originalMoreInfoUrl,
-       _originalVisibility = originalVisibility,
-       _originalSections = originalSections;
+    required this._originalName,
+    required this._originalDescription,
+    required this._originalMoreInfoUrl,
+    required this._originalVisibility,
+    required this._originalSections,
+  });
 
   factory SpotListEditDraft.fromList(SpotList list) {
     final sections = _cloneOrWrap(list);

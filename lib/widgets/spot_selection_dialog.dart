@@ -1,6 +1,8 @@
 import 'dart:math' as math;
-import 'package:flutter/material.dart';
+
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
+
 import '../models/spot.dart';
 import '../services/spot_service.dart';
 import '../services/url_service.dart';

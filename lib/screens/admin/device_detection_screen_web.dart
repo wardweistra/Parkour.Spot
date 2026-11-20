@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'dart:js_interop';
-import 'package:flutter/material.dart';
+
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:web/web.dart' as web;
+
 import '../../services/auth_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../services/pwa_install_service.dart';

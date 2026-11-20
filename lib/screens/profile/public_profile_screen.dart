@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../utils/image_picker_utils.dart';
 import '../../services/user_profile_service.dart';
 import '../../services/auth_service.dart';
@@ -25,6 +27,7 @@ import '../../widgets/spot_list_summary_tile.dart';
 import '../../l10n/app_localizations.dart';
 import '../../utils/spot_list_localization.dart';
 import '../../utils/spots_added_by_user.dart';
+
 import 'package:flutter/services.dart';
 
 class PublicProfileScreen extends StatefulWidget {

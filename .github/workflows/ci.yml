@@ -16,8 +16,8 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
-      # Latest stable (Dart 3.10+). Matches Cloud Agent install, which upgrades
-      # /opt/flutter to the stable channel. Do not pin below 3.38.1.
+      # Latest stable (Dart 3.13+). Matches Cloud Agent install, which upgrades
+      # /opt/flutter to the stable channel. Do not pin below 3.47.0 (material_ui).
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: stable

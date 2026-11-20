@@ -1,5 +1,6 @@
 // lib/analytics/web_analytics.dart
 import 'dart:js_interop';
+
 import 'package:web/web.dart' as web;
 
 // Helper function to call gtag via JS interop

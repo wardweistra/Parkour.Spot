@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Icon, title, and optional subtitle row for detail-screen popup menus.
 class DetailActionMenuItem extends StatelessWidget {

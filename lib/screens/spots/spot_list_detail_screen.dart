@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
+
 import '../../models/spot_list.dart';
 import '../../models/spot.dart';
 import '../../services/spot_list_service.dart';
@@ -33,7 +34,9 @@ import '../../widgets/linked_upcoming_event_panel.dart';
 import '../../widgets/detail_external_link_tile.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_config.dart';
 import '../../widgets/explore_entity_picker/explore_entity_picker_screen.dart';
+
 import 'package:flutter/services.dart';
+
 import '../../models/spot_list_edit_draft.dart';
 import 'spot_list_detail_edit_body.dart';
 import '../../l10n/app_localizations.dart';

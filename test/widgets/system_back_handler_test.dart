@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parkour_spot/widgets/page_scaffold.dart';
 import 'package:parkour_spot/widgets/system_back_handler.dart';

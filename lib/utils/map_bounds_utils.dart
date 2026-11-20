@@ -1,4 +1,5 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+
 import '../models/spot.dart';
 
 LatLngBounds? _calculateBoundsFromCoordinates({

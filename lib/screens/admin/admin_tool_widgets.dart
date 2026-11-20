@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Label above a grouped tools card (Admin Tools and Moderator Tools).
 class AdminSectionHeader extends StatelessWidget {
