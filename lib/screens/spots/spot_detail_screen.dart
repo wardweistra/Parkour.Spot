@@ -4059,7 +4059,9 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                   imageUrl: widget.spot.imageUrls![_currentImageIndex],
                   fit: BoxFit.cover,
                   width: double.infinity,
-                  height: 400,
+                  // Fill the app bar's flexible space, which also covers the
+                  // status bar on edge-to-edge Android.
+                  height: double.infinity,
                   placeholder: (context, url) => Container(
                     color: Theme.of(
                       context,

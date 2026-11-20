@@ -201,19 +201,19 @@ class DetailImageCarouselState extends State<DetailImageCarousel> {
     if (builder != null) {
       return SizedBox(
         width: double.infinity,
-        height: widget.height,
+        height: double.infinity,
         child: builder(context, url),
       );
     }
     return ResizedSpotImage(
       imageUrl: url,
       width: double.infinity,
-      height: widget.height,
+      height: double.infinity,
       fit: BoxFit.cover,
       errorWidget: (_, _, _) => _errorPlaceholder(context),
       placeholder: (_, _) => Container(
         width: double.infinity,
-        height: widget.height,
+        height: double.infinity,
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         child: const Center(child: CircularProgressIndicator()),
       ),
@@ -223,7 +223,7 @@ class DetailImageCarouselState extends State<DetailImageCarousel> {
   Widget _errorPlaceholder(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: widget.height,
+      height: double.infinity,
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
