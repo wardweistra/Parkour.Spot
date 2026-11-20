@@ -4,7 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint, listEquals;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, debugPrint, listEquals, setEquals;
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' show lerpDouble;
@@ -255,6 +256,9 @@ class ReliableIcon extends StatelessWidget {
 /// Selected explore pins stack above latitude-ordered pins but below overlays.
 const int _exploreSelectedMarkerZBase = 8000;
 
+/// Signed-in user's own relation to a spot, shown on Explore pins.
+enum _SpotTrackingStatus { wantToVisit, visited }
+
 /// Event artwork replaces the spot pin, including when that spot is selected
 /// and not in the active list.
 bool _exploreSpotDrawnAsEventPin({
@@ -336,7 +340,14 @@ class SearchScreenState extends State<SearchScreen>
   BitmapDescriptor? _spotHighlightedIcon;
   BitmapDescriptor? _spotSelectedHighlightedIcon;
   BitmapDescriptor? _spotAboveAverageIcon;
+  BitmapDescriptor? _spotWantToVisitIcon;
+  BitmapDescriptor? _spotWantToVisitSelectedIcon;
+  BitmapDescriptor? _spotVisitedIcon;
+  BitmapDescriptor? _spotVisitedSelectedIcon;
   BitmapDescriptor? _addSpotPinIcon;
+  AuthService? _authServiceRef;
+  Set<String> _wantToVisitSpotIds = {};
+  Set<String> _visitedSpotIds = {};
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   late final ExploreAutocompleteSession _autocompleteSession;
@@ -674,6 +685,12 @@ class SearchScreenState extends State<SearchScreen>
       );
       _syncSourceServiceRef!.addListener(_onSyncSourcesChanged);
 
+      // Listen to AuthService so want-to-visit / visited pins follow the
+      // signed-in user's profile (sign-in, sign-out, marking a spot).
+      _authServiceRef = Provider.of<AuthService>(context, listen: false);
+      _authServiceRef!.addListener(_onSpotTrackingChanged);
+      _onSpotTrackingChanged();
+
       unawaited(
         warmupExploreAutocomplete(
           geocoding: Provider.of<GeocodingService>(context, listen: false),
@@ -804,7 +821,37 @@ class SearchScreenState extends State<SearchScreen>
     _spotServiceRef?.removeListener(_onSpotsChanged);
     _syncSourceServiceRef?.removeListener(_onSyncSourcesChanged);
     _searchStateServiceRef?.removeListener(_onSearchStateChanged);
+    _authServiceRef?.removeListener(_onSpotTrackingChanged);
     super.dispose();
+  }
+
+  /// Syncs the signed-in user's tracked spot IDs and rebuilds markers only
+  /// when they actually changed (AuthService notifies for many reasons).
+  void _onSpotTrackingChanged() {
+    if (!mounted) return;
+    final profile = _authServiceRef?.isAuthenticated == true
+        ? _authServiceRef?.userProfile
+        : null;
+    final wantToVisit = (profile?.wantToVisit ?? const <String>[]).toSet();
+    final visited = (profile?.visited ?? const <String>[]).toSet();
+    if (setEquals(wantToVisit, _wantToVisitSpotIds) &&
+        setEquals(visited, _visitedSpotIds)) {
+      return;
+    }
+    setState(() {
+      _wantToVisitSpotIds = wantToVisit;
+      _visitedSpotIds = visited;
+      _markers = _rebuildMarkers();
+    });
+  }
+
+  _SpotTrackingStatus? _trackingStatusFor(String? spotId) {
+    if (spotId == null) return null;
+    if (_visitedSpotIds.contains(spotId)) return _SpotTrackingStatus.visited;
+    if (_wantToVisitSpotIds.contains(spotId)) {
+      return _SpotTrackingStatus.wantToVisit;
+    }
+    return null;
   }
 
   void _onSearchChanged() {
@@ -2406,6 +2453,7 @@ class SearchScreenState extends State<SearchScreen>
     required bool isSelected,
     required bool isHighlighted,
     required bool hasEvent,
+    _SpotTrackingStatus? trackingStatus,
   }) {
     if (_exploreSpotDrawnAsEventPin(
       isSelected: isSelected,
@@ -2415,14 +2463,27 @@ class SearchScreenState extends State<SearchScreen>
       return (isSelected ? _eventSelectedIcon : _eventIcon) ??
           BitmapDescriptor.defaultMarker;
     }
-    if (isSelected && isHighlighted) {
-      return _spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker;
+    if (isHighlighted) {
+      return (isSelected
+              ? _spotSelectedHighlightedIcon
+              : _spotHighlightedIcon) ??
+          BitmapDescriptor.defaultMarker;
+    }
+    // The user's own status outranks the community rating star.
+    switch (trackingStatus) {
+      case _SpotTrackingStatus.visited:
+        final icon = isSelected ? _spotVisitedSelectedIcon : _spotVisitedIcon;
+        if (icon != null) return icon;
+      case _SpotTrackingStatus.wantToVisit:
+        final icon = isSelected
+            ? _spotWantToVisitSelectedIcon
+            : _spotWantToVisitIcon;
+        if (icon != null) return icon;
+      case null:
+        break;
     }
     if (isSelected) {
       return _spotSelectedIcon ?? BitmapDescriptor.defaultMarker;
-    }
-    if (isHighlighted) {
-      return _spotHighlightedIcon ?? BitmapDescriptor.defaultMarker;
     }
     if (aboveAverage) {
       return _spotAboveAverageIcon ??
@@ -2455,6 +2516,7 @@ class SearchScreenState extends State<SearchScreen>
         isSelected: isSelected,
         isHighlighted: isHighlighted,
         hasEvent: hasEvent,
+        trackingStatus: _trackingStatusFor(spot.id),
       );
 
       if (hasEvent && spot.id != null) {
@@ -2619,6 +2681,29 @@ class SearchScreenState extends State<SearchScreen>
             fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
             logicalHeight: browsePinHeight,
           );
+      final BitmapDescriptor wantToVisitPin =
+          await MarkerIconUtils.loadMapPinPng(
+            MarkerIconUtils.mapPinWantToVisitAsset,
+            fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
+            logicalHeight: browsePinHeight,
+          );
+      final BitmapDescriptor wantToVisitSelectedPin =
+          await MarkerIconUtils.loadMapPinPng(
+            MarkerIconUtils.mapPinWantToVisitSelectedAsset,
+            fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
+            logicalHeight: browsePinHeight,
+          );
+      final BitmapDescriptor visitedPin = await MarkerIconUtils.loadMapPinPng(
+        MarkerIconUtils.mapPinBeenAsset,
+        fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
+        logicalHeight: browsePinHeight,
+      );
+      final BitmapDescriptor visitedSelectedPin =
+          await MarkerIconUtils.loadMapPinPng(
+            MarkerIconUtils.mapPinBeenSelectedAsset,
+            fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
+            logicalHeight: browsePinHeight,
+          );
       final BitmapDescriptor addPin = await MarkerIconUtils.loadMapPinPng(
         MarkerIconUtils.mapPinAddAsset,
         fallbackFill: MarkerIconUtils.mapPinAddFallbackFill,
@@ -2638,6 +2723,10 @@ class SearchScreenState extends State<SearchScreen>
           _spotHighlightedIcon = listPin;
           _spotSelectedHighlightedIcon = listSelectedPin;
           _spotAboveAverageIcon = aboveAveragePin;
+          _spotWantToVisitIcon = wantToVisitPin;
+          _spotWantToVisitSelectedIcon = wantToVisitSelectedPin;
+          _spotVisitedIcon = visitedPin;
+          _spotVisitedSelectedIcon = visitedSelectedPin;
           _addSpotPinIcon = addPin;
           _eventIcon = eventPin;
           _eventSelectedIcon = eventSelectedPin;

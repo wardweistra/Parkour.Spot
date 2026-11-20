@@ -38,6 +38,22 @@ class MarkerIconUtils {
   static const String mapPinEventSelectedAsset =
       'assets/images/map/map-icon-event-64x64-selected.png';
 
+  /// Signed-in user marked this spot as want to visit (bookmark).
+  static const String mapPinWantToVisitAsset =
+      'assets/images/map/map-icon-want-to-visit-64x64.png';
+
+  /// Selected want-to-visit spot.
+  static const String mapPinWantToVisitSelectedAsset =
+      'assets/images/map/map-icon-want-to-visit-64x64-selected.png';
+
+  /// Signed-in user marked this spot as been to (checkmark).
+  static const String mapPinBeenAsset =
+      'assets/images/map/map-icon-been-64x64.png';
+
+  /// Selected been-to spot.
+  static const String mapPinBeenSelectedAsset =
+      'assets/images/map/map-icon-been-64x64-selected.png';
+
   /// Spot pin for UI chrome (Explore mode toggle, legends).
   static const String mapPinSpotLegendAsset =
       'assets/images/map/map-icon-spot-legend.svg';
