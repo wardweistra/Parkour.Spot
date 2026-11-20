@@ -479,7 +479,15 @@ class AuthService extends ChangeNotifier {
       return false;
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
-        debugPrint('Google Sign-In canceled by user');
+        // Android Credential Manager also reports configuration failures as a
+        // cancellation (e.g. Play services' UNREGISTERED_ON_API_CONSOLE when
+        // the signing certificate's SHA-1 is not registered in Firebase), so
+        // this is not necessarily the user closing the dialog.
+        debugPrint(
+          'Google Sign-In canceled (closed by the user, or a configuration '
+          'error such as an unregistered signing SHA-1; check logcat for '
+          'Auth.Api.Credentials): ${e.description} ${e.details ?? ''}',
+        );
       } else {
         debugPrint('Google Sign-In error: $e');
       }

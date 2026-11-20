@@ -148,6 +148,23 @@ The Android app activates App Check on startup (`lib/main.dart`), matching the w
 
 Until the app is registered, token requests fail and the app keeps working as long as enforcement is off. Do not switch enforcement on before `placesAppCheck.missing` stops appearing for Android in the Functions logs.
 
+### **Android signing certificates**
+
+Builds installed from Google Play are re-signed by Play with the **app signing key**, not the upload key. Native Google services check that certificate, so every signing key must be registered in two places:
+
+| Key | Where it comes from |
+| --- | --- |
+| Debug | `~/.android/debug.keystore` on each developer machine (`flutter run`) |
+| Upload | `android/keystore/upload-keystore.jks` (`scripts/build_android_production.sh`, local release installs) |
+| Play app signing | Play Console → Protected with Play → App signing (all Play tracks) |
+
+1. **Firebase Console** → Project settings → Android app `parkour.spot` → SHA certificate fingerprints: add the **SHA-1 and SHA-256**. SHA-1 creates the Android OAuth client that **Sign in with Google** needs; SHA-256 is used by App Check (Play Integrity).
+2. **Google Cloud Console** → Credentials → **ParkourSpot Android Maps key** → Android apps: add the **SHA-1** with package `parkour.spot`. Without it the **map stays blank** (`Authorization failure` in logcat).
+
+The Play app signing key has been rotated once (Play Console lists a **previous** key and a post-quantum key next to the current one). Keep the fingerprints of all of them registered: Play signs for Android 13+ with the current key and for older Android versions with the previous key. Use **Copy all certificate fingerprints** on the App signing page. After a future key change there, register the new fingerprints in both places again.
+
+Symptoms of a missing registration on a Play install: blank maps, and Google Sign-In failing with `UNREGISTERED_ON_API_CONSOLE` in `adb logcat | grep Auth.Api.Credentials` (the app only sees a cancellation).
+
 ### **Android cleartext (debug/profile only)**
 
 `android/app/src/debug/AndroidManifest.xml` and `profile/` set `usesCleartextTraffic="true"` so debug/profile builds can talk to local Firebase emulators over HTTP (`10.0.2.2`). The release manifest does not allow cleartext and does not disable TLS certificate validation. Scanner findings that call this "improper SSL certificate validation" should be accepted as a local-emulator exception.
