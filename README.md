@@ -176,6 +176,10 @@ The Android project follows the versions in the current Flutter stable template:
 # Build the Flutter app for production
 ./scripts/build_production.sh
 
+# Build the signed Android App Bundle for Google Play
+# (bump `version:` in pubspec.yaml first; output: build/app/outputs/bundle/release/app-release.aab)
+./scripts/build_android_production.sh
+
 # Build about.parkour.spot from Firestore snapshots
 ./scripts/build_about_production.sh
 ```
