@@ -103,8 +103,9 @@ class _SpotSelectionDialogState extends State<SpotSelectionDialog> {
       // Filter out the current spot and spots already marked as duplicates
       final filteredSpots = spots.where((spot) {
         if (spot.id == widget.currentSpotId) return false;
-        if (!widget.allowExternalSources && spot.duplicateOf != null)
+        if (!widget.allowExternalSources && spot.duplicateOf != null) {
           return false;
+        }
         return true;
       }).toList();
 

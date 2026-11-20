@@ -153,7 +153,7 @@ class SavedSpotListService extends ChangeNotifier {
     try {
       final snap = await ref.orderBy('savedAt', descending: true).get();
       final ids = snap.docs.map((d) => d.id).toList();
-      return resolveSavedListIds(spotListService, ids);
+      return await resolveSavedListIds(spotListService, ids);
     } catch (e) {
       debugPrint('Error loading saved spot lists: $e');
       return [];

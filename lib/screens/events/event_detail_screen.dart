@@ -1944,6 +1944,7 @@ class _SuggestEventPhotoDialogState extends State<_SuggestEventPhotoDialog> {
       _error = null;
     });
     await yieldToUi();
+    if (!mounted) return;
 
     try {
       final eventService = context.read<EventReportService>();

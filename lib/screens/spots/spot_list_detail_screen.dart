@@ -128,6 +128,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
       listen: false,
     );
     final list = await spotListService.getSpotListById(widget.listId);
+    if (!mounted) return;
 
     if (list == null) {
       // Keep `_list` null so the memorial not-found body can render.

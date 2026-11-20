@@ -239,39 +239,34 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                     children: [
                       const Text('Search Mode', style: TextStyle(fontSize: 14)),
                       const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: RadioListTile<SearchMode>(
-                              title: const Text('Last Updated Before'),
-                              value: SearchMode.lastUpdatedBefore,
-                              groupValue: _searchMode,
-                              onChanged: (value) {
-                                setState(() {
-                                  _searchMode = value!;
-                                  _spots = [];
-                                  _selectedSpotIds.clear();
-                                });
-                              },
-                              contentPadding: EdgeInsets.zero,
+                      RadioGroup<SearchMode>(
+                        groupValue: _searchMode,
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setState(() {
+                            _searchMode = value;
+                            _spots = [];
+                            _selectedSpotIds.clear();
+                          });
+                        },
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: RadioListTile<SearchMode>(
+                                title: const Text('Last Updated Before'),
+                                value: SearchMode.lastUpdatedBefore,
+                                contentPadding: EdgeInsets.zero,
+                              ),
                             ),
-                          ),
-                          Expanded(
-                            child: RadioListTile<SearchMode>(
-                              title: const Text('Removed Spots'),
-                              value: SearchMode.removedSpots,
-                              groupValue: _searchMode,
-                              onChanged: (value) {
-                                setState(() {
-                                  _searchMode = value!;
-                                  _spots = [];
-                                  _selectedSpotIds.clear();
-                                });
-                              },
-                              contentPadding: EdgeInsets.zero,
+                            Expanded(
+                              child: RadioListTile<SearchMode>(
+                                title: const Text('Removed Spots'),
+                                value: SearchMode.removedSpots,
+                                contentPadding: EdgeInsets.zero,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -652,7 +647,9 @@ class _SpotManagementScreenState extends State<SpotManagementScreen> {
                                   city: spot.city,
                                 );
                                 if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  ScaffoldMessenger.of(
+                                    this.context,
+                                  ).showSnackBar(
                                     const SnackBar(
                                       content: Text(
                                         'Spot URL copied to clipboard',

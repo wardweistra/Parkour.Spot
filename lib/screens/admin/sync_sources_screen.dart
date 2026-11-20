@@ -1062,9 +1062,9 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     );
 
     if (saved == true) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       final syncService = context.read<SyncSourceService>();
-      if (!mounted) return;
+      if (!context.mounted) return;
       await syncService.fetchSyncSources(includeInactive: true);
     }
   }
@@ -1087,15 +1087,15 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     );
 
     try {
-      if (!mounted) return;
+      if (!context.mounted) return;
       final syncService = context.read<SyncSourceService>();
-      if (!mounted) return;
+      if (!context.mounted) return;
       final scaffoldMessenger = ScaffoldMessenger.of(context);
-      if (!mounted) return;
+      if (!context.mounted) return;
       final navigator = Navigator.of(context);
       final result = await syncService.findOrphanedSpots();
 
-      if (!mounted) return;
+      if (!context.mounted) return;
       navigator.pop(); // Close loading dialog
 
       if (result != null && result['success'] == true) {
@@ -1114,7 +1114,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
           );
         } else {
           // Show detailed dialog with orphaned spots
-          if (!mounted) return;
+          if (!context.mounted) return;
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
@@ -1217,9 +1217,9 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
         );
       }
     } catch (e) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       final navigator = Navigator.of(context);
-      if (!mounted) return;
+      if (!context.mounted) return;
       final scaffoldMessenger = ScaffoldMessenger.of(context);
       navigator.pop(); // Close loading dialog
       scaffoldMessenger.showSnackBar(
@@ -1260,14 +1260,14 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     );
 
     if (confirmed == true) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       await _deleteSpot(context, spotId);
     }
   }
 
   Future<void> _deleteSpot(BuildContext context, String spotId) async {
     try {
-      if (!mounted) return;
+      if (!context.mounted) return;
       // Show loading indicator
       showDialog(
         context: context,
@@ -1285,20 +1285,20 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
       );
 
       // Delete the spot using cloud function
-      if (!mounted) return;
+      if (!context.mounted) return;
       final syncService = context.read<SyncSourceService>();
-      if (!mounted) return;
+      if (!context.mounted) return;
       final result = await syncService.deleteSpot(spotId);
 
-      if (!mounted) return;
+      if (!context.mounted) return;
       final navigator = Navigator.of(context);
-      if (!mounted) return;
+      if (!context.mounted) return;
       navigator.pop(); // Close loading dialog
 
       if (result != null && result['success'] == true) {
-        if (!mounted) return;
+        if (!context.mounted) return;
         final scaffoldMessenger = ScaffoldMessenger.of(context);
-        if (!mounted) return;
+        if (!context.mounted) return;
         scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text(result['message'] ?? 'Spot deleted successfully'),
@@ -1307,15 +1307,17 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
         );
 
         // Refresh the orphaned spots dialog
-        if (!mounted) return;
+        if (!context.mounted) return;
         final navigator2 = Navigator.of(context);
-        if (!mounted) return;
+        if (!context.mounted) return;
         navigator2.pop(); // Close the orphaned spots dialog
-        _showOrphanedSpotsDialog(context); // Reopen to show updated list
+        // Reopen from the screen: this dialog's context is now disposed.
+        if (!mounted) return;
+        _showOrphanedSpotsDialog(this.context); // Reopen to show updated list
       } else {
-        if (!mounted) return;
+        if (!context.mounted) return;
         final scaffoldMessenger = ScaffoldMessenger.of(context);
-        if (!mounted) return;
+        if (!context.mounted) return;
         scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text(
@@ -1326,9 +1328,9 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
         );
       }
     } catch (e) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       final navigator = Navigator.of(context);
-      if (!mounted) return;
+      if (!context.mounted) return;
       final scaffoldMessenger = ScaffoldMessenger.of(context);
       navigator.pop(); // Close loading dialog
       scaffoldMessenger.showSnackBar(
@@ -1368,7 +1370,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     );
 
     if (confirmed == true) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       await _deleteAllSpots(context, orphanedSpots);
     }
   }
@@ -1378,7 +1380,7 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
     List<dynamic> orphanedSpots,
   ) async {
     try {
-      if (!mounted) return;
+      if (!context.mounted) return;
       // Show loading indicator
       showDialog(
         context: context,
@@ -1401,20 +1403,20 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
           .toList();
 
       // Delete all spots using cloud function
-      if (!mounted) return;
+      if (!context.mounted) return;
       final syncService = context.read<SyncSourceService>();
-      if (!mounted) return;
+      if (!context.mounted) return;
       final result = await syncService.deleteSpots(spotIds);
 
-      if (!mounted) return;
+      if (!context.mounted) return;
       final navigator = Navigator.of(context);
-      if (!mounted) return;
+      if (!context.mounted) return;
       navigator.pop(); // Close loading dialog
 
       if (result != null && result['success'] == true) {
-        if (!mounted) return;
+        if (!context.mounted) return;
         final scaffoldMessenger = ScaffoldMessenger.of(context);
-        if (!mounted) return;
+        if (!context.mounted) return;
         scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text(
@@ -1426,14 +1428,14 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
         );
 
         // Close the orphaned spots dialog
-        if (!mounted) return;
+        if (!context.mounted) return;
         final navigator2 = Navigator.of(context);
-        if (!mounted) return;
+        if (!context.mounted) return;
         navigator2.pop();
       } else {
-        if (!mounted) return;
+        if (!context.mounted) return;
         final scaffoldMessenger = ScaffoldMessenger.of(context);
-        if (!mounted) return;
+        if (!context.mounted) return;
         scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text(
@@ -1444,9 +1446,9 @@ class _SyncSourcesScreenState extends State<SyncSourcesScreen> {
         );
       }
     } catch (e) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       final navigator = Navigator.of(context);
-      if (!mounted) return;
+      if (!context.mounted) return;
       final scaffoldMessenger = ScaffoldMessenger.of(context);
       navigator.pop(); // Close loading dialog
       scaffoldMessenger.showSnackBar(

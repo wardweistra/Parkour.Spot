@@ -65,7 +65,6 @@ class CountryFlagBadge extends StatelessWidget {
 /// Lowercase ISO 3166-1 alpha-2 code, or null if invalid.
 ///
 /// Subdivision suffixes after a hyphen are ignored (`GB-ENG` → `gb`).
-@visibleForTesting
 String? isoAlpha2CountryCode(String countryCode) {
   final base = countryCode.trim().toUpperCase().split('-').first;
   if (base.length != 2) {

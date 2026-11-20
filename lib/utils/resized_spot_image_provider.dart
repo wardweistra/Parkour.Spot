@@ -58,7 +58,7 @@ class ResizedSpotImageProvider extends ImageProvider<ResizedSpotImageProvider> {
           final buffer = await ui.ImmutableBuffer.fromUint8List(
             Uint8List.fromList(response.bodyBytes),
           );
-          return decode(buffer);
+          return await decode(buffer);
         }
       } catch (e) {
         lastError = e;

@@ -86,7 +86,7 @@ class AdminEventsService extends ChangeNotifier {
           .where('needsModeratorReview', isEqualTo: true)
           .snapshots()
           .map((snapshot) => snapshot.docs.length),
-      onValue: (count) => _needsReviewCount = count,
+      onValue: (value) => _needsReviewCount = value,
     );
   }
 
@@ -98,7 +98,7 @@ class AdminEventsService extends ChangeNotifier {
           .where('duplicateHasPendingChanges', isEqualTo: true)
           .snapshots()
           .map((snapshot) => snapshot.docs.length),
-      onValue: (count) => _duplicatePendingChangesCount = count,
+      onValue: (value) => _duplicatePendingChangesCount = value,
     );
   }
 

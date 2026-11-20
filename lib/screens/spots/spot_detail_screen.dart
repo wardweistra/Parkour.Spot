@@ -5354,7 +5354,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             // Now check if mounted for UI operations
                             if (!mounted) return;
                             final scaffoldMessenger = ScaffoldMessenger.of(
-                              context,
+                              this.context,
                             );
                             scaffoldMessenger.showSnackBar(
                               SnackBar(
@@ -5368,11 +5368,11 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                             // Navigate to explore immediately after successful deletion
                             // Use replace to ensure we don't go back to the deleted spot
                             if (!mounted) return;
-                            context.replace('/explore');
+                            this.context.replace('/explore');
                           } else {
                             if (!mounted) return;
                             final scaffoldMessenger = ScaffoldMessenger.of(
-                              context,
+                              this.context,
                             );
                             scaffoldMessenger.showSnackBar(
                               SnackBar(
@@ -5384,7 +5384,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
                         } catch (e) {
                           if (!mounted) return;
                           final scaffoldMessenger = ScaffoldMessenger.of(
-                            context,
+                            this.context,
                           );
                           scaffoldMessenger.showSnackBar(
                             SnackBar(
@@ -6389,7 +6389,7 @@ class _ReportDuplicateDialogState extends State<_ReportDuplicateDialog> {
                     );
 
                     if (success) {
-                      if (!mounted) return;
+                      if (!dialogContext.mounted) return;
                       Navigator.of(dialogContext).pop(true);
                     } else {
                       if (!mounted) return;
@@ -6754,7 +6754,7 @@ class _ReportSpotDialogState extends State<_ReportSpotDialog> {
                     );
 
                     if (success) {
-                      if (!mounted) return;
+                      if (!dialogContext.mounted) return;
                       Navigator.of(dialogContext).pop(true);
                     } else {
                       if (!mounted) return;
@@ -7139,6 +7139,7 @@ class _SuggestPhotoDialogState extends State<_SuggestPhotoDialog> {
       emailError = null;
     });
     await yieldToUi();
+    if (!mounted) return;
 
     try {
       final spotService = Provider.of<SpotService>(context, listen: false);
@@ -7997,7 +7998,7 @@ class _SuggestEditDialogState extends State<_SuggestEditDialog> {
                   videoMeta: widget.spot.youtubeVideoMeta,
                   onAdd: _isSubmitting ? () {} : _addYoutubeRow,
                   onRemove: _isSubmitting ? (_) {} : _removeYoutubeRow,
-                  onReorder: _isSubmitting ? (_, __) {} : _reorderYoutubeRows,
+                  onReorder: _isSubmitting ? (_, _) {} : _reorderYoutubeRows,
                   onChanged: _isSubmitting ? null : () => setState(() {}),
                   hintText: l10n.spotDetailSuggestEditYoutubeHint,
                   forDialog: true,

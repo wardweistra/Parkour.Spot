@@ -82,12 +82,8 @@ class SpotYoutubeSection extends StatelessWidget {
         // Drag overlay is outside the Card's Material; TextField needs one.
         return Material(type: MaterialType.transparency, child: child);
       },
-      onReorder: (oldIndex, newIndex) {
-        if (newIndex > oldIndex) {
-          newIndex -= 1;
-        }
-        onReorder(oldIndex, newIndex);
-      },
+      // newIndex is already adjusted for the removed item.
+      onReorderItem: (oldIndex, newIndex) => onReorder(oldIndex, newIndex),
       itemBuilder: (context, index) {
         return _YoutubeLinkRow(
           key: ObjectKey(controllers[index]),

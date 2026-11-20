@@ -958,7 +958,7 @@ class SpotService extends ChangeNotifier {
   }) async {
     try {
       if (preparedPhotos != null && preparedPhotos.isNotEmpty) {
-        return _uploadPreparedImages(
+        return await _uploadPreparedImages(
           preparedPhotos,
           pathPrefix: 'suggestions/',
           fileNameStem: 'web_image',
@@ -2247,7 +2247,7 @@ class SpotService extends ChangeNotifier {
           .where('duplicateHasPendingChanges', isEqualTo: true)
           .snapshots()
           .map((snapshot) => snapshot.docs.length),
-      onValue: (count) => _duplicatePendingChangesCount = count,
+      onValue: (value) => _duplicatePendingChangesCount = value,
     );
   }
 

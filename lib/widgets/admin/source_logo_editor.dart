@@ -130,6 +130,7 @@ class _SourceLogoEditorState extends State<SourceLogoEditor> {
         if (previousUrl != null && previousUrl.trim().isNotEmpty) {
           await CachedNetworkImage.evictFromCache(previousUrl.trim());
         }
+        if (!mounted) return;
         setState(() => _displayLogoUrl = newUrl);
         widget.onLogoChanged?.call();
         ScaffoldMessenger.of(

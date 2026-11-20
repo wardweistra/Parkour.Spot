@@ -287,6 +287,7 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
 
     try {
       final bounds = await _mapController!.getVisibleRegion();
+      if (!mounted) return;
       final minLat = bounds.southwest.latitude;
       final maxLat = bounds.northeast.latitude;
       final minLng = bounds.southwest.longitude;
@@ -554,6 +555,7 @@ class _ExploreEntityPickerScreenState extends State<ExploreEntityPickerScreen> {
         await _mapController!.animateCamera(CameraUpdate.zoomTo(targetZoom));
       }
     }
+    if (!mounted) return;
     setState(() {
       _pendingLocation = null;
       _previewSpot = spot;

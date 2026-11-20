@@ -169,7 +169,7 @@ Future<PreparedImage?> prepareDownloadedImageOnWeb({
 
   try {
     await element.decode().toDart;
-    return _prepareDecodedElement(
+    return await _prepareDecodedElement(
       element: element,
       bytes: bytes,
       maxDimension: maxDimension,

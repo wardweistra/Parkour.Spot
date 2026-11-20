@@ -275,6 +275,7 @@ class _EventReportQueueScreenState extends State<EventReportQueueScreen> {
     if (!mounted) return;
     _updateBusyProgress(report.id, message: 'Starting approval...');
     await yieldToUi();
+    if (!mounted) return;
     final auth = context.read<AuthService>();
     final user = auth.currentUser;
     final userId = user?.uid;

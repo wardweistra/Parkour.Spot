@@ -1324,6 +1324,7 @@ class _AddEventReportScreenState extends State<AddEventReportScreen>
           : l10n.addEventSubmitting;
     });
     await yieldToUi();
+    if (!mounted) return;
     try {
       final eventReportService = context.read<EventReportService>();
       List<String> suggestedPhotoUrls = const <String>[];

@@ -345,7 +345,7 @@ Future<PreparedImage> prepareImageForUpload(
           'Failed to convert HEIC image. Please try a different photo.',
         );
       }
-      return prepareImageForUpload(
+      return await prepareImageForUpload(
         jpegBytes,
         maxDimension: maxDimension,
         jpegQuality: jpegQuality,

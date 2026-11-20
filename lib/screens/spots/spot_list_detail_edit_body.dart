@@ -275,13 +275,13 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
     return items;
   }
 
-  void _onReorder(int oldIndex, int newIndex) {
+  /// [newIndex] is already adjusted for the removed item (onReorderItem).
+  void _onReorderItem(int oldIndex, int newIndex) {
     final items = _flatten();
     if (oldIndex < 0 || oldIndex >= items.length) return;
     final dragged = items[oldIndex];
     if (dragged.kind != _FlatKind.spot) return;
 
-    if (oldIndex < newIndex) newIndex -= 1;
     final item = items.removeAt(oldIndex);
     newIndex = newIndex.clamp(0, items.length);
     final addAt = items.indexWhere((i) => i.kind == _FlatKind.add);
@@ -498,7 +498,7 @@ class _SpotListDetailEditBodyState extends State<SpotListDetailEditBody> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           sliver: SliverReorderableList(
             itemCount: items.length,
-            onReorder: _onReorder,
+            onReorderItem: _onReorderItem,
             autoScrollerVelocityScalar: _autoScrollVelocityScalar,
             itemBuilder: (context, index) {
               return _buildFlatItem(index, items[index], theme, l10n);

@@ -134,6 +134,7 @@ class _EventSuggestionApprovalDialogState
       _error = null;
     });
     await yieldToUi();
+    if (!mounted) return;
 
     try {
       final authService = Provider.of<AuthService>(context, listen: false);

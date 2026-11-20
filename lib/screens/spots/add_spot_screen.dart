@@ -538,6 +538,7 @@ class _AddSpotScreenState extends State<AddSpotScreen>
       _imageProcessingMessage = l10n.publicProfileUploading;
     });
     await yieldToUi();
+    if (!mounted) return;
 
     try {
       final authService = Provider.of<AuthService>(context, listen: false);

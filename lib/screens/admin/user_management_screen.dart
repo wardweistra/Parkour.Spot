@@ -86,23 +86,19 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     : const Icon(Icons.more_vert),
                 onSelected: (value) async {
                   if (value == 'sync_created_at') {
-                    await _syncUserCreatedAt(context, service, dryRun: false);
+                    await _syncUserCreatedAt(service, dryRun: false);
                   } else if (value == 'sync_created_at_dry_run') {
-                    await _syncUserCreatedAt(context, service, dryRun: true);
+                    await _syncUserCreatedAt(service, dryRun: true);
                   } else if (value == 'copy_google_avatars_dry_run') {
-                    await _copyGoogleAvatars(context, service, dryRun: true);
+                    await _copyGoogleAvatars(service, dryRun: true);
                   } else if (value == 'copy_google_avatars') {
-                    await _copyGoogleAvatars(context, service, dryRun: false);
+                    await _copyGoogleAvatars(service, dryRun: false);
                   } else if (value == 'make_profile_pictures_public') {
-                    await _makeProfilePicturesPublic(context, service);
+                    await _makeProfilePicturesPublic(service);
                   } else if (value == 'sync_spot_display_names_dry_run') {
-                    await _syncSpotDisplayNames(context, service, dryRun: true);
+                    await _syncSpotDisplayNames(service, dryRun: true);
                   } else if (value == 'sync_spot_display_names') {
-                    await _syncSpotDisplayNames(
-                      context,
-                      service,
-                      dryRun: false,
-                    );
+                    await _syncSpotDisplayNames(service, dryRun: false);
                   }
                 },
                 itemBuilder: (context) => [
@@ -265,8 +261,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       ..sort((a, b) {
                         // Sort by createdAt in reverse chronological order (newest first)
                         // Users without createdAt go to the end
-                        if (a.createdAt == null && b.createdAt == null)
+                        if (a.createdAt == null && b.createdAt == null) {
                           return 0;
+                        }
                         if (a.createdAt == null) return 1;
                         if (b.createdAt == null) return -1;
                         return b.createdAt!.compareTo(a.createdAt!);
@@ -574,15 +571,16 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         onChanged: updatingModerator
                             ? null
                             : (value) async {
+                                final messenger = ScaffoldMessenger.of(
+                                  rootContext,
+                                );
                                 final bool success = await userService
                                     .updateModeratorStatus(user.id, value);
                                 if (!mounted) return;
 
                                 if (success) {
                                   if (!mounted) return;
-                                  ScaffoldMessenger.of(
-                                    rootContext,
-                                  ).showSnackBar(
+                                  messenger.showSnackBar(
                                     SnackBar(
                                       content: Text(
                                         value
@@ -596,9 +594,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                   );
                                 } else {
                                   if (!mounted) return;
-                                  ScaffoldMessenger.of(
-                                    rootContext,
-                                  ).showSnackBar(
+                                  messenger.showSnackBar(
                                     SnackBar(
                                       content: const Text(
                                         'Failed to update moderator status',
@@ -666,7 +662,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   Future<void> _syncUserCreatedAt(
-    BuildContext context,
     UserManagementService service, {
     required bool dryRun,
   }) async {
@@ -838,6 +833,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           );
         }
 
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -903,7 +899,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   Future<void> _copyGoogleAvatars(
-    BuildContext context,
     UserManagementService service, {
     required bool dryRun,
   }) async {
@@ -1014,6 +1009,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           );
         }
 
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -1077,10 +1073,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     }
   }
 
-  Future<void> _makeProfilePicturesPublic(
-    BuildContext context,
-    UserManagementService service,
-  ) async {
+  Future<void> _makeProfilePicturesPublic(UserManagementService service) async {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1159,7 +1152,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   Future<void> _syncSpotDisplayNames(
-    BuildContext context,
     UserManagementService service, {
     required bool dryRun,
   }) async {
@@ -1265,6 +1257,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           );
         }
 
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -1462,6 +1455,7 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
   }
 
   Future<void> _updateFeatureAccess(String featureName, bool hasAccess) async {
+    final messenger = ScaffoldMessenger.of(widget.rootContext);
     final bool success = await widget.userService.updateFeatureAccess(
       widget.user.id,
       featureName,
@@ -1475,7 +1469,7 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
         _localFeatureAccess[featureName] = hasAccess;
       });
       if (!mounted) return;
-      ScaffoldMessenger.of(widget.rootContext).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             hasAccess
@@ -1487,7 +1481,7 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
       );
     } else {
       if (!mounted) return;
-      ScaffoldMessenger.of(widget.rootContext).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Failed to update feature access'),
           backgroundColor: Colors.red,
@@ -1497,6 +1491,7 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
   }
 
   Future<void> _removeFeatureAccess(String featureName) async {
+    final messenger = ScaffoldMessenger.of(widget.rootContext);
     final bool success = await widget.userService.updateFeatureAccess(
       widget.user.id,
       featureName,
@@ -1510,7 +1505,7 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
         _localFeatureAccess.remove(featureName);
       });
       if (!mounted) return;
-      ScaffoldMessenger.of(widget.rootContext).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text('Removed "$featureName" access'),
           backgroundColor: Colors.orange,
@@ -1518,7 +1513,7 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
       );
     } else {
       if (!mounted) return;
-      ScaffoldMessenger.of(widget.rootContext).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Failed to remove feature access'),
           backgroundColor: Colors.red,
@@ -1528,9 +1523,10 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
   }
 
   Future<void> _addFeatureAccess() async {
+    final messenger = ScaffoldMessenger.of(widget.rootContext);
     final featureName = _newFeatureController.text.trim();
     if (featureName.isEmpty) {
-      ScaffoldMessenger.of(widget.rootContext).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Please enter a feature name'),
           backgroundColor: Colors.orange,
@@ -1540,7 +1536,7 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
     }
 
     if (_localFeatureAccess.containsKey(featureName)) {
-      ScaffoldMessenger.of(widget.rootContext).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Feature already exists'),
           backgroundColor: Colors.orange,
@@ -1563,7 +1559,7 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
       });
       _newFeatureController.clear();
       if (!mounted) return;
-      ScaffoldMessenger.of(widget.rootContext).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text('Added "$featureName" access'),
           backgroundColor: Colors.green,
@@ -1571,7 +1567,7 @@ class _FeatureAccessSectionState extends State<_FeatureAccessSection> {
       );
     } else {
       if (!mounted) return;
-      ScaffoldMessenger.of(widget.rootContext).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Failed to add feature access'),
           backgroundColor: Colors.red,

@@ -947,8 +947,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 dialogReady.complete();
               }
             }
-            return WillPopScope(
-              onWillPop: () async => false, // Prevent dismissing during upload
+            return PopScope(
+              canPop: false, // Prevent dismissing during upload
               child: AlertDialog(
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1043,8 +1043,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       );
 
       // Close progress dialog
-      if (mounted && dialogContext != null) {
-        Navigator.of(dialogContext!, rootNavigator: true).pop();
+      final progressContext = dialogContext;
+      if (progressContext != null && progressContext.mounted) {
+        Navigator.of(progressContext, rootNavigator: true).pop();
       }
 
       if (mounted) {
@@ -1079,8 +1080,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       }
     } catch (e) {
       // Close progress dialog
-      if (mounted && dialogContext != null) {
-        Navigator.of(dialogContext!, rootNavigator: true).pop();
+      final progressContext = dialogContext;
+      if (progressContext != null && progressContext.mounted) {
+        Navigator.of(progressContext, rootNavigator: true).pop();
       }
 
       if (mounted) {
@@ -1609,7 +1611,7 @@ class _ProfileSettingsSheetContentState
                             _displayNameError = null;
                           });
                           widget.onSaved();
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          ScaffoldMessenger.of(this.context).showSnackBar(
                             SnackBar(
                               content: Text(
                                 newDisplayName != null
@@ -1769,7 +1771,7 @@ class _ProfileSettingsSheetContentState
                             widget.onSaved();
                           }
 
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          ScaffoldMessenger.of(this.context).showSnackBar(
                             SnackBar(
                               content: Text(_l10n.publicProfileUsernameUpdated),
                               backgroundColor: Colors.green,
@@ -1919,7 +1921,7 @@ class _ProfileSettingsSheetContentState
                             _bioError = null;
                           });
                           widget.onSaved();
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          ScaffoldMessenger.of(this.context).showSnackBar(
                             SnackBar(
                               content: Text(
                                 rawInput.isEmpty
@@ -2081,7 +2083,7 @@ class _ProfileSettingsSheetContentState
                             _instagramUrlError = null;
                           });
                           widget.onSaved();
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          ScaffoldMessenger.of(this.context).showSnackBar(
                             SnackBar(
                               content: Text(
                                 rawInput.isEmpty
@@ -2162,7 +2164,7 @@ class _ProfileSettingsSheetContentState
                 if (mounted) {
                   if (success) {
                     widget.onSaved();
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(this.context).showSnackBar(
                       SnackBar(
                         content: Text(
                           value
@@ -2173,7 +2175,7 @@ class _ProfileSettingsSheetContentState
                       ),
                     );
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(this.context).showSnackBar(
                       SnackBar(
                         content: Text(
                           _l10n.publicProfileFailedToUpdateProfilePrivacy,

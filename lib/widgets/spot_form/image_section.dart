@@ -285,12 +285,8 @@ class SpotImageSection extends StatelessWidget {
           // Return child directly without default Material wrapper to avoid white background
           return child;
         },
-        onReorder: (oldIndex, newIndex) {
-          if (newIndex > oldIndex) {
-            newIndex -= 1;
-          }
-          onReorder(oldIndex, newIndex);
-        },
+        // newIndex is already adjusted for the removed item.
+        onReorderItem: (oldIndex, newIndex) => onReorder(oldIndex, newIndex),
         children: List.generate(items.length, (index) {
           final item = items[index];
           // Use index-based keys to preserve duplicates (same URL can appear multiple times)

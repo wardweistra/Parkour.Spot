@@ -213,6 +213,7 @@ class _PhotoApprovalDialogState extends State<PhotoApprovalDialog> {
       _error = null;
     });
     await yieldToUi();
+    if (!mounted) return;
 
     try {
       final spotService = Provider.of<SpotService>(context, listen: false);

@@ -1327,6 +1327,7 @@ class SearchScreenState extends State<SearchScreen>
     }
 
     // First, center on cached location if available
+    if (!mounted) return;
     final searchState = Provider.of<SearchStateService>(context, listen: false);
     final cachedLat = searchState.lastKnownUserLat;
     final cachedLng = searchState.lastKnownUserLng;
@@ -4201,7 +4202,9 @@ class SearchScreenState extends State<SearchScreen>
 
                                 // Get the screen size
                                 if (!mounted) return;
-                                final screenSize = MediaQuery.of(context).size;
+                                final screenSize = MediaQuery.of(
+                                  this.context,
+                                ).size;
 
                                 // Calculate the offset from center (in pixels)
                                 final offsetX =
