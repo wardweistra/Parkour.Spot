@@ -105,6 +105,8 @@ class _DetailNetworkGalleryViewerState
       },
       child: Scaffold(
         backgroundColor: Colors.black,
+        // Center the photo on the whole screen, not below the bar.
+        extendBodyBehindAppBar: true,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
