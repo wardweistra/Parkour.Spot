@@ -128,3 +128,6 @@ skills-lock.json
 # Temp files
 temp/
 .vscode/settings.json
+
+# Google Play upload service account key (scripts/upload_android_play.py)
+/play-service-account.json

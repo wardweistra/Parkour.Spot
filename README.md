@@ -165,6 +165,28 @@ The Play app signing key has been rotated once (Play Console lists a **previous*
 
 Symptoms of a missing registration on a Play install: blank maps, and Google Sign-In failing with `UNREGISTERED_ON_API_CONSOLE` in `adb logcat | grep Auth.Api.Credentials` (the app only sees a cancellation).
 
+### **Publishing to Google Play**
+
+`scripts/upload_android_play.py` uploads `build/app/outputs/bundle/release/app-release.aab` through the Google Play Developer API and releases it to a track. It runs with [uv](https://docs.astral.sh/uv/), which installs its Python dependencies on first run.
+
+```bash
+./scripts/build_android_production.sh                        # bump `version:` in pubspec.yaml first
+./scripts/upload_android_play.py --dry-run                   # upload + validate, then discard
+./scripts/upload_android_play.py --notes "Bug fixes"         # internal testing (default track)
+./scripts/upload_android_play.py --track alpha               # closed testing; also beta, production
+./scripts/upload_android_play.py --track production --status inProgress --rollout 0.1
+```
+
+It refuses a version code that Play already has and a bundle whose version code does not match `pubspec.yaml`. Store listing, content rating and data safety still go through Play Console.
+
+One-time setup:
+
+1. **Google Cloud** (project `parkourspot-93c90`): enable the **Google Play Android Developer API**, create a service account (no project roles needed), and create a **JSON key** for it.
+2. Save the key as `play-service-account.json` in the repo root (gitignored), or point `PLAY_SERVICE_ACCOUNT_JSON` at it.
+3. **Play Console** → Users and permissions → **Invite new users**: add the service account's email, give it access to Parkour.Spot with **Release to testing tracks** (and **Release to production** if it should publish there).
+
+Permissions can take a few minutes to apply. Until the app has passed its first production review, Play may only accept draft releases from the API: then use `--status draft` and roll out in Play Console.
+
 ### **Android cleartext (debug/profile only)**
 
 `android/app/src/debug/AndroidManifest.xml` and `profile/` set `usesCleartextTraffic="true"` so debug/profile builds can talk to local Firebase emulators over HTTP (`10.0.2.2`). The release manifest does not allow cleartext and does not disable TLS certificate validation. Scanner findings that call this "improper SSL certificate validation" should be accepted as a local-emulator exception.
@@ -196,6 +218,9 @@ The Android project follows the versions in the current Flutter stable template:
 # Build the signed Android App Bundle for Google Play
 # (bump `version:` in pubspec.yaml first; output: build/app/outputs/bundle/release/app-release.aab)
 ./scripts/build_android_production.sh
+
+# Upload it to the internal testing track (see "Publishing to Google Play")
+./scripts/upload_android_play.py --notes "What changed"
 
 # Build about.parkour.spot from Firestore snapshots
 ./scripts/build_about_production.sh
