@@ -1,12 +1,17 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
     "target": {
       "namespace": "android_app",
       "package_name": "parkour.spot",
       "sha256_cert_fingerprints": [
         "80:5A:99:78:28:A7:B3:8E:F2:09:04:C6:CF:8D:B2:24:F8:BA:83:D0:9F:F5:78:20:E4:73:05:75:A0:DB:D9:66",
-        "A8:94:73:3B:92:D5:19:74:BA:D5:10:D3:B2:F5:8C:4C:53:F3:63:F7:14:51:4F:A8:49:EA:DC:F3:9F:B9:E2:6D"
+        "A8:94:73:3B:92:D5:19:74:BA:D5:10:D3:B2:F5:8C:4C:53:F3:63:F7:14:51:4F:A8:49:EA:DC:F3:9F:B9:E2:6D",
+        "5D:F6:17:25:E7:4B:B3:69:FF:DB:C4:A1:4F:53:43:BB:EF:16:A0:7B:75:A4:04:B3:F5:37:C7:6E:2B:F0:6F:8E",
+        "BA:6D:07:CF:B3:F6:29:D1:20:F9:A8:C2:CC:12:D0:3E:09:F7:C6:40:84:E7:38:4A:34:74:57:F2:F6:20:3D:92"
       ]
     }
   }
