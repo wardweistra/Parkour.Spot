@@ -114,6 +114,20 @@ class EventInterestService extends ChangeNotifier {
     return ids;
   }
 
+  /// Live list of the signed-in user's RSVPs (empty when signed out).
+  Stream<List<EventInterest>> watchMyInterests() {
+    final userId = _userId;
+    final col = userId == null ? null : _interestsColFor(userId);
+    if (userId == null || col == null) {
+      return Stream<List<EventInterest>>.value(const []);
+    }
+    return col.snapshots().map(
+      (snap) => snap.docs
+          .map((doc) => EventInterest.fromFirestore(doc, userId: userId))
+          .toList(growable: false),
+    );
+  }
+
   Future<List<EventInterest>> getMyInterests() async {
     final userId = _userId;
     final col = userId == null ? null : _interestsColFor(userId);

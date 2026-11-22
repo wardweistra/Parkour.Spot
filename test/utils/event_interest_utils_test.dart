@@ -413,4 +413,42 @@ void main() {
       );
     });
   });
+
+  group('eventInterestStatusByNativeEventId', () {
+    test('keys native RSVPs by their own id', () {
+      final result = eventInterestStatusByNativeEventId([
+        interest(eventId: 'a', status: EventInterestStatus.going),
+        interest(eventId: 'b', status: EventInterestStatus.interested),
+      ], const {});
+
+      expect(result, {
+        'a': EventInterestStatus.going,
+        'b': EventInterestStatus.interested,
+      });
+    });
+
+    test('credits duplicate RSVPs to the native event, going wins', () {
+      final result = eventInterestStatusByNativeEventId(
+        [
+          interest(eventId: 'native', status: EventInterestStatus.interested),
+          interest(eventId: 'dup', status: EventInterestStatus.going),
+        ],
+        const {'dup': 'native'},
+      );
+
+      expect(result, {'native': EventInterestStatus.going});
+    });
+
+    test('going on native is not downgraded by interested on duplicate', () {
+      final result = eventInterestStatusByNativeEventId(
+        [
+          interest(eventId: 'native', status: EventInterestStatus.going),
+          interest(eventId: 'dup', status: EventInterestStatus.interested),
+        ],
+        const {'dup': 'native'},
+      );
+
+      expect(result, {'native': EventInterestStatus.going});
+    });
+  });
 }

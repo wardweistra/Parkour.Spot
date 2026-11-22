@@ -5,7 +5,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/foundation.dart'
-    show kIsWeb, debugPrint, listEquals, setEquals;
+    show kIsWeb, debugPrint, listEquals, mapEquals, setEquals;
 
 import 'dart:async';
 import 'dart:math' as math;
@@ -18,6 +18,9 @@ import '../../services/event_map_service.dart';
 import '../../services/admin_events_service.dart';
 import '../../services/spot_service.dart';
 import '../../models/event_map_pin.dart';
+import '../../models/event_interest.dart';
+import '../../services/event_interest_service.dart';
+import '../../utils/event_interest_utils.dart';
 import '../../utils/explore_events_utils.dart';
 import '../../utils/explore_spots_utils.dart';
 import '../../widgets/event_card.dart';
@@ -400,6 +403,20 @@ class SearchScreenState extends State<SearchScreen>
   int _communityLoadGeneration = 0;
   BitmapDescriptor? _eventIcon;
   BitmapDescriptor? _eventSelectedIcon;
+  BitmapDescriptor? _eventGoingIcon;
+  BitmapDescriptor? _eventGoingSelectedIcon;
+  BitmapDescriptor? _eventInterestedIcon;
+  BitmapDescriptor? _eventInterestedSelectedIcon;
+
+  /// Signed-in user's RSVPs, so Going / Interested event pins stay live.
+  StreamSubscription<List<EventInterest>>? _eventInterestSub;
+  String? _eventInterestUserId;
+  List<EventInterest> _myEventInterests = const [];
+
+  /// RSVP'd event id → native event id (duplicates have no map pins).
+  final Map<String, String> _interestNativeIdByEventId = {};
+  final Set<String> _interestIdsResolving = {};
+  Map<String, EventInterestStatus> _eventInterestByNativeId = const {};
   late AnimationController _bottomSheetAnimationController;
   late CurvedAnimation _bottomSheetAnimation;
   late PageController _imagePageController;
@@ -828,6 +845,7 @@ class SearchScreenState extends State<SearchScreen>
     _syncSourceServiceRef?.removeListener(_onSyncSourcesChanged);
     _searchStateServiceRef?.removeListener(_onSearchStateChanged);
     _authServiceRef?.removeListener(_onSpotTrackingChanged);
+    _eventInterestSub?.cancel();
     super.dispose();
   }
 
@@ -835,6 +853,7 @@ class SearchScreenState extends State<SearchScreen>
   /// when they actually changed (AuthService notifies for many reasons).
   void _onSpotTrackingChanged() {
     if (!mounted) return;
+    _syncEventInterestSubscription();
     final profile = _authServiceRef?.isAuthenticated == true
         ? _authServiceRef?.userProfile
         : null;
@@ -849,6 +868,104 @@ class SearchScreenState extends State<SearchScreen>
       _visitedSpotIds = visited;
       _markers = _rebuildMarkers();
     });
+  }
+
+  /// (Re)subscribes to the user's RSVPs when the signed-in user changes.
+  void _syncEventInterestSubscription() {
+    final String? userId = _authServiceRef?.isAuthenticated == true
+        ? _authServiceRef?.currentUser?.uid
+        : null;
+    if (userId == _eventInterestUserId && _eventInterestSub != null) return;
+    _eventInterestUserId = userId;
+    _eventInterestSub?.cancel();
+    _eventInterestSub = null;
+    if (userId == null) {
+      _applyEventInterests(const []);
+      return;
+    }
+    _eventInterestSub = context
+        .read<EventInterestService>()
+        .watchMyInterests()
+        .listen(
+          _applyEventInterests,
+          onError: (Object e, StackTrace st) {
+            debugPrint('Explore event interests stream failed: $e\n$st');
+          },
+        );
+  }
+
+  void _applyEventInterests(List<EventInterest> interests) {
+    if (!mounted) return;
+    _myEventInterests = interests;
+    _recomputeEventInterestStatuses();
+    unawaited(_resolveInterestNativeIds());
+  }
+
+  void _recomputeEventInterestStatuses() {
+    final next = eventInterestStatusByNativeEventId(
+      _myEventInterests,
+      _interestNativeIdByEventId,
+    );
+    if (mapEquals(next, _eventInterestByNativeId)) return;
+    setState(() {
+      _eventInterestByNativeId = next;
+      _markers = _rebuildMarkers();
+    });
+  }
+
+  /// Looks up RSVP'd events not already known to be native, so RSVPs on a
+  /// duplicate listing light up the native event's pin. Cached per session.
+  Future<void> _resolveInterestNativeIds() async {
+    final pinEventIds = _loadedEventPins.map((p) => p.eventId).toSet();
+    final unknown = _myEventInterests
+        .map((i) => i.eventId.trim())
+        .where(
+          (id) =>
+              id.isNotEmpty &&
+              !pinEventIds.contains(id) &&
+              !_interestNativeIdByEventId.containsKey(id) &&
+              !_interestIdsResolving.contains(id),
+        )
+        .toSet();
+    if (unknown.isEmpty) return;
+    _interestIdsResolving.addAll(unknown);
+    try {
+      final events = await context.read<EventInterestService>().getEventsByIds(
+        unknown,
+      );
+      for (final id in unknown) {
+        final event = events[id];
+        _interestNativeIdByEventId[id] = event == null
+            ? id
+            : (canonicalEventInterestEventId(event) ?? id);
+      }
+    } catch (e, st) {
+      debugPrint('Explore could not resolve RSVP event ids: $e\n$st');
+    } finally {
+      _interestIdsResolving.removeAll(unknown);
+    }
+    if (mounted) _recomputeEventInterestStatuses();
+  }
+
+  /// Event pin artwork, swapped for Going / Interested when the user RSVP'd.
+  BitmapDescriptor _eventMarkerIcon(
+    String eventId, {
+    required bool isSelected,
+  }) {
+    switch (_eventInterestByNativeId[eventId]) {
+      case EventInterestStatus.going:
+        final icon = isSelected ? _eventGoingSelectedIcon : _eventGoingIcon;
+        if (icon != null) return icon;
+      case EventInterestStatus.interested:
+        final icon = isSelected
+            ? _eventInterestedSelectedIcon
+            : _eventInterestedIcon;
+        if (icon != null) return icon;
+      case null:
+        break;
+    }
+    return (isSelected ? (_eventSelectedIcon ?? _eventIcon) : _eventIcon) ??
+        BitmapDescriptor.defaultMarker;
   }
 
   _SpotTrackingStatus? _trackingStatusFor(String? spotId) {
@@ -2452,6 +2569,7 @@ class SearchScreenState extends State<SearchScreen>
     required bool isSelected,
     required bool isHighlighted,
     required bool hasEvent,
+    String? eventId,
     _SpotTrackingStatus? trackingStatus,
   }) {
     if (_exploreSpotDrawnAsEventPin(
@@ -2459,6 +2577,9 @@ class SearchScreenState extends State<SearchScreen>
       isHighlighted: isHighlighted,
       hasEvent: hasEvent,
     )) {
+      if (eventId != null) {
+        return _eventMarkerIcon(eventId, isSelected: isSelected);
+      }
       return (isSelected ? _eventSelectedIcon : _eventIcon) ??
           BitmapDescriptor.defaultMarker;
     }
@@ -2529,6 +2650,7 @@ class SearchScreenState extends State<SearchScreen>
         isSelected: isSelected,
         isHighlighted: isHighlighted,
         hasEvent: hasEvent,
+        eventId: eventPin?.eventId,
         trackingStatus: _trackingStatusFor(spot.id),
       );
 
@@ -2572,9 +2694,7 @@ class SearchScreenState extends State<SearchScreen>
           ? 'event_venue_${pin.eventId}'
           : 'event_spot_${pin.id}';
       final isSelected = _selectedEventPin?.id == pin.id;
-      final icon =
-          (isSelected ? (_eventSelectedIcon ?? _eventIcon) : _eventIcon) ??
-          BitmapDescriptor.defaultMarker;
+      final icon = _eventMarkerIcon(pin.eventId, isSelected: isSelected);
 
       pending.add(
         _PendingExploreMarker(
@@ -2753,8 +2873,26 @@ class SearchScreenState extends State<SearchScreen>
           await MarkerIconUtils.loadEventSelectedMapPin(
             logicalHeight: browsePinHeight,
           );
+      final List<BitmapDescriptor> rsvpPins = await Future.wait(
+        [
+          MarkerIconUtils.mapPinEventGoingAsset,
+          MarkerIconUtils.mapPinEventGoingSelectedAsset,
+          MarkerIconUtils.mapPinEventInterestedAsset,
+          MarkerIconUtils.mapPinEventInterestedSelectedAsset,
+        ].map(
+          (asset) => MarkerIconUtils.loadMapPinPng(
+            asset,
+            fallbackFill: MarkerIconUtils.mapPinEventFallbackFill,
+            logicalHeight: browsePinHeight,
+          ),
+        ),
+      );
       if (mounted) {
         setState(() {
+          _eventGoingIcon = rsvpPins[0];
+          _eventGoingSelectedIcon = rsvpPins[1];
+          _eventInterestedIcon = rsvpPins[2];
+          _eventInterestedSelectedIcon = rsvpPins[3];
           _spotDefaultIcon = normalPin;
           _spotSelectedIcon = normalSelectedPin;
           _spotHighlightedIcon = listPin;

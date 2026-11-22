@@ -40,6 +40,22 @@ class MarkerIconUtils {
   static const String mapPinEventSelectedAsset =
       'assets/images/map/map-icon-event-64x64-selected.png';
 
+  /// Event the signed-in user RSVP'd Going to.
+  static const String mapPinEventGoingAsset =
+      'assets/images/map/map-icon-event-going-64x64.png';
+
+  /// Selected Going event pin.
+  static const String mapPinEventGoingSelectedAsset =
+      'assets/images/map/map-icon-event-going-64x64-selected.png';
+
+  /// Event the signed-in user RSVP'd Interested to.
+  static const String mapPinEventInterestedAsset =
+      'assets/images/map/map-icon-event-interested-64x64.png';
+
+  /// Selected Interested event pin.
+  static const String mapPinEventInterestedSelectedAsset =
+      'assets/images/map/map-icon-event-interested-64x64-selected.png';
+
   /// Signed-in user marked this spot as want to visit (bookmark).
   static const String mapPinWantToVisitAsset =
       'assets/images/map/map-icon-want-to-visit-64x64.png';

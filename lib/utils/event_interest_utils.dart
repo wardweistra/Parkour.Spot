@@ -131,6 +131,26 @@ EventInterestStatus? clusterEventInterestStatus(
   return status;
 }
 
+/// The user's RSVP status per native event id, for map pins.
+///
+/// Map pins exist only for native events, so an RSVP on a duplicate listing is
+/// credited to the native id from [nativeIdByEventId]. Ids missing from that
+/// map are treated as native. Going wins within a cluster.
+Map<String, EventInterestStatus> eventInterestStatusByNativeEventId(
+  Iterable<EventInterest> interests,
+  Map<String, String> nativeIdByEventId,
+) {
+  final result = <String, EventInterestStatus>{};
+  for (final interest in interests) {
+    final eventId = _trimmedId(interest.eventId);
+    if (eventId == null) continue;
+    final nativeId = nativeIdByEventId[eventId] ?? eventId;
+    if (result[nativeId] == EventInterestStatus.going) continue;
+    result[nativeId] = interest.status;
+  }
+  return result;
+}
+
 /// Docs to delete so each user has at most one RSVP in a duplicate cluster.
 ///
 /// Clearing removes every cluster doc. Setting a status keeps the listing
