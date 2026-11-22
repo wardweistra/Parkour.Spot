@@ -106,6 +106,10 @@ flutter:
     - assets/images/map/map-icon-want-to-visit-64x64-selected.png
     - assets/images/map/map-icon-been-64x64.png
     - assets/images/map/map-icon-been-64x64-selected.png
+    - assets/images/map/map-icon-list-want-to-visit-64x64.png
+    - assets/images/map/map-icon-list-want-to-visit-64x64-selected.png
+    - assets/images/map/map-icon-list-been-64x64.png
+    - assets/images/map/map-icon-list-been-64x64-selected.png
     - assets/images/map/map-icon-spot-legend.svg
     - assets/images/map/map-icon-event-legend.svg
     - assets/images/brands/

@@ -56,6 +56,22 @@ class MarkerIconUtils {
   static const String mapPinBeenSelectedAsset =
       'assets/images/map/map-icon-been-64x64-selected.png';
 
+  /// Spot in the active list filter that the user marked as want to visit.
+  static const String mapPinListWantToVisitAsset =
+      'assets/images/map/map-icon-list-want-to-visit-64x64.png';
+
+  /// Selected list spot marked as want to visit.
+  static const String mapPinListWantToVisitSelectedAsset =
+      'assets/images/map/map-icon-list-want-to-visit-64x64-selected.png';
+
+  /// Spot in the active list filter that the user marked as been to.
+  static const String mapPinListBeenAsset =
+      'assets/images/map/map-icon-list-been-64x64.png';
+
+  /// Selected list spot marked as been to.
+  static const String mapPinListBeenSelectedAsset =
+      'assets/images/map/map-icon-list-been-64x64-selected.png';
+
   /// Spot pin for UI chrome (Explore mode toggle, legends).
   static const String mapPinSpotLegendAsset =
       'assets/images/map/map-icon-spot-legend.svg';

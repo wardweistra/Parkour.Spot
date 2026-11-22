@@ -66,6 +66,10 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
   GoogleMapController? _mapController;
   BitmapDescriptor? _spotHighlightedIcon;
   BitmapDescriptor? _spotSelectedHighlightedIcon;
+  BitmapDescriptor? _spotWantToVisitIcon;
+  BitmapDescriptor? _spotWantToVisitSelectedIcon;
+  BitmapDescriptor? _spotVisitedIcon;
+  BitmapDescriptor? _spotVisitedSelectedIcon;
   Spot? _selectedSpot; // Currently selected/highlighted spot
   final ScrollController _scrollController = ScrollController();
   String? _creatorName;
@@ -109,10 +113,37 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
             fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
             logicalHeight: h,
           );
+      final BitmapDescriptor wantToVisitPin =
+          await MarkerIconUtils.loadMapPinPng(
+            MarkerIconUtils.mapPinListWantToVisitAsset,
+            fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
+            logicalHeight: h,
+          );
+      final BitmapDescriptor wantToVisitSelectedPin =
+          await MarkerIconUtils.loadMapPinPng(
+            MarkerIconUtils.mapPinListWantToVisitSelectedAsset,
+            fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
+            logicalHeight: h,
+          );
+      final BitmapDescriptor visitedPin = await MarkerIconUtils.loadMapPinPng(
+        MarkerIconUtils.mapPinListBeenAsset,
+        fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
+        logicalHeight: h,
+      );
+      final BitmapDescriptor visitedSelectedPin =
+          await MarkerIconUtils.loadMapPinPng(
+            MarkerIconUtils.mapPinListBeenSelectedAsset,
+            fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
+            logicalHeight: h,
+          );
       if (mounted) {
         setState(() {
           _spotHighlightedIcon = listPin;
           _spotSelectedHighlightedIcon = listSelectedPin;
+          _spotWantToVisitIcon = wantToVisitPin;
+          _spotWantToVisitSelectedIcon = wantToVisitSelectedPin;
+          _spotVisitedIcon = visitedPin;
+          _spotVisitedSelectedIcon = visitedSelectedPin;
         });
       }
     } catch (_) {
@@ -859,15 +890,47 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
     return calculateBoundsForSpots(_mapSpots);
   }
 
-  Set<Marker> _buildMarkers() {
+  /// List pin for [spot], swapped for the been / want-to-visit list variant
+  /// when the signed-in user tracks it (visited wins, matching Explore).
+  BitmapDescriptor _listSpotMarkerIcon({
+    required Spot spot,
+    required bool isSelected,
+    required Set<String> visitedIds,
+    required Set<String> wantToVisitIds,
+  }) {
+    final String? id = spot.id;
+    if (id != null && visitedIds.contains(id)) {
+      final icon = isSelected ? _spotVisitedSelectedIcon : _spotVisitedIcon;
+      if (icon != null) return icon;
+    } else if (id != null && wantToVisitIds.contains(id)) {
+      final icon = isSelected
+          ? _spotWantToVisitSelectedIcon
+          : _spotWantToVisitIcon;
+      if (icon != null) return icon;
+    }
+    return (isSelected ? _spotSelectedHighlightedIcon : _spotHighlightedIcon) ??
+        BitmapDescriptor.defaultMarker;
+  }
+
+  Set<Marker> _buildMarkers(AuthService authService) {
+    final profile = authService.isAuthenticated
+        ? authService.userProfile
+        : null;
+    final Set<String> visitedIds = (profile?.visited ?? const <String>[])
+        .toSet();
+    final Set<String> wantToVisitIds =
+        (profile?.wantToVisit ?? const <String>[]).toSet();
     return MarkerIconUtils.sortSpotsForMapDrawOrder(_mapSpots).map((spot) {
       final bool isSelected = _selectedSpot?.id != null
           ? _selectedSpot!.id == spot.id
           : _selectedSpot?.name == spot.name;
 
-      final BitmapDescriptor icon = isSelected
-          ? (_spotSelectedHighlightedIcon ?? BitmapDescriptor.defaultMarker)
-          : (_spotHighlightedIcon ?? BitmapDescriptor.defaultMarker);
+      final BitmapDescriptor icon = _listSpotMarkerIcon(
+        spot: spot,
+        isSelected: isSelected,
+        visitedIds: visitedIds,
+        wantToVisitIds: wantToVisitIds,
+      );
 
       return Marker(
         markerId: MarkerId(spot.id ?? spot.name),
@@ -981,7 +1044,7 @@ class _SpotListDetailScreenState extends State<SpotListDetailScreen> {
               key: ValueKey(_mapMembershipKey),
               initialCameraPosition: initialCameraPosition,
               mapType: _isSatelliteView ? MapType.hybrid : MapType.normal,
-              markers: _buildMarkers(),
+              markers: _buildMarkers(context.watch<AuthService>()),
               onMapCreated: (GoogleMapController controller) {
                 _mapController = controller;
                 // Fit bounds after map is created

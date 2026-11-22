@@ -347,6 +347,10 @@ class SearchScreenState extends State<SearchScreen>
   BitmapDescriptor? _spotWantToVisitSelectedIcon;
   BitmapDescriptor? _spotVisitedIcon;
   BitmapDescriptor? _spotVisitedSelectedIcon;
+  BitmapDescriptor? _spotListWantToVisitIcon;
+  BitmapDescriptor? _spotListWantToVisitSelectedIcon;
+  BitmapDescriptor? _spotListVisitedIcon;
+  BitmapDescriptor? _spotListVisitedSelectedIcon;
   BitmapDescriptor? _addSpotPinIcon;
   AuthService? _authServiceRef;
   Set<String> _wantToVisitSpotIds = {};
@@ -2459,6 +2463,20 @@ class SearchScreenState extends State<SearchScreen>
           BitmapDescriptor.defaultMarker;
     }
     if (isHighlighted) {
+      switch (trackingStatus) {
+        case _SpotTrackingStatus.visited:
+          final icon = isSelected
+              ? _spotListVisitedSelectedIcon
+              : _spotListVisitedIcon;
+          if (icon != null) return icon;
+        case _SpotTrackingStatus.wantToVisit:
+          final icon = isSelected
+              ? _spotListWantToVisitSelectedIcon
+              : _spotListWantToVisitIcon;
+          if (icon != null) return icon;
+        case null:
+          break;
+      }
       return (isSelected
               ? _spotSelectedHighlightedIcon
               : _spotHighlightedIcon) ??
@@ -2699,6 +2717,30 @@ class SearchScreenState extends State<SearchScreen>
             fallbackFill: MarkerIconUtils.mapPinNormalFallbackFill,
             logicalHeight: browsePinHeight,
           );
+      final BitmapDescriptor listWantToVisitPin =
+          await MarkerIconUtils.loadMapPinPng(
+            MarkerIconUtils.mapPinListWantToVisitAsset,
+            fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
+            logicalHeight: browsePinHeight,
+          );
+      final BitmapDescriptor listWantToVisitSelectedPin =
+          await MarkerIconUtils.loadMapPinPng(
+            MarkerIconUtils.mapPinListWantToVisitSelectedAsset,
+            fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
+            logicalHeight: browsePinHeight,
+          );
+      final BitmapDescriptor listVisitedPin =
+          await MarkerIconUtils.loadMapPinPng(
+            MarkerIconUtils.mapPinListBeenAsset,
+            fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
+            logicalHeight: browsePinHeight,
+          );
+      final BitmapDescriptor listVisitedSelectedPin =
+          await MarkerIconUtils.loadMapPinPng(
+            MarkerIconUtils.mapPinListBeenSelectedAsset,
+            fallbackFill: MarkerIconUtils.mapPinListFallbackFill,
+            logicalHeight: browsePinHeight,
+          );
       final BitmapDescriptor addPin = await MarkerIconUtils.loadMapPinPng(
         MarkerIconUtils.mapPinAddAsset,
         fallbackFill: MarkerIconUtils.mapPinAddFallbackFill,
@@ -2722,6 +2764,10 @@ class SearchScreenState extends State<SearchScreen>
           _spotWantToVisitSelectedIcon = wantToVisitSelectedPin;
           _spotVisitedIcon = visitedPin;
           _spotVisitedSelectedIcon = visitedSelectedPin;
+          _spotListWantToVisitIcon = listWantToVisitPin;
+          _spotListWantToVisitSelectedIcon = listWantToVisitSelectedPin;
+          _spotListVisitedIcon = listVisitedPin;
+          _spotListVisitedSelectedIcon = listVisitedSelectedPin;
           _addSpotPinIcon = addPin;
           _eventIcon = eventPin;
           _eventSelectedIcon = eventSelectedPin;
