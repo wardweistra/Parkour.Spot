@@ -5,8 +5,12 @@
  * trigger; this covers accounts that existed before it was deployed. Safe to
  * re-run: it only writes documents whose content differs.
  *
+ * Needs Firestore write access, so run it with your own credentials
+ * (`gcloud auth application-default login`), not the read-only
+ * firebase-service-account.json deploy key:
+ *
  *   cd functions
- *   GOOGLE_APPLICATION_CREDENTIALS=../firebase-service-account.json \
+ *   GCLOUD_PROJECT=parkourspot-93c90 \
  *     node scripts/backfill-public-profiles.js [--dry-run]
  */
 
