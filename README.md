@@ -150,7 +150,7 @@ Until the app is registered, token requests fail and the app keeps working as lo
 
 ### **Android signing certificates**
 
-Builds installed from Google Play are re-signed by Play with the **app signing key**, not the upload key. Native Google services check that certificate, so every signing key must be registered in two places:
+Builds installed from Google Play are re-signed by Play with the **app signing key**, not the upload key. Native Google services and Android App Links check that certificate, so every signing key must be registered in three places:
 
 | Key | Where it comes from |
 | --- | --- |
@@ -160,8 +160,11 @@ Builds installed from Google Play are re-signed by Play with the **app signing k
 
 1. **Firebase Console** → Project settings → Android app `parkour.spot` → SHA certificate fingerprints: add the **SHA-1 and SHA-256**. SHA-1 creates the Android OAuth client that **Sign in with Google** needs; SHA-256 is used by App Check (Play Integrity).
 2. **Google Cloud Console** → Credentials → **ParkourSpot Android Maps key** → Android apps: add the **SHA-1** with package `parkour.spot`. Without it the **map stays blank** (`Authorization failure` in logcat).
+3. **`web/.well-known/assetlinks.json`** (served at `https://parkour.spot/.well-known/assetlinks.json`): the **SHA-256** in colon-separated form (`80:5A:…`). Without it `https://parkour.spot/...` links open in the browser instead of the app ("0 verified links" under the app's **Open by default** settings). Play Console → Grow users → **Deep links** → Add domain generates this file with all current fingerprints; copy it from there. It also grants `get_login_creds`, so saved logins are shared between the website and the app. Deploy with `firebase deploy --only hosting:app`.
 
-The Play app signing key has been rotated once (Play Console lists a **previous** key and a post-quantum key next to the current one). Keep the fingerprints of all of them registered: Play signs for Android 13+ with the current key and for older Android versions with the previous key. Use **Copy all certificate fingerprints** on the App signing page. After a future key change there, register the new fingerprints in both places again.
+The Play app signing key has been rotated once (Play Console lists a **previous** key and a post-quantum key next to the current one). Keep the fingerprints of all of them registered: Play signs for Android 13+ with the current key and for older Android versions with the previous key. Use **Copy all certificate fingerprints** on the App signing page. After a future key change there, register the new fingerprints in all three places again.
+
+To check App Links: `https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://parkour.spot&relation=delegate_permission/common.handle_all_urls` must list the statements without errors (Google caches the file for about 10 minutes). Devices verify on install and update; force it with `adb shell pm verify-app-links --re-verify parkour.spot` and inspect with `adb shell pm get-app-links parkour.spot`. Only `parkour.spot` is in the manifest's App Links filter: `www.parkour.spot` redirects, and Android does not follow redirects when verifying.
 
 Symptoms of a missing registration on a Play install: blank maps, and Google Sign-In failing with `UNREGISTERED_ON_API_CONSOLE` in `adb logcat | grep Auth.Api.Credentials` (the app only sees a cancellation).
 
