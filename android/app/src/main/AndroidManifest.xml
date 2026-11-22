@@ -10,8 +10,8 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <!-- Android 13+ photo picker; image_picker may also request these -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <!-- No READ_MEDIA_IMAGES: image_picker uses the system photo picker, which
+         needs no permission (Play requires a declaration for broad access). -->
     <application
         android:label="Parkour·Spot"
         android:name="${applicationName}"
