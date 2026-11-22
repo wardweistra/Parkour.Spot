@@ -1606,7 +1606,10 @@ class SpotService extends ChangeNotifier {
         final userId = rating.userId.trim();
         if (userId.isEmpty) return;
         try {
-          final doc = await _firestore.collection('users').doc(userId).get();
+          final doc = await _firestore
+              .collection('publicProfiles')
+              .doc(userId)
+              .get();
           if (!doc.exists) return;
           final data = doc.data();
           if (data == null) return;

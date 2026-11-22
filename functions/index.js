@@ -391,6 +391,10 @@ const {
   removeSpotListMember,
 } = require("./lib/spot-list-sharing");
 const {deliverNotifications} = require("./lib/deliver-notification");
+const {
+  buildPublicProfile,
+  publicProfilesEqual,
+} = require("./lib/public-profile");
 
 /** App description appended to spot, list, and user page meta descriptions */
 const APP_DESCRIPTION = "Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.";
@@ -7643,6 +7647,27 @@ exports.makeProfilePicturesPublic = onCall(
             `Failed to make profile pictures public: ${error.message}`,
         );
       }
+    },
+);
+
+/**
+ * Firestore trigger: mirror the public fields of `users/{uid}` into
+ * `publicProfiles/{uid}` (see lib/public-profile.js). The users collection is
+ * private to its owner and admins, so profile pages, username checks and rating
+ * names read the mirror instead.
+ */
+exports.onUserWrittenSyncPublicProfile = onDocumentWritten(
+    {document: "users/{userId}", region: "europe-west1"},
+    async (event) => {
+      const ref = db.collection("publicProfiles").doc(event.params.userId);
+      const next = buildPublicProfile(event.data?.after?.data());
+      if (next === null) {
+        await ref.delete();
+        return;
+      }
+      const before = buildPublicProfile(event.data?.before?.data());
+      if (publicProfilesEqual(before, next)) return;
+      await ref.set(next);
     },
 );
 

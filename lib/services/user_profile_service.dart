@@ -12,9 +12,15 @@ class UserProfileService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  /// Collection with the public fields of every user; `users/{uid}` itself is
+  /// only readable by its owner and admins (see firestore.rules).
+  CollectionReference<Map<String, dynamic>> get _publicProfiles =>
+      _firestore.collection('publicProfiles');
+
   /// Get user profile by ID or username
   /// Returns null if user not found or profile is private (unless currentUserId matches)
-  /// Note: Email is excluded from public profiles unless viewing own profile
+  /// Other users' profiles come from `publicProfiles`, so they never include
+  /// email or other private fields; your own profile is read in full.
   /// [currentUserId] - Optional current user ID to allow viewing own private profile
   Future<app_user.User?> getUserProfile(
     String userIdOrUsername, {
@@ -26,60 +32,57 @@ class UserProfileService extends ChangeNotifier {
       // Defer notifyListeners to avoid calling during build phase
       Future.microtask(() => notifyListeners());
 
-      DocumentSnapshot? doc;
-      String? resolvedUserId;
+      DocumentSnapshot<Map<String, dynamic>>? doc;
 
       // Try to fetch by user ID first (if it looks like a Firebase UID)
       // Firebase UIDs are typically 28 characters
       if (userIdOrUsername.length == 28) {
-        doc = await _firestore.collection('users').doc(userIdOrUsername).get();
-        if (doc.exists) {
-          resolvedUserId = doc.id;
-        }
+        doc = await _publicProfiles.doc(userIdOrUsername).get();
       }
 
       // If not found by ID, try username lookup (case-insensitive)
       if (doc == null || !doc.exists) {
-        final querySnapshot = await _firestore
-            .collection('users')
+        final querySnapshot = await _publicProfiles
             .where('username', isEqualTo: userIdOrUsername.toLowerCase())
             .limit(1)
             .get();
 
         if (querySnapshot.docs.isNotEmpty) {
           doc = querySnapshot.docs.first;
-          resolvedUserId = doc.id;
         }
       }
 
-      if (doc == null || !doc.exists) {
+      final isOwnLookup =
+          currentUserId != null && userIdOrUsername == currentUserId;
+      final resolvedUserId = (doc != null && doc.exists)
+          ? doc.id
+          : (isOwnLookup ? currentUserId : null);
+      if (resolvedUserId == null) {
         _isLoading = false;
         Future.microtask(() => notifyListeners());
         return null;
       }
 
-      final data = doc.data() as Map<String, dynamic>;
-
-      // Check if profile is public
-      final isPublicProfile = data['isPublicProfile'] ?? true;
-      final isOwnProfile =
-          currentUserId != null && resolvedUserId == currentUserId;
-
-      // Allow viewing own profile even if private
-      if (!isPublicProfile && !isOwnProfile) {
-        _isLoading = false;
-        Future.microtask(() => notifyListeners());
-        return null; // Profile is private and not own profile
+      final isOwnProfile = resolvedUserId == currentUserId;
+      Map<String, dynamic>? data;
+      if (isOwnProfile) {
+        // Own profile: the full private document.
+        data = (await _firestore.collection('users').doc(resolvedUserId).get())
+            .data();
+      } else if (doc!.data()?['isPublicProfile'] != false) {
+        data = doc.data();
       }
 
-      // Create user object
-      // Exclude email for public profiles, include for own profile
+      if (data == null) {
+        _isLoading = false;
+        Future.microtask(() => notifyListeners());
+        return null; // Missing, or private and not own profile
+      }
+
       final user = app_user.User.fromMap({
-        'id': doc.id,
         ...data,
-        'email': isOwnProfile
-            ? (data['email'] ?? '')
-            : '', // Include email only for own profile
+        'id': resolvedUserId,
+        'email': isOwnProfile ? (data['email'] ?? '') : '',
       });
 
       _isLoading = false;
@@ -112,8 +115,7 @@ class UserProfileService extends ChangeNotifier {
         return false;
       }
 
-      final querySnapshot = await _firestore
-          .collection('users')
+      final querySnapshot = await _publicProfiles
           .where('username', isEqualTo: trimmedUsername.toLowerCase())
           .limit(1)
           .get();

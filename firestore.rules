@@ -421,18 +421,22 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     
-    // Users collection - users can only manage their own profile, admins can read/update all
-    // Public profiles (isPublicProfile == true) are readable by anyone
+    // Public profile mirror of users/{userId}: username, display name and (for
+    // public profiles) photo, bio and links. Written only by the
+    // onUserWrittenSyncPublicProfile Cloud Function; see functions/lib/public-profile.js.
+    match /publicProfiles/{userId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Users collection - private account data (email, saved/visited spots,
+    // notification and location settings). Only the owner and admins can read
+    // it; everyone else reads publicProfiles/{userId}.
     match /users/{userId} {
-      // Allow read if:
-      // 1. User is reading their own profile, OR
-      // 2. User is an admin, OR
-      // 3. Profile is public (isPublicProfile == true, defaulting to true if field doesn't exist)
-      allow read: if request.auth != null && 
+      allow read: if request.auth != null &&
         (request.auth.uid == userId ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true)) ||
-        (resource.data.isPublicProfile == true || !('isPublicProfile' in resource.data));
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true));
       // Allow create only for self and forbid setting privileged flags
       allow create: if request.auth != null && request.auth.uid == userId &&
         request.resource.data.isAdmin == false &&
