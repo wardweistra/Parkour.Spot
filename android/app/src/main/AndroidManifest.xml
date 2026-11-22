@@ -37,13 +37,22 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- App Links: https://parkour.spot/... -->
+            <!-- Incoming links are handled by app_links in lib/main.dart (which
+                 sends API/calendar/etc. paths back to the browser). Disable
+                 Flutter's built-in deep linking so GoRouter doesn't also route
+                 them. Android-only: the web/PWA build is unaffected. -->
+            <meta-data
+              android:name="flutter_deeplinking_enabled"
+              android:value="false"
+              />
+            <!-- App Links: https://parkour.spot/... Verified via
+                 web/.well-known/assetlinks.json. www is omitted on purpose: it
+                 301-redirects, and Android won't follow redirects when verifying. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https" android:host="parkour.spot"/>
-                <data android:scheme="https" android:host="www.parkour.spot"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
