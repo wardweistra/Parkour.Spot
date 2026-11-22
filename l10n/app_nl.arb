@@ -1448,5 +1448,12 @@
   "splashSloganStrongToBeUseful": "Voor wie sterk is om nuttig te zijn",
   "splashSloganTrainToLast": "Voor wie traint om te blijven",
   "splashSloganStrongBodyStrongMind": "Voor wie een sterk lichaam en een sterke geest traint",
-  "splashSloganObstaclesIntoPaths": "Voor wie obstakels in paden verandert"
+  "splashSloganObstaclesIntoPaths": "Voor wie obstakels in paden verandert",
+  "legalPrivacyPolicy": "Privacybeleid",
+  "legalPrivacyPolicyLink": "privacybeleid",
+  "legalSignInNotice": "Door verder te gaan, ga je akkoord met ons {policy}.",
+  "settingsPrivacyCardTitle": "Privacy en je gegevens",
+  "settingsPrivacyPolicySubtitle": "Wat we verzamelen en wie het kan zien",
+  "settingsDeleteAccountTitle": "Account verwijderen",
+  "settingsDeleteAccountSubtitle": "Zo verwijder je je account en gegevens"
 }

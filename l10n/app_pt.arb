@@ -1448,5 +1448,12 @@
   "splashSloganStrongToBeUseful": "Para quem é forte para ser útil",
   "splashSloganTrainToLast": "Para quem treina para durar",
   "splashSloganStrongBodyStrongMind": "Para quem treina um corpo forte e uma mente forte",
-  "splashSloganObstaclesIntoPaths": "Para quem transforma obstáculos em caminhos"
+  "splashSloganObstaclesIntoPaths": "Para quem transforma obstáculos em caminhos",
+  "legalPrivacyPolicy": "Política de privacidade",
+  "legalPrivacyPolicyLink": "política de privacidade",
+  "legalSignInNotice": "Ao continuar, aceitas a nossa {policy}.",
+  "settingsPrivacyCardTitle": "Privacidade e os teus dados",
+  "settingsPrivacyPolicySubtitle": "O que recolhemos e quem o pode ver",
+  "settingsDeleteAccountTitle": "Eliminar conta",
+  "settingsDeleteAccountSubtitle": "Como eliminar a tua conta e os teus dados"
 }

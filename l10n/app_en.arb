@@ -5758,5 +5758,36 @@
   "splashSloganObstaclesIntoPaths": "For those who turn obstacles into paths",
   "@splashSloganObstaclesIntoPaths": {
     "description": "Splash screen: random obstacle-as-path slogan"
+  },
+  "legalPrivacyPolicy": "Privacy policy",
+  "@legalPrivacyPolicy": {
+    "description": "Button or row label that opens the privacy policy on about.parkour.spot"
+  },
+  "legalPrivacyPolicyLink": "privacy policy",
+  "@legalPrivacyPolicyLink": {
+    "description": "Link text inside legalSignInNotice; must appear verbatim in that sentence"
+  },
+  "legalSignInNotice": "By continuing, you accept our {policy}.",
+  "@legalSignInNotice": {
+    "description": "Sign-in and sign-up screen: notice under the buttons; {policy} is the tappable legalPrivacyPolicyLink",
+    "placeholders": {
+      "policy": {"type": "String"}
+    }
+  },
+  "settingsPrivacyCardTitle": "Privacy and your data",
+  "@settingsPrivacyCardTitle": {
+    "description": "Account settings: card title for privacy links"
+  },
+  "settingsPrivacyPolicySubtitle": "What we collect and who can see it",
+  "@settingsPrivacyPolicySubtitle": {
+    "description": "Account settings: subtitle of the privacy policy row"
+  },
+  "settingsDeleteAccountTitle": "Delete account",
+  "@settingsDeleteAccountTitle": {
+    "description": "Account settings: row that opens the delete-account page"
+  },
+  "settingsDeleteAccountSubtitle": "How to delete your account and data",
+  "@settingsDeleteAccountSubtitle": {
+    "description": "Account settings: subtitle of the delete account row"
   }
 }

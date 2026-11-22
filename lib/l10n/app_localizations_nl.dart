@@ -5580,4 +5580,29 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get splashSloganObstaclesIntoPaths =>
       'Voor wie obstakels in paden verandert';
+
+  @override
+  String get legalPrivacyPolicy => 'Privacybeleid';
+
+  @override
+  String get legalPrivacyPolicyLink => 'privacybeleid';
+
+  @override
+  String legalSignInNotice(String policy) {
+    return 'Door verder te gaan, ga je akkoord met ons $policy.';
+  }
+
+  @override
+  String get settingsPrivacyCardTitle => 'Privacy en je gegevens';
+
+  @override
+  String get settingsPrivacyPolicySubtitle =>
+      'Wat we verzamelen en wie het kan zien';
+
+  @override
+  String get settingsDeleteAccountTitle => 'Account verwijderen';
+
+  @override
+  String get settingsDeleteAccountSubtitle =>
+      'Zo verwijder je je account en gegevens';
 }

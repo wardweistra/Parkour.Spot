@@ -9015,6 +9015,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'For those who turn obstacles into paths'**
   String get splashSloganObstaclesIntoPaths;
+
+  /// Button or row label that opens the privacy policy on about.parkour.spot
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy policy'**
+  String get legalPrivacyPolicy;
+
+  /// Link text inside legalSignInNotice; must appear verbatim in that sentence
+  ///
+  /// In en, this message translates to:
+  /// **'privacy policy'**
+  String get legalPrivacyPolicyLink;
+
+  /// Sign-in and sign-up screen: notice under the buttons; {policy} is the tappable legalPrivacyPolicyLink
+  ///
+  /// In en, this message translates to:
+  /// **'By continuing, you accept our {policy}.'**
+  String legalSignInNotice(String policy);
+
+  /// Account settings: card title for privacy links
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy and your data'**
+  String get settingsPrivacyCardTitle;
+
+  /// Account settings: subtitle of the privacy policy row
+  ///
+  /// In en, this message translates to:
+  /// **'What we collect and who can see it'**
+  String get settingsPrivacyPolicySubtitle;
+
+  /// Account settings: row that opens the delete-account page
+  ///
+  /// In en, this message translates to:
+  /// **'Delete account'**
+  String get settingsDeleteAccountTitle;
+
+  /// Account settings: subtitle of the delete account row
+  ///
+  /// In en, this message translates to:
+  /// **'How to delete your account and data'**
+  String get settingsDeleteAccountSubtitle;
 }
 
 class _AppLocalizationsDelegate

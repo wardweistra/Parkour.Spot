@@ -16,6 +16,14 @@ export function aboutContactPath(): string {
   return "/#contact";
 }
 
+export function aboutPrivacyPath(): string {
+  return "/privacy";
+}
+
+export function aboutDeleteAccountPath(): string {
+  return "/delete-account";
+}
+
 export function aboutCommunityPath(): string {
   return "/community";
 }

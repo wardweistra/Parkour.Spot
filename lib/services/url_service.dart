@@ -18,6 +18,12 @@ class UrlService {
   /// About site How it works page.
   static String get aboutHowItWorksUrl => '$aboutOrigin/how-it-works';
 
+  /// Privacy policy (also linked from the Play Store listing).
+  static String get aboutPrivacyUrl => '$aboutOrigin/privacy';
+
+  /// How to request account deletion (also the Play Data safety deletion URL).
+  static String get aboutDeleteAccountUrl => '$aboutOrigin/delete-account';
+
   static final RegExp _instagramHandleRegex = RegExp(r'^[a-zA-Z0-9._]{1,30}$');
 
   static const Set<String> _instagramReservedPaths = {

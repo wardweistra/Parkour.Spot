@@ -11,6 +11,7 @@ import '../../services/event_report_service.dart';
 import '../../services/spot_report_service.dart';
 import '../../services/spot_service.dart';
 import '../../services/url_service.dart';
+import '../../utils/external_launch.dart';
 import '../../services/user_notification_service.dart';
 import '../../services/mobile_detection_service.dart';
 import '../../widgets/about_site_button.dart';
@@ -615,6 +616,13 @@ class _ProfileScreenState extends State<ProfileScreen>
         ReportIssueButton(
           url: 'https://github.com/wardweistra/Parkour.Spot/issues',
           label: l10n.profileReportIssue,
+        ),
+        const SizedBox(height: 4),
+        TextButton.icon(
+          onPressed: () =>
+              launchExternalUri(context, Uri.parse(UrlService.aboutPrivacyUrl)),
+          icon: const Icon(Icons.privacy_tip_outlined, size: 20),
+          label: Text(l10n.legalPrivacyPolicy),
         ),
       ],
     );

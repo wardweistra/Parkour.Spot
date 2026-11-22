@@ -1,0 +1,358 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import {SITE_NAME} from "../lib/brand";
+import {
+  CONTACT_EMAIL,
+  OPEN_SOURCE_URL,
+  aboutDeleteAccountPath,
+} from "../lib/urls";
+
+const pageTitle = "Privacy policy";
+const lastUpdated = "22 November 2026";
+const lede =
+  `How ${SITE_NAME} handles your data: what we collect, what other people can see, ` +
+  "who helps us run the service, and how to get your data or delete your account.";
+
+const sections = [
+  {id: "who", title: "Who we are"},
+  {id: "summary", title: "In short"},
+  {id: "collect", title: "What we collect"},
+  {id: "public", title: "What others can see"},
+  {id: "sharing", title: "Who we share data with"},
+  {id: "retention", title: "How long we keep it"},
+  {id: "rights", title: "Your rights"},
+  {id: "children", title: "Children"},
+  {id: "changes", title: "Changes and contact"},
+];
+const mailto = `mailto:${CONTACT_EMAIL}`;
+---
+
+<BaseLayout
+  title={pageTitle}
+  description={lede}
+  canonicalPath="/privacy"
+>
+  <h1 class="page-title">{pageTitle}</h1>
+  <p class="page-lede">{lede}</p>
+  <p class="muted policy-updated">Last updated {lastUpdated}</p>
+
+  <nav class="chip-row on-this-page" aria-label="On this page">
+    {sections.map((s) => <a class="chip" href={`#${s.id}`}>{s.title}</a>)}
+  </nav>
+
+  <div class="prose policy">
+    <section class="section" id="who">
+      <h2 class="section__title">Who we are</h2>
+      <p>
+        {SITE_NAME} is a community map of parkour spots and events. It is run
+        by Ward Weistra, a private individual in the Netherlands, as a
+        non-commercial project. Ward is the controller of your personal data
+        under the EU General Data Protection Regulation (GDPR).
+      </p>
+      <p>
+        This policy covers the {SITE_NAME} app on Android, the web app at
+        parkour.spot, and this site, about.parkour.spot. Questions or requests:
+        email <a href={mailto}>{CONTACT_EMAIL}</a>.
+      </p>
+    </section>
+
+    <section class="section" id="summary">
+      <h2 class="section__title">In short</h2>
+      <ul>
+        <li>You can browse the map, spots and events without an account.</li>
+        <li>
+          With an account we store your email address, your profile and what
+          you add. Your email address is never shown to other people.
+        </li>
+        <li>
+          Spots, photos, ratings and events you add are public, with your
+          display name.
+        </li>
+        <li>
+          Your location stays on your device unless you're signed in with
+          nearby alerts turned on. You can turn that off at any time.
+        </li>
+        <li>
+          We don't sell your data, don't show ads and don't use your data for
+          advertising.
+        </li>
+        <li>
+          The app's source code is open: you can check how it works on
+          <a href={OPEN_SOURCE_URL}>GitHub</a>.
+        </li>
+      </ul>
+    </section>
+
+    <section class="section" id="collect">
+      <h2 class="section__title">What we collect</h2>
+
+      <h3>When you use the app without an account</h3>
+      <ul>
+        <li>
+          <strong>Usage statistics.</strong> Which screens and pages are
+          opened, plus device type, app version, approximate region (derived
+          from your IP address) and a random app or browser identifier. We use
+          Google Analytics for Firebase (in the app) and Google Analytics (on
+          the web). This helps us see which features are used and fix
+          problems. We never collect your phone's advertising ID.
+        </li>
+        <li>
+          <strong>Security checks.</strong> The Android app uses Google Play
+          Integrity and the web app uses Google reCAPTCHA to confirm requests
+          come from the real app, so the map can't be abused. These services
+          receive technical information about your device or browser.
+        </li>
+        <li>
+          <strong>Your location, on your device.</strong> If you allow
+          location access, the app uses it to center the map and show spots
+          near you. Without an account, your location is not sent to or stored
+          on our servers.
+        </li>
+        <li>
+          <strong>Searches.</strong> When you search for a place, the text you
+          type is sent to our server and to Google Maps to find matching
+          places.
+        </li>
+      </ul>
+
+      <h3>When you create an account</h3>
+      <ul>
+        <li>
+          <strong>Account details.</strong> Your email address, and a password
+          (stored only in encrypted form by Firebase Authentication). If you
+          sign in with Google, we receive your name, email address and profile
+          photo from Google.
+        </li>
+        <li>
+          <strong>Profile.</strong> Display name, username, profile photo, bio
+          and Instagram link, if you add them. You choose whether your profile
+          is public.
+        </li>
+        <li>
+          <strong>Your activity.</strong> Spots you save, want to visit or
+          have been to, your lists, check-ins, planned sessions, ratings, events
+          you're going to or interested in, and reports you send to
+          moderators. We also record when you last signed in and were active.
+        </li>
+        <li>
+          <strong>Settings.</strong> Language, notification preferences and
+          privacy choices.
+        </li>
+        <li>
+          <strong>Nearby alerts and your location.</strong> When you're signed
+          in, have given the app location access and have
+          <em>Share last known location for alerts</em> turned on (the
+          default), we store the most recent location from your device,
+          updated at most every 15 minutes. We use it only to notify you about
+          new spots, sessions, check-ins and events near you. You can also
+          save fixed places to get alerts for. Turning the setting off in
+          Account settings deletes the stored location.
+        </li>
+        <li>
+          <strong>Notifications.</strong> If you allow notifications, we store a
+          push token for your device or browser, so we can deliver them.
+        </li>
+        <li>
+          <strong>Photos.</strong> Photos you upload for spots, events or your
+          profile. Photos you add to spots and events are public, including
+          any information embedded in the original file (such as the time it
+          was taken or the camera's location). We show resized copies in the
+          app.
+        </li>
+      </ul>
+
+      <h3>Why we use it</h3>
+      <ul>
+        <li>
+          To provide the service you sign up for: your account, profile, saved
+          spots and the things you add (performance of a contract).
+        </li>
+        <li>
+          To keep the community map useful and safe: moderation, preventing
+          abuse and spam, a log of who changed what, and usage statistics to
+          improve the app (our legitimate interest in running a reliable
+          community service).
+        </li>
+        <li>
+          Location-based alerts and push notifications, which only run with
+          the location and notification permissions you grant on your device
+          (consent). You can withdraw consent at any time in your device
+          settings or in Account settings.
+        </li>
+      </ul>
+    </section>
+
+    <section class="section" id="public">
+      <h2 class="section__title">What others can see</h2>
+      <p>
+        {SITE_NAME} is a shared map, so a lot of what you contribute is public,
+        for everyone, including people without an account and search engines:
+      </p>
+      <ul>
+        <li>
+          Spots, photos, events, ratings and edits you add, together with your
+          display name.
+        </li>
+        <li>
+          Your public profile: display name, username, photo, bio, Instagram
+          link and when you joined. With a private profile, others only see
+          your display name next to what you added.
+        </li>
+        <li>
+          Check-ins and planned sessions you don't mark as private, and
+          whether you're going to or interested in an event.
+        </li>
+        <li>
+          Lists you make public or share, and your added or rated spots if you
+          turn on those lists in your profile settings.
+        </li>
+      </ul>
+      <p>
+        Your email address, saved spots, want-to-visit and been-to lists,
+        location and settings are never shown to other users. Moderators and
+        the administrator can see account details when needed to review
+        reports and keep the map in order.
+      </p>
+      <p>
+        Public spot and event information is also available through our API,
+        for example to AI assistants. The API doesn't include contributor names
+        or any account data.
+      </p>
+    </section>
+
+    <section class="section" id="sharing">
+      <h2 class="section__title">Who we share data with</h2>
+      <p>
+        We don't sell personal data. We share it only with service providers
+        that help run {SITE_NAME}, and only for that purpose:
+      </p>
+      <ul>
+        <li>
+          <strong>Google (Firebase and Google Cloud):</strong> sign-in,
+          database, photo storage, server functions, hosting, push
+          notifications, analytics and app security checks. Our database and
+          server functions run in data centers in the European Union.
+        </li>
+        <li>
+          <strong>Google Maps Platform:</strong> map display, place search and
+          addresses. Google receives the map area you view and the places you
+          search for.
+        </li>
+        <li>
+          <strong>Google Fonts and Google Play:</strong> fonts are loaded from
+          Google's servers, and the Android app is distributed through Google
+          Play.
+        </li>
+        <li>
+          <strong>YouTube:</strong> video thumbnails on spots load from YouTube,
+          and videos open on YouTube under YouTube's own privacy policy.
+        </li>
+        <li>
+          <strong>flagcdn.com:</strong> small country flag images. This only
+          shares your IP address and the flag requested.
+        </li>
+      </ul>
+      <p>
+        Some of these providers may process data outside the European Union,
+        for example in the United States. Where that happens, they do so under
+        the EU Standard Contractual Clauses or the EU-U.S. Data Privacy
+        Framework. We may also disclose data if the law requires it.
+      </p>
+    </section>
+
+    <section class="section" id="retention">
+      <h2 class="section__title">How long we keep it</h2>
+      <ul>
+        <li>
+          Account and profile data: until you delete your account.
+        </li>
+        <li>
+          Your stored last known location: replaced on each update, and deleted
+          when you turn off location sharing for alerts or delete your account.
+        </li>
+        <li>
+          Usage statistics: kept by Google Analytics for at most 14 months.
+        </li>
+        <li>
+          Spots, photos, events and ratings you added stay on the map after
+          you delete your account, because the community relies on them. We
+          remove your name and the link to your account from them.
+        </li>
+        <li>
+          A change log of edits to spots and events, so moderators can undo
+          vandalism. We remove your name from it when you delete your
+          account.
+        </li>
+      </ul>
+    </section>
+
+    <section class="section" id="rights">
+      <h2 class="section__title">Your rights</h2>
+      <p>
+        You can ask to see, correct, export or delete your personal data, and
+        object to or ask us to restrict how we use it. Most of your profile
+        and settings you can change yourself in the app, under Account.
+        For anything else, email <a href={mailto}>{CONTACT_EMAIL}</a>. We reply
+        within one month.
+      </p>
+      <p>
+        To delete your account, see
+        <a href={aboutDeleteAccountPath()}>Delete your account</a>.
+      </p>
+      <p>
+        If you think we handle your data wrongly, please tell us first. You
+        also have the right to complain to the Dutch data protection authority,
+        the <a href="https://autoriteitpersoonsgegevens.nl/en">Autoriteit
+        Persoonsgegevens</a>, or the authority in the country where you live.
+      </p>
+    </section>
+
+    <section class="section" id="children">
+      <h2 class="section__title">Children</h2>
+      <p>
+        Anyone can browse the map. {SITE_NAME} is not designed for children
+        under 13. To create an account you need to be at least 16, or have
+        permission from a parent or guardian. If you believe a child has
+        created an account without permission, email us and we'll delete it.
+      </p>
+    </section>
+
+    <section class="section" id="changes">
+      <h2 class="section__title">Changes and contact</h2>
+      <p>
+        When this policy changes we'll update the date at the top of this
+        page. If a change significantly affects how we use your data, we'll
+        also tell you in the app.
+      </p>
+      <p>
+        Questions about privacy: <a href={mailto}>{CONTACT_EMAIL}</a>.
+      </p>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .policy-updated {
+    margin: calc(-1 * var(--space-md)) 0 var(--space-lg);
+  }
+
+  .policy h3 {
+    margin: var(--space-lg) 0 var(--space-xs);
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .policy ul {
+    margin: 0 0 var(--space-md);
+    padding-left: 1.25rem;
+  }
+
+  .policy li {
+    margin-bottom: var(--space-xs);
+  }
+
+  .policy .section:first-child {
+    margin-top: var(--space-lg);
+  }
+</style>

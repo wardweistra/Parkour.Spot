@@ -7,6 +7,7 @@ import '../../services/auth_service.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/system_back_handler.dart';
+import '../../widgets/privacy_notice.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -668,6 +669,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: const Text('Forgot Password?'),
                         ),
                       ],
+
+                      const SizedBox(height: 16),
+                      const PrivacyNotice(),
                     ],
                   ),
                 ),

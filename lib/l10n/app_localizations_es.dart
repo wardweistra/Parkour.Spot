@@ -5597,4 +5597,29 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get splashSloganObstaclesIntoPaths =>
       'Para quienes convierten los obstáculos en caminos';
+
+  @override
+  String get legalPrivacyPolicy => 'Política de privacidad';
+
+  @override
+  String get legalPrivacyPolicyLink => 'política de privacidad';
+
+  @override
+  String legalSignInNotice(String policy) {
+    return 'Al continuar, aceptas nuestra $policy.';
+  }
+
+  @override
+  String get settingsPrivacyCardTitle => 'Privacidad y tus datos';
+
+  @override
+  String get settingsPrivacyPolicySubtitle =>
+      'Qué recopilamos y quién puede verlo';
+
+  @override
+  String get settingsDeleteAccountTitle => 'Eliminar cuenta';
+
+  @override
+  String get settingsDeleteAccountSubtitle =>
+      'Cómo eliminar tu cuenta y tus datos';
 }

@@ -9,7 +9,9 @@ import '../../services/auth_service.dart';
 import '../../services/geocoding_service.dart';
 import '../../services/locale_preferences_service.dart';
 import '../../services/user_locations_of_interest_service.dart';
+import '../../services/url_service.dart';
 import '../../services/web_push_subscription_service.dart';
+import '../../utils/external_launch.dart';
 import '../../utils/location_permission_utils.dart';
 import '../../widgets/confirm_disable_push_dialog.dart';
 import '../../widgets/page_scaffold.dart';
@@ -41,9 +43,50 @@ class AccountSettingsScreen extends StatelessWidget {
               _buildLocationAlertsCard(context, authService),
               const SizedBox(height: 16),
               _buildNotificationSettingsCard(context, authService),
+              const SizedBox(height: 16),
+              _buildPrivacyCard(context),
             ],
           );
         },
+      ),
+    );
+  }
+
+  /// Links to the privacy policy and the account deletion page on the About
+  /// site (both required by Google Play).
+  Widget _buildPrivacyCard(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    void open(String url) => launchExternalUri(context, Uri.parse(url));
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: Text(
+                l10n.settingsPrivacyCardTitle,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.privacy_tip_outlined),
+              title: Text(l10n.legalPrivacyPolicy),
+              subtitle: Text(l10n.settingsPrivacyPolicySubtitle),
+              trailing: const Icon(Icons.open_in_new, size: 20),
+              onTap: () => open(UrlService.aboutPrivacyUrl),
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_remove_outlined),
+              title: Text(l10n.settingsDeleteAccountTitle),
+              subtitle: Text(l10n.settingsDeleteAccountSubtitle),
+              trailing: const Icon(Icons.open_in_new, size: 20),
+              onTap: () => open(UrlService.aboutDeleteAccountUrl),
+            ),
+          ],
+        ),
       ),
     );
   }

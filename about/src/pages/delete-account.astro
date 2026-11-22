@@ -1,0 +1,95 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import {SITE_NAME} from "../lib/brand";
+import {CONTACT_EMAIL, aboutPrivacyPath} from "../lib/urls";
+
+const pageTitle = "Delete your account";
+const lede =
+  `How to delete your ${SITE_NAME} account and what happens to your data.`;
+const subject = encodeURIComponent(`Delete my ${SITE_NAME} account`);
+const body = encodeURIComponent(
+  "Please delete my account.\n\nEmail address or username of the account: \n",
+);
+const mailto = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+---
+
+<BaseLayout
+  title={pageTitle}
+  description={lede}
+  canonicalPath="/delete-account"
+>
+  <h1 class="page-title">{pageTitle}</h1>
+  <p class="page-lede">{lede}</p>
+
+  <div class="prose policy">
+    <section class="section">
+      <h2 class="section__title">How to ask</h2>
+      <ol>
+        <li>
+          Send an email to <a href={mailto}>{CONTACT_EMAIL}</a> from the email
+          address you use to sign in, with the subject
+          “Delete my {SITE_NAME} account”.
+        </li>
+        <li>
+          If you can't send it from that address, tell us your username and
+          we'll confirm through the account's email address that the request
+          is yours.
+        </li>
+        <li>
+          We delete the account within 30 days and email you when it's done.
+        </li>
+      </ol>
+      <p>
+        <a class="btn btn--primary" href={mailto}>Email a deletion request</a>
+      </p>
+    </section>
+
+    <section class="section">
+      <h2 class="section__title">What we delete</h2>
+      <ul>
+        <li>Your sign-in account and email address.</li>
+        <li>
+          Your profile: display name, username, photo, bio and links.
+        </li>
+        <li>
+          Your saved spots, want-to-visit and been-to lists, private lists,
+          check-ins, planned sessions and event interest.
+        </li>
+        <li>
+          Your settings, stored locations and notification tokens.
+        </li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2 class="section__title">What stays</h2>
+      <p>
+        Spots, photos, events, ratings and edits you added to the shared map
+        stay, so the community keeps them. We remove your name and the link to
+        your account from them. Want something you added removed as well? Say
+        so in your email.
+      </p>
+      <p>
+        Usage statistics aren't linked to your account and expire on their own
+        within 14 months. See the <a href={aboutPrivacyPath()}>privacy
+        policy</a> for details.
+      </p>
+    </section>
+  </div>
+</BaseLayout>
+
+<style>
+  .policy ul,
+  .policy ol {
+    margin: 0 0 var(--space-md);
+    padding-left: 1.25rem;
+  }
+
+  .policy li {
+    margin-bottom: var(--space-xs);
+  }
+
+  .policy .section:first-child {
+    margin-top: var(--space-lg);
+  }
+</style>

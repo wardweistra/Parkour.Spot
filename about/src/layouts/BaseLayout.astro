@@ -9,7 +9,7 @@ import {
 import {APP_DEFINITION, formatUpdatedAt} from "../lib/citation";
 import {loadAboutIndex, useFixtures} from "../lib/snapshots";
 import {escapeHtmlAttr} from "../lib/html";
-import {aboutContactPath} from "../lib/urls";
+import {aboutContactPath, aboutPrivacyPath} from "../lib/urls";
 
 interface Props {
   title: string;
@@ -188,6 +188,8 @@ const analyticsEnabled = import.meta.env.PROD && !useFixtures();
             <a href="/community">Community</a>
             ·
             <a href={aboutContactPath()}>Contact</a>
+            ·
+            <a href={aboutPrivacyPath()}>Privacy</a>
             ·
             <a href="https://parkour.spot">Open the app</a>
           </p>
