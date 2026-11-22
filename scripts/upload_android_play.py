@@ -122,12 +122,15 @@ def main() -> None:
     credentials = service_account.Credentials.from_service_account_file(
         str(args.key), scopes=SCOPES
     )
+    base_http = httplib2.Http(timeout=HTTP_TIMEOUT_SECONDS)
+    # Resumable uploads answer each chunk with 308 "Resume Incomplete", which
+    # httplib2 would follow as a redirect. googleapiclient's build_http() drops
+    # 308 the same way; we build our own Http for the longer timeout.
+    base_http.redirect_codes = base_http.redirect_codes - {308}
     publisher = build(
         "androidpublisher",
         "v3",
-        http=google_auth_httplib2.AuthorizedHttp(
-            credentials, http=httplib2.Http(timeout=HTTP_TIMEOUT_SECONDS)
-        ),
+        http=google_auth_httplib2.AuthorizedHttp(credentials, http=base_http),
         cache_discovery=False,
     )
     edits = publisher.edits()
