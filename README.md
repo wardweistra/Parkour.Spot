@@ -178,6 +178,7 @@ Symptoms of a missing registration on a Play install: blank maps, and Google Sig
 ./scripts/upload_android_play.py --notes "Bug fixes"         # internal testing (default track)
 ./scripts/upload_android_play.py --track alpha               # closed testing; also beta, production
 ./scripts/upload_android_play.py --track production --status inProgress --rollout 0.1
+./scripts/upload_android_play.py --promote --track alpha     # release the already-uploaded pubspec version to closed testing, no rebuild
 ```
 
 It refuses a version code that Play already has and a bundle whose version code does not match `pubspec.yaml`. Store listing, content rating and data safety still go through Play Console.

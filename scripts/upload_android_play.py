@@ -16,6 +16,9 @@ Build first with ./scripts/build_android_production.sh, then:
     ./scripts/upload_android_play.py --track alpha        # closed testing
     ./scripts/upload_android_play.py --notes "Bug fixes"  # en-US release notes
     ./scripts/upload_android_play.py --dry-run            # validate, don't publish
+    ./scripts/upload_android_play.py --promote --track alpha
+        # release the already-uploaded pubspec version to closed testing,
+        # reusing its release notes unless --notes is given (no rebuild)
 
 Auth: a Google Cloud service account JSON key with release access to the app in
 Play Console (Users and permissions). Default location is
@@ -61,6 +64,17 @@ def pubspec_version() -> tuple[str, int]:
     return match.group(1), int(match.group(2))
 
 
+def existing_release_notes(edits, edit_id: str, version_code: int) -> list | None:
+    """Release notes of a track release that already contains version_code."""
+    tracks = edits.tracks().list(packageName=PACKAGE_NAME, editId=edit_id).execute()
+    for track in tracks.get("tracks", []):
+        for release in track.get("releases", []):
+            if str(version_code) in release.get("versionCodes", []):
+                if release.get("releaseNotes"):
+                    return release["releaseNotes"]
+    return None
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--track", choices=TRACKS, default="internal")
@@ -86,6 +100,12 @@ def parse_args() -> argparse.Namespace:
         help="Staged rollout fraction for --status inProgress, e.g. 0.1",
     )
     parser.add_argument(
+        "--promote",
+        action="store_true",
+        help="Release the pubspec version that is already on Google Play (e.g. "
+        "on internal) to --track instead of uploading a bundle",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Upload and validate the edit, then discard it",
@@ -96,7 +116,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
 
-    if not args.aab.is_file():
+    if not args.promote and not args.aab.is_file():
         sys.exit(
             f"❌ {args.aab} not found. Build it with "
             "./scripts/build_android_production.sh"
@@ -113,7 +133,7 @@ def main() -> None:
         sys.exit("❌ --rollout must be between 0 and 1 (exclusive)")
 
     version_name, version_code = pubspec_version()
-    if args.aab.stat().st_mtime < (REPO_ROOT / "pubspec.yaml").stat().st_mtime:
+    if not args.promote and args.aab.stat().st_mtime < (REPO_ROOT / "pubspec.yaml").stat().st_mtime:
         print(
             "⚠️  The bundle is older than pubspec.yaml; rebuild if the version "
             "changed since the last build."
@@ -136,8 +156,9 @@ def main() -> None:
     edits = publisher.edits()
 
     print(
-        f"🚀 Uploading {PACKAGE_NAME} {version_name} ({version_code}) "
-        f"to the {args.track} track{' [dry run]' if args.dry_run else ''}..."
+        f"🚀 {'Promoting' if args.promote else 'Uploading'} {PACKAGE_NAME} "
+        f"{version_name} ({version_code}) to the {args.track} track"
+        f"{' [dry run]' if args.dry_run else ''}..."
     )
 
     edit_id = edits.insert(packageName=PACKAGE_NAME, body={}).execute()["id"]
@@ -157,46 +178,57 @@ def main() -> None:
             edits.bundles().list(packageName=PACKAGE_NAME, editId=edit_id).execute()
         )
         known_codes = {b["versionCode"] for b in existing.get("bundles", [])}
-        if version_code in known_codes:
-            abort(
-                f"❌ Version code {version_code} was already uploaded. "
-                "Bump `version:` in pubspec.yaml and rebuild."
-            )
+        notes = None
+        if args.promote:
+            if version_code not in known_codes:
+                abort(
+                    f"❌ Version code {version_code} is not on Google Play yet. "
+                    "Upload it first (without --promote)."
+                )
+            notes = existing_release_notes(edits, edit_id, version_code)
+        else:
+            if version_code in known_codes:
+                abort(
+                    f"❌ Version code {version_code} was already uploaded. "
+                    "Bump `version:` in pubspec.yaml and rebuild."
+                )
 
-        size_mb = args.aab.stat().st_size / 1024 / 1024
-        print(f"📦 Uploading {args.aab.name} ({size_mb:.1f} MB)...", flush=True)
-        upload = edits.bundles().upload(
-            packageName=PACKAGE_NAME,
-            editId=edit_id,
-            media_body=MediaFileUpload(
-                str(args.aab),
-                mimetype="application/octet-stream",
-                chunksize=UPLOAD_CHUNK_SIZE,
-                resumable=True,
-            ),
-        )
-        bundle = None
-        while bundle is None:
-            progress, bundle = upload.next_chunk(num_retries=UPLOAD_RETRIES)
-            if progress is not None:
-                print(f"   {progress.progress():.0%}", flush=True)
-        print("   Uploaded, Play processed the bundle.", flush=True)
-        uploaded_code = bundle["versionCode"]
-        if uploaded_code != version_code:
-            abort(
-                f"❌ Bundle has version code {uploaded_code}, pubspec.yaml says "
-                f"{version_code}. Rebuild with ./scripts/build_android_production.sh"
+            size_mb = args.aab.stat().st_size / 1024 / 1024
+            print(f"📦 Uploading {args.aab.name} ({size_mb:.1f} MB)...", flush=True)
+            upload = edits.bundles().upload(
+                packageName=PACKAGE_NAME,
+                editId=edit_id,
+                media_body=MediaFileUpload(
+                    str(args.aab),
+                    mimetype="application/octet-stream",
+                    chunksize=UPLOAD_CHUNK_SIZE,
+                    resumable=True,
+                ),
             )
+            bundle = None
+            while bundle is None:
+                progress, bundle = upload.next_chunk(num_retries=UPLOAD_RETRIES)
+                if progress is not None:
+                    print(f"   {progress.progress():.0%}", flush=True)
+            print("   Uploaded, Play processed the bundle.", flush=True)
+            uploaded_code = bundle["versionCode"]
+            if uploaded_code != version_code:
+                abort(
+                    f"❌ Bundle has version code {uploaded_code}, pubspec.yaml says "
+                    f"{version_code}. Rebuild with ./scripts/build_android_production.sh"
+                )
 
         release: dict = {
             "name": f"{version_name} ({version_code})",
-            "versionCodes": [str(uploaded_code)],
+            "versionCodes": [str(version_code)],
             "status": args.status,
         }
         if args.rollout is not None:
             release["userFraction"] = args.rollout
         if args.notes:
-            release["releaseNotes"] = [{"language": "en-US", "text": args.notes}]
+            notes = [{"language": "en-US", "text": args.notes}]
+        if notes:
+            release["releaseNotes"] = notes
 
         edits.tracks().update(
             packageName=PACKAGE_NAME,
