@@ -48,6 +48,7 @@ import '../../widgets/linked_upcoming_event_panel.dart';
 import '../../widgets/source_details_dialog.dart';
 import '../../config/app_config.dart';
 import '../../utils/marker_icon_utils.dart';
+import '../../utils/marker_tap_resolver.dart';
 import '../../utils/spot_rating_utils.dart';
 import '../../utils/map_bounds_utils.dart';
 import '../../utils/map_camera_utils.dart';
@@ -310,6 +311,11 @@ class SearchScreenState extends State<SearchScreen>
   bool get wantKeepAlive => true;
 
   GoogleMapController? _mapController;
+  final MarkerTapResolver _markerTapResolver = MarkerTapResolver(
+    pinHeightDp: MarkerIconUtils.mapPinBrowseLogicalHeight,
+  );
+  final Map<String, LatLng> _markerTapPositions = {};
+  final Map<String, VoidCallback> _markerTapActions = {};
   final Completer<void> _mapReady = Completer<void>();
 
   /// True when the map was created while its tab was not yet activated (e.g.
@@ -2625,6 +2631,32 @@ class SearchScreenState extends State<SearchScreen>
     return _spotDefaultIcon ?? BitmapDescriptor.defaultMarker;
   }
 
+  /// Explore spot/event marker tap. On Android the SDK's oversized hit boxes
+  /// often report a neighbouring pin, so re-pick the pin nearest the finger.
+  Future<void> _onExploreMarkerTap(String tappedId) async {
+    if (_isBottomSheetOpen || _showFiltersDialog) return;
+    var id = tappedId;
+    final controller = _mapController;
+    if (controller != null && MarkerTapResolver.isNeeded) {
+      final dpr = MediaQuery.devicePixelRatioOf(context);
+      id = await _markerTapResolver.resolve(
+        tappedId: tappedId,
+        positions: Map.of(_markerTapPositions),
+        controller: controller,
+        devicePixelRatio: dpr,
+      );
+      if (!mounted || _isBottomSheetOpen || _showFiltersDialog) return;
+    }
+    if (!_markerTapActions.containsKey(id)) id = tappedId;
+    _markerTapActions[id]?.call();
+    // Preserve the SDK's default "centre the tapped marker" on Android, which
+    // consumeTapEvents turned off, but for the pin we actually selected.
+    final target = _markerTapPositions[id];
+    if (controller != null && target != null && MarkerTapResolver.isNeeded) {
+      controller.animateCamera(CameraUpdate.newLatLng(target));
+    }
+  }
+
   Set<Marker> _rebuildMarkers() {
     final markers = <Marker>{};
     final visibleSpotIds = _visibleSpots
@@ -2660,22 +2692,30 @@ class SearchScreenState extends State<SearchScreen>
         _PendingExploreMarker(
           latitude: spot.latitude,
           isSelected: isSelected,
-          build: (zIndex) => Marker(
-            markerId: MarkerId(spot.id ?? spot.name),
-            position: LatLng(spot.latitude, spot.longitude),
-            icon: icon,
-            anchor: const Offset(0.5, 1.0),
-            zIndexInt: zIndex,
-            onTap: () {
-              if (_isBottomSheetOpen || _showFiltersDialog) return;
+          build: (zIndex) {
+            final id = spot.id ?? spot.name;
+            final position = LatLng(spot.latitude, spot.longitude);
+            _markerTapPositions[id] = position;
+            _markerTapActions[id] = () {
               setState(() {
                 _selectedSpot = spot;
                 _selectedEventPin = null;
                 _showListPreview = false;
                 _markers = _rebuildMarkers();
               });
-            },
-          ),
+            };
+            return Marker(
+              markerId: MarkerId(id),
+              position: position,
+              icon: icon,
+              anchor: const Offset(0.5, 1.0),
+              zIndexInt: zIndex,
+              // Android: we pan to the resolved pin ourselves instead of
+              // letting the SDK centre the (possibly wrong) hit marker.
+              consumeTapEvents: MarkerTapResolver.isNeeded,
+              onTap: () => _onExploreMarkerTap(id),
+            );
+          },
         ),
       );
     }
@@ -2698,21 +2738,27 @@ class SearchScreenState extends State<SearchScreen>
         _PendingExploreMarker(
           latitude: pin.latitude,
           isSelected: isSelected,
-          build: (zIndex) => Marker(
-            markerId: MarkerId(markerId),
-            position: LatLng(pin.latitude, pin.longitude),
-            icon: icon,
-            anchor: const Offset(0.5, 1.0),
-            zIndexInt: zIndex,
-            onTap: () {
-              if (_isBottomSheetOpen || _showFiltersDialog) return;
-              _selectEventPin(pin, focusMap: false);
-            },
-          ),
+          build: (zIndex) {
+            final position = LatLng(pin.latitude, pin.longitude);
+            _markerTapPositions[markerId] = position;
+            _markerTapActions[markerId] = () =>
+                _selectEventPin(pin, focusMap: false);
+            return Marker(
+              markerId: MarkerId(markerId),
+              position: position,
+              icon: icon,
+              anchor: const Offset(0.5, 1.0),
+              zIndexInt: zIndex,
+              consumeTapEvents: MarkerTapResolver.isNeeded,
+              onTap: () => _onExploreMarkerTap(markerId),
+            );
+          },
         ),
       );
     }
 
+    _markerTapPositions.clear();
+    _markerTapActions.clear();
     final ordered = MarkerIconUtils.sortByLatitudeNorthFirst(
       pending,
       (item) => item.latitude,
@@ -4262,6 +4308,19 @@ class SearchScreenState extends State<SearchScreen>
                       await _handleLongPress(position);
                     },
                   ),
+
+                  // Remembers where the finger lands so marker taps can be
+                  // resolved to the nearest pin (Android); never consumes.
+                  if (MarkerTapResolver.isNeeded)
+                    Positioned.fill(
+                      child: Listener(
+                        behavior: HitTestBehavior.translucent,
+                        onPointerDown: (PointerDownEvent e) =>
+                            _markerTapResolver.recordPointerDown(
+                              e.localPosition,
+                            ),
+                      ),
+                    ),
 
                   // Map clickable overlay when bottom sheet is expanded
                   if (_isBottomSheetOpen)
