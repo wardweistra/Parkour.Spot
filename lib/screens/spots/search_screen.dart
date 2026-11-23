@@ -4371,52 +4371,20 @@ class SearchScreenState extends State<SearchScreen>
                               _longPressHandled = true;
 
                               try {
-                                // Get the visible region to calculate the LatLng from screen coordinates
-                                final visibleRegion = await _mapController!
-                                    .getVisibleRegion();
-
-                                // Calculate the center of the visible region
-                                final centerLat =
-                                    (visibleRegion.northeast.latitude +
-                                        visibleRegion.southwest.latitude) /
-                                    2;
-                                final centerLng =
-                                    (visibleRegion.northeast.longitude +
-                                        visibleRegion.southwest.longitude) /
-                                    2;
-
-                                // Get the screen size
+                                // The overlay fills the map, so localPosition is
+                                // map-relative; on web logical px == CSS px,
+                                // which is what getLatLng expects. The plugin
+                                // uses the map's Mercator projection, so this is
+                                // exact anywhere on the map.
+                                final start = _longPressStartPosition!;
+                                final longPressLatLng = await _mapController!
+                                    .getLatLng(
+                                      ScreenCoordinate(
+                                        x: start.dx.round(),
+                                        y: start.dy.round(),
+                                      ),
+                                    );
                                 if (!mounted) return;
-                                final screenSize = MediaQuery.of(this.context)
-                                    .size;
-
-                                // Calculate the offset from center (in pixels)
-                                final offsetX =
-                                    _longPressStartPosition!.dx -
-                                    screenSize.width / 2;
-                                final offsetY =
-                                    _longPressStartPosition!.dy -
-                                    screenSize.height / 2;
-
-                                // Calculate the lat/lng range of the visible region
-                                final latRange =
-                                    visibleRegion.northeast.latitude -
-                                    visibleRegion.southwest.latitude;
-                                final lngRange =
-                                    visibleRegion.northeast.longitude -
-                                    visibleRegion.southwest.longitude;
-
-                                // Convert pixel offset to lat/lng offset
-                                // Note: Y is inverted (screen Y increases downward, but latitude increases upward)
-                                final latOffset =
-                                    -(offsetY / screenSize.height) * latRange;
-                                final lngOffset =
-                                    (offsetX / screenSize.width) * lngRange;
-
-                                final longPressLatLng = LatLng(
-                                  centerLat + latOffset,
-                                  centerLng + lngOffset,
-                                );
 
                                 // Clear timer and position after marking as handled
                                 _longPressTimer = null;
