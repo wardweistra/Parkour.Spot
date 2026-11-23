@@ -532,7 +532,7 @@ service cloud.firestore {
       match /pushSubscriptions/{subscriptionId} {
         function pushPlatformOk(data) {
           return data.platform is string &&
-            data.platform in ['web'];
+            data.platform in ['web', 'android', 'ios'];
         }
         function pushPermissionOk(data) {
           return data.permission is string &&

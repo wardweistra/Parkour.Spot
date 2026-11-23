@@ -27,7 +27,12 @@ class WebPushSubscriptionService extends ChangeNotifier {
   }
 
   static const _installationIdPrefsKey = 'web_push_installation_id';
+  static const _androidPermissionRequestedPrefsKey =
+      'android_push_permission_requested';
   static const _maxUserAgentLength = 600;
+
+  static bool get _isNativeAndroid =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
   static const _maxLocaleLength = 16;
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -119,6 +124,10 @@ class WebPushSubscriptionService extends ChangeNotifier {
       _lastError = null;
       _installationId = await _getOrCreateInstallationId();
       final settings = await _messaging.requestPermission();
+      if (_isNativeAndroid) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(_androidPermissionRequestedPrefsKey, true);
+      }
       _permissionState = _mapPermission(settings.authorizationStatus);
       if (_permissionState != WebPushPermissionState.authorized) {
         _isSubscribed = false;
@@ -211,7 +220,17 @@ class WebPushSubscriptionService extends ChangeNotifier {
   Future<WebPushPermissionState> _readPermissionState() async {
     try {
       final settings = await _messaging.getNotificationSettings();
-      return _mapPermission(settings.authorizationStatus);
+      final state = _mapPermission(settings.authorizationStatus);
+      // Android has no "not determined" state: FCM reports `denied` until the
+      // POST_NOTIFICATIONS permission is granted, even if we never asked.
+      // Only treat it as blocked once we've actually prompted on this install.
+      if (_isNativeAndroid && state == WebPushPermissionState.denied) {
+        final prefs = await SharedPreferences.getInstance();
+        final requested =
+            prefs.getBool(_androidPermissionRequestedPrefsKey) ?? false;
+        if (!requested) return WebPushPermissionState.notDetermined;
+      }
+      return state;
     } catch (_) {
       return WebPushPermissionState.unknown;
     }
