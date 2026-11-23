@@ -340,7 +340,6 @@ class SearchScreenState extends State<SearchScreen>
   static const double _collapsedBottomSheetHeightFraction = 0.09;
   static const double _expandedBottomSheetHeightFraction = 0.75;
   Position? _currentPosition;
-  BitmapDescriptor? _userLocationIcon;
   BitmapDescriptor? _spotDefaultIcon;
   BitmapDescriptor? _spotSelectedIcon;
   BitmapDescriptor? _spotHighlightedIcon;
@@ -629,7 +628,6 @@ class SearchScreenState extends State<SearchScreen>
     // Set initial list ID - prioritize URL parameter, then fall back to stored value
     // Will be set from SearchStateService in post-frame callback if not provided via URL
 
-    _loadUserLocationIcon();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _loadSpotIcons();
@@ -2725,33 +2723,6 @@ class SearchScreenState extends State<SearchScreen>
       markers.add(item.build(zIndex));
     }
 
-    if (_currentPosition != null) {
-      markers.add(
-        Marker(
-          markerId: const MarkerId('current_location'),
-          position: LatLng(
-            _currentPosition!.latitude,
-            _currentPosition!.longitude,
-          ),
-          icon:
-              _userLocationIcon ??
-              BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-          zIndexInt: 9999,
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  AppLocalizations.of(context)!.exploreCurrentLocationSnackbar,
-                ),
-                duration: const Duration(seconds: 2),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          },
-        ),
-      );
-    }
-
     if (_longPressedLocation != null) {
       markers.add(
         Marker(
@@ -2765,22 +2736,6 @@ class SearchScreenState extends State<SearchScreen>
     }
 
     return markers;
-  }
-
-  Future<void> _loadUserLocationIcon() async {
-    try {
-      final icon = await MarkerIconUtils.createUserLocationIcon(
-        size: 24,
-        fillColor: Colors.blue,
-      );
-      if (mounted) {
-        setState(() {
-          _userLocationIcon = icon;
-        });
-      }
-    } catch (_) {
-      // Ignore icon errors silently
-    }
   }
 
   Future<void> _loadSpotIcons() async {

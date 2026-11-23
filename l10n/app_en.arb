@@ -1393,10 +1393,6 @@
       }
     }
   },
-  "exploreCurrentLocationSnackbar": "This is your current location",
-  "@exploreCurrentLocationSnackbar": {
-    "description": "Shown when centering map on user location"
-  },
   "exploreCloseTooltip": "Close",
   "@exploreCloseTooltip": {
     "description": "Close button tooltip"

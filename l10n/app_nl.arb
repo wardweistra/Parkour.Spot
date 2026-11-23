@@ -302,7 +302,6 @@
   "exploreParkourSpotNative": "Parkour·Spot (native)",
   "exploreAllFolders": "Alle mappen",
   "exploreLocationError": "Fout bij ophalen locatie: {error}",
-  "exploreCurrentLocationSnackbar": "Dit is je huidige locatie",
   "exploreCloseTooltip": "Sluiten",
   "exploreClearSearchTooltip": "Wissen",
   "exploreFiltersTooltip": "Filters",

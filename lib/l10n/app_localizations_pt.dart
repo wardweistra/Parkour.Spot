@@ -1133,9 +1133,6 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get exploreCurrentLocationSnackbar => 'Esta é a tua localização atual';
-
-  @override
   String get exploreCloseTooltip => 'Fechar';
 
   @override

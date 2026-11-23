@@ -1918,12 +1918,6 @@ abstract class AppLocalizations {
   /// **'Error getting location: {error}'**
   String exploreLocationError(String error);
 
-  /// Shown when centering map on user location
-  ///
-  /// In en, this message translates to:
-  /// **'This is your current location'**
-  String get exploreCurrentLocationSnackbar;
-
   /// Close button tooltip
   ///
   /// In en, this message translates to:

@@ -237,7 +237,6 @@
   "exploreParkourSpotNative": "Parkour·Spot (nativo)",
   "exploreAllFolders": "Todas las carpetas",
   "exploreLocationError": "Error al obtener la ubicación: {error}",
-  "exploreCurrentLocationSnackbar": "Esta es tu ubicación actual",
   "exploreCloseTooltip": "Cerrar",
   "exploreClearSearchTooltip": "Borrar",
   "exploreFiltersTooltip": "Filtros",
