@@ -12,7 +12,7 @@ const https = require("https");
 // Naver's bookmark API returns HTTP 500 for non-browser User-Agent strings.
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-  "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+  "(KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36";
 const DEFAULT_SPOT_NAME = "Parkour spot";
 const DEFAULT_PAGE_SIZE = 500;
 const MAX_BOOKMARKS = 20000;

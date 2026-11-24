@@ -1,16 +1,83 @@
 const {
   USER_AGENT,
+  FALLBACK_USER_AGENT,
   DEFAULT_ACCEPT,
   DEFAULT_MAX_ATTEMPTS,
   downloadTextFromUrl,
   resolveRetryDelayMs,
   isRetryableStatus,
+  isConnectionFailure,
 } = require("../lib/download-text");
 
 describe("download-text helpers", () => {
   it("uses a browser-compatible User-Agent for calendar hosts", () => {
     expect(USER_AGENT).toContain("Mozilla/5.0");
     expect(USER_AGENT).toContain("ParkourSpotEventSync");
+  });
+
+  it("has a non-browser fallback User-Agent", () => {
+    expect(FALLBACK_USER_AGENT).not.toContain("Mozilla");
+    expect(FALLBACK_USER_AGENT).toContain("ParkourSpotEventSync");
+  });
+
+  it("classifies connection failures separately from HTTP errors", () => {
+    expect(isConnectionFailure(new Error("socket hang up"))).toBe(true);
+    expect(isConnectionFailure(new Error("ICS request timed out"))).toBe(true);
+    const reset = new Error("read failed");
+    reset.code = "ECONNRESET";
+    expect(isConnectionFailure(reset)).toBe(true);
+    const http = new Error("Failed fetching ICS (HTTP 503)");
+    http.statusCode = 503;
+    expect(isConnectionFailure(http)).toBe(false);
+  });
+
+  it("switches to the fallback User-Agent after a dropped connection",
+      async () => {
+        const sleeps = [];
+        const userAgents = [];
+        const downloadOnceFn = jest.fn(async (url, options) => {
+          userAgents.push(options.userAgent);
+          if (options.userAgent === USER_AGENT) {
+            throw new Error("socket hang up");
+          }
+          return {body: "BEGIN:VCALENDAR\nEND:VCALENDAR\n", statusCode: 200};
+        });
+
+        const body = await downloadTextFromUrl(
+            "https://example.com/events/list/?ical=1",
+            {
+              downloadOnceFn,
+              sleepFn: async (ms) => {
+                sleeps.push(ms);
+              },
+            },
+        );
+
+        expect(body).toContain("BEGIN:VCALENDAR");
+        expect(userAgents).toEqual([USER_AGENT, FALLBACK_USER_AGENT]);
+        expect(sleeps).toEqual([]);
+      });
+
+  it("keeps the browser User-Agent when retrying HTTP 429", async () => {
+    const userAgents = [];
+    const downloadOnceFn = jest.fn(async (url, options) => {
+      userAgents.push(options.userAgent);
+      if (userAgents.length === 1) {
+        const error = new Error("Failed fetching ICS (HTTP 429)");
+        error.statusCode = 429;
+        throw error;
+      }
+      return {body: "BEGIN:VCALENDAR\nEND:VCALENDAR\n", statusCode: 200};
+    });
+
+    await downloadTextFromUrl("https://example.com/feed.ics", {
+      baseDelayMs: 1,
+      maxDelayMs: 10,
+      downloadOnceFn,
+      sleepFn: async () => {},
+    });
+
+    expect(userAgents).toEqual([USER_AGENT, USER_AGENT]);
   });
 
   it("prefers calendar content types in Accept", () => {
