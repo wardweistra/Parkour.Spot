@@ -7,7 +7,9 @@
  *
  * Some site firewalls instead drop the connection for browser-like UAs that
  * don't look like a real browser. When a connection-level failure happens with
- * the browser-like UA, the next attempt switches to a plain bot UA.
+ * the browser-like UA, the next attempt switches to a plain bot UA. Others
+ * answer such UAs with a small 200 block page; callers can pass
+ * `validateBody` so an unexpected body also triggers the fallback UA.
  */
 
 const http = require("http");
@@ -177,6 +179,34 @@ function downloadTextOnce(url, options = {}) {
   });
 }
 
+const INVALID_BODY_CODE = "INVALID_BODY";
+
+/**
+ * @param {string} body
+ * @param {string} userAgent
+ * @return {Error}
+ */
+function invalidBodyError(body, userAgent) {
+  const text = typeof body === "string" ? body : "";
+  const snippet = text.replace(/\s+/g, " ").trim().slice(0, 200);
+  const error = new Error(
+      `Unexpected feed response (${text.length} bytes, ` +
+      `UA ${userAgent === FALLBACK_USER_AGENT ? "fallback" : "browser"}): ` +
+      (snippet || "<empty>"),
+  );
+  error.code = INVALID_BODY_CODE;
+  return error;
+}
+
+/**
+ * Whether an ICS download looks like an actual calendar.
+ * @param {string} body
+ * @return {boolean}
+ */
+function looksLikeIcs(body) {
+  return typeof body === "string" && /BEGIN:VCALENDAR/i.test(body);
+}
+
 /**
  * Whether an error is a connection-level failure (no HTTP response), which
  * can mean a firewall dropped the request based on its User-Agent.
@@ -205,6 +235,9 @@ function isConnectionFailure(error) {
  * @param {number=} options.timeoutMs
  * @param {number=} options.baseDelayMs
  * @param {number=} options.maxDelayMs
+ * @param {function(string): boolean=} options.validateBody Returns false
+ *   when the body is not the expected content (e.g. a firewall block page).
+ *   That retries once with the fallback UA, then throws.
  * @param {Function=} options.downloadOnceFn Injectable for tests
  * @param {Function=} options.sleepFn Injectable for tests
  * @return {Promise<string>}
@@ -240,8 +273,23 @@ async function downloadTextFromUrl(url, options = {}) {
         timeoutMs: normalized.timeoutMs,
         userAgent,
       });
-      return typeof result === "string" ? result : result.body;
+      const body = typeof result === "string" ? result : result.body;
+      if (
+        typeof normalized.validateBody === "function" &&
+        !normalized.validateBody(body)
+      ) {
+        throw invalidBodyError(body, userAgent);
+      }
+      return body;
     } catch (error) {
+      if (error && error.code === INVALID_BODY_CODE) {
+        lastError = error;
+        if (userAgent !== FALLBACK_USER_AGENT && attempt < maxAttempts) {
+          userAgent = FALLBACK_USER_AGENT;
+          continue;
+        }
+        break;
+      }
       lastError = error;
       const statusCode = error && typeof error.statusCode === "number" ?
         error.statusCode :
@@ -279,4 +327,5 @@ module.exports = {
   resolveRetryDelayMs,
   isRetryableStatus,
   isConnectionFailure,
+  looksLikeIcs,
 };

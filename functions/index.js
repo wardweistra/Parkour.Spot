@@ -34,7 +34,7 @@ const {getStorage} = require("firebase-admin/storage");
 const yauzl = require("yauzl");
 const https = require("https");
 const path = require("path");
-const {downloadTextFromUrl} = require("./lib/download-text");
+const {downloadTextFromUrl, looksLikeIcs} = require("./lib/download-text");
 const countries = require("i18n-iso-countries");
 
 // Initialize Firebase Admin. v14 removed the namespaced root API.
@@ -5624,9 +5624,14 @@ async function syncExternalEventSource(sourceDoc, options = {}) {
         sourceDefaultTimeZone,
       });
     } else {
-      const feedText = await downloadTextFromUrl(feedUrl);
+      const isBoomTech =
+        sourceType === EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR;
+      const feedText = await downloadTextFromUrl(
+          feedUrl,
+          isBoomTech ? {} : {validateBody: looksLikeIcs},
+      );
       feedBytes = feedText.length;
-      if (sourceType === EVENT_SYNC_SOURCE_TYPE_BOOMTECH_PUBLISHED_CALENDAR) {
+      if (isBoomTech) {
         let payload;
         try {
           payload = JSON.parse(feedText);

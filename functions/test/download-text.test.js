@@ -7,6 +7,7 @@ const {
   resolveRetryDelayMs,
   isRetryableStatus,
   isConnectionFailure,
+  looksLikeIcs,
 } = require("../lib/download-text");
 
 describe("download-text helpers", () => {
@@ -56,6 +57,51 @@ describe("download-text helpers", () => {
         expect(body).toContain("BEGIN:VCALENDAR");
         expect(userAgents).toEqual([USER_AGENT, FALLBACK_USER_AGENT]);
         expect(sleeps).toEqual([]);
+      });
+
+  it("recognizes ICS bodies", () => {
+    expect(looksLikeIcs("BEGIN:VCALENDAR\r\nEND:VCALENDAR")).toBe(true);
+    expect(looksLikeIcs("<html><body>Blocked</body></html>")).toBe(false);
+    expect(looksLikeIcs("")).toBe(false);
+  });
+
+  it("retries with the fallback UA when the body fails validation",
+      async () => {
+        const userAgents = [];
+        const downloadOnceFn = jest.fn(async (url, options) => {
+          userAgents.push(options.userAgent);
+          const body = options.userAgent === USER_AGENT ?
+            "<html>Access denied</html>" :
+            "BEGIN:VCALENDAR\nEND:VCALENDAR\n";
+          return {body, statusCode: 200};
+        });
+
+        const body = await downloadTextFromUrl("https://example.com/f.ics", {
+          validateBody: looksLikeIcs,
+          downloadOnceFn,
+          sleepFn: async () => {},
+        });
+
+        expect(body).toContain("BEGIN:VCALENDAR");
+        expect(userAgents).toEqual([USER_AGENT, FALLBACK_USER_AGENT]);
+      });
+
+  it("throws with a body snippet when both UAs get invalid bodies",
+      async () => {
+        const downloadOnceFn = jest.fn(async () => ({
+          body: "<html>Access   denied</html>",
+          statusCode: 200,
+        }));
+
+        await expect(downloadTextFromUrl("https://example.com/f.ics", {
+          validateBody: looksLikeIcs,
+          downloadOnceFn,
+          sleepFn: async () => {},
+        })).rejects.toThrow(
+            "Unexpected feed response (28 bytes, UA fallback): " +
+            "<html>Access denied</html>",
+        );
+        expect(downloadOnceFn).toHaveBeenCalledTimes(2);
       });
 
   it("keeps the browser User-Agent when retrying HTTP 429", async () => {
