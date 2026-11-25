@@ -4376,6 +4376,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get publicProfilePublicSpotLists => 'Openbare spotlijsten';
 
   @override
+  String get publicProfilePublicSpotListsEmpty =>
+      'Lijsten die je openbaar maakt verschijnen hier voor iedereen die je profiel bekijkt, net als de spots die je toevoegde of beoordeelde als je die wilt delen.';
+
+  @override
   String get publicProfileManageLists => 'Lijsten beheren';
 
   @override

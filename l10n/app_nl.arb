@@ -1128,6 +1128,7 @@
   "publicProfileCreateYourFirstList": "Maak je eerste lijst",
   "publicProfileSaved": "Opgeslagen spotlijsten",
   "publicProfilePublicSpotLists": "Openbare spotlijsten",
+  "publicProfilePublicSpotListsEmpty": "Lijsten die je openbaar maakt verschijnen hier voor iedereen die je profiel bekijkt, net als de spots die je toevoegde of beoordeelde als je die wilt delen.",
   "publicProfileManageLists": "Lijsten beheren",
   "publicProfileNoSavedListsYet": "Nog geen opgeslagen lijsten",
   "publicProfileSaveListsHint": "Sla lijsten op die je vindt op lijstpagina’s van andere gebruikers",

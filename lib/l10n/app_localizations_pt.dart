@@ -4401,6 +4401,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get publicProfilePublicSpotLists => 'Listas públicas de spots';
 
   @override
+  String get publicProfilePublicSpotListsEmpty =>
+      'As listas que tornares públicas aparecem aqui para quem visitar o teu perfil, tal como os spots que adicionaste ou avaliaste, se os quiseres partilhar.';
+
+  @override
   String get publicProfileManageLists => 'Gerir listas';
 
   @override

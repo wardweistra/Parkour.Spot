@@ -1063,6 +1063,7 @@
   "publicProfileCreateYourFirstList": "Créez votre première liste",
   "publicProfileSaved": "Listes de spots enregistrées",
   "publicProfilePublicSpotLists": "Listes publiques de spots",
+  "publicProfilePublicSpotListsEmpty": "Les listes que vous rendez publiques apparaissent ici pour toute personne qui visite votre profil, tout comme les spots que vous avez ajoutés ou notés si vous choisissez de les partager.",
   "publicProfileManageLists": "Gérer les listes",
   "publicProfileNoSavedListsYet": "Aucune liste enregistrée pour le moment",
   "publicProfileSaveListsHint": "Enregistrez les listes trouvées sur les pages de listes d'autres utilisateurs",

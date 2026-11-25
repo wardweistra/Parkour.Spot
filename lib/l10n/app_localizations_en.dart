@@ -4348,6 +4348,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get publicProfilePublicSpotLists => 'Public spot lists';
 
   @override
+  String get publicProfilePublicSpotListsEmpty =>
+      'Lists you make public show up here for anyone visiting your profile, and so do the spots you added or rated if you choose to share them.';
+
+  @override
   String get publicProfileManageLists => 'Manage lists';
 
   @override

@@ -250,14 +250,19 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     bool isOwnProfile,
   ) {
     // Layout (padding, max width, centering) comes from [PageScaffold].
+    // Stretch so the header, Contributions and lists cards share one width;
+    // the header still centres its own content.
     return SingleChildScrollView(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Profile Header
           Card(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Stack(
+                // The card now spans the column; keep the profile centred.
+                alignment: Alignment.topCenter,
                 children: [
                   Column(
                     children: [
@@ -831,6 +836,19 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                         ),
                     ],
                   ),
+                  // Only your own profile reaches here without lists (others
+                  // hide the section): say what will appear and how.
+                  if (lists.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, bottom: 12),
+                      child: Text(
+                        _l10n.publicProfilePublicSpotListsEmpty,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
                   if (lists.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     ...lists.map(

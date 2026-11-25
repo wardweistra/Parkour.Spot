@@ -4280,6 +4280,10 @@
   "@publicProfilePublicSpotLists": {
     "description": "Card title for public lists on a user profile"
   },
+  "publicProfilePublicSpotListsEmpty": "Lists you make public show up here for anyone visiting your profile, and so do the spots you added or rated if you choose to share them.",
+  "@publicProfilePublicSpotListsEmpty": {
+    "description": "Own profile, no public lists yet: what the Public spot lists section will show"
+  },
   "publicProfileManageLists": "Manage lists",
   "@publicProfileManageLists": {
     "description": "Link from own public profile to the My spots hub"

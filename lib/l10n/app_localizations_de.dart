@@ -4419,6 +4419,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get publicProfilePublicSpotLists => 'Öffentliche Spot-Listen';
 
   @override
+  String get publicProfilePublicSpotListsEmpty =>
+      'Listen, die du öffentlich machst, erscheinen hier für alle, die dein Profil besuchen – ebenso die Spots, die du hinzugefügt oder bewertet hast, wenn du sie teilen möchtest.';
+
+  @override
   String get publicProfileManageLists => 'Listen verwalten';
 
   @override

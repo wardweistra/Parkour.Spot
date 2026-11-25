@@ -6982,6 +6982,12 @@ abstract class AppLocalizations {
   /// **'Public spot lists'**
   String get publicProfilePublicSpotLists;
 
+  /// Own profile, no public lists yet: what the Public spot lists section will show
+  ///
+  /// In en, this message translates to:
+  /// **'Lists you make public show up here for anyone visiting your profile, and so do the spots you added or rated if you choose to share them.'**
+  String get publicProfilePublicSpotListsEmpty;
+
   /// Link from own public profile to the My spots hub
   ///
   /// In en, this message translates to:
