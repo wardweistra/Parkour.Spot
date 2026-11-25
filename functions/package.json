@@ -15,6 +15,7 @@
   },
   "main": "index.js",
   "dependencies": {
+    "@fontsource/fredoka": "^5.1.1",
     "cron-parser": "^4.9.0",
     "firebase-admin": "^14.5.0",
     "firebase-functions": "^7.3.2",
@@ -22,9 +23,11 @@
     "i18n-iso-countries": "^7.9.0",
     "node-ical": "^0.26.1",
     "parse5": "^7.3.0",
+    "satori": "^0.10.14",
     "sharp": "^0.35.5",
     "xml2js": "^0.6.2",
-    "yauzl": "^3.2.1"
+    "yauzl": "^3.2.1",
+    "yoga-wasm-web": "^0.3.3"
   },
   "devDependencies": {
     "eslint": "^8.15.0",

@@ -396,9 +396,13 @@ const {
   publicProfilesEqual,
 } = require("./lib/public-profile");
 const {
+  FIRST_STATS_YEAR,
   backfillUserStats,
   handleUserStatsSourceWrite,
 } = require("./lib/user-stats");
+const {buildYearReviewData} = require("./lib/year-review-data");
+const {renderYearReviewCard, FORMATS: YEAR_REVIEW_FORMATS} = require("./lib/year-review-card");
+const {resolveCardLocale} = require("./lib/year-review-copy");
 
 /** App description appended to spot, list, and user page meta descriptions */
 const APP_DESCRIPTION = "Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.";
@@ -1979,6 +1983,50 @@ exports.backfillUserStats = onCall(
       } catch (error) {
         console.error("backfillUserStats error:", error);
         throw new HttpsError("internal", error.message);
+      }
+    },
+);
+
+// Yearly review share card (PNG). Public profiles only; 404 when the person
+// has no contributions that year.
+// GET ?user=<uid|username>&year=2026&format=story|square&locale=<code>
+exports.yearReviewCard = onRequest(
+    {region: "europe-west1", memory: "1GiB", timeoutSeconds: 60},
+    async (req, res) => {
+      if (req.method !== "GET" && req.method !== "HEAD") {
+        res.set("Allow", "GET, HEAD").status(405).send("Method not allowed");
+        return;
+      }
+      const userIdOrUsername = typeof req.query.user === "string" ? req.query.user : "";
+      const year = Number.parseInt(String(req.query.year || ""), 10);
+      const format = typeof req.query.format === "string" ? req.query.format : "story";
+      const currentYear = new Date().getUTCFullYear();
+      if (!userIdOrUsername || !Number.isInteger(year) ||
+          year < FIRST_STATS_YEAR || year > currentYear ||
+          !Object.prototype.hasOwnProperty.call(YEAR_REVIEW_FORMATS, format)) {
+        res.status(400).send("Expected user, a valid year and format=story|square");
+        return;
+      }
+      try {
+        const data = await buildYearReviewData(db, {userIdOrUsername, year});
+        if (!data) {
+          res.set("Cache-Control", "public, max-age=300").status(404).send("No year review");
+          return;
+        }
+        const locale = resolveCardLocale(
+            typeof req.query.locale === "string" ? req.query.locale : data.preferredLocale,
+        );
+        const png = await renderYearReviewCard(data, {format, locale});
+        // Numbers change while the year is running; a finished year is final.
+        const finished = year < currentYear;
+        res.set("Content-Type", "image/png");
+        res.set("Cache-Control", finished ?
+          "public, max-age=86400, s-maxage=604800" :
+          "public, max-age=900, s-maxage=3600");
+        res.status(200).send(png);
+      } catch (error) {
+        logger.error("yearReviewCard failed", {userIdOrUsername, year, format, error: error && error.message});
+        res.status(500).send("Could not render the card");
       }
     },
 );
