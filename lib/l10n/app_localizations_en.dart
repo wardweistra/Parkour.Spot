@@ -4445,6 +4445,104 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get yearReviewPageTitle => 'Year in review';
+
+  @override
+  String get yearReviewShareStory => 'Share to your story';
+
+  @override
+  String get yearReviewShareSquare => 'Share square image';
+
+  @override
+  String get yearReviewCopyLink => 'Copy link';
+
+  @override
+  String get yearReviewLinkCopied => 'Link copied';
+
+  @override
+  String get yearReviewImageSaved => 'Image saved to your downloads';
+
+  @override
+  String get yearReviewImageFailed =>
+      'The image couldn\'t load. Try again in a moment.';
+
+  @override
+  String get yearReviewOpenMap => 'Open the map';
+
+  @override
+  String yearReviewSeeProfile(String name) {
+    return 'See $name\'s profile';
+  }
+
+  @override
+  String yearReviewSpotsTitle(String year) {
+    return 'Spots from $year';
+  }
+
+  @override
+  String yearReviewMoreSpots(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'And $count more spots with photos',
+      one: 'And 1 more spot with photos',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get yearReviewSoFarNote =>
+      'These numbers keep updating until 31 December.';
+
+  @override
+  String get yearReviewNotFoundTitle => 'No year in review here';
+
+  @override
+  String yearReviewNotFoundBody(String year) {
+    return 'This profile is private, or has no contributions in $year yet.';
+  }
+
+  @override
+  String get yearReviewLoadError => 'Couldn\'t load this year in review.';
+
+  @override
+  String get yearReviewRetry => 'Try again';
+
+  @override
+  String get yearReviewKindSpotAdded => 'Added';
+
+  @override
+  String get yearReviewKindPhotosAdded => 'Photos added';
+
+  @override
+  String get yearReviewKindSpotImproved => 'Improved';
+
+  @override
+  String get yearReviewKindCheckIn => 'Trained here';
+
+  @override
+  String get yearReviewKindRated => 'Rated';
+
+  @override
+  String yearReviewBannerOwnTitle(String year) {
+    return 'Your $year on Parkour·Spot';
+  }
+
+  @override
+  String get yearReviewBannerOwnBody =>
+      'See the spots you shaped this year and share them.';
+
+  @override
+  String yearReviewBannerOtherTitle(String name, String year) {
+    return '$name\'s $year on Parkour·Spot';
+  }
+
+  @override
+  String yearReviewCardImageLabel(String sentence) {
+    return 'Year in review card: $sentence';
+  }
+
+  @override
   String get profileContributionsTitle => 'Contributions';
 
   @override

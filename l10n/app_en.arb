@@ -4409,6 +4409,144 @@
       }
     }
   },
+  "yearReviewPageTitle": "Year in review",
+  "@yearReviewPageTitle": {
+    "description": "Year review page: app bar title"
+  },
+  "yearReviewShareStory": "Share to your story",
+  "@yearReviewShareStory": {
+    "description": "Year review: primary button that shares the 9:16 card image"
+  },
+  "yearReviewShareSquare": "Share square image",
+  "@yearReviewShareSquare": {
+    "description": "Year review: button that shares the 1:1 card image"
+  },
+  "yearReviewCopyLink": "Copy link",
+  "@yearReviewCopyLink": {
+    "description": "Year review: copy the page link"
+  },
+  "yearReviewLinkCopied": "Link copied",
+  "@yearReviewLinkCopied": {
+    "description": "Snackbar after copying the year review link"
+  },
+  "yearReviewImageSaved": "Image saved to your downloads",
+  "@yearReviewImageSaved": {
+    "description": "Snackbar when the card image was downloaded instead of shared"
+  },
+  "yearReviewImageFailed": "The image couldn't load. Try again in a moment.",
+  "@yearReviewImageFailed": {
+    "description": "Year review: card image failed to load or share"
+  },
+  "yearReviewOpenMap": "Open the map",
+  "@yearReviewOpenMap": {
+    "description": "Year review, visitor: primary button to Explore"
+  },
+  "yearReviewSeeProfile": "See {name}'s profile",
+  "@yearReviewSeeProfile": {
+    "description": "Year review, visitor: button to the person's profile",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "yearReviewSpotsTitle": "Spots from {year}",
+  "@yearReviewSpotsTitle": {
+    "description": "Year review: heading above the list of spots",
+    "placeholders": {
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "yearReviewMoreSpots": "{count, plural, one{And 1 more spot with photos} other{And {count} more spots with photos}}",
+  "@yearReviewMoreSpots": {
+    "description": "Year review: count of spots beyond the list",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "yearReviewSoFarNote": "These numbers keep updating until 31 December.",
+  "@yearReviewSoFarNote": {
+    "description": "Year review, own and in December: the card is not final yet"
+  },
+  "yearReviewNotFoundTitle": "No year in review here",
+  "@yearReviewNotFoundTitle": {
+    "description": "Year review: private profile or no contributions"
+  },
+  "yearReviewNotFoundBody": "This profile is private, or has no contributions in {year} yet.",
+  "@yearReviewNotFoundBody": {
+    "description": "Year review not found: explanation",
+    "placeholders": {
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "yearReviewLoadError": "Couldn't load this year in review.",
+  "@yearReviewLoadError": {
+    "description": "Year review: loading failed"
+  },
+  "yearReviewRetry": "Try again",
+  "@yearReviewRetry": {
+    "description": "Year review: retry after a load error"
+  },
+  "yearReviewKindSpotAdded": "Added",
+  "@yearReviewKindSpotAdded": {
+    "description": "Year review spot row: the person added this spot"
+  },
+  "yearReviewKindPhotosAdded": "Photos added",
+  "@yearReviewKindPhotosAdded": {
+    "description": "Year review spot row: the person added photos"
+  },
+  "yearReviewKindSpotImproved": "Improved",
+  "@yearReviewKindSpotImproved": {
+    "description": "Year review spot row: the person improved this spot"
+  },
+  "yearReviewKindCheckIn": "Trained here",
+  "@yearReviewKindCheckIn": {
+    "description": "Year review spot row: the person checked in here"
+  },
+  "yearReviewKindRated": "Rated",
+  "@yearReviewKindRated": {
+    "description": "Year review spot row: the person rated this spot"
+  },
+  "yearReviewBannerOwnTitle": "Your {year} on Parkour·Spot",
+  "@yearReviewBannerOwnTitle": {
+    "description": "Own profile banner in December/January",
+    "placeholders": {
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "yearReviewBannerOwnBody": "See the spots you shaped this year and share them.",
+  "@yearReviewBannerOwnBody": {
+    "description": "Own profile banner body"
+  },
+  "yearReviewBannerOtherTitle": "{name}'s {year} on Parkour·Spot",
+  "@yearReviewBannerOtherTitle": {
+    "description": "Other person's profile banner in December/January",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "yearReviewCardImageLabel": "Year in review card: {sentence}",
+  "@yearReviewCardImageLabel": {
+    "description": "Screen reader label for the card image",
+    "placeholders": {
+      "sentence": {
+        "type": "String"
+      }
+    }
+  },
   "profileContributionsTitle": "Contributions",
   "@profileContributionsTitle": {
     "description": "Public profile: heading of the contributions section"

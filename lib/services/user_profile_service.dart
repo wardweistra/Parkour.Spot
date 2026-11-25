@@ -227,15 +227,26 @@ class UserProfileService extends ChangeNotifier {
     }
   }
 
-  /// All-time contribution totals from `userStats/{uid}`.
+  /// Contribution totals from `userStats/{uid}`: all time, plus [year] when
+  /// given (the yearly review being promoted).
   ///
   /// A user without contributions has no document, which reads as
   /// [UserContributionStats.empty]. Returns null when the read fails (e.g. the
   /// profile became private), so callers can hide the section.
-  Future<UserContributionStats?> getContributionStats(String userId) async {
+  Future<ContributionStatsSnapshot?> getContributionStats(
+    String userId, {
+    int? year,
+  }) async {
     try {
       final doc = await _firestore.collection('userStats').doc(userId).get();
-      return UserContributionStats.allTimeFromDocument(doc.data());
+      final data = doc.data();
+      return ContributionStatsSnapshot(
+        allTime: UserContributionStats.allTimeFromDocument(data),
+        year: year,
+        yearStats: year == null
+            ? UserContributionStats.empty
+            : UserContributionStats.yearFromDocument(data, year),
+      );
     } catch (e) {
       debugPrint('Error getting contribution stats: $e');
       return null;

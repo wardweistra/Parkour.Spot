@@ -527,9 +527,9 @@ async function buildCardTree(data, {format, locale, now = new Date(), fetchImage
 }
 
 /**
- * Renders the card to PNG.
+ * Renders the card to JPEG (or PNG with `options.type: "png"`).
  * @param {Object} data From buildYearReviewData.
- * @param {Object} options See buildCardTree.
+ * @param {Object} options See buildCardTree, plus `type`.
  * @return {Promise<Buffer>}
  */
 async function renderYearReviewCard(data, options) {
@@ -541,7 +541,12 @@ async function renderYearReviewCard(data, options) {
     fonts: loadFonts(),
     loadAdditionalAsset,
   });
-  return sharp(Buffer.from(svg)).png({compressionLevel: 9}).toBuffer();
+  const image = sharp(Buffer.from(svg));
+  // JPEG by default: the card is mostly photos, so PNG is several times the
+  // size for no visible gain on a phone screen or a social feed.
+  return options.type === "png" ?
+    image.png({compressionLevel: 9}).toBuffer() :
+    image.jpeg({quality: 88, mozjpeg: true, chromaSubsampling: "4:4:4"}).toBuffer();
 }
 
 module.exports = {

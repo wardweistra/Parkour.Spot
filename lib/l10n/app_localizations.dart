@@ -7138,6 +7138,156 @@ abstract class AppLocalizations {
   /// **'Failed to copy profile: {error}'**
   String publicProfileFailedToCopyProfile(String error);
 
+  /// Year review page: app bar title
+  ///
+  /// In en, this message translates to:
+  /// **'Year in review'**
+  String get yearReviewPageTitle;
+
+  /// Year review: primary button that shares the 9:16 card image
+  ///
+  /// In en, this message translates to:
+  /// **'Share to your story'**
+  String get yearReviewShareStory;
+
+  /// Year review: button that shares the 1:1 card image
+  ///
+  /// In en, this message translates to:
+  /// **'Share square image'**
+  String get yearReviewShareSquare;
+
+  /// Year review: copy the page link
+  ///
+  /// In en, this message translates to:
+  /// **'Copy link'**
+  String get yearReviewCopyLink;
+
+  /// Snackbar after copying the year review link
+  ///
+  /// In en, this message translates to:
+  /// **'Link copied'**
+  String get yearReviewLinkCopied;
+
+  /// Snackbar when the card image was downloaded instead of shared
+  ///
+  /// In en, this message translates to:
+  /// **'Image saved to your downloads'**
+  String get yearReviewImageSaved;
+
+  /// Year review: card image failed to load or share
+  ///
+  /// In en, this message translates to:
+  /// **'The image couldn\'t load. Try again in a moment.'**
+  String get yearReviewImageFailed;
+
+  /// Year review, visitor: primary button to Explore
+  ///
+  /// In en, this message translates to:
+  /// **'Open the map'**
+  String get yearReviewOpenMap;
+
+  /// Year review, visitor: button to the person's profile
+  ///
+  /// In en, this message translates to:
+  /// **'See {name}\'s profile'**
+  String yearReviewSeeProfile(String name);
+
+  /// Year review: heading above the list of spots
+  ///
+  /// In en, this message translates to:
+  /// **'Spots from {year}'**
+  String yearReviewSpotsTitle(String year);
+
+  /// Year review: count of spots beyond the list
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{And 1 more spot with photos} other{And {count} more spots with photos}}'**
+  String yearReviewMoreSpots(int count);
+
+  /// Year review, own and in December: the card is not final yet
+  ///
+  /// In en, this message translates to:
+  /// **'These numbers keep updating until 31 December.'**
+  String get yearReviewSoFarNote;
+
+  /// Year review: private profile or no contributions
+  ///
+  /// In en, this message translates to:
+  /// **'No year in review here'**
+  String get yearReviewNotFoundTitle;
+
+  /// Year review not found: explanation
+  ///
+  /// In en, this message translates to:
+  /// **'This profile is private, or has no contributions in {year} yet.'**
+  String yearReviewNotFoundBody(String year);
+
+  /// Year review: loading failed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this year in review.'**
+  String get yearReviewLoadError;
+
+  /// Year review: retry after a load error
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get yearReviewRetry;
+
+  /// Year review spot row: the person added this spot
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get yearReviewKindSpotAdded;
+
+  /// Year review spot row: the person added photos
+  ///
+  /// In en, this message translates to:
+  /// **'Photos added'**
+  String get yearReviewKindPhotosAdded;
+
+  /// Year review spot row: the person improved this spot
+  ///
+  /// In en, this message translates to:
+  /// **'Improved'**
+  String get yearReviewKindSpotImproved;
+
+  /// Year review spot row: the person checked in here
+  ///
+  /// In en, this message translates to:
+  /// **'Trained here'**
+  String get yearReviewKindCheckIn;
+
+  /// Year review spot row: the person rated this spot
+  ///
+  /// In en, this message translates to:
+  /// **'Rated'**
+  String get yearReviewKindRated;
+
+  /// Own profile banner in December/January
+  ///
+  /// In en, this message translates to:
+  /// **'Your {year} on Parkour·Spot'**
+  String yearReviewBannerOwnTitle(String year);
+
+  /// Own profile banner body
+  ///
+  /// In en, this message translates to:
+  /// **'See the spots you shaped this year and share them.'**
+  String get yearReviewBannerOwnBody;
+
+  /// Other person's profile banner in December/January
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s {year} on Parkour·Spot'**
+  String yearReviewBannerOtherTitle(String name, String year);
+
+  /// Screen reader label for the card image
+  ///
+  /// In en, this message translates to:
+  /// **'Year in review card: {sentence}'**
+  String yearReviewCardImageLabel(String sentence);
+
   /// Public profile: heading of the contributions section
   ///
   /// In en, this message translates to:

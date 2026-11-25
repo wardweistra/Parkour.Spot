@@ -4516,6 +4516,105 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get yearReviewPageTitle => 'Jahresrückblick';
+
+  @override
+  String get yearReviewShareStory => 'In deiner Story teilen';
+
+  @override
+  String get yearReviewShareSquare => 'Quadratisches Bild teilen';
+
+  @override
+  String get yearReviewCopyLink => 'Link kopieren';
+
+  @override
+  String get yearReviewLinkCopied => 'Link kopiert';
+
+  @override
+  String get yearReviewImageSaved => 'Bild in deinen Downloads gespeichert';
+
+  @override
+  String get yearReviewImageFailed =>
+      'Das Bild konnte nicht geladen werden. Versuche es gleich noch einmal.';
+
+  @override
+  String get yearReviewOpenMap => 'Karte öffnen';
+
+  @override
+  String yearReviewSeeProfile(String name) {
+    return 'Profil von $name ansehen';
+  }
+
+  @override
+  String yearReviewSpotsTitle(String year) {
+    return 'Spots aus $year';
+  }
+
+  @override
+  String yearReviewMoreSpots(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Und $count weitere Spots mit Fotos',
+      one: 'Und 1 weiterer Spot mit Fotos',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get yearReviewSoFarNote =>
+      'Diese Zahlen werden bis zum 31. Dezember aktualisiert.';
+
+  @override
+  String get yearReviewNotFoundTitle => 'Kein Jahresrückblick gefunden';
+
+  @override
+  String yearReviewNotFoundBody(String year) {
+    return 'Dieses Profil ist privat oder hat in $year noch keine Beiträge.';
+  }
+
+  @override
+  String get yearReviewLoadError =>
+      'Dieser Jahresrückblick konnte nicht geladen werden.';
+
+  @override
+  String get yearReviewRetry => 'Erneut versuchen';
+
+  @override
+  String get yearReviewKindSpotAdded => 'Hinzugefügt';
+
+  @override
+  String get yearReviewKindPhotosAdded => 'Fotos hinzugefügt';
+
+  @override
+  String get yearReviewKindSpotImproved => 'Verbessert';
+
+  @override
+  String get yearReviewKindCheckIn => 'Hier trainiert';
+
+  @override
+  String get yearReviewKindRated => 'Bewertet';
+
+  @override
+  String yearReviewBannerOwnTitle(String year) {
+    return 'Dein $year auf Parkour·Spot';
+  }
+
+  @override
+  String get yearReviewBannerOwnBody =>
+      'Sieh dir die Spots an, die du dieses Jahr mitgestaltet hast, und teile sie.';
+
+  @override
+  String yearReviewBannerOtherTitle(String name, String year) {
+    return '${name}s $year auf Parkour·Spot';
+  }
+
+  @override
+  String yearReviewCardImageLabel(String sentence) {
+    return 'Jahresrückblick: $sentence';
+  }
+
+  @override
   String get profileContributionsTitle => 'Beiträge';
 
   @override

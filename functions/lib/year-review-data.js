@@ -243,7 +243,7 @@ async function resolvePublicProfile(db, userIdOrUsername) {
   let doc = byId.exists ? byId : null;
   if (!doc) {
     const byUsername = await db.collection("publicProfiles")
-        .where("username", "==", key).limit(1).get();
+        .where("username", "==", key.toLowerCase()).limit(1).get();
     doc = byUsername.empty ? null : byUsername.docs[0];
   }
   if (!doc) return null;

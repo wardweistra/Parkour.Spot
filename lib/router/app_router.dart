@@ -55,6 +55,7 @@ import '../screens/profile/account_settings_screen.dart';
 import '../screens/profile/notifications_screen.dart';
 import '../screens/profile/spot_lists_hub_screen.dart';
 import '../screens/profile/public_profile_screen.dart';
+import '../screens/profile/year_review_screen.dart';
 import '../models/spot.dart';
 import '../services/spot_service.dart';
 import '../services/auth_service.dart';
@@ -455,6 +456,19 @@ class AppRouter {
             final listId = state.pathParameters['listId']!;
             return SpotListDetailScreen(listId: listId);
           },
+        ),
+        // Yearly review: /year/2026/@noor (or a uid). Declared before the
+        // three-segment /:countryCode/:city/:spotId route it would match.
+        GoRoute(
+          path: '/year/:year/:userIdOrUsername',
+          redirect: (context, state) {
+            final year = int.tryParse(state.pathParameters['year']!);
+            return year == null || year < 2025 ? '/explore' : null;
+          },
+          builder: (context, state) => YearReviewScreen(
+            year: int.parse(state.pathParameters['year']!),
+            userIdOrUsername: state.pathParameters['userIdOrUsername']!,
+          ),
         ),
         GoRoute(
           path: '/user/:userIdOrUsername',

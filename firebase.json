@@ -68,6 +68,18 @@
           "function": "serveSitemap"
         },
         {
+          "source": "/year/*/*/story.jpg",
+          "function": "yearReviewCard"
+        },
+        {
+          "source": "/year/*/*/square.jpg",
+          "function": "yearReviewCard"
+        },
+        {
+          "source": "/year/**",
+          "function": "userAndListPage"
+        },
+        {
           "source": "/user/**",
           "function": "userAndListPage"
         },

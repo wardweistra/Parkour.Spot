@@ -185,13 +185,13 @@ describe("renderYearReviewCard", () => {
   it.each([
     ["story", 1080, 1920],
     ["square", 1080, 1080],
-  ])("renders a %s PNG at its size", (format, width, height) => {
-    expect(render({format, locale: "en"})).toEqual({format: "png", width, height});
+  ])("renders a %s JPEG at its size", (format, width, height) => {
+    expect(render({format, locale: "en"})).toEqual({format: "jpeg", width, height});
   }, 70000);
 
   it("still renders when every image fails to load", () => {
     expect(render({format: "story", locale: "de", failImages: true})).toEqual({
-      format: "png",
+      format: "jpeg",
       width: 1080,
       height: 1920,
     });

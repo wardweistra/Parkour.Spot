@@ -24,6 +24,8 @@ import '../../widgets/instagram_button.dart';
 import '../../utils/web_meta_utils.dart';
 import '../../widgets/page_scaffold.dart';
 import '../../widgets/profile_contributions_section.dart';
+import '../../widgets/year_review_banner.dart';
+import '../../utils/year_review_window.dart';
 import '../../widgets/entity_not_found_view.dart';
 import '../../widgets/spot_list_summary_tile.dart';
 import '../../l10n/app_localizations.dart';
@@ -52,7 +54,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   String? _publicListsUserId;
   bool? _publicListsIncludeAdded;
   bool? _publicListsIncludeRated;
-  Future<UserContributionStats?>? _contributionsFuture;
+  Future<ContributionStatsSnapshot?>? _contributionsFuture;
   String? _contributionsUserId;
 
   @override
@@ -594,14 +596,14 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     );
   }
 
-  Future<UserContributionStats?> _contributionsForUser(String userId) {
+  Future<ContributionStatsSnapshot?> _contributionsForUser(String userId) {
     if (_contributionsFuture != null && _contributionsUserId == userId) {
       return _contributionsFuture!;
     }
     _contributionsUserId = userId;
     _contributionsFuture = context
         .read<UserProfileService>()
-        .getContributionStats(userId);
+        .getContributionStats(userId, year: promotedReviewYear(DateTime.now()));
     return _contributionsFuture!;
   }
 
@@ -617,7 +619,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         ? user.username!.trim()
         : user.id;
 
-    return FutureBuilder<UserContributionStats?>(
+    return FutureBuilder<ContributionStatsSnapshot?>(
       future: _contributionsForUser(user.id),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -626,12 +628,36 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             child: ProfileContributionsSkeleton(),
           );
         }
-        final stats = snapshot.data;
+        final snapshotData = snapshot.data;
         // A failed read hides the section rather than showing zeros.
-        if (stats == null || (stats.isEmpty && !isOwnProfile)) {
-          return const SizedBox.shrink();
+        if (snapshotData == null) return const SizedBox.shrink();
+        final stats = snapshotData.allTime;
+        final reviewYear = snapshotData.year;
+        // Promote the yearly review only when there is one to open.
+        final banner = reviewYear != null && !snapshotData.yearStats.isEmpty
+            ? Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: YearReviewBanner(
+                  year: reviewYear,
+                  name: isOwnProfile
+                      ? null
+                      : (user.displayName ??
+                            user.username ??
+                            _l10n.profileDefaultDisplayName),
+                  onOpen: () => context.push(
+                    yearReviewPagePath(
+                      year: reviewYear,
+                      userId: user.id,
+                      username: user.username,
+                    ),
+                  ),
+                ),
+              )
+            : null;
+        if (stats.isEmpty && !isOwnProfile) {
+          return banner ?? const SizedBox.shrink();
         }
-        return Padding(
+        final section = Padding(
           padding: const EdgeInsets.only(top: 16),
           child: ProfileContributionsSection(
             stats: stats,
@@ -661,6 +687,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
               }
             },
           ),
+        );
+        if (banner == null) return section;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [banner, section],
         );
       },
     );

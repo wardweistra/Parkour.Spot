@@ -52,6 +52,53 @@ class WebShareService {
     }
   }
 
+  /// Shares an image file (Web Share level 2) where the browser supports
+  /// sharing files, which on phones offers Instagram, WhatsApp and similar
+  /// apps directly. Elsewhere the image is downloaded and the outcome is
+  /// [WebShareOutcome.fallback] so callers can say where it went.
+  static Future<WebShareOutcome> tryShareImage({
+    required Uint8List bytes,
+    required String fileName,
+    required String text,
+    String mimeType = 'image/jpeg',
+  }) async {
+    final blob = web.Blob(
+      [bytes.toJS].toJS,
+      web.BlobPropertyBag(type: mimeType),
+    );
+    final file = web.File(
+      [blob].toJS,
+      fileName,
+      web.FilePropertyBag(type: mimeType),
+    );
+    try {
+      final data = web.ShareData(files: [file].toJS, text: text);
+      final nav = web.window.navigator;
+      if (MobileDetectionService.isMobileUserAgent && nav.canShare(data)) {
+        await nav.share(data).toDart;
+        return WebShareOutcome.shared;
+      }
+    } catch (e) {
+      if (_isAbortError(e)) {
+        return WebShareOutcome.cancelled;
+      }
+    }
+    _download(blob, fileName);
+    return WebShareOutcome.fallback;
+  }
+
+  static void _download(web.Blob blob, String fileName) {
+    final url = web.URL.createObjectURL(blob);
+    final anchor = web.document.createElement('a') as web.HTMLAnchorElement
+      ..href = url
+      ..download = fileName
+      ..style.display = 'none';
+    web.document.body?.append(anchor);
+    anchor.click();
+    anchor.remove();
+    web.URL.revokeObjectURL(url);
+  }
+
   /// User dismissed the share sheet; avoid clipboard fallback. Avoids `is` checks
   /// on JS interop types (see invalid_runtime_check_with_js_interop_types).
   static bool _isAbortError(Object error) {

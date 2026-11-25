@@ -84,3 +84,18 @@ class UserContributionStats {
     );
   }
 }
+
+/// One read of `userStats/{uid}`: all-time totals and, optionally, one year.
+class ContributionStatsSnapshot {
+  const ContributionStatsSnapshot({
+    required this.allTime,
+    this.year,
+    this.yearStats = UserContributionStats.empty,
+  });
+
+  final UserContributionStats allTime;
+
+  /// The year [yearStats] covers, or null when none was requested.
+  final int? year;
+  final UserContributionStats yearStats;
+}
