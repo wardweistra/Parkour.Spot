@@ -872,6 +872,15 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Contribution totals (lib/user-stats.js). Readable by the owner and, for
+    // public profiles, by anyone; only Cloud Functions write.
+    match /userStats/{userId} {
+      allow read: if (request.auth != null && request.auth.uid == userId) ||
+        (exists(/databases/$(database)/documents/publicProfiles/$(userId)) &&
+         get(/databases/$(database)/documents/publicProfiles/$(userId)).data.isPublicProfile == true);
+      allow write: if false;
+    }
+
     // about.parkour.spot build-time snapshots (Admin SDK only)
     match /snapshots/{document=**} {
       allow read, write: if false;

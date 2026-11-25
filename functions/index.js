@@ -395,6 +395,10 @@ const {
   buildPublicProfile,
   publicProfilesEqual,
 } = require("./lib/public-profile");
+const {
+  backfillUserStats,
+  handleUserStatsSourceWrite,
+} = require("./lib/user-stats");
 
 /** App description appended to spot, list, and user page meta descriptions */
 const APP_DESCRIPTION = "Discover, map, and share the best parkour spots worldwide with community photos, ratings, and local tips for your next training session.";
@@ -1865,6 +1869,116 @@ exports.onAuditLogCreatedForCommunityActivity = onDocumentCreated(
         await syncSpotPhotoAddedActivity(db, logId, logData);
       } catch (e) {
         console.error("onAuditLogCreatedForCommunityActivity error", {logId, e});
+      }
+    },
+);
+
+// ========== User contribution stats (userStats/{uid}) ==========
+// Profile contributions and the yearly review. Each trigger recomputes the
+// affected user(s) only when a counted field changed; see lib/user-stats.js.
+
+/**
+ * @param {string} collection Source collection name.
+ * @return {function(Object): Promise<void>} Firestore trigger handler.
+ */
+function userStatsWriteHandler(collection) {
+  return async (event) => {
+    const before = event.data && event.data.before && event.data.before.exists ?
+      (event.data.before.data() || {}) :
+      null;
+    const after = event.data && event.data.after && event.data.after.exists ?
+      (event.data.after.data() || {}) :
+      null;
+    await handleUserStatsSourceWrite(db, FieldValue, collection, before, after);
+  };
+}
+
+/**
+ * Handler for create/delete-only triggers (spots, events): those collections
+ * see frequent sync updates that never change who created the document.
+ * @param {string} collection Source collection name.
+ * @param {"created"|"deleted"} change
+ * @return {function(Object): Promise<void>} Firestore trigger handler.
+ */
+function userStatsCreateDeleteHandler(collection, change) {
+  return async (event) => {
+    const data = event.data ? (event.data.data() || {}) : null;
+    await handleUserStatsSourceWrite(
+        db,
+        FieldValue,
+        collection,
+        change === "deleted" ? data : null,
+        change === "created" ? data : null,
+    );
+  };
+}
+
+exports.onSpotCreatedForUserStats = onDocumentCreated(
+    {document: "spots/{spotId}", region: "europe-west1"},
+    userStatsCreateDeleteHandler("spots", "created"),
+);
+
+exports.onSpotDeletedForUserStats = onDocumentDeleted(
+    {document: "spots/{spotId}", region: "europe-west1"},
+    userStatsCreateDeleteHandler("spots", "deleted"),
+);
+
+exports.onEventCreatedForUserStats = onDocumentCreated(
+    {document: "events/{eventId}", region: "europe-west1"},
+    userStatsCreateDeleteHandler("events", "created"),
+);
+
+exports.onEventDeletedForUserStats = onDocumentDeleted(
+    {document: "events/{eventId}", region: "europe-west1"},
+    userStatsCreateDeleteHandler("events", "deleted"),
+);
+
+exports.onRatingWrittenForUserStats = onDocumentWritten(
+    {document: "ratings/{ratingId}", region: "europe-west1"},
+    userStatsWriteHandler("ratings"),
+);
+
+exports.onSpotListWrittenForUserStats = onDocumentWritten(
+    {document: "spotLists/{listId}", region: "europe-west1"},
+    userStatsWriteHandler("spotLists"),
+);
+
+exports.onSpotCheckInWrittenForUserStats = onDocumentWritten(
+    {document: "spotCheckIns/{checkInId}", region: "europe-west1"},
+    userStatsWriteHandler("spotCheckIns"),
+);
+
+exports.onSpotTrainingPlanWrittenForUserStats = onDocumentWritten(
+    {document: "spotTrainingPlans/{planId}", region: "europe-west1"},
+    userStatsWriteHandler("spotTrainingPlans"),
+);
+
+exports.onSpotReportWrittenForUserStats = onDocumentWritten(
+    {document: "spotReports/{reportId}", region: "europe-west1"},
+    userStatsWriteHandler("spotReports"),
+);
+
+exports.onEventReportWrittenForUserStats = onDocumentWritten(
+    {document: "eventReports/{reportId}", region: "europe-west1"},
+    userStatsWriteHandler("eventReports"),
+);
+
+// Admin: recompute userStats for every user and every year. Resumable — call
+// again with the returned nextCursor as startAfter until it is null.
+exports.backfillUserStats = onCall(
+    {region: "europe-west1", timeoutSeconds: 540, memory: "512MiB"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+        const {startAfter = null} = request.data || {};
+        const result = await backfillUserStats(db, FieldValue, {
+          startAfter: typeof startAfter === "string" && startAfter ? startAfter : null,
+        });
+        console.log("backfillUserStats:", result);
+        return {success: true, ...result};
+      } catch (error) {
+        console.error("backfillUserStats error:", error);
+        throw new HttpsError("internal", error.message);
       }
     },
 );
