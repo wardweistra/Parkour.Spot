@@ -56,7 +56,7 @@ describe("year review copy", () => {
         expect(sentence.before + sentence.after).not.toMatch(/\{|\}/);
         expect(sentence.emphasis).toMatch(/^2 /);
       }
-      expect(countLabel(locale, "trainingPlans", 2)).not.toBe("trainingPlans");
+      expect(countLabel(locale, "lists", 2)).not.toBe("lists");
       expect(heroCaption(locale, "spotsAdded", d("2026-06-05"))).toMatch(/5|juni|June|junio|juin|junho|Juni/);
     }
   });

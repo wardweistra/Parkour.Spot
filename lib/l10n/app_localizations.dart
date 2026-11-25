@@ -7357,12 +7357,6 @@ abstract class AppLocalizations {
   /// Public profile contributions: row label after the count
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{session planned} other{sessions planned}}'**
-  String profileContributionsTrainingPlans(int count);
-
-  /// Public profile contributions: row label after the count
-  ///
-  /// In en, this message translates to:
   /// **'{count, plural, one{spot rated} other{spots rated}}'**
   String profileContributionsRatings(int count);
 

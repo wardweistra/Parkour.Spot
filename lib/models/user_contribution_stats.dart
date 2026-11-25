@@ -1,8 +1,8 @@
 /// Contribution totals for one user, read from `userStats/{uid}`
 /// (maintained by `functions/lib/user-stats.js`).
 ///
-/// Private check-ins, private planned sessions and private lists are never
-/// counted, so these numbers are safe to show on a public profile.
+/// Private check-ins are never counted and only public lists are, so these
+/// numbers are safe to show on a public profile.
 class UserContributionStats {
   const UserContributionStats({
     this.spotsAdded = 0,
@@ -13,7 +13,6 @@ class UserContributionStats {
     this.ratings = 0,
     this.lists = 0,
     this.checkIns = 0,
-    this.trainingPlans = 0,
   });
 
   static const empty = UserContributionStats();
@@ -26,7 +25,6 @@ class UserContributionStats {
   final int ratings;
   final int lists;
   final int checkIns;
-  final int trainingPlans;
 
   int get total =>
       spotsAdded +
@@ -36,8 +34,7 @@ class UserContributionStats {
       eventsImproved +
       ratings +
       lists +
-      checkIns +
-      trainingPlans;
+      checkIns;
 
   bool get isEmpty => total == 0;
 
@@ -58,7 +55,6 @@ class UserContributionStats {
       ratings: read('ratings'),
       lists: read('lists'),
       checkIns: read('checkIns'),
-      trainingPlans: read('trainingPlans'),
     );
   }
 

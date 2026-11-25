@@ -16,8 +16,10 @@
  * the year is over. `backfillUserStats` recomputes every year since
  * [FIRST_STATS_YEAR].
  *
- * Only contributions others can see are counted: private check-ins, private
- * training plans and private lists are left out. Spots and events created via
+ * Only contributions others can see are counted: private check-ins are left
+ * out, and only public lists count (unlisted lists stay unlisted: counting
+ * them would reveal they exist). Training plans are not contributions: a
+ * plan someone follows becomes a check-in, which is counted. Spots and events created via
  * moderator "Create native" deduplication are moderation work, not
  * contributions: they are excluded from added/created and not stored here
  * (the admin Sheets export counts them, see `user-contribution-stats.js`).
@@ -40,7 +42,6 @@ const USER_STATS_KEYS = Object.freeze([
   "ratings",
   "lists",
   "checkIns",
-  "trainingPlans",
 ]);
 
 /**
@@ -54,7 +55,6 @@ const WATCHED_SOURCES = Object.freeze({
   ratings: {userField: "userId", fields: ["createdAt"]},
   spotLists: {userField: "createdBy", fields: ["visibility", "createdAt"]},
   spotCheckIns: {userField: "userId", fields: ["isPrivate", "checkedInAt"]},
-  spotTrainingPlans: {userField: "userId", fields: ["isPrivate", "plannedStartAt"]},
   spotReports: {
     userField: "reporterUserId",
     fields: ["spotId", "acceptedEditFields", "acceptedPhotoUrls", "updatedAt"],
@@ -100,10 +100,12 @@ const COUNT_SOURCES = Object.freeze([
     restKey: "ratings",
   },
   {
+    // Public lists only: unlisted (and legacy lists without `visibility`,
+    // which the app treats as unlisted) must not be revealed by a count.
     collection: "spotLists",
     userField: "createdBy",
     dateField: "createdAt",
-    split: {field: "visibility", value: "private"},
+    match: {field: "visibility", value: "public"},
     restKey: "lists",
   },
   {
@@ -112,13 +114,6 @@ const COUNT_SOURCES = Object.freeze([
     dateField: "checkedInAt",
     split: {field: "isPrivate", value: true},
     restKey: "checkIns",
-  },
-  {
-    collection: "spotTrainingPlans",
-    userField: "userId",
-    dateField: "plannedStartAt",
-    split: {field: "isPrivate", value: true},
-    restKey: "trainingPlans",
   },
 ]);
 
@@ -285,6 +280,9 @@ async function readHiddenDates(db, userId) {
 async function addCountSourceStats(db, userId, range, stats, hiddenDates) {
   await Promise.all(COUNT_SOURCES.map(async (source) => {
     const filters = [[source.userField, "==", userId]];
+    if (source.match) {
+      filters.push([source.match.field, "==", source.match.value]);
+    }
     if (range) {
       filters.push([source.dateField, ">=", range.start]);
       filters.push([source.dateField, "<", range.end]);
@@ -562,11 +560,15 @@ async function recomputeUserStats(db, FieldValue, userId, options = {}) {
     if (!existing.exists) return {written: false, stats};
   }
 
+  // mergeFields replaces allTime and each recomputed year as a whole, so a
+  // key that is no longer counted is removed rather than left behind by a
+  // deep merge; years not recomputed (frozen ones) are kept as they are.
+  const yearFields = Object.keys(stats.years).map((year) => `years.${year}`);
   await ref.set({
     allTime: stats.allTime,
     years: stats.years,
     updatedAt: FieldValue.serverTimestamp(),
-  }, {merge: true});
+  }, {mergeFields: ["allTime", ...yearFields, "updatedAt"]});
   return {written: true, stats};
 }
 

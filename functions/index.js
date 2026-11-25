@@ -1988,11 +1988,6 @@ exports.onSpotCheckInWrittenForUserStats = onDocumentWritten(
     userStatsWriteHandler("spotCheckIns"),
 );
 
-exports.onSpotTrainingPlanWrittenForUserStats = onDocumentWritten(
-    {document: "spotTrainingPlans/{planId}", region: "europe-west1"},
-    userStatsWriteHandler("spotTrainingPlans"),
-);
-
 exports.onSpotReportWrittenForUserStats = onDocumentWritten(
     {document: "spotReports/{reportId}", region: "europe-west1"},
     userStatsWriteHandler("spotReports"),

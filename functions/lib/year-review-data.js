@@ -28,7 +28,6 @@ const COUNT_PRIORITY = Object.freeze([
   "checkIns",
   "eventsCreated",
   "eventsImproved",
-  "trainingPlans",
   "lists",
 ]);
 

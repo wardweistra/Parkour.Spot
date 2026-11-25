@@ -4621,15 +4621,6 @@
       }
     }
   },
-  "profileContributionsTrainingPlans": "{count, plural, one{session planned} other{sessions planned}}",
-  "@profileContributionsTrainingPlans": {
-    "description": "Public profile contributions: row label after the count",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "profileContributionsRatings": "{count, plural, one{spot rated} other{spots rated}}",
   "@profileContributionsRatings": {
     "description": "Public profile contributions: row label after the count",

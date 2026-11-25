@@ -76,10 +76,25 @@ function createFakeDb(seed = {}) {
         _id: id,
         get: async () => ({exists: docsOf(name).has(id), data: () => docsOf(name).get(id)}),
         set: async (data, options) => {
+          if (options && options.mergeFields) {
+            // Replace each listed field (dotted paths allowed) as a whole.
+            const next = JSON.parse(JSON.stringify(docsOf(name).get(id) || {}));
+            for (const field of options.mergeFields) {
+              const parts = field.split(".");
+              let source = data;
+              let target = next;
+              for (const part of parts.slice(0, -1)) {
+                source = source[part];
+                target[part] = target[part] || {};
+                target = target[part];
+              }
+              target[parts[parts.length - 1]] = source[parts[parts.length - 1]];
+            }
+            docsOf(name).set(id, next);
+            return;
+          }
           const prev = options && options.merge ? (docsOf(name).get(id) || {}) : {};
-          const merged = {...prev, ...data};
-          if (prev.years && data.years) merged.years = {...prev.years, ...data.years};
-          docsOf(name).set(id, merged);
+          docsOf(name).set(id, {...prev, ...data});
         },
       }),
     }),
@@ -217,6 +232,7 @@ describe("computeUserStats", () => {
       c2: {userId: "u1", checkedInAt: d("2026-05-02"), isPrivate: true},
       c3: {userId: "u1", checkedInAt: d("2026-05-03"), isPrivate: false},
     },
+    // Plans are not contributions; these must not show up anywhere.
     spotTrainingPlans: {
       p1: {userId: "u1", plannedStartAt: d("2026-08-01"), isPrivate: false},
       p2: {userId: "u1", plannedStartAt: d("2026-08-02"), isPrivate: true},
@@ -239,21 +255,37 @@ describe("computeUserStats", () => {
       photosAdded: 1,
       eventsCreated: 1,
       ratings: 2,
-      lists: 2,
+      lists: 1, // public only: private and unlisted are not counted
       checkIns: 2,
-      trainingPlans: 1,
     });
     expect(stats.years["2026"]).toMatchObject({
       spotsAdded: 1,
       ratings: 1,
       checkIns: 2,
-      lists: 2,
+      lists: 1, // public only: private and unlisted are not counted
     });
     expect(stats.years["2025"]).toMatchObject({spotsAdded: 1, ratings: 1, checkIns: 0});
     expect(stats.years["2026"].spotsImproved).toBe(1);
     expect(stats.years["2026"].photosAdded).toBe(1);
     expect(Object.keys(stats.allTime).sort()).toEqual([...USER_STATS_KEYS].sort());
     expect(stats.allTime).not.toHaveProperty("spotsDeduplicated");
+    expect(stats.allTime).not.toHaveProperty("trainingPlans");
+  });
+
+  it("drops keys that are no longer counted from stored maps", async () => {
+    const db = createFakeDb({
+      ...seed(),
+      userStats: {u1: {
+        allTime: {...emptyUserStats(), trainingPlans: 7},
+        years: {"2026": {trainingPlans: 7}, "2025": {trainingPlans: 3}},
+      }},
+    });
+    await recomputeUserStats(db, FieldValue, "u1", {now: d("2026-12-02")});
+    const doc = db._get("userStats", "u1");
+    expect(doc.allTime).not.toHaveProperty("trainingPlans");
+    expect(doc.years["2026"]).not.toHaveProperty("trainingPlans");
+    // A year that was not recomputed is left frozen as it was.
+    expect(doc.years["2025"]).toEqual({trainingPlans: 3});
   });
 
   it("writes the current year only on recompute, leaving earlier years frozen", async () => {

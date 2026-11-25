@@ -4653,17 +4653,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String profileContributionsTrainingPlans(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'sessies gepland',
-      one: 'sessie gepland',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String profileContributionsRatings(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

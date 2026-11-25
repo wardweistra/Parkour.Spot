@@ -1190,7 +1190,6 @@
   "profileContributionsEventsCreated": "{count, plural, one{event aangemaakt} other{events aangemaakt}}",
   "profileContributionsEventsImproved": "{count, plural, one{event verbeterd} other{events verbeterd}}",
   "profileContributionsCheckIns": "{count, plural, one{check-in} other{check-ins}}",
-  "profileContributionsTrainingPlans": "{count, plural, one{sessie gepland} other{sessies gepland}}",
   "profileContributionsRatings": "{count, plural, one{spot beoordeeld} other{spots beoordeeld}}",
   "profileContributionsLists": "{count, plural, one{lijst gedeeld} other{lijsten gedeeld}}",
   "profileContributionsEmptyTitle": "Hier verschijnen je bijdragen",

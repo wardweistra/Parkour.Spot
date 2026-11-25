@@ -12,7 +12,6 @@ enum ContributionKind {
   eventsCreated,
   eventsImproved,
   checkIns,
-  trainingPlans,
   ratings,
   lists,
 }
@@ -55,7 +54,6 @@ List<ContributionGroup> buildContributionGroups(UserContributionStats stats) {
       ContributionRow(ContributionKind.eventsCreated, stats.eventsCreated),
       ContributionRow(ContributionKind.eventsImproved, stats.eventsImproved),
       ContributionRow(ContributionKind.checkIns, stats.checkIns),
-      ContributionRow(ContributionKind.trainingPlans, stats.trainingPlans),
     ]),
     group(ContributionGroupKind.guide, [
       ContributionRow(ContributionKind.ratings, stats.ratings),
@@ -275,8 +273,6 @@ class _ContributionGroupView extends StatelessWidget {
         return l10n.profileContributionsEventsImproved(row.count);
       case ContributionKind.checkIns:
         return l10n.profileContributionsCheckIns(row.count);
-      case ContributionKind.trainingPlans:
-        return l10n.profileContributionsTrainingPlans(row.count);
       case ContributionKind.ratings:
         return l10n.profileContributionsRatings(row.count);
       case ContributionKind.lists:

@@ -130,7 +130,7 @@ void main() {
           eventsCreated: 54,
           eventsImproved: 12,
           checkIns: 23,
-          trainingPlans: 6,
+          lists: 3,
         ),
         onOpenRow: (kind) => kind == ContributionKind.checkIns ? () {} : null,
       );
@@ -142,7 +142,7 @@ void main() {
       // Unlinked rows keep their order.
       expect(
         tester.getTopLeft(find.text('events created')).dy,
-        lessThan(tester.getTopLeft(find.text('sessions planned')).dy),
+        lessThan(tester.getTopLeft(find.text('events improved')).dy),
       );
       final button = tester.getRect(
         find.ancestor(of: checkIns, matching: find.byType(InkWell)),
@@ -204,7 +204,7 @@ void main() {
           spotsImproved: 40,
           photosAdded: 129,
           eventsCreated: 1,
-          trainingPlans: 1,
+          checkIns: 1,
           ratings: 3,
           lists: 1,
         ),
@@ -212,8 +212,8 @@ void main() {
         locale: const Locale('de'),
       );
       expect(find.text('Leute zusammenbringen'), findsOneWidget);
-      expect(find.text('Sessions geplant'), findsNothing);
-      expect(find.text('Session geplant'), findsOneWidget);
+      expect(find.text('Check-ins'), findsNothing);
+      expect(find.text('Check-in'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

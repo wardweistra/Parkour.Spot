@@ -1125,7 +1125,6 @@
   "profileContributionsEventsCreated": "{count, plural, one{Event erstellt} other{Events erstellt}}",
   "profileContributionsEventsImproved": "{count, plural, one{Event verbessert} other{Events verbessert}}",
   "profileContributionsCheckIns": "{count, plural, one{Check-in} other{Check-ins}}",
-  "profileContributionsTrainingPlans": "{count, plural, one{Session geplant} other{Sessions geplant}}",
   "profileContributionsRatings": "{count, plural, one{Spot bewertet} other{Spots bewertet}}",
   "profileContributionsLists": "{count, plural, one{Liste geteilt} other{Listen geteilt}}",
   "profileContributionsEmptyTitle": "Hier erscheinen deine Beiträge",
