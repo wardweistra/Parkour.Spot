@@ -62,9 +62,18 @@ function createFakeDb(seed = {}) {
   });
 
   return {
+    getAll: async (...args) => args
+        .filter((ref) => ref && ref._name)
+        .map((ref) => ({
+          id: ref._id,
+          exists: docsOf(ref._name).has(ref._id),
+          data: () => docsOf(ref._name).get(ref._id),
+        })),
     collection: (name) => ({
       ...makeQuery(name),
       doc: (id) => ({
+        _name: name,
+        _id: id,
         get: async () => ({exists: docsOf(name).has(id), data: () => docsOf(name).get(id)}),
         set: async (data, options) => {
           const prev = options && options.merge ? (docsOf(name).get(id) || {}) : {};
@@ -132,24 +141,49 @@ describe("userIdsAffectedByWrite", () => {
 });
 
 describe("reportStatsFromReports", () => {
-  it("counts distinct improved spots, accepted photos and approved event edits", () => {
+  const targets = {
+    userId: "u1",
+    spotCreators: new Map([["s1", "other"], ["s2", "other"], ["s3", "other"], ["s4", "other"], ["own", "u1"]]),
+    eventCreators: new Map([["e1", "other"], ["e2", "other"], ["ownEvent", "u1"]]),
+  };
+
+  it("counts distinct improved spots (edits or photos), photos and approved event edits", () => {
     const result = reportStatsFromReports(
         [
           {spotId: "s1", acceptedEditFields: ["name"], updatedAt: d("2026-02-01")},
           {spotId: "s1", acceptedEditFields: ["description"], updatedAt: d("2026-04-01")},
           {spotId: "s2", acceptedEditFields: ["goodFor"], updatedAt: d("2025-10-01")},
           {spotId: "s3", acceptedEditFields: [], acceptedPhotoUrls: ["a", "b", "a"], updatedAt: d("2026-06-01")},
-          {spotId: "s4", acceptedEditFields: [], updatedAt: d("2026-06-01")},
+          {spotId: "s4", acceptedEditFields: [], updatedAt: d("2026-06-01")}, // nothing accepted
         ],
         [
           {status: "Approved", targetEventId: "e1", reviewedAt: d("2026-07-01")},
           {status: "Rejected", targetEventId: "e2", reviewedAt: d("2026-07-01")},
           {status: "Approved", reviewedAt: d("2026-07-01")}, // new-event submission
         ],
+        targets,
     );
-    expect(result.allTime).toEqual({spotsImproved: 2, photosAdded: 2, eventsImproved: 1});
-    expect(result.years["2026"]).toEqual({spotsImproved: 1, photosAdded: 2, eventsImproved: 1});
+    expect(result.allTime).toEqual({spotsImproved: 3, photosAdded: 2, eventsImproved: 1});
+    expect(result.years["2026"]).toEqual({spotsImproved: 2, photosAdded: 2, eventsImproved: 1});
     expect(result.years["2025"]).toEqual({spotsImproved: 1, photosAdded: 0, eventsImproved: 0});
+  });
+
+  it("skips improvements to own spots and events but keeps photos on own spots", () => {
+    const result = reportStatsFromReports(
+        [{spotId: "own", acceptedEditFields: ["name"], acceptedPhotoUrls: ["p"], updatedAt: d("2026-02-01")}],
+        [{status: "Approved", targetEventId: "ownEvent", reviewedAt: d("2026-07-01")}],
+        targets,
+    );
+    expect(result.allTime).toEqual({spotsImproved: 0, photosAdded: 1, eventsImproved: 0});
+  });
+
+  it("skips spots and events that no longer exist", () => {
+    const result = reportStatsFromReports(
+        [{spotId: "gone", acceptedEditFields: ["name"], acceptedPhotoUrls: ["p"], updatedAt: d("2026-02-01")}],
+        [{status: "Approved", targetEventId: "goneEvent", reviewedAt: d("2026-07-01")}],
+        targets,
+    );
+    expect(result.allTime).toEqual({spotsImproved: 0, photosAdded: 0, eventsImproved: 0});
   });
 });
 
@@ -183,7 +217,7 @@ describe("computeUserStats", () => {
       p2: {userId: "u1", plannedStartAt: d("2026-08-02"), isPrivate: true},
     },
     spotReports: {
-      rep1: {reporterUserId: "u1", spotId: "s9", acceptedEditFields: ["name"], acceptedPhotoUrls: ["x"], updatedAt: d("2026-04-01")},
+      rep1: {reporterUserId: "u1", spotId: "s4", acceptedEditFields: ["name"], acceptedPhotoUrls: ["x"], updatedAt: d("2026-04-01")},
     },
     eventReports: {},
   });

@@ -289,22 +289,72 @@ function yearKeyOf(date) {
 }
 
 /**
+ * @param {unknown} value
+ * @return {string} Trimmed string, or "" for non-strings.
+ */
+function trimmedId(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+/**
+ * Whether a spot report had any suggestion accepted (edits or photos).
+ * @param {Object} report
+ * @return {boolean}
+ */
+function spotReportWasAccepted(report) {
+  return uniqueStrings(report.acceptedEditFields).length > 0 ||
+    uniqueStrings(report.acceptedPhotoUrls).length > 0;
+}
+
+/**
+ * Spot and event ids whose creator decides whether the user's reports count.
+ * @param {Array<Object>} spotReports
+ * @param {Array<Object>} eventReports
+ * @return {{spotIds: string[], eventIds: string[]}}
+ */
+function reportTargetIds(spotReports, eventReports) {
+  const spotIds = new Set();
+  for (const report of spotReports) {
+    const spotId = report ? trimmedId(report.spotId) : "";
+    if (spotId && spotReportWasAccepted(report)) spotIds.add(spotId);
+  }
+  const eventIds = new Set();
+  for (const report of eventReports) {
+    const eventId = report && report.status === "Approved" ?
+      trimmedId(report.targetEventId) :
+      "";
+    if (eventId) eventIds.add(eventId);
+  }
+  return {spotIds: [...spotIds], eventIds: [...eventIds]};
+}
+
+/**
  * Improvements and photos from one user's spot and event reports.
  *
- * - `spotsImproved`: distinct spots where the user had at least one suggested
- *   edit accepted. Dated by the report's `updatedAt` (the review write).
+ * - `spotsImproved`: distinct spots where the user had any suggestion accepted
+ *   (edits or photos). Dated by the report's `updatedAt` (the review write).
  * - `photosAdded`: accepted photo URLs across the user's spot reports.
  * - `eventsImproved`: distinct events with an approved edit report from the
  *   user. Dated by `reviewedAt`, falling back to `updatedAt`.
  *
+ * Spots and events that no longer exist are skipped, and so are improvements
+ * to the user's own spots and events (photos on their own spots still count),
+ * matching the `contributors`-based totals in `user-contribution-stats.js`.
+ *
  * @param {Array<Object>} spotReports Data of the user's spot reports.
  * @param {Array<Object>} eventReports Data of the user's event reports.
+ * @param {Object} targets
+ * @param {string} targets.userId
+ * @param {Map<string, string>} targets.spotCreators Existing spot id →
+ *     `createdBy` ("" when unknown). Ids absent from the map are deleted.
+ * @param {Map<string, string>} targets.eventCreators Same for events.
  * @return {{
  *   allTime: Object<string, number>,
  *   years: Object<string, Object<string, number>>,
  * }} Only the report-derived keys are set.
  */
-function reportStatsFromReports(spotReports, eventReports) {
+function reportStatsFromReports(spotReports, eventReports, targets) {
+  const {userId, spotCreators, eventCreators} = targets;
   const allTime = {spotsImproved: 0, photosAdded: 0, eventsImproved: 0};
   const years = {};
   const yearStats = (yearKey) => {
@@ -313,24 +363,28 @@ function reportStatsFromReports(spotReports, eventReports) {
     }
     return years[yearKey];
   };
+  const addDistinct = (byYear, yearKey, id) => {
+    if (!yearKey) return;
+    if (!byYear.has(yearKey)) byYear.set(yearKey, new Set());
+    byYear.get(yearKey).add(id);
+  };
 
   const improvedSpots = new Set();
   const improvedSpotsByYear = new Map();
   for (const report of spotReports) {
-    if (!report) continue;
+    const spotId = report ? trimmedId(report.spotId) : "";
+    if (!spotId || !spotCreators.has(spotId) || !spotReportWasAccepted(report)) {
+      continue;
+    }
     const yearKey = yearKeyOf(toDate(report.updatedAt) || toDate(report.createdAt));
     const photoCount = uniqueStrings(report.acceptedPhotoUrls).length;
     if (photoCount > 0) {
       allTime.photosAdded += photoCount;
       if (yearKey) yearStats(yearKey).photosAdded += photoCount;
     }
-    const spotId = typeof report.spotId === "string" ? report.spotId.trim() : "";
-    if (!spotId || uniqueStrings(report.acceptedEditFields).length === 0) continue;
+    if (spotCreators.get(spotId) === userId) continue;
     improvedSpots.add(spotId);
-    if (yearKey) {
-      if (!improvedSpotsByYear.has(yearKey)) improvedSpotsByYear.set(yearKey, new Set());
-      improvedSpotsByYear.get(yearKey).add(spotId);
-    }
+    addDistinct(improvedSpotsByYear, yearKey, spotId);
   }
   allTime.spotsImproved = improvedSpots.size;
   for (const [yearKey, spotIds] of improvedSpotsByYear) {
@@ -341,16 +395,15 @@ function reportStatsFromReports(spotReports, eventReports) {
   const improvedEventsByYear = new Map();
   for (const report of eventReports) {
     if (!report || report.status !== "Approved") continue;
-    const eventId = typeof report.targetEventId === "string" ?
-      report.targetEventId.trim() :
-      "";
-    if (!eventId) continue;
+    const eventId = trimmedId(report.targetEventId);
+    if (!eventId || !eventCreators.has(eventId)) continue;
+    if (eventCreators.get(eventId) === userId) continue;
     improvedEvents.add(eventId);
-    const yearKey = yearKeyOf(toDate(report.reviewedAt) || toDate(report.updatedAt));
-    if (yearKey) {
-      if (!improvedEventsByYear.has(yearKey)) improvedEventsByYear.set(yearKey, new Set());
-      improvedEventsByYear.get(yearKey).add(eventId);
-    }
+    addDistinct(
+        improvedEventsByYear,
+        yearKeyOf(toDate(report.reviewedAt) || toDate(report.updatedAt)),
+        eventId,
+    );
   }
   allTime.eventsImproved = improvedEvents.size;
   for (const [yearKey, eventIds] of improvedEventsByYear) {
@@ -358,6 +411,27 @@ function reportStatsFromReports(spotReports, eventReports) {
   }
 
   return {allTime, years};
+}
+
+/**
+ * `createdBy` of each existing document among [ids].
+ * @param {Object} db Firestore
+ * @param {string} collection
+ * @param {string[]} ids
+ * @return {Promise<Map<string, string>>} Missing documents are absent.
+ */
+async function readCreators(db, collection, ids) {
+  const creators = new Map();
+  for (let i = 0; i < ids.length; i += 100) {
+    const refs = ids.slice(i, i + 100).map((id) => db.collection(collection).doc(id));
+    const snapshots = await db.getAll(...refs, {fieldMask: ["createdBy"]});
+    for (const snapshot of snapshots) {
+      if (!snapshot.exists) continue;
+      const data = snapshot.data() || {};
+      creators.set(snapshot.id, trimmedId(data.createdBy));
+    }
+  }
+  return creators;
 }
 
 /**
@@ -394,7 +468,16 @@ async function computeUserStats(db, userId, years) {
       "status", "targetEventId", "reviewedAt", "updatedAt",
     ]),
   ]);
-  const reportStats = reportStatsFromReports(spotReports, eventReports);
+  const {spotIds, eventIds} = reportTargetIds(spotReports, eventReports);
+  const [spotCreators, eventCreators] = await Promise.all([
+    readCreators(db, "spots", spotIds),
+    readCreators(db, "events", eventIds),
+  ]);
+  const reportStats = reportStatsFromReports(spotReports, eventReports, {
+    userId,
+    spotCreators,
+    eventCreators,
+  });
 
   const allTime = {...emptyUserStats(), ...reportStats.allTime};
   const yearStats = {};
