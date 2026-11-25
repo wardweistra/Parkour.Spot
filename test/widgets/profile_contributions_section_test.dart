@@ -94,6 +94,8 @@ void main() {
         onAddSpot: () => added++,
       );
       expect(find.text('Your contributions show up here'), findsOneWidget);
+      // The empty card fills the column like the populated one.
+      expect(tester.getSize(find.byType(Card)).width, 400);
       await tester.tap(find.text('Add a spot'));
       expect(added, 1);
     });
@@ -107,7 +109,14 @@ void main() {
             kind == ContributionKind.spotsAdded ? () => opened.add(kind) : null,
       );
       expect(find.byIcon(Icons.chevron_right), findsOneWidget);
-      await tester.tap(find.text('spots added'));
+      // The chevron follows its label instead of floating at the column edge.
+      final label = find.textContaining('spots added', findRichText: true);
+      expect(
+        tester.getTopLeft(find.byIcon(Icons.chevron_right)).dx -
+            tester.getTopLeft(label).dx,
+        lessThan(200),
+      );
+      await tester.tap(label);
       await tester.tap(find.text('spots improved'));
       expect(opened, [ContributionKind.spotsAdded]);
     });

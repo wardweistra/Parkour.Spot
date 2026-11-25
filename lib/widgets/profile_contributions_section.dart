@@ -292,13 +292,17 @@ class _ContributionRowView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    // Links keep a 44px touch target; plain rows sit tighter so a full
-    // profile stays scannable on a phone.
+    final labelStyle = theme.textTheme.bodyLarge?.copyWith(
+      color: colorScheme.onSurface,
+    );
+    // One row height for plain and linked rows, so the rhythm never jumps;
+    // 40px meets the compact-control target in DESIGN.md.
     final content = ConstrainedBox(
-      constraints: BoxConstraints(minHeight: onTap != null ? 44 : 36),
+      constraints: const BoxConstraints(minHeight: 40),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.fromLTRB(0, 4, 8, 4),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
@@ -313,20 +317,31 @@ class _ContributionRowView extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurface,
+            Flexible(
+              // The chevron rides inline after the label: attached to the
+              // words it links, centred on them, and wrapping with them in
+              // long translations.
+              child: Text.rich(
+                TextSpan(
+                  text: label,
+                  children: [
+                    if (onTap != null)
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 2),
+                          child: Icon(
+                            Icons.chevron_right,
+                            size: 20,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
+                style: labelStyle,
               ),
             ),
-            if (onTap != null)
-              Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: colorScheme.onSurfaceVariant,
-              ),
           ],
         ),
       ),
@@ -339,14 +354,19 @@ class _ContributionRowView extends StatelessWidget {
         child: content,
       );
     }
-    return Semantics(
-      button: true,
-      label: '${row.count} $label',
-      excludeSemantics: true,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: content,
+    // The tap target hugs the row's content, so hover and ripple mark the
+    // link itself rather than the whole column.
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Semantics(
+        button: true,
+        label: '${row.count} $label',
+        excludeSemantics: true,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: content,
+        ),
       ),
     );
   }
@@ -362,44 +382,55 @@ class _EmptyContributions extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.profileContributionsTitle,
-              style: theme.textTheme.titleLarge,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              l10n.profileContributionsEmptyTitle,
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: 6),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Text(
-                l10n.profileContributionsEmptyBody,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  height: 1.45,
-                ),
-              ),
-            ),
-            if (onAddSpot != null) ...[
-              const SizedBox(height: 16),
-              CustomButton(
-                onPressed: onAddSpot,
-                text: l10n.profileContributionsEmptyAction,
-                icon: Icons.add_location_alt_outlined,
-                isOutlined: true,
-              ),
-            ],
-          ],
+    // Full column width and the same 16px inset as the populated card and the
+    // lists card, so the empty state sits in the page's grid instead of
+    // shrinking to its text.
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+          child: _emptyContent(l10n, theme, colorScheme),
         ),
       ),
+    );
+  }
+
+  Widget _emptyContent(
+    AppLocalizations l10n,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.profileContributionsTitle, style: theme.textTheme.titleLarge),
+        const SizedBox(height: 16),
+        Text(
+          l10n.profileContributionsEmptyTitle,
+          style: theme.textTheme.titleMedium,
+        ),
+        const SizedBox(height: 6),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Text(
+            l10n.profileContributionsEmptyBody,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              height: 1.45,
+            ),
+          ),
+        ),
+        if (onAddSpot != null) ...[
+          const SizedBox(height: 16),
+          CustomButton(
+            onPressed: onAddSpot,
+            text: l10n.profileContributionsEmptyAction,
+            icon: Icons.add_location_alt_outlined,
+            isOutlined: true,
+          ),
+        ],
+      ],
     );
   }
 }
