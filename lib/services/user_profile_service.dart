@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/user.dart' as app_user;
+import '../models/user_contribution_stats.dart';
 
 class UserProfileService extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -226,44 +227,18 @@ class UserProfileService extends ChangeNotifier {
     }
   }
 
-  /// Get user statistics (spots created, ratings given)
-  /// Returns a map with 'spotsCreated' and 'ratings' counts
-  Future<Map<String, int>?> getUserStats(String userId) async {
+  /// All-time contribution totals from `userStats/{uid}`.
+  ///
+  /// A user without contributions has no document, which reads as
+  /// [UserContributionStats.empty]. Returns null when the read fails (e.g. the
+  /// profile became private), so callers can hide the section.
+  Future<UserContributionStats?> getContributionStats(String userId) async {
     try {
-      final int totalSpotsCreatedCount = await _countDocuments(
-        _firestore.collection('spots').where('createdBy', isEqualTo: userId),
-      );
-      final int createNativeSpotsCount = await _countDocuments(
-        _firestore
-            .collection('spots')
-            .where('createdBy', isEqualTo: userId)
-            .where('createdFromCreateNative', isEqualTo: true),
-      );
-      final int spotsCreatedCount =
-          (totalSpotsCreatedCount - createNativeSpotsCount).clamp(0, 1 << 30);
-      final int ratingsCount = await _countDocuments(
-        _firestore.collection('ratings').where('userId', isEqualTo: userId),
-      );
-
-      return {'spotsCreated': spotsCreatedCount, 'ratings': ratingsCount};
+      final doc = await _firestore.collection('userStats').doc(userId).get();
+      return UserContributionStats.allTimeFromDocument(doc.data());
     } catch (e) {
-      debugPrint('Error getting user stats: $e');
+      debugPrint('Error getting contribution stats: $e');
       return null;
-    }
-  }
-
-  /// Helper method to count documents with fallback for missing indexes
-  Future<int> _countDocuments(Query<Map<String, dynamic>> query) async {
-    try {
-      final aggregateSnapshot = await query.count().get();
-      return aggregateSnapshot.count ?? 0;
-    } on FirebaseException catch (e) {
-      if (e.code == 'failed-precondition') {
-        // Firestore requires an index; fall back to client-side count.
-        final snapshot = await query.get();
-        return snapshot.docs.length;
-      }
-      rethrow;
     }
   }
 }

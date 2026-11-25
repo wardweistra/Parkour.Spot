@@ -4497,10 +4497,126 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get publicProfileStatsSpots => 'Spots';
+  String get profileContributionsTitle => 'Contribuições';
 
   @override
-  String get publicProfileStatsRatings => 'Avaliações';
+  String get profileContributionsGroupMap => 'Construir o mapa';
+
+  @override
+  String get profileContributionsGroupPeople => 'Juntar pessoas';
+
+  @override
+  String get profileContributionsGroupGuide => 'Orientar outros';
+
+  @override
+  String profileContributionsSpotsAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'spots adicionados',
+      one: 'spot adicionado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String profileContributionsSpotsImproved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'spots melhorados',
+      one: 'spot melhorado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String profileContributionsPhotosAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'fotos adicionadas',
+      one: 'foto adicionada',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String profileContributionsEventsCreated(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'eventos criados',
+      one: 'evento criado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String profileContributionsEventsImproved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'eventos melhorados',
+      one: 'evento melhorado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String profileContributionsCheckIns(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'check-ins',
+      one: 'check-in',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String profileContributionsTrainingPlans(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'sessões planeadas',
+      one: 'sessão planeada',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String profileContributionsRatings(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'spots avaliados',
+      one: 'spot avaliado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String profileContributionsLists(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'listas partilhadas',
+      one: 'lista partilhada',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get profileContributionsEmptyTitle =>
+      'As tuas contribuições aparecem aqui';
+
+  @override
+  String get profileContributionsEmptyBody =>
+      'Adiciona um spot, partilha uma foto ou avalia um spot onde treinas. Tudo o que adicionas ajuda outros a encontrar bons sítios para treinar.';
+
+  @override
+  String get profileContributionsEmptyAction => 'Adicionar um spot';
 
   @override
   String get publicProfileSettingsTitle => 'Definições do perfil';

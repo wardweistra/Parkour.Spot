@@ -7138,17 +7138,101 @@ abstract class AppLocalizations {
   /// **'Failed to copy profile: {error}'**
   String publicProfileFailedToCopyProfile(String error);
 
-  /// Stats label for spots created
+  /// Public profile: heading of the contributions section
   ///
   /// In en, this message translates to:
-  /// **'Spots'**
-  String get publicProfileStatsSpots;
+  /// **'Contributions'**
+  String get profileContributionsTitle;
 
-  /// Stats label for ratings given
+  /// Public profile contributions: group of spots added, spots improved and photos
   ///
   /// In en, this message translates to:
-  /// **'Ratings'**
-  String get publicProfileStatsRatings;
+  /// **'Building the map'**
+  String get profileContributionsGroupMap;
+
+  /// Public profile contributions: group of events, check-ins and planned sessions
+  ///
+  /// In en, this message translates to:
+  /// **'Bringing people together'**
+  String get profileContributionsGroupPeople;
+
+  /// Public profile contributions: group of ratings and shared lists
+  ///
+  /// In en, this message translates to:
+  /// **'Guiding others'**
+  String get profileContributionsGroupGuide;
+
+  /// Public profile contributions: row label after the count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{spot added} other{spots added}}'**
+  String profileContributionsSpotsAdded(int count);
+
+  /// Public profile contributions: row label after the count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{spot improved} other{spots improved}}'**
+  String profileContributionsSpotsImproved(int count);
+
+  /// Public profile contributions: row label after the count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{photo added} other{photos added}}'**
+  String profileContributionsPhotosAdded(int count);
+
+  /// Public profile contributions: row label after the count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{event created} other{events created}}'**
+  String profileContributionsEventsCreated(int count);
+
+  /// Public profile contributions: row label after the count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{event improved} other{events improved}}'**
+  String profileContributionsEventsImproved(int count);
+
+  /// Public profile contributions: row label after the count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{check-in} other{check-ins}}'**
+  String profileContributionsCheckIns(int count);
+
+  /// Public profile contributions: row label after the count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{session planned} other{sessions planned}}'**
+  String profileContributionsTrainingPlans(int count);
+
+  /// Public profile contributions: row label after the count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{spot rated} other{spots rated}}'**
+  String profileContributionsRatings(int count);
+
+  /// Public profile contributions: row label after the count
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{list shared} other{lists shared}}'**
+  String profileContributionsLists(int count);
+
+  /// Own profile, no contributions yet: title
+  ///
+  /// In en, this message translates to:
+  /// **'Your contributions show up here'**
+  String get profileContributionsEmptyTitle;
+
+  /// Own profile, no contributions yet: body
+  ///
+  /// In en, this message translates to:
+  /// **'Add a spot, share a photo or rate a spot you train at. Everything you add helps others find good places to train.'**
+  String get profileContributionsEmptyBody;
+
+  /// Own profile, no contributions yet: button that opens Add spot
+  ///
+  /// In en, this message translates to:
+  /// **'Add a spot'**
+  String get profileContributionsEmptyAction;
 
   /// Bottom sheet title for editing profile
   ///

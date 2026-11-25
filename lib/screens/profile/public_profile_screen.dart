@@ -17,11 +17,13 @@ import '../../utils/share_link_text.dart';
 import '../../services/snackbar_service.dart';
 import '../../models/user.dart' as app_user;
 import '../../models/spot_list.dart';
+import '../../models/user_contribution_stats.dart';
 import '../../services/spot_list_service.dart';
 import '../../services/spot_service.dart';
 import '../../widgets/instagram_button.dart';
 import '../../utils/web_meta_utils.dart';
 import '../../widgets/page_scaffold.dart';
+import '../../widgets/profile_contributions_section.dart';
 import '../../widgets/entity_not_found_view.dart';
 import '../../widgets/spot_list_summary_tile.dart';
 import '../../l10n/app_localizations.dart';
@@ -50,6 +52,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   String? _publicListsUserId;
   bool? _publicListsIncludeAdded;
   bool? _publicListsIncludeRated;
+  Future<UserContributionStats?>? _contributionsFuture;
+  String? _contributionsUserId;
 
   @override
   void didChangeDependencies() {
@@ -93,6 +97,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     _publicListsFuture = null;
     _publicListsUserId = null;
     _publicListsIncludeAdded = null;
+    _contributionsFuture = null;
+    _contributionsUserId = null;
     // Force a rebuild to show the new data
     if (mounted) {
       setState(() {});
@@ -447,10 +453,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                               ),
                         ),
                       ],
-
-                      // User Stats
-                      const SizedBox(height: 16),
-                      _buildUserStats(context, user.id),
                     ],
                   ),
                   if (isOwnProfile)
@@ -467,6 +469,12 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 ],
               ),
             ),
+          ),
+
+          _buildContributionsSection(
+            context,
+            user: user,
+            isOwnProfile: isOwnProfile,
           ),
 
           // Public lists only (Want to visit, training, and list management
@@ -583,6 +591,78 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Future<UserContributionStats?> _contributionsForUser(String userId) {
+    if (_contributionsFuture != null && _contributionsUserId == userId) {
+      return _contributionsFuture!;
+    }
+    _contributionsUserId = userId;
+    _contributionsFuture = context
+        .read<UserProfileService>()
+        .getContributionStats(userId);
+    return _contributionsFuture!;
+  }
+
+  Widget _buildContributionsSection(
+    BuildContext context, {
+    required app_user.User user,
+    required bool isOwnProfile,
+  }) {
+    // Your own lists are always reachable; others' only when they opted in.
+    final isAddedPublic = isOwnProfile || user.isAddedSpotsListPublic;
+    final isRatedPublic = isOwnProfile || user.isRatedSpotsListPublic;
+    final segment = (user.username != null && user.username!.trim().isNotEmpty)
+        ? user.username!.trim()
+        : user.id;
+
+    return FutureBuilder<UserContributionStats?>(
+      future: _contributionsForUser(user.id),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.only(top: 16),
+            child: ProfileContributionsSkeleton(),
+          );
+        }
+        final stats = snapshot.data;
+        // A failed read hides the section rather than showing zeros.
+        if (stats == null || (stats.isEmpty && !isOwnProfile)) {
+          return const SizedBox.shrink();
+        }
+        return Padding(
+          padding: const EdgeInsets.only(top: 16),
+          child: ProfileContributionsSection(
+            stats: stats,
+            isOwnProfile: isOwnProfile,
+            onAddSpot: () => context.push('/spots/add'),
+            onOpenRow: (kind) {
+              switch (kind) {
+                case ContributionKind.spotsAdded:
+                  if (!isAddedPublic) return null;
+                  return () => context.push(
+                    isOwnProfile
+                        ? '/profile/added'
+                        : addedByUserPublicListPath(segment),
+                  );
+                case ContributionKind.ratings:
+                  if (!isRatedPublic) return null;
+                  return () => context.push(
+                    isOwnProfile
+                        ? '/profile/rated'
+                        : ratedByUserPublicListPath(segment),
+                  );
+                case ContributionKind.checkIns:
+                  if (!isOwnProfile) return null;
+                  return () => context.push('/profile/check-ins');
+                default:
+                  return null;
+              }
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -1248,72 +1328,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         );
       }
     }
-  }
-
-  Widget _buildUserStats(BuildContext context, String userId) {
-    final userProfileService = UserProfileService();
-
-    return FutureBuilder<Map<String, int>?>(
-      future: userProfileService.getUserStats(userId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox(
-            height: 60,
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (snapshot.hasError || snapshot.data == null) {
-          return const SizedBox.shrink();
-        }
-
-        final stats = snapshot.data!;
-        final spotsCount = stats['spotsCreated'] ?? 0;
-        final ratingsCount = stats['ratings'] ?? 0;
-
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildStatItem(
-              context,
-              Icons.add_location,
-              spotsCount,
-              _l10n.publicProfileStatsSpots,
-            ),
-            _buildStatItem(
-              context,
-              Icons.star,
-              ratingsCount,
-              _l10n.publicProfileStatsRatings,
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildStatItem(
-    BuildContext context,
-    IconData icon,
-    int count,
-    String label,
-  ) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 24, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(height: 4),
-        Text(count.toString(), style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurface
-                .withValues(alpha: 0.7),
-          ),
-        ),
-      ],
-    );
   }
 
   /// Add cache-busting query parameter to image URL

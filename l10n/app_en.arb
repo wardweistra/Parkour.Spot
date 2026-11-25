@@ -4409,13 +4409,114 @@
       }
     }
   },
-  "publicProfileStatsSpots": "Spots",
-  "@publicProfileStatsSpots": {
-    "description": "Stats label for spots created"
+  "profileContributionsTitle": "Contributions",
+  "@profileContributionsTitle": {
+    "description": "Public profile: heading of the contributions section"
   },
-  "publicProfileStatsRatings": "Ratings",
-  "@publicProfileStatsRatings": {
-    "description": "Stats label for ratings given"
+  "profileContributionsGroupMap": "Building the map",
+  "@profileContributionsGroupMap": {
+    "description": "Public profile contributions: group of spots added, spots improved and photos"
+  },
+  "profileContributionsGroupPeople": "Bringing people together",
+  "@profileContributionsGroupPeople": {
+    "description": "Public profile contributions: group of events, check-ins and planned sessions"
+  },
+  "profileContributionsGroupGuide": "Guiding others",
+  "@profileContributionsGroupGuide": {
+    "description": "Public profile contributions: group of ratings and shared lists"
+  },
+  "profileContributionsSpotsAdded": "{count, plural, one{spot added} other{spots added}}",
+  "@profileContributionsSpotsAdded": {
+    "description": "Public profile contributions: row label after the count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileContributionsSpotsImproved": "{count, plural, one{spot improved} other{spots improved}}",
+  "@profileContributionsSpotsImproved": {
+    "description": "Public profile contributions: row label after the count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileContributionsPhotosAdded": "{count, plural, one{photo added} other{photos added}}",
+  "@profileContributionsPhotosAdded": {
+    "description": "Public profile contributions: row label after the count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileContributionsEventsCreated": "{count, plural, one{event created} other{events created}}",
+  "@profileContributionsEventsCreated": {
+    "description": "Public profile contributions: row label after the count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileContributionsEventsImproved": "{count, plural, one{event improved} other{events improved}}",
+  "@profileContributionsEventsImproved": {
+    "description": "Public profile contributions: row label after the count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileContributionsCheckIns": "{count, plural, one{check-in} other{check-ins}}",
+  "@profileContributionsCheckIns": {
+    "description": "Public profile contributions: row label after the count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileContributionsTrainingPlans": "{count, plural, one{session planned} other{sessions planned}}",
+  "@profileContributionsTrainingPlans": {
+    "description": "Public profile contributions: row label after the count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileContributionsRatings": "{count, plural, one{spot rated} other{spots rated}}",
+  "@profileContributionsRatings": {
+    "description": "Public profile contributions: row label after the count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileContributionsLists": "{count, plural, one{list shared} other{lists shared}}",
+  "@profileContributionsLists": {
+    "description": "Public profile contributions: row label after the count",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileContributionsEmptyTitle": "Your contributions show up here",
+  "@profileContributionsEmptyTitle": {
+    "description": "Own profile, no contributions yet: title"
+  },
+  "profileContributionsEmptyBody": "Add a spot, share a photo or rate a spot you train at. Everything you add helps others find good places to train.",
+  "@profileContributionsEmptyBody": {
+    "description": "Own profile, no contributions yet: body"
+  },
+  "profileContributionsEmptyAction": "Add a spot",
+  "@profileContributionsEmptyAction": {
+    "description": "Own profile, no contributions yet: button that opens Add spot"
   },
   "publicProfileSettingsTitle": "Profile settings",
   "@publicProfileSettingsTitle": {
