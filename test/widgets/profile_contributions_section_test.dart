@@ -121,6 +121,49 @@ void main() {
       expect(opened, [ContributionKind.spotsAdded]);
     });
 
+    testWidgets('puts linked rows first and centres them in their tap area', (
+      tester,
+    ) async {
+      await pumpSection(
+        tester,
+        const UserContributionStats(
+          eventsCreated: 54,
+          eventsImproved: 12,
+          checkIns: 23,
+          trainingPlans: 6,
+        ),
+        onOpenRow: (kind) => kind == ContributionKind.checkIns ? () {} : null,
+      );
+      final checkIns = find.textContaining('check-ins', findRichText: true);
+      expect(
+        tester.getTopLeft(checkIns).dy,
+        lessThan(tester.getTopLeft(find.text('events created')).dy),
+      );
+      // Unlinked rows keep their order.
+      expect(
+        tester.getTopLeft(find.text('events created')).dy,
+        lessThan(tester.getTopLeft(find.text('sessions planned')).dy),
+      );
+      final button = tester.getRect(
+        find.ancestor(of: checkIns, matching: find.byType(InkWell)),
+      );
+      final label = tester.getRect(checkIns);
+      expect((button.center.dy - label.center.dy).abs(), lessThan(3));
+      // The highlight hugs the row instead of spanning the column.
+      expect(button.width, lessThan(300));
+    });
+
+    testWidgets('keeps the default order when nothing links', (tester) async {
+      await pumpSection(
+        tester,
+        const UserContributionStats(eventsCreated: 1, checkIns: 2),
+      );
+      expect(
+        tester.getTopLeft(find.text('event created')).dy,
+        lessThan(tester.getTopLeft(find.text('check-ins')).dy),
+      );
+    });
+
     testWidgets('lays groups side by side when wide, stacked when narrow', (
       tester,
     ) async {

@@ -215,16 +215,28 @@ class _ContributionGroupView extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        for (final row in group.rows)
+        for (final (row, onTap) in _linkedFirst(group.rows))
           _ContributionRowView(
             row: row,
             label: _rowLabel(l10n, row),
             numberStyle: numberStyle,
             numberWidth: numberWidth,
-            onTap: onOpenRow?.call(row.kind),
+            onTap: onTap,
           ),
       ],
     );
+  }
+
+  /// Rows that open something come first, so a group's links sit at its
+  /// top; the rest keep their order. Without links nothing moves.
+  List<(ContributionRow, VoidCallback?)> _linkedFirst(
+    List<ContributionRow> rows,
+  ) {
+    final withTaps = [for (final row in rows) (row, onOpenRow?.call(row.kind))];
+    return [
+      ...withTaps.where((entry) => entry.$2 != null),
+      ...withTaps.where((entry) => entry.$2 == null),
+    ];
   }
 
   static IconData _groupIcon(ContributionGroupKind kind) {
@@ -297,52 +309,60 @@ class _ContributionRowView extends StatelessWidget {
     );
     // One row height for plain and linked rows, so the rhythm never jumps;
     // 40px meets the compact-control target in DESIGN.md.
+    // Centred in its 40px box, so a linked row's hover and press highlight
+    // has even space above and below the text. widthFactor keeps the box as
+    // wide as its content (a Container with an alignment would fill the
+    // column and stretch the highlight with it).
     final content = ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 40),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(0, 4, 8, 4),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            SizedBox(
-              width: numberWidth,
-              child: Text(
-                '${row.count}',
-                textAlign: TextAlign.end,
-                style: numberStyle,
-                maxLines: 1,
-                softWrap: false,
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        widthFactor: 1,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(0, 4, 8, 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              SizedBox(
+                width: numberWidth,
+                child: Text(
+                  '${row.count}',
+                  textAlign: TextAlign.end,
+                  style: numberStyle,
+                  maxLines: 1,
+                  softWrap: false,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Flexible(
-              // The chevron rides inline after the label: attached to the
-              // words it links, centred on them, and wrapping with them in
-              // long translations.
-              child: Text.rich(
-                TextSpan(
-                  text: label,
-                  children: [
-                    if (onTap != null)
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.middle,
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 2),
-                          child: Icon(
-                            Icons.chevron_right,
-                            size: 20,
-                            color: colorScheme.primary,
+              const SizedBox(width: 12),
+              Flexible(
+                // The chevron rides inline after the label: attached to the
+                // words it links, centred on them, and wrapping with them in
+                // long translations.
+                child: Text.rich(
+                  TextSpan(
+                    text: label,
+                    children: [
+                      if (onTap != null)
+                        WidgetSpan(
+                          alignment: PlaceholderAlignment.middle,
+                          child: Padding(
+                            padding: const EdgeInsets.only(left: 2),
+                            child: Icon(
+                              Icons.chevron_right,
+                              size: 20,
+                              color: colorScheme.primary,
+                            ),
                           ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
+                  style: labelStyle,
                 ),
-                style: labelStyle,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
