@@ -49,8 +49,8 @@ const USER_STATS_KEYS = Object.freeze([
  * touching `updatedAt`, a rating's comment edit) triggers no recompute.
  */
 const WATCHED_SOURCES = Object.freeze({
-  spots: {userField: "createdBy", fields: ["createdFromCreateNative", "createdAt"]},
-  events: {userField: "createdBy", fields: ["createdFromCreateNative", "createdAt"]},
+  spots: {userField: "createdBy", fields: ["createdFromCreateNative", "createdAt", "hidden"]},
+  events: {userField: "createdBy", fields: ["createdFromCreateNative", "createdAt", "hidden"]},
   ratings: {userField: "userId", fields: ["createdAt"]},
   spotLists: {userField: "createdBy", fields: ["visibility", "createdAt"]},
   spotCheckIns: {userField: "userId", fields: ["isPrivate", "checkedInAt"]},
@@ -69,6 +69,12 @@ const WATCHED_SOURCES = Object.freeze({
  * Counts that are "all docs by the user, minus an excluded subset", optionally
  * limited to a year by [dateField]. Subtracting handles docs that predate the
  * excluded flag (e.g. check-ins without `isPrivate`).
+ *
+ * `hidden` (spots and events a moderator took off the map) is subtracted from
+ * documents read once per recompute rather than counted per year: a person
+ * has few hidden documents, and an equality-only read needs no composite
+ * index. Hidden documents already in the `split` subset are not subtracted
+ * twice.
  */
 const COUNT_SOURCES = Object.freeze([
   {
@@ -76,6 +82,7 @@ const COUNT_SOURCES = Object.freeze([
     userField: "createdBy",
     dateField: "createdAt",
     split: {field: "createdFromCreateNative", value: true},
+    hiddenField: "hidden",
     restKey: "spotsAdded",
   },
   {
@@ -83,6 +90,7 @@ const COUNT_SOURCES = Object.freeze([
     userField: "createdBy",
     dateField: "createdAt",
     split: {field: "createdFromCreateNative", value: true},
+    hiddenField: "hidden",
     restKey: "eventsCreated",
   },
   {
@@ -242,14 +250,39 @@ async function countMatching(db, collection, filters) {
 }
 
 /**
+ * Dates of a user's hidden documents per source that are not already in the
+ * source's `split` subset.
+ * @param {Object} db Firestore
+ * @param {string} userId
+ * @return {Promise<Map<string, Array<(Date|null)>>>} collection → dates
+ */
+async function readHiddenDates(db, userId) {
+  const hidden = new Map();
+  await Promise.all(COUNT_SOURCES.filter((source) => source.hiddenField).map(async (source) => {
+    const fields = [source.dateField, ...(source.split ? [source.split.field] : [])];
+    const snapshot = await db.collection(source.collection)
+        .where(source.userField, "==", userId)
+        .where(source.hiddenField, "==", true)
+        .select(...fields)
+        .get();
+    hidden.set(source.collection, snapshot.docs
+        .map((doc) => doc.data())
+        .filter((data) => !source.split || data[source.split.field] !== source.split.value)
+        .map((data) => toDate(data[source.dateField])));
+  }));
+  return hidden;
+}
+
+/**
  * Adds the [COUNT_SOURCES] counts for one user and scope to [stats].
  * @param {Object} db Firestore
  * @param {string} userId
  * @param {{start: Date, end: Date}|null} range Null for all time.
  * @param {Object<string, number>} stats Mutated.
+ * @param {Map<string, Array<(Date|null)>>} hiddenDates From readHiddenDates.
  * @return {Promise<void>}
  */
-async function addCountSourceStats(db, userId, range, stats) {
+async function addCountSourceStats(db, userId, range, stats, hiddenDates) {
   await Promise.all(COUNT_SOURCES.map(async (source) => {
     const filters = [[source.userField, "==", userId]];
     if (range) {
@@ -265,7 +298,9 @@ async function addCountSourceStats(db, userId, range, stats) {
         ...filters.slice(1),
       ]);
     }
-    stats[source.restKey] += Math.max(0, total - splitCount);
+    const hiddenCount = (hiddenDates.get(source.collection) || []).filter((date) =>
+      !range || (!!date && date >= range.start && date < range.end)).length;
+    stats[source.restKey] += Math.max(0, total - splitCount - hiddenCount);
   }));
 }
 
@@ -337,7 +372,7 @@ function reportTargetIds(spotReports, eventReports) {
  * - `eventsImproved`: distinct events with an approved edit report from the
  *   user. Dated by `reviewedAt`, falling back to `updatedAt`.
  *
- * Spots and events that no longer exist are skipped, and so are improvements
+ * Spots and events that no longer exist or are hidden are skipped, and so are improvements
  * to the user's own spots and events (photos on their own spots still count),
  * matching the `contributors`-based totals in `user-contribution-stats.js`.
  *
@@ -414,20 +449,24 @@ function reportStatsFromReports(spotReports, eventReports, targets) {
 }
 
 /**
- * `createdBy` of each existing document among [ids].
+ * `createdBy` of each existing, visible document among [ids]: reports on
+ * hidden spots and events no longer count, like the hidden documents
+ * themselves.
  * @param {Object} db Firestore
  * @param {string} collection
  * @param {string[]} ids
- * @return {Promise<Map<string, string>>} Missing documents are absent.
+ * @return {Promise<Map<string, string>>} Missing and hidden documents are
+ *     absent.
  */
 async function readCreators(db, collection, ids) {
   const creators = new Map();
   for (let i = 0; i < ids.length; i += 100) {
     const refs = ids.slice(i, i + 100).map((id) => db.collection(collection).doc(id));
-    const snapshots = await db.getAll(...refs, {fieldMask: ["createdBy"]});
+    const snapshots = await db.getAll(...refs, {fieldMask: ["createdBy", "hidden"]});
     for (const snapshot of snapshots) {
       if (!snapshot.exists) continue;
       const data = snapshot.data() || {};
+      if (data.hidden === true) continue;
       creators.set(snapshot.id, trimmedId(data.createdBy));
     }
   }
@@ -488,10 +527,11 @@ async function computeUserStats(db, userId, years) {
     };
   }
 
+  const hiddenDates = await readHiddenDates(db, userId);
   await Promise.all([
-    addCountSourceStats(db, userId, null, allTime),
+    addCountSourceStats(db, userId, null, allTime, hiddenDates),
     ...years.map((year) => addCountSourceStats(
-        db, userId, utcYearRange(year), yearStats[String(year)],
+        db, userId, utcYearRange(year), yearStats[String(year)], hiddenDates,
     )),
   ]);
 

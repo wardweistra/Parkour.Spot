@@ -2185,6 +2185,13 @@ exports.onSpotUpdated = onDocumentUpdated(
       const beforeData = event.data.before.data();
       const afterData = event.data.after.data();
 
+      // Hiding or unhiding a spot changes its creator's contribution totals.
+      // Checked here (not in a separate trigger) so the many sync updates
+      // that never touch `hidden` cost nothing extra.
+      if ((beforeData && beforeData.hidden === true) !== (afterData && afterData.hidden === true)) {
+        await handleUserStatsSourceWrite(db, FieldValue, "spots", beforeData, afterData);
+      }
+
       const reviewUpdate = buildSpotDuplicateReviewUpdate(
           beforeData,
           afterData,
@@ -6764,6 +6771,10 @@ exports.onEventWritten = onDocumentWritten(
         const beforeData = event.data.before.exists ?
           (event.data.before.data() || {}) :
           null;
+        // Hiding or unhiding an event changes its creator's contribution totals.
+        if (beforeData && (beforeData.hidden === true) !== (eventData.hidden === true)) {
+          await handleUserStatsSourceWrite(db, FieldValue, "events", beforeData, eventData);
+        }
         if (onlyResolvedLocationChanged(beforeData, eventData)) return;
         try {
           await handleEventDuplicateOfChanged(db, eventId, beforeData, eventData);

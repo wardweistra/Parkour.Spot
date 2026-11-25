@@ -194,6 +194,11 @@ describe("computeUserStats", () => {
       s2: {createdBy: "u1", createdAt: d("2025-11-16")},
       s3: {createdBy: "u1", createdAt: d("2026-06-05"), createdFromCreateNative: true},
       s4: {createdBy: "other", createdAt: d("2026-06-05")},
+      // Hidden by a moderator: off the map, so not a contribution.
+      s5: {createdBy: "u1", createdAt: d("2026-03-03"), hidden: true},
+      // Hidden dedup: already excluded as dedup, must not be subtracted twice.
+      s6: {createdBy: "u1", createdAt: d("2026-03-04"), hidden: true, createdFromCreateNative: true},
+      s7: {createdBy: "other", createdAt: d("2026-01-01"), hidden: true},
     },
     events: {
       e1: {createdBy: "u1", createdAt: d("2026-09-01")},
@@ -218,6 +223,8 @@ describe("computeUserStats", () => {
     },
     spotReports: {
       rep1: {reporterUserId: "u1", spotId: "s4", acceptedEditFields: ["name"], acceptedPhotoUrls: ["x"], updatedAt: d("2026-04-01")},
+      // Suggestion on a hidden spot: neither an improvement nor a photo.
+      rep2: {reporterUserId: "u1", spotId: "s7", acceptedEditFields: ["name"], acceptedPhotoUrls: ["y"], updatedAt: d("2026-04-02")},
     },
     eventReports: {},
   });
@@ -243,6 +250,8 @@ describe("computeUserStats", () => {
       lists: 2,
     });
     expect(stats.years["2025"]).toMatchObject({spotsAdded: 1, ratings: 1, checkIns: 0});
+    expect(stats.years["2026"].spotsImproved).toBe(1);
+    expect(stats.years["2026"].photosAdded).toBe(1);
     expect(Object.keys(stats.allTime).sort()).toEqual([...USER_STATS_KEYS].sort());
     expect(stats.allTime).not.toHaveProperty("spotsDeduplicated");
   });
