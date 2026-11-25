@@ -153,6 +153,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Open the map'), findsNothing);
+      expect(find.text('What is Parkour·Spot?'), findsNothing);
       expect(find.text('Parkour Park Leeuwesteyn'), findsOneWidget);
       expect(find.text('Utrecht · Added'), findsOneWidget);
       expect(
@@ -169,6 +170,7 @@ void main() {
         tester,
         review: YearReview.fromMap(reviewMap(moreCount: 4)),
       );
+      expect(find.text('What is Parkour·Spot?'), findsOneWidget);
       expect(find.text('Open the map'), findsOneWidget);
       expect(find.text("See Noor's profile"), findsOneWidget);
       expect(find.text('Share to your story'), findsNothing);

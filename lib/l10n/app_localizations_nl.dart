@@ -4480,6 +4480,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get yearReviewPageTitle => 'Jaaroverzicht';
 
   @override
+  String get yearReviewCardLoading => 'De kaart wordt gemaakt…';
+
+  @override
+  String get yearReviewAboutTitle => 'Wat is Parkour·Spot?';
+
+  @override
+  String get yearReviewAboutBody =>
+      'Een gratis kaart van parkourspots over de hele wereld, gemaakt door de community. Vind plekken om te trainen, met foto\'s en beoordelingen van mensen die er trainen, en voeg de spots toe die jij kent. De kaart is voor iedereen open, ook zonder account.';
+
+  @override
   String get yearReviewShareStory => 'Delen in je story';
 
   @override

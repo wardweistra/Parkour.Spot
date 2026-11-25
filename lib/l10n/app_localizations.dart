@@ -7150,6 +7150,24 @@ abstract class AppLocalizations {
   /// **'Year in review'**
   String get yearReviewPageTitle;
 
+  /// Year review: shown on the card while its image renders
+  ///
+  /// In en, this message translates to:
+  /// **'Putting the card together…'**
+  String get yearReviewCardLoading;
+
+  /// Year review, visitor: heading introducing the app
+  ///
+  /// In en, this message translates to:
+  /// **'What is Parkour·Spot?'**
+  String get yearReviewAboutTitle;
+
+  /// Year review, visitor: what the app is, for people arriving from a shared card
+  ///
+  /// In en, this message translates to:
+  /// **'A free map of parkour spots around the world, made by the community. Find places to train, with photos and ratings from people who train there, and add the spots you know. The map is open to everyone, no account needed.'**
+  String get yearReviewAboutBody;
+
   /// Year review: primary button that shares the 9:16 card image
   ///
   /// In en, this message translates to:

@@ -118,12 +118,19 @@ function cellBoxes(cellCount, width, height) {
 let fontCache = null;
 
 /**
- * Fredoka (latin + latin-ext) at the weights the card uses.
+ * Fredoka at the weights the card uses, then Nunito as a per-glyph fallback.
+ *
+ * Fredoka's Latin coverage is partial (no ě, ő, ș, ơ…), and satori only
+ * calls loadAdditionalAsset for non-Latin scripts, so a missing Latin letter
+ * would render as an empty box ("Hlavní m□sto Praha"). Nunito is a rounded
+ * face of similar proportions with full Latin Extended and Vietnamese.
  * @return {Array<Object>} satori font entries
  */
 function loadFonts() {
   if (fontCache) return fontCache;
-  const dir = path.dirname(require.resolve("@fontsource/fredoka/package.json"));
+  const fontFile = (pkg, file) => fs.readFileSync(
+      path.join(path.dirname(require.resolve(`@fontsource/${pkg}/package.json`)), "files", file),
+  );
   fontCache = [];
   for (const weight of [400, 500, 600]) {
     for (const subset of ["latin", "latin-ext"]) {
@@ -131,7 +138,19 @@ function loadFonts() {
         name: "Fredoka",
         weight,
         style: "normal",
-        data: fs.readFileSync(path.join(dir, "files", `fredoka-${subset}-${weight}-normal.woff`)),
+        data: fontFile("fredoka", `fredoka-${subset}-${weight}-normal.woff`),
+      });
+    }
+  }
+  // Nunito is lighter than Fredoka at the same weight: one heavier step
+  // (800 under Fredoka 600, 700 under 500) gives the same stroke.
+  for (const [weight, nunitoWeight] of [[500, 700], [600, 800]]) {
+    for (const subset of ["latin-ext", "vietnamese"]) {
+      fontCache.push({
+        name: "Nunito",
+        weight,
+        style: "normal",
+        data: fontFile("nunito", `nunito-${subset}-${nunitoWeight}-normal.woff`),
       });
     }
   }

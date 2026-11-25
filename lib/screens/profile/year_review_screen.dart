@@ -18,6 +18,7 @@ import '../../widgets/page_scaffold.dart';
 /// Ground of the share card (`functions/lib/year-review-card.js`); the card's
 /// placeholder uses it so the image fades in on its own colour.
 const Color _cardGround = Color(0xFF13191C);
+const Color _cardAccent = Color(0xFF8ECFF2);
 
 /// `/year/<year>/<@username|uid>`: one person's yearly review.
 ///
@@ -242,7 +243,20 @@ class _YearReviewScreenState extends State<YearReviewScreen> {
   }
 
   List<Widget> _visitorActions(YearReview review) {
+    final theme = Theme.of(context);
     return [
+      // Many visitors arrive from a story or a shared link and have never
+      // heard of the app: say what it is before asking them to open it.
+      Text(_l10n.yearReviewAboutTitle, style: theme.textTheme.titleLarge),
+      const SizedBox(height: 8),
+      Text(
+        _l10n.yearReviewAboutBody,
+        style: theme.textTheme.bodyLarge?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          height: 1.5,
+        ),
+      ),
+      const SizedBox(height: 24),
       CustomButton(
         onPressed: () => context.go('/explore'),
         text: _l10n.yearReviewOpenMap,
@@ -284,29 +298,32 @@ class _CardImage extends StatelessWidget {
               url,
               fit: BoxFit.cover,
               excludeFromSemantics: true,
+              // The first frame decides loading vs loaded: progress events
+              // (loadingBuilder) are often never reported on the web, which
+              // left an empty dark box while the card rendered.
               frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
                 if (wasSynchronouslyLoaded) return child;
-                return AnimatedOpacity(
-                  opacity: frame == null ? 0 : 1,
-                  duration: MediaQuery.disableAnimationsOf(context)
-                      ? Duration.zero
-                      : const Duration(milliseconds: 280),
-                  curve: Curves.easeOutCubic,
-                  child: child,
+                final loaded = frame != null;
+                final duration = MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 280);
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    AnimatedOpacity(
+                      opacity: loaded ? 0 : 1,
+                      duration: duration,
+                      child: const _CardLoading(),
+                    ),
+                    AnimatedOpacity(
+                      opacity: loaded ? 1 : 0,
+                      duration: duration,
+                      curve: Curves.easeOutCubic,
+                      child: child,
+                    ),
+                  ],
                 );
               },
-              loadingBuilder: (context, child, progress) => progress == null
-                  ? child
-                  : const Center(
-                      child: SizedBox(
-                        width: 28,
-                        height: 28,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ),
               errorBuilder: (context, error, stackTrace) => Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
@@ -320,6 +337,41 @@ class _CardImage extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Shown on the card's own ground while the image renders (a first render
+/// fetches photos server-side and can take a few seconds).
+class _CardLoading extends StatelessWidget {
+  const _CardLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              color: _cardAccent,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            l10n.yearReviewCardLoading,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.white.withValues(alpha: 0.78),
+            ),
+          ),
+        ],
       ),
     );
   }
