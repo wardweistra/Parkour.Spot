@@ -25,18 +25,14 @@ const {
 let satoriRenderer = null;
 
 /**
- * satori/wasm with the asm.js build of Yoga, initialised on first use: no
- * dynamic import() of the wasm binary and no cold-start fetch. Lazy so the
- * layout helpers stay importable where ES-module requires are unavailable
- * (Jest); Node 22 itself loads the ES-module Yoga build via require().
+ * satori, loaded on first use. Its CommonJS build inlines Yoga and HarfBuzz
+ * as WASM, so there is no binary to fetch on cold start.
  * @return {Function} satori
  */
 function getSatori() {
   if (!satoriRenderer) {
-    const {default: satori, init} = require("satori/wasm");
-    const initYoga = require("yoga-wasm-web/asm");
-    init((initYoga.default || initYoga)());
-    satoriRenderer = satori;
+    const satori = require("satori");
+    satoriRenderer = satori.default || satori;
   }
   return satoriRenderer;
 }
@@ -118,6 +114,18 @@ function cellBoxes(cellCount, width, height) {
 let fontCache = null;
 
 /**
+ * Each font file is its own family: satori keeps one face per name and
+ * weight, so subsets sharing a name would drop all but one of them.
+ */
+const FONT_SUBSETS = Object.freeze([
+  ["Fredoka", "fredoka", "latin"],
+  ["Fredoka Ext", "fredoka", "latin-ext"],
+  ["Nunito Ext", "nunito", "latin-ext"],
+  ["Nunito Vietnamese", "nunito", "vietnamese"],
+]);
+const FONT_STACK = FONT_SUBSETS.map(([name]) => name).join(", ");
+
+/**
  * Fredoka at the weights the card uses, then Nunito as a per-glyph fallback.
  *
  * Fredoka's Latin coverage is partial (no ě, ő, ș, ơ…), and satori only
@@ -133,9 +141,9 @@ function loadFonts() {
   );
   fontCache = [];
   for (const weight of [400, 500, 600]) {
-    for (const subset of ["latin", "latin-ext"]) {
+    for (const [name, , subset] of FONT_SUBSETS.filter(([, pkg]) => pkg === "fredoka")) {
       fontCache.push({
-        name: "Fredoka",
+        name,
         weight,
         style: "normal",
         data: fontFile("fredoka", `fredoka-${subset}-${weight}-normal.woff`),
@@ -145,9 +153,9 @@ function loadFonts() {
   // Nunito is lighter than Fredoka at the same weight: one heavier step
   // (800 under Fredoka 600, 700 under 500) gives the same stroke.
   for (const [weight, nunitoWeight] of [[500, 700], [600, 800]]) {
-    for (const subset of ["latin-ext", "vietnamese"]) {
+    for (const [name, , subset] of FONT_SUBSETS.filter(([, pkg]) => pkg === "nunito")) {
       fontCache.push({
-        name: "Nunito",
+        name,
         weight,
         style: "normal",
         data: fontFile("nunito", `nunito-${subset}-${nunitoWeight}-normal.woff`),
@@ -186,20 +194,20 @@ const FALLBACK_FAMILIES = Object.freeze({
 });
 
 /**
- * Fetches a Google Fonts subset containing exactly [text] (TrueType, which
- * satori reads). Spot and city names in other scripts still render.
+ * Fetches a Google Fonts subset containing exactly [text] (TrueType or WOFF,
+ * which satori reads; not WOFF2). Spot and city names in other scripts still render.
  * @param {string} family
  * @param {string} text
  * @return {Promise<Buffer|null>}
  */
 async function fetchFontSubset(family, text) {
   const cssUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@600&text=${encodeURIComponent(text)}`;
-  // An old user agent makes Google Fonts serve TrueType instead of WOFF2.
+  // An old user agent makes Google Fonts serve TrueType or WOFF, not WOFF2.
   const css = await (await fetch(cssUrl, {
     headers: {"User-Agent": "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/534.30 (KHTML, like Gecko) Safari/534.30"},
     signal: AbortSignal.timeout(IMAGE_FETCH_TIMEOUT_MS),
   })).text();
-  const match = css.match(/src: url\((.+?)\) format\('(opentype|truetype)'\)/);
+  const match = css.match(/src: url\((.+?)\) format\('(opentype|truetype|woff)'\)/);
   if (!match) return null;
   const font = await fetch(match[1], {signal: AbortSignal.timeout(IMAGE_FETCH_TIMEOUT_MS)});
   return font.ok ? Buffer.from(await font.arrayBuffer()) : null;
@@ -518,7 +526,7 @@ async function buildCardTree(data, {format, locale, now = new Date(), fetchImage
     height,
     padding,
     backgroundColor: COLORS.ground,
-    fontFamily: "Fredoka",
+    fontFamily: FONT_STACK,
     color: COLORS.ink,
   }, [
     topBar({yearText: yearLabel(locale, data.year, soFar), scale}),
