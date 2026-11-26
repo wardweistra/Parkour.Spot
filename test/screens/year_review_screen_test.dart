@@ -29,9 +29,9 @@ Map<String, dynamic> reviewMap({int moreCount = 0}) => {
     {'spotId': 's2', 'kind': 'unknown', 'name': 'Dropped'},
   ],
   'moreCount': moreCount,
-  'pagePath': '/year/2026/%40noor',
-  'storyPath': '/year/2026/%40noor/story.jpg',
-  'squarePath': '/year/2026/%40noor/square.jpg',
+  'pagePath': '/year/2026/@noor',
+  'storyPath': '/year/2026/@noor/story.jpg',
+  'squarePath': '/year/2026/@noor/square.jpg',
 };
 
 class FakeYearReviewService extends YearReviewService {
@@ -131,7 +131,7 @@ void main() {
     test('builds page paths from username or uid', () {
       expect(
         yearReviewPagePath(year: 2026, userId: 'u1', username: 'noor'),
-        '/year/2026/%40noor',
+        '/year/2026/@noor',
       );
       expect(yearReviewPagePath(year: 2026, userId: 'u1'), '/year/2026/u1');
     });

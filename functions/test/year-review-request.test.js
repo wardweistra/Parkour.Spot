@@ -64,7 +64,7 @@ describe("page paths", () => {
   });
 
   it("builds page and card paths from username or uid", () => {
-    expect(yearReviewPath({year: 2026, username: "noor", userId: "u1"})).toBe("/year/2026/%40noor");
+    expect(yearReviewPath({year: 2026, username: "noor", userId: "u1"})).toBe("/year/2026/@noor");
     expect(yearReviewPath({year: 2026, username: null, userId: "u1"}, "story.jpg")).toBe("/year/2026/u1/story.jpg");
   });
 });
@@ -85,9 +85,9 @@ describe("serializeYearReview", () => {
     expect(json).toMatchObject({
       sentence: "In 2026 Noor put 1 spot on the map in Utrecht",
       soFar: true,
-      storyPath: "/year/2026/%40noor/story.jpg",
-      squarePath: "/year/2026/%40noor/square.jpg",
-      pagePath: "/year/2026/%40noor",
+      storyPath: "/year/2026/@noor/story.jpg",
+      squarePath: "/year/2026/@noor/square.jpg",
+      pagePath: "/year/2026/@noor",
     });
     expect(json.frames[0].date).toBe("2026-06-05T00:00:00.000Z");
     expect(JSON.parse(JSON.stringify(json))).toEqual(json);

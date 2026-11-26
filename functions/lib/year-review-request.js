@@ -92,7 +92,10 @@ function parseYearReviewPagePath(segments, now = new Date()) {
  */
 function yearReviewPath(data, file) {
   const handle = data.username ? `@${data.username}` : data.userId;
-  const base = `/year/${data.year}/${encodeURIComponent(handle)}`;
+  // "@" is valid as-is in a path segment and handles are limited to
+  // [A-Za-z0-9_.-], so no encoding: copied links read /year/2026/@noor rather
+  // than %40noor. Parsing still decodes %40 for links shared before.
+  const base = `/year/${data.year}/${handle}`;
   return file ? `${base}/${file}` : base;
 }
 

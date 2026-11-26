@@ -23,5 +23,7 @@ String yearReviewPagePath({
   final handle = username != null && username.trim().isNotEmpty
       ? '@${username.trim()}'
       : userId;
-  return '/year/$year/${Uri.encodeComponent(handle)}';
+  // Usernames and uids are URL-safe; leaving "@" unencoded keeps shared links
+  // readable (/year/2026/@noor, not %40noor).
+  return '/year/$year/$handle';
 }
