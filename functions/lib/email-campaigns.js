@@ -28,6 +28,7 @@
 const {pickCounts, buildYearReviewDataForUser} = require("./year-review-data");
 const {ANONYMOUS_USER_ID, FIRST_STATS_YEAR} = require("./user-stats");
 const {buildYearReviewEmail} = require("./year-review-email");
+const {DEFAULT_SENDER} = require("./brevo");
 const {
   isEmailCategoryEnabled,
   unsubscribeUrl,
@@ -222,6 +223,8 @@ async function prepareYearReviewMessage({db, uid, year, getAuthUser, unsubscribe
     to: {email: authUser.email, name: data.name || authUser.displayName || ""},
     locale: email.locale,
     message: {
+      // From Ward, on the authenticated sender address; replies go to him.
+      sender: {...DEFAULT_SENDER, name: email.senderName},
       subject: email.subject,
       html: email.html,
       text: email.text,

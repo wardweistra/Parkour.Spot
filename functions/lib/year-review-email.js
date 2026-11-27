@@ -23,6 +23,12 @@ const {yearReviewPath} = require("./year-review-request");
 const PUBLIC_ORIGIN = "https://parkour.spot";
 const SETTINGS_URL = `${PUBLIC_ORIGIN}/profile/settings`;
 const ADD_SPOT_URL = `${PUBLIC_ORIGIN}/explore?tab=add`;
+
+/** Signs the email's closing note; replies reach him (lib/brevo.js). */
+const SIGNER = "Ward";
+
+/** Parkour·Spot's first full calendar year, named in that year's note. */
+const FIRST_FULL_YEAR = 2026;
 const LOGO_URL = `${PUBLIC_ORIGIN}/icons/Icon-192.png`;
 
 /**
@@ -62,7 +68,11 @@ const STRINGS = {
     downloadSquare: "Square (1:1)",
     privateNote: "Your profile is private, so your year has no public page or card. Make your profile public in Settings to get one you can share.",
     privateCta: "Open settings",
-    signoff: "See you at the spots.",
+    senderName: "Ward from Parkour·Spot",
+    letterFirstYear: "{year} was the first full year of Parkour·Spot, a side project I build for our community. Thank you for being part of it and for making it better.",
+    letterIntro: "Parkour·Spot is a side project I build for our community. Thank you for being part of it and for making it better.",
+    letterReply: "Have feedback, an idea or a question? Just reply to this email. It comes straight to me, and I read every reply.",
+    signoff: "See you at the spots,",
     footer: "You get this email because you have a Parkour·Spot account.",
     unsubscribe: "Unsubscribe from newsletter emails",
     settings: "Email settings",
@@ -88,7 +98,11 @@ const STRINGS = {
     downloadSquare: "Quadrat (1:1)",
     privateNote: "Dein Profil ist privat, darum hat dein Jahr keine öffentliche Seite und keine Karte. Mach dein Profil in den Einstellungen öffentlich, um sie teilen zu können.",
     privateCta: "Einstellungen öffnen",
-    signoff: "Wir sehen uns beim Training.",
+    senderName: "Ward von Parkour·Spot",
+    letterFirstYear: "{year} war das erste volle Jahr von Parkour·Spot, einem Nebenprojekt, das ich für unsere Community baue. Danke, dass du dabei bist und es besser machst.",
+    letterIntro: "Parkour·Spot ist ein Nebenprojekt, das ich für unsere Community baue. Danke, dass du dabei bist und es besser machst.",
+    letterReply: "Hast du Feedback, eine Idee oder eine Frage? Antworte einfach auf diese E-Mail. Sie landet direkt bei mir, und ich lese jede Antwort.",
+    signoff: "Bis bald beim Training,",
     footer: "Du bekommst diese E-Mail, weil du ein Parkour·Spot-Konto hast.",
     unsubscribe: "Newsletter-E-Mails abbestellen",
     settings: "E-Mail-Einstellungen",
@@ -114,7 +128,11 @@ const STRINGS = {
     downloadSquare: "Vierkant (1:1)",
     privateNote: "Je profiel is privé, dus je jaar heeft geen openbare pagina of kaart. Maak je profiel openbaar in Instellingen om er een te krijgen die je kunt delen.",
     privateCta: "Instellingen openen",
-    signoff: "Tot op de spots.",
+    senderName: "Ward van Parkour·Spot",
+    letterFirstYear: "{year} was het eerste volle jaar van Parkour·Spot, een zijproject dat ik voor onze community bouw. Bedankt dat je erbij bent en het beter maakt.",
+    letterIntro: "Parkour·Spot is een zijproject dat ik voor onze community bouw. Bedankt dat je erbij bent en het beter maakt.",
+    letterReply: "Heb je feedback, een idee of een vraag? Beantwoord gewoon deze e-mail. Hij komt rechtstreeks bij mij binnen en ik lees elke reactie.",
+    signoff: "Tot op de spots,",
     footer: "Je krijgt deze e-mail omdat je een Parkour·Spot-account hebt.",
     unsubscribe: "Afmelden voor nieuwsbrief-e-mails",
     settings: "E-mailinstellingen",
@@ -140,7 +158,11 @@ const STRINGS = {
     downloadSquare: "Carré (1:1)",
     privateNote: "Ton profil est privé : ton année n’a donc ni page publique ni carte. Rends ton profil public dans les Réglages pour en avoir une à partager.",
     privateCta: "Ouvrir les réglages",
-    signoff: "À bientôt sur les spots.",
+    senderName: "Ward de Parkour·Spot",
+    letterFirstYear: "{year} était la première année complète de Parkour·Spot, un projet perso que je construis pour notre communauté. Merci d’en faire partie et de l’améliorer.",
+    letterIntro: "Parkour·Spot est un projet perso que je construis pour notre communauté. Merci d’en faire partie et de l’améliorer.",
+    letterReply: "Un retour, une idée ou une question ? Réponds simplement à cet e-mail. Il m’arrive directement, et je lis chaque réponse.",
+    signoff: "À bientôt sur les spots,",
     footer: "Tu reçois cet e-mail parce que tu as un compte Parkour·Spot.",
     unsubscribe: "Se désabonner des e-mails d’actualité",
     settings: "Réglages e-mail",
@@ -166,7 +188,11 @@ const STRINGS = {
     downloadSquare: "Cuadrada (1:1)",
     privateNote: "Tu perfil es privado, así que tu año no tiene página ni tarjeta públicas. Haz público tu perfil en Ajustes para tener una que puedas compartir.",
     privateCta: "Abrir ajustes",
-    signoff: "Nos vemos en los spots.",
+    senderName: "Ward de Parkour·Spot",
+    letterFirstYear: "{year} fue el primer año completo de Parkour·Spot, un proyecto personal que construyo para nuestra comunidad. Gracias por formar parte de él y por hacerlo mejor.",
+    letterIntro: "Parkour·Spot es un proyecto personal que construyo para nuestra comunidad. Gracias por formar parte de él y por hacerlo mejor.",
+    letterReply: "¿Tienes comentarios, una idea o una pregunta? Responde a este correo. Me llega directamente y leo cada respuesta.",
+    signoff: "Nos vemos en los spots,",
     footer: "Recibes este correo porque tienes una cuenta de Parkour·Spot.",
     unsubscribe: "Darse de baja de los correos informativos",
     settings: "Ajustes de correo",
@@ -192,7 +218,11 @@ const STRINGS = {
     downloadSquare: "Quadrado (1:1)",
     privateNote: "O teu perfil é privado, por isso o teu ano não tem página nem cartão públicos. Torna o teu perfil público nas Definições para teres um que possas partilhar.",
     privateCta: "Abrir definições",
-    signoff: "Vemo-nos nos spots.",
+    senderName: "Ward do Parkour·Spot",
+    letterFirstYear: "{year} foi o primeiro ano completo do Parkour·Spot, um projeto paralelo que construo para a nossa comunidade. Obrigado por fazeres parte dele e por o tornares melhor.",
+    letterIntro: "O Parkour·Spot é um projeto paralelo que construo para a nossa comunidade. Obrigado por fazeres parte dele e por o tornares melhor.",
+    letterReply: "Tens feedback, uma ideia ou uma pergunta? Responde a este e-mail. Chega diretamente a mim e leio todas as respostas.",
+    signoff: "Vemo-nos nos spots,",
     footer: "Recebes este e-mail porque tens uma conta Parkour·Spot.",
     unsubscribe: "Cancelar e-mails informativos",
     settings: "Definições de e-mail",
@@ -263,7 +293,7 @@ function buttonHtml(href, label, {outlined = false} = {}) {
  * @param {Date=} options.now
  * @param {string=} options.cacheKey Appended to the card URL so mail-proxy
  *     caches pick up this send's numbers, not an earlier render.
- * @return {{subject: string, html: string, text: string, locale: string}}
+ * @return {{subject: string, html: string, text: string, locale: string, senderName: string}}
  */
 function buildYearReviewEmail(data, {locale: rawLocale, unsubscribeUrl, now = new Date(), cacheKey = ""}) {
   const locale = resolveCardLocale(rawLocale);
@@ -302,7 +332,7 @@ function buildYearReviewEmail(data, {locale: rawLocale, unsubscribeUrl, now = ne
   const heading = (text, {size, pad}) =>
     `<tr><td style="padding:${pad}"><h${size > 24 ? 1 : 2} style="margin:0;font-family:${FONT};font-size:${size}px;font-weight:700;line-height:1.25;color:${COLORS.ink}">${text}</h${size > 24 ? 1 : 2}></td></tr>`;
   const link = (href, label) =>
-    `<a href="${escapeHtml(href)}" style="color:${COLORS.accent};font-weight:700;text-decoration:underline">${escapeHtml(label)}</a>`;
+    `<a href="${escapeHtml(href)}" style="color:${COLORS.accent};font-weight:700;text-decoration:underline;white-space:nowrap">${escapeHtml(label)}</a>`;
 
   // Thanks first: the email exists to say it.
   const thanksHtml =
@@ -342,6 +372,16 @@ function buildYearReviewEmail(data, {locale: rawLocale, unsubscribeUrl, now = ne
     `<tr><td style="padding:28px 28px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid ${COLORS.hairline}"><tr><td style="padding-top:20px;font-family:${FONT};font-size:15px;line-height:1.5;color:${COLORS.muted}">${escapeHtml(s.stillTime)} ${link(ADD_SPOT_URL, s.addSpot)}</td></tr></table></td></tr>` :
     "";
 
+  // A personal note closes the email: who makes this, and that replies
+  // reach a person.
+  const letterIntro = data.year === FIRST_FULL_YEAR ?
+    fill(s.letterFirstYear, {year: data.year}) :
+    s.letterIntro;
+  const letterHtml =
+    p(escapeHtml(letterIntro), {pad: "28px 28px 0"}) +
+    p(escapeHtml(s.letterReply), {pad: "12px 28px 0"}) +
+    p(`${escapeHtml(s.signoff)}<br><strong style="font-weight:700;color:${COLORS.ink}">${escapeHtml(SIGNER)}</strong>`, {pad: "20px 28px 28px"});
+
   // Zero-width padding keeps clients from pulling body text into the
   // inbox preview after the preheader.
   const preheaderPad = "&#847;&zwnj;&nbsp;".repeat(60);
@@ -356,7 +396,7 @@ function buildYearReviewEmail(data, {locale: rawLocale, unsubscribeUrl, now = ne
 ${thanksHtml}
 ${bodyHtml}
 ${stillTimeHtml}
-${p(escapeHtml(s.signoff), {pad: "28px 28px 28px"})}
+${letterHtml}
 </table>
 <table role="presentation" width="540" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:540px"><tr><td class="yr-footer" style="padding:20px 28px;font-family:${FONT};font-size:13px;line-height:1.6;color:${COLORS.footer};text-align:center">
 ${escapeHtml(s.footer)}<br>
@@ -378,7 +418,12 @@ ${escapeHtml(s.footer)}<br>
       [s.privateNote, `${s.privateCta}: ${SETTINGS_URL}`]),
     ...(soFar ? ["", `${s.stillTime} ${ADD_SPOT_URL}`] : []),
     "",
+    letterIntro,
+    "",
+    s.letterReply,
+    "",
     s.signoff,
+    SIGNER,
     "",
     "--",
     s.footer,
@@ -386,7 +431,7 @@ ${escapeHtml(s.footer)}<br>
     `${s.settings}: ${SETTINGS_URL}`,
   ].join("\n");
 
-  return {subject, html, text, locale};
+  return {subject, html, text, locale, senderName: s.senderName};
 }
 
 /**
