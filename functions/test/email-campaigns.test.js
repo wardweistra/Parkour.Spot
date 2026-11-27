@@ -111,6 +111,17 @@ describe("year review email", () => {
     expect(email.html).toContain("https://parkour.spot/profile/settings");
   });
 
+  it("closes with Ward's note, naming the first full year only in 2026", () => {
+    const email = buildYearReviewEmail(reviewData(), {locale: "en", unsubscribeUrl: unsub});
+    expect(email.senderName).toBe("Ward from Parkour·Spot");
+    expect(email.html).toContain("2026 was the first full year of Parkour·Spot");
+    expect(email.html).toContain("Just reply to this email.");
+    expect(email.text).toContain("See you at the spots,\nWard");
+    const later = buildYearReviewEmail(reviewData({year: 2027}), {locale: "nl", unsubscribeUrl: unsub});
+    expect(later.html).not.toContain("eerste volle jaar");
+    expect(later.html).toContain(EMAIL_STRINGS.nl.letterIntro);
+  });
+
   it("leaves out the still-time invite once the year is over", () => {
     const email = buildYearReviewEmail(reviewData(), {locale: "en", unsubscribeUrl: unsub, now: d("2027-01-05")});
     expect(email.html).not.toContain("There&#39;s still time");
@@ -242,6 +253,7 @@ describe("email campaigns", () => {
     const message = send.mock.calls[0][0];
     expect(message.to.email).toBe("ann@example.com");
     expect(message.subject).toBe("Jouw 2026 op Parkour·Spot: 2 spots");
+    expect(message.sender).toEqual({email: "noreply@parkour.spot", name: "Ward van Parkour·Spot"});
     expect(message.headers["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
     expect(message.tags).toEqual(["year-review-2026"]);
 
