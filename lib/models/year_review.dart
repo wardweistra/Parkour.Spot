@@ -13,6 +13,7 @@ class YearReview {
     required this.storyPath,
     required this.squarePath,
     this.username,
+    this.places = const [],
   });
 
   final String userId;
@@ -29,8 +30,11 @@ class YearReview {
   /// Spots shown on the card, most meaningful first.
   final List<YearReviewFrame> frames;
 
-  /// Spots with photos beyond [frames].
+  /// Spots beyond [frames], so [frames] plus this match the sentence's count.
   final int moreCount;
+
+  /// Up to three cities the sentence names, most frequent first.
+  final List<String> places;
 
   final String pagePath;
   final String storyPath;
@@ -77,6 +81,9 @@ class YearReview {
       pagePath: pagePath,
       storyPath: storyPath,
       squarePath: squarePath,
+      places: map['places'] is List
+          ? (map['places'] as List).whereType<String>().toList()
+          : const [],
     );
   }
 }

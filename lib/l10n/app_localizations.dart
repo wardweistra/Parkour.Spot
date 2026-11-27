@@ -7207,7 +7207,7 @@ abstract class AppLocalizations {
   /// Year review, visitor: link for the card's owner, who is signed out, to log in and get the share buttons
   ///
   /// In en, this message translates to:
-  /// **'Is this you? Log in to share'**
+  /// **'Is this you? Log in'**
   String get yearReviewIsThisYou;
 
   /// Year review: primary button that shares the 9:16 card image
@@ -7267,13 +7267,13 @@ abstract class AppLocalizations {
   /// Year review: count of spots beyond the list
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, one{And 1 more spot with photos} other{And {count} more spots with photos}}'**
+  /// **'{count, plural, one{And 1 more spot} other{And {count} more spots}}'**
   String yearReviewMoreSpots(int count);
 
   /// Year review, own and in December: the card is not final yet
   ///
   /// In en, this message translates to:
-  /// **'These numbers keep updating until 31 December.'**
+  /// **'These numbers keep updating until 31 December. Add a spot before then and it shows up on your card.'**
   String get yearReviewSoFarNote;
 
   /// Year review: private profile or no contributions
@@ -7285,13 +7285,13 @@ abstract class AppLocalizations {
   /// Year review not found: explanation
   ///
   /// In en, this message translates to:
-  /// **'This profile is private, or has no contributions in {year} yet.'**
+  /// **'This profile is private, or has no contributions from {year}.'**
   String yearReviewNotFoundBody(String year);
 
   /// Year review: loading failed
   ///
   /// In en, this message translates to:
-  /// **'Couldn\'t load this year in review.'**
+  /// **'Couldn\'t load this year in review. Check your connection and try again.'**
   String get yearReviewLoadError;
 
   /// Year review: retry after a load error
@@ -7347,6 +7347,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name}\'s {year} on Parkour·Spot'**
   String yearReviewBannerOtherTitle(String name, String year);
+
+  /// Visitor intro on a year review page whose owner has no name
+  ///
+  /// In en, this message translates to:
+  /// **'Parkour·Spot is a free, open map of parkour spots around the world. Every spot, photo and rating on it comes from people who train, like whoever made this card. Add the places you train, so others can find them too.'**
+  String get yearReviewAboutBodyNoName;
+
+  /// Link to the profile of a year review owner with no name
+  ///
+  /// In en, this message translates to:
+  /// **'See their profile'**
+  String get yearReviewSeeProfileNoName;
+
+  /// Visitor button sharing the year review card image
+  ///
+  /// In en, this message translates to:
+  /// **'Share this card'**
+  String get yearReviewShareThisCard;
+
+  /// Heading above the owner's share buttons on their year review
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks for shaping the map in {year}'**
+  String yearReviewOwnThanks(String year);
+
+  /// Year review page title for a signed-in owner whose profile is private
+  ///
+  /// In en, this message translates to:
+  /// **'Your year is private'**
+  String get yearReviewOwnPrivateTitle;
+
+  /// Explains to a signed-in owner why their private year has no page
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile is private, so your {year} has no public page or card. Make your profile public in Settings to get one you can share.'**
+  String yearReviewOwnPrivateBody(String year);
+
+  /// Button opening profile settings from the year review page
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get yearReviewOpenSettings;
 
   /// Screen reader label for the card image
   ///

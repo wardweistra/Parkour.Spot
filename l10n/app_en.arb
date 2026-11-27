@@ -4464,7 +4464,7 @@
       "year": {"type": "String", "example": "2026"}
     }
   },
-  "yearReviewIsThisYou": "Is this you? Log in to share",
+  "yearReviewIsThisYou": "Is this you? Log in",
   "@yearReviewIsThisYou": {
     "description": "Year review, visitor: link for the card's owner, who is signed out, to log in and get the share buttons"
   },
@@ -4514,7 +4514,7 @@
       }
     }
   },
-  "yearReviewMoreSpots": "{count, plural, one{And 1 more spot with photos} other{And {count} more spots with photos}}",
+  "yearReviewMoreSpots": "{count, plural, one{And 1 more spot} other{And {count} more spots}}",
   "@yearReviewMoreSpots": {
     "description": "Year review: count of spots beyond the list",
     "placeholders": {
@@ -4523,7 +4523,7 @@
       }
     }
   },
-  "yearReviewSoFarNote": "These numbers keep updating until 31 December.",
+  "yearReviewSoFarNote": "These numbers keep updating until 31 December. Add a spot before then and it shows up on your card.",
   "@yearReviewSoFarNote": {
     "description": "Year review, own and in December: the card is not final yet"
   },
@@ -4531,7 +4531,7 @@
   "@yearReviewNotFoundTitle": {
     "description": "Year review: private profile or no contributions"
   },
-  "yearReviewNotFoundBody": "This profile is private, or has no contributions in {year} yet.",
+  "yearReviewNotFoundBody": "This profile is private, or has no contributions from {year}.",
   "@yearReviewNotFoundBody": {
     "description": "Year review not found: explanation",
     "placeholders": {
@@ -4540,7 +4540,7 @@
       }
     }
   },
-  "yearReviewLoadError": "Couldn't load this year in review.",
+  "yearReviewLoadError": "Couldn't load this year in review. Check your connection and try again.",
   "@yearReviewLoadError": {
     "description": "Year review: loading failed"
   },
@@ -4592,6 +4592,44 @@
         "type": "String"
       }
     }
+  },
+  "yearReviewAboutBodyNoName": "Parkour·Spot is a free, open map of parkour spots around the world. Every spot, photo and rating on it comes from people who train, like whoever made this card. Add the places you train, so others can find them too.",
+  "@yearReviewAboutBodyNoName": {
+    "description": "Visitor intro on a year review page whose owner has no name"
+  },
+  "yearReviewSeeProfileNoName": "See their profile",
+  "@yearReviewSeeProfileNoName": {
+    "description": "Link to the profile of a year review owner with no name"
+  },
+  "yearReviewShareThisCard": "Share this card",
+  "@yearReviewShareThisCard": {
+    "description": "Visitor button sharing the year review card image"
+  },
+  "yearReviewOwnThanks": "Thanks for shaping the map in {year}",
+  "@yearReviewOwnThanks": {
+    "description": "Heading above the owner's share buttons on their year review",
+    "placeholders": {
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "yearReviewOwnPrivateTitle": "Your year is private",
+  "@yearReviewOwnPrivateTitle": {
+    "description": "Year review page title for a signed-in owner whose profile is private"
+  },
+  "yearReviewOwnPrivateBody": "Your profile is private, so your {year} has no public page or card. Make your profile public in Settings to get one you can share.",
+  "@yearReviewOwnPrivateBody": {
+    "description": "Explains to a signed-in owner why their private year has no page",
+    "placeholders": {
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "yearReviewOpenSettings": "Open settings",
+  "@yearReviewOpenSettings": {
+    "description": "Button opening profile settings from the year review page"
   },
   "yearReviewCardImageLabel": "Year in review card: {sentence}",
   "@yearReviewCardImageLabel": {

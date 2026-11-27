@@ -4559,7 +4559,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get yearReviewIsThisYou => 'C’est toi ? Connecte-toi pour partager';
+  String get yearReviewIsThisYou => 'C’est toi ? Connecte-toi';
 
   @override
   String get yearReviewShareStory => 'Partager en story';
@@ -4599,27 +4599,27 @@ class AppLocalizationsFr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Et $count autres spots avec photos',
-      one: 'Et 1 autre spot avec photos',
+      other: 'Et $count autres spots',
+      one: 'Et 1 autre spot',
     );
     return '$_temp0';
   }
 
   @override
   String get yearReviewSoFarNote =>
-      'Ces chiffres sont mis à jour jusqu\'au 31 décembre.';
+      'Ces chiffres sont mis à jour jusqu’au 31 décembre. Ajoute un spot d’ici là et il apparaîtra sur ta carte.';
 
   @override
   String get yearReviewNotFoundTitle => 'Aucun bilan de l\'année ici';
 
   @override
   String yearReviewNotFoundBody(String year) {
-    return 'Ce profil est privé, ou n\'a pas encore de contributions en $year.';
+    return 'Ce profil est privé, ou n’a aucune contribution en $year.';
   }
 
   @override
   String get yearReviewLoadError =>
-      'Impossible de charger ce bilan de l\'année.';
+      'Impossible de charger ce bilan de l’année. Vérifie ta connexion et réessaie.';
 
   @override
   String get yearReviewRetry => 'Réessayer';
@@ -4652,6 +4652,32 @@ class AppLocalizationsFr extends AppLocalizations {
   String yearReviewBannerOtherTitle(String name, String year) {
     return 'Le $year de $name sur Parkour·Spot';
   }
+
+  @override
+  String get yearReviewAboutBodyNoName =>
+      'Parkour·Spot est une carte libre et gratuite des spots de parkour du monde entier. Chaque spot, photo et note vient de personnes qui s’entraînent, comme l’auteur·rice de cette carte. Ajoute les endroits où tu t’entraînes pour que d’autres les trouvent aussi.';
+
+  @override
+  String get yearReviewSeeProfileNoName => 'Voir le profil';
+
+  @override
+  String get yearReviewShareThisCard => 'Partager cette carte';
+
+  @override
+  String yearReviewOwnThanks(String year) {
+    return 'Merci d’avoir façonné la carte en $year';
+  }
+
+  @override
+  String get yearReviewOwnPrivateTitle => 'Ton année est privée';
+
+  @override
+  String yearReviewOwnPrivateBody(String year) {
+    return 'Ton profil est privé : ton année $year n’a donc ni page publique ni carte. Rends ton profil public dans les Réglages pour en avoir une à partager.';
+  }
+
+  @override
+  String get yearReviewOpenSettings => 'Ouvrir les réglages';
 
   @override
   String yearReviewCardImageLabel(String sentence) {

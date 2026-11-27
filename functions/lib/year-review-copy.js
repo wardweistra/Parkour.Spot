@@ -15,7 +15,9 @@ const SUPPORTED_LOCALE_SET = new Set(SUPPORTED_LOCALES);
  *
  * Lead templates take {name}, {count} (already pluralized with its noun, e.g.
  * "4 spots") and end before the place clause; {places} is appended with the
- * locale's "across"/"in" phrasing.
+ * locale's "across"/"in" phrasing, or filled where the template puts it
+ * (German keeps the participle last). `leadYou` is the email's second-person
+ * version; `someone` replaces an empty name.
  */
 const STRINGS = {
   en: {
@@ -43,6 +45,17 @@ const STRINGS = {
       eventsCreated: "In {year} {name} created {count}",
       mixed: "In {year} {name} shaped {count}",
     },
+    // The email speaks to its reader.
+    leadYou: {
+      spotsAdded: "In {year} you put {count} on the map",
+      photosAdded: "In {year} you added {count} to the map",
+      ratings: "In {year} you rated {count}",
+      checkIns: "In {year} you trained at {count}",
+      eventsCreated: "In {year} you created {count}",
+      mixed: "In {year} you shaped {count}",
+    },
+    // Stands in for the name when the person has no name or username.
+    someone: "a Parkour·Spot member",
     placesOne: " in {place}",
     placesMany: " across {places}",
     and: "and",
@@ -73,13 +86,24 @@ const STRINGS = {
       event: ["Event", "Events"],
     },
     lead: {
-      spotsAdded: "{year} hat {name} {count} auf die Karte gebracht",
-      photosAdded: "{year} hat {name} {count} zur Karte beigetragen",
-      ratings: "{year} hat {name} {count} bewertet",
-      checkIns: "{year} hat {name} an {count} trainiert",
-      eventsCreated: "{year} hat {name} {count} erstellt",
-      mixed: "{year} hat {name} {count} mitgestaltet",
+      spotsAdded: "{year} hat {name} {count}{places} auf die Karte gebracht",
+      photosAdded: "{year} hat {name} {count}{places} zur Karte beigetragen",
+      ratings: "{year} hat {name} {count}{places} bewertet",
+      checkIns: "{year} hat {name} an {count}{places} trainiert",
+      eventsCreated: "{year} hat {name} {count}{places} erstellt",
+      mixed: "{year} hat {name} {count}{places} mitgestaltet",
     },
+    // The email speaks to its reader.
+    leadYou: {
+      spotsAdded: "{year} hast du {count}{places} auf die Karte gebracht",
+      photosAdded: "{year} hast du {count}{places} zur Karte beigetragen",
+      ratings: "{year} hast du {count}{places} bewertet",
+      checkIns: "{year} hast du an {count}{places} trainiert",
+      eventsCreated: "{year} hast du {count}{places} erstellt",
+      mixed: "{year} hast du {count}{places} mitgestaltet",
+    },
+    // Stands in for the name when the person has no name or username.
+    someone: "ein Parkour·Spot-Mitglied",
     placesOne: " in {place}",
     placesMany: " in {places}",
     and: "und",
@@ -117,6 +141,17 @@ const STRINGS = {
       eventsCreated: "In {year} maakte {name} {count} aan",
       mixed: "In {year} gaf {name} vorm aan {count}",
     },
+    // The email speaks to its reader.
+    leadYou: {
+      spotsAdded: "In {year} zette je {count} op de kaart",
+      photosAdded: "In {year} voegde je {count} toe aan de kaart",
+      ratings: "In {year} beoordeelde je {count}",
+      checkIns: "In {year} trainde je op {count}",
+      eventsCreated: "In {year} maakte je {count} aan",
+      mixed: "In {year} gaf je vorm aan {count}",
+    },
+    // Stands in for the name when the person has no name or username.
+    someone: "een Parkour·Spot-lid",
     placesOne: " in {place}",
     placesMany: " in {places}",
     and: "en",
@@ -154,6 +189,17 @@ const STRINGS = {
       eventsCreated: "En {year}, {name} a créé {count}",
       mixed: "En {year}, {name} a façonné {count}",
     },
+    // The email speaks to its reader.
+    leadYou: {
+      spotsAdded: "En {year}, tu as mis {count} sur la carte",
+      photosAdded: "En {year}, tu as ajouté {count} à la carte",
+      ratings: "En {year}, tu as noté {count}",
+      checkIns: "En {year}, tu t'es entraîné·e sur {count}",
+      eventsCreated: "En {year}, tu as créé {count}",
+      mixed: "En {year}, tu as façonné {count}",
+    },
+    // Stands in for the name when the person has no name or username.
+    someone: "un membre de Parkour·Spot",
     placesOne: " à {place}",
     placesMany: " entre {places}",
     and: "et",
@@ -191,6 +237,17 @@ const STRINGS = {
       eventsCreated: "En {year}, {name} creó {count}",
       mixed: "En {year}, {name} dio forma a {count}",
     },
+    // The email speaks to its reader.
+    leadYou: {
+      spotsAdded: "En {year} pusiste {count} en el mapa",
+      photosAdded: "En {year} añadiste {count} al mapa",
+      ratings: "En {year} valoraste {count}",
+      checkIns: "En {year} entrenaste en {count}",
+      eventsCreated: "En {year} creaste {count}",
+      mixed: "En {year} diste forma a {count}",
+    },
+    // Stands in for the name when the person has no name or username.
+    someone: "alguien de Parkour·Spot",
     placesOne: " en {place}",
     placesMany: " entre {places}",
     and: "y",
@@ -228,6 +285,17 @@ const STRINGS = {
       eventsCreated: "Em {year}, {name} criou {count}",
       mixed: "Em {year}, {name} deu forma a {count}",
     },
+    // The email speaks to its reader.
+    leadYou: {
+      spotsAdded: "Em {year} puseste {count} no mapa",
+      photosAdded: "Em {year} adicionaste {count} ao mapa",
+      ratings: "Em {year} avaliaste {count}",
+      checkIns: "Em {year} treinaste em {count}",
+      eventsCreated: "Em {year} criaste {count}",
+      mixed: "Em {year} deste forma a {count}",
+    },
+    // Stands in for the name when the person has no name or username.
+    someone: "alguém do Parkour·Spot",
     placesOne: " em {place}",
     placesMany: " entre {places}",
     and: "e",
@@ -285,6 +353,16 @@ function plural(locale, count, forms) {
 }
 
 /**
+ * A count in the locale's digits ("1,234", "1.234").
+ * @param {string} locale
+ * @param {number} count
+ * @return {string}
+ */
+function formatCount(locale, count) {
+  return new Intl.NumberFormat(locale).format(count);
+}
+
+/**
  * Count label after a number, e.g. "spots added".
  * @param {string} locale
  * @param {string} key A `userStats` key.
@@ -316,13 +394,16 @@ function joinPlaces(locale, items) {
  * @param {string} options.kind A LEAD_NOUN key.
  * @param {number} options.count
  * @param {string[]} options.places Up to three city names.
+ * @param {"third"|"second"=} options.person "second" addresses the reader.
  * @return {{before: string, emphasis: string, after: string}}
  */
-function leadSentence({locale, year, name, kind, count, places}) {
+function leadSentence({locale, year, name, kind, count, places, person = "third"}) {
   const copy = STRINGS[locale];
-  const template = copy.lead[kind] || copy.lead.mixed;
+  const templates = person === "second" ? copy.leadYou : copy.lead;
+  const template = templates[kind] || templates.mixed;
+  const who = String(name || "").trim() || copy.someone;
   const noun = copy.nouns[LEAD_NOUN[kind] || "spot"];
-  const emphasis = `${count} ${plural(locale, count, noun)}`;
+  const emphasis = `${formatCount(locale, count)} ${plural(locale, count, noun)}`;
   let placeClause = "";
   if (places.length === 1) {
     placeClause = fill(copy.placesOne, {place: places[0]});
@@ -330,9 +411,25 @@ function leadSentence({locale, year, name, kind, count, places}) {
     placeClause = fill(copy.placesMany, {places: joinPlaces(locale, places)});
   }
   const marker = "\u0000";
-  const filled = fill(template, {year, name, count: marker});
+  const inline = template.includes("{places}");
+  const filled = fill(template, {year, name: who, count: marker, places: placeClause});
   const [before, after = ""] = filled.split(marker);
-  return {before, emphasis, after: `${after}${placeClause}`};
+  return {before, emphasis, after: inline ? after : `${after}${placeClause}`};
+}
+
+/**
+ * How many spots the card stands for beyond the [shown] photos: the lead's
+ * count when it counts spots (so "55 spots" over 8 photos reads "+47"),
+ * otherwise the spots with photos that did not fit.
+ * @param {{lead: {kind: string, count: number}, frames: Array, moreCount: number}} data
+ * @param {number} shown Photos shown.
+ * @return {number}
+ */
+function moreSpots(data, shown) {
+  const withPhotos = data.frames.length + (data.moreCount || 0);
+  const countsSpots = (LEAD_NOUN[data.lead.kind] || "spot") === "spot";
+  const total = countsSpots ? Math.max(data.lead.count, withPhotos) : withPhotos;
+  return Math.max(0, total - shown);
 }
 
 /**
@@ -376,9 +473,11 @@ module.exports = {
   SUPPORTED_LOCALES,
   resolveCardLocale,
   countLabel,
+  formatCount,
   leadSentence,
   yearLabel,
   heroCaption,
   moreLabel,
+  moreSpots,
   joinPlaces,
 };

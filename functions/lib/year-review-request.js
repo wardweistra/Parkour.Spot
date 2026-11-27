@@ -12,6 +12,7 @@
  */
 
 const {FIRST_STATS_YEAR} = require("./user-stats");
+const {moreSpots} = require("./year-review-copy");
 
 const CARD_FILES = Object.freeze({
   "story.jpg": "story",
@@ -128,7 +129,9 @@ function serializeYearReview(data, {sentence = "", now = new Date()} = {}) {
       imageUrl: frame.imageUrl,
       date: frame.date instanceof Date ? frame.date.toISOString() : null,
     })),
-    moreCount: data.moreCount,
+    // Spots beyond the listed frames, matching the card's +N and the
+    // sentence's count.
+    moreCount: moreSpots(data, data.frames.length),
     pagePath: yearReviewPath(data),
     storyPath: yearReviewPath(data, "story.jpg"),
     squarePath: yearReviewPath(data, "square.jpg"),

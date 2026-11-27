@@ -46,23 +46,30 @@ class YearReviewService {
   ///
   /// Production goes through Hosting (same origin on web, cached at the CDN);
   /// local emulator runs call the function directly.
-  Uri cardUrl(YearReview review, YearReviewCardFormat format) {
+  Uri cardUrl(YearReview review, YearReviewCardFormat format) =>
+      cardUrlFor(year: review.year, handle: review.handle, format: format);
+
+  /// Card URL from the page route alone (`@username` or uid), so the image
+  /// can load while the review data is still on its way.
+  Uri cardUrlFor({
+    required int year,
+    required String handle,
+    required YearReviewCardFormat format,
+  }) {
     if (_useEmulator) {
       return Uri.parse(
         'http://127.0.0.1:5001/${AppConfig.firebaseProjectId}/europe-west1/'
         'yearReviewCard',
       ).replace(
         queryParameters: {
-          'user': review.username ?? review.userId,
-          'year': '${review.year}',
+          'user': handle.replaceFirst('@', ''),
+          'year': '$year',
           'format': format.name,
         },
       );
     }
-    final path = format == YearReviewCardFormat.story
-        ? review.storyPath
-        : review.squarePath;
-    return _origin().resolve(path);
+    // Handles are [A-Za-z0-9_.-] with an optional leading "@".
+    return _origin().resolve('/year/$year/$handle/${format.name}.jpg');
   }
 
   /// Public URL of the review page, for sharing as a link.

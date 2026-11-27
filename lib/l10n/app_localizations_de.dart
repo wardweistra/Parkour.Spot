@@ -4557,7 +4557,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get yearReviewIsThisYou => 'Bist du das? Anmelden zum Teilen';
+  String get yearReviewIsThisYou => 'Bist du das? Anmelden';
 
   @override
   String get yearReviewShareStory => 'In deiner Story teilen';
@@ -4596,27 +4596,27 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'Und $count weitere Spots mit Fotos',
-      one: 'Und 1 weiterer Spot mit Fotos',
+      other: 'Und $count weitere Spots',
+      one: 'Und 1 weiterer Spot',
     );
     return '$_temp0';
   }
 
   @override
   String get yearReviewSoFarNote =>
-      'Diese Zahlen werden bis zum 31. Dezember aktualisiert.';
+      'Diese Zahlen werden bis zum 31. Dezember aktualisiert. Trag bis dahin einen Spot ein, dann erscheint er auf deiner Karte.';
 
   @override
   String get yearReviewNotFoundTitle => 'Kein Jahresrückblick gefunden';
 
   @override
   String yearReviewNotFoundBody(String year) {
-    return 'Dieses Profil ist privat oder hat in $year noch keine Beiträge.';
+    return 'Dieses Profil ist privat oder hat keine Beiträge aus $year.';
   }
 
   @override
   String get yearReviewLoadError =>
-      'Dieser Jahresrückblick konnte nicht geladen werden.';
+      'Der Jahresrückblick konnte nicht geladen werden. Prüf deine Verbindung und versuch es noch einmal.';
 
   @override
   String get yearReviewRetry => 'Erneut versuchen';
@@ -4647,8 +4647,34 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String yearReviewBannerOtherTitle(String name, String year) {
-    return '${name}s $year auf Parkour·Spot';
+    return 'Jahresrückblick $year von $name';
   }
+
+  @override
+  String get yearReviewAboutBodyNoName =>
+      'Parkour·Spot ist eine freie, offene Karte mit Parkour-Spots auf der ganzen Welt. Jeder Spot, jedes Foto und jede Bewertung darauf kommt von Leuten, die trainieren, wie der Person hinter dieser Karte. Füg die Orte hinzu, an denen du trainierst, damit andere sie auch finden.';
+
+  @override
+  String get yearReviewSeeProfileNoName => 'Profil ansehen';
+
+  @override
+  String get yearReviewShareThisCard => 'Diese Karte teilen';
+
+  @override
+  String yearReviewOwnThanks(String year) {
+    return 'Danke, dass du $year die Karte mitgestaltet hast';
+  }
+
+  @override
+  String get yearReviewOwnPrivateTitle => 'Dein Jahr ist privat';
+
+  @override
+  String yearReviewOwnPrivateBody(String year) {
+    return 'Dein Profil ist privat, darum hat dein $year keine öffentliche Seite und keine Karte. Mach dein Profil in den Einstellungen öffentlich, um eine zum Teilen zu bekommen.';
+  }
+
+  @override
+  String get yearReviewOpenSettings => 'Einstellungen öffnen';
 
   @override
   String yearReviewCardImageLabel(String sentence) {

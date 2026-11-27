@@ -4,7 +4,8 @@
  *
  * The sentence and count labels come from year-review-copy.js so the email
  * says exactly what the card says. Public profiles get the square card and a
- * link to their shareable page; private profiles get their numbers and a
+ * link to their shareable page (opened with ?share so it leads with sharing);
+ * private profiles get their numbers and a
  * nudge, since their page and card are not public.
  *
  * HTML is table-based with inline styles: email clients ignore <style> and
@@ -14,13 +15,14 @@
 const {
   resolveCardLocale,
   countLabel,
+  formatCount,
   leadSentence,
-  yearLabel,
 } = require("./year-review-copy");
 const {yearReviewPath} = require("./year-review-request");
 
 const PUBLIC_ORIGIN = "https://parkour.spot";
 const SETTINGS_URL = `${PUBLIC_ORIGIN}/profile/settings`;
+const ADD_SPOT_URL = `${PUBLIC_ORIGIN}/explore?tab=add`;
 const LOGO_URL = `${PUBLIC_ORIGIN}/icons/Icon-192.png`;
 
 /**
@@ -39,20 +41,24 @@ const COLORS = Object.freeze({
   button: "#8ECFF2",
   buttonInk: "#13191C",
   page: "#EEF1F2",
+  pageDark: "#0B1012",
+  hairline: "#2E383D",
   footer: "#5F6B70",
 });
 
 const STRINGS = {
   en: {
-    subject: "Your {year} on Parkour·Spot",
+    subject: "Your {year} on Parkour·Spot: {count}",
     thanksTitle: "Thank you, {name}",
     thanksTitleNoName: "Thank you",
     thanksBody: "Everything you added in {year} is on a free, open map, so anyone can find a good place to train.",
     shareTitle: "Share your year",
     shareBody: "Post your card to your story, so the people you train with find these spots too and maybe add a few of their own.",
-    cta: "Open your card",
-    downloadLead: "Or save the image:",
-    downloadStory: "Story (9:16)",
+    cta: "Share your card",
+    stillTime: "There's still time: add a spot before 31 December and it shows up on your card.",
+    addSpot: "Add a spot",
+    saveStory: "Save the story image",
+    squareLead: "Square version for a post:",
     downloadSquare: "Square (1:1)",
     privateNote: "Your profile is private, so your year has no public page or card. Make your profile public in Settings to get one you can share.",
     privateCta: "Open settings",
@@ -68,15 +74,17 @@ const STRINGS = {
     pageOpenApp: "Open Parkour·Spot",
   },
   de: {
-    subject: "Dein {year} auf Parkour·Spot",
+    subject: "Dein {year} auf Parkour·Spot: {count}",
     thanksTitle: "Danke, {name}",
     thanksTitleNoName: "Danke",
     thanksBody: "Alles, was du {year} beigetragen hast, steht auf einer freien, offenen Karte. So findet jeder einen guten Ort zum Trainieren.",
     shareTitle: "Teile dein Jahr",
     shareBody: "Poste deine Karte in deiner Story, damit die Leute, mit denen du trainierst, diese Spots auch finden und vielleicht selbst ein paar hinzufügen.",
-    cta: "Deine Karte öffnen",
-    downloadLead: "Oder speichere das Bild:",
-    downloadStory: "Story (9:16)",
+    cta: "Deine Karte teilen",
+    stillTime: "Noch ist Zeit: Trag bis zum 31. Dezember einen Spot ein, dann erscheint er auf deiner Karte.",
+    addSpot: "Spot hinzufügen",
+    saveStory: "Story-Bild speichern",
+    squareLead: "Quadratisch für einen Post:",
     downloadSquare: "Quadrat (1:1)",
     privateNote: "Dein Profil ist privat, darum hat dein Jahr keine öffentliche Seite und keine Karte. Mach dein Profil in den Einstellungen öffentlich, um sie teilen zu können.",
     privateCta: "Einstellungen öffnen",
@@ -92,15 +100,17 @@ const STRINGS = {
     pageOpenApp: "Parkour·Spot öffnen",
   },
   nl: {
-    subject: "Jouw {year} op Parkour·Spot",
+    subject: "Jouw {year} op Parkour·Spot: {count}",
     thanksTitle: "Bedankt, {name}",
     thanksTitleNoName: "Bedankt",
     thanksBody: "Alles wat je in {year} hebt toegevoegd staat op een gratis, open kaart, zodat iedereen een goede plek vindt om te trainen.",
     shareTitle: "Deel je jaar",
     shareBody: "Zet je kaart in je story, zodat de mensen met wie je traint deze spots ook vinden en misschien zelf een paar toevoegen.",
-    cta: "Open je kaart",
-    downloadLead: "Of bewaar de afbeelding:",
-    downloadStory: "Story (9:16)",
+    cta: "Deel je kaart",
+    stillTime: "Er is nog tijd: voeg vóór 31 december een spot toe en hij komt op je kaart.",
+    addSpot: "Spot toevoegen",
+    saveStory: "Story-afbeelding bewaren",
+    squareLead: "Vierkant voor een post:",
     downloadSquare: "Vierkant (1:1)",
     privateNote: "Je profiel is privé, dus je jaar heeft geen openbare pagina of kaart. Maak je profiel openbaar in Instellingen om er een te krijgen die je kunt delen.",
     privateCta: "Instellingen openen",
@@ -116,15 +126,17 @@ const STRINGS = {
     pageOpenApp: "Parkour·Spot openen",
   },
   fr: {
-    subject: "Ton année {year} sur Parkour·Spot",
+    subject: "Ton année {year} sur Parkour·Spot : {count}",
     thanksTitle: "Merci, {name}",
     thanksTitleNoName: "Merci",
     thanksBody: "Tout ce que tu as ajouté en {year} est sur une carte libre et gratuite, pour que chacun·e trouve un bon endroit où s’entraîner.",
     shareTitle: "Partage ton année",
     shareBody: "Publie ta carte en story : les personnes avec qui tu t’entraînes découvriront ces spots, et en ajouteront peut-être quelques-uns.",
-    cta: "Ouvrir ta carte",
-    downloadLead: "Ou enregistre l’image :",
-    downloadStory: "Story (9:16)",
+    cta: "Partager ta carte",
+    stillTime: "Il reste du temps : ajoute un spot avant le 31 décembre et il apparaîtra sur ta carte.",
+    addSpot: "Ajouter un spot",
+    saveStory: "Enregistrer l’image story",
+    squareLead: "Version carrée pour un post :",
     downloadSquare: "Carré (1:1)",
     privateNote: "Ton profil est privé : ton année n’a donc ni page publique ni carte. Rends ton profil public dans les Réglages pour en avoir une à partager.",
     privateCta: "Ouvrir les réglages",
@@ -140,15 +152,17 @@ const STRINGS = {
     pageOpenApp: "Ouvrir Parkour·Spot",
   },
   es: {
-    subject: "Tu {year} en Parkour·Spot",
+    subject: "Tu {year} en Parkour·Spot: {count}",
     thanksTitle: "Gracias, {name}",
     thanksTitleNoName: "Gracias",
     thanksBody: "Todo lo que añadiste en {year} está en un mapa abierto y gratuito, para que cualquiera encuentre un buen lugar para entrenar.",
     shareTitle: "Comparte tu año",
     shareBody: "Publica tu tarjeta en tu historia para que la gente con la que entrenas descubra estos spots, y quizá añada algunos.",
-    cta: "Abrir tu tarjeta",
-    downloadLead: "O guarda la imagen:",
-    downloadStory: "Historia (9:16)",
+    cta: "Compartir tu tarjeta",
+    stillTime: "Aún hay tiempo: añade un spot antes del 31 de diciembre y saldrá en tu tarjeta.",
+    addSpot: "Añadir un spot",
+    saveStory: "Guardar la imagen de historia",
+    squareLead: "Versión cuadrada para una publicación:",
     downloadSquare: "Cuadrada (1:1)",
     privateNote: "Tu perfil es privado, así que tu año no tiene página ni tarjeta públicas. Haz público tu perfil en Ajustes para tener una que puedas compartir.",
     privateCta: "Abrir ajustes",
@@ -164,15 +178,17 @@ const STRINGS = {
     pageOpenApp: "Abrir Parkour·Spot",
   },
   pt: {
-    subject: "O teu {year} no Parkour·Spot",
+    subject: "O teu {year} no Parkour·Spot: {count}",
     thanksTitle: "Obrigado, {name}",
     thanksTitleNoName: "Obrigado",
     thanksBody: "Tudo o que adicionaste em {year} está num mapa aberto e gratuito, para que qualquer pessoa encontre um bom sítio para treinar.",
     shareTitle: "Partilha o teu ano",
     shareBody: "Publica o teu cartão na tua story para que as pessoas com quem treinas descubram estes spots, e talvez adicionem alguns.",
-    cta: "Abrir o teu cartão",
-    downloadLead: "Ou guarda a imagem:",
-    downloadStory: "Story (9:16)",
+    cta: "Partilhar o teu cartão",
+    stillTime: "Ainda vais a tempo: adiciona um spot até 31 de dezembro e ele aparece no teu cartão.",
+    addSpot: "Adicionar um spot",
+    saveStory: "Guardar a imagem da story",
+    squareLead: "Versão quadrada para uma publicação:",
     downloadSquare: "Quadrado (1:1)",
     privateNote: "O teu perfil é privado, por isso o teu ano não tem página nem cartão públicos. Torna o teu perfil público nas Definições para teres um que possas partilhar.",
     privateCta: "Abrir definições",
@@ -223,11 +239,17 @@ function emailStrings(locale) {
 /**
  * @param {string} href
  * @param {string} label
+ * @param {{outlined: (boolean|undefined)}=} options
  * @return {string}
  */
-function buttonHtml(href, label) {
-  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 0"><tr><td style="border-radius:999px;background:${COLORS.button}">` +
-    `<a href="${escapeHtml(href)}" style="display:inline-block;padding:14px 26px;font-family:${FONT};font-size:16px;font-weight:700;color:${COLORS.buttonInk};text-decoration:none;border-radius:999px">${escapeHtml(label)}</a>` +
+function buttonHtml(href, label, {outlined = false} = {}) {
+  // Padding sits on the cell, so Outlook (which ignores padding on links)
+  // still draws a full-size button.
+  const fill = outlined ? COLORS.ground : COLORS.button;
+  const ink = outlined ? COLORS.accent : COLORS.buttonInk;
+  const border = outlined ? `border:2px solid ${COLORS.accent};` : "";
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="${fill}" style="border-radius:999px;background:${fill};${border}padding:14px 26px;mso-padding-alt:14px 26px">` +
+    `<a href="${escapeHtml(href)}" style="display:inline-block;font-family:${FONT};font-size:16px;font-weight:700;line-height:20px;color:${ink};text-decoration:none">${escapeHtml(label)}</a>` +
     "</td></tr></table>";
 }
 
@@ -247,23 +269,29 @@ function buildYearReviewEmail(data, {locale: rawLocale, unsubscribeUrl, now = ne
   const locale = resolveCardLocale(rawLocale);
   const s = STRINGS[locale];
   const soFar = now.getTime() < Date.UTC(data.year + 1, 0, 1);
-  const sentence = leadSentence({
+  const sentenceOptions = {
     locale,
     year: data.year,
     name: data.name || "",
     kind: data.lead.kind,
     count: data.lead.count,
     places: data.places || [],
-  });
-  const sentenceText = `${sentence.before}${sentence.emphasis}${sentence.after}`.replace(/\s+/g, " ").trim();
-  const subject = fill(s.subject, {year: data.year});
+  };
+  const plain = ({before, emphasis, after}) => `${before}${emphasis}${after}`.replace(/\s+/g, " ").trim();
+  // The card speaks about its owner; the email speaks to them.
+  const cardSentence = leadSentence(sentenceOptions);
+  const sentence = leadSentence({...sentenceOptions, person: "second"});
+  const sentenceText = plain(sentence);
+  const subject = fill(s.subject, {year: data.year, count: sentence.emphasis});
   const name = (data.name || "").trim();
   const thanksTitle = name ? fill(s.thanksTitle, {name}) : s.thanksTitleNoName;
   const thanksBody = fill(s.thanksBody, {year: data.year});
-  const yearText = yearLabel(locale, data.year, soFar);
-  const counts = (data.counts || []).map(({key, count}) => ({count, label: countLabel(locale, key, count)}));
+  const counts = (data.counts || []).map(({key, count}) => ({count: formatCount(locale, count), label: countLabel(locale, key, count)}));
 
   const pageUrl = `${PUBLIC_ORIGIN}${yearReviewPath(data)}`;
+  // ?share leads the page with the share buttons: the owner usually opens
+  // this in a mail app's browser where they are signed out.
+  const shareUrl = `${pageUrl}?share=1`;
   const cardQuery = `?locale=${locale}${cacheKey ? `&v=${encodeURIComponent(cacheKey)}` : ""}`;
   const cardUrl = `${PUBLIC_ORIGIN}${yearReviewPath(data, "square.jpg")}${cardQuery}`;
   const storyUrl = `${PUBLIC_ORIGIN}${yearReviewPath(data, "story.jpg")}${cardQuery}`;
@@ -271,35 +299,37 @@ function buildYearReviewEmail(data, {locale: rawLocale, unsubscribeUrl, now = ne
 
   const p = (text, {size = 15, color = COLORS.muted, pad = "0 28px"} = {}) =>
     `<tr><td style="padding:${pad};font-family:${FONT};font-size:${size}px;line-height:1.5;color:${color}">${text}</td></tr>`;
+  const heading = (text, {size, pad}) =>
+    `<tr><td style="padding:${pad}"><h${size > 24 ? 1 : 2} style="margin:0;font-family:${FONT};font-size:${size}px;font-weight:700;line-height:1.25;color:${COLORS.ink}">${text}</h${size > 24 ? 1 : 2}></td></tr>`;
   const link = (href, label) =>
     `<a href="${escapeHtml(href)}" style="color:${COLORS.accent};font-weight:700;text-decoration:underline">${escapeHtml(label)}</a>`;
 
-  const countCells = counts.map(({count, label}) =>
-    `<td valign="top" style="padding:12px 8px;text-align:center;font-family:${FONT}">` +
-    `<div style="font-size:28px;font-weight:700;color:${COLORS.accent};line-height:1.1">${escapeHtml(count)}</div>` +
-    `<div style="font-size:13px;color:${COLORS.muted};line-height:1.3;padding-top:4px">${escapeHtml(label)}</div></td>`,
-  ).join("");
-  const countsHtml = countCells ?
-    `<tr><td style="padding:16px 20px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.panel};border-radius:16px"><tr>${countCells}</tr></table></td></tr>` :
-    "";
-
-  // Thanks first: the email exists to say it. The card prints the lead
-  // sentence (and carries it as alt text), so only private profiles, who get
-  // no card, get the sentence as text.
+  // Thanks first: the email exists to say it.
   const thanksHtml =
-    `<tr><td style="padding:24px 28px 0;font-family:${FONT};font-size:28px;font-weight:700;line-height:1.2;color:${COLORS.ink}">${escapeHtml(thanksTitle)}</td></tr>` +
+    heading(escapeHtml(thanksTitle), {size: 28, pad: "24px 28px 0"}) +
     p(escapeHtml(thanksBody), {size: 16, pad: "8px 28px 0"});
 
   let bodyHtml;
   if (isPublic) {
+    // The card carries the sentence and the counts (and the sentence as its
+    // alt text), so the email adds no stat panel of its own.
     bodyHtml =
-      `<tr><td style="padding:24px 28px 0"><a href="${escapeHtml(pageUrl)}"><img src="${escapeHtml(cardUrl)}" width="484" alt="${escapeHtml(sentenceText)}" style="display:block;width:100%;max-width:484px;height:auto;border:0;border-radius:16px;font-family:${FONT};font-size:15px;color:${COLORS.muted}"></a></td></tr>` +
-      countsHtml +
-      `<tr><td style="padding:32px 28px 0;font-family:${FONT};font-size:20px;font-weight:700;line-height:1.3;color:${COLORS.ink}">${escapeHtml(s.shareTitle)}</td></tr>` +
+      `<tr><td style="padding:24px 28px 0"><a href="${escapeHtml(shareUrl)}"><img src="${escapeHtml(cardUrl)}" width="484" alt="${escapeHtml(plain(cardSentence))}" style="display:block;width:100%;max-width:484px;height:auto;border:0;border-radius:16px;font-family:${FONT};font-size:15px;color:${COLORS.muted}"></a></td></tr>` +
+      heading(escapeHtml(s.shareTitle), {size: 20, pad: "32px 28px 0"}) +
       p(escapeHtml(s.shareBody), {pad: "6px 28px 0"}) +
-      `<tr><td style="padding:16px 28px 0">${buttonHtml(pageUrl, s.cta)}</td></tr>` +
-      p(`${escapeHtml(s.downloadLead)} ${link(storyUrl, s.downloadStory)} · ${link(cardUrl, s.downloadSquare)}`, {size: 14, pad: "14px 28px 0"});
+      `<tr><td style="padding:16px 28px 0">${buttonHtml(shareUrl, s.cta)}</td></tr>` +
+      `<tr><td style="padding:12px 28px 0">${buttonHtml(storyUrl, s.saveStory, {outlined: true})}</td></tr>` +
+      p(`${escapeHtml(s.squareLead)} ${link(cardUrl, s.downloadSquare)}`, {size: 14, pad: "14px 28px 0"});
   } else {
+    const countCells = counts.map(({count, label}) =>
+      `<td valign="top" style="padding:12px 8px;text-align:center;font-family:${FONT}">` +
+      `<div style="font-size:28px;font-weight:700;color:${COLORS.ink};line-height:1.1">${escapeHtml(count)}</div>` +
+      `<div style="font-size:13px;color:${COLORS.muted};line-height:1.3;padding-top:4px">${escapeHtml(label)}</div></td>`,
+    ).join("");
+    const countsHtml = countCells ?
+      `<tr><td style="padding:16px 20px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.panel};border-radius:16px"><tr>${countCells}</tr></table></td></tr>` :
+      "";
+    // No card for private profiles: the sentence and counts stand in for it.
     bodyHtml =
       `<tr><td style="padding:24px 28px 0;font-family:${FONT};font-size:20px;font-weight:700;line-height:1.3;color:${COLORS.ink}">${escapeHtml(sentence.before)}<span style="color:${COLORS.accent}">${escapeHtml(sentence.emphasis)}</span>${escapeHtml(sentence.after)}</td></tr>` +
       countsHtml +
@@ -307,18 +337,28 @@ function buildYearReviewEmail(data, {locale: rawLocale, unsubscribeUrl, now = ne
       `<tr><td style="padding:16px 28px 0">${buttonHtml(SETTINGS_URL, s.privateCta)}</td></tr>`;
   }
 
+  // In December the year is still open: invite one more spot.
+  const stillTimeHtml = soFar ?
+    `<tr><td style="padding:28px 28px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid ${COLORS.hairline}"><tr><td style="padding-top:20px;font-family:${FONT};font-size:15px;line-height:1.5;color:${COLORS.muted}">${escapeHtml(s.stillTime)} ${link(ADD_SPOT_URL, s.addSpot)}</td></tr></table></td></tr>` :
+    "";
+
+  // Zero-width padding keeps clients from pulling body text into the
+  // inbox preview after the preheader.
+  const preheaderPad = "&#847;&zwnj;&nbsp;".repeat(60);
   const html = `<!doctype html>
-<html lang="${locale}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light">${FONT_LINK}<title>${escapeHtml(subject)}</title></head>
-<body style="margin:0;padding:0;background:${COLORS.page}">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0">${escapeHtml(`${thanksTitle}. ${sentenceText}`)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.page}"><tr><td align="center" style="padding:24px 12px">
-<table role="presentation" width="540" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:540px;background:${COLORS.ground};border-radius:24px">
-<tr><td style="padding:28px 28px 0"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td><img src="${LOGO_URL}" width="40" height="40" alt="Parkour·Spot" style="display:block;border:0;border-radius:10px"></td><td style="padding-left:12px;font-family:${FONT};font-size:14px;color:${COLORS.muted}">${escapeHtml(yearText)}</td></tr></table></td></tr>
+<html lang="${locale}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="supported-color-schemes" content="dark light">${FONT_LINK}<title>${escapeHtml(subject)}</title>
+<style>@media (prefers-color-scheme:dark){.yr-page{background:${COLORS.pageDark}!important}.yr-footer{color:${COLORS.muted}!important}.yr-footer a{color:${COLORS.muted}!important}}</style></head>
+<body class="yr-page" style="margin:0;padding:0;background:${COLORS.page}">
+<div style="display:none;mso-hide:all;max-height:0;overflow:hidden;opacity:0">${escapeHtml(`${thanksTitle}. ${sentenceText}.`)}${preheaderPad}</div>
+<table class="yr-page" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLORS.page}" style="background:${COLORS.page}"><tr><td align="center" style="padding:24px 12px">
+<table role="presentation" width="540" cellpadding="0" cellspacing="0" border="0" bgcolor="${COLORS.ground}" style="width:100%;max-width:540px;background:${COLORS.ground};border-radius:24px">
+<tr><td style="padding:28px 28px 0"><img src="${LOGO_URL}" width="40" height="40" alt="Parkour·Spot" style="display:block;border:0;border-radius:10px"></td></tr>
 ${thanksHtml}
 ${bodyHtml}
+${stillTimeHtml}
 ${p(escapeHtml(s.signoff), {pad: "28px 28px 28px"})}
 </table>
-<table role="presentation" width="540" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:540px"><tr><td style="padding:20px 28px;font-family:${FONT};font-size:12px;line-height:1.6;color:${COLORS.footer};text-align:center">
+<table role="presentation" width="540" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:540px"><tr><td class="yr-footer" style="padding:20px 28px;font-family:${FONT};font-size:13px;line-height:1.6;color:${COLORS.footer};text-align:center">
 ${escapeHtml(s.footer)}<br>
 <a href="${escapeHtml(unsubscribeUrl)}" style="color:${COLORS.footer};text-decoration:underline">${escapeHtml(s.unsubscribe)}</a> · <a href="${SETTINGS_URL}" style="color:${COLORS.footer};text-decoration:underline">${escapeHtml(s.settings)}</a>
 </td></tr></table>
@@ -329,13 +369,14 @@ ${escapeHtml(s.footer)}<br>
     thanksTitle,
     thanksBody,
     "",
-    sentenceText,
+    `${sentenceText}.`,
     "",
     ...counts.map(({count, label}) => `${count} ${label}`),
     "",
     ...(isPublic ?
-      [s.shareTitle, s.shareBody, `${s.cta}: ${pageUrl}`, `${s.downloadStory}: ${storyUrl}`, `${s.downloadSquare}: ${cardUrl}`] :
+      [s.shareTitle, s.shareBody, `${s.cta}: ${shareUrl}`, `${s.saveStory}: ${storyUrl}`, `${s.downloadSquare}: ${cardUrl}`] :
       [s.privateNote, `${s.privateCta}: ${SETTINGS_URL}`]),
+    ...(soFar ? ["", `${s.stillTime} ${ADD_SPOT_URL}`] : []),
     "",
     s.signoff,
     "",

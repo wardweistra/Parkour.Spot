@@ -138,6 +138,32 @@ describe("year review data", () => {
   });
 });
 
+describe("year review copy", () => {
+  const {leadSentence, moreSpots} = require("../lib/year-review-copy");
+  const text = (parts) => `${parts.before}${parts.emphasis}${parts.after}`;
+  const base = {year: 2026, kind: "spotsAdded", count: 1, places: ["Utrecht"]};
+
+  it("stands in for a missing name", () => {
+    expect(text(leadSentence({...base, locale: "en", name: ""}))).toBe("In 2026 a Parkour·Spot member put 1 spot on the map in Utrecht");
+  });
+
+  it("addresses the reader in the second person", () => {
+    expect(text(leadSentence({...base, locale: "en", name: "Noor", person: "second"}))).toBe("In 2026 you put 1 spot on the map in Utrecht");
+    expect(text(leadSentence({...base, locale: "de", name: "Noor", person: "second"}))).toBe("2026 hast du 1 Spot in Utrecht auf die Karte gebracht");
+  });
+
+  it("keeps the German participle after the places", () => {
+    expect(text(leadSentence({...base, locale: "de", name: "Noor", kind: "mixed", count: 1234, places: ["Utrecht", "Breda"]})))
+        .toBe("2026 hat Noor 1.234 Spots in Utrecht und Breda mitgestaltet");
+  });
+
+  it("counts +N up to the spots the sentence names", () => {
+    const frames = Array.from({length: 9}, () => ({}));
+    expect(moreSpots({lead: {kind: "mixed", count: 55}, frames, moreCount: 6}, 8)).toBe(47);
+    expect(moreSpots({lead: {kind: "photosAdded", count: 80}, frames, moreCount: 6}, 8)).toBe(7);
+  });
+});
+
 describe("year review card layout", () => {
   it("lays out 1 to 9 cells in uneven rows", () => {
     for (let n = 1; n <= 9; n++) {

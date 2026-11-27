@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:parkour_spot/l10n/app_localizations.dart';
+import 'package:parkour_spot/models/user.dart' as app_user;
 import 'package:parkour_spot/models/year_review.dart';
 import 'package:parkour_spot/screens/profile/year_review_screen.dart';
 import 'package:parkour_spot/services/auth_service.dart';
@@ -10,10 +11,11 @@ import 'package:parkour_spot/utils/year_review_window.dart';
 import 'package:parkour_spot/widgets/year_review_banner.dart';
 import 'package:provider/provider.dart';
 
-Map<String, dynamic> reviewMap({int moreCount = 0}) => {
+Map<String, dynamic> reviewMap({int moreCount = 0, String name = 'Noor'}) => {
   'userId': 'u1',
   'username': 'noor',
-  'name': 'Noor',
+  'name': name,
+  'places': ['Utrecht'],
   'year': 2026,
   'sentence': 'In 2026 Noor put 1 spot on the map in Utrecht',
   'soFar': true,
@@ -50,17 +52,24 @@ class FakeYearReviewService extends YearReviewService {
   }
 
   @override
-  Uri cardUrl(YearReview review, YearReviewCardFormat format) =>
-      Uri.parse('https://example.invalid/card.jpg');
+  Uri cardUrlFor({
+    required int year,
+    required String handle,
+    required YearReviewCardFormat format,
+  }) => Uri.parse('https://example.invalid/card.jpg');
 }
 
 class FakeAuthService extends ChangeNotifier implements AuthService {
-  FakeAuthService(this.uid);
+  FakeAuthService(this.uid, {this.profile});
 
   final String? uid;
+  final app_user.User? profile;
 
   @override
   firebase_auth.User? get currentUser => uid == null ? null : _FakeUser(uid!);
+
+  @override
+  app_user.User? get userProfile => profile;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -80,10 +89,12 @@ Future<void> pumpScreen(
   WidgetTester tester, {
   required YearReview? review,
   String? signedInUid,
+  app_user.User? profile,
+  bool shareFirst = false,
 }) async {
   await tester.pumpWidget(
     ChangeNotifierProvider<AuthService>.value(
-      value: FakeAuthService(signedInUid),
+      value: FakeAuthService(signedInUid, profile: profile),
       child: MaterialApp(
         localizationsDelegates: const [
           AppLocalizations.delegate,
@@ -93,6 +104,7 @@ Future<void> pumpScreen(
         home: YearReviewScreen(
           year: 2026,
           userIdOrUsername: '@noor',
+          shareFirst: shareFirst,
           service: FakeYearReviewService(review),
         ),
       ),
@@ -148,13 +160,14 @@ void main() {
       expect(find.text('Share to your story'), findsOneWidget);
       expect(find.text('Share square image'), findsOneWidget);
       expect(find.text('Copy link'), findsOneWidget);
+      expect(find.text('Thanks for shaping the map in 2026'), findsOneWidget);
       expect(
-        find.text('These numbers keep updating until 31 December.'),
+        find.textContaining('These numbers keep updating until 31 December.'),
         findsOneWidget,
       );
+      expect(find.text('Add a spot you know'), findsOneWidget);
       expect(find.text('Open the map'), findsNothing);
       expect(find.text('A map made by people who train'), findsNothing);
-      expect(find.text('Add a spot you know'), findsNothing);
       expect(find.text('Parkour Park Leeuwesteyn'), findsOneWidget);
       expect(find.text('Utrecht · Added'), findsOneWidget);
       expect(
@@ -184,10 +197,78 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('Is this you? Log in to share'), findsOneWidget);
+      expect(find.text('Is this you? Log in'), findsOneWidget);
       expect(find.text("See Noor's profile"), findsOneWidget);
+      // Anyone can pass the public card on, without signing in.
+      expect(find.text('Share this card'), findsOneWidget);
       expect(find.text('Share to your story'), findsNothing);
-      expect(find.text('And 4 more spots with photos'), findsOneWidget);
+      expect(find.text('And 4 more spots'), findsOneWidget);
+    });
+
+    testWidgets('signed in as someone else, no log-in prompt', (tester) async {
+      await pumpScreen(
+        tester,
+        review: YearReview.fromMap(reviewMap()),
+        signedInUid: 'u2',
+      );
+      expect(find.text('Is this you? Log in'), findsNothing);
+      expect(find.text('Share this card'), findsOneWidget);
+      expect(find.text('Add a spot you know'), findsOneWidget);
+    });
+
+    testWidgets('the email link shows the visitor view to someone else', (
+      tester,
+    ) async {
+      await pumpScreen(
+        tester,
+        review: YearReview.fromMap(reviewMap()),
+        signedInUid: 'u2',
+        shareFirst: true,
+      );
+      expect(find.text('Share to your story'), findsNothing);
+      expect(find.text('A map made by people who train'), findsOneWidget);
+    });
+
+    testWidgets('the email link leads with sharing, even signed out', (
+      tester,
+    ) async {
+      await pumpScreen(
+        tester,
+        review: YearReview.fromMap(reviewMap()),
+        shareFirst: true,
+      );
+      expect(find.text('Share to your story'), findsOneWidget);
+      expect(find.text('Share square image'), findsOneWidget);
+      expect(find.text('A map made by people who train'), findsNothing);
+    });
+
+    testWidgets('a review without a name reads without one', (tester) async {
+      await pumpScreen(tester, review: YearReview.fromMap(reviewMap(name: '')));
+      expect(
+        find.textContaining('like whoever made this card'),
+        findsOneWidget,
+      );
+      expect(find.text('See their profile'), findsOneWidget);
+      expect(find.textContaining('like .'), findsNothing);
+    });
+
+    testWidgets('the signed-in owner of a private profile gets Settings', (
+      tester,
+    ) async {
+      await pumpScreen(
+        tester,
+        review: null,
+        signedInUid: 'u1',
+        profile: app_user.User(
+          id: 'u1',
+          email: 'noor@example.com',
+          username: 'noor',
+          isPublicProfile: false,
+        ),
+      );
+      expect(find.text('Your year is private'), findsOneWidget);
+      expect(find.text('Open settings'), findsOneWidget);
+      expect(find.text('Open the map'), findsOneWidget);
     });
 
     testWidgets('private or empty reviews show the not-found state', (
