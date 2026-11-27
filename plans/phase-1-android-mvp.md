@@ -129,7 +129,7 @@ Not verified on a device: this pass was checked with `flutter analyze`, `flutter
 
 ## Notes
 
-- Firebase packages are **pinned** in `pubspec.yaml` (`firebase_core: 4.3.0`, etc.) so `flutter pub add` does not pull `firebase_core_web` versions that break dart2js. Keep pins until Flutter/Firebase align on web.
+- Firebase packages use caret constraints in `pubspec.yaml`. The earlier exact pins and the `firebase_core_web` override (a dart2js `isA` breakage) were dropped with FlutterFire 5.x, where `firebase_core_web` 3.12.0+ fixes it.
 - Upload keystore password was generated for local use only — change it before production Play uploads.
 
 ## Out of scope (Phase 2+)
