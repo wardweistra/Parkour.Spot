@@ -4,7 +4,28 @@
 const {
   buildWebPushMessage,
   normalizePushPlatform,
+  pushTargetFromSubscription,
 } = require("../lib/send-web-push");
+
+describe("pushTargetFromSubscription", () => {
+  const fid = "cR_fidAbcdefghijklmnop";
+  const token = "legacy-token-abcdefghijklmnop";
+
+  test("prefers the token over an FID", () => {
+    expect(pushTargetFromSubscription({fid, token})).toEqual({token});
+  });
+
+  test("uses the FID when there is no token", () => {
+    expect(pushTargetFromSubscription({fid, token: null})).toEqual({fid});
+  });
+
+  test("returns null without a usable target", () => {
+    expect(pushTargetFromSubscription(undefined)).toBeNull();
+    expect(pushTargetFromSubscription({})).toBeNull();
+    expect(pushTargetFromSubscription({fid: "short", token: "short"}))
+        .toBeNull();
+  });
+});
 
 describe("normalizePushPlatform", () => {
   test("passes through android and ios", () => {
@@ -58,6 +79,12 @@ describe("buildWebPushMessage", () => {
     expect(msg.apns.payload.aps.alert).toEqual({title: "Hello", body: "World"});
     expect(msg.webpush).toBeUndefined();
     expect(msg.android).toBeUndefined();
+  });
+
+  test("targets the FID instead of the token when given", () => {
+    const msg = buildWebPushMessage({...base, fid: "cR_fid123", platform: "web"});
+    expect(msg.fid).toBe("cR_fid123");
+    expect(msg.token).toBeUndefined();
   });
 
   test("missing platform defaults to web", () => {

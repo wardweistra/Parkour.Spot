@@ -9,6 +9,7 @@ const {
 } = require("../lib/send-web-push");
 
 const TOKEN = "fcm-token-abcdefghijklmnopqrstuvwxyz";
+const FID = "cR_fidAbcdefghijklmnop";
 
 function createDb({
   written,
@@ -321,6 +322,86 @@ describe("deliverNotifications", () => {
     expect(cleanupWrites[0].ref.path).toBe("users/u1/pushSubscriptions/inst1");
     expect(cleanupWrites[0].data).toEqual({
       enabled: false,
+      fid: null,
+      token: null,
+      updatedAt: {_ts: true},
+    });
+  });
+
+  it("sends to the FID only when a subscription has no token", async () => {
+    const written = [];
+    const cleanupWrites = [];
+    const db = createDb({
+      written,
+      cleanupWrites,
+      subscriptionsByUser: {
+        u1: [
+          {id: "inst1", enabled: true, fid: FID, token: null, locale: "en"},
+          {id: "inst2", enabled: true, fid: FID + "2", token: TOKEN,
+            locale: "en"},
+        ],
+      },
+    });
+    const messaging = {
+      sendEach: jest.fn(async (messages) => ({
+        successCount: messages.length,
+        failureCount: 0,
+        responses: messages.map(() => ({success: true})),
+      })),
+    };
+
+    await deliverNotifications({
+      db,
+      FieldValue,
+      userIds: ["u1"],
+      payload: spotPayload,
+      messaging,
+    });
+
+    const messages = messaging.sendEach.mock.calls[0][0];
+    expect(messages.length).toBe(2);
+    expect(messages[0].fid).toBe(FID);
+    expect(messages[0].token).toBeUndefined();
+    expect(messages[1].token).toBe(TOKEN);
+    expect(messages[1].fid).toBeUndefined();
+  });
+
+  it("disables unregistered installation IDs", async () => {
+    const written = [];
+    const cleanupWrites = [];
+    const db = createDb({
+      written,
+      cleanupWrites,
+      subscriptionsByUser: {
+        u1: [{id: "inst1", enabled: true, fid: FID, locale: "en"}],
+      },
+    });
+    const messaging = {
+      sendEach: jest.fn(async () => ({
+        successCount: 0,
+        failureCount: 1,
+        responses: [{
+          success: false,
+          error: {
+            code: "messaging/installation-id-not-registered",
+            message: "not registered",
+          },
+        }],
+      })),
+    };
+
+    await deliverNotifications({
+      db,
+      FieldValue,
+      userIds: ["u1"],
+      payload: spotPayload,
+      messaging,
+    });
+
+    expect(cleanupWrites.length).toBe(1);
+    expect(cleanupWrites[0].data).toEqual({
+      enabled: false,
+      fid: null,
       token: null,
       updatedAt: {_ts: true},
     });
