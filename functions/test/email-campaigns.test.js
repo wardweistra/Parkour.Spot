@@ -76,14 +76,21 @@ describe("year review email", () => {
 
   it("puts the sentence, counts, card and links in a public profile's email", () => {
     const email = buildYearReviewEmail(reviewData(), {locale: "en", unsubscribeUrl: unsub, now: d("2026-12-02"), cacheKey: "2026-12-02"});
-    expect(email.subject).toBe("Your 2026 on Parkour·Spot");
+    expect(email.subject).toBe("Your 2026 on Parkour·Spot: 4 spots");
     expect(email.html).toContain("4 spots");
     expect(email.html).toContain("https://parkour.spot/year/2026/@noor/square.jpg?locale=en&amp;v=2026-12-02");
-    expect(email.html).toContain("https://parkour.spot/year/2026/@noor\"");
+    // The page opens with sharing first for owners signed out in a mail browser.
+    expect(email.html).toContain("https://parkour.spot/year/2026/@noor?share=1\"");
     expect(email.html).toContain(unsub.replace(/&/g, "&amp;"));
-    expect(email.text).toContain("4 spots added");
     expect(email.text).toContain(`Unsubscribe from newsletter emails: ${unsub}`);
-    expect(email.html).toContain("2026 so far");
+    // The card already shows the year and counts: no header or stat panel.
+    expect(email.html).not.toContain("2026 so far");
+    expect(email.html).not.toContain("spots rated");
+    // December: the year is open, so it invites one more spot.
+    expect(email.html).toContain("There&#39;s still time");
+    expect(email.text).toContain("https://parkour.spot/explore?tab=add");
+    // Inbox preview talks to the reader.
+    expect(email.html).toContain("Thank you, Noor. In 2026 you put 4 spots on the map in Utrecht.");
     // Thanks lead; the card shows the sentence, so no text copy of it.
     expect(email.html).toContain("Thank you, Noor");
     expect(email.html).not.toContain("<span style=\"color:#8ECFF2\">4 spots</span>");
@@ -102,6 +109,17 @@ describe("year review email", () => {
     expect(email.html).toContain("<span style=\"color:#8ECFF2\">");
     expect(email.html).not.toContain(EMAIL_STRINGS.nl.shareTitle);
     expect(email.html).toContain("https://parkour.spot/profile/settings");
+  });
+
+  it("leaves out the still-time invite once the year is over", () => {
+    const email = buildYearReviewEmail(reviewData(), {locale: "en", unsubscribeUrl: unsub, now: d("2027-01-05")});
+    expect(email.html).not.toContain("There&#39;s still time");
+  });
+
+  it("speaks to a private profile in the second person with its counts", () => {
+    const email = buildYearReviewEmail(reviewData({isPublicProfile: false, username: null}), {locale: "en", unsubscribeUrl: unsub});
+    expect(email.html).toContain("In 2026 you put <span style=\"color:#8ECFF2\">4 spots</span>");
+    expect(email.html).toContain("spots rated");
   });
 
   it("escapes names and places", () => {
@@ -223,7 +241,7 @@ describe("email campaigns", () => {
     expect(send).toHaveBeenCalledTimes(1);
     const message = send.mock.calls[0][0];
     expect(message.to.email).toBe("ann@example.com");
-    expect(message.subject).toBe("Jouw 2026 op Parkour·Spot");
+    expect(message.subject).toBe("Jouw 2026 op Parkour·Spot: 2 spots");
     expect(message.headers["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
     expect(message.tags).toEqual(["year-review-2026"]);
 

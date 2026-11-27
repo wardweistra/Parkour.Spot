@@ -23,17 +23,23 @@ const Color _cardAccent = Color(0xFF8ECFF2);
 /// `/year/<year>/<@username|uid>`: one person's yearly review.
 ///
 /// The card image leads (it is what gets shared); below or beside it, the
-/// owner shares it, visitors open the map, and everyone can open the spots.
+/// owner shares it, visitors add a spot or open the map, and everyone can
+/// share the card and open the spots.
 class YearReviewScreen extends StatefulWidget {
   const YearReviewScreen({
     super.key,
     required this.year,
     required this.userIdOrUsername,
+    this.shareFirst = false,
     this.service,
   });
 
   final int year;
   final String userIdOrUsername;
+
+  /// Lead with the share buttons when signed out: the yearly email links
+  /// here with `?share`, and owners often open it in a signed-out browser.
+  final bool shareFirst;
   final YearReviewService? service;
 
   @override
@@ -44,8 +50,30 @@ class _YearReviewScreenState extends State<YearReviewScreen> {
   late final YearReviewService _service = widget.service ?? YearReviewService();
   late Future<YearReview?> _future;
   YearReviewCardFormat? _sharing;
+  bool _precached = false;
 
   AppLocalizations get _l10n => AppLocalizations.of(context)!;
+
+  /// The story card's URL from the route alone, so it loads alongside the
+  /// review data instead of after it.
+  String get _storyUrl => _service
+      .cardUrlFor(
+        year: widget.year,
+        handle: widget.userIdOrUsername,
+        format: YearReviewCardFormat.story,
+      )
+      .toString();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_precached) {
+      _precached = true;
+      // A first render fetches photos server-side; start it now. Failures
+      // surface in the card's own error state.
+      precacheImage(NetworkImage(_storyUrl), context, onError: (_, _) {});
+    }
+  }
 
   @override
   void initState() {
@@ -58,6 +86,7 @@ class _YearReviewScreenState extends State<YearReviewScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.year != widget.year ||
         oldWidget.userIdOrUsername != widget.userIdOrUsername) {
+      _precached = false;
       _load();
     }
   }
@@ -78,6 +107,30 @@ class _YearReviewScreenState extends State<YearReviewScreen> {
 
   bool _isOwn(YearReview review) =>
       context.read<AuthService>().currentUser?.uid == review.userId;
+
+  /// Signed in as this page's owner with a private profile: the page is
+  /// empty for everyone else, but the owner should learn why.
+  bool _isOwnPrivatePage() {
+    final auth = context.read<AuthService>();
+    final user = auth.currentUser;
+    if (user == null) return false;
+    final profile = auth.userProfile;
+    final handle = widget.userIdOrUsername.replaceFirst('@', '');
+    final mine =
+        handle == user.uid ||
+        (profile?.username != null && profile!.username == handle);
+    return mine && profile?.isPublicProfile == false;
+  }
+
+  /// The map, opened on the city the card names first.
+  void _openMap(YearReview? review) {
+    final place = review?.places.firstOrNull;
+    context.go(
+      place == null
+          ? '/explore'
+          : '/explore?location=${Uri.encodeQueryComponent(place)}',
+    );
+  }
 
   Future<void> _shareCard(
     YearReview review,
@@ -125,7 +178,7 @@ class _YearReviewScreenState extends State<YearReviewScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return _LoadError(onRetry: _load);
+            return _LoadError(onRetry: _load, onOpenMap: () => _openMap(null));
           }
           final review = snapshot.data;
           if (review == null) {
@@ -133,14 +186,19 @@ class _YearReviewScreenState extends State<YearReviewScreen> {
             // empty year), not a broken one: no 404 page.
             return _NoReview(
               year: widget.year,
-              onOpenMap: () => context.go('/explore'),
+              ownPrivate: _isOwnPrivatePage(),
+              onOpenMap: () => _openMap(null),
+              onOpenSettings: () => context.push('/profile/settings'),
             );
           }
           if (kIsWeb) {
+            final who = review.name.isEmpty
+                ? _l10n.yearReviewPageTitle
+                : review.name;
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
                 WebMetaUtils.updatePageMeta(
-                  '${review.name} · ${review.year} - Parkour·Spot',
+                  '$who · ${review.year} - Parkour·Spot',
                   review.sentence,
                 );
               }
@@ -154,14 +212,21 @@ class _YearReviewScreenState extends State<YearReviewScreen> {
 
   Widget _buildReview(BuildContext context, YearReview review) {
     final isOwn = _isOwn(review);
+    // ?share only stands in for a signed-out owner: signed in, we know
+    // whose page this is.
+    final signedOut = context.read<AuthService>().currentUser == null;
+    final shareFirst = isOwn || (widget.shareFirst && signedOut);
     final card = _CardImage(
-      url: _service.cardUrl(review, YearReviewCardFormat.story).toString(),
+      url: _storyUrl,
       label: _l10n.yearReviewCardImageLabel(review.sentence),
     );
     final details = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (isOwn) ..._ownActions(review) else ..._visitorActions(review),
+        if (shareFirst)
+          ..._shareActions(review)
+        else
+          ..._visitorActions(review),
         const SizedBox(height: 32),
         _SpotsSection(review: review),
       ],
@@ -170,39 +235,60 @@ class _YearReviewScreenState extends State<YearReviewScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 840;
-        return SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 32),
-          child: wide
-              ? Row(
+        if (wide) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 32),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 980),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(width: 380, child: card),
                     const SizedBox(width: 40),
-                    Expanded(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 560),
-                        child: details,
-                      ),
-                    ),
+                    Expanded(child: details),
                   ],
-                )
-              : Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 440),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [card, const SizedBox(height: 24), details],
-                    ),
-                  ),
                 ),
+              ),
+            ),
+          );
+        }
+        // A full-width 9:16 card would fill a phone's first screen. Cap it
+        // so the next step shows: visitors (who just saw this image in a
+        // story) get the tighter cap, so the ask to add a spot is in view.
+        final viewHeight = MediaQuery.sizeOf(context).height;
+        final cardHeight = viewHeight * (shareFirst ? 0.62 : 0.5);
+        final cardWidth = (cardHeight * 9 / 16).clamp(200.0, 440.0);
+        return SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 32),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: SizedBox(width: cardWidth, child: card),
+                  ),
+                  const SizedBox(height: 24),
+                  details,
+                ],
+              ),
+            ),
+          ),
         );
       },
     );
   }
 
-  List<Widget> _ownActions(YearReview review) {
+  List<Widget> _shareActions(YearReview review) {
     final theme = Theme.of(context);
     return [
+      Text(
+        _l10n.yearReviewOwnThanks('${review.year}'),
+        style: theme.textTheme.titleLarge,
+      ),
+      const SizedBox(height: 16),
       CustomButton(
         onPressed: _sharing == null
             ? () => _shareCard(review, YearReviewCardFormat.story)
@@ -222,8 +308,7 @@ class _YearReviewScreenState extends State<YearReviewScreen> {
         isOutlined: true,
       ),
       const SizedBox(height: 4),
-      Align(
-        alignment: Alignment.centerLeft,
+      _FlushStart(
         child: TextButton.icon(
           onPressed: () => _copyLink(review),
           icon: const Icon(Icons.link, size: 20),
@@ -231,12 +316,23 @@ class _YearReviewScreenState extends State<YearReviewScreen> {
         ),
       ),
       if (review.soFar) ...[
-        const SizedBox(height: 4),
+        // A separate task from sharing: its own group under a hairline.
+        const SizedBox(height: 20),
+        const Divider(height: 1),
+        const SizedBox(height: 24),
         Text(
           _l10n.yearReviewSoFarNote,
-          style: theme.textTheme.bodyMedium?.copyWith(
+          style: theme.textTheme.bodyLarge?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
+            height: 1.5,
           ),
+        ),
+        const SizedBox(height: 16),
+        CustomButton(
+          onPressed: () => context.go('/explore?tab=add'),
+          text: _l10n.yearReviewAddSpot,
+          icon: Icons.add_location_alt_outlined,
+          isOutlined: true,
         ),
       ],
     ];
@@ -248,13 +344,19 @@ class _YearReviewScreenState extends State<YearReviewScreen> {
       color: theme.colorScheme.onSurfaceVariant,
       height: 1.5,
     );
+    final signedIn = context.read<AuthService>().currentUser != null;
     return [
       // Many visitors arrive from a story or a shared link and have never
       // heard of the app: say what it is, that people like this card's owner
       // made it, and invite them to add to it.
       Text(_l10n.yearReviewAboutTitle, style: theme.textTheme.titleLarge),
       const SizedBox(height: 8),
-      Text(_l10n.yearReviewAboutBody(review.name), style: muted),
+      Text(
+        review.name.isEmpty
+            ? _l10n.yearReviewAboutBodyNoName
+            : _l10n.yearReviewAboutBody(review.name),
+        style: muted,
+      ),
       if (review.soFar) ...[
         const SizedBox(height: 12),
         Text(_l10n.yearReviewOwnCardHint('${review.year}'), style: muted),
@@ -268,34 +370,70 @@ class _YearReviewScreenState extends State<YearReviewScreen> {
       ),
       const SizedBox(height: 12),
       CustomButton(
-        onPressed: () => context.go('/explore'),
+        onPressed: () => _openMap(review),
         text: _l10n.yearReviewOpenMap,
         icon: Icons.map_outlined,
         isOutlined: true,
       ),
       const SizedBox(height: 12),
-      Wrap(
-        spacing: 8,
-        children: [
-          TextButton.icon(
-            onPressed: () => context.push(
-              '/user/${Uri.encodeComponent(review.username ?? review.userId)}',
+      _FlushStart(
+        child: Wrap(
+          spacing: 8,
+          children: [
+            // The card is public: anyone can pass it on, no sign-in needed.
+            TextButton.icon(
+              onPressed: _sharing == null
+                  ? () => _shareCard(review, YearReviewCardFormat.story)
+                  : null,
+              icon: const Icon(Icons.ios_share, size: 20),
+              label: Text(_l10n.yearReviewShareThisCard),
             ),
-            icon: const Icon(Icons.person_outline, size: 20),
-            label: Text(_l10n.yearReviewSeeProfile(review.name)),
-          ),
-          // The owner often opens this from the email in a browser where
-          // they are signed out; signing in brings back the share buttons.
-          TextButton.icon(
-            onPressed: () => context.push(
-              '/login?redirectTo=${Uri.encodeComponent(review.pagePath)}',
+            TextButton.icon(
+              onPressed: () => context.push(
+                '/user/${Uri.encodeComponent(review.username ?? review.userId)}',
+              ),
+              icon: const Icon(Icons.person_outline, size: 20),
+              label: Text(
+                review.name.isEmpty
+                    ? _l10n.yearReviewSeeProfileNoName
+                    : _l10n.yearReviewSeeProfile(review.name),
+              ),
             ),
-            icon: const Icon(Icons.ios_share, size: 20),
-            label: Text(_l10n.yearReviewIsThisYou),
-          ),
-        ],
+            // Owners signed out in a mail browser can sign in to see the page
+            // as their own. Signed in as someone else, it's not them.
+            if (!signedIn)
+              TextButton.icon(
+                onPressed: () => context.push(
+                  '/login?redirectTo=${Uri.encodeComponent(review.pagePath)}',
+                ),
+                icon: const Icon(Icons.login, size: 20),
+                label: Text(_l10n.yearReviewIsThisYou),
+              ),
+          ],
+        ),
       ),
     ];
+  }
+}
+
+/// Text buttons pad their icon 12px in from the start; shifting them back
+/// lines the icon up with the headings and buttons above, while the hover
+/// and focus highlight keeps its padding.
+class _FlushStart extends StatelessWidget {
+  const _FlushStart({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Transform.translate(
+        offset: Offset(rtl ? 12 : -12, 0),
+        child: child,
+      ),
+    );
   }
 }
 
@@ -466,16 +604,14 @@ class _SpotRow extends StatelessWidget {
                 width: 64,
                 height: 64,
                 child: frame.imageUrl == null
-                    ? ColoredBox(color: colorScheme.surfaceContainerHighest)
+                    ? const _NoPhoto()
                     : CachedNetworkImage(
                         imageUrl: frame.imageUrl!,
                         fit: BoxFit.cover,
                         placeholder: (context, url) => ColoredBox(
                           color: colorScheme.surfaceContainerHighest,
                         ),
-                        errorWidget: (context, url, error) => ColoredBox(
-                          color: colorScheme.surfaceContainerHighest,
-                        ),
+                        errorWidget: (context, url, error) => const _NoPhoto(),
                       ),
               ),
             ),
@@ -508,11 +644,34 @@ class _SpotRow extends StatelessWidget {
   }
 }
 
+/// Thumbnail stand-in for a spot without a photo, or one that failed.
+class _NoPhoto extends StatelessWidget {
+  const _NoPhoto();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return ColoredBox(
+      color: colorScheme.surfaceContainerHighest,
+      child: Icon(Icons.place_outlined, color: colorScheme.onSurfaceVariant),
+    );
+  }
+}
+
 class _NoReview extends StatelessWidget {
-  const _NoReview({required this.year, required this.onOpenMap});
+  const _NoReview({
+    required this.year,
+    required this.ownPrivate,
+    required this.onOpenMap,
+    required this.onOpenSettings,
+  });
 
   final int year;
+
+  /// The signed-in owner's own private page: explain and offer Settings.
+  final bool ownPrivate;
   final VoidCallback onOpenMap;
+  final VoidCallback onOpenSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -525,29 +684,42 @@ class _NoReview extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.add_location_alt_outlined,
+              ownPrivate ? Icons.lock_outline : Icons.add_location_alt_outlined,
               size: 40,
               color: theme.colorScheme.primary,
             ),
             const SizedBox(height: 16),
             Text(
-              l10n.yearReviewNotFoundTitle,
+              ownPrivate
+                  ? l10n.yearReviewOwnPrivateTitle
+                  : l10n.yearReviewNotFoundTitle,
               style: theme.textTheme.titleLarge,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              l10n.yearReviewNotFoundBody('$year'),
+              ownPrivate
+                  ? l10n.yearReviewOwnPrivateBody('$year')
+                  : l10n.yearReviewNotFoundBody('$year'),
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
+            if (ownPrivate) ...[
+              CustomButton(
+                onPressed: onOpenSettings,
+                text: l10n.yearReviewOpenSettings,
+                icon: Icons.settings_outlined,
+              ),
+              const SizedBox(height: 12),
+            ],
             CustomButton(
               onPressed: onOpenMap,
               text: l10n.yearReviewOpenMap,
               icon: Icons.map_outlined,
+              isOutlined: ownPrivate,
             ),
           ],
         ),
@@ -557,9 +729,10 @@ class _NoReview extends StatelessWidget {
 }
 
 class _LoadError extends StatelessWidget {
-  const _LoadError({required this.onRetry});
+  const _LoadError({required this.onRetry, required this.onOpenMap});
 
   final VoidCallback onRetry;
+  final VoidCallback onOpenMap;
 
   @override
   Widget build(BuildContext context) {
@@ -574,10 +747,12 @@ class _LoadError extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          CustomButton(
-            onPressed: onRetry,
-            text: l10n.yearReviewRetry,
-            isOutlined: true,
+          CustomButton(onPressed: onRetry, text: l10n.yearReviewRetry),
+          const SizedBox(height: 4),
+          TextButton.icon(
+            onPressed: onOpenMap,
+            icon: const Icon(Icons.map_outlined, size: 20),
+            label: Text(l10n.yearReviewOpenMap),
           ),
         ],
       ),

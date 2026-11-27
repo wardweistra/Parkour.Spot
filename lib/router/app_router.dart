@@ -469,6 +469,8 @@ class AppRouter {
           builder: (context, state) => YearReviewScreen(
             year: int.parse(state.pathParameters['year']!),
             userIdOrUsername: state.pathParameters['userIdOrUsername']!,
+            // ?share (from the yearly email) leads with the share buttons.
+            shareFirst: state.uri.queryParameters.containsKey('share'),
           ),
         ),
         GoRoute(

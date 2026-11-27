@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../l10n/app_localizations.dart';
 
 /// Share card ground and accent (`functions/lib/year-review-card.js`): the
-/// banner previews the card it opens, so it borrows the card's colours.
+/// banner opens the card, so it borrows the card's colours.
 const Color _cardGround = Color(0xFF13191C);
 const Color _cardAccent = Color(0xFF8ECFF2);
 
@@ -33,7 +33,7 @@ class YearReviewBanner extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: title,
+      label: isOwn ? '$title. ${l10n.yearReviewBannerOwnBody}' : title,
       excludeSemantics: true,
       child: Material(
         color: _cardGround,

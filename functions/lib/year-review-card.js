@@ -17,10 +17,12 @@ const path = require("path");
 const sharp = require("sharp");
 const {
   countLabel,
+  formatCount,
   leadSentence,
   yearLabel,
   heroCaption,
   moreLabel,
+  moreSpots,
 } = require("./year-review-copy");
 let satoriRenderer = null;
 
@@ -410,15 +412,16 @@ function leadBlock({sentence, fontSize}) {
 
 /**
  * @param {Object} options
+ * @param {boolean=} options.compact Smaller type for the square card.
  * @return {Object} satori element
  */
-function countsRow({counts, locale}) {
+function countsRow({counts, locale, compact = false}) {
   // Equal columns on one line; long labels (de, pt) wrap inside their column
   // instead of pushing the last count onto a second row.
   return h("div", {
     display: "flex",
     borderTop: `2px solid ${COLORS.hairline}`,
-    paddingTop: 28,
+    paddingTop: compact ? 18 : 28,
   }, counts.map(({key, count}) => h("div", {
     display: "flex",
     flexDirection: "column",
@@ -426,8 +429,8 @@ function countsRow({counts, locale}) {
     flexBasis: 0,
     paddingRight: 20,
   }, [
-    h("div", {display: "flex", fontSize: 64, fontWeight: 600, color: COLORS.ink, lineHeight: 1.05}, String(count)),
-    h("div", {display: "flex", fontSize: 28, fontWeight: 500, color: COLORS.muted, marginTop: 4, lineHeight: 1.2}, countLabel(locale, key, count)),
+    h("div", {display: "flex", fontSize: compact ? 44 : 64, fontWeight: 600, color: COLORS.ink, lineHeight: 1.05}, formatCount(locale, count)),
+    h("div", {display: "flex", fontSize: compact ? 22 : 28, fontWeight: 500, color: COLORS.muted, marginTop: 4, lineHeight: 1.2}, countLabel(locale, key, count)),
   ])));
 }
 
@@ -480,7 +483,8 @@ async function buildCardTree(data, {format, locale, now = new Date(), fetchImage
     places: data.places,
   });
 
-  const {photos, more} = planCells(data.frames, data.moreCount, spec.maxCells);
+  // +N counts every spot the sentence names, so photos plus N add up to it.
+  const {photos, more} = planCells(data.frames, moreSpots(data, data.frames.length), spec.maxCells);
   const isStory = format !== "square";
   const fieldHeight = photos.length === 0 ? 0 : (isStory ? (photos.length === 1 ? 1120 : 1040) : 560);
 
@@ -517,7 +521,7 @@ async function buildCardTree(data, {format, locale, now = new Date(), fetchImage
   }
 
   const leadSize = photos.length === 0 ? (isStory ? 104 : 80) : (isStory ? 68 : 52);
-  const showCounts = isStory && !countsRepeatLead(data.counts, data.lead);
+  const showCounts = !countsRepeatLead(data.counts, data.lead);
   const scale = isStory ? 1 : 0.9;
   return h("div", {
     display: "flex",
@@ -541,10 +545,10 @@ async function buildCardTree(data, {format, locale, now = new Date(), fetchImage
       field ? null : h("div", {display: "flex", flexGrow: 1}, null),
       leadBlock({sentence, fontSize: leadSize}),
       h("div", {display: "flex", flexGrow: 1}, null),
-      showCounts ? countsRow({counts: data.counts, locale}) : null,
+      showCounts ? countsRow({counts: data.counts, locale, compact: !isStory}) : null,
       h("div", {
         display: "flex",
-        marginTop: isStory ? 28 : 0,
+        marginTop: isStory ? 28 : (showCounts ? 20 : 0),
         fontSize: isStory ? 30 : 28,
         fontWeight: 500,
         color: COLORS.faint,
