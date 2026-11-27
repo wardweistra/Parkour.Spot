@@ -4542,11 +4542,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get yearReviewCardLoading => 'Préparation de la carte…';
 
   @override
-  String get yearReviewAboutTitle => 'Qu\'est-ce que Parkour·Spot ?';
+  String get yearReviewAboutTitle =>
+      'Une carte faite par celles et ceux qui s’entraînent';
 
   @override
-  String get yearReviewAboutBody =>
-      'Une carte gratuite des spots de parkour du monde entier, faite par la communauté. Trouvez des endroits où vous entraîner, avec les photos et les notes de celles et ceux qui s\'y entraînent, et ajoutez les spots que vous connaissez. La carte est ouverte à tous, sans compte.';
+  String yearReviewAboutBody(String name) {
+    return 'Parkour·Spot est une carte libre et gratuite des spots de parkour du monde entier. Chaque spot, photo et note vient de personnes comme $name. Ajoute les lieux où tu t’entraînes, pour que d’autres les trouvent aussi.';
+  }
+
+  @override
+  String get yearReviewAddSpot => 'Ajouter un spot';
+
+  @override
+  String yearReviewOwnCardHint(String year) {
+    return 'Ajoute quelque chose avant le 31 décembre et tu auras ta propre carte $year.';
+  }
+
+  @override
+  String get yearReviewIsThisYou => 'C’est toi ? Connecte-toi pour partager';
 
   @override
   String get yearReviewShareStory => 'Partager en story';

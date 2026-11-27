@@ -84,8 +84,11 @@ describe("year review email", () => {
     expect(email.text).toContain("4 spots added");
     expect(email.text).toContain(`Unsubscribe from newsletter emails: ${unsub}`);
     expect(email.html).toContain("2026 so far");
-    // The card shows the sentence; no headline repeating it.
-    expect(email.html).not.toContain("font-size:26px");
+    // Thanks lead; the card shows the sentence, so no text copy of it.
+    expect(email.html).toContain("Thank you, Noor");
+    expect(email.html).not.toContain("<span style=\"color:#8ECFF2\">4 spots</span>");
+    expect(email.html).toContain("https://parkour.spot/year/2026/@noor/story.jpg?locale=en&amp;v=2026-12-02");
+    expect(email.text).toContain("Share your year");
     expect(email.html).toContain("alt=\"In 2026 Noor put 4 spots on the map in Utrecht\"");
   });
 
@@ -95,7 +98,9 @@ describe("year review email", () => {
     expect(email.html).not.toContain("square.jpg");
     expect(email.html).not.toContain("/year/2026/");
     expect(email.html).toContain(EMAIL_STRINGS.nl.privateNote);
-    expect(email.html).toContain("font-size:26px");
+    expect(email.html).toContain("Bedankt, Noor");
+    expect(email.html).toContain("<span style=\"color:#8ECFF2\">");
+    expect(email.html).not.toContain(EMAIL_STRINGS.nl.shareTitle);
     expect(email.html).toContain("https://parkour.spot/profile/settings");
   });
 

@@ -4470,11 +4470,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yearReviewCardLoading => 'Putting the card together…';
 
   @override
-  String get yearReviewAboutTitle => 'What is Parkour·Spot?';
+  String get yearReviewAboutTitle => 'A map made by people who train';
 
   @override
-  String get yearReviewAboutBody =>
-      'A free map of parkour spots around the world, made by the community. Find places to train, with photos and ratings from people who train there, and add the spots you know. The map is open to everyone, no account needed.';
+  String yearReviewAboutBody(String name) {
+    return 'Parkour·Spot is a free, open map of parkour spots around the world. Every spot, photo and rating on it comes from people like $name. Add the places you train, so others can find them too.';
+  }
+
+  @override
+  String get yearReviewAddSpot => 'Add a spot you know';
+
+  @override
+  String yearReviewOwnCardHint(String year) {
+    return 'Add something before 31 December and you get your own $year card.';
+  }
+
+  @override
+  String get yearReviewIsThisYou => 'Is this you? Log in to share';
 
   @override
   String get yearReviewShareStory => 'Share to your story';
