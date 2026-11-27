@@ -7180,17 +7180,35 @@ abstract class AppLocalizations {
   /// **'Putting the card together…'**
   String get yearReviewCardLoading;
 
-  /// Year review, visitor: heading introducing the app
+  /// Year review, visitor: heading introducing the app as made by its contributors
   ///
   /// In en, this message translates to:
-  /// **'What is Parkour·Spot?'**
+  /// **'A map made by people who train'**
   String get yearReviewAboutTitle;
 
-  /// Year review, visitor: what the app is, for people arriving from a shared card
+  /// Year review, visitor: what the app is and an invitation to contribute, for people arriving from a shared card
   ///
   /// In en, this message translates to:
-  /// **'A free map of parkour spots around the world, made by the community. Find places to train, with photos and ratings from people who train there, and add the spots you know. The map is open to everyone, no account needed.'**
-  String get yearReviewAboutBody;
+  /// **'Parkour·Spot is a free, open map of parkour spots around the world. Every spot, photo and rating on it comes from people like {name}. Add the places you train, so others can find them too.'**
+  String yearReviewAboutBody(String name);
+
+  /// Year review, visitor: primary button that opens the add flow
+  ///
+  /// In en, this message translates to:
+  /// **'Add a spot you know'**
+  String get yearReviewAddSpot;
+
+  /// Year review, visitor: shown in December, while the year's numbers still update
+  ///
+  /// In en, this message translates to:
+  /// **'Add something before 31 December and you get your own {year} card.'**
+  String yearReviewOwnCardHint(String year);
+
+  /// Year review, visitor: link for the card's owner, who is signed out, to log in and get the share buttons
+  ///
+  /// In en, this message translates to:
+  /// **'Is this you? Log in to share'**
+  String get yearReviewIsThisYou;
 
   /// Year review: primary button that shares the 9:16 card image
   ///

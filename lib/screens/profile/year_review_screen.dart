@@ -244,32 +244,56 @@ class _YearReviewScreenState extends State<YearReviewScreen> {
 
   List<Widget> _visitorActions(YearReview review) {
     final theme = Theme.of(context);
+    final muted = theme.textTheme.bodyLarge?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      height: 1.5,
+    );
     return [
       // Many visitors arrive from a story or a shared link and have never
-      // heard of the app: say what it is before asking them to open it.
+      // heard of the app: say what it is, that people like this card's owner
+      // made it, and invite them to add to it.
       Text(_l10n.yearReviewAboutTitle, style: theme.textTheme.titleLarge),
       const SizedBox(height: 8),
-      Text(
-        _l10n.yearReviewAboutBody,
-        style: theme.textTheme.bodyLarge?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-          height: 1.5,
-        ),
-      ),
+      Text(_l10n.yearReviewAboutBody(review.name), style: muted),
+      if (review.soFar) ...[
+        const SizedBox(height: 12),
+        Text(_l10n.yearReviewOwnCardHint('${review.year}'), style: muted),
+      ],
       const SizedBox(height: 24),
+      // The add hub signs visitors in itself, then returns them to adding.
+      CustomButton(
+        onPressed: () => context.go('/explore?tab=add'),
+        text: _l10n.yearReviewAddSpot,
+        icon: Icons.add_location_alt_outlined,
+      ),
+      const SizedBox(height: 12),
       CustomButton(
         onPressed: () => context.go('/explore'),
         text: _l10n.yearReviewOpenMap,
         icon: Icons.map_outlined,
+        isOutlined: true,
       ),
       const SizedBox(height: 12),
-      CustomButton(
-        onPressed: () => context.push(
-          '/user/${Uri.encodeComponent(review.username ?? review.userId)}',
-        ),
-        text: _l10n.yearReviewSeeProfile(review.name),
-        icon: Icons.person_outline,
-        isOutlined: true,
+      Wrap(
+        spacing: 8,
+        children: [
+          TextButton.icon(
+            onPressed: () => context.push(
+              '/user/${Uri.encodeComponent(review.username ?? review.userId)}',
+            ),
+            icon: const Icon(Icons.person_outline, size: 20),
+            label: Text(_l10n.yearReviewSeeProfile(review.name)),
+          ),
+          // The owner often opens this from the email in a browser where
+          // they are signed out; signing in brings back the share buttons.
+          TextButton.icon(
+            onPressed: () => context.push(
+              '/login?redirectTo=${Uri.encodeComponent(review.pagePath)}',
+            ),
+            icon: const Icon(Icons.ios_share, size: 20),
+            label: Text(_l10n.yearReviewIsThisYou),
+          ),
+        ],
       ),
     ];
   }

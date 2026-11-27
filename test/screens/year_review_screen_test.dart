@@ -153,7 +153,8 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Open the map'), findsNothing);
-      expect(find.text('What is Parkour·Spot?'), findsNothing);
+      expect(find.text('A map made by people who train'), findsNothing);
+      expect(find.text('Add a spot you know'), findsNothing);
       expect(find.text('Parkour Park Leeuwesteyn'), findsOneWidget);
       expect(find.text('Utrecht · Added'), findsOneWidget);
       expect(
@@ -170,8 +171,20 @@ void main() {
         tester,
         review: YearReview.fromMap(reviewMap(moreCount: 4)),
       );
-      expect(find.text('What is Parkour·Spot?'), findsOneWidget);
+      expect(find.text('A map made by people who train'), findsOneWidget);
+      expect(
+        find.textContaining('comes from people like Noor'),
+        findsOneWidget,
+      );
+      expect(find.text('Add a spot you know'), findsOneWidget);
       expect(find.text('Open the map'), findsOneWidget);
+      expect(
+        find.text(
+          'Add something before 31 December and you get your own 2026 card.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Is this you? Log in to share'), findsOneWidget);
       expect(find.text("See Noor's profile"), findsOneWidget);
       expect(find.text('Share to your story'), findsNothing);
       expect(find.text('And 4 more spots with photos'), findsOneWidget);

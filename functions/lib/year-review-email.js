@@ -45,11 +45,18 @@ const COLORS = Object.freeze({
 const STRINGS = {
   en: {
     subject: "Your {year} on Parkour·Spot",
-    heading: "Your {year} on Parkour·Spot",
-    cta: "See and share your year",
+    thanksTitle: "Thank you, {name}",
+    thanksTitleNoName: "Thank you",
+    thanksBody: "Everything you added in {year} is on a free, open map, so anyone can find a good place to train.",
+    shareTitle: "Share your year",
+    shareBody: "Post your card to your story, so the people you train with find these spots too and maybe add a few of their own.",
+    cta: "Open your card",
+    downloadLead: "Or save the image:",
+    downloadStory: "Story (9:16)",
+    downloadSquare: "Square (1:1)",
     privateNote: "Your profile is private, so your year has no public page or card. Make your profile public in Settings to get one you can share.",
     privateCta: "Open settings",
-    thanks: "Thanks for helping everyone find better places to train.",
+    signoff: "See you at the spots.",
     footer: "You get this email because you have a Parkour·Spot account.",
     unsubscribe: "Unsubscribe from newsletter emails",
     settings: "Email settings",
@@ -62,11 +69,18 @@ const STRINGS = {
   },
   de: {
     subject: "Dein {year} auf Parkour·Spot",
-    heading: "Dein {year} auf Parkour·Spot",
-    cta: "Dein Jahr ansehen und teilen",
+    thanksTitle: "Danke, {name}",
+    thanksTitleNoName: "Danke",
+    thanksBody: "Alles, was du {year} beigetragen hast, steht auf einer freien, offenen Karte. So findet jeder einen guten Ort zum Trainieren.",
+    shareTitle: "Teile dein Jahr",
+    shareBody: "Poste deine Karte in deiner Story, damit die Leute, mit denen du trainierst, diese Spots auch finden und vielleicht selbst ein paar hinzufügen.",
+    cta: "Deine Karte öffnen",
+    downloadLead: "Oder speichere das Bild:",
+    downloadStory: "Story (9:16)",
+    downloadSquare: "Quadrat (1:1)",
     privateNote: "Dein Profil ist privat, darum hat dein Jahr keine öffentliche Seite und keine Karte. Mach dein Profil in den Einstellungen öffentlich, um sie teilen zu können.",
     privateCta: "Einstellungen öffnen",
-    thanks: "Danke, dass du allen hilfst, bessere Trainingsorte zu finden.",
+    signoff: "Wir sehen uns beim Training.",
     footer: "Du bekommst diese E-Mail, weil du ein Parkour·Spot-Konto hast.",
     unsubscribe: "Newsletter-E-Mails abbestellen",
     settings: "E-Mail-Einstellungen",
@@ -79,11 +93,18 @@ const STRINGS = {
   },
   nl: {
     subject: "Jouw {year} op Parkour·Spot",
-    heading: "Jouw {year} op Parkour·Spot",
-    cta: "Bekijk en deel je jaar",
+    thanksTitle: "Bedankt, {name}",
+    thanksTitleNoName: "Bedankt",
+    thanksBody: "Alles wat je in {year} hebt toegevoegd staat op een gratis, open kaart, zodat iedereen een goede plek vindt om te trainen.",
+    shareTitle: "Deel je jaar",
+    shareBody: "Zet je kaart in je story, zodat de mensen met wie je traint deze spots ook vinden en misschien zelf een paar toevoegen.",
+    cta: "Open je kaart",
+    downloadLead: "Of bewaar de afbeelding:",
+    downloadStory: "Story (9:16)",
+    downloadSquare: "Vierkant (1:1)",
     privateNote: "Je profiel is privé, dus je jaar heeft geen openbare pagina of kaart. Maak je profiel openbaar in Instellingen om er een te krijgen die je kunt delen.",
     privateCta: "Instellingen openen",
-    thanks: "Bedankt dat je iedereen helpt betere plekken te vinden om te trainen.",
+    signoff: "Tot op de spots.",
     footer: "Je krijgt deze e-mail omdat je een Parkour·Spot-account hebt.",
     unsubscribe: "Afmelden voor nieuwsbrief-e-mails",
     settings: "E-mailinstellingen",
@@ -96,11 +117,18 @@ const STRINGS = {
   },
   fr: {
     subject: "Ton année {year} sur Parkour·Spot",
-    heading: "Ton année {year} sur Parkour·Spot",
-    cta: "Voir et partager ton année",
+    thanksTitle: "Merci, {name}",
+    thanksTitleNoName: "Merci",
+    thanksBody: "Tout ce que tu as ajouté en {year} est sur une carte libre et gratuite, pour que chacun·e trouve un bon endroit où s’entraîner.",
+    shareTitle: "Partage ton année",
+    shareBody: "Publie ta carte en story : les personnes avec qui tu t’entraînes découvriront ces spots, et en ajouteront peut-être quelques-uns.",
+    cta: "Ouvrir ta carte",
+    downloadLead: "Ou enregistre l’image :",
+    downloadStory: "Story (9:16)",
+    downloadSquare: "Carré (1:1)",
     privateNote: "Ton profil est privé : ton année n’a donc ni page publique ni carte. Rends ton profil public dans les Réglages pour en avoir une à partager.",
     privateCta: "Ouvrir les réglages",
-    thanks: "Merci d’aider tout le monde à trouver de meilleurs lieux d’entraînement.",
+    signoff: "À bientôt sur les spots.",
     footer: "Tu reçois cet e-mail parce que tu as un compte Parkour·Spot.",
     unsubscribe: "Se désabonner des e-mails d’actualité",
     settings: "Réglages e-mail",
@@ -113,11 +141,18 @@ const STRINGS = {
   },
   es: {
     subject: "Tu {year} en Parkour·Spot",
-    heading: "Tu {year} en Parkour·Spot",
-    cta: "Mira y comparte tu año",
+    thanksTitle: "Gracias, {name}",
+    thanksTitleNoName: "Gracias",
+    thanksBody: "Todo lo que añadiste en {year} está en un mapa abierto y gratuito, para que cualquiera encuentre un buen lugar para entrenar.",
+    shareTitle: "Comparte tu año",
+    shareBody: "Publica tu tarjeta en tu historia para que la gente con la que entrenas descubra estos spots, y quizá añada algunos.",
+    cta: "Abrir tu tarjeta",
+    downloadLead: "O guarda la imagen:",
+    downloadStory: "Historia (9:16)",
+    downloadSquare: "Cuadrada (1:1)",
     privateNote: "Tu perfil es privado, así que tu año no tiene página ni tarjeta públicas. Haz público tu perfil en Ajustes para tener una que puedas compartir.",
     privateCta: "Abrir ajustes",
-    thanks: "Gracias por ayudar a todos a encontrar mejores lugares para entrenar.",
+    signoff: "Nos vemos en los spots.",
     footer: "Recibes este correo porque tienes una cuenta de Parkour·Spot.",
     unsubscribe: "Darse de baja de los correos informativos",
     settings: "Ajustes de correo",
@@ -130,11 +165,18 @@ const STRINGS = {
   },
   pt: {
     subject: "O teu {year} no Parkour·Spot",
-    heading: "O teu {year} no Parkour·Spot",
-    cta: "Vê e partilha o teu ano",
+    thanksTitle: "Obrigado, {name}",
+    thanksTitleNoName: "Obrigado",
+    thanksBody: "Tudo o que adicionaste em {year} está num mapa aberto e gratuito, para que qualquer pessoa encontre um bom sítio para treinar.",
+    shareTitle: "Partilha o teu ano",
+    shareBody: "Publica o teu cartão na tua story para que as pessoas com quem treinas descubram estes spots, e talvez adicionem alguns.",
+    cta: "Abrir o teu cartão",
+    downloadLead: "Ou guarda a imagem:",
+    downloadStory: "Story (9:16)",
+    downloadSquare: "Quadrado (1:1)",
     privateNote: "O teu perfil é privado, por isso o teu ano não tem página nem cartão públicos. Torna o teu perfil público nas Definições para teres um que possas partilhar.",
     privateCta: "Abrir definições",
-    thanks: "Obrigado por ajudares todos a encontrar melhores sítios para treinar.",
+    signoff: "Vemo-nos nos spots.",
     footer: "Recebes este e-mail porque tens uma conta Parkour·Spot.",
     unsubscribe: "Cancelar e-mails informativos",
     settings: "Definições de e-mail",
@@ -215,42 +257,66 @@ function buildYearReviewEmail(data, {locale: rawLocale, unsubscribeUrl, now = ne
   });
   const sentenceText = `${sentence.before}${sentence.emphasis}${sentence.after}`.replace(/\s+/g, " ").trim();
   const subject = fill(s.subject, {year: data.year});
-  const heading = fill(s.heading, {year: yearLabel(locale, data.year, soFar)});
+  const name = (data.name || "").trim();
+  const thanksTitle = name ? fill(s.thanksTitle, {name}) : s.thanksTitleNoName;
+  const thanksBody = fill(s.thanksBody, {year: data.year});
+  const yearText = yearLabel(locale, data.year, soFar);
   const counts = (data.counts || []).map(({key, count}) => ({count, label: countLabel(locale, key, count)}));
 
   const pageUrl = `${PUBLIC_ORIGIN}${yearReviewPath(data)}`;
-  const cardUrl = `${PUBLIC_ORIGIN}${yearReviewPath(data, "square.jpg")}` +
-    `?locale=${locale}${cacheKey ? `&v=${encodeURIComponent(cacheKey)}` : ""}`;
+  const cardQuery = `?locale=${locale}${cacheKey ? `&v=${encodeURIComponent(cacheKey)}` : ""}`;
+  const cardUrl = `${PUBLIC_ORIGIN}${yearReviewPath(data, "square.jpg")}${cardQuery}`;
+  const storyUrl = `${PUBLIC_ORIGIN}${yearReviewPath(data, "story.jpg")}${cardQuery}`;
   const isPublic = data.isPublicProfile !== false;
-  const ctaUrl = isPublic ? pageUrl : SETTINGS_URL;
-  const ctaLabel = isPublic ? s.cta : s.privateCta;
+
+  const p = (text, {size = 15, color = COLORS.muted, pad = "0 28px"} = {}) =>
+    `<tr><td style="padding:${pad};font-family:${FONT};font-size:${size}px;line-height:1.5;color:${color}">${text}</td></tr>`;
+  const link = (href, label) =>
+    `<a href="${escapeHtml(href)}" style="color:${COLORS.accent};font-weight:700;text-decoration:underline">${escapeHtml(label)}</a>`;
 
   const countCells = counts.map(({count, label}) =>
     `<td valign="top" style="padding:12px 8px;text-align:center;font-family:${FONT}">` +
     `<div style="font-size:28px;font-weight:700;color:${COLORS.accent};line-height:1.1">${escapeHtml(count)}</div>` +
     `<div style="font-size:13px;color:${COLORS.muted};line-height:1.3;padding-top:4px">${escapeHtml(label)}</div></td>`,
   ).join("");
+  const countsHtml = countCells ?
+    `<tr><td style="padding:16px 20px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.panel};border-radius:16px"><tr>${countCells}</tr></table></td></tr>` :
+    "";
 
-  // The card prints the sentence itself (and carries it as alt text), so
-  // only private profiles, who get no card, get it as a headline.
-  const headlineHtml = `<tr><td style="padding:10px 28px 16px;font-family:${FONT};font-size:26px;font-weight:700;line-height:1.25;color:${COLORS.ink}">${escapeHtml(sentence.before)}<span style="color:${COLORS.accent}">${escapeHtml(sentence.emphasis)}</span>${escapeHtml(sentence.after)}</td></tr>`;
-  const cardHtml = isPublic ?
-    `<tr><td style="padding:8px 28px 0"><a href="${escapeHtml(pageUrl)}"><img src="${escapeHtml(cardUrl)}" width="484" alt="${escapeHtml(sentenceText)}" style="display:block;width:100%;max-width:484px;height:auto;border:0;border-radius:16px;font-family:${FONT};font-size:15px;color:${COLORS.muted}"></a></td></tr>` :
-    `<tr><td style="padding:8px 28px 0;font-family:${FONT};font-size:15px;line-height:1.5;color:${COLORS.muted}">${escapeHtml(s.privateNote)}</td></tr>`;
+  // Thanks first: the email exists to say it. The card prints the lead
+  // sentence (and carries it as alt text), so only private profiles, who get
+  // no card, get the sentence as text.
+  const thanksHtml =
+    `<tr><td style="padding:24px 28px 0;font-family:${FONT};font-size:28px;font-weight:700;line-height:1.2;color:${COLORS.ink}">${escapeHtml(thanksTitle)}</td></tr>` +
+    p(escapeHtml(thanksBody), {size: 16, pad: "8px 28px 0"});
+
+  let bodyHtml;
+  if (isPublic) {
+    bodyHtml =
+      `<tr><td style="padding:24px 28px 0"><a href="${escapeHtml(pageUrl)}"><img src="${escapeHtml(cardUrl)}" width="484" alt="${escapeHtml(sentenceText)}" style="display:block;width:100%;max-width:484px;height:auto;border:0;border-radius:16px;font-family:${FONT};font-size:15px;color:${COLORS.muted}"></a></td></tr>` +
+      countsHtml +
+      `<tr><td style="padding:32px 28px 0;font-family:${FONT};font-size:20px;font-weight:700;line-height:1.3;color:${COLORS.ink}">${escapeHtml(s.shareTitle)}</td></tr>` +
+      p(escapeHtml(s.shareBody), {pad: "6px 28px 0"}) +
+      `<tr><td style="padding:16px 28px 0">${buttonHtml(pageUrl, s.cta)}</td></tr>` +
+      p(`${escapeHtml(s.downloadLead)} ${link(storyUrl, s.downloadStory)} · ${link(cardUrl, s.downloadSquare)}`, {size: 14, pad: "14px 28px 0"});
+  } else {
+    bodyHtml =
+      `<tr><td style="padding:24px 28px 0;font-family:${FONT};font-size:20px;font-weight:700;line-height:1.3;color:${COLORS.ink}">${escapeHtml(sentence.before)}<span style="color:${COLORS.accent}">${escapeHtml(sentence.emphasis)}</span>${escapeHtml(sentence.after)}</td></tr>` +
+      countsHtml +
+      p(escapeHtml(s.privateNote), {pad: "24px 28px 0"}) +
+      `<tr><td style="padding:16px 28px 0">${buttonHtml(SETTINGS_URL, s.privateCta)}</td></tr>`;
+  }
 
   const html = `<!doctype html>
 <html lang="${locale}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light">${FONT_LINK}<title>${escapeHtml(subject)}</title></head>
 <body style="margin:0;padding:0;background:${COLORS.page}">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0">${escapeHtml(sentenceText)}</div>
+<div style="display:none;max-height:0;overflow:hidden;opacity:0">${escapeHtml(`${thanksTitle}. ${sentenceText}`)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.page}"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="540" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:540px;background:${COLORS.ground};border-radius:24px">
-<tr><td style="padding:28px 28px 0"><img src="${LOGO_URL}" width="40" height="40" alt="Parkour·Spot" style="display:block;border:0;border-radius:10px"></td></tr>
-<tr><td style="padding:20px 28px 0;font-family:${FONT};font-size:14px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:${COLORS.muted}">${escapeHtml(heading)}</td></tr>
-${isPublic ? "" : headlineHtml}
-${cardHtml}
-${countCells ? `<tr><td style="padding:16px 20px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.panel};border-radius:16px"><tr>${countCells}</tr></table></td></tr>` : ""}
-<tr><td style="padding:20px 28px 0">${buttonHtml(ctaUrl, ctaLabel)}</td></tr>
-<tr><td style="padding:20px 28px 28px;font-family:${FONT};font-size:15px;line-height:1.5;color:${COLORS.muted}">${escapeHtml(s.thanks)}</td></tr>
+<tr><td style="padding:28px 28px 0"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td><img src="${LOGO_URL}" width="40" height="40" alt="Parkour·Spot" style="display:block;border:0;border-radius:10px"></td><td style="padding-left:12px;font-family:${FONT};font-size:14px;color:${COLORS.muted}">${escapeHtml(yearText)}</td></tr></table></td></tr>
+${thanksHtml}
+${bodyHtml}
+${p(escapeHtml(s.signoff), {pad: "28px 28px 28px"})}
 </table>
 <table role="presentation" width="540" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:540px"><tr><td style="padding:20px 28px;font-family:${FONT};font-size:12px;line-height:1.6;color:${COLORS.footer};text-align:center">
 ${escapeHtml(s.footer)}<br>
@@ -260,15 +326,18 @@ ${escapeHtml(s.footer)}<br>
 </body></html>`;
 
   const text = [
-    heading,
+    thanksTitle,
+    thanksBody,
     "",
     sentenceText,
     "",
     ...counts.map(({count, label}) => `${count} ${label}`),
     "",
-    isPublic ? `${s.cta}: ${pageUrl}` : `${s.privateNote}\n${s.privateCta}: ${SETTINGS_URL}`,
+    ...(isPublic ?
+      [s.shareTitle, s.shareBody, `${s.cta}: ${pageUrl}`, `${s.downloadStory}: ${storyUrl}`, `${s.downloadSquare}: ${cardUrl}`] :
+      [s.privateNote, `${s.privateCta}: ${SETTINGS_URL}`]),
     "",
-    s.thanks,
+    s.signoff,
     "",
     "--",
     s.footer,

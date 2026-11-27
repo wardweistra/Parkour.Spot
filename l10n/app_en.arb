@@ -4442,13 +4442,31 @@
   "@yearReviewCardLoading": {
     "description": "Year review: shown on the card while its image renders"
   },
-  "yearReviewAboutTitle": "What is Parkour·Spot?",
+  "yearReviewAboutTitle": "A map made by people who train",
   "@yearReviewAboutTitle": {
-    "description": "Year review, visitor: heading introducing the app"
+    "description": "Year review, visitor: heading introducing the app as made by its contributors"
   },
-  "yearReviewAboutBody": "A free map of parkour spots around the world, made by the community. Find places to train, with photos and ratings from people who train there, and add the spots you know. The map is open to everyone, no account needed.",
+  "yearReviewAboutBody": "Parkour·Spot is a free, open map of parkour spots around the world. Every spot, photo and rating on it comes from people like {name}. Add the places you train, so others can find them too.",
   "@yearReviewAboutBody": {
-    "description": "Year review, visitor: what the app is, for people arriving from a shared card"
+    "description": "Year review, visitor: what the app is and an invitation to contribute, for people arriving from a shared card",
+    "placeholders": {
+      "name": {"type": "String", "example": "Noor"}
+    }
+  },
+  "yearReviewAddSpot": "Add a spot you know",
+  "@yearReviewAddSpot": {
+    "description": "Year review, visitor: primary button that opens the add flow"
+  },
+  "yearReviewOwnCardHint": "Add something before 31 December and you get your own {year} card.",
+  "@yearReviewOwnCardHint": {
+    "description": "Year review, visitor: shown in December, while the year's numbers still update",
+    "placeholders": {
+      "year": {"type": "String", "example": "2026"}
+    }
+  },
+  "yearReviewIsThisYou": "Is this you? Log in to share",
+  "@yearReviewIsThisYou": {
+    "description": "Year review, visitor: link for the card's owner, who is signed out, to log in and get the share buttons"
   },
   "yearReviewShareStory": "Share to your story",
   "@yearReviewShareStory": {
