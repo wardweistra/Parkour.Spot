@@ -161,14 +161,19 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  /// Set once the auth listener is attached; used to detach it in [dispose].
+  AuthService? _authService;
+
   @override
   void initState() {
     super.initState();
 
-    // Listen to auth state changes to handle navigation
+    // Listen to auth state changes to handle navigation. Keep the reference:
+    // dispose() cannot look up providers through `context`.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      authService.addListener(_onAuthStateChanged);
+      if (!mounted) return;
+      _authService = Provider.of<AuthService>(context, listen: false)
+        ..addListener(_onAuthStateChanged);
     });
   }
 
@@ -205,20 +210,16 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.dispose();
     _displayNameController.dispose();
 
-    // Remove auth listener
-    try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      authService.removeListener(_onAuthStateChanged);
-    } catch (e) {
-      // Ignore errors during disposal
-    }
+    _authService?.removeListener(_onAuthStateChanged);
+    _authService = null;
 
     super.dispose();
   }
 
   void _onAuthStateChanged() {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    if (authService.isAuthenticated && mounted) {
+    final authService = _authService;
+    if (!mounted || authService == null) return;
+    if (authService.isAuthenticated) {
       // User is now authenticated, redirect them
       _redirectAfterAuth();
     }
