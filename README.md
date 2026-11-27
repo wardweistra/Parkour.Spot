@@ -128,6 +128,22 @@ This key should have at least the following APIs enabled:
 
 The Flutter client calls callable functions `placesAutocomplete`, `placeDetails`, `geocodeCoordinates`, and `reverseGeocodeAddress`, which proxy Google APIs securely using the backend key.
 
+### **Email (Brevo)**
+
+Personalized email (first: the yearly review, "Wrapped") goes out through Brevo's transactional API from Cloud Functions. Set two secrets:
+
+```bash
+firebase functions:secrets:set BREVO_API_KEY            # Brevo → SMTP & API → API keys
+firebase functions:secrets:set EMAIL_UNSUBSCRIBE_SECRET # e.g. `openssl rand -base64 32`; never rotate casually, it signs every unsubscribe link already sent
+```
+
+Mail is sent from `noreply@parkour.spot` (on the domain authenticated in Brevo) with replies going to `parkour.spot@wardweistra.nl`; both are set in `functions/lib/brevo.js`.
+
+- **Queue:** Admin → Email campaigns. Pick a year, start time and daily cap (Brevo's free plan: 300/day, the default), send yourself a test, then queue. `processEmailCampaignsScheduled` sends every 10 minutes within the cap. Recipients are everyone with contributions that year (`userStats`). At send time, people who opted out, have no verified email, or have nothing to show are skipped.
+- **Opt-out:** `users/{uid}.emailPrefs.newsletter` (missing = on). New accounts choose at sign-up (checkbox, on by default; recorded with `newsletterUpdatedAt`). Toggle in Settings → Notifications → Email, or via the signed link and one-click `List-Unsubscribe` header in every email (`/email/unsubscribe` → `emailUnsubscribe`).
+- **Locally:** without `BREVO_API_KEY` in the emulator, sends are logged as `[brevo dry-run]` and recorded as sent.
+- **Adding email for other events:** add a category to `EMAIL_CATEGORIES` in `functions/lib/email-preferences.js` (default off), a toggle next to the newsletter one, and an email channel in `lib/deliver-notification.js` that checks `isEmailCategoryEnabled` and uses `unsubscribeUrl` for that category.
+
 ### **Firebase Web API key (public client identifier)**
 
 The Firebase **Web** API key in `FIREBASE_API_KEY` is a public client identifier. Background FCM requires it inside generated `web/firebase-messaging-sw.js` (gitignored; rebuilt by `scripts/generate-firebase-messaging-sw.js`). Security scanners that report this as a leaked GCP key are false positives: the key cannot be removed from the service worker, and data access is enforced by Auth, App Check, and Firestore/Storage rules.

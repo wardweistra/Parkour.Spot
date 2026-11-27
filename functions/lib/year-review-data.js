@@ -263,8 +263,32 @@ async function resolvePublicProfile(db, userIdOrUsername) {
 async function buildYearReviewData(db, {userIdOrUsername, year}) {
   const resolved = await resolvePublicProfile(db, userIdOrUsername);
   if (!resolved) return null;
-  const {userId, profile} = resolved;
+  return buildForProfile(db, {...resolved, year, isPublicProfile: true});
+}
 
+/**
+ * Same data for a known uid, whatever the profile's visibility. For the
+ * person themselves (the yearly review email), never for public pages.
+ * `isPublicProfile` tells the caller whether the public page and card exist.
+ * @param {Object} db Firestore
+ * @param {Object} options
+ * @param {string} options.userId
+ * @param {number} options.year
+ * @return {Promise<Object|null>} Null when nothing was contributed that year.
+ */
+async function buildYearReviewDataForUser(db, {userId, year}) {
+  const profileDoc = await db.collection("publicProfiles").doc(userId).get();
+  const profile = profileDoc.exists ? profileDoc.data() || {} : {};
+  const isPublicProfile = profileDoc.exists && profile.isPublicProfile !== false;
+  return buildForProfile(db, {userId, profile, year, isPublicProfile});
+}
+
+/**
+ * @param {Object} db Firestore
+ * @param {{userId: string, profile: Object, year: number, isPublicProfile: boolean}} options
+ * @return {Promise<Object|null>}
+ */
+async function buildForProfile(db, {userId, profile, year, isPublicProfile}) {
   const [statsDoc, userDoc, touches] = await Promise.all([
     db.collection("userStats").doc(userId).get(),
     db.collection("users").doc(userId).get(),
@@ -289,10 +313,12 @@ async function buildYearReviewData(db, {userIdOrUsername, year}) {
   const overflow = withImages.length > MAX_FRAMES;
   const frames = withImages.slice(0, overflow ? MAX_FRAMES - 1 : MAX_FRAMES);
 
-  const name = trimmed(profile.displayName) || trimmed(profile.username) || "";
   const userData = userDoc.exists ? userDoc.data() || {} : {};
+  const name = trimmed(profile.displayName) || trimmed(profile.username) ||
+    trimmed(userData.displayName) || "";
   return {
     userId,
+    isPublicProfile,
     year,
     name,
     username: trimmed(profile.username) || null,
@@ -321,4 +347,5 @@ module.exports = {
   readYearTouches,
   resolvePublicProfile,
   buildYearReviewData,
+  buildYearReviewDataForUser,
 };

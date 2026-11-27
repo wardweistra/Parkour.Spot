@@ -667,6 +667,7 @@ module.exports = {
   USER_STATS_COLLECTION,
   USER_STATS_KEYS,
   FIRST_STATS_YEAR,
+  ANONYMOUS_USER_ID,
   WATCHED_SOURCES,
   emptyUserStats,
   hasAnyContribution,

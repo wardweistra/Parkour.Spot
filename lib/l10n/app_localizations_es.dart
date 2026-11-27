@@ -687,6 +687,21 @@ class AppLocalizationsEs extends AppLocalizations {
       'Recibe un recordatorio cuando tu sesión planificada haya empezado y aún no hayas hecho check-in en ese spot.';
 
   @override
+  String get profileNotificationSettingsEmailGroupTitle => 'Correo';
+
+  @override
+  String profileNotificationSettingsEmailGroupHelper(String email) {
+    return 'Se envía a $email.';
+  }
+
+  @override
+  String get profileEmailNewsletterTitle => 'Correos informativos';
+
+  @override
+  String get profileEmailNewsletterSubtitle =>
+      'De vez en cuando, como tu resumen del año. Sin spam, y puedes dejarlos cuando quieras.';
+
+  @override
   String get profileLocationAlertsSavedLocationsTitle =>
       'Mis lugares de interés';
 

@@ -25,6 +25,9 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLogin = true;
   bool _isLoading = false;
   bool _isGoogleSignInLoading = false;
+
+  /// Sign-up only: newsletter email such as the yearly review. On by default.
+  bool _emailNewsletter = true;
   String? _intendedDestination;
   bool _hasCapturedDestination = false;
   bool _hasRedirected = false;
@@ -246,6 +249,7 @@ class _LoginScreenState extends State<LoginScreen> {
           _emailController.text.trim(),
           _passwordController.text,
           _displayNameController.text.trim(),
+          emailNewsletter: _emailNewsletter,
         );
       }
 
@@ -363,7 +367,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
-      final success = await authService.signInWithGoogle();
+      final success = await authService.signInWithGoogle(
+        signUpEmailNewsletter: _isLogin ? null : _emailNewsletter,
+      );
 
       if (success && mounted) {
         final isAuthenticated = Provider.of<AuthService>(
@@ -482,6 +488,27 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
 
                       const SizedBox(height: 32),
+
+                      // Applies to both ways of signing up below.
+                      if (!_isLogin) ...[
+                        CheckboxListTile(
+                          value: _emailNewsletter,
+                          onChanged: (_isLoading || _isGoogleSignInLoading)
+                              ? null
+                              : (value) => setState(
+                                  () => _emailNewsletter = value ?? false,
+                                ),
+                          controlAffinity: ListTileControlAffinity.leading,
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text(
+                            'Email me now and then, like my yearly review',
+                          ),
+                          subtitle: const Text(
+                            'No spam. You can change this any time in Settings.',
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
 
                       // Google Sign-In Button
                       ElevatedButton.icon(

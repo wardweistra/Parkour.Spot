@@ -29,6 +29,12 @@ class User {
   final bool notifyTrainingPlansNearby;
   final bool notifyEventsNearby;
   final bool notifyTrainingPlanCheckInReminders;
+
+  /// Newsletter-style email (the yearly review). Stored as
+  /// `emailPrefs.newsletter`; missing means on. Not written by [toMap]: the
+  /// unsubscribe link changes it server-side and a profile save must not
+  /// switch it back on.
+  final bool emailNewsletter;
   final String? preferredLanguageCode;
   final bool isLanguageExplicitlySet;
 
@@ -59,6 +65,7 @@ class User {
     this.notifyTrainingPlansNearby = true,
     this.notifyEventsNearby = true,
     this.notifyTrainingPlanCheckInReminders = true,
+    this.emailNewsletter = true,
     this.preferredLanguageCode,
     this.isLanguageExplicitlySet = false,
   });
@@ -113,6 +120,7 @@ class User {
           map['notifyTrainingPlanCheckInReminders'] is bool
           ? map['notifyTrainingPlanCheckInReminders'] as bool
           : true,
+      emailNewsletter: _emailPref(map, 'newsletter', defaultValue: true),
       preferredLanguageCode: map['preferredLanguageCode'] as String?,
       isLanguageExplicitlySet: map['isLanguageExplicitlySet'] is bool
           ? map['isLanguageExplicitlySet'] as bool
@@ -153,6 +161,16 @@ class User {
     };
   }
 
+  static bool _emailPref(
+    Map<String, dynamic> map,
+    String key, {
+    required bool defaultValue,
+  }) {
+    final prefs = map['emailPrefs'];
+    if (prefs is Map && prefs[key] is bool) return prefs[key] as bool;
+    return defaultValue;
+  }
+
   static const _omit = Object();
 
   User copyWith({
@@ -182,6 +200,7 @@ class User {
     bool? notifyTrainingPlansNearby,
     bool? notifyEventsNearby,
     bool? notifyTrainingPlanCheckInReminders,
+    bool? emailNewsletter,
     Object? preferredLanguageCode = _omit,
     bool? isLanguageExplicitlySet,
   }) {
@@ -221,6 +240,7 @@ class User {
       notifyTrainingPlanCheckInReminders:
           notifyTrainingPlanCheckInReminders ??
           this.notifyTrainingPlanCheckInReminders,
+      emailNewsletter: emailNewsletter ?? this.emailNewsletter,
       preferredLanguageCode: preferredLanguageCode == _omit
           ? this.preferredLanguageCode
           : preferredLanguageCode as String?,

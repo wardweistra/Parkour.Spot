@@ -122,6 +122,12 @@ class AdminHomeScreen extends StatelessWidget {
                 onTap: () => context.push('/admin/push-subscriptions'),
               ),
               AdminToolTile(
+                icon: Icons.mail_outline,
+                title: 'Email campaigns',
+                subtitle: 'Queue the yearly review email, send a test, track delivery',
+                onTap: () => context.push('/admin/email-campaigns'),
+              ),
+              AdminToolTile(
                 icon: Icons.analytics,
                 title: 'User activity metrics',
                 subtitle: 'Calculate and sync DAU/WAU/MAU metrics, Spots, Users, and Events to Google Sheets',

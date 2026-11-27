@@ -68,6 +68,10 @@
           "function": "serveSitemap"
         },
         {
+          "source": "/email/unsubscribe",
+          "function": "emailUnsubscribe"
+        },
+        {
           "source": "/year/*/*/story.jpg",
           "function": "yearReviewCard"
         },

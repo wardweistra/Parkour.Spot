@@ -690,6 +690,21 @@ class AppLocalizationsDe extends AppLocalizations {
       'Erhalte eine Erinnerung, wenn dein geplantes Zeitfenster begonnen hat und du an diesem Spot noch nicht eingecheckt bist.';
 
   @override
+  String get profileNotificationSettingsEmailGroupTitle => 'E-Mail';
+
+  @override
+  String profileNotificationSettingsEmailGroupHelper(String email) {
+    return 'Geht an $email.';
+  }
+
+  @override
+  String get profileEmailNewsletterTitle => 'Newsletter-E-Mails';
+
+  @override
+  String get profileEmailNewsletterSubtitle =>
+      'Ab und zu, etwa dein Jahresrückblick. Kein Spam, und du kannst sie jederzeit abbestellen.';
+
+  @override
   String get profileLocationAlertsSavedLocationsTitle =>
       'Meine Orte von Interesse';
 

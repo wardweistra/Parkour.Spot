@@ -1174,6 +1174,30 @@ abstract class AppLocalizations {
   /// **'Get a reminder when your planned session has started and you haven’t checked in at that spot yet.'**
   String get profileTrainingPlanCheckInReminderSubtitle;
 
+  /// Account settings: group title for email preferences
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get profileNotificationSettingsEmailGroupTitle;
+
+  /// Account settings: names the address email goes to
+  ///
+  /// In en, this message translates to:
+  /// **'Sent to {email}.'**
+  String profileNotificationSettingsEmailGroupHelper(String email);
+
+  /// Account settings: newsletter email opt-out toggle title
+  ///
+  /// In en, this message translates to:
+  /// **'Newsletter emails'**
+  String get profileEmailNewsletterTitle;
+
+  /// Account settings: explains what newsletter emails are
+  ///
+  /// In en, this message translates to:
+  /// **'Now and then, like your yearly review. No spam, and you can stop any time.'**
+  String get profileEmailNewsletterSubtitle;
+
   /// Account settings: saved locations subsection title
   ///
   /// In en, this message translates to:
