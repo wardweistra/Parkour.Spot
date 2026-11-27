@@ -99,6 +99,7 @@ const {
 } = require("./lib/training-plan-check-in-reminders");
 const {
   sendWebPushToTargets,
+  pushTargetFromSubscription,
   DEFAULT_NOTIFICATION_ICON_URL,
   DEFAULT_NOTIFICATION_BADGE_URL,
 } = require("./lib/send-web-push");
@@ -13080,7 +13081,10 @@ function serializePushSubscriptionForAdmin(docId, data) {
   if (!data) {
     return {id: docId};
   }
-  const token = typeof data.token === "string" ? data.token : "";
+  // Admin UI shows the tail of the send target: the FID for current
+  // clients, the legacy registration token for older ones.
+  const fid = typeof data.fid === "string" ? data.fid : "";
+  const token = fid || (typeof data.token === "string" ? data.token : "");
   const tokenSuffix = token.length >= 8 ? token.slice(-8) : (token.length > 0 ? token : null);
   return {
     id: docId,
@@ -13288,7 +13292,7 @@ exports.sendWebPushToUserSubscriptions = onCall(
             "notification image URL",
         );
 
-        /** @type {{id: string, token: string, platform?: *}[]} */
+        /** @type {{id: string, fid?: string, token?: string, platform?: *}[]} */
         const targets = [];
         /** @type {{id: string, reason: string}[]} */
         const skipped = [];
@@ -13311,12 +13315,12 @@ exports.sendWebPushToUserSubscriptions = onCall(
             skipped.push({id: sid, reason: "disabled"});
             continue;
           }
-          const token = data.token;
-          if (typeof token !== "string" || token.length < 10) {
+          const target = pushTargetFromSubscription(data);
+          if (!target) {
             skipped.push({id: sid, reason: "no_token"});
             continue;
           }
-          targets.push({id: sid, token, platform: data.platform});
+          targets.push({id: sid, ...target, platform: data.platform});
         }
 
         if (targets.length === 0) {
@@ -13335,6 +13339,7 @@ exports.sendWebPushToUserSubscriptions = onCall(
           uid: targetUid,
           targets: targets.map((t) => ({
             id: t.id,
+            fid: t.fid,
             token: t.token,
             title,
             body,

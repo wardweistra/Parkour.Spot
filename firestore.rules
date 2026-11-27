@@ -550,6 +550,13 @@ service cloud.firestore {
               data.token.size() > 0 &&
               data.token.size() <= 4096));
         }
+        // Firebase Installation ID (FCM direct send); replaces `token`.
+        function pushFidOk(data) {
+          return (!('fid' in data) || data.fid == null ||
+            (data.fid is string &&
+              data.fid.size() > 0 &&
+              data.fid.size() <= 256));
+        }
         function pushOptionalStringsOk(data) {
           return (!('locale' in data) || data.locale == null ||
             (data.locale is string && data.locale.size() <= 16)) &&
@@ -575,6 +582,7 @@ service cloud.firestore {
             pushPermissionOk(data) &&
             pushInstallationOk(data) &&
             pushTokenOk(data) &&
+            pushFidOk(data) &&
             pushOptionalStringsOk(data) &&
             pushClientContextOk(data) &&
             pushTimestampsOk(data);

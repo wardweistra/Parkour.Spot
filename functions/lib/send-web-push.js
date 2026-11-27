@@ -1,5 +1,5 @@
 /**
- * Shared FCM send + invalid-token cleanup.
+ * Shared FCM send + invalid-registration cleanup.
  * Used by the admin test-send callable and product inbox delivery.
  * Builds webpush or native (android/ios) message shapes from
  * subscription platform.
@@ -8,7 +8,34 @@
 const FCM_UNRECOVERABLE_TOKEN_ERROR_CODES = new Set([
   "messaging/registration-token-not-registered",
   "messaging/invalid-registration-token",
+  "messaging/installation-id-not-registered",
 ]);
+
+/** Shortest string accepted as an FCM installation ID or legacy token. */
+const MIN_PUSH_TARGET_LENGTH = 10;
+
+/**
+ * Send target for a pushSubscriptions doc. Clients on firebase_messaging 17+
+ * store the Firebase Installation ID (`fid`); older clients stored a legacy
+ * registration `token`. Prefer the FID when both are present.
+ *
+ * @param {object|undefined} data pushSubscriptions document data
+ * @return {{fid: string}|{token: string}|null}
+ */
+function pushTargetFromSubscription(data) {
+  if (!data) {
+    return null;
+  }
+  if (typeof data.fid === "string" &&
+      data.fid.length >= MIN_PUSH_TARGET_LENGTH) {
+    return {fid: data.fid};
+  }
+  if (typeof data.token === "string" &&
+      data.token.length >= MIN_PUSH_TARGET_LENGTH) {
+    return {token: data.token};
+  }
+  return null;
+}
 
 const DEFAULT_NOTIFICATION_ICON_URL = "https://parkour.spot/icons/Icon-192.png";
 const DEFAULT_NOTIFICATION_BADGE_URL =
@@ -30,7 +57,8 @@ function normalizePushPlatform(platform) {
 
 /**
  * @param {object} options
- * @param {string} options.token
+ * @param {string} [options.fid] Firebase Installation ID (preferred)
+ * @param {string} [options.token] legacy registration token
  * @param {string} options.title
  * @param {string} options.body
  * @param {string} options.clickLink
@@ -41,6 +69,7 @@ function normalizePushPlatform(platform) {
  * @return {object} FCM message
  */
 function buildWebPushMessage({
+  fid,
   token,
   title,
   body,
@@ -52,7 +81,7 @@ function buildWebPushMessage({
 }) {
   const resolvedPlatform = normalizePushPlatform(platform);
   const base = {
-    token,
+    ...(fid ? {fid} : {token}),
     notification: {title, body},
     data: {openUrl: String(clickLink || "")},
   };
@@ -116,7 +145,8 @@ function buildWebPushMessage({
  * @param {object} options.FieldValue
  * @param {object} options.messaging Firebase Messaging client
  * @param {string} options.uid
- * @param {object[]} options.targets each {id, token, title, body, platform?}
+ * @param {object[]} options.targets each
+ *   {id, fid?, token?, title, body, platform?}
  * @param {string} options.clickLink
  * @param {string} [options.iconUrl]
  * @param {string} [options.badgeUrl]
@@ -155,6 +185,7 @@ async function sendWebPushToTargets({
   for (let offset = 0; offset < targets.length; offset += SEND_CHUNK_SIZE) {
     const chunk = targets.slice(offset, offset + SEND_CHUNK_SIZE);
     const messages = chunk.map((t) => buildWebPushMessage({
+      fid: t.fid,
       token: t.token,
       title: t.title,
       body: t.body,
@@ -197,6 +228,7 @@ async function sendWebPushToTargets({
       for (const subId of deactivatedUnique) {
         batch.set(subsCol.doc(subId), {
           enabled: false,
+          fid: null,
           token: null,
           updatedAt: now,
         }, {merge: true});
@@ -219,6 +251,8 @@ module.exports = {
   sendWebPushToTargets,
   buildWebPushMessage,
   normalizePushPlatform,
+  pushTargetFromSubscription,
+  MIN_PUSH_TARGET_LENGTH,
   FCM_UNRECOVERABLE_TOKEN_ERROR_CODES,
   DEFAULT_NOTIFICATION_ICON_URL,
   DEFAULT_NOTIFICATION_BADGE_URL,

@@ -11,13 +11,13 @@ const {
 } = require("./notification-copy");
 const {
   sendWebPushToTargets,
+  pushTargetFromSubscription,
   DEFAULT_NOTIFICATION_ICON_URL,
   DEFAULT_NOTIFICATION_BADGE_URL,
 } = require("./send-web-push");
 
 const BATCH_SIZE = 500;
 const PUBLIC_ORIGIN = "https://parkour.spot";
-const MIN_TOKEN_LENGTH = 10;
 
 /**
  * @param {string} deeplinkKind
@@ -95,8 +95,8 @@ async function writeInboxNotifications(db, FieldValue, userIds, payload) {
 /**
  * @param {FirebaseFirestore.Firestore} db
  * @param {string} uid
- * @return {Promise<Array<{id: string, token: string, locale: *,
- *   platform: * }>>}
+ * @return {Promise<Array<object>>} enabled subscriptions as
+ *   {id, fid?, token?, locale, platform}
  */
 async function loadEnabledPushSubscriptions(db, uid) {
   const snap = await db.collection("users").doc(uid)
@@ -111,13 +111,13 @@ async function loadEnabledPushSubscriptions(db, uid) {
     if (data.enabled !== true) {
       continue;
     }
-    const token = data.token;
-    if (typeof token !== "string" || token.length < MIN_TOKEN_LENGTH) {
+    const target = pushTargetFromSubscription(data);
+    if (!target) {
       continue;
     }
     out.push({
       id: doc.id,
-      token,
+      ...target,
       locale: data.locale,
       platform: data.platform,
     });
@@ -197,6 +197,7 @@ async function sendPushForPayload({
       });
       return {
         id: sub.id,
+        fid: sub.fid,
         token: sub.token,
         title: copy.title,
         body: copy.body,

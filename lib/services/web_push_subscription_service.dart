@@ -47,7 +47,7 @@ class WebPushSubscriptionService extends ChangeNotifier {
   bool _isSubscribed = false;
   String? _lastError;
   WebPushPermissionState _permissionState = WebPushPermissionState.unknown;
-  StreamSubscription<String>? _tokenRefreshSub;
+  StreamSubscription<String>? _registeredSub;
 
   bool get isBusy => _isBusy;
   bool get isSupported => _isSupported;
@@ -64,34 +64,38 @@ class WebPushSubscriptionService extends ChangeNotifier {
     if (_uid == null) {
       _isSubscribed = false;
       _permissionState = WebPushPermissionState.unknown;
-      await _tokenRefreshSub?.cancel();
-      _tokenRefreshSub = null;
+      await _registeredSub?.cancel();
+      _registeredSub = null;
       notifyListeners();
       return;
     }
     await refresh();
-    _listenTokenRefresh();
+    _listenRegistrations();
   }
 
-  void _listenTokenRefresh() {
+  /// Keeps the stored Firebase Installation ID (FID) current when FCM
+  /// re-registers this app instance on its own (FID change, routine sync, or
+  /// a web `pushsubscriptionchange`). FIDs from our own [_registerAndGetFid]
+  /// calls arrive while [_isBusy] and are stored by that flow instead.
+  void _listenRegistrations() {
     if (!_isSupported || _uid == null) return;
-    _tokenRefreshSub?.cancel();
-    _tokenRefreshSub = _messaging.onTokenRefresh.listen((token) async {
-      if (_uid == null || token.isEmpty) return;
+    _registeredSub?.cancel();
+    _registeredSub = _messaging.onRegistered.listen((fid) async {
+      if (_uid == null || fid.isEmpty || _isBusy) return;
       try {
-        await _upsertSubscription(token: token, enabled: true);
-        await _disableDuplicateTokenDocs(token: token);
+        await _upsertSubscription(fid: fid, enabled: true);
+        await _disableDuplicateFidDocs(fid: fid);
         _isSubscribed = true;
         notifyListeners();
       } catch (e) {
-        debugPrint('FCM token refresh upsert failed: $e');
+        debugPrint('FCM registration upsert failed: $e');
       }
     });
   }
 
   @override
   void dispose() {
-    _tokenRefreshSub?.cancel();
+    _registeredSub?.cancel();
     super.dispose();
   }
 
@@ -106,13 +110,13 @@ class WebPushSubscriptionService extends ChangeNotifier {
         _isSubscribed = false;
         return;
       }
-      final token = await _getCurrentToken();
-      if (token == null || token.isEmpty) {
+      final fid = await _registerAndGetFid();
+      if (fid == null || fid.isEmpty) {
         _isSubscribed = false;
         return;
       }
-      await _upsertSubscription(token: token, enabled: true);
-      await _disableDuplicateTokenDocs(token: token);
+      await _upsertSubscription(fid: fid, enabled: true);
+      await _disableDuplicateFidDocs(fid: fid);
       _isSubscribed = true;
     });
   }
@@ -133,18 +137,18 @@ class WebPushSubscriptionService extends ChangeNotifier {
         _isSubscribed = false;
         return;
       }
-      final token = await _getCurrentToken();
-      if (token == null || token.isEmpty) {
+      final fid = await _registerAndGetFid();
+      if (fid == null || fid.isEmpty) {
         _isSubscribed = false;
-        _lastError = kIsWeb
-            ? 'No push token available for this browser.'
-            : 'No push token available for this device.';
+        _lastError ??= kIsWeb
+            ? 'No push registration available for this browser.'
+            : 'No push registration available for this device.';
         return;
       }
-      await _upsertSubscription(token: token, enabled: true);
-      await _disableDuplicateTokenDocs(token: token);
+      await _upsertSubscription(fid: fid, enabled: true);
+      await _disableDuplicateFidDocs(fid: fid);
       _isSubscribed = true;
-      _listenTokenRefresh();
+      _listenRegistrations();
       success = true;
     });
     return success;
@@ -157,9 +161,9 @@ class WebPushSubscriptionService extends ChangeNotifier {
       _lastError = null;
       _installationId = await _getOrCreateInstallationId();
       try {
-        await _messaging.deleteToken();
+        await _messaging.unregister();
       } catch (_) {}
-      await _upsertSubscription(token: null, enabled: false);
+      await _upsertSubscription(fid: null, enabled: false);
       _permissionState = await _readPermissionState();
       _isSubscribed = false;
       success = true;
@@ -182,21 +186,35 @@ class WebPushSubscriptionService extends ChangeNotifier {
     }
   }
 
-  Future<String?> _getCurrentToken() async {
+  /// Registers this app instance with FCM and returns its Firebase
+  /// Installation ID (FID), the direct-send target stored for the backend.
+  ///
+  /// [FirebaseMessaging.register] reports the FID only through
+  /// [FirebaseMessaging.onRegistered], which emits after every register call,
+  /// even when the instance is already registered. Subscribe before calling
+  /// it so the event cannot be missed.
+  Future<String?> _registerAndGetFid() async {
     try {
       await _awaitFirebaseMessagingServiceWorkerReady();
+      String? vapidKey;
       if (kIsWeb) {
-        final vapidKey = AppConfig.firebaseWebPushVapidKey.trim();
+        vapidKey = AppConfig.firebaseWebPushVapidKey.trim();
         if (vapidKey.isEmpty) {
           _lastError = 'Missing FIREBASE_WEB_PUSH_VAPID_KEY configuration.';
           return null;
         }
-        return await _messaging
-            .getToken(vapidKey: vapidKey)
-            .timeout(const Duration(seconds: 12));
       }
-      // Native FCM: no VAPID key.
-      return await _messaging.getToken().timeout(const Duration(seconds: 12));
+      const timeout = Duration(seconds: 12);
+      final registered = _messaging.onRegistered.first.timeout(timeout);
+      try {
+        // Native FCM ignores the VAPID key.
+        await _messaging.register(vapidKey: vapidKey).timeout(timeout);
+      } catch (_) {
+        // Don't leave the pending onRegistered wait to fail unhandled.
+        unawaited(registered.then((_) {}, onError: (_) {}));
+        rethrow;
+      }
+      return await registered;
     } on TimeoutException {
       _lastError =
           'Timed out while checking push registration. Please try again.';
@@ -207,9 +225,9 @@ class WebPushSubscriptionService extends ChangeNotifier {
     }
   }
 
-  /// Ensures the active service worker is ready before [getToken]. Calling
-  /// [getToken] too early (e.g. right after first frame) can associate the FCM
-  /// token with the wrong registration so **foreground** JS still receives
+  /// Ensures the active service worker is ready before registering. Registering
+  /// too early (e.g. right after first frame) can associate the FCM
+  /// registration with the wrong service worker so **foreground** JS still receives
   /// messages but **background** push (service worker) does not — especially
   /// on Android PWAs after eager startup sync.
   Future<void> _awaitFirebaseMessagingServiceWorkerReady() async {
@@ -274,9 +292,12 @@ class WebPushSubscriptionService extends ChangeNotifier {
         .collection('pushSubscriptions');
   }
 
+  /// Stores this installation's push registration. Writing [fid] also clears
+  /// the legacy `token` left by app versions that used registration tokens,
+  /// so the backend switches this installation to FID sends.
   Future<void> _upsertSubscription({
     required bool enabled,
-    String? token,
+    String? fid,
   }) async {
     final collection = _subscriptionsCollection();
     final installationId = _installationId;
@@ -291,7 +312,8 @@ class WebPushSubscriptionService extends ChangeNotifier {
       'installationId': installationId,
       'platform': _platform,
       'enabled': enabled,
-      'token': token,
+      'fid': fid,
+      'token': null,
       'permission': _permissionState.name,
       'locale': normalizedLocale?.substring(
         0,
@@ -312,11 +334,11 @@ class WebPushSubscriptionService extends ChangeNotifier {
     }, SetOptions(merge: true));
   }
 
-  Future<void> _disableDuplicateTokenDocs({required String token}) async {
+  Future<void> _disableDuplicateFidDocs({required String fid}) async {
     final collection = _subscriptionsCollection();
     final keepId = _installationId;
     if (collection == null || keepId == null) return;
-    final dupes = await collection.where('token', isEqualTo: token).get();
+    final dupes = await collection.where('fid', isEqualTo: fid).get();
     if (dupes.docs.length <= 1) return;
     final now = FieldValue.serverTimestamp();
     final batch = _firestore.batch();
