@@ -807,6 +807,27 @@
   "@profileTrainingPlanCheckInReminderSubtitle": {
     "description": "Account settings: explains planned-session check-in reminder opt-in"
   },
+  "profileNotificationSettingsEmailGroupTitle": "Email",
+  "@profileNotificationSettingsEmailGroupTitle": {
+    "description": "Account settings: group title for email preferences"
+  },
+  "profileNotificationSettingsEmailGroupHelper": "Sent to {email}.",
+  "@profileNotificationSettingsEmailGroupHelper": {
+    "description": "Account settings: names the address email goes to",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "profileEmailNewsletterTitle": "Newsletter emails",
+  "@profileEmailNewsletterTitle": {
+    "description": "Account settings: newsletter email opt-out toggle title"
+  },
+  "profileEmailNewsletterSubtitle": "Now and then, like your yearly review. No spam, and you can stop any time.",
+  "@profileEmailNewsletterSubtitle": {
+    "description": "Account settings: explains what newsletter emails are"
+  },
   "profileLocationAlertsSavedLocationsTitle": "Locations of interest",
   "@profileLocationAlertsSavedLocationsTitle": {
     "description": "Account settings: saved locations subsection title"

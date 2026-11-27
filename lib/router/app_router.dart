@@ -21,6 +21,7 @@ import '../screens/admin/spot_images_screen.dart';
 import '../screens/admin/event_data_screen.dart';
 import '../screens/admin/event_sync_sources_screen.dart';
 import '../screens/admin/admin_push_subscriptions_screen.dart';
+import '../screens/admin/email_campaigns_screen.dart';
 import '../screens/admin/user_activity_metrics_screen.dart';
 import '../screens/admin/audit_log_viewer_screen.dart';
 import '../screens/admin/duplicate_images_screen.dart';
@@ -556,6 +557,10 @@ class AppRouter {
         GoRoute(
           path: '/admin/push-subscriptions',
           builder: (context, state) => const AdminPushSubscriptionsScreen(),
+        ),
+        GoRoute(
+          path: '/admin/email-campaigns',
+          builder: (context, state) => const EmailCampaignsScreen(),
         ),
         GoRoute(
           path: '/admin/user-activity-metrics',

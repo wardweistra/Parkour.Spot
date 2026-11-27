@@ -721,6 +721,22 @@ service cloud.firestore {
       allow read: if requestingUserIsAdmin();
       allow create, update, delete: if false;
     }
+
+    // Email campaigns (Cloud Functions write; admins watch progress).
+    match /emailCampaigns/{campaignId} {
+      allow read: if requestingUserIsAdmin();
+      allow create, update, delete: if false;
+
+      match /recipients/{userId} {
+        allow read: if requestingUserIsAdmin();
+        allow create, update, delete: if false;
+      }
+    }
+
+    match /emailSendCounters/{day} {
+      allow read: if requestingUserIsAdmin();
+      allow create, update, delete: if false;
+    }
     
     // AuditLog collection - logs moderator actions on spots
     match /auditLog/{logId} {

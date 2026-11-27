@@ -682,6 +682,21 @@ class AppLocalizationsNl extends AppLocalizations {
       'Ontvang een herinnering wanneer je geplande sessie is begonnen en je nog niet bent ingecheckt op die spot.';
 
   @override
+  String get profileNotificationSettingsEmailGroupTitle => 'E-mail';
+
+  @override
+  String profileNotificationSettingsEmailGroupHelper(String email) {
+    return 'Naar $email.';
+  }
+
+  @override
+  String get profileEmailNewsletterTitle => 'Nieuwsbrief-e-mails';
+
+  @override
+  String get profileEmailNewsletterSubtitle =>
+      'Af en toe, zoals je jaaroverzicht. Geen spam, en je kunt altijd stoppen.';
+
+  @override
   String get profileLocationAlertsSavedLocationsTitle =>
       'Mijn locaties van interesse';
 

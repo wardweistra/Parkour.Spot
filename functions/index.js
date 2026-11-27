@@ -402,6 +402,18 @@ const {
 } = require("./lib/user-stats");
 const {buildYearReviewData} = require("./lib/year-review-data");
 const {renderYearReviewCard} = require("./lib/year-review-card");
+const {sendBrevoEmail} = require("./lib/brevo");
+const {
+  createYearReviewCampaign,
+  cancelCampaign: cancelEmailCampaignById,
+  prepareYearReviewMessage,
+  processDueCampaigns,
+} = require("./lib/email-campaigns");
+const {
+  verifyUnsubscribeParams,
+  setEmailCategory,
+} = require("./lib/email-preferences");
+const {unsubscribePageHtml} = require("./lib/year-review-email");
 const {resolveCardLocale, leadSentence} = require("./lib/year-review-copy");
 const {
   parseReviewYear,
@@ -2091,6 +2103,216 @@ exports.getYearReview = onCall({region: "europe-west1"}, async (request) => {
     throw new HttpsError("internal", "Could not load the year review");
   }
 });
+
+// ---------------------------------------------------------------------------
+// Email campaigns (Brevo). See lib/email-campaigns.js.
+//
+// Secrets: BREVO_API_KEY (Brevo → SMTP & API → API keys) and
+// EMAIL_UNSUBSCRIBE_SECRET (any long random string; changing it breaks the
+// unsubscribe links in emails already sent).
+// ---------------------------------------------------------------------------
+
+const EMAIL_SECRETS = ["BREVO_API_KEY", "EMAIL_UNSUBSCRIBE_SECRET"];
+
+/**
+ * @param {string} uid
+ * @return {Promise<Object>} Auth record fields the email queue needs.
+ */
+async function getAuthUserForEmail(uid) {
+  const record = await getAuth().getUser(uid);
+  return {
+    email: record.email || "",
+    emailVerified: record.emailVerified === true,
+    disabled: record.disabled === true,
+    displayName: record.displayName || "",
+  };
+}
+
+/**
+ * @param {Object} message `{to, subject, html, text, headers, tags}`
+ * @return {Promise<{messageId: string}>}
+ */
+function sendEmailViaBrevo(message) {
+  return sendBrevoEmail({apiKey: process.env.BREVO_API_KEY, ...message});
+}
+
+/** @return {string} */
+function emailUnsubscribeSecret() {
+  const secret = process.env.EMAIL_UNSUBSCRIBE_SECRET;
+  if (secret) return secret;
+  if (process.env.FUNCTIONS_EMULATOR === "true") return "emulator-unsubscribe-secret";
+  throw new Error("EMAIL_UNSUBSCRIBE_SECRET is not set");
+}
+
+// Admin: queue the yearly review email for everyone with contributions in
+// [year]. {year, sendAt?: ISO string, dailyLimit?: number}
+exports.createYearReviewEmailCampaign = onCall(
+    {region: "europe-west1", timeoutSeconds: 300, memory: "512MiB"},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+      } catch (error) {
+        throw new HttpsError("permission-denied", error.message);
+      }
+      const {year, sendAt, dailyLimit} = request.data || {};
+      try {
+        const result = await createYearReviewCampaign({
+          db,
+          FieldValue,
+          Timestamp,
+          year: Number(year),
+          sendAt,
+          dailyLimit,
+          createdBy: (request.auth && request.auth.uid) || null,
+        });
+        logger.info("createYearReviewEmailCampaign", result);
+        return {success: true, ...result};
+      } catch (error) {
+        throw new HttpsError("failed-precondition", error.message);
+      }
+    },
+);
+
+// Admin: stop a queued or sending campaign. {campaignId}
+exports.cancelEmailCampaign = onCall({region: "europe-west1"}, async (request) => {
+  try {
+    await ensureAdmin(request);
+  } catch (error) {
+    throw new HttpsError("permission-denied", error.message);
+  }
+  const campaignId = String((request.data || {}).campaignId || "");
+  if (!campaignId) throw new HttpsError("invalid-argument", "campaignId is required");
+  try {
+    await cancelEmailCampaignById(db, FieldValue, campaignId);
+    return {success: true};
+  } catch (error) {
+    throw new HttpsError("failed-precondition", error.message);
+  }
+});
+
+// Admin: send one person's yearly review to the calling admin's own address,
+// subject prefixed with [Test]. Unsubscribe links in it act on the admin.
+// {year, previewUserId?} (defaults to the admin).
+exports.sendYearReviewTestEmail = onCall(
+    {region: "europe-west1", secrets: EMAIL_SECRETS, timeoutSeconds: 60},
+    async (request) => {
+      try {
+        await ensureAdmin(request);
+      } catch (error) {
+        throw new HttpsError("permission-denied", error.message);
+      }
+      const adminUid = request.auth && request.auth.uid;
+      if (!adminUid) throw new HttpsError("unauthenticated", "Sign in as an admin");
+      const {year: rawYear, previewUserId} = request.data || {};
+      const year = Number(rawYear);
+      const uid = typeof previewUserId === "string" && previewUserId.trim() ?
+        previewUserId.trim() :
+        adminUid;
+      const admin = await getAuthUserForEmail(adminUid);
+      if (!admin.email) throw new HttpsError("failed-precondition", "Your account has no email address");
+      try {
+        // The preview person's own auth record decides nothing here: only
+        // their data is used, and the mail goes to the admin.
+        const prepared = await prepareYearReviewMessage({
+          db,
+          uid,
+          year,
+          getAuthUser: async (id) => ({...(await getAuthUserForEmail(id)), emailVerified: true, disabled: false, email: admin.email}),
+          unsubscribeSecret: emailUnsubscribeSecret(),
+          unsubscribeUid: adminUid,
+          checkPreference: false,
+        });
+        if (prepared.skip) {
+          return {success: false, reason: prepared.skip};
+        }
+        const {messageId} = await sendEmailViaBrevo({
+          ...prepared.message,
+          to: {email: admin.email, name: admin.displayName},
+          subject: `[Test] ${prepared.message.subject}`,
+          tags: [...prepared.message.tags, "test"],
+        });
+        return {success: true, sentTo: admin.email, locale: prepared.locale, messageId};
+      } catch (error) {
+        logger.error("sendYearReviewTestEmail failed", {uid, year, error: error && error.message});
+        throw new HttpsError("internal", error.message);
+      }
+    },
+);
+
+// Sends due campaign emails in small batches within each campaign's daily cap.
+exports.processEmailCampaignsScheduled = onSchedule(
+    {
+      schedule: "every 10 minutes",
+      region: "europe-west1",
+      timeZone: "Etc/UTC",
+      secrets: EMAIL_SECRETS,
+      timeoutSeconds: 540,
+      memory: "512MiB",
+    },
+    async () => {
+      const summary = await processDueCampaigns({
+        db,
+        FieldValue,
+        Timestamp,
+        send: sendEmailViaBrevo,
+        getAuthUser: getAuthUserForEmail,
+        unsubscribeSecret: emailUnsubscribeSecret(),
+      });
+      if (Object.keys(summary).length) {
+        logger.info("processEmailCampaignsScheduled", summary);
+      }
+    },
+);
+
+// Unsubscribe links (Hosting: /email/unsubscribe). GET shows a confirm
+// button; POST unsubscribes, either from that button or as an RFC 8058
+// one-click request from the mail client.
+exports.emailUnsubscribe = onRequest(
+    {region: "europe-west1", secrets: ["EMAIL_UNSUBSCRIBE_SECRET"]},
+    async (req, res) => {
+      res.set("Cache-Control", "no-store");
+      res.set("X-Robots-Tag", "noindex");
+      if (req.method !== "GET" && req.method !== "POST") {
+        res.set("Allow", "GET, POST").status(405).send("Method not allowed");
+        return;
+      }
+      const params = {...(req.query || {})};
+      let verified = null;
+      try {
+        verified = verifyUnsubscribeParams(params, emailUnsubscribeSecret());
+      } catch (error) {
+        logger.error("emailUnsubscribe: secret missing", {error: error.message});
+      }
+      let locale = null;
+      if (verified) {
+        const userSnap = await db.collection("users").doc(verified.uid).get();
+        locale = userSnap.exists ? (userSnap.data() || {}).preferredLanguageCode : null;
+      }
+      const send = (status, state) => {
+        res.status(status).type("html").send(unsubscribePageHtml({
+          locale,
+          state,
+          actionUrl: req.originalUrl || req.url,
+        }));
+      };
+      if (!verified) {
+        send(400, "invalid");
+        return;
+      }
+      if (req.method === "GET") {
+        send(200, "confirm");
+        return;
+      }
+      try {
+        await setEmailCategory(db, FieldValue, verified.uid, verified.category, false);
+        logger.info("emailUnsubscribe", verified);
+        send(200, "done");
+      } catch (error) {
+        logger.error("emailUnsubscribe failed", {...verified, error: error.message});
+        res.status(500).send("Could not unsubscribe. Please try again.");
+      }
+    },
+);
 
 exports.onSpotCheckInCreated = onDocumentCreated(
     {document: "spotCheckIns/{checkInId}", region: "europe-west1"},

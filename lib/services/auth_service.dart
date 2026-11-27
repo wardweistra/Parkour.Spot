@@ -75,6 +75,10 @@ class AuthService extends ChangeNotifier {
   bool _isCopyingGooglePicture =
       false; // Track if Google picture copy is in progress
   bool _isLoadingProfile = false; // Prevent concurrent profile loads
+
+  /// Newsletter choice from the sign-up form, applied when Google sign-in
+  /// creates a new profile. Null: no choice was shown (the default applies).
+  bool? _pendingSignUpEmailNewsletter;
   String? _loadingProfileUid; // Track which UID is currently being loaded
   final Map<String, Completer<void>> _profileLoadCompleters =
       {}; // Track profile load completers by UID
@@ -153,6 +157,8 @@ class AuthService extends ChangeNotifier {
       final doc = await _getUserProfileDoc(uid);
       if (doc.exists) {
         _profileLoadError = null;
+        // An existing account keeps its own preference.
+        _pendingSignUpEmailNewsletter = null;
         final data = doc.data() as Map<String, dynamic>;
         _userProfile = app_user.User.fromMap({'id': uid, ...data});
         await _seedPreferredLanguageIfMissing(uid, data);
@@ -192,6 +198,8 @@ class AuthService extends ChangeNotifier {
 
         // Create user profile if it doesn't exist (Auth user is new)
         _profileLoadError = null;
+        final emailNewsletter = _pendingSignUpEmailNewsletter;
+        _pendingSignUpEmailNewsletter = null;
         _userProfile = app_user.User(
           id: uid,
           email: _auth.currentUser?.email ?? '',
@@ -205,11 +213,12 @@ class AuthService extends ChangeNotifier {
           featureAccess: null,
           preferredLanguageCode: _browserLanguageCode(),
           isLanguageExplicitlySet: false,
+          emailNewsletter: emailNewsletter ?? true,
         );
-        await _firestore
-            .collection('users')
-            .doc(uid)
-            .set(_userProfile!.toMap());
+        await _firestore.collection('users').doc(uid).set({
+          ..._userProfile!.toMap(),
+          ..._signUpEmailPrefs(emailNewsletter),
+        });
       }
 
       // Note: lastActiveAt is updated by the router observer on page views/navigation
@@ -454,9 +463,14 @@ class AuthService extends ChangeNotifier {
 
   static bool _googleSignInInitialized = false;
 
-  Future<bool> signInWithGoogle() async {
+  /// [signUpEmailNewsletter]: the sign-up form's newsletter checkbox. Used
+  /// only if this sign-in creates a new account.
+  Future<bool> signInWithGoogle({bool? signUpEmailNewsletter}) async {
     try {
       _isLoading = true;
+      // Set before signing in: the auth listener may create the profile
+      // before the sign-in call returns.
+      _pendingSignUpEmailNewsletter = signUpEmailNewsletter;
       notifyListeners();
 
       final UserCredential userCredential;
@@ -524,8 +538,9 @@ class AuthService extends ChangeNotifier {
   Future<bool> createUserWithEmailAndPassword(
     String email,
     String password,
-    String displayName,
-  ) async {
+    String displayName, {
+    bool emailNewsletter = true,
+  }) async {
     try {
       _isLoading = true;
       notifyListeners();
@@ -556,9 +571,13 @@ class AuthService extends ChangeNotifier {
           featureAccess: null,
           preferredLanguageCode: _browserLanguageCode(),
           isLanguageExplicitlySet: false,
+          emailNewsletter: emailNewsletter,
         );
 
-        await _firestore.collection('users').doc(user.id).set(user.toMap());
+        await _firestore.collection('users').doc(user.id).set({
+          ...user.toMap(),
+          ..._signUpEmailPrefs(emailNewsletter),
+        });
         _userProfile = user;
 
         // Note: Email/password accounts don't have Google profile pictures
@@ -573,6 +592,18 @@ class AuthService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// `emailPrefs` for a new profile, recording the sign-up choice and when it
+  /// was made. Empty when no choice was shown, so the default applies.
+  Map<String, dynamic> _signUpEmailPrefs(bool? emailNewsletter) {
+    if (emailNewsletter == null) return const {};
+    return {
+      'emailPrefs': {
+        'newsletter': emailNewsletter,
+        'newsletterUpdatedAt': FieldValue.serverTimestamp(),
+      },
+    };
   }
 
   Future<void> sendEmailVerification() async {
@@ -997,6 +1028,32 @@ class AuthService extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Error updating training plan reminder preference: $e');
+      return false;
+    }
+  }
+
+  /// Opt in or out of newsletter-style email, such as the yearly review.
+  /// The email queue reads this right before each send.
+  Future<bool> updateEmailNewsletter(bool enabled) async {
+    if (_auth.currentUser == null || _userProfile == null) {
+      debugPrint(
+        'Cannot update newsletter email preference: user not authenticated or profile not loaded',
+      );
+      return false;
+    }
+
+    try {
+      final userId = _auth.currentUser!.uid;
+      await _firestore.collection('users').doc(userId).update({
+        'emailPrefs.newsletter': enabled,
+        'emailPrefs.newsletterUpdatedAt': FieldValue.serverTimestamp(),
+      });
+
+      _userProfile = _userProfile!.copyWith(emailNewsletter: enabled);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error updating newsletter email preference: $e');
       return false;
     }
   }

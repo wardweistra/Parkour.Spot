@@ -356,6 +356,7 @@ class AccountSettingsScreen extends StatelessWidget {
         authService.userProfile?.notifyEventsNearby == true;
     final notifyTrainingPlanCheckInReminders =
         authService.userProfile?.notifyTrainingPlanCheckInReminders == true;
+    final emailNewsletter = authService.userProfile?.emailNewsletter ?? true;
     final pushService = context.watch<WebPushSubscriptionService>();
 
     return Card(
@@ -559,6 +560,29 @@ class AccountSettingsScreen extends StatelessWidget {
                               .updateNotifyTrainingPlanCheckInReminders(
                                 enabled,
                               );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    _NotificationSettingsGroupHeader(
+                      title: l10n.profileNotificationSettingsEmailGroupTitle,
+                      helper: l10n.profileNotificationSettingsEmailGroupHelper(
+                        authService.currentUser?.email ?? '',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.mail_outline,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      title: Text(l10n.profileEmailNewsletterTitle),
+                      subtitle: Text(l10n.profileEmailNewsletterSubtitle),
+                      trailing: Switch(
+                        value: emailNewsletter,
+                        onChanged: (enabled) async {
+                          await authService.updateEmailNewsletter(enabled);
                         },
                       ),
                     ),
