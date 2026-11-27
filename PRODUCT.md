@@ -4,7 +4,7 @@
 
 ## Platform
 
-web
+adaptive
 
 ## Users
 
@@ -24,13 +24,13 @@ Core spot discovery and community value stay open—no login or paywall on the m
 
 ## Operating Context
 
-Planning at home (browse, save, share) and on the go (map, photos, ratings outdoors). Trainers may share locations with students; gym owners and jam/event organizers use the map to attract visitors or surface events. Production surface is a Flutter web PWA installable on desktop and mobile browsers.
+Planning at home (browse, save, share) and on the go (map, photos, ratings outdoors). Trainers may share locations with students; gym owners and jam/event organizers use the map to attract visitors or surface events. Production surfaces are a Flutter web PWA installable on desktop and mobile browsers, and a native Android app from the same Flutter codebase.
 
 ## Capabilities and Constraints
 
-Confirmed today: authentication and profiles; spot discovery/search; interactive maps; add spots with photos; ratings/reviews; Firebase backend; user / moderator / admin roles; localization for `en`, `de`, `es`, `fr`, `nl`, `pt`; PWA on web. Live production: [https://Parkour.Spot](https://Parkour.Spot).
+Confirmed today: authentication and profiles; spot discovery/search; interactive maps; add spots with photos; ratings/reviews; Firebase backend; user / moderator / admin roles; localization for `en`, `de`, `es`, `fr`, `nl`, `pt`; PWA on web; Android app distributed through Google Play (App Links open `parkour.spot` URLs in the app). Live production: [https://Parkour.Spot](https://Parkour.Spot).
 
-Undecided / future: in-app light/dark toggle (system preference today); any paid “extra features” remain unspecified and must not gate core discovery. Native store apps are exploratory only—Android early alpha, iOS not built; neither is in production, and shipping them is not a confirmed commitment.
+Undecided / future: in-app light/dark toggle (system preference today); any paid “extra features” remain unspecified and must not gate core discovery. An iOS app is not built; shipping one is not a confirmed commitment.
 
 Technical stack is established in-repo (Flutter web + Firebase); no greenfield stack choice.
 
@@ -58,7 +58,7 @@ Visual system (Material 3, Fredoka, `#007FA8` seed, radii, components) is record
 2. **Clarity at a glance** — Spots must be understandable quickly via map, images, and ratings, at home and outdoors.
 3. **Community-owned, not extractive** — UX and copy reinforce shared ownership; avoid patterns that lock the community’s own map behind friction or scarcity theater.
 4. **Global-ready** — First-class locales; layout and copy tolerate long translations and avoid brittle truncation.
-5. **At-home and on-the-go** — Design for planning and for motion outdoors; touch-friendly, PWA-first on desktop and mobile web.
+5. **At-home and on-the-go** — Design for planning and for motion outdoors; touch-friendly on the web PWA (desktop and mobile) and in the Android app, which follows Android conventions where they differ from the web.
 
 ## Accessibility & Inclusion
 

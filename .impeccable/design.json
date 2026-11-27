@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-06-08T00:00:00.000Z",
+  "generatedAt": "2026-11-27T21:49:41.000Z",
   "title": "Design System: ParkourSpot",
   "extensions": {
     "colorMeta": {
@@ -223,6 +223,14 @@
       "description": "PageScaffold toolbar: flat, centered content, back navigation.",
       "html": "<header class=\"ds-appbar\"><div class=\"ds-appbar-inner\"><button class=\"ds-appbar-back\" type=\"button\" aria-label=\"Back\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\"><path d=\"M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z\" fill=\"#171C1F\"/></svg></button><h1 class=\"ds-appbar-title\">Resolve Duplicate Cluster</h1></div></header>",
       "css": ".ds-appbar { background: #F6FAFE; border-bottom: 1px solid #C0C7CD; font-family: Fredoka, system-ui, sans-serif; } .ds-appbar-inner { display: flex; align-items: center; gap: 8px; max-width: 1200px; margin: 0 auto; padding: 12px 16px; } .ds-appbar-back { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: none; border-radius: 8px; background: transparent; cursor: pointer; transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-appbar-back:hover { background: #F0F4F8; } .ds-appbar-back:focus-visible { outline: 2px solid #186584; outline-offset: 2px; } .ds-appbar-title { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.25; color: #171C1F; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }"
+    },
+    {
+      "name": "Events Calendar",
+      "kind": "custom",
+      "refersTo": "spot-card",
+      "description": "About site month grid (EventCalendar.astro): flat table, today ring, selected day fill, all-day bars and timed chips.",
+      "html": "<table class=\"ds-cal\"><thead><tr><th>Mon</th><th>Tue</th><th>Wed</th></tr></thead><tbody><tr><td class=\"ds-cal-day is-past\"><span class=\"ds-cal-date\">8</span></td><td class=\"ds-cal-day is-today\"><span class=\"ds-cal-date\">9</span><a class=\"ds-cal-chip ds-cal-chip-allday\" href=\"#\">Utrecht jam</a></td><td class=\"ds-cal-day is-selected\"><span class=\"ds-cal-date\">10</span><a class=\"ds-cal-chip\" href=\"#\"><span class=\"ds-cal-time\">18:00</span> Open training</a></td></tr></tbody></table>",
+      "css": ".ds-cal { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; border: 1px solid #C0C7CD; border-radius: 12px; background: #F6FAFE; overflow: hidden; font-family: Fredoka, system-ui, sans-serif; color: #171C1F; } .ds-cal th { padding: 8px 8px 6px; border-bottom: 1px solid #C0C7CD; background: #F0F4F8; color: #40484D; font-size: 0.85rem; font-weight: 600; text-align: start; } .ds-cal-day { height: 7.25rem; padding: 6px; vertical-align: top; border-right: 1px solid #C0C7CD; } .ds-cal-day:last-child { border-right: 0; } .ds-cal-date { display: inline-grid; place-items: center; min-width: 30px; height: 30px; margin: 0 0 4px; padding: 0 6px; border-radius: 999px; font-weight: 600; } .ds-cal-day.is-past .ds-cal-date { color: rgba(64,72,77,0.7); font-weight: 400; } .ds-cal-day.is-today .ds-cal-date { color: #186584; box-shadow: inset 0 0 0 2px #186584; } .ds-cal-day.is-selected { background: #E9F4FC; } .ds-cal-day.is-selected .ds-cal-date { background: #186584; color: #FFFFFF; } .ds-cal-chip { display: flex; align-items: center; gap: 4px; height: 24px; padding: 0 6px; border-radius: 6px; background: rgba(193,232,255,0.6); color: #004D67; font-size: 0.8rem; font-weight: 600; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background 200ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-cal-chip:hover { background: #C1E8FF; } .ds-cal-chip:focus-visible { outline: 2px solid #186584; outline-offset: 2px; } .ds-cal-chip-allday { background: #186584; color: #FFFFFF; } .ds-cal-chip-allday:hover { background: #004D67; } .ds-cal-time { font-variant-numeric: tabular-nums; }"
     }
   ],
   "narrative": {
