@@ -328,7 +328,7 @@ describe("deliverNotifications", () => {
     });
   });
 
-  it("sends to the FID when a subscription has one", async () => {
+  it("sends to the FID only when a subscription has no token", async () => {
     const written = [];
     const cleanupWrites = [];
     const db = createDb({
@@ -336,8 +336,9 @@ describe("deliverNotifications", () => {
       cleanupWrites,
       subscriptionsByUser: {
         u1: [
-          {id: "inst1", enabled: true, fid: FID, token: TOKEN, locale: "en"},
-          {id: "inst2", enabled: true, token: TOKEN + "2", locale: "en"},
+          {id: "inst1", enabled: true, fid: FID, token: null, locale: "en"},
+          {id: "inst2", enabled: true, fid: FID + "2", token: TOKEN,
+            locale: "en"},
         ],
       },
     });
@@ -361,7 +362,7 @@ describe("deliverNotifications", () => {
     expect(messages.length).toBe(2);
     expect(messages[0].fid).toBe(FID);
     expect(messages[0].token).toBeUndefined();
-    expect(messages[1].token).toBe(TOKEN + "2");
+    expect(messages[1].token).toBe(TOKEN);
     expect(messages[1].fid).toBeUndefined();
   });
 

@@ -13081,10 +13081,10 @@ function serializePushSubscriptionForAdmin(docId, data) {
   if (!data) {
     return {id: docId};
   }
-  // Admin UI shows the tail of the send target: the FID for current
-  // clients, the legacy registration token for older ones.
-  const fid = typeof data.fid === "string" ? data.fid : "";
-  const token = fid || (typeof data.token === "string" ? data.token : "");
+  // Admin UI shows the tail of the send target (same preference as
+  // pushTargetFromSubscription: token, then FID).
+  const rawToken = typeof data.token === "string" ? data.token : "";
+  const token = rawToken || (typeof data.fid === "string" ? data.fid : "");
   const tokenSuffix = token.length >= 8 ? token.slice(-8) : (token.length > 0 ? token : null);
   return {
     id: docId,

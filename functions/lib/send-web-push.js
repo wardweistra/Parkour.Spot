@@ -15,9 +15,11 @@ const FCM_UNRECOVERABLE_TOKEN_ERROR_CODES = new Set([
 const MIN_PUSH_TARGET_LENGTH = 10;
 
 /**
- * Send target for a pushSubscriptions doc. Clients on firebase_messaging 17+
- * store the Firebase Installation ID (`fid`); older clients stored a legacy
- * registration `token`. Prefer the FID when both are present.
+ * Send target for a pushSubscriptions doc. Native apps store a Firebase
+ * Installation ID (`fid`, FCM direct send); web stores a registration
+ * `token`. Current clients write one and clear the other. Prefer the token
+ * when both exist: FCM rejects sends to web FIDs (UNREGISTERED), and a doc
+ * holding both comes from a web client that wrote a token after a stale FID.
  *
  * @param {object|undefined} data pushSubscriptions document data
  * @return {{fid: string}|{token: string}|null}
@@ -26,13 +28,13 @@ function pushTargetFromSubscription(data) {
   if (!data) {
     return null;
   }
-  if (typeof data.fid === "string" &&
-      data.fid.length >= MIN_PUSH_TARGET_LENGTH) {
-    return {fid: data.fid};
-  }
   if (typeof data.token === "string" &&
       data.token.length >= MIN_PUSH_TARGET_LENGTH) {
     return {token: data.token};
+  }
+  if (typeof data.fid === "string" &&
+      data.fid.length >= MIN_PUSH_TARGET_LENGTH) {
+    return {fid: data.fid};
   }
   return null;
 }

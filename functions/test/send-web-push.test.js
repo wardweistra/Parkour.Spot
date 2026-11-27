@@ -11,12 +11,12 @@ describe("pushTargetFromSubscription", () => {
   const fid = "cR_fidAbcdefghijklmnop";
   const token = "legacy-token-abcdefghijklmnop";
 
-  test("prefers the FID over a legacy token", () => {
-    expect(pushTargetFromSubscription({fid, token})).toEqual({fid});
+  test("prefers the token over an FID", () => {
+    expect(pushTargetFromSubscription({fid, token})).toEqual({token});
   });
 
-  test("falls back to the legacy token", () => {
-    expect(pushTargetFromSubscription({fid: null, token})).toEqual({token});
+  test("uses the FID when there is no token", () => {
+    expect(pushTargetFromSubscription({fid, token: null})).toEqual({fid});
   });
 
   test("returns null without a usable target", () => {
