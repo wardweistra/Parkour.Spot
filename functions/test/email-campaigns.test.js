@@ -84,6 +84,9 @@ describe("year review email", () => {
     expect(email.text).toContain("4 spots added");
     expect(email.text).toContain(`Unsubscribe from newsletter emails: ${unsub}`);
     expect(email.html).toContain("2026 so far");
+    // The card shows the sentence; no headline repeating it.
+    expect(email.html).not.toContain("font-size:26px");
+    expect(email.html).toContain("alt=\"In 2026 Noor put 4 spots on the map in Utrecht\"");
   });
 
   it("gives a private profile its numbers without a card or public link", () => {
@@ -92,6 +95,7 @@ describe("year review email", () => {
     expect(email.html).not.toContain("square.jpg");
     expect(email.html).not.toContain("/year/2026/");
     expect(email.html).toContain(EMAIL_STRINGS.nl.privateNote);
+    expect(email.html).toContain("font-size:26px");
     expect(email.html).toContain("https://parkour.spot/profile/settings");
   });
 
