@@ -231,6 +231,9 @@ function buildYearReviewEmail(data, {locale: rawLocale, unsubscribeUrl, now = ne
     `<div style="font-size:13px;color:${COLORS.muted};line-height:1.3;padding-top:4px">${escapeHtml(label)}</div></td>`,
   ).join("");
 
+  // The card prints the sentence itself (and carries it as alt text), so
+  // only private profiles, who get no card, get it as a headline.
+  const headlineHtml = `<tr><td style="padding:10px 28px 16px;font-family:${FONT};font-size:26px;font-weight:700;line-height:1.25;color:${COLORS.ink}">${escapeHtml(sentence.before)}<span style="color:${COLORS.accent}">${escapeHtml(sentence.emphasis)}</span>${escapeHtml(sentence.after)}</td></tr>`;
   const cardHtml = isPublic ?
     `<tr><td style="padding:8px 28px 0"><a href="${escapeHtml(pageUrl)}"><img src="${escapeHtml(cardUrl)}" width="484" alt="${escapeHtml(sentenceText)}" style="display:block;width:100%;max-width:484px;height:auto;border:0;border-radius:16px;font-family:${FONT};font-size:15px;color:${COLORS.muted}"></a></td></tr>` :
     `<tr><td style="padding:8px 28px 0;font-family:${FONT};font-size:15px;line-height:1.5;color:${COLORS.muted}">${escapeHtml(s.privateNote)}</td></tr>`;
@@ -243,7 +246,7 @@ function buildYearReviewEmail(data, {locale: rawLocale, unsubscribeUrl, now = ne
 <table role="presentation" width="540" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:540px;background:${COLORS.ground};border-radius:24px">
 <tr><td style="padding:28px 28px 0"><img src="${LOGO_URL}" width="40" height="40" alt="Parkour·Spot" style="display:block;border:0;border-radius:10px"></td></tr>
 <tr><td style="padding:20px 28px 0;font-family:${FONT};font-size:14px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:${COLORS.muted}">${escapeHtml(heading)}</td></tr>
-<tr><td style="padding:10px 28px 16px;font-family:${FONT};font-size:26px;font-weight:700;line-height:1.25;color:${COLORS.ink}">${escapeHtml(sentence.before)}<span style="color:${COLORS.accent}">${escapeHtml(sentence.emphasis)}</span>${escapeHtml(sentence.after)}</td></tr>
+${isPublic ? "" : headlineHtml}
 ${cardHtml}
 ${countCells ? `<tr><td style="padding:16px 20px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${COLORS.panel};border-radius:16px"><tr>${countCells}</tr></table></td></tr>` : ""}
 <tr><td style="padding:20px 28px 0">${buttonHtml(ctaUrl, ctaLabel)}</td></tr>
